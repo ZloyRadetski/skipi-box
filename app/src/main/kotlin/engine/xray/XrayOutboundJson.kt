@@ -6,6 +6,7 @@ package engine.xray
 import app.AppState
 import app.effectiveLocalDnsEnabled
 import engine.network.NetworkDefaults
+import engine.vpn.VpnDefaults
 import features.proxy.server.model.ProxyServerConstants
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -27,7 +28,7 @@ internal fun buildXrayOutbounds(
         proxyOutbounds.forEach { outboundServer ->
             add(buildProxyOutbound(appState, outboundServer))
         }
-        add(buildFreedomOutbound(XrayTags.DIRECT, appState.xrayDirectOutboundDomainStrategy()))
+        add(buildFreedomOutbound(XrayTags.DIRECT, appState.xrayDirectOutboundDomainStrategy(), appState))
         add(buildSimpleOutbound(XrayTags.BLOCK, XrayProtocols.BLACKHOLE))
         if (appState.effectiveLocalDnsEnabled) {
             add(buildSimpleOutbound(XrayTags.DNS_OUT, XrayProtocols.DNS))
@@ -140,6 +141,14 @@ private fun buildProxyOutbound(appState: AppState, outboundServer: XrayProxyOutb
 }
 
 private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): JsonObject {
+    val keepAlive = appState.tunTcpKeepAliveInterval.toIntCoercedInOrDefault(
+        VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MIN..VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MAX,
+        default = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL.toInt(),
+    )
+    val userTimeout = appState.tunTcpUserTimeout.toIntCoercedInOrDefault(
+        VpnDefaults.TCP_USER_TIMEOUT_MIN..VpnDefaults.TCP_USER_TIMEOUT_MAX,
+        default = VpnDefaults.TCP_USER_TIMEOUT.toInt(),
+    )
     if (stringValue("protocol") == ProxyServerConstants.PROTOCOL_WIREGUARD) {
         val settings = objectValue("settings") ?: buildJsonObject {}
         return updated {
@@ -147,6 +156,7 @@ private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): Jso
                 "settings",
                 settings.updated {
                     put("domainStrategy", appState.wireguardDomainStrategy())
+                    put("keepAlive", keepAlive)
                 },
             )
         }
@@ -154,6 +164,9 @@ private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): Jso
 
     return withSockopt {
         put("domainStrategy", appState.xrayDirectOutboundDomainStrategy())
+        put("tcpKeepAliveInterval", keepAlive)
+        put("tcpKeepAliveIdle", keepAlive)
+        put("tcpUserTimeout", userTimeout)
     }
 }
 
@@ -164,8 +177,12 @@ internal fun buildSimpleOutbound(tag: String, protocol: String): JsonObject {
     }
 }
 
-internal fun buildFreedomOutbound(tag: String, domainStrategy: String): JsonObject {
-    return buildJsonObject {
+internal fun buildFreedomOutbound(
+    tag: String,
+    domainStrategy: String,
+    appState: AppState? = null,
+): JsonObject {
+    val base = buildJsonObject {
         put("tag", tag)
         put("protocol", XrayProtocols.FREEDOM)
         put(
@@ -174,6 +191,20 @@ internal fun buildFreedomOutbound(tag: String, domainStrategy: String): JsonObje
                 put("domainStrategy", domainStrategy)
             },
         )
+    }
+    if (appState == null) return base
+    val keepAlive = appState.tunTcpKeepAliveInterval.toIntCoercedInOrDefault(
+        VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MIN..VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MAX,
+        default = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL.toInt(),
+    )
+    val userTimeout = appState.tunTcpUserTimeout.toIntCoercedInOrDefault(
+        VpnDefaults.TCP_USER_TIMEOUT_MIN..VpnDefaults.TCP_USER_TIMEOUT_MAX,
+        default = VpnDefaults.TCP_USER_TIMEOUT.toInt(),
+    )
+    return base.withSockopt {
+        put("tcpKeepAliveInterval", keepAlive)
+        put("tcpKeepAliveIdle", keepAlive)
+        put("tcpUserTimeout", userTimeout)
     }
 }
 

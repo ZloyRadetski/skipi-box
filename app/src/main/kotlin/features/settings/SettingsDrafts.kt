@@ -13,6 +13,8 @@ internal data class TunSettingsDraft(
     val vpnDns: String = "",
     val ipv4Cidr: String = "",
     val ipv6Cidr: String = "",
+    val tcpKeepAliveInterval: String = "",
+    val tcpUserTimeout: String = "",
 )
 
 internal fun AppState.toTunSettingsDraft(): TunSettingsDraft {
@@ -21,6 +23,8 @@ internal fun AppState.toTunSettingsDraft(): TunSettingsDraft {
         vpnDns = tunVpnDns,
         ipv4Cidr = tunIpv4Cidr,
         ipv6Cidr = tunIpv6Cidr,
+        tcpKeepAliveInterval = tunTcpKeepAliveInterval,
+        tcpUserTimeout = tunTcpUserTimeout,
     )
 }
 

@@ -17,6 +17,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.os.PowerManager
 import app.R
 import app.effects.matchingNetworkConfigId
 import data.AndroidAppStateStore
@@ -62,6 +63,7 @@ class SkipiVpnService : VpnService() {
     }
     private val networkProxyServiceUseCase by lazy { ProxyServiceUseCase(networkProxyEngine) }
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -132,6 +134,9 @@ class SkipiVpnService : VpnService() {
 
     private fun startVpn(config: VpnServiceStartConfig) {
         stopVpn()
+        if (config.enableWakeLock) {
+            acquireWakeLock()
+        }
         config.coreLogPaths.clearCoreLogs(LogTag)
         logFileTailers = config.coreLogPaths.startCoreLogTailers(config.enableAccessLog)
         tunFileDescriptor = establishTun(config)
@@ -177,7 +182,15 @@ class SkipiVpnService : VpnService() {
         builder.applyApplicationPolicy(config)
         builder.applyAppendHttpProxy(config)
 
-        return builder.establish() ?: error(getString(R.string.error_vpn_tunnel_establish_failed))
+        val pfd = builder.establish() ?: error(getString(R.string.error_vpn_tunnel_establish_failed))
+        if (config.enableSeamlessNetworkSwitching) {
+            val connectivityManager = getSystemService(ConnectivityManager::class.java)
+            val active = connectivityManager?.activeNetwork
+            if (active != null) {
+                setUnderlyingNetworks(arrayOf(active))
+            }
+        }
+        return pfd
     }
 
     private fun Builder.applyVpnRoutes(config: VpnServiceStartConfig): Builder {
@@ -264,6 +277,7 @@ class SkipiVpnService : VpnService() {
 
     private fun stopVpn() {
         unregisterNetworkConfigCallback()
+        releaseWakeLock()
         logFileTailers.forEach { tailer -> tailer.stop() }
         logFileTailers = emptyList()
         runCatching {
@@ -286,19 +300,64 @@ class SkipiVpnService : VpnService() {
         running = false
     }
 
-    /** Keeps automatic Wi-Fi/LTE profile switching alive after the activity is closed. */
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        runCatching {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+            wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "skipi:vpn_tunnel")?.apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+            AndroidAppLogger.info(LogTag, "Acquired partial WakeLock for VPN tunnel")
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to acquire partial WakeLock", error)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        runCatching {
+            wakeLock?.let {
+                if (it.isHeld) it.release()
+            }
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to release partial WakeLock", error)
+        }
+        wakeLock = null
+    }
+
+    /** Keeps automatic Wi-Fi/LTE profile switching and seamless underlying network binding alive. */
     private fun registerNetworkConfigCallback() {
         if (networkCallback != null) return
         val connectivityManager = getSystemService(ConnectivityManager::class.java) ?: return
         val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                if (stateStore.state.value.enableSeamlessNetworkSwitching) {
+                    setUnderlyingNetworks(arrayOf(network))
+                }
+            }
+
             override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                if (stateStore.state.value.enableSeamlessNetworkSwitching) {
+                    setUnderlyingNetworks(arrayOf(network))
+                }
                 reconcileNetworkConfig(networkCapabilities)
+            }
+
+            override fun onLost(network: Network) {
+                if (stateStore.state.value.enableSeamlessNetworkSwitching) {
+                    val active = connectivityManager.activeNetwork
+                    setUnderlyingNetworks(if (active != null) arrayOf(active) else null)
+                }
             }
         }
         networkCallback = callback
         runCatching {
             connectivityManager.registerDefaultNetworkCallback(callback)
-            reconcileNetworkConfig(connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork))
+            val active = connectivityManager.activeNetwork
+            if (active != null && stateStore.state.value.enableSeamlessNetworkSwitching) {
+                setUnderlyingNetworks(arrayOf(active))
+            }
+            reconcileNetworkConfig(connectivityManager.getNetworkCapabilities(active))
         }.onFailure { error ->
             networkCallback = null
             AndroidAppLogger.warn(LogTag, "Failed to observe network changes for configuration switching", error)

@@ -70,6 +70,8 @@ internal fun Intent.readVpnServiceStartConfig(): VpnServiceStartConfig? {
             errorLogPath = getStringExtra(EXTRA_ERROR_LOG_PATH).orEmpty(),
         ),
         enableAccessLog = getBooleanExtra(EXTRA_ENABLE_ACCESS_LOG, false),
+        enableWakeLock = getBooleanExtra(EXTRA_ENABLE_WAKE_LOCK, true),
+        enableSeamlessNetworkSwitching = getBooleanExtra(EXTRA_ENABLE_SEAMLESS_NETWORK_SWITCHING, true),
         dataDir = getStringExtra(EXTRA_DATA_DIR).orEmpty(),
         hevSocks5TunnelConfig = readHevSocks5TunnelConfig(),
     )
@@ -97,6 +99,8 @@ private fun Intent.writeStartConfig(config: VpnServiceStartConfig) {
     putExtra(EXTRA_ACCESS_LOG_PATH, config.coreLogPaths.accessLogPath)
     putExtra(EXTRA_ERROR_LOG_PATH, config.coreLogPaths.errorLogPath)
     putExtra(EXTRA_ENABLE_ACCESS_LOG, config.enableAccessLog)
+    putExtra(EXTRA_ENABLE_WAKE_LOCK, config.enableWakeLock)
+    putExtra(EXTRA_ENABLE_SEAMLESS_NETWORK_SWITCHING, config.enableSeamlessNetworkSwitching)
     putExtra(EXTRA_DATA_DIR, config.dataDir)
     config.hevSocks5TunnelConfig?.let { hevConfig ->
         writeHevSocks5TunnelConfig(hevConfig)
@@ -178,6 +182,8 @@ private const val EXTRA_APPEND_HTTP_PROXY_PORT = "append_http_proxy_port"
 private const val EXTRA_ACCESS_LOG_PATH = "access_log_path"
 private const val EXTRA_ERROR_LOG_PATH = "error_log_path"
 private const val EXTRA_ENABLE_ACCESS_LOG = "enable_access_log"
+private const val EXTRA_ENABLE_WAKE_LOCK = "enable_wake_lock"
+private const val EXTRA_ENABLE_SEAMLESS_NETWORK_SWITCHING = "enable_seamless_network_switching"
 private const val EXTRA_DATA_DIR = "data_dir"
 private const val EXTRA_HEV_TUN_EXECUTABLE_PATH = "hev_tun_executable_path"
 private const val EXTRA_HEV_TUN_CONFIG_PATH = "hev_tun_config_path"

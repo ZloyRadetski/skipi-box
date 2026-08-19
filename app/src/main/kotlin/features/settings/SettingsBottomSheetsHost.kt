@@ -69,6 +69,8 @@ internal fun SettingsBottomSheetsHost(
         vpnDns = sheetState.tunSettingsDraft.vpnDns,
         ipv4Cidr = sheetState.tunSettingsDraft.ipv4Cidr,
         ipv6Cidr = sheetState.tunSettingsDraft.ipv6Cidr,
+        tcpKeepAliveInterval = sheetState.tunSettingsDraft.tcpKeepAliveInterval,
+        tcpUserTimeout = sheetState.tunSettingsDraft.tcpUserTimeout,
         showVpnDns = appState.runMode == RunModeVpnService,
         onMtuChange = {
             sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(mtu = it)
@@ -76,14 +78,22 @@ internal fun SettingsBottomSheetsHost(
         onVpnDnsChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(vpnDns = it) },
         onIpv4CidrChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(ipv4Cidr = it) },
         onIpv6CidrChange = { sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(ipv6Cidr = it) },
+        onTcpKeepAliveIntervalChange = {
+            sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(tcpKeepAliveInterval = it)
+        },
+        onTcpUserTimeoutChange = {
+            sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(tcpUserTimeout = it)
+        },
         onDismissRequest = { sheetState.showTunSettings = false },
-        onSave = { mtu, vpnDns, ipv4Cidr, ipv6Cidr ->
+        onSave = { mtu, vpnDns, ipv4Cidr, ipv6Cidr, tcpKeepAlive, tcpUserTimeout ->
             updateAppState { state ->
                 state.copy(
                     tunMtu = mtu,
                     tunVpnDns = if (state.runMode == RunModeVpnService) vpnDns else state.tunVpnDns,
                     tunIpv4Cidr = ipv4Cidr,
                     tunIpv6Cidr = ipv6Cidr,
+                    tunTcpKeepAliveInterval = tcpKeepAlive,
+                    tunTcpUserTimeout = tcpUserTimeout,
                 )
             }
             sheetState.showTunSettings = false

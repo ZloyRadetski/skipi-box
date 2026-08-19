@@ -97,6 +97,10 @@ data class AppState(
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
     val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
+    val enableWakeLock: Boolean = true,
+    val enableSeamlessNetworkSwitching: Boolean = true,
+    val tunTcpKeepAliveInterval: String = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL,
+    val tunTcpUserTimeout: String = VpnDefaults.TCP_USER_TIMEOUT,
 
     val proxyServers: List<ProxyServerState> = emptyList(),
     val nextProxyServerId: Int = 10,

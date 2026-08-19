@@ -7,6 +7,12 @@ package features.settings
 
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,11 +21,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.LocalAppChromeState
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -46,6 +60,8 @@ import ui.layout.pageScrollModifiers
 fun SettingsVpnPage(
     padding: PaddingValues,
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val languageMode = LocalAppChromeState.current.languageMode
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
@@ -55,6 +71,20 @@ fun SettingsVpnPage(
     val topAppBarScrollBehavior = MiuixScrollBehavior()
     val lazyListState = rememberLazyListState()
     val sheetState = rememberSettingsSheetState(updateAppState)
+
+    var isIgnoringBatteryOptimizations by remember {
+        mutableStateOf(isIgnoringBatteryOptimizations(context))
+    }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val tunSummary = tunSettingsSummary(
         mtu = appState.tunMtu,
@@ -142,6 +172,41 @@ fun SettingsVpnPage(
                         )
                     }
                 }
+
+                item(key = "vpn_stability_card") {
+                    SmallTitle(text = stringResource(R.string.settings_stability_and_background))
+                    SettingsSectionCard {
+                        ArrowPreference(
+                            title = stringResource(R.string.settings_battery_optimization),
+                            summary = stringResource(
+                                if (isIgnoringBatteryOptimizations) {
+                                    R.string.settings_battery_optimization_unrestricted
+                                } else {
+                                    R.string.settings_battery_optimization_restricted
+                                },
+                            ),
+                            onClick = {
+                                requestIgnoreBatteryOptimizations(context)
+                            },
+                        )
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_wake_lock),
+                            summary = stringResource(R.string.settings_wake_lock_summary),
+                            checked = appState.enableWakeLock,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(enableWakeLock = enabled) }
+                            },
+                        )
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_seamless_network_switching),
+                            summary = stringResource(R.string.settings_seamless_network_switching_summary),
+                            checked = appState.enableSeamlessNetworkSwitching,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(enableSeamlessNetworkSwitching = enabled) }
+                            },
+                        )
+                    }
+                }
             }
 
             VerticalScrollBar(
@@ -155,6 +220,27 @@ fun SettingsVpnPage(
                 sheetState = sheetState,
                 updateAppState = updateAppState,
             )
+        }
+    }
+}
+
+private fun isIgnoringBatteryOptimizations(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+    val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+    return powerManager?.isIgnoringBatteryOptimizations(context.packageName) == true
+}
+
+private fun requestIgnoreBatteryOptimizations(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+    runCatching {
+        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+            data = Uri.parse("package:${context.packageName}")
+        }
+        context.startActivity(intent)
+    }.onFailure {
+        runCatching {
+            val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            context.startActivity(fallbackIntent)
         }
     }
 }

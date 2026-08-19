@@ -180,6 +180,19 @@ internal class AppSettingsPreferences(
             tunVpnDns = preferences.getString(KeyTunVpnDns, defaults.tunVpnDns) ?: defaults.tunVpnDns,
             tunIpv4Cidr = preferences.getString(KeyTunIpv4Cidr, defaults.tunIpv4Cidr) ?: defaults.tunIpv4Cidr,
             tunIpv6Cidr = preferences.getString(KeyTunIpv6Cidr, defaults.tunIpv6Cidr) ?: defaults.tunIpv6Cidr,
+            enableWakeLock = preferences.getBoolean(KeyEnableWakeLock, defaults.enableWakeLock),
+            enableSeamlessNetworkSwitching = preferences.getBoolean(
+                KeyEnableSeamlessNetworkSwitching,
+                defaults.enableSeamlessNetworkSwitching,
+            ),
+            tunTcpKeepAliveInterval = preferences.getString(
+                KeyTunTcpKeepAliveInterval,
+                defaults.tunTcpKeepAliveInterval,
+            ) ?: defaults.tunTcpKeepAliveInterval,
+            tunTcpUserTimeout = preferences.getString(
+                KeyTunTcpUserTimeout,
+                defaults.tunTcpUserTimeout,
+            ) ?: defaults.tunTcpUserTimeout,
             nextProxyServerId = preferences.getInt(KeyNextProxyServerId, defaults.nextProxyServerId),
             selectedProxyServerId = preferences.getInt(KeySelectedProxyServerId, defaults.selectedProxyServerId),
             proxyServerListLayout = preferences.getInt(
@@ -388,6 +401,10 @@ internal class AppSettingsPreferences(
             .putString(KeyTunVpnDns, state.tunVpnDns)
             .putString(KeyTunIpv4Cidr, state.tunIpv4Cidr)
             .putString(KeyTunIpv6Cidr, state.tunIpv6Cidr)
+            .putBoolean(KeyEnableWakeLock, state.enableWakeLock)
+            .putBoolean(KeyEnableSeamlessNetworkSwitching, state.enableSeamlessNetworkSwitching)
+            .putString(KeyTunTcpKeepAliveInterval, state.tunTcpKeepAliveInterval)
+            .putString(KeyTunTcpUserTimeout, state.tunTcpUserTimeout)
             .putInt(KeyNextProxyServerId, state.nextProxyServerId)
             .putInt(KeySelectedProxyServerId, state.selectedProxyServerId)
             .putInt(KeyProxyServerListLayout, state.proxyServerListLayout)
@@ -718,6 +735,10 @@ private const val KeyTunMtu = "tun_mtu"
 private const val KeyTunVpnDns = "tun_vpn_dns"
 private const val KeyTunIpv4Cidr = "tun_ipv4_cidr"
 private const val KeyTunIpv6Cidr = "tun_ipv6_cidr"
+private const val KeyEnableWakeLock = "enable_wake_lock"
+private const val KeyEnableSeamlessNetworkSwitching = "enable_seamless_network_switching"
+private const val KeyTunTcpKeepAliveInterval = "tun_tcp_keep_alive_interval"
+private const val KeyTunTcpUserTimeout = "tun_tcp_user_timeout"
 private const val KeyNextProxyServerId = "next_proxy_server_id"
 private const val KeySelectedProxyServerId = "selected_proxy_server_id"
 private const val KeyProxyServerListLayout = "proxy_server_list_layout"
