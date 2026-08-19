@@ -25,7 +25,7 @@ internal class ProxyServiceUseCase(
         return runCatching { proxyEngine.restart(ProxyEngineStartRequest(state, server)) }.toResult()
     }
 
-    private suspend fun start(state: AppState, selectedServer: ProxyServerState?): ProxyServiceResult {
+    suspend fun start(state: AppState, selectedServer: ProxyServerState?): ProxyServiceResult {
         val server = selectedServer ?: return ProxyServiceResult.MissingServer
         return runCatching { proxyEngine.start(ProxyEngineStartRequest(state, server)) }.toResult()
     }

@@ -220,7 +220,7 @@ class NetworkAutomationMonitor(
                                     selectedProxyServerId = targetServerId,
                                     activeTrafficConfigId = resolvedState.activeTrafficConfigId,
                                 )
-                                when (val result = proxyServiceUseCase.toggle(updatedState, targetServer)) {
+                                when (val result = proxyServiceUseCase.start(updatedState, targetServer)) {
                                     is ProxyServiceResult.Success -> stateStore.update {
                                         it.copy(
                                             selectedProxyServerId = targetServerId,

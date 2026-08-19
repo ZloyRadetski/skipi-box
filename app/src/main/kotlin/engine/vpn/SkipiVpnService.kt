@@ -189,7 +189,8 @@ class SkipiVpnService : VpnService() {
         if (config.enableSeamlessNetworkSwitching) {
             val connectivityManager = getSystemService(ConnectivityManager::class.java)
             val active = connectivityManager?.activeNetwork
-            if (active != null) {
+            val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
+            if (active != null && activeCaps != null && !activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
                 setUnderlyingNetworks(arrayOf(active))
             }
         }
@@ -334,12 +335,15 @@ class SkipiVpnService : VpnService() {
         val connectivityManager = getSystemService(ConnectivityManager::class.java) ?: return
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
+                val caps = connectivityManager.getNetworkCapabilities(network) ?: return
+                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return
                 if (stateStore.state.value.enableSeamlessNetworkSwitching) {
                     setUnderlyingNetworks(arrayOf(network))
                 }
             }
 
             override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return
                 if (stateStore.state.value.enableSeamlessNetworkSwitching) {
                     setUnderlyingNetworks(arrayOf(network))
                 }
@@ -348,7 +352,9 @@ class SkipiVpnService : VpnService() {
             override fun onLost(network: Network) {
                 if (stateStore.state.value.enableSeamlessNetworkSwitching) {
                     val active = connectivityManager.activeNetwork
-                    setUnderlyingNetworks(if (active != null) arrayOf(active) else null)
+                    val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
+                    val isPhysical = active != null && activeCaps != null && !activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                    setUnderlyingNetworks(if (isPhysical) arrayOf(active!!) else null)
                 }
             }
         }
@@ -356,7 +362,8 @@ class SkipiVpnService : VpnService() {
         runCatching {
             connectivityManager.registerDefaultNetworkCallback(callback)
             val active = connectivityManager.activeNetwork
-            if (active != null && stateStore.state.value.enableSeamlessNetworkSwitching) {
+            val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
+            if (active != null && activeCaps != null && !activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) && stateStore.state.value.enableSeamlessNetworkSwitching) {
                 setUnderlyingNetworks(arrayOf(active))
             }
         }.onFailure { error ->
