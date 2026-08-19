@@ -101,11 +101,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -117,6 +114,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -541,39 +540,48 @@ private fun ExpressiveFloatingNavigationBar(
                 )
                 .padding(horizontal = 6.dp, vertical = 6.dp),
         ) {
-            BoxWithConstraints(
+            val density = LocalDensity.current
+            var totalWidthPx by remember { mutableIntStateOf(0) }
+            var totalHeightPx by remember { mutableIntStateOf(0) }
+
+            val tabCount = navigationItems.size.coerceAtLeast(1)
+            val tabWidthDp = if (totalWidthPx > 0) with(density) { (totalWidthPx.toFloat() / tabCount).toDp() } else 0.dp
+            val totalHeightDp = if (totalHeightPx > 0) with(density) { totalHeightPx.toDp() } else 0.dp
+            val innerPaddingHorizontal = 3.dp
+            val innerPaddingVertical = 2.dp
+            val indicatorShape = RoundedCornerShape(20.dp)
+
+            val indicatorWidth = (tabWidthDp - innerPaddingHorizontal * 2).coerceAtLeast(0.dp)
+            val indicatorHeight = (totalHeightDp - innerPaddingVertical * 2).coerceAtLeast(0.dp)
+            val targetOffset = tabWidthDp * selectedPage + innerPaddingHorizontal
+
+            val animatedOffsetX by animateDpAsState(
+                targetValue = targetOffset,
+                animationSpec = spring(
+                    dampingRatio = 0.74f,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
+                label = "capsule_offset",
+            )
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
+                    .onSizeChanged {
+                        totalWidthPx = it.width
+                        totalHeightPx = it.height
+                    },
             ) {
-                val tabCount = navigationItems.size.coerceAtLeast(1)
-                val totalWidth = maxWidth
-                val tabWidth = totalWidth / tabCount
-                val innerPaddingHorizontal = 3.dp
-                val indicatorPaddingVertical = 2.dp
-                val indicatorShape = RoundedCornerShape(20.dp)
-                val indicatorWidth = (tabWidth - (innerPaddingHorizontal * 2)).coerceAtLeast(0.dp)
-                val targetOffset = tabWidth * selectedPage + innerPaddingHorizontal
-
-                val animatedOffsetX by animateDpAsState(
-                    targetValue = targetOffset,
-                    animationSpec = spring(
-                        dampingRatio = 0.74f,
-                        stiffness = Spring.StiffnessMediumLow,
-                    ),
-                    label = "capsule_offset",
-                )
-
                 // Active tab sliding capsule indicator
-                Box(
-                    modifier = Modifier
-                        .offset(x = animatedOffsetX)
-                        .width(indicatorWidth)
-                        .fillMaxHeight()
-                        .padding(vertical = indicatorPaddingVertical)
-                        .clip(indicatorShape)
-                        .background(AppTheme.colors.accent),
-                )
+                if (totalWidthPx > 0 && totalHeightPx > 0) {
+                    Box(
+                        modifier = Modifier
+                            .offset(x = animatedOffsetX, y = innerPaddingVertical)
+                            .size(width = indicatorWidth, height = indicatorHeight)
+                            .clip(indicatorShape)
+                            .background(AppTheme.colors.accent),
+                    )
+                }
 
                 // Tab items (Icons & Labels are ALWAYS visible)
                 Row(
