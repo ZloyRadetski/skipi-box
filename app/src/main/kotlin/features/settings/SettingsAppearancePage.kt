@@ -73,6 +73,8 @@ import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import features.proxy.server.display.ProtocolColorUtils
+import features.settings.sheets.AppIconSelectionBottomSheet
+import features.settings.sheets.appIconDescriptorForMode
 import ui.AppTheme
 import ui.KeyColors
 import ui.components.BackNavigationIcon
@@ -138,6 +140,7 @@ fun SettingsAppearancePage(
     val isDark = isInDarkTheme()
 
     var activeColorPickerTarget by remember { mutableStateOf<ColorPickerTarget?>(null) }
+    var showAppIconBottomSheet by remember { mutableStateOf(false) }
 
     val contentPadding = pageContentPaddingWithCutout(
         innerPadding = PaddingValues(),
@@ -153,17 +156,6 @@ fun SettingsAppearancePage(
         stringResource(R.string.option_theme_system),
         stringResource(R.string.option_theme_light),
         stringResource(R.string.option_theme_dark),
-    )
-    val appIconOptions = listOf(
-        stringResource(R.string.app_icon_default),
-        stringResource(R.string.app_icon_dark),
-        stringResource(R.string.app_icon_light),
-        stringResource(R.string.app_icon_monet),
-        stringResource(R.string.app_icon_cyber),
-        stringResource(R.string.app_icon_sunset),
-        stringResource(R.string.app_icon_nordic),
-        stringResource(R.string.app_icon_emerald),
-        stringResource(R.string.app_icon_stealth),
     )
     val languageOptions = listOf(
         stringResource(R.string.option_english),
@@ -253,12 +245,10 @@ fun SettingsAppearancePage(
                             selectedIndex = appState.colorMode,
                             onSelectedIndexChange = { index -> updateAppState { it.copy(colorMode = index) } },
                         )
-                        OverlayDropdownPreference(
+                        ArrowPreference(
                             title = stringResource(R.string.settings_app_icon),
-                            summary = stringResource(R.string.settings_app_icon_summary),
-                            items = appIconOptions,
-                            selectedIndex = appState.appIcon.coerceIn(0, appIconOptions.lastIndex),
-                            onSelectedIndexChange = { index -> updateAppState { it.copy(appIcon = index) } },
+                            summary = stringResource(appIconDescriptorForMode(appState.appIcon).titleRes),
+                            onClick = { showAppIconBottomSheet = true },
                         )
                         SwitchPreference(
                             title = stringResource(R.string.settings_enable_material_you),
@@ -729,6 +719,15 @@ fun SettingsAppearancePage(
                     },
                 )
             }
+
+            AppIconSelectionBottomSheet(
+                show = showAppIconBottomSheet,
+                selectedIconMode = appState.appIcon,
+                onSelectIconMode = { mode ->
+                    updateAppState { it.copy(appIcon = mode) }
+                },
+                onDismissRequest = { showAppIconBottomSheet = false },
+            )
         }
     }
 }
