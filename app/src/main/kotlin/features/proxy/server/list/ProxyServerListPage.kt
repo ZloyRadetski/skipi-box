@@ -378,9 +378,6 @@ fun ProxyServerListPage(
             pageCount = { groupTabIds.size.coerceAtLeast(1) },
         )
     }
-    val groupPagerOffsetFraction by remember(groupPagerState) {
-        derivedStateOf { groupPagerState.currentPageOffsetFraction }
-    }
 
     LaunchedEffect(groupTabIds) {
         val lastIndex = groupTabIds.lastIndex
@@ -442,8 +439,7 @@ fun ProxyServerListPage(
             searchValue = searchValue,
             onSearchValueChange = { searchValue = it },
             groupState = groupState,
-            groupPagerPage = groupPagerState.currentPage,
-            groupPagerOffsetFraction = groupPagerOffsetFraction,
+            pagerPositionProvider = { groupPagerState.currentPage + groupPagerState.currentPageOffsetFraction },
             selectedServer = selectedServer,
             proxyListState = proxyListState,
             stateStore = stateStore,
@@ -510,6 +506,7 @@ fun ProxyServerListPage(
                 onOpenSelectGroupMember = { selectingGroupMemberForServer = it },
                 pingingGroupIds = pingingGroupIds,
                 activeOutboundTag = activeOutboundTag,
+                activeTrafficConfigId = proxyListState.activeTrafficConfigId,
             )
             if (showFloatingToolbar) {
                 val showPingInFloatingToolbar = proxyListState.connectionDisplayMode == ConnectionDisplayModeCompact

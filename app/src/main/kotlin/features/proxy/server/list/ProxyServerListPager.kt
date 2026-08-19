@@ -43,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import app.collectAppState
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -130,6 +129,7 @@ internal fun ProxyServerListPager(
     onOpenSelectGroupMember: (ProxyServerState) -> Unit = {},
     pingingGroupIds: Set<Int> = emptySet(),
     activeOutboundTag: String? = null,
+    activeTrafficConfigId: Int? = null,
 ) {
     val context = LocalContext.current
     var qrCodeDialogState by remember { mutableStateOf<ProxyServerQrCodeDialogState?>(null) }
@@ -156,9 +156,6 @@ internal fun ProxyServerListPager(
             onDismissRequest = { qrCodeDialogState = null },
         )
     }
-
-    val appState by stateStore.collectAppState()
-    val activeTrafficConfigId = appState.activeTrafficConfigId
 
     AppPullToRefresh(
         isRefreshing = allSubscriptionsRefreshing,

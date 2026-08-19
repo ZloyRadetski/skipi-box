@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
@@ -54,6 +55,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -133,47 +135,18 @@ private fun linearInterpolate(start: Int, end: Int, fraction: Float): Int {
 internal fun ProxyServerListGroupTabs(
     groups: List<ProxyServerListGroupTabUi>,
     selectedGroupId: Int,
-    pagerPage: Int,
-    pagerOffsetFraction: Float,
+    pagerPositionProvider: () -> Float,
     onGroupSelected: (Int) -> Unit,
     onGroupMove: (groupId: Int, offset: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (groups.isEmpty()) return
-    val density = LocalDensity.current
     val tabScrollState = rememberScrollState()
     var viewportWidthPx by remember { mutableIntStateOf(0) }
     var tabBounds by remember { mutableStateOf<Map<Int, ProxyServerListGroupTabBounds>>(emptyMap()) }
     var reorderGroupId by remember { mutableStateOf<Int?>(null) }
     val selectedIndex = groups.indexOfFirst { group -> group.id == selectedGroupId }
     val selectedBounds = tabBounds[selectedGroupId]
-    val pagerPosition = (pagerPage + pagerOffsetFraction)
-        .coerceIn(0f, groups.lastIndex.toFloat())
-    val startIndex = floor(pagerPosition).toInt().coerceIn(0, groups.lastIndex)
-    val endIndex = (startIndex + 1).coerceAtMost(groups.lastIndex)
-    val indicatorStartBounds = tabBounds[groups[startIndex].id]
-    val indicatorEndBounds = tabBounds[groups[endIndex].id] ?: indicatorStartBounds
-    val indicatorFraction = pagerPosition - startIndex
-    val indicatorLeftPx = if (indicatorStartBounds != null && indicatorEndBounds != null) {
-        linearInterpolate(
-            start = indicatorStartBounds.leftPx,
-            end = indicatorEndBounds.leftPx,
-            fraction = indicatorFraction,
-        )
-    } else {
-        selectedBounds?.leftPx
-    }
-    val indicatorWidthPx = if (indicatorStartBounds != null && indicatorEndBounds != null) {
-        linearInterpolate(
-            start = indicatorStartBounds.widthPx,
-            end = indicatorEndBounds.widthPx,
-            fraction = indicatorFraction,
-        )
-    } else {
-        selectedBounds?.widthPx
-    }
-    val indicatorOffset = with(density) { (indicatorLeftPx ?: 0).toDp() }
-    val indicatorWidth = with(density) { (indicatorWidthPx ?: 0).toDp() }
 
     LaunchedEffect(selectedIndex, selectedBounds, viewportWidthPx) {
         if (selectedIndex < 0 || selectedBounds == null || viewportWidthPx <= 0) return@LaunchedEffect
@@ -198,16 +171,54 @@ internal fun ProxyServerListGroupTabs(
             .onSizeChanged { size -> viewportWidthPx = size.width }
             .horizontalScroll(tabScrollState),
     ) {
-        if (indicatorWidthPx != null && indicatorWidthPx > 0) {
-            Box(
-                modifier = Modifier
-                    .offset(x = indicatorOffset)
-                    .width(indicatorWidth)
-                    .height(ProxyServerListGroupTabHeight)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(AppTheme.colors.accent),
-            )
-        }
+        Box(
+            modifier = Modifier
+                .height(ProxyServerListGroupTabHeight)
+                .clip(RoundedCornerShape(8.dp))
+                .background(AppTheme.colors.accent)
+                .layout { measurable, constraints ->
+                    val pagerPosition = pagerPositionProvider().coerceIn(0f, groups.lastIndex.toFloat())
+                    val startIndex = floor(pagerPosition).toInt().coerceIn(0, groups.lastIndex)
+                    val endIndex = (startIndex + 1).coerceAtMost(groups.lastIndex)
+                    val indicatorStartBounds = tabBounds[groups[startIndex].id]
+                    val indicatorEndBounds = tabBounds[groups[endIndex].id] ?: indicatorStartBounds
+                    val indicatorFraction = pagerPosition - startIndex
+                    val indicatorLeftPx = if (indicatorStartBounds != null && indicatorEndBounds != null) {
+                        linearInterpolate(
+                            start = indicatorStartBounds.leftPx,
+                            end = indicatorEndBounds.leftPx,
+                            fraction = indicatorFraction,
+                        )
+                    } else {
+                        selectedBounds?.leftPx ?: 0
+                    }
+                    val indicatorWidthPx = if (indicatorStartBounds != null && indicatorEndBounds != null) {
+                        linearInterpolate(
+                            start = indicatorStartBounds.widthPx,
+                            end = indicatorEndBounds.widthPx,
+                            fraction = indicatorFraction,
+                        )
+                    } else {
+                        selectedBounds?.widthPx ?: 0
+                    }
+
+                    if (indicatorWidthPx <= 0) {
+                        layout(0, 0) {}
+                    } else {
+                        val placeable = measurable.measure(
+                            Constraints(
+                                minWidth = indicatorWidthPx,
+                                maxWidth = indicatorWidthPx,
+                                minHeight = constraints.minHeight,
+                                maxHeight = constraints.maxHeight,
+                            ),
+                        )
+                        layout(placeable.width, placeable.height) {
+                            placeable.placeRelative(indicatorLeftPx, 0)
+                        }
+                    }
+                },
+        )
         Row(
             horizontalArrangement = Arrangement.spacedBy(ProxyServerListGroupTabSpacing),
         ) {
