@@ -66,10 +66,21 @@ import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import features.networkautomation.engine.NetworkAutomationEvaluator
+
 @Composable
 fun SettingsNetworkAutomationPage(
     padding: PaddingValues,
 ) {
+    val context = LocalContext.current
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
     val stateStore = LocalAppStateStore.current
@@ -80,6 +91,56 @@ fun SettingsNetworkAutomationPage(
 
     var showRuleDialog by remember { mutableStateOf(false) }
     var editingRule by remember { mutableStateOf<NetworkAutomationRule?>(null) }
+    var pendingWifiSsidCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && permissions[Manifest.permission.NEARBY_WIFI_DEVICES] == true)
+        if (granted) {
+            val current = NetworkAutomationEvaluator.getCurrentWifiSsid(context)
+            if (!current.isNullOrBlank()) {
+                pendingWifiSsidCallback?.invoke(current)
+            } else {
+                Toast.makeText(context, context.getString(R.string.network_automation_no_wifi_detected), Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(context, context.getString(R.string.network_automation_no_wifi_detected), Toast.LENGTH_SHORT).show()
+        }
+        pendingWifiSsidCallback = null
+    }
+
+    val onRequestCurrentWifi: ((String) -> Unit) -> Unit = { onSsidReceived ->
+        val current = NetworkAutomationEvaluator.getCurrentWifiSsid(context)
+        if (!current.isNullOrBlank()) {
+            onSsidReceived(current)
+        } else {
+            val hasFineLocation = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED
+            val hasNearbyDevices = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.NEARBY_WIFI_DEVICES,
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasFineLocation || !hasNearbyDevices) {
+                pendingWifiSsidCallback = onSsidReceived
+                val permissionsToRequest = mutableListOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissionsToRequest.add(Manifest.permission.NEARBY_WIFI_DEVICES)
+                }
+                permissionLauncher.launch(permissionsToRequest.toTypedArray())
+            } else {
+                Toast.makeText(context, context.getString(R.string.network_automation_no_wifi_detected), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -289,6 +350,7 @@ fun SettingsNetworkAutomationPage(
             rule = editingRule,
             existingRules = appState.networkAutomationRules,
             servers = appState.proxyServers,
+            onRequestCurrentWifi = onRequestCurrentWifi,
             onDismissRequest = {
                 showRuleDialog = false
                 editingRule = null

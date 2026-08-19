@@ -1031,6 +1031,7 @@
     <string name="network_automation_use_current_wifi">Insert current Wi-Fi</string>
     <string name="network_automation_server_label">Target server</string>
     <string name="network_automation_ssid_exists_error">A rule for this SSID already exists</string>
+    <string name="network_automation_type_exists_error">A rule for this network type already exists</string>
     <string name="network_automation_no_rules">No automation rules configured. Tap «+» to add.</string>
     <string name="network_automation_edit_rule">Edit rule</string>
     <string name="network_automation_delete_rule">Delete rule</string>

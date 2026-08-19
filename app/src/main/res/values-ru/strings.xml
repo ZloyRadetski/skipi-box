@@ -1021,6 +1021,7 @@
     <string name="network_automation_use_current_wifi">Вставить текущий Wi-Fi</string>
     <string name="network_automation_server_label">Целевой сервер</string>
     <string name="network_automation_ssid_exists_error">Правило для этого SSID уже существует</string>
+    <string name="network_automation_type_exists_error">Правило для этого типа сети уже существует</string>
     <string name="network_automation_no_rules">Нет правил автоматизации. Нажмите «+», чтобы добавить.</string>
     <string name="network_automation_edit_rule">Редактировать правило</string>
     <string name="network_automation_delete_rule">Удалить правило</string>
