@@ -67,7 +67,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.LocalOverScrollState
 import top.yukonga.miuix.kmp.utils.OverScrollState
 
-private const val THRESHOLD_DP = 112f
+private const val THRESHOLD_DP = 72f
 
 sealed interface AppRefreshState {
     data object Idle : AppRefreshState
@@ -194,8 +194,8 @@ class AppPullToRefreshState(
                     currentTouch = (currentTouch + delta).coerceIn(0f, maxDragDistancePx * 1.5f)
 
                     val progress = (currentTouch / maxDragDistancePx).coerceIn(0f, 1f)
-                    val factor = 1f - 0.50f * progress
-                    dragOffset = (currentTouch * 0.38f * factor).coerceAtMost(maxDragDistancePx * 0.5f)
+                    val factor = 1f - 0.45f * progress
+                    dragOffset = (currentTouch * 0.48f * factor).coerceAtMost(maxDragDistancePx * 0.5f)
 
                     val nextState = when {
                         refreshThresholdOffset > 0f && dragOffset >= refreshThresholdOffset -> AppRefreshState.ThresholdReached
