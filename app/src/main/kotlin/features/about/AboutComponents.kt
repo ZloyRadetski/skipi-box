@@ -42,6 +42,7 @@ import features.updater.AppUpdateDownloadProgress
 import features.updater.AppUpdateInfo
 import features.updater.AppUpdateInstaller
 import features.updater.GitHubReleaseChecker
+import features.updater.ui.AppUpdateBanner
 import features.updater.ui.AppUpdateChangelogDialog
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -157,9 +158,30 @@ internal fun AboutUpdatesCard(
     val scope = rememberCoroutineScope()
     var isChecking by remember { mutableStateOf(false) }
     var updateInfoToShow by remember { mutableStateOf<AppUpdateInfo?>(null) }
+    var downloadProgress by remember { mutableStateOf<AppUpdateDownloadProgress>(AppUpdateDownloadProgress.Idle) }
     val checkingText = stringResource(R.string.app_update_checking)
     val latestText = stringResource(R.string.app_update_already_latest)
     val context = LocalContext.current
+
+    fun startDownload(update: AppUpdateInfo) {
+        scope.launch {
+            val downloader = AppUpdateDownloader(context)
+            downloader.downloadApk(update).collectLatest { progress ->
+                downloadProgress = progress
+                if (progress is AppUpdateDownloadProgress.Completed) {
+                    AppUpdateInstaller.installApk(context, File(progress.apkFilePath))
+                }
+            }
+        }
+    }
+
+    appState.availableAppUpdate?.let { update ->
+        AppUpdateBanner(
+            updateInfo = update,
+            dismissedVersion = "",
+            modifier = modifier.padding(bottom = 8.dp),
+        )
+    }
 
     SmallTitle(text = stringResource(R.string.settings_updates_title))
     SettingsSectionCard(
@@ -186,9 +208,24 @@ internal fun AboutUpdatesCard(
         }
         ArrowPreference(
             title = stringResource(R.string.settings_check_updates_now_action),
-            summary = if (isChecking) checkingText else null,
+            summary = when {
+                isChecking -> checkingText
+                downloadProgress is AppUpdateDownloadProgress.Downloading -> {
+                    val p = (downloadProgress as AppUpdateDownloadProgress.Downloading).progress
+                    "${stringResource(R.string.app_update_downloading_action)} ${(p * 100).toInt()}%"
+                }
+                appState.availableAppUpdate != null -> {
+                    "${stringResource(R.string.app_update_available_title)} v${appState.availableAppUpdate?.versionName}"
+                }
+                else -> null
+            },
             onClick = {
                 if (isChecking) return@ArrowPreference
+                val existing = appState.availableAppUpdate
+                if (existing != null) {
+                    updateInfoToShow = existing
+                    return@ArrowPreference
+                }
                 isChecking = true
                 scope.launch {
                     val update = GitHubReleaseChecker().checkLatestRelease()
@@ -213,14 +250,7 @@ internal fun AboutUpdatesCard(
                 val update = updateInfoToShow
                 updateInfoToShow = null
                 if (update != null) {
-                    scope.launch {
-                        val downloader = AppUpdateDownloader(context)
-                        downloader.downloadApk(update).collectLatest { progress ->
-                            if (progress is AppUpdateDownloadProgress.Completed) {
-                                AppUpdateInstaller.installApk(context, File(progress.apkFilePath))
-                            }
-                        }
-                    }
+                    startDownload(update)
                 }
             },
         )
