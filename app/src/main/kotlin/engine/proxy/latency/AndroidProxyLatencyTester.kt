@@ -11,10 +11,11 @@ import features.logs.AndroidAppLogger
 import engine.xray.XrayConfigRequest
 import engine.xray.XraySpeedTestConfigFactory
 import engine.xray.initializeAndroidXrayCoreEnvironment
-import engine.xray.prepareXrayCoreLogPaths
 import features.resources.runtime.prepareXrayResourceFilePaths
+import engine.xray.prepareXrayCoreLogPaths
 import engine.network.NetworkDefaults
 import engine.network.toPortOrNull
+import engine.xray.strategyGroupMembers
 import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
@@ -105,9 +106,8 @@ internal class AndroidProxyLatencyTester(
         failedDnsCache: ConcurrentMap<String, Boolean>?,
     ): ProxyServerLatencyTestResult = coroutineScope {
         val strategyGroup = server.server as? StrategyGroup ?: return@coroutineScope ProxyServerLatencyTestResult.Failed
-        val members = appState.proxyServers.filter { member ->
-            member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
-        }
+        val members = appState.strategyGroupMembers(strategyGroup)
+            .filter { member -> member.server !is StrategyGroup }
         if (members.isEmpty()) {
             return@coroutineScope ProxyServerLatencyTestResult.Failed
         }
@@ -145,9 +145,8 @@ internal class AndroidProxyLatencyTester(
         strategyGroup: StrategyGroup,
         maxWaitMillis: Long = 600L,
     ): Map<Int, Long> = withContext(Dispatchers.IO) {
-        val members = appState.proxyServers.filter { member ->
-            member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
-        }
+        val members = appState.strategyGroupMembers(strategyGroup)
+            .filter { member -> member.server !is StrategyGroup }
         if (members.isEmpty()) return@withContext emptyMap()
 
         val dnsCache = java.util.concurrent.ConcurrentHashMap<String, java.net.InetAddress>()

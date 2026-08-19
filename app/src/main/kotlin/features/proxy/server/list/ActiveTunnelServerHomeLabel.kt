@@ -112,4 +112,4 @@ private inline fun Boolean.then(block: () -> ProxyTrafficStatsRuntime?): ProxyTr
     return if (this) block() else null
 }
 
-private const val ActiveTunnelSampleIntervalMillis = 3_000L
+private const val ActiveTunnelSampleIntervalMillis = 1_000L

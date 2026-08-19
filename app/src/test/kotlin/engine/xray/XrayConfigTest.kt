@@ -122,6 +122,11 @@ class XrayConfigTest {
         assertEquals(1, plan.balancers.size)
         val balancer = plan.balancers.first()
         assertEquals("proxy-policy-20", balancer.fallbackTag)
+
+        val jsonBalancers = buildXrayBalancers(plan.balancers)
+        assertEquals(1, jsonBalancers.size)
+        val strategySettings = jsonBalancers.first()["strategy"]?.let { it as? kotlinx.serialization.json.JsonObject }?.get("settings") as? kotlinx.serialization.json.JsonObject
+        assertEquals("burstObservatory", strategySettings?.get("observerTag")?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content })
     }
 
     @Test
