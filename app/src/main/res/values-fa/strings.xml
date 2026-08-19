@@ -164,7 +164,7 @@
     <string name="settings_stability_and_background">پایداری و پس‌زمینه</string>
     <string name="settings_battery_optimization">پس‌زمینه بدون محدودیت</string>
     <string name="settings_battery_optimization_unrestricted">بدون محدودیت (توصیه می‌شود)</string>
-    <string name="settings_battery_optimization_restricted">محدود شده توسط سیستم (برای تنظیم ضربه بزنید)</string>
+    <string name="settings_battery_optimization_restricted">محدود شده توسط سیستم</string>
     <string name="settings_wake_lock">بیدار نگه داشتن پردازنده (WakeLock)</string>
     <string name="settings_wake_lock_summary">جلوگیری از قطع سوکت‌ها هنگام خاموش بودن صفحه</string>
     <string name="settings_seamless_network_switching">جابه‌جایی بدون قطعی شبکه</string>

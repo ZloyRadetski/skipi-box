@@ -170,7 +170,7 @@
     <string name="settings_stability_and_background">Stability &amp; background</string>
     <string name="settings_battery_optimization">Unrestricted background</string>
     <string name="settings_battery_optimization_unrestricted">Unrestricted (Recommended)</string>
-    <string name="settings_battery_optimization_restricted">Restricted by system (tap to allow)</string>
+    <string name="settings_battery_optimization_restricted">Restricted by system</string>
     <string name="settings_wake_lock">CPU WakeLock</string>
     <string name="settings_wake_lock_summary">Prevents sockets from sleeping when the screen is off</string>
     <string name="settings_seamless_network_switching">Seamless network switching</string>

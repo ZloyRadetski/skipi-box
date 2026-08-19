@@ -172,7 +172,7 @@
     <string name="settings_stability_and_background">Стабильность и работа в фоне</string>
     <string name="settings_battery_optimization">Работа в фоне без ограничений</string>
     <string name="settings_battery_optimization_unrestricted">Разрешено (Рекомендуется)</string>
-    <string name="settings_battery_optimization_restricted">Ограничено системой (нажмите для настройки)</string>
+    <string name="settings_battery_optimization_restricted">Ограничено системой</string>
     <string name="settings_wake_lock">Удержание процессора (WakeLock)</string>
     <string name="settings_wake_lock_summary">Предотвращает засыпание сокетов при выключенном экране</string>
     <string name="settings_seamless_network_switching">Бесшовный роуминг сетей</string>

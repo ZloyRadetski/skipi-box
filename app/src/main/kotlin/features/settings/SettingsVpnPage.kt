@@ -176,7 +176,7 @@ fun SettingsVpnPage(
                 item(key = "vpn_stability_card") {
                     SmallTitle(text = stringResource(R.string.settings_stability_and_background))
                     SettingsSectionCard {
-                        ArrowPreference(
+                        SwitchPreference(
                             title = stringResource(R.string.settings_battery_optimization),
                             summary = stringResource(
                                 if (isIgnoringBatteryOptimizations) {
@@ -185,8 +185,13 @@ fun SettingsVpnPage(
                                     R.string.settings_battery_optimization_restricted
                                 },
                             ),
-                            onClick = {
-                                requestIgnoreBatteryOptimizations(context)
+                            checked = isIgnoringBatteryOptimizations,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    requestIgnoreBatteryOptimizations(context)
+                                } else {
+                                    openBatteryOptimizationSettings(context)
+                                }
                             },
                         )
                         SwitchPreference(
@@ -232,15 +237,31 @@ private fun isIgnoringBatteryOptimizations(context: Context): Boolean {
 
 private fun requestIgnoreBatteryOptimizations(context: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+    val directIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+        data = Uri.parse("package:${context.packageName}")
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
     runCatching {
-        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-            data = Uri.parse("package:${context.packageName}")
-        }
-        context.startActivity(intent)
+        context.startActivity(directIntent)
+    }.onFailure {
+        openBatteryOptimizationSettings(context)
+    }
+}
+
+private fun openBatteryOptimizationSettings(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+    val settingsIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching {
+        context.startActivity(settingsIntent)
     }.onFailure {
         runCatching {
-            val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-            context.startActivity(fallbackIntent)
+            val appDetailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${context.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(appDetailsIntent)
         }
     }
 }

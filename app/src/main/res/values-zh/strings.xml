@@ -164,7 +164,7 @@
     <string name="settings_stability_and_background">稳定性与后台运行</string>
     <string name="settings_battery_optimization">无限制后台运行</string>
     <string name="settings_battery_optimization_unrestricted">无限制（推荐）</string>
-    <string name="settings_battery_optimization_restricted">受系统限制（点击设置）</string>
+    <string name="settings_battery_optimization_restricted">受系统限制</string>
     <string name="settings_wake_lock">保持唤醒 (WakeLock)</string>
     <string name="settings_wake_lock_summary">息屏时防止套接字休眠</string>
     <string name="settings_seamless_network_switching">无缝网络漫游</string>
