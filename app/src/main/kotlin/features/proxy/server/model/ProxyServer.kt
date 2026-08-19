@@ -416,7 +416,8 @@ fun ProxyServer<*>.getTransportDisplay(): String? {
         is Wireguard -> "UDP"
         is HTTP -> "TCP"
         is Socks -> "TCP"
-        is StrategyGroup, is ChainProxy, is Custom -> null
+        is Custom -> customXrayConfigTransportDisplay(configJson)
+        is StrategyGroup, is ChainProxy -> null
         else -> null
     }
 }

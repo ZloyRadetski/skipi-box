@@ -86,5 +86,100 @@ class ProxyServerParserTest {
 
         val strategy = features.proxy.server.model.StrategyGroup()
         assertEquals(null, strategy.getTransportDisplay())
+
+        val jsonWsTls = features.proxy.server.model.Custom(
+            remarks = "JSON WS",
+            configJson = """
+                {
+                  "outbounds": [
+                    {
+                      "tag": "proxy",
+                      "protocol": "vless",
+                      "settings": { "vnext": [{ "address": "1.2.3.4", "port": 443 }] },
+                      "streamSettings": {
+                        "network": "ws",
+                        "security": "tls"
+                      }
+                    }
+                  ]
+                }
+            """.trimIndent()
+        )
+        assertEquals("WS • TLS", jsonWsTls.getTransportDisplay())
+
+        val jsonGrpcReality = features.proxy.server.model.Custom(
+            remarks = "JSON gRPC Reality",
+            configJson = """
+                {
+                  "outbounds": [
+                    {
+                      "tag": "proxy",
+                      "protocol": "vless",
+                      "settings": { "vnext": [{ "address": "1.2.3.4", "port": 443 }] },
+                      "streamSettings": {
+                        "network": "grpc",
+                        "security": "reality"
+                      }
+                    }
+                  ]
+                }
+            """.trimIndent()
+        )
+        assertEquals("gRPC • Reality", jsonGrpcReality.getTransportDisplay())
+
+        val jsonXhttp = features.proxy.server.model.Custom(
+            remarks = "JSON xHTTP",
+            configJson = """
+                {
+                  "outbounds": [
+                    {
+                      "tag": "proxy",
+                      "protocol": "vless",
+                      "streamSettings": {
+                        "network": "xhttp",
+                        "security": "reality"
+                      }
+                    }
+                  ]
+                }
+            """.trimIndent()
+        )
+        assertEquals("xHTTP • Reality", jsonXhttp.getTransportDisplay())
+
+        val jsonHttpObfs = features.proxy.server.model.Custom(
+            remarks = "JSON HTTP-OBFS",
+            configJson = """
+                {
+                  "outbounds": [
+                    {
+                      "tag": "proxy",
+                      "protocol": "shadowsocks",
+                      "streamSettings": {
+                        "network": "tcp",
+                        "tcpSettings": {
+                          "header": { "type": "http" }
+                        }
+                      }
+                    }
+                  ]
+                }
+            """.trimIndent()
+        )
+        assertEquals("HTTP-OBFS", jsonHttpObfs.getTransportDisplay())
+
+        val jsonWireguard = features.proxy.server.model.Custom(
+            remarks = "JSON WireGuard",
+            configJson = """
+                {
+                  "outbounds": [
+                    {
+                      "tag": "proxy",
+                      "protocol": "wireguard"
+                    }
+                  ]
+                }
+            """.trimIndent()
+        )
+        assertEquals("UDP", jsonWireguard.getTransportDisplay())
     }
 }

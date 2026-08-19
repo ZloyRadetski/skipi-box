@@ -159,6 +159,50 @@ internal fun customXrayConfigProtocolDisplayName(value: String): String {
     }
 }
 
+internal fun customXrayConfigTransportDisplay(value: String): String? {
+    val primary = customXrayConfigPrimaryProxyOutbound(value) ?: return null
+    val protocol = primary.stringValue("protocol")?.trim()?.lowercase()
+    val streamSettings = primary.objectValue("streamSettings")
+    val network = streamSettings?.stringValue("network")?.trim()?.lowercase()
+    val security = streamSettings?.stringValue("security")?.trim()?.lowercase()
+
+    val transportLabel = when (network) {
+        "ws", "websocket" -> "WS"
+        "grpc" -> "gRPC"
+        "httpupgrade" -> "HTTPUpgrade"
+        "xhttp", "splithttp" -> "xHTTP"
+        "kcp", "mkcp" -> "mKCP"
+        "quic" -> "QUIC"
+        "domainsocket" -> "DomainSocket"
+        "http", "h2" -> "HTTP/2"
+        "tcp", "raw" -> {
+            val tcpHeaderType = streamSettings.objectValue("tcpSettings")
+                ?.objectValue("header")
+                ?.stringValue("type")
+                ?.trim()
+                ?.lowercase()
+            if (tcpHeaderType == "http") "HTTP-OBFS" else "TCP"
+        }
+        null, "" -> when (protocol) {
+            "wireguard" -> "UDP"
+            "hysteria2", "hy2", "tuic" -> "QUIC"
+            "shadowsocks", "ss", "socks", "http", "vless", "vmess", "trojan" -> "TCP"
+            else -> null
+        }
+        else -> network.uppercase()
+    } ?: return null
+
+    return when {
+        security.equals("reality", ignoreCase = true) -> {
+            if (transportLabel == "TCP") "Reality" else "$transportLabel • Reality"
+        }
+        security.equals("tls", ignoreCase = true) -> {
+            if (transportLabel == "TCP") "TLS" else "$transportLabel • TLS"
+        }
+        else -> transportLabel
+    }
+}
+
 private fun customXrayConfigSummary(value: String): String {
     val outbounds = runCatching {
         parseCustomXrayConfigJsonObject(value)["outbounds"] as? JsonArray
