@@ -439,7 +439,7 @@ fun ProxyServerListPage(
             searchValue = searchValue,
             onSearchValueChange = { searchValue = it },
             groupState = groupState,
-            pagerPositionProvider = { groupPagerState.currentPage + groupPagerState.currentPageOffsetFraction },
+            groupPagerState = groupPagerState,
             selectedServer = selectedServer,
             proxyListState = proxyListState,
             stateStore = stateStore,
