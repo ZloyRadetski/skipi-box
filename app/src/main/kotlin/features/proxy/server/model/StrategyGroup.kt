@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 object StrategyGroupConstants {
     const val TYPE_SELECT = "select"
     const val TYPE_LEAST_PING = "leastPing"
+    const val TYPE_FALLBACK = "fallback"
     const val TYPE_LEAST_LOAD = "leastLoad"
     const val TYPE_RANDOM = "random"
     const val TYPE_ROUND_ROBIN = "roundRobin"
@@ -15,6 +16,7 @@ object StrategyGroupConstants {
     val TYPES = setOf(
         TYPE_SELECT,
         TYPE_LEAST_PING,
+        TYPE_FALLBACK,
         TYPE_LEAST_LOAD,
         TYPE_RANDOM,
         TYPE_ROUND_ROBIN,
@@ -49,6 +51,7 @@ data class StrategyGroup(
     var probeInterval: String = "15s",
     var probeUrl: String = "",
     var enableBurstProbe: Boolean = false,
+    var tolerance: String = "50ms",
 ) : ProxyServer<StrategyGroup> {
     override fun getInfo(): ProxyServerInfo {
         val source = if (proxyServerIds.isNotEmpty()) {
@@ -81,6 +84,7 @@ data class StrategyGroup(
         probeInterval = other.probeInterval
         probeUrl = other.probeUrl
         enableBurstProbe = other.enableBurstProbe
+        tolerance = other.tolerance
     }
 
     override fun validateBasic(): List<ProxyServerValidationIssue> = validateFull()
@@ -91,6 +95,6 @@ data class StrategyGroup(
     }
 
     override fun connectionFingerprint(): String {
-        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$selectedMemberId|$displayMode"
+        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$selectedMemberId|$displayMode|$tolerance"
     }
 }

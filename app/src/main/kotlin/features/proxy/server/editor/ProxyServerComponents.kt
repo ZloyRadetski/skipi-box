@@ -78,6 +78,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
             listOf(
                 StrategyGroupConstants.TYPE_SELECT,
                 StrategyGroupConstants.TYPE_LEAST_PING,
+                StrategyGroupConstants.TYPE_FALLBACK,
                 StrategyGroupConstants.TYPE_LEAST_LOAD,
                 StrategyGroupConstants.TYPE_RANDOM,
                 StrategyGroupConstants.TYPE_ROUND_ROBIN,
@@ -86,6 +87,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
         val strategyLabels = listOf(
             stringResource(R.string.proxy_editor_strategy_group_select),
             stringResource(R.string.proxy_editor_strategy_group_least_ping),
+            stringResource(R.string.proxy_editor_strategy_group_fallback),
             stringResource(R.string.proxy_editor_strategy_group_least_load),
             stringResource(R.string.proxy_editor_strategy_group_random),
             stringResource(R.string.proxy_editor_strategy_group_round_robin),
@@ -258,6 +260,25 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 mutableStateOf(strategyGroupEdit.enableBurstProbe)
             }
 
+            val toleranceValues = remember {
+                listOf("0ms", "20ms", "50ms", "100ms", "150ms", "200ms", "300ms", "500ms")
+            }
+            val toleranceLabels = listOf(
+                "0 ms",
+                "20 ms",
+                "50 ms",
+                "100 ms",
+                "150 ms",
+                "200 ms",
+                "300 ms",
+                "500 ms",
+            )
+            val toleranceIndex = remember(strategyGroupEdit.tolerance) {
+                mutableIntStateOf(
+                    toleranceValues.indexOf(strategyGroupEdit.tolerance).let { if (it >= 0) it else 2 },
+                )
+            }
+
             SmallTitle(text = stringResource(R.string.proxy_editor_strategy_group_health_check))
             Card(
                 modifier = Modifier
@@ -272,6 +293,15 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     onSelectedIndexChange = { index ->
                         probeIntervalIndex.intValue = index
                         strategyGroupEdit.probeInterval = probeIntervalValues[index]
+                    },
+                )
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.proxy_editor_strategy_group_tolerance),
+                    items = toleranceLabels,
+                    selectedIndex = toleranceIndex.intValue,
+                    onSelectedIndexChange = { index ->
+                        toleranceIndex.intValue = index
+                        strategyGroupEdit.tolerance = toleranceValues[index]
                     },
                 )
                 SwitchPreference(

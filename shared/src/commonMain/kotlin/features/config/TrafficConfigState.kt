@@ -489,8 +489,9 @@ private data class ConfigAutoBalancerSource(
 
 private fun ShadowrocketPolicyGroup.toStrategyGroupType(): String {
     return when (type) {
-        "load-balance" -> StrategyGroupConstants.TYPE_RANDOM
-        "url-test", "fallback", "select" -> StrategyGroupConstants.TYPE_LEAST_PING
-        else -> StrategyGroupConstants.TYPE_LEAST_PING
+        "least-load" -> StrategyGroupConstants.TYPE_LEAST_LOAD
+        "fallback" -> StrategyGroupConstants.TYPE_FALLBACK
+        "url-test", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
+        else -> StrategyGroupConstants.TYPE_SELECT
     }
 }

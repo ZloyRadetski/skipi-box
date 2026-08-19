@@ -564,6 +564,7 @@
     <string name="proxy_editor_strategy_group_show_on_home_summary">Show this group in the Proxy groups list on the Proxies screen.</string>
     <string name="proxy_editor_strategy_group_select">Manual selection (Select)</string>
     <string name="proxy_editor_strategy_group_least_ping">Least ping (URLTest)</string>
+    <string name="proxy_editor_strategy_group_fallback">Fallback (Priority)</string>
     <string name="proxy_editor_strategy_group_least_load">Least load</string>
     <string name="proxy_editor_strategy_group_random">Random</string>
     <string name="proxy_editor_strategy_group_round_robin">Round robin</string>
@@ -573,6 +574,8 @@
     <string name="proxy_editor_strategy_group_filter">Remarks regex filter</string>
     <string name="proxy_editor_strategy_group_health_check">Health Check</string>
     <string name="proxy_editor_strategy_group_probe_interval">Probe interval</string>
+    <string name="proxy_editor_strategy_group_tolerance">Switching tolerance</string>
+    <string name="proxy_editor_strategy_group_tolerance_summary">Ignore ping variations smaller than this threshold to prevent flapping</string>
     <string name="proxy_editor_strategy_group_probe_url">Probe URL</string>
     <string name="proxy_editor_strategy_group_burst_probe">Burst probe on startup</string>
     <string name="proxy_editor_strategy_group_burst_probe_summary">Quickly probe all members in parallel on startup or network switch</string>

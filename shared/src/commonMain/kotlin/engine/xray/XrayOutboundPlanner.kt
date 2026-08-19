@@ -199,9 +199,17 @@ private class XrayOutboundPlanner(
                 server = member,
             )
         }
-        val bestFallbackTag = members.zip(memberTags)
-            .minByOrNull { (member, _) -> member.latency.latencySortKey() }
-            ?.second ?: memberTags.first()
+        val balancerStrategy = when (strategyGroup.strategy) {
+            StrategyGroupConstants.TYPE_FALLBACK -> StrategyGroupConstants.TYPE_LEAST_PING
+            else -> strategyGroup.strategy
+        }
+        val bestFallbackTag = if (strategyGroup.strategy == StrategyGroupConstants.TYPE_FALLBACK) {
+            memberTags.first()
+        } else {
+            members.zip(memberTags)
+                .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+                ?.second ?: memberTags.first()
+        }
 
         val customProbeUrl = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)
             ?: appState.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
@@ -223,7 +231,7 @@ private class XrayOutboundPlanner(
         balancers += XrayBalancerPlan(
             tag = tag,
             selector = selector,
-            strategy = strategyGroup.strategy,
+            strategy = balancerStrategy,
             fallbackTag = bestFallbackTag,
             observerTag = observerTag,
         )

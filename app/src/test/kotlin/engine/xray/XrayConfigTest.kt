@@ -462,5 +462,46 @@ class XrayConfigTest {
         assertEquals("30s", decoded.probeInterval)
         assertEquals("https://www.gstatic.com/generate_204", decoded.probeUrl)
         assertEquals(StrategyGroupDisplayMode.ALWAYS, decoded.displayMode)
+        assertEquals("50ms", decoded.tolerance)
+    }
+
+    @Test
+    fun testBuildXrayOutboundPlanForFallbackStrategyGroup() {
+        val server1 = ProxyServerState(
+            id = 10,
+            server = VLESS(remarks = "Primary Node", id = "uuid-1", server = "s1.example.com", port = "443"),
+            latency = "120ms",
+            groupId = 0,
+        )
+        val server2 = ProxyServerState(
+            id = 20,
+            server = VLESS(remarks = "Backup Node", id = "uuid-2", server = "s2.example.com", port = "443"),
+            latency = "40ms",
+            groupId = 0,
+        )
+        val group = StrategyGroup(
+            remarks = "My Fallback Balancer",
+            strategy = StrategyGroupConstants.TYPE_FALLBACK,
+            proxyServerIds = listOf(10, 20),
+            tolerance = "100ms",
+        )
+        val groupState = ProxyServerState(
+            id = 100,
+            server = group,
+            groupId = 0,
+        )
+        val appState = AppState(
+            proxyServers = listOf(server1, server2, groupState),
+            selectedProxyServerId = 100,
+        )
+
+        val plan = appState.buildXrayOutboundPlan(groupState)
+        assertNotNull(plan)
+        assertEquals(1, plan.balancers.size)
+        val balancer = plan.balancers.first()
+
+        // Fallback strategy always prioritizes the first member as fallbackTag
+        assertEquals("proxy-policy-10", balancer.fallbackTag)
+        assertEquals("leastPing", balancer.strategy)
     }
 }

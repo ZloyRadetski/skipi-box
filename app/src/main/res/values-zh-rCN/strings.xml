@@ -542,6 +542,7 @@
     <string name="proxy_editor_strategy_group_show_on_home_summary">在代理屏幕上的代理组列表中显示该组。</string>
     <string name="proxy_editor_strategy_group_select">手动选择 (Select)</string>
     <string name="proxy_editor_strategy_group_least_ping">最少 ping (URLTest)</string>
+    <string name="proxy_editor_strategy_group_fallback">故障转移 (Fallback)</string>
     <string name="proxy_editor_strategy_group_least_load">最小负载</string>
     <string name="proxy_editor_strategy_group_random">随机</string>
     <string name="proxy_editor_strategy_group_round_robin">轮询 (Round robin)</string>
@@ -551,6 +552,8 @@
     <string name="proxy_editor_strategy_group_filter">备注正则表达式过滤器</string>
     <string name="proxy_editor_strategy_group_health_check">健康检查</string>
     <string name="proxy_editor_strategy_group_probe_interval">探测间隔</string>
+    <string name="proxy_editor_strategy_group_tolerance">切换容差 (Tolerance)</string>
+    <string name="proxy_editor_strategy_group_tolerance_summary">忽略小于此阈值的 ping 波动，以防止频繁切换</string>
     <string name="proxy_editor_strategy_group_probe_url">探测网址</string>
     <string name="proxy_editor_strategy_group_burst_probe">启动时突发探针</string>
     <string name="proxy_editor_strategy_group_burst_probe_summary">在启动或网络切换时快速并行探测所有成员</string>

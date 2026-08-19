@@ -549,6 +549,7 @@
     <string name="proxy_editor_strategy_group_show_on_home_summary">Показывает эту группу во вкладке «Группы прокси» на главном экране.</string>
     <string name="proxy_editor_strategy_group_select">Ручной выбор (Select)</string>
     <string name="proxy_editor_strategy_group_least_ping">Наименьший пинг (URLTest)</string>
+    <string name="proxy_editor_strategy_group_fallback">Резервный (Fallback)</string>
     <string name="proxy_editor_strategy_group_least_load">Наименьшая нагрузка (Least Load)</string>
     <string name="proxy_editor_strategy_group_random">Случайный выбор (Random)</string>
     <string name="proxy_editor_strategy_group_round_robin">Циклический перебор (Round robin)</string>
@@ -558,6 +559,8 @@
     <string name="proxy_editor_strategy_group_filter">Фильтр имен по регулярному выражению (Regex)</string>
     <string name="proxy_editor_strategy_group_health_check">Проверка здоровья (Health Check)</string>
     <string name="proxy_editor_strategy_group_probe_interval">Интервал проверки</string>
+    <string name="proxy_editor_strategy_group_tolerance">Порог переключения (Tolerance)</string>
+    <string name="proxy_editor_strategy_group_tolerance_summary">Игнорировать колебания пинга меньше этого порога для предотвращения частых переключений</string>
     <string name="proxy_editor_strategy_group_probe_url">URL проверки (Probe URL)</string>
     <string name="proxy_editor_strategy_group_burst_probe">Экспресс-проверка при старте</string>
     <string name="proxy_editor_strategy_group_burst_probe_summary">Мгновенно опрашивать все узлы пачкой при запуске соединения или смене сети</string>

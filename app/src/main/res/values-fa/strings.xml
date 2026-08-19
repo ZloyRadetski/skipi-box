@@ -548,6 +548,7 @@ lid">CIDR نامعتبر است</string>
     <string name="proxy_editor_strategy_group_show_on_home">نمایش در Auto-balancers</string>
     <string name="proxy_editor_strategy_group_show_on_home_summary">این گروه را در لیست Auto-balancers در صفحه Proxies نشان دهید.</string>
     <string name="proxy_editor_strategy_group_least_ping">حداقل پینگ</string>
+    <string name="proxy_editor_strategy_group_fallback">پشتیبان (Fallback)</string>
     <string name="proxy_editor_strategy_group_least_load">کمترین بار</string>
     <string name="proxy_editor_strategy_group_random">تصادفی</string>
     <string name="proxy_editor_strategy_group_round_robin">گرد رابین</string>
@@ -556,6 +557,8 @@ lid">CIDR نامعتبر است</string>
     <string name="proxy_editor_strategy_group_filter">اظهارات فیلتر regex</string>
     <string name="proxy_editor_strategy_group_health_check">بررسی سلامت</string>
     <string name="proxy_editor_strategy_group_probe_interval">فاصله کاوشگر</string>
+    <string name="proxy_editor_strategy_group_tolerance">آستانه تغییر (Tolerance)</string>
+    <string name="proxy_editor_strategy_group_tolerance_summary">نادیده گرفتن نوسانات پینگ کمتر از این مقدار</string>
     <string name="proxy_editor_strategy_group_probe_url">URL کاوشگر</string>
     <string name="proxy_editor_strategy_group_burst_probe">انفجار کاوشگر هنگام راه اندازی</string>
     <string name="proxy_editor_strategy_group_burst_probe_summary">در هنگام راه اندازی یا سوئیچ شبکه، به سرعت همه اعضا را به صورت موازی بررسی کنید</string>

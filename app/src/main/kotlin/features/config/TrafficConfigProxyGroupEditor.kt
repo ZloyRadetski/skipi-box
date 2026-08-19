@@ -260,7 +260,8 @@ private fun ShadowrocketPolicyGroup.toStrategyGroupType(): String {
         "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
         "round-robin", "roundrobin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
         "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
-        "url-test", "fallback", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
+        "fallback" -> StrategyGroupConstants.TYPE_FALLBACK
+        "url-test", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
         else -> StrategyGroupConstants.TYPE_SELECT
     }
 }
