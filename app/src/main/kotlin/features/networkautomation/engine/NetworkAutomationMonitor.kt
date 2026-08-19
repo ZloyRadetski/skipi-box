@@ -188,7 +188,7 @@ class NetworkAutomationMonitor(
                         val needsConfigChange = state.activeTrafficConfigId != resolvedState.activeTrafficConfigId
 
                         if (isRunning) {
-                            if (state.enableNetworkAutomation && (needsServerChange || needsConfigChange)) {
+                            if (state.enableNetworkAutomation && isNetworkTransition && (needsServerChange || needsConfigChange)) {
                                 AndroidAppLogger.info(
                                     LogTag,
                                     "Network automation: Auto-switching server to #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network $currentNetworkId",

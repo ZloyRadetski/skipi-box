@@ -129,16 +129,6 @@ class ProxyQuickSettingsTileService : TileService() {
         if (state.activeTrafficConfigId != rawState.activeTrafficConfigId) {
             stateStore.update { it.copy(activeTrafficConfigId = state.activeTrafficConfigId) }
         }
-        if (!running && (state.enableNetworkAutomation || state.enableOnDemandVpn)) {
-            val decision = NetworkAutomationEvaluator.evaluate(applicationContext, state)
-            if (decision is NetworkAutomationDecision.SwitchServer) {
-                val serverIdInt = decision.serverId
-                if (state.selectedProxyServerId != serverIdInt) {
-                    state = state.copy(selectedProxyServerId = serverIdInt)
-                    stateStore.update { it.copy(selectedProxyServerId = serverIdInt) }
-                }
-            }
-        }
         if (!running && state.requiresVpnPermission()) {
             showToast(getString(R.string.quick_settings_tile_vpn_permission_required))
             launchActivityAndCollapse(VpnService.prepare(this))

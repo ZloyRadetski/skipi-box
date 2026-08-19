@@ -198,16 +198,6 @@ internal fun ProxyServerListTopBar(
                 currentState = resolvedState
                 updateAppState { it.copy(activeTrafficConfigId = resolvedState.activeTrafficConfigId) }
             }
-            if (currentState.enableNetworkAutomation || currentState.enableOnDemandVpn) {
-                val decision = NetworkAutomationEvaluator.evaluate(context, currentState)
-                if (decision is NetworkAutomationDecision.SwitchServer) {
-                    val serverIdInt = decision.serverId
-                    if (currentState.selectedProxyServerId != serverIdInt) {
-                        currentState = currentState.copy(selectedProxyServerId = serverIdInt)
-                        updateAppState { it.copy(selectedProxyServerId = serverIdInt) }
-                    }
-                }
-            }
             val activeServer = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId } ?: selectedServer
             when (
                 val result = proxyServiceUseCase.toggle(
