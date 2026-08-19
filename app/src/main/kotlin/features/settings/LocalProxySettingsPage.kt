@@ -72,6 +72,10 @@ import ui.clipboard.setPlainText
 import ui.components.BackNavigationIcon
 import ui.icons.IconsEye
 import ui.icons.IconsEyeOff
+import engine.vpn.VpnDefaults
+import engine.vpn.fallbackAppendHttpProxyPort
+import java.net.Inet4Address
+import java.net.NetworkInterface
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
@@ -85,27 +89,35 @@ fun LocalProxySettingsPage(
     val updateAppState = LocalUpdateAppState.current
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
-    val scrollBehavior = MiuixScrollBehavior()
-    val lazyListState = rememberLazyListState()
     val clipboard = LocalClipboard.current
     val tipNotifier = LocalAppServices.current.tipNotifier
     val scope = rememberCoroutineScope()
+    val scrollBehavior = MiuixScrollBehavior()
+    val listState = rememberLazyListState()
 
     var isPasswordVisible by remember { mutableStateOf(false) }
-
-    val portError = if (isPort(appState.localProxyPort)) null else {
-        stringResource(R.string.settings_local_proxy_port_invalid)
-    }
 
     val copyToastTemplate = stringResource(R.string.settings_local_proxy_copied_toast)
     val usernameLabel = stringResource(R.string.settings_local_proxy_username)
     val passwordLabel = stringResource(R.string.settings_local_proxy_password)
+    val ipLabel = stringResource(R.string.settings_local_proxy_lan_ip_label)
+    val socksEndpointLabel = stringResource(R.string.settings_local_proxy_lan_socks_endpoint)
+    val httpEndpointLabel = stringResource(R.string.settings_local_proxy_lan_http_endpoint)
+    val portInvalidMsg = stringResource(R.string.settings_local_proxy_port_invalid)
 
     fun copyText(text: String, label: String) {
+        if (text.isBlank()) return
         scope.launch {
             clipboard.setPlainText(text)
             tipNotifier.show(String.format(copyToastTemplate, label))
         }
+    }
+
+    val isCustomPort = !appState.enableDynamicLocalProxyPort
+    val portError = if (isCustomPort && !isPort(appState.localProxyPort)) {
+        portInvalidMsg
+    } else {
+        null
     }
 
     Scaffold(
@@ -133,14 +145,11 @@ fun LocalProxySettingsPage(
                 .background(AppTheme.colors.background),
         ) {
             LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(AppTheme.colors.background)
-                    .pageScrollModifiers(scrollBehavior),
+                state = listState,
+                modifier = Modifier.pageScrollModifiers(scrollBehavior),
                 contentPadding = pageListPadding(contentPadding),
             ) {
-                // Section 1: Port and Network Configuration
+                // Section 1: Network Parameters
                 item(key = "section_network_title") {
                     SmallTitle(text = stringResource(R.string.settings_local_proxy_network_params))
                 }
@@ -148,7 +157,6 @@ fun LocalProxySettingsPage(
                 item(key = "section_network_card") {
                     SettingsSectionCard {
                         Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                            // 1. Динамический порт
                             SwitchPreference(
                                 title = stringResource(R.string.settings_local_proxy_dynamic_port),
                                 summary = stringResource(R.string.settings_local_proxy_dynamic_port_summary),
@@ -158,13 +166,16 @@ fun LocalProxySettingsPage(
                                 },
                             )
 
-                            // 2. Порт локального прокси (только если динамический порт выключен)
                             AnimatedVisibility(
                                 visible = !appState.enableDynamicLocalProxyPort,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut(),
                             ) {
-                                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                                ) {
                                     TextField(
                                         value = appState.localProxyPort,
                                         onValueChange = { port ->
@@ -185,7 +196,6 @@ fun LocalProxySettingsPage(
                                 }
                             }
 
-                            // 3. Слушать все сетевые интерфейсы
                             SwitchPreference(
                                 title = stringResource(R.string.settings_local_proxy_listen_all_interfaces),
                                 summary = stringResource(R.string.settings_local_proxy_listen_all_interfaces_summary),
@@ -198,6 +208,58 @@ fun LocalProxySettingsPage(
                     }
                 }
 
+                // Section: Hotspot & LAN Sharing info
+                if (appState.localProxyListenAllInterfaces) {
+                    item(key = "section_lan_title") {
+                        SmallTitle(text = stringResource(R.string.settings_local_proxy_lan_sharing_section))
+                    }
+
+                    item(key = "section_lan_card") {
+                        SettingsSectionCard {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = stringResource(R.string.settings_local_proxy_lan_instruction),
+                                    fontSize = 13.sp,
+                                    lineHeight = 18.sp,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+
+                                Spacer(modifier = Modifier.height(14.dp))
+
+                                val localIps = remember { getLocalNetworkIpAddresses() }
+                                val displayIp = localIps.firstOrNull() ?: "192.168.43.1"
+                                val socksPort = appState.localProxyPort.ifBlank { VpnDefaults.LOCAL_PROXY_PORT.toString() }
+                                val socksEndpoint = "$displayIp:$socksPort"
+                                val httpPort = socksPort.toIntOrNull()?.let { fallbackAppendHttpProxyPort(it) } ?: (VpnDefaults.LOCAL_PROXY_PORT + 1)
+                                val httpEndpoint = "$displayIp:$httpPort"
+
+                                LanEndpointRow(
+                                    label = ipLabel,
+                                    value = displayIp,
+                                    onCopy = { copyText(displayIp, ipLabel) },
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                LanEndpointRow(
+                                    label = socksEndpointLabel,
+                                    value = socksEndpoint,
+                                    onCopy = { copyText(socksEndpoint, socksEndpointLabel) },
+                                )
+
+                                if (appState.enableVpnAppendHttpProxy) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    LanEndpointRow(
+                                        label = httpEndpointLabel,
+                                        value = httpEndpoint,
+                                        onCopy = { copyText(httpEndpoint, httpEndpointLabel) },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Section 2: Authorization Switch
                 item(key = "section_auth_title") {
                     SmallTitle(text = stringResource(R.string.settings_local_proxy_security_section))
@@ -206,7 +268,6 @@ fun LocalProxySettingsPage(
                 item(key = "section_auth_card") {
                     SettingsSectionCard {
                         Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                            // 4. Включить авторизацию
                             SwitchPreference(
                                 title = stringResource(R.string.settings_local_proxy_enable_auth),
                                 summary = stringResource(R.string.settings_local_proxy_enable_auth_summary),
@@ -219,7 +280,6 @@ fun LocalProxySettingsPage(
                     }
                 }
 
-                // Section 3: Credentials Card (appears if enableLocalProxyAuth is true)
                 if (appState.enableLocalProxyAuth) {
                     item(key = "section_credentials_title") {
                         SmallTitle(text = stringResource(R.string.settings_local_proxy_credentials_section))
@@ -268,7 +328,6 @@ fun LocalProxySettingsPage(
 
                                 Spacer(modifier = Modifier.height(14.dp))
 
-                                // Username row (tap to copy)
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -313,7 +372,6 @@ fun LocalProxySettingsPage(
 
                                 Spacer(modifier = Modifier.height(10.dp))
 
-                                // Password row (IDENTICAL look, tap to copy without changing display, compact eye toggle)
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -378,4 +436,64 @@ fun LocalProxySettingsPage(
             }
         }
     }
+}
+
+@Composable
+private fun LanEndpointRow(
+    label: String,
+    value: String,
+    onCopy: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
+            .clickable(onClick = onCopy)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MiuixTheme.colorScheme.primary.copy(alpha = 0.8f),
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = value,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MiuixTheme.colorScheme.primary,
+                fontFamily = FontFamily.Monospace,
+            )
+        }
+        IconButton(
+            onClick = onCopy,
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Copy,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+}
+
+private fun getLocalNetworkIpAddresses(): List<String> {
+    return runCatching {
+        NetworkInterface.getNetworkInterfaces()
+            ?.asSequence()
+            ?.filter { it.isUp && !it.isLoopback && !it.isPointToPoint && !it.name.startsWith("skipi") && !it.name.startsWith("tun") }
+            ?.flatMap { it.inetAddresses.asSequence() }
+            ?.filter { it is Inet4Address && !it.isLoopbackAddress && it.hostAddress != null }
+            ?.mapNotNull { it.hostAddress }
+            ?.distinct()
+            ?.toList()
+            .orEmpty()
+    }.getOrDefault(emptyList())
 }

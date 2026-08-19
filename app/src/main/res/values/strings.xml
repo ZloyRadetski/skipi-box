@@ -943,6 +943,12 @@
     <string name="settings_local_proxy_copied_toast">%1$s copied to clipboard</string>
     <string name="settings_local_proxy_copy_username">Copy username</string>
     <string name="settings_local_proxy_copy_password">Copy password</string>
+    <string name="settings_local_proxy_lan_sharing_section">Hotspot &amp; LAN sharing</string>
+    <string name="settings_local_proxy_lan_instruction">To share VPN with other devices: connect them to this Wi-Fi hotspot and configure manual proxy in their Wi-Fi settings.</string>
+    <string name="settings_local_proxy_lan_ip_label">Detected IP address</string>
+    <string name="settings_local_proxy_lan_socks_endpoint">SOCKS5 Endpoint</string>
+    <string name="settings_local_proxy_lan_http_endpoint">HTTP Endpoint</string>
+    <string name="settings_local_proxy_lan_no_ip">No active Wi-Fi or Hotspot network detected</string>
     <string name="subscription_ping_url_label">Latency test URL</string>
     <string name="subscription_ping_quick_select">Quick provider select:</string>
     <string name="subscription_ping_selected_test">Selected test: %1$s</string>

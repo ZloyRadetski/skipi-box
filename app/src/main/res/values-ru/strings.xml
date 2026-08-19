@@ -933,6 +933,12 @@
     <string name="settings_local_proxy_copied_toast">%1$s скопирован в буфер обмена</string>
     <string name="settings_local_proxy_copy_username">Копировать логин</string>
     <string name="settings_local_proxy_copy_password">Копировать пароль</string>
+    <string name="settings_local_proxy_lan_sharing_section">Раздача и доступ по сети</string>
+    <string name="settings_local_proxy_lan_instruction">Для раздачи VPN на другие устройства: подключите их к этой точке доступа и укажите ручной прокси в свойствах Wi-Fi подключения.</string>
+    <string name="settings_local_proxy_lan_ip_label">IP-адрес устройства</string>
+    <string name="settings_local_proxy_lan_socks_endpoint">SOCKS5 прокси</string>
+    <string name="settings_local_proxy_lan_http_endpoint">HTTP прокси</string>
+    <string name="settings_local_proxy_lan_no_ip">Сеть Wi-Fi или точка доступа не обнаружена</string>
     <string name="subscription_ping_url_label">URL для теста задержки</string>
     <string name="subscription_ping_quick_select">Быстрый выбор провайдера:</string>
     <string name="subscription_ping_selected_test">Выбран тест %1$s</string>
