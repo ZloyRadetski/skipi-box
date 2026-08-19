@@ -316,6 +316,10 @@ internal class AppSettingsPreferences(
                 KeyConnectionDisplayMode,
                 defaults.connectionDisplayMode,
             ),
+            bottomBarSize = preferences.getInt(
+                KeyBottomBarSize,
+                defaults.bottomBarSize,
+            ),
             classicShowFloatingPowerButton = preferences.getBoolean(
                 KeyClassicShowFloatingPowerButton,
                 defaults.classicShowFloatingPowerButton,
@@ -463,6 +467,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableTrafficStatsNotification, state.enableTrafficStatsNotification)
             .putBoolean(KeyShowServerSearch, state.showServerSearch)
             .putInt(KeyConnectionDisplayMode, state.connectionDisplayMode)
+            .putInt(KeyBottomBarSize, state.bottomBarSize)
             .putBoolean(KeyClassicShowFloatingPowerButton, state.classicShowFloatingPowerButton)
             .putBoolean(KeyShowTunnelMemoryOnHome, state.showTunnelMemoryOnHome)
             .putBoolean(KeyEnableBroadcastControl, state.enableBroadcastControl)
@@ -814,6 +819,7 @@ private const val KeyFragmentInterval = "fragment_interval"
 private const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_notification"
 private const val KeyShowServerSearch = "show_server_search"
 private const val KeyConnectionDisplayMode = "connection_display_mode"
+private const val KeyBottomBarSize = "bottom_bar_size"
 private const val KeyClassicShowFloatingPowerButton = "classic_show_floating_power_button"
 private const val KeyShowTunnelMemoryOnHome = "show_tunnel_memory_on_home"
 private const val KeyEnableBroadcastControl = "enable_broadcast_control"

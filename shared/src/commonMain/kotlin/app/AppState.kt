@@ -3,6 +3,7 @@
 
 package app
 
+import app.modes.BottomBarSizeLarge
 import app.modes.ColorModeSystem
 import app.modes.LanguageModeEnglish
 import app.modes.ProxyAppListModeGlobal
@@ -41,6 +42,7 @@ data class AppState(
     val nextSubscriptionGroupId: Int = 4,
     val enableAllProxyGroup: Boolean = false,
     val enableDeletionConfirmation: Boolean = true,
+    val bottomBarSize: Int = BottomBarSizeLarge,
 
     val runMode: Int = RunModeVpnService,
     val enableResolveProxyServerDomain: Boolean = false,

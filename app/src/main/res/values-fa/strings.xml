@@ -106,6 +106,11 @@
     <string name="settings_connection_display_mode_summary">بین ویجت اتصال فشرده و کلاسیک در صفحه اصلی انتخاب کنید</string>
     <string name="settings_connection_display_mode_compact">فشرده</string>
     <string name="settings_connection_display_mode_classic">کلاسیک</string>
+    <string name="settings_bottom_bar_size">اندازه نوار پایین</string>
+    <string name="settings_bottom_bar_size_summary">تنظیم ارتفاع، آیکون‌ها و اندازه متن نوار شناور پایین</string>
+    <string name="settings_bottom_bar_size_small">کوچک</string>
+    <string name="settings_bottom_bar_size_medium">متوسط</string>
+    <string name="settings_bottom_bar_size_large">بزرگ</string>
     <string name="connection_status_connected">متصل شد</string>
     <string name="connection_status_disconnected">قطع شده است</string>
     <string name="connection_status_secured">اتصال امن فعال است</string>
@@ -182,7 +187,7 @@
     <string name="settings_external_interfaces_selected">فعال:{interfaces}</string>
     <string name="settings_external_interfaces_wifi">اشتراک گذاری نقطه اتصال Wi-Fi</string>
     <string name="settings_external_interfaces_usb">اتصال USB</string>
-    <string name="settings_external_interfaces_bluetooth">اتصال به اینتر�    <string name="settings_enable_custom_colors">رنگ‌های سفارشی</string>
+    <string name="settings_external_interfaces_bluetooth">اتصال به اینتر    <string name="settings_enable_custom_colors">رنگ‌های سفارشی</string>
     <string name="settings_enable_custom_colors_summary">تنظیم دستی پالت رنگ</string>
     <string name="settings_color_accent">رنگ تاکیدی</string>
     <string name="settings_color_accent_summary">دکمه ها، شاخص ها و عناصر فعال</string>

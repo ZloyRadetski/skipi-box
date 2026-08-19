@@ -112,6 +112,11 @@
     <string name="settings_connection_display_mode_summary">Choose between compact and classic connection widget on home screen</string>
     <string name="settings_connection_display_mode_compact">Compact</string>
     <string name="settings_connection_display_mode_classic">Classic</string>
+    <string name="settings_bottom_bar_size">Bottom bar size</string>
+    <string name="settings_bottom_bar_size_summary">Adjust the height, icons, and text size of the bottom bar</string>
+    <string name="settings_bottom_bar_size_small">Small</string>
+    <string name="settings_bottom_bar_size_medium">Medium</string>
+    <string name="settings_bottom_bar_size_large">Large</string>
     <string name="connection_status_connected">Connected</string>
     <string name="connection_status_disconnected">Disconnected</string>
     <string name="connection_status_secured">Secure connection active</string>

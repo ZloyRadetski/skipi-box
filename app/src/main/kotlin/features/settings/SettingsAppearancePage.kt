@@ -200,6 +200,12 @@ fun SettingsAppearancePage(
         stringResource(R.string.settings_connection_display_mode_classic),
     )
 
+    val bottomBarSizeOptions = listOf(
+        stringResource(R.string.settings_bottom_bar_size_small),
+        stringResource(R.string.settings_bottom_bar_size_medium),
+        stringResource(R.string.settings_bottom_bar_size_large),
+    )
+
     val resetCompletedMessage = stringResource(R.string.settings_colors_reset_completed)
 
     Scaffold(
@@ -553,6 +559,15 @@ fun SettingsAppearancePage(
                 item(key = "appearance_layout") {
                     SmallTitle(text = stringResource(R.string.settings_connection_display_mode))
                     SettingsSectionCard {
+                        OverlayDropdownPreference(
+                            title = stringResource(R.string.settings_bottom_bar_size),
+                            summary = stringResource(R.string.settings_bottom_bar_size_summary),
+                            items = bottomBarSizeOptions,
+                            selectedIndex = appState.bottomBarSize,
+                            onSelectedIndexChange = { size ->
+                                updateAppState { it.copy(bottomBarSize = size) }
+                            },
+                        )
                         OverlayDropdownPreference(
                             title = stringResource(R.string.settings_connection_display_mode),
                             summary = stringResource(R.string.settings_connection_display_mode_summary),

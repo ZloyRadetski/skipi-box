@@ -20,3 +20,12 @@ fun normalizeColorMode(value: Int): Int = when (value) {
 
 const val LanguageModeEnglish = 1
 const val LanguageModeRussian = 3
+
+const val BottomBarSizeSmall = 0
+const val BottomBarSizeMedium = 1
+const val BottomBarSizeLarge = 2
+
+fun normalizeBottomBarSize(value: Int): Int = when (value) {
+    in BottomBarSizeSmall..BottomBarSizeLarge -> value
+    else -> BottomBarSizeLarge
+}

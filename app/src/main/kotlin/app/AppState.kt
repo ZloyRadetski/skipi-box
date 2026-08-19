@@ -4,6 +4,7 @@
 package app
 
 import app.modes.AppIconDefault
+import app.modes.BottomBarSizeLarge
 import app.modes.ColorModeSystem
 import app.modes.LanguageModeSystem
 import app.modes.ConnectionDisplayModeCompact
@@ -81,6 +82,7 @@ data class AppState(
     val enableDeletionConfirmation: Boolean = true,
     val connectionDisplayMode: Int = ConnectionDisplayModeCompact,
     val classicShowFloatingPowerButton: Boolean = false,
+    val bottomBarSize: Int = BottomBarSizeLarge,
 
     val runMode: Int = RunModeVpnService,
     val enableResolveProxyServerDomain: Boolean = false,

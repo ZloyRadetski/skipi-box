@@ -18,6 +18,7 @@ data class AppChromeState(
     val colorMode: Int,
     val languageMode: Int,
     val seedIndex: Int,
+    val bottomBarSize: Int = app.modes.BottomBarSizeLarge,
 )
 
 data class ProxyServerListState(
@@ -89,6 +90,7 @@ private fun AppState.toAppChromeState(): AppChromeState {
         colorMode = colorMode,
         languageMode = languageMode,
         seedIndex = seedIndex,
+        bottomBarSize = bottomBarSize,
     )
 }
 

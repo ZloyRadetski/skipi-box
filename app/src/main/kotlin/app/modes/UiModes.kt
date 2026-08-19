@@ -43,3 +43,12 @@ fun normalizeAppIcon(value: Int): Int = when (value) {
     in AppIconDefault..AppIconStealth -> value
     else -> AppIconDefault
 }
+
+const val BottomBarSizeSmall = 0
+const val BottomBarSizeMedium = 1
+const val BottomBarSizeLarge = 2
+
+fun normalizeBottomBarSize(value: Int): Int = when (value) {
+    in BottomBarSizeSmall..BottomBarSizeLarge -> value
+    else -> BottomBarSizeLarge
+}

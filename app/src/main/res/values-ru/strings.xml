@@ -129,6 +129,11 @@
     <string name="settings_connection_display_mode_summary">Выберите стиль плашки подключения на главном экране</string>
     <string name="settings_connection_display_mode_compact">Компактный</string>
     <string name="settings_connection_display_mode_classic">Классический</string>
+    <string name="settings_bottom_bar_size">Размер нижней панели</string>
+    <string name="settings_bottom_bar_size_summary">Настройка высоты, иконок и текста нижней панели навигации</string>
+    <string name="settings_bottom_bar_size_small">Маленький</string>
+    <string name="settings_bottom_bar_size_medium">Средний</string>
+    <string name="settings_bottom_bar_size_large">Большой</string>
     <string name="connection_status_connected">Подключено</string>
     <string name="connection_status_disconnected">Отключено</string>
     <string name="connection_status_secured">Идет защищенное соединение</string>
