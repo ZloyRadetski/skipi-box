@@ -251,7 +251,7 @@
     <string name="settings_category_subscriptions">Subscriptions &amp; Servers</string>
     <string name="settings_category_subscriptions_summary">Fetch timeout, User-Agent, ping check</string>
     <string name="settings_category_integration">Automation &amp; Integration</string>
-    <string name="settings_category_integration_summary">URL schemes, Broadcast API</string>
+    <string name="settings_category_integration_summary">URL schemes</string>
     <string name="settings_category_logs">Logs &amp; Diagnostics</string>
     <string name="settings_category_logs_summary">Core logs, access logs, Logcat</string>
     <string name="settings_category_backup_reset">Backup &amp; Reset</string>

@@ -245,7 +245,7 @@
     <string name="settings_category_subscriptions">订阅和服务器</string>
     <string name="settings_category_subscriptions_summary">获取超时、用户代理、ping 检查</string>
     <string name="settings_category_integration">自动化与集成</string>
-    <string name="settings_category_integration_summary">URL方案、广播API</string>
+    <string name="settings_category_integration_summary">URL方案</string>
     <string name="settings_category_logs">日志和诊断</string>
     <string name="settings_category_logs_summary">核心日志、访问日志、Logcat</string>
     <string name="settings_category_backup_reset">备份与重置</string>

@@ -250,7 +250,7 @@
     <string name="settings_category_subscriptions">Подписки и узлы</string>
     <string name="settings_category_subscriptions_summary">Таймауты, User-Agent, проверка пинга</string>
     <string name="settings_category_integration">Автоматизация и интеграция</string>
-    <string name="settings_category_integration_summary">Схемы URL-ссылок, Broadcast API</string>
+    <string name="settings_category_integration_summary">Схемы URL-ссылок</string>
     <string name="settings_category_logs">Журналы и логи</string>
     <string name="settings_category_logs_summary">Логи ядра, логи доступа, Logcat</string>
     <string name="settings_category_backup_reset">Резервное копирование и сброс</string>

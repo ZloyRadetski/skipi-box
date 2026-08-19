@@ -93,13 +93,34 @@ import features.settings.SkipiUrlSchemesPage
 import features.settings.SubscriptionPingSettingsPage
 import features.settings.SubscriptionUserAgentsPage
 import features.subscription.SubscriptionGroupListPage
-import top.yukonga.miuix.kmp.basic.NavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
-import top.yukonga.miuix.kmp.basic.NavigationBarItem
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NavigationItem
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.AppRecording
 import top.yukonga.miuix.kmp.icon.extended.Layers
@@ -457,7 +478,7 @@ private fun CompactScreenLayout(
             .fillMaxSize()
             .background(AppTheme.colors.background),
         bottomBar = {
-            NavigationBar(
+            ExpressiveFloatingNavigationBar(
                 navigationItems = navigationItems,
                 mainPagerState = mainPagerState,
             )
@@ -472,37 +493,128 @@ private fun CompactScreenLayout(
 }
 
 @Composable
-private fun NavigationBar(
+private fun ExpressiveFloatingNavigationBar(
     navigationItems: List<NavigationItem>,
     mainPagerState: MainPagerState,
     modifier: Modifier = Modifier,
 ) {
-    val page = mainPagerState.selectedPage
-    val navShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-    val accentColor = AppTheme.colors.accent
+    val selectedPage = mainPagerState.selectedPage
+    val haptic = LocalHapticFeedback.current
+    val isDark = AppTheme.colors.isDark
+
+    val islandBackground = if (isDark) {
+        AppTheme.colors.surface.copy(alpha = 0.96f)
+    } else {
+        AppTheme.colors.surface
+    }
+    val islandBorderColor = if (isDark) {
+        Color.White.copy(alpha = 0.10f)
+    } else {
+        Color.Black.copy(alpha = 0.08f)
+    }
+    val islandShape = RoundedCornerShape(32.dp)
+
     Box(
         modifier = Modifier
-            .clip(navShape)
-            .background(accentColor)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {},
-            )
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 8.dp)
             .then(modifier),
+        contentAlignment = Alignment.Center,
     ) {
-        NavigationBar(
-            modifier = Modifier.clip(navShape),
-            color = accentColor,
-            mode = NavigationBarDisplayMode.IconAndText,
-        ) {
-            navigationItems.forEachIndexed { index, item ->
-                NavigationBarItem(
-                    selected = page == index,
-                    onClick = { mainPagerState.animateToPage(index) },
-                    icon = item.icon,
-                    label = item.label,
+        Box(
+            modifier = Modifier
+                .shadow(
+                    elevation = 8.dp,
+                    shape = islandShape,
+                    ambientColor = if (isDark) Color.Black else Color.Black.copy(alpha = 0.35f),
+                    spotColor = if (isDark) Color.Black else Color.Black.copy(alpha = 0.35f),
                 )
+                .clip(islandShape)
+                .background(islandBackground)
+                .border(
+                    width = 1.dp,
+                    color = islandBorderColor,
+                    shape = islandShape,
+                )
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                navigationItems.forEachIndexed { index, item ->
+                    val isSelected = selectedPage == index
+
+                    val animatedBackground by animateColorAsState(
+                        targetValue = if (isSelected) AppTheme.colors.accent else Color.Transparent,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "nav_tab_bg_$index",
+                    )
+                    val animatedIconTint by animateColorAsState(
+                        targetValue = if (isSelected) {
+                            AppTheme.colors.onAccent
+                        } else {
+                            AppTheme.colors.onSurfaceVariant.copy(alpha = 0.75f)
+                        },
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "nav_tab_icon_$index",
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(animatedBackground)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = {
+                                    if (!isSelected) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        mainPagerState.animateToPage(index)
+                                    }
+                                },
+                            )
+                            .animateContentSize(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessMediumLow,
+                                )
+                            )
+                            .padding(
+                                horizontal = if (isSelected) 16.dp else 12.dp,
+                                vertical = 10.dp,
+                            ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            tint = animatedIconTint,
+                            modifier = Modifier.size(22.dp),
+                        )
+
+                        AnimatedVisibility(
+                            visible = isSelected,
+                            enter = fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) +
+                                    expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow)),
+                            exit = fadeOut(spring(stiffness = Spring.StiffnessMediumLow)) +
+                                   shrinkHorizontally(spring(stiffness = Spring.StiffnessMediumLow)),
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = item.label,
+                                    color = AppTheme.colors.onAccent,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
