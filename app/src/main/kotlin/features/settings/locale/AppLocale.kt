@@ -78,7 +78,13 @@ fun RecreateActivityOnAppLanguageChange(languageMode: Int) {
 }
 
 private fun String?.toAppLocale(systemLocale: Locale): Locale {
-    return this?.let(Locale::forLanguageTag) ?: systemLocale
+    return when (this) {
+        "zh-CN" -> Locale.SIMPLIFIED_CHINESE
+        "fa" -> Locale.forLanguageTag("fa")
+        "ru" -> Locale.forLanguageTag("ru")
+        "en" -> Locale.ENGLISH
+        else -> this?.let(Locale::forLanguageTag) ?: systemLocale
+    }
 }
 
 internal fun Context.localizedAppContext(
