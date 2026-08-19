@@ -39,6 +39,7 @@ class NetworkAutomationMonitor(
     private val operationMutex = Mutex()
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var debounceJob: Job? = null
+    private var lastKnownNetworkId: String? = null
 
     fun start() {
         scope.launch {
@@ -55,7 +56,6 @@ class NetworkAutomationMonitor(
                     val shouldListen = (key.enableNetworkAutomation || key.enableOnDemandVpn) && key.rulesCount > 0
                     if (shouldListen) {
                         registerCallback()
-                        scheduleEvaluation(null)
                     } else {
                         unregisterCallback()
                     }
@@ -66,6 +66,8 @@ class NetworkAutomationMonitor(
     private fun registerCallback() {
         if (networkCallback != null) return
         val cm = appContext.getSystemService(ConnectivityManager::class.java) ?: return
+
+        lastKnownNetworkId = NetworkAutomationEvaluator.getPhysicalNetworkIdentifier(appContext, null)
 
         val hasFineLocation = ContextCompat.checkSelfPermission(
             appContext,
@@ -100,7 +102,7 @@ class NetworkAutomationMonitor(
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 .build()
             cm.registerNetworkCallback(request, callback)
-            AndroidAppLogger.info(LogTag, "Network automation observer registered successfully")
+            AndroidAppLogger.info(LogTag, "Network automation observer registered (initial network: $lastKnownNetworkId)")
         }.onFailure { error ->
             networkCallback = null
             AndroidAppLogger.warn(LogTag, "Failed to register network automation observer", error)
@@ -124,6 +126,7 @@ class NetworkAutomationMonitor(
     private fun unregisterCallback() {
         val callback = networkCallback ?: return
         networkCallback = null
+        lastKnownNetworkId = null
         runCatching {
             appContext.getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
             AndroidAppLogger.info(LogTag, "Network automation observer unregistered")
@@ -146,13 +149,25 @@ class NetworkAutomationMonitor(
                 val state = stateStore.state.value
                 if (!state.enableNetworkAutomation && !state.enableOnDemandVpn) return@withLock
 
-                val decision = NetworkAutomationEvaluator.evaluate(appContext, state, capabilities)
+                val currentNetworkId = NetworkAutomationEvaluator.getPhysicalNetworkIdentifier(appContext, capabilities)
+                val previousNetworkId = lastKnownNetworkId
+                val isNetworkTransition = previousNetworkId != null && previousNetworkId != currentNetworkId
+                lastKnownNetworkId = currentNetworkId
+
                 val isRunning = SkipiVpnService.isRunning()
+
+                // If network did not transition and VPN is currently stopped (e.g. user manually stopped VPN on LTE),
+                // do not auto-connect.
+                if (!isNetworkTransition && !isRunning) {
+                    return@withLock
+                }
+
+                val decision = NetworkAutomationEvaluator.evaluate(appContext, state, capabilities)
 
                 when (decision) {
                     is NetworkAutomationDecision.DisconnectVpn -> {
-                        if (state.enableOnDemandVpn && isRunning) {
-                            AndroidAppLogger.info(LogTag, "On-Demand VPN: Disconnecting VPN due to network rule")
+                        if (state.enableOnDemandVpn && isRunning && isNetworkTransition) {
+                            AndroidAppLogger.info(LogTag, "On-Demand VPN: Disconnecting VPN on network switch to $currentNetworkId")
                             proxyServiceUseCase.stop(state.runMode)
                             stateStore.update { it.copy(proxyRunning = false) }
                         }
@@ -170,7 +185,7 @@ class NetworkAutomationMonitor(
                             if (state.enableNetworkAutomation && (needsServerChange || needsConfigChange)) {
                                 AndroidAppLogger.info(
                                     LogTag,
-                                    "Network automation: Auto-switching server to #${targetServer.id} (${targetServer.server.getInfo().remarks})",
+                                    "Network automation: Auto-switching server to #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network $currentNetworkId",
                                 )
                                 stateStore.update {
                                     it.copy(
@@ -190,10 +205,10 @@ class NetworkAutomationMonitor(
                                 }
                             }
                         } else {
-                            if (state.enableOnDemandVpn) {
+                            if (state.enableOnDemandVpn && isNetworkTransition) {
                                 AndroidAppLogger.info(
                                     LogTag,
-                                    "On-Demand VPN: Auto-starting VPN on server #${targetServer.id} (${targetServer.server.getInfo().remarks})",
+                                    "On-Demand VPN: Auto-starting VPN on server #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network transition to $currentNetworkId",
                                 )
                                 stateStore.update {
                                     it.copy(

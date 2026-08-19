@@ -22,6 +22,19 @@ sealed interface NetworkAutomationDecision {
 
 object NetworkAutomationEvaluator {
 
+    fun getPhysicalNetworkIdentifier(context: Context, capabilities: NetworkCapabilities? = null): String {
+        val physicalCaps = getActivePhysicalCapabilities(context, capabilities) ?: return "DISCONNECTED"
+        return when {
+            physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
+                val ssid = getCurrentWifiSsid(context, physicalCaps)
+                if (!ssid.isNullOrBlank()) "WIFI:$ssid" else "WIFI:ANY"
+            }
+            physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
+            physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
+            else -> "UNKNOWN"
+        }
+    }
+
     fun getActivePhysicalCapabilities(context: Context, capabilities: NetworkCapabilities? = null): NetworkCapabilities? {
         val appContext = context.applicationContext
         val cm = appContext.getSystemService(ConnectivityManager::class.java) ?: return capabilities
