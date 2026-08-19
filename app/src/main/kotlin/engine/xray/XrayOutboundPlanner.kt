@@ -218,9 +218,18 @@ private class XrayOutboundPlanner(
             burstObservatorySelectors += selector
         }
         when (strategyGroup.strategy) {
-            StrategyGroupConstants.TYPE_LEAST_LOAD -> burstObservatorySelectors += selector
-            StrategyGroupConstants.TYPE_LEAST_PING -> observatorySelectors += selector
-            else -> observatorySelectors += selector
+            StrategyGroupConstants.TYPE_LEAST_LOAD -> {
+                burstObservatorySelectors += selector
+                observatorySelectors += selector
+            }
+            StrategyGroupConstants.TYPE_LEAST_PING -> {
+                burstObservatorySelectors += selector
+                observatorySelectors += selector
+            }
+            else -> {
+                burstObservatorySelectors += selector
+                observatorySelectors += selector
+            }
         }
         routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
     }

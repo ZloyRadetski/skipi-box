@@ -140,6 +140,37 @@ internal class AndroidProxyLatencyTester(
         ProxyServerLatencyTestResult(chosenDelay)
     }
 
+    suspend fun fastProbeStrategyGroupMembers(
+        appState: AppState,
+        strategyGroup: StrategyGroup,
+        maxWaitMillis: Long = 600L,
+    ): Map<Int, Long> = withContext(Dispatchers.IO) {
+        val members = appState.proxyServers.filter { member ->
+            member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
+        }
+        if (members.isEmpty()) return@withContext emptyMap()
+
+        val dnsCache = java.util.concurrent.ConcurrentHashMap<String, java.net.InetAddress>()
+        val failedDnsCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
+        withTimeoutOrNull(maxWaitMillis) {
+            coroutineScope {
+                members.map { member ->
+                    async {
+                        val endpoint = member.server.endpoint() ?: return@async null
+                        val started = SystemClock.elapsedRealtime()
+                        val address = resolveHost(endpoint.host, 300L, dnsCache, failedDnsCache) ?: return@async null
+                        val connectTime = nioSocketConnectTime(address, endpoint.port, 300)
+                        if (connectTime >= 0) {
+                            val total = SystemClock.elapsedRealtime() - started
+                            member.id to total
+                        } else null
+                    }
+                }.awaitAll().filterNotNull().toMap()
+            }
+        }.orEmpty()
+    }
+
     private suspend fun tcpConnectLatency(
         appState: AppState,
         server: ProxyServerState,

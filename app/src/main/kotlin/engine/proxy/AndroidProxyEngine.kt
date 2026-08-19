@@ -22,6 +22,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+import engine.proxy.latency.AndroidProxyLatencyTester
+import features.proxy.server.model.StrategyGroup
+
 /** VPN-only runtime for SKIPI. ROOT runtimes intentionally are not linked here. */
 class AndroidProxyEngine(
     context: Context,
@@ -29,6 +32,7 @@ class AndroidProxyEngine(
 ) {
     private val appContext = context.applicationContext
     private val vpnXrayEngine = VpnXrayEngine(appContext, requestVpnPermission)
+    private val latencyTester by lazy { AndroidProxyLatencyTester(appContext) }
 
     suspend fun start(request: ProxyEngineStartRequest): ProxyEngineStatus = globalOperationMutex.withLock {
         startUnlocked(request, restart = false)
@@ -71,11 +75,29 @@ class AndroidProxyEngine(
         if (ProxyTrafficStatsRuntimeStore.read(appContext)?.paused != true) {
             ProxyTrafficStatsService.reconcile(appContext, null)
         }
-        val vpnState = request.appState
+        var vpnState = request.appState
             .resolveActiveNetworkConfig(appContext)
             .withActiveTrafficConfigApplied()
             .copy(runMode = RunModeVpnService)
             .withResolvedDynamicLocalProxyPort()
+
+        val strategyGroup = request.selectedServer.server as? StrategyGroup
+        if (strategyGroup != null) {
+            val warmupResults = runCatching {
+                latencyTester.fastProbeStrategyGroupMembers(vpnState, strategyGroup, maxWaitMillis = 600L)
+            }.getOrDefault(emptyMap())
+            if (warmupResults.isNotEmpty()) {
+                vpnState = vpnState.copy(
+                    proxyServers = vpnState.proxyServers.map { server ->
+                        val ping = warmupResults[server.id]
+                        if (ping != null && (server.latency.isBlank() || server.latency.contains("Failed", ignoreCase = true))) {
+                            server.copy(latency = "${ping}ms")
+                        } else server
+                    },
+                )
+            }
+        }
+
         val (resolvedRequest, trafficStatsRuntime) = request.copy(appState = vpnState).withTrafficStatsConfig()
         runCatching { vpnXrayEngine.start(resolvedRequest).copy(appState = vpnState, runMode = RunModeVpnService) }
             .onSuccess { status ->

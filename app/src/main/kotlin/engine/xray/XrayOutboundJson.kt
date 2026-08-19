@@ -94,9 +94,9 @@ internal fun buildXrayBurstObservatory(
             "pingConfig",
             buildJsonObject {
                 put("destination", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
-                put("interval", "10s")
+                put("interval", "5s")
                 put("sampling", 2)
-                put("timeout", "2s")
+                put("timeout", "1s")
             },
         )
     }

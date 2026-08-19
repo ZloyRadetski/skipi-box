@@ -84,6 +84,7 @@ class XrayConfigTest {
         assertTrue(plan.balancers.isNotEmpty())
         assertEquals("leastPing", plan.balancers.first().strategy)
         assertEquals(1, plan.observatorySelectors.size)
+        assertEquals(1, plan.burstObservatorySelectors.size)
     }
 
     @Test
