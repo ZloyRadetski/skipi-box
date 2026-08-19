@@ -7,11 +7,26 @@ import android.os.SystemClock
 import app.effects.resolveActiveNetworkConfig
 import features.networkautomation.engine.NetworkAutomationDecision
 import features.networkautomation.engine.NetworkAutomationEvaluator
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.EaseOutQuad
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,6 +60,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.Clipboard
@@ -574,20 +590,72 @@ private fun ProxyHeroConnectionCardClassic(
         appState.customAccentColor?.let { Color(it) } ?: (keyColorFor(appState.seedIndex, appState.customMaterialYouSeed) ?: resolveSystemAccentColor(context))
     }
 
+    val cardBgColor by animateColorAsState(
+        targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surfaceVariant.copy(alpha = 0.55f),
+        animationSpec = tween(350),
+        label = "classic_card_bg",
+    )
+    val cardBorderColor by animateColorAsState(
+        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
+        animationSpec = tween(350),
+        label = "classic_card_border",
+    )
+
+    val buttonBgColor by animateColorAsState(
+        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.18f) else AppTheme.colors.surfaceVariant.copy(alpha = 0.45f),
+        animationSpec = tween(300),
+        label = "classic_btn_bg",
+    )
+    val buttonBorderColor by animateColorAsState(
+        targetValue = if (proxyRunning) accentTone else AppTheme.colors.onSurface.copy(alpha = 0.2f),
+        animationSpec = tween(300),
+        label = "classic_btn_border",
+    )
+    val powerIconTint by animateColorAsState(
+        targetValue = if (proxyRunning) AppTheme.colors.onSurface else AppTheme.colors.onSurface.copy(alpha = 0.55f),
+        animationSpec = tween(300),
+        label = "classic_icon_tint",
+    )
+
+    val buttonScale by animateFloatAsState(
+        targetValue = if (proxyRunning) 1.03f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "classic_btn_scale",
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "power_pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = EaseOutQuad),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "power_aura_scale",
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.45f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = EaseOutQuad),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "power_aura_alpha",
+    )
+
     Card(
         modifier = modifier
             .clip(heroShape)
             .border(
                 width = 1.dp,
-                color = AppTheme.colors.onSurface.copy(alpha = 0.12f),
+                color = cardBorderColor,
                 shape = heroShape,
             ),
         colors = CardDefaults.defaultColors(
-            color = if (proxyRunning) {
-                AppTheme.colors.accent
-            } else {
-                AppTheme.colors.surfaceVariant.copy(alpha = 0.55f)
-            },
+            color = cardBgColor,
         ),
         insideMargin = PaddingValues(horizontal = 18.dp, vertical = 18.dp),
     ) {
@@ -597,31 +665,51 @@ private fun ProxyHeroConnectionCardClassic(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Large Circular Power Button
+                // Large Circular Power Button with Aura
                 Box(
-                    modifier = Modifier
-                        .size(86.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (proxyRunning) accentTone.copy(alpha = 0.16f)
-                            else AppTheme.colors.surfaceVariant.copy(alpha = 0.45f)
-                        )
-                        .border(
-                            width = if (proxyRunning) 4.dp else 2.5.dp,
-                            color = if (proxyRunning) accentTone else AppTheme.colors.onSurface.copy(alpha = 0.2f),
-                            shape = CircleShape,
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onToggleProxy,
-                        ),
+                    modifier = Modifier.size(92.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    PowerIcon(
-                        color = if (proxyRunning) AppTheme.colors.onSurface else AppTheme.colors.onSurface.copy(alpha = 0.55f),
-                        modifier = Modifier.size(42.dp),
-                    )
+                    if (proxyRunning) {
+                        Box(
+                            modifier = Modifier
+                                .size(86.dp)
+                                .graphicsLayer {
+                                    scaleX = pulseScale
+                                    scaleY = pulseScale
+                                    alpha = pulseAlpha
+                                }
+                                .clip(CircleShape)
+                                .background(accentTone),
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(86.dp)
+                            .graphicsLayer {
+                                scaleX = buttonScale
+                                scaleY = buttonScale
+                            }
+                            .clip(CircleShape)
+                            .background(buttonBgColor)
+                            .border(
+                                width = if (proxyRunning) 4.dp else 2.5.dp,
+                                color = buttonBorderColor,
+                                shape = CircleShape,
+                            )
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onToggleProxy,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        PowerIcon(
+                            color = powerIconTint,
+                            modifier = Modifier.size(42.dp),
+                        )
+                    }
                 }
 
                 Spacer(Modifier.width(16.dp))
@@ -630,236 +718,250 @@ private fun ProxyHeroConnectionCardClassic(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    Text(
-                        text = if (proxyRunning) {
-                            stringResource(R.string.connection_status_connected)
-                        } else {
-                            stringResource(R.string.connection_status_disconnected)
+                    AnimatedContent(
+                        targetState = proxyRunning,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(260)) + slideInVertically(animationSpec = tween(260)) { height -> height / 3 })
+                                .togetherWith(fadeOut(animationSpec = tween(160)) + slideOutVertically(animationSpec = tween(160)) { height -> -height / 3 })
                         },
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppTheme.colors.onSurface,
-                    )
+                        label = "classic_status_title",
+                    ) { isRunning ->
+                        Text(
+                            text = if (isRunning) {
+                                stringResource(R.string.connection_status_connected)
+                            } else {
+                                stringResource(R.string.connection_status_disconnected)
+                            },
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AppTheme.colors.onSurface,
+                        )
+                    }
 
                     Spacer(Modifier.height(4.dp))
 
-                    if (proxyRunning && cleanTitle.isNotBlank() && cleanTitle != directName) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(
-                                        if (proxyRunning) accentTone.copy(alpha = 0.20f)
-                                        else AppTheme.colors.onSurface.copy(alpha = 0.08f)
-                                    ),
-                                contentAlignment = Alignment.Center,
+                    AnimatedContent(
+                        targetState = proxyRunning && cleanTitle.isNotBlank() && cleanTitle != directName,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(260)) + expandVertically(animationSpec = tween(260)))
+                                .togetherWith(fadeOut(animationSpec = tween(160)) + shrinkVertically(animationSpec = tween(160)))
+                        },
+                        label = "classic_server_title",
+                    ) { showActiveServer ->
+                        if (showActiveServer) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_shield),
-                                    contentDescription = null,
-                                    tint = if (proxyRunning) accentTone else AppTheme.colors.onSurfaceVariant,
-                                    modifier = Modifier.size(14.dp),
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(accentTone.copy(alpha = 0.20f)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_shield),
+                                        contentDescription = null,
+                                        tint = accentTone,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = cleanTitle,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AppTheme.colors.onSurfaceVariant,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    lineHeight = 19.sp,
+                                    modifier = Modifier.weight(1f),
                                 )
                             }
-                            Spacer(Modifier.width(8.dp))
+                        } else {
                             Text(
-                                text = cleanTitle,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Medium,
+                                text = if (proxyRunning) {
+                                    stringResource(R.string.connection_status_secured)
+                                } else {
+                                    stringResource(R.string.connection_status_tap_to_connect)
+                                },
+                                fontSize = 14.sp,
                                 color = AppTheme.colors.onSurfaceVariant,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                lineHeight = 19.sp,
-                                modifier = Modifier.weight(1f),
+                                lineHeight = 18.sp,
                             )
                         }
-                    } else {
-                        Text(
-                            text = if (proxyRunning) {
-                                stringResource(R.string.connection_status_secured)
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = proxyRunning,
+                enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
+                exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
+            ) {
+                Column {
+                    Spacer(Modifier.height(14.dp))
+
+                    val isMemoryVisible = showTunnelMemoryOnHome && memoryKb > 0L
+                    val latencyText = remember(activeServerState, appState.proxyServers, sample?.outboundTag) {
+                        val directLatency = activeServerState?.latency?.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
+                        if (directLatency != null) return@remember directLatency
+
+                        val strategyGroup = activeServerState?.server as? StrategyGroup
+                            ?: (appState.proxyServers.firstOrNull { it.id == appState.selectedProxyServerId }?.server as? StrategyGroup)
+                        if (strategyGroup != null) {
+                            val activeMemberId = sample?.outboundTag?.proxyServerIdFromOutboundTag()
+                            if (activeMemberId != null) {
+                                val activeMemberLatency = appState.proxyServers.firstOrNull { it.id == activeMemberId }?.latency?.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
+                                if (activeMemberLatency != null) return@remember activeMemberLatency
+                            }
+                            val memberLatencies = appState.proxyServers.filter { member ->
+                                member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
+                            }.mapNotNull { member ->
+                                member.latency.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
+                            }
+                            if (memberLatencies.isNotEmpty()) {
+                                return@remember memberLatencies.firstOrNull()
+                            }
+                        }
+                        null
+                    } ?: "-- ms"
+
+                    val checkButton: @Composable () -> Unit = {
+                        Row(
+                            modifier = Modifier
+                                .height(30.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(accentTone.copy(alpha = 0.22f))
+                                .border(
+                                    width = 1.dp,
+                                    color = accentTone.copy(alpha = 0.45f),
+                                    shape = RoundedCornerShape(10.dp),
+                                )
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = onTestPing,
+                                )
+                                .padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (isPinging) {
+                                AnimatedHourglassIcon(
+                                    color = accentTone,
+                                    isPinging = true,
+                                    size = 14.dp,
+                                )
                             } else {
-                                stringResource(R.string.connection_status_tap_to_connect)
-                            },
-                            fontSize = 14.sp,
-                            color = AppTheme.colors.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = 18.sp,
-                        )
+                                StaticHourglass(
+                                    color = accentTone,
+                                    size = 14.dp,
+                                )
+                            }
+                            Spacer(Modifier.width(5.dp))
+                            Text(
+                                text = stringResource(R.string.proxy_server_list_ping_check),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppTheme.colors.onSurface,
+                                maxLines = 1,
+                            )
+                        }
                     }
-                }
-            }
 
-            Spacer(Modifier.height(14.dp))
+                    val infoRowContent: @Composable () -> Unit = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(accentTone),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = sessionDuration,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = AppTheme.colors.onSurfaceVariant,
+                            )
 
-            val isMemoryVisible = showTunnelMemoryOnHome && memoryKb > 0L
-            val latencyText = remember(activeServerState, appState.proxyServers, sample?.outboundTag) {
-                val directLatency = activeServerState?.latency?.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
-                if (directLatency != null) return@remember directLatency
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "|",
+                                fontSize = 12.sp,
+                                color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
+                            )
+                            Spacer(Modifier.width(8.dp))
 
-                val strategyGroup = activeServerState?.server as? StrategyGroup
-                    ?: (appState.proxyServers.firstOrNull { it.id == appState.selectedProxyServerId }?.server as? StrategyGroup)
-                if (strategyGroup != null) {
-                    val activeMemberId = sample?.outboundTag?.proxyServerIdFromOutboundTag()
-                    if (activeMemberId != null) {
-                        val activeMemberLatency = appState.proxyServers.firstOrNull { it.id == activeMemberId }?.latency?.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
-                        if (activeMemberLatency != null) return@remember activeMemberLatency
+                            SignalBarsIcon(
+                                color = accentTone,
+                                modifier = Modifier.size(12.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+
+                            Text(
+                                text = latencyText,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = AppTheme.colors.onSurfaceVariant,
+                            )
+
+                            if (isMemoryVisible) {
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "|",
+                                    fontSize = 12.sp,
+                                    color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "RAM ${formatTunnelMemory(memoryKb)}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AppTheme.colors.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
-                    val memberLatencies = appState.proxyServers.filter { member ->
-                        member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
-                    }.mapNotNull { member ->
-                        member.latency.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
-                    }
-                    if (memberLatencies.isNotEmpty()) {
-                        return@remember memberLatencies.firstOrNull()
-                    }
-                }
-                null
-            } ?: "-- ms"
 
-            val checkButton: @Composable () -> Unit = {
-                Row(
-                    modifier = Modifier
-                        .height(30.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(
-                            if (proxyRunning) accentTone.copy(alpha = 0.22f)
-                            else AppTheme.colors.surfaceVariant.copy(alpha = 0.7f)
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = if (proxyRunning) accentTone.copy(alpha = 0.45f)
-                            else AppTheme.colors.onSurface.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(10.dp),
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onTestPing,
-                        )
-                        .padding(horizontal = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (isPinging) {
-                        AnimatedHourglassIcon(
-                            color = if (proxyRunning) accentTone else AppTheme.colors.onSurfaceVariant,
-                            isPinging = true,
-                            size = 14.dp,
-                        )
-                    } else {
-                        StaticHourglass(
-                            color = if (proxyRunning) accentTone else AppTheme.colors.onSurfaceVariant,
-                            size = 14.dp,
-                        )
-                    }
-                    Spacer(Modifier.width(5.dp))
-                    Text(
-                        text = stringResource(R.string.proxy_server_list_ping_check),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (proxyRunning) AppTheme.colors.onSurface else AppTheme.colors.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                }
-            }
-
-            val infoRowContent: @Composable () -> Unit = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
+                    Layout(
+                        content = {
+                            infoRowContent()
+                            checkButton()
+                        },
                         modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (proxyRunning) accentTone else AppTheme.colors.onSurfaceVariant.copy(alpha = 0.4f)
-                            ),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = sessionDuration,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = AppTheme.colors.onSurfaceVariant,
-                    )
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(AppTheme.colors.surfaceVariant.copy(alpha = 0.45f))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    ) { measurables, constraints ->
+                        val infoPlaceable = measurables[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
+                        val checkPlaceable = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
 
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "|",
-                        fontSize = 12.sp,
-                        color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
-                    )
-                    Spacer(Modifier.width(8.dp))
+                        val spacing = 8.dp.roundToPx()
+                        val minGap = 8.dp.roundToPx()
+                        val fitsOnSingleLine = !isMemoryVisible && (infoPlaceable.width + minGap + checkPlaceable.width <= constraints.maxWidth)
 
-                    SignalBarsIcon(
-                        color = if (proxyRunning) accentTone else AppTheme.colors.onSurfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.size(12.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-
-                    Text(
-                        text = latencyText,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = AppTheme.colors.onSurfaceVariant,
-                    )
-
-                    if (isMemoryVisible) {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "|",
-                            fontSize = 12.sp,
-                            color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "RAM ${formatTunnelMemory(memoryKb)}",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = AppTheme.colors.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            Layout(
-                content = {
-                    infoRowContent()
-                    checkButton()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        if (proxyRunning) AppTheme.colors.surfaceVariant.copy(alpha = 0.45f)
-                        else AppTheme.colors.surfaceVariant.copy(alpha = 0.35f)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-            ) { measurables, constraints ->
-                val infoPlaceable = measurables[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
-                val checkPlaceable = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
-
-                val spacing = 8.dp.roundToPx()
-                val minGap = 8.dp.roundToPx()
-                val fitsOnSingleLine = !isMemoryVisible && (infoPlaceable.width + minGap + checkPlaceable.width <= constraints.maxWidth)
-
-                if (fitsOnSingleLine) {
-                    val totalHeight = maxOf(infoPlaceable.height, checkPlaceable.height)
-                    layout(constraints.maxWidth, totalHeight) {
-                        val infoY = (totalHeight - infoPlaceable.height) / 2
-                        val checkY = (totalHeight - checkPlaceable.height) / 2
-                        infoPlaceable.placeRelative(0, infoY)
-                        checkPlaceable.placeRelative(constraints.maxWidth - checkPlaceable.width, checkY)
-                    }
-                } else {
-                    val totalHeight = infoPlaceable.height + spacing + checkPlaceable.height
-                    layout(constraints.maxWidth, totalHeight) {
-                        infoPlaceable.placeRelative(0, 0)
-                        checkPlaceable.placeRelative(0, infoPlaceable.height + spacing)
+                        if (fitsOnSingleLine) {
+                            val totalHeight = maxOf(infoPlaceable.height, checkPlaceable.height)
+                            layout(constraints.maxWidth, totalHeight) {
+                                val infoY = (totalHeight - infoPlaceable.height) / 2
+                                val checkY = (totalHeight - checkPlaceable.height) / 2
+                                infoPlaceable.placeRelative(0, infoY)
+                                checkPlaceable.placeRelative(constraints.maxWidth - checkPlaceable.width, checkY)
+                            }
+                        } else {
+                            val totalHeight = infoPlaceable.height + spacing + checkPlaceable.height
+                            layout(constraints.maxWidth, totalHeight) {
+                                infoPlaceable.placeRelative(0, 0)
+                                checkPlaceable.placeRelative(0, infoPlaceable.height + spacing)
+                            }
+                        }
                     }
                 }
             }
@@ -883,125 +985,153 @@ private fun ProxyHeroConnectionCardCompact(
         appState.customAccentColor?.let { Color(it) } ?: (keyColorFor(appState.seedIndex, appState.customMaterialYouSeed) ?: resolveSystemAccentColor(context))
     }
 
+    val compactCardBgColor by animateColorAsState(
+        targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surfaceVariant.copy(alpha = 0.55f),
+        animationSpec = tween(350),
+        label = "compact_card_bg",
+    )
+    val compactCardBorderColor by animateColorAsState(
+        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
+        animationSpec = tween(350),
+        label = "compact_card_border",
+    )
+
+    val dotTransition = rememberInfiniteTransition(label = "dot_pulse")
+    val dotScale by dotTransition.animateFloat(
+        initialValue = 0.82f,
+        targetValue = 1.18f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOut),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "dot_scale",
+    )
+
     Card(
         modifier = modifier
             .clip(heroShape)
             .border(
                 width = 1.dp,
-                color = AppTheme.colors.onSurface.copy(alpha = 0.12f),
+                color = compactCardBorderColor,
                 shape = heroShape,
             ),
         colors = CardDefaults.defaultColors(
-            color = if (proxyRunning) {
-                AppTheme.colors.accent
-            } else {
-                AppTheme.colors.surfaceVariant.copy(alpha = 0.55f)
-            },
+            color = compactCardBgColor,
         ),
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        if (proxyRunning) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val statusConnectedColor = appState.customStatusRunningColor?.let { Color(it) }
-                        ?: if (isInDarkTheme()) Color(0xFF6BD58A) else Color(0xFF128A3C)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(statusConnectedColor),
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.proxy_active_server_status_connected),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = statusConnectedColor,
-                        )
-                    }
-                    if (showTunnelMemoryOnHome && memoryKb > 0L) {
-                        Text(
-                            text = "RAM ${formatTunnelMemory(memoryKb)}",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (proxyRunning) accentTone.copy(alpha = 0.20f)
-                                else AppTheme.colors.onSurface.copy(alpha = 0.08f)
-                            ),
-                        contentAlignment = Alignment.Center,
+        AnimatedContent(
+            targetState = proxyRunning,
+            transitionSpec = {
+                (fadeIn(animationSpec = tween(280)) + expandVertically(animationSpec = tween(280)))
+                    .togetherWith(fadeOut(animationSpec = tween(180)) + shrinkVertically(animationSpec = tween(180)))
+            },
+            label = "compact_card_content",
+        ) { isRunning ->
+            if (isRunning) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_shield),
-                            contentDescription = null,
-                            tint = if (proxyRunning) accentTone else AppTheme.colors.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp),
-                        )
+                        val statusConnectedColor = appState.customStatusRunningColor?.let { Color(it) }
+                            ?: if (isInDarkTheme()) Color(0xFF6BD58A) else Color(0xFF128A3C)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .graphicsLayer {
+                                        scaleX = dotScale
+                                        scaleY = dotScale
+                                    }
+                                    .clip(CircleShape)
+                                    .background(statusConnectedColor),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.proxy_active_server_status_connected),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = statusConnectedColor,
+                            )
+                        }
+                        if (showTunnelMemoryOnHome && memoryKb > 0L) {
+                            Text(
+                                text = "RAM ${formatTunnelMemory(memoryKb)}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
                     }
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = cleanTitle,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CountryFlagBadge(
-                    flag = null,
-                    size = 36.dp,
-                    shapeRadius = 8.dp,
-                )
-                Spacer(Modifier.width(10.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f)),
-                        )
-                        Spacer(Modifier.width(6.dp))
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(accentTone.copy(alpha = 0.20f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_shield),
+                                contentDescription = null,
+                                tint = accentTone,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
                         Text(
-                            text = stringResource(R.string.proxy_active_server_status_stopped),
-                            fontSize = 15.sp,
+                            text = cleanTitle,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
                     }
-                    Text(
-                        text = stringResource(R.string.proxy_active_server_select_to_connect),
-                        fontSize = 12.sp,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CountryFlagBadge(
+                        flag = null,
+                        size = 36.dp,
+                        shapeRadius = 8.dp,
                     )
+                    Spacer(Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f)),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.proxy_active_server_status_stopped),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MiuixTheme.colorScheme.onSurface,
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.proxy_active_server_select_to_connect),
+                            fontSize = 12.sp,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }

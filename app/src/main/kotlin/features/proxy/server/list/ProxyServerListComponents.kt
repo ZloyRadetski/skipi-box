@@ -3,12 +3,22 @@
 
 package features.proxy.server.list
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -879,6 +889,21 @@ internal fun ProxyServerListFloatingToolbar(
     val fabColor = accentTone
     val fabIconTint = Color.White
 
+    val animatedFabColor by animateColorAsState(
+        targetValue = if (running) fabColor else fabColor.copy(alpha = 0.95f),
+        animationSpec = tween(300),
+        label = "fab_color_anim",
+    )
+
+    val toggleScale by animateFloatAsState(
+        targetValue = if (serviceOperationInProgress) 0.88f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "fab_toggle_scale",
+    )
+
     Box(
         modifier = modifier.padding(
             end = 20.dp,
@@ -886,7 +911,7 @@ internal fun ProxyServerListFloatingToolbar(
         ),
     ) {
         FloatingToolbar(
-            color = fabColor,
+            color = animatedFabColor,
             cornerRadius = 32.dp,
         ) {
             Row(
@@ -915,25 +940,39 @@ internal fun ProxyServerListFloatingToolbar(
                     }
                 }
                 IconButton(
-                    modifier = Modifier.size(ProxyServerListFloatingToolbarButtonSize),
+                    modifier = Modifier
+                        .size(ProxyServerListFloatingToolbarButtonSize)
+                        .graphicsLayer {
+                            scaleX = toggleScale
+                            scaleY = toggleScale
+                        },
                     onClick = {
                         if (!serviceOperationInProgress) {
                             onToggleRunning()
                         }
                     },
                 ) {
-                    Icon(
-                        modifier = Modifier.size(26.dp),
-                        imageVector = if (running) MiuixIcons.Pause else MiuixIcons.Play,
-                        contentDescription = if (running) {
-                            stringResource(R.string.proxy_server_list_stop_proxy)
-                        } else {
-                            stringResource(R.string.proxy_server_list_start_proxy)
+                    AnimatedContent(
+                        targetState = running,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(220, delayMillis = 40)) + scaleIn(initialScale = 0.65f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)))
+                                .togetherWith(fadeOut(animationSpec = tween(140)) + scaleOut(targetScale = 0.65f))
                         },
-                        tint = fabIconTint.copy(
-                            alpha = if (serviceOperationInProgress) 0.45f else 1f,
-                        ),
-                    )
+                        label = "fab_play_pause_anim",
+                    ) { isRunning ->
+                        Icon(
+                            modifier = Modifier.size(26.dp),
+                            imageVector = if (isRunning) MiuixIcons.Pause else MiuixIcons.Play,
+                            contentDescription = if (isRunning) {
+                                stringResource(R.string.proxy_server_list_stop_proxy)
+                            } else {
+                                stringResource(R.string.proxy_server_list_start_proxy)
+                            },
+                            tint = fabIconTint.copy(
+                                alpha = if (serviceOperationInProgress) 0.55f else 1f,
+                            ),
+                        )
+                    }
                 }
             }
         }
