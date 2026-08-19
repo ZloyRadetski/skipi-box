@@ -512,20 +512,21 @@ private fun ExpressiveFloatingNavigationBar(
     } else {
         Color.Black.copy(alpha = 0.08f)
     }
-    val islandShape = RoundedCornerShape(32.dp)
+    val islandShape = RoundedCornerShape(36.dp)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .then(modifier),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
+                .fillMaxWidth()
                 .shadow(
-                    elevation = 8.dp,
+                    elevation = 10.dp,
                     shape = islandShape,
                     ambientColor = if (isDark) Color.Black else Color.Black.copy(alpha = 0.35f),
                     spotColor = if (isDark) Color.Black else Color.Black.copy(alpha = 0.35f),
@@ -537,10 +538,11 @@ private fun ExpressiveFloatingNavigationBar(
                     color = islandBorderColor,
                     shape = islandShape,
                 )
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .padding(horizontal = 10.dp, vertical = 8.dp),
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 navigationItems.forEachIndexed { index, item ->
@@ -563,7 +565,7 @@ private fun ExpressiveFloatingNavigationBar(
 
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(24.dp))
+                            .clip(RoundedCornerShape(28.dp))
                             .background(animatedBackground)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
@@ -582,8 +584,8 @@ private fun ExpressiveFloatingNavigationBar(
                                 )
                             )
                             .padding(
-                                horizontal = if (isSelected) 16.dp else 12.dp,
-                                vertical = 10.dp,
+                                horizontal = if (isSelected) 22.dp else 16.dp,
+                                vertical = 13.dp,
                             ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
@@ -592,7 +594,7 @@ private fun ExpressiveFloatingNavigationBar(
                             imageVector = item.icon,
                             contentDescription = item.label,
                             tint = animatedIconTint,
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(25.dp),
                         )
 
                         AnimatedVisibility(
@@ -603,12 +605,12 @@ private fun ExpressiveFloatingNavigationBar(
                                    shrinkHorizontally(spring(stiffness = Spring.StiffnessMediumLow)),
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = item.label,
                                     color = AppTheme.colors.onAccent,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp,
+                                    fontSize = 14.5.sp,
                                     maxLines = 1,
                                 )
                             }
