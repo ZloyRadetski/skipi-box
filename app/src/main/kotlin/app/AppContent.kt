@@ -546,42 +546,22 @@ private fun ExpressiveFloatingNavigationBar(
                 val innerPaddingHorizontal = 3.dp
                 val indicatorPaddingVertical = 2.dp
                 val indicatorShape = RoundedCornerShape(20.dp)
+                val indicatorWidth = (tabWidth - (innerPaddingHorizontal * 2)).coerceAtLeast(0.dp)
+                val targetOffset = tabWidth * selectedPage + innerPaddingHorizontal
 
-                var previousPage by remember { mutableIntStateOf(selectedPage) }
-                val isMovingForward = selectedPage >= previousPage
-
-                val leadSpring = spring<Dp>(
-                    dampingRatio = 0.72f,
-                    stiffness = Spring.StiffnessMediumLow,
-                )
-                val trailSpring = spring<Dp>(
-                    dampingRatio = 0.68f,
-                    stiffness = Spring.StiffnessLow,
-                )
-
-                val targetLeft = tabWidth * selectedPage + innerPaddingHorizontal
-                val targetRight = tabWidth * (selectedPage + 1) - innerPaddingHorizontal
-
-                val animatedLeft by animateDpAsState(
-                    targetValue = targetLeft,
-                    animationSpec = if (isMovingForward) trailSpring else leadSpring,
-                    label = "liquid_capsule_left",
-                )
-                val animatedRight by animateDpAsState(
-                    targetValue = targetRight,
-                    animationSpec = if (isMovingForward) leadSpring else trailSpring,
-                    label = "liquid_capsule_right",
+                val animatedOffsetX by animateDpAsState(
+                    targetValue = targetOffset,
+                    animationSpec = spring(
+                        dampingRatio = 0.74f,
+                        stiffness = Spring.StiffnessMediumLow,
+                    ),
+                    label = "capsule_offset",
                 )
 
-                LaunchedEffect(selectedPage) {
-                    previousPage = selectedPage
-                }
-
-                // Fluid elastic rubber capsule indicator
-                val indicatorWidth = (animatedRight - animatedLeft).coerceAtLeast(0.dp)
+                // Active tab sliding capsule indicator
                 Box(
                     modifier = Modifier
-                        .offset(x = animatedLeft)
+                        .offset(x = animatedOffsetX)
                         .width(indicatorWidth)
                         .matchParentSize()
                         .padding(vertical = indicatorPaddingVertical)
