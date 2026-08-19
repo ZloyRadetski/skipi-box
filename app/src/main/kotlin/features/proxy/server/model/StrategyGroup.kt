@@ -46,7 +46,7 @@ data class StrategyGroup(
     /** Config-owned groups keep resolving their current named members after subscription refreshes. */
     var sourceTrafficConfigId: Int? = null,
     var sourcePolicyGroupName: String = "",
-    var probeInterval: String = "15s",
+    var probeInterval: String = "5s",
     var probeUrl: String = "",
     var enableBurstProbe: Boolean = true,
 ) : ProxyServer<StrategyGroup> {

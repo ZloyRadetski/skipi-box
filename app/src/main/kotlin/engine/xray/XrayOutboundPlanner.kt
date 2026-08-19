@@ -196,11 +196,15 @@ private class XrayOutboundPlanner(
                 server = member,
             )
         }
+        val bestFallbackTag = members.zip(memberTags)
+            .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+            ?.second ?: memberTags.first()
+
         balancers += XrayBalancerPlan(
             tag = tag,
             selector = selector,
             strategy = strategyGroup.strategy,
-            fallbackTag = memberTags.first(),
+            fallbackTag = bestFallbackTag,
         )
         val customProbeUrl = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)
         val customProbeInterval = strategyGroup.probeInterval.trim().takeIf(String::isNotEmpty)
@@ -363,3 +367,14 @@ private fun AppState.chainProxyMembers(chainProxy: ChainProxy): List<ProxyServer
 private fun chainProxyOutboundTag(tag: String, index: Int): String {
     return if (index == 0) tag else "$tag-chain-$index"
 }
+
+private fun String.latencySortKey(): Int {
+    val number = latencyRegex.find(this)?.value?.toIntOrNull()
+    return when {
+        number != null -> number
+        isBlank() -> Int.MAX_VALUE
+        else -> Int.MAX_VALUE - 1
+    }
+}
+
+private val latencyRegex = Regex("""\d+""")

@@ -231,8 +231,9 @@ internal fun LazyListScope.strategyGroupProxyServer(
         )
 
         if (strategyGroupEdit.strategy != StrategyGroupConstants.TYPE_SELECT) {
-            val probeIntervalValues = remember { listOf("5s", "10s", "15s", "30s", "1m", "2m", "5m") }
+            val probeIntervalValues = remember { listOf("3s", "5s", "10s", "15s", "30s", "1m", "2m", "5m") }
             val probeIntervalLabels = listOf(
+                "3s",
                 "5s",
                 "10s",
                 "15s",
@@ -243,7 +244,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
             )
             val probeIntervalIndex = remember(strategyGroupEdit.probeInterval) {
                 mutableIntStateOf(
-                    probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 2 },
+                    probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 1 },
                 )
             }
             val initialProbeUrl = remember(strategyGroupEdit.probeUrl, defaultProbeUrl) {

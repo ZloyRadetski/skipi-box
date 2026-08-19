@@ -87,6 +87,43 @@ class XrayConfigTest {
     }
 
     @Test
+    fun testBuildXrayOutboundPlanForLeastPingPrefersLowestLatencyFallback() {
+        val server1 = ProxyServerState(
+            id = 10,
+            server = VLESS(remarks = "Dead Node", id = "uuid-1", server = "s1.example.com", port = "443"),
+            latency = "9999ms",
+            groupId = 0,
+        )
+        val server2 = ProxyServerState(
+            id = 20,
+            server = VLESS(remarks = "Fast Node", id = "uuid-2", server = "s2.example.com", port = "443"),
+            latency = "45ms",
+            groupId = 0,
+        )
+        val group = StrategyGroup(
+            remarks = "Fast Balancer",
+            strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+            proxyServerIds = listOf(10, 20),
+        )
+        val groupState = ProxyServerState(
+            id = 100,
+            server = group,
+            groupId = 0,
+        )
+        val appState = AppState(
+            proxyServers = listOf(server1, server2, groupState),
+            selectedProxyServerId = 100,
+        )
+
+        val plan = appState.buildXrayOutboundPlan(groupState)
+
+        assertNotNull(plan)
+        assertEquals(1, plan.balancers.size)
+        val balancer = plan.balancers.first()
+        assertEquals("proxy-policy-20", balancer.fallbackTag)
+    }
+
+    @Test
     fun testBuildXrayOutboundPlanForSelectStrategyGroup() {
         val server1 = ProxyServerState(
             id = 10,
