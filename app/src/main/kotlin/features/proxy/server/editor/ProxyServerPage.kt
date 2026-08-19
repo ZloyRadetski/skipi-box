@@ -125,7 +125,6 @@ fun ProxyServerPage(
             navigator.observeResult<StrategyGroupMemberSelectionResult>(strategyMemberResultKey).collect { result ->
                 strategyGroupMemberIds = result.serverIds.distinct()
                 psEdit.proxyServerIds = strategyGroupMemberIds
-                ps.update(psEdit)
                 navigator.clearResult(strategyMemberResultKey)
             }
         }
@@ -184,7 +183,6 @@ fun ProxyServerPage(
             strategyGroupSelectedMemberCount = strategyGroupMemberIds.size,
             onOpenStrategyGroupMembers = if (psEdit is StrategyGroup) {
                 {
-                    ps.update(psEdit)
                     navigator.navigateForResult(
                         route = Route.StrategyGroupMemberSelector(
                             selectedServerIds = strategyGroupMemberIds,

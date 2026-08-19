@@ -17,6 +17,8 @@ import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.VLESS
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import engine.stats.maxTrafficDeltaComparedTo
+import data.encodePersistedProxyServer
+import data.decodePersistedProxyServer
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -437,5 +439,28 @@ class XrayConfigTest {
         assertNotNull(observatory)
         assertEquals("45s", observatory["probeInterval"]?.toString()?.trim('"'))
         assertEquals("https://www.google.com/generate_204", observatory["probeURL"]?.toString()?.trim('"'))
+    }
+
+    @Test
+    fun testStrategyGroupPersistenceAndDeserialization() {
+        val original = StrategyGroup(
+            remarks = "Test Persistent Balancer",
+            strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+            proxyServerIds = listOf(10, 20, 30),
+            selectedMemberId = 20,
+            probeInterval = "30s",
+            probeUrl = "https://www.gstatic.com/generate_204",
+            displayMode = StrategyGroupDisplayMode.ALWAYS,
+        )
+        val encoded = original.encodePersistedProxyServer()
+        val decoded = encoded.decodePersistedProxyServer() as StrategyGroup
+
+        assertEquals("Test Persistent Balancer", decoded.remarks)
+        assertEquals(StrategyGroupConstants.TYPE_LEAST_PING, decoded.strategy)
+        assertEquals(listOf(10, 20, 30), decoded.proxyServerIds)
+        assertEquals(20, decoded.selectedMemberId)
+        assertEquals("30s", decoded.probeInterval)
+        assertEquals("https://www.gstatic.com/generate_204", decoded.probeUrl)
+        assertEquals(StrategyGroupDisplayMode.ALWAYS, decoded.displayMode)
     }
 }

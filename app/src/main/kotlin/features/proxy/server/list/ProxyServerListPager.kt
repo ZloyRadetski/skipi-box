@@ -736,15 +736,17 @@ private fun ProxyServerListItem(
         }
     }
     val isStrategyGroup = server.server is StrategyGroup
-    val activeMemberFlag = remember(server.server, activeOutboundTag, servers) {
+    val activeMemberFlag = remember(server.server, activeOutboundTag, servers, selectedServerId, server.id) {
         val strategyGroup = server.server as? StrategyGroup
         if (strategyGroup != null) {
             val targetMemberId = if (strategyGroup.strategy == StrategyGroupConstants.TYPE_SELECT) {
                 strategyGroup.selectedMemberId ?: strategyGroup.proxyServerIds.firstOrNull()
-            } else {
+            } else if (server.id == selectedServerId) {
                 activeOutboundTag?.proxyServerIdFromOutboundTag()?.takeIf {
                     CountryFlagUtils.strategyGroupContainsMember(strategyGroup, it, servers)
                 }
+            } else {
+                null
             }
             if (targetMemberId != null) {
                 val activeMember = servers.firstOrNull { it.id == targetMemberId }

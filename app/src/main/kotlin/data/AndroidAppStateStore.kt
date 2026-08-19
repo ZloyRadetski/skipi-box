@@ -55,18 +55,14 @@ class AndroidAppStateStore private constructor(
         val pendingSave = synchronized(updateLock) {
             val previousState = mutableState.value
             val nextState = transform(previousState)
-            if (nextState == previousState) {
-                null
+            mutableState.value = nextState
+            if (persist) {
+                PendingStateSave(
+                    nextState = nextState,
+                    revision = saveRevision.incrementAndGet(),
+                )
             } else {
-                mutableState.value = nextState
-                if (persist) {
-                    PendingStateSave(
-                        nextState = nextState,
-                        revision = saveRevision.incrementAndGet(),
-                    )
-                } else {
-                    null
-                }
+                null
             }
         } ?: return
 
