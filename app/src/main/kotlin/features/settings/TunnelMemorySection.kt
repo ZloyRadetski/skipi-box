@@ -33,7 +33,7 @@ internal fun Context.currentTunnelMemoryPssKb(): Long {
     val manager = getSystemService(ActivityManager::class.java) ?: return 0L
     return manager.getProcessMemoryInfo(intArrayOf(Process.myPid()))
         .firstOrNull()
-        ?.totalPss
+        ?.nativePss
         ?.toLong()
         ?.coerceAtLeast(0L)
         ?: 0L
