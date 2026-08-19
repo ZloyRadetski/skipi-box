@@ -4,6 +4,7 @@
 package features.proxy.server.list
 
 import android.os.SystemClock
+import app.effects.resolveActiveNetworkConfig
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -152,6 +153,7 @@ internal fun ProxyServerListTopBar(
     onTestProxyServerLatency: (List<ProxyServerState>, ProxyServerLatencyTestMode, String, Boolean, (() -> Unit)?) -> Unit,
 ) {
     val appState by stateStore.collectAppState()
+    val context = LocalContext.current
     var pendingDeletionAction by remember { mutableStateOf<ProxyServerListToolAction?>(null) }
     var isPingingSelectedServer by remember { mutableStateOf(false) }
 
@@ -188,9 +190,14 @@ internal fun ProxyServerListTopBar(
 
     fun toggleProxy() {
         runProxyServiceOperation {
+            val currentState = stateStore.state.value
+            val resolvedState = currentState.resolveActiveNetworkConfig(context)
+            if (resolvedState.activeTrafficConfigId != currentState.activeTrafficConfigId) {
+                updateAppState { it.copy(activeTrafficConfigId = resolvedState.activeTrafficConfigId) }
+            }
             when (
                 val result = proxyServiceUseCase.toggle(
-                    state = stateStore.state.value,
+                    state = resolvedState,
                     selectedServer = selectedServer,
                 )
             ) {

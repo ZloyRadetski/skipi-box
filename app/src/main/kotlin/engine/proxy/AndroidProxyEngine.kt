@@ -6,6 +6,7 @@ package engine.proxy
 import android.content.Context
 import android.content.Intent
 import app.AppState
+import app.effects.resolveActiveNetworkConfig
 import app.withActiveTrafficConfigApplied
 import app.ProxyServerState
 import app.modes.RunModeVpnService
@@ -72,6 +73,7 @@ class AndroidProxyEngine(
             ProxyTrafficStatsService.reconcile(appContext, null)
         }
         val vpnState = request.appState
+            .resolveActiveNetworkConfig(appContext)
             .withActiveTrafficConfigApplied()
             .copy(runMode = RunModeVpnService)
             .withResolvedDynamicLocalProxyPort()

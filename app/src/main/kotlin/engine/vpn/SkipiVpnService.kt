@@ -357,7 +357,6 @@ class SkipiVpnService : VpnService() {
             if (active != null && stateStore.state.value.enableSeamlessNetworkSwitching) {
                 setUnderlyingNetworks(arrayOf(active))
             }
-            reconcileNetworkConfig(connectivityManager.getNetworkCapabilities(active))
         }.onFailure { error ->
             networkCallback = null
             AndroidAppLogger.warn(LogTag, "Failed to observe network changes for configuration switching", error)
@@ -376,14 +375,17 @@ class SkipiVpnService : VpnService() {
 
     private fun reconcileNetworkConfig(capabilities: NetworkCapabilities?) {
         val targetConfigId = capabilities?.let { stateStore.state.value.matchingNetworkConfigId(it) } ?: return
+        val current = stateStore.state.value
+        if (!running || current.activeTrafficConfigId == targetConfigId) return
+        val target = current.trafficConfigs.firstOrNull { config -> config.id == targetConfigId } ?: return
+
         serviceScope.launch {
             networkSwitchMutex.withLock {
-                val current = stateStore.state.value
-                if (!running || current.activeTrafficConfigId == targetConfigId) return@withLock
-                val target = current.trafficConfigs.firstOrNull { config -> config.id == targetConfigId }
-                    ?: return@withLock
+                val latestState = stateStore.state.value
+                if (!running || latestState.activeTrafficConfigId == targetConfigId) return@withLock
+                AndroidAppLogger.info(LogTag, "Auto-switching traffic config to '${target.name}' (id=$targetConfigId) on network change")
                 stateStore.update { state ->
-                    if (state.activeTrafficConfigId == current.activeTrafficConfigId) {
+                    if (state.activeTrafficConfigId == latestState.activeTrafficConfigId) {
                         state.copy(activeTrafficConfigId = target.id)
                     } else {
                         state
@@ -393,7 +395,7 @@ class SkipiVpnService : VpnService() {
                 val selectedServer = switched.proxyServers.firstOrNull { server ->
                     server.id == switched.selectedProxyServerId
                 }
-                when (val result = networkProxyServiceUseCase.restart(switched, selectedServer)) {
+                when (val result = runCatching { networkProxyServiceUseCase.restart(switched, selectedServer) }.getOrNull()) {
                     is ProxyServiceResult.Success -> stateStore.update { state ->
                         state.copy(
                             proxyRunning = result.proxyRunning,
@@ -401,7 +403,7 @@ class SkipiVpnService : VpnService() {
                         )
                     }
 
-                    ProxyServiceResult.MissingServer -> Unit
+                    ProxyServiceResult.MissingServer, null -> Unit
                     is ProxyServiceResult.Failed -> AndroidAppLogger.warn(
                         LogTag,
                         "Failed to restart VPN after network configuration switch",

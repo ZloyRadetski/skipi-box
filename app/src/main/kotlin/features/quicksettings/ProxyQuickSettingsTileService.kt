@@ -15,6 +15,7 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.widget.Toast
 import app.AppState
+import app.effects.resolveActiveNetworkConfig
 import app.MainActivity
 import app.R
 import app.modes.RunModeVpnService
@@ -121,7 +122,11 @@ class ProxyQuickSettingsTileService : TileService() {
 
     private suspend fun toggleProxy(): Boolean {
         val running = syncProxyRunningState()
-        val state = stateStore.state.value.copy(proxyRunning = running)
+        val rawState = stateStore.state.value.copy(proxyRunning = running)
+        val state = if (!running) rawState.resolveActiveNetworkConfig(applicationContext) else rawState
+        if (state.activeTrafficConfigId != rawState.activeTrafficConfigId) {
+            stateStore.update { it.copy(activeTrafficConfigId = state.activeTrafficConfigId) }
+        }
         if (!running && state.requiresVpnPermission()) {
             showToast(getString(R.string.quick_settings_tile_vpn_permission_required))
             launchActivityAndCollapse(VpnService.prepare(this))

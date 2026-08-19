@@ -3,6 +3,8 @@
 
 package app.effects
 
+import android.content.Context
+import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import app.AppState
 import features.config.TrafficConfigNetworkTransportCellular
@@ -18,4 +20,19 @@ internal fun AppState.matchingNetworkConfigId(capabilities: NetworkCapabilities)
             else -> false
         }
     }?.id
+}
+
+/** Resolves and switches to the network-activated traffic profile matching current connectivity before starting VPN. */
+internal fun AppState.resolveActiveNetworkConfig(context: Context): AppState {
+    return runCatching {
+        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return@runCatching this
+        val activeNetwork = cm.activeNetwork ?: return@runCatching this
+        val capabilities = cm.getNetworkCapabilities(activeNetwork) ?: return@runCatching this
+        val matchingId = matchingNetworkConfigId(capabilities) ?: return@runCatching this
+        if (activeTrafficConfigId != matchingId && trafficConfigs.any { it.id == matchingId }) {
+            copy(activeTrafficConfigId = matchingId)
+        } else {
+            this
+        }
+    }.getOrElse { this }
 }
