@@ -66,6 +66,7 @@ import features.proxy.server.usecase.withSavedProxyServer
 import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
+import features.subscription.usecase.toSubscriptionFetchOptions
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -175,7 +176,7 @@ fun TrafficConfigPage(
                     services.subscriptionFetcher.fetch(
                         url = text,
                         userAgent = DefaultSubscriptionUserAgent,
-                        options = AndroidSubscriptionFetchOptions(),
+                        options = appState.toSubscriptionFetchOptions(),
                     )
                 } else {
                     text
@@ -203,7 +204,7 @@ fun TrafficConfigPage(
                 val fetched = services.subscriptionFetcher.fetch(
                     url = normalizedUrl,
                     userAgent = DefaultSubscriptionUserAgent,
-                    options = AndroidSubscriptionFetchOptions(),
+                    options = appState.toSubscriptionFetchOptions(),
                 )
                 val normalized = fetched.trimEnd() + "\n"
                 val analysis = normalized.analyzeShadowrocketConfig()
@@ -243,7 +244,7 @@ fun TrafficConfigPage(
                     val fetched = services.subscriptionFetcher.fetch(
                         url = url,
                         userAgent = normalizeSkipiUserAgent(config.resourceSettings.userAgent),
-                        options = AndroidSubscriptionFetchOptions(),
+                        options = appState.toSubscriptionFetchOptions(),
                     )
                     val normalized = fetched.trimEnd() + "\n"
                     val analysis = normalized.analyzeShadowrocketConfig()

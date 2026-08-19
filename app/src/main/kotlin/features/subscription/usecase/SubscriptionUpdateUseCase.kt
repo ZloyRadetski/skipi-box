@@ -141,6 +141,20 @@ internal class SubscriptionUpdateCoordinator {
 
 private val DefaultSubscriptionUpdateCoordinator = SubscriptionUpdateCoordinator()
 
+internal fun AppState.toSubscriptionFetchOptions(
+    sendDeviceHeaders: Boolean = enableSubscriptionDeviceHeaders,
+    useRunningProxy: Boolean = false,
+    ageSecretKey: String = "",
+    timeoutSeconds: Int = subscriptionFetchTimeoutSeconds,
+): AndroidSubscriptionFetchOptions {
+    return AndroidSubscriptionFetchOptions(
+        useRunningProxy = useRunningProxy,
+        ageSecretKey = ageSecretKey,
+        sendDeviceHeaders = sendDeviceHeaders,
+        timeoutSeconds = timeoutSeconds,
+    )
+}
+
 internal fun AppState.toSubscriptionFetchOptions(group: SubscriptionGroupState): AndroidSubscriptionFetchOptions {
     return AndroidSubscriptionFetchOptions(
         useRunningProxy = group.updateViaProxy && proxyRunning,

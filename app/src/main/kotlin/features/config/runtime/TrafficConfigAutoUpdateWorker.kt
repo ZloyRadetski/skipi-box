@@ -15,6 +15,7 @@ import features.config.withSkipiSettingsReadFromRawConfig
 import features.config.withUpdatedTrafficConfig
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
+import features.subscription.usecase.toSubscriptionFetchOptions
 
 internal class TrafficConfigAutoUpdateWorker(
     appContext: Context,
@@ -34,7 +35,7 @@ internal class TrafficConfigAutoUpdateWorker(
             val fetched = application.subscriptionFetcher.fetch(
                 url = url,
                 userAgent = normalizeSkipiUserAgent(config.resourceSettings.userAgent),
-                options = AndroidSubscriptionFetchOptions(),
+                options = application.stateStore.state.value.toSubscriptionFetchOptions(),
             )
             val normalized = fetched.trimEnd() + "\n"
             val analysis = normalized.analyzeShadowrocketConfig()

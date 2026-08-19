@@ -39,6 +39,7 @@ import features.subscription.isSubscriptionInstallConfigUri
 import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.subscriptionInstallMessage
 import features.subscription.toSubscriptionInstallConfigOrNull
+import features.subscription.usecase.toSubscriptionFetchOptions
 import kotlinx.coroutines.launch
 import ui.feedback.AndroidToastTipNotifier
 
@@ -270,7 +271,7 @@ class MainActivity : ComponentActivity() {
                         application.subscriptionFetcher.fetch(
                             url = link.content,
                             userAgent = features.subscription.DefaultSubscriptionUserAgent,
-                            options = features.subscription.runtime.AndroidSubscriptionFetchOptions(),
+                            options = application.stateStore.state.value.toSubscriptionFetchOptions(),
                         )
                     } else {
                         link.content

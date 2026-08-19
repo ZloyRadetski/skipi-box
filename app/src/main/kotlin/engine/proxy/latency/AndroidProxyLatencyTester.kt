@@ -179,7 +179,7 @@ internal class AndroidProxyLatencyTester(
         failedDnsCache: ConcurrentMap<String, Boolean>?,
     ): Long {
         val endpoint = server.server.endpoint() ?: return FailedDelayMillis
-        val timeoutMs = appState.subscriptionPingTimeoutMillis.resolvedPingTimeoutMillis().coerceIn(1000, 30000).toLong()
+        val timeoutMs = appState.subscriptionPingTimeoutMillis.resolvedPingTimeoutMillis().toLong()
         val startedAt = SystemClock.elapsedRealtime()
 
         val dnsTimeoutMs = (timeoutMs / 2).coerceIn(300L, 1200L)
@@ -285,7 +285,7 @@ internal class AndroidProxyLatencyTester(
             return FailedDelayMillis
         }
 
-        val timeoutMs = appState.subscriptionPingTimeoutMillis.resolvedPingTimeoutMillis().coerceIn(1000, 30000).toLong()
+        val timeoutMs = appState.subscriptionPingTimeoutMillis.resolvedPingTimeoutMillis().toLong()
         val pingUrl = appState.subscriptionPingUrl.resolvedPingUrl()
 
         val result = withTimeoutOrNull(timeoutMs) {

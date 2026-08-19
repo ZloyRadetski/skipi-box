@@ -1287,12 +1287,14 @@ private fun importProxyServersInBackground(
             ) {
                 return@runCatching
             }
+            val appState = stateStore.state.value
             importProxyServers(
                 text = text,
                 source = source,
                 groupState = groupState,
                 subscriptionFetcher = subscriptionFetcher,
-                sendDeviceHeaders = stateStore.state.value.enableSubscriptionDeviceHeaders,
+                sendDeviceHeaders = appState.enableSubscriptionDeviceHeaders,
+                fetchTimeoutSeconds = appState.subscriptionFetchTimeoutSeconds,
                 updateAppState = updateAppState,
                 tipNotifier = tipNotifier,
                 messages = messages,
@@ -1335,6 +1337,7 @@ private suspend fun importProxyServers(
     groupState: ProxyServerListGroups,
     subscriptionFetcher: AndroidSubscriptionFetcher,
     sendDeviceHeaders: Boolean,
+    fetchTimeoutSeconds: Int,
     updateAppState: ((AppState) -> AppState) -> Unit,
     tipNotifier: AndroidToastTipNotifier,
     messages: ProxyServerListMessages,
@@ -1350,7 +1353,10 @@ private suspend fun importProxyServers(
             subscriptionFetcher.fetch(
                 url = providerUrl,
                 userAgent = "",
-                options = AndroidSubscriptionFetchOptions(sendDeviceHeaders = sendDeviceHeaders),
+                options = AndroidSubscriptionFetchOptions(
+                    sendDeviceHeaders = sendDeviceHeaders,
+                    timeoutSeconds = fetchTimeoutSeconds,
+                ),
             )
         },
     )

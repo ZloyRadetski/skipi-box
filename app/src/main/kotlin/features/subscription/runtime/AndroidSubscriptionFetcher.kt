@@ -81,7 +81,7 @@ internal data class AndroidSubscriptionFetchOptions(
     val ageSecretKey: String = "",
     /** Controls the full set of opt-in device headers for subscription providers. */
     val sendDeviceHeaders: Boolean = true,
-    val timeoutSeconds: Int = 30,
+    val timeoutSeconds: Int = 10,
 )
 
 private data class SubscriptionRequestCredentials(

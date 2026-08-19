@@ -28,6 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +48,8 @@ import app.collectAppState
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
 import app.navigation.StrategyGroupMemberSelectionResult
+import data.decodePersistedProxyServer
+import data.encodePersistedProxyServer
 import features.proxy.server.display.displayName
 import features.proxy.server.display.displayNameById
 import features.proxy.server.display.displayNameWithGroup
@@ -81,6 +85,11 @@ import ui.layout.pageContentPaddingWithIme
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 
+private val ProxyServerSaver: Saver<ProxyServer<*>, String> = Saver(
+    save = { it.encodePersistedProxyServer() },
+    restore = { it.decodePersistedProxyServer() },
+)
+
 @Composable
 fun ProxyServerPage(
     padding: PaddingValues,
@@ -111,26 +120,30 @@ fun ProxyServerPage(
     val allGroupsLabel = stringResource(R.string.proxy_editor_strategy_group_all_groups)
     val defaultProxyServerTemplate = stringResource(R.string.routing_default_proxy_server)
 
-    val psEdit = remember(ps) {
+    val psEdit = rememberSaveable(ps, serverId, resultKey, saver = ProxyServerSaver) {
         ps.editableCopy()
     }
-    val strategyMemberResultKey = remember(psEdit, serverId) {
-        "strategy-group-members-${serverId ?: System.identityHashCode(psEdit)}"
+    val strategyMemberResultKey = remember(serverId, resultKey) {
+        "strategy-group-members-${serverId ?: resultKey ?: "draft"}"
     }
-    var strategyGroupMemberIds by remember(psEdit) {
+    var strategyGroupMemberIds by rememberSaveable(serverId, resultKey) {
         mutableStateOf((psEdit as? StrategyGroup)?.proxyServerIds.orEmpty())
     }
     if (psEdit is StrategyGroup) {
         LaunchedEffect(navigator, strategyMemberResultKey) {
             navigator.observeResult<StrategyGroupMemberSelectionResult>(strategyMemberResultKey).collect { result ->
-                strategyGroupMemberIds = result.serverIds.distinct()
-                psEdit.proxyServerIds = strategyGroupMemberIds
+                val memberIds = result.serverIds.distinct()
+                strategyGroupMemberIds = memberIds
+                psEdit.proxyServerIds = memberIds
                 navigator.clearResult(strategyMemberResultKey)
             }
         }
     }
     var pendingSaveIssues by remember { mutableStateOf<List<ProxyServerValidationIssue>>(emptyList()) }
     fun saveProxyServer() {
+        if (psEdit is StrategyGroup) {
+            psEdit.proxyServerIds = strategyGroupMemberIds
+        }
         if (resultKey != null && serverId != null) {
             navigator.setResult(
                 resultKey,
