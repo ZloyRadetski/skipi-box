@@ -49,20 +49,18 @@ import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
+import app.SubscriptionGroupState
+import features.proxy.server.display.CountryFlagUtils
+import features.proxy.server.editor.ServerPickerEmptyGroupRow
+import features.proxy.server.editor.ServerPickerGroupHeader
+import features.proxy.server.editor.ServerPickerItemRow
+import features.proxy.server.model.getTransportDisplay
 import features.subscription.DefaultSubscriptionGroupId
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ExpandLess
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -104,6 +102,7 @@ private sealed interface RouteOutboundItem {
 private data class RouteOutboundPickerGroup(
     val key: String,
     val title: String,
+    val subscriptionGroup: SubscriptionGroupState? = null,
     val items: List<RouteOutboundItem>,
 )
 
@@ -194,6 +193,7 @@ fun RouteOutboundSelectorPage(
                 RouteOutboundPickerGroup(
                     key = "routing-subscription-${group.id}",
                     title = group.displayName(defaultGroupName),
+                    subscriptionGroup = group,
                     items = serversByGroup[group.id].orEmpty().map {
                         RouteOutboundItem.Server(it, shadowrocketPolicyMode)
                     },
@@ -250,6 +250,7 @@ fun RouteOutboundSelectorPage(
                 RouteOutboundPickerGroup(
                     key = "routing-system-targets",
                     title = systemTargetsName,
+                    subscriptionGroup = null,
                     items = systemEntries,
                 ),
             )
@@ -257,6 +258,7 @@ fun RouteOutboundSelectorPage(
                 RouteOutboundPickerGroup(
                     key = "routing-auto-balancers",
                     title = autoBalancerName,
+                    subscriptionGroup = null,
                     items = autoBalancerItems,
                 ),
             )
@@ -265,6 +267,7 @@ fun RouteOutboundSelectorPage(
                 RouteOutboundPickerGroup(
                     key = "routing-manual-servers",
                     title = defaultGroupName,
+                    subscriptionGroup = appState.subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId },
                     items = manualGroupItems,
                 ),
             )
@@ -273,6 +276,7 @@ fun RouteOutboundSelectorPage(
                     RouteOutboundPickerGroup(
                         key = "routing-config-proxy-groups",
                         title = proxyGroupsName,
+                        subscriptionGroup = null,
                         items = configProxyGroups,
                     ),
                 )
@@ -280,6 +284,7 @@ fun RouteOutboundSelectorPage(
                     RouteOutboundPickerGroup(
                         key = "routing-config-targets",
                         title = configTargetsName,
+                        subscriptionGroup = null,
                         items = otherConfigs,
                     ),
                 )
@@ -288,21 +293,23 @@ fun RouteOutboundSelectorPage(
     }
 
     val initiallyExpandedGroupKey = remember(selectedTag, groups) {
-        when {
-            selectedTag.isBlank() || selectedTag == "PROXY" || selectedTag == DefaultRouteOutboundTag ||
-                selectedTag == "DIRECT" || selectedTag == "direct" || selectedTag == "REJECT" || selectedTag == "block" ->
-                "routing-system-targets"
-            else -> {
-                groups.firstOrNull { g ->
-                    g.items.any { item ->
-                        when (item) {
-                            is RouteOutboundItem.Static -> item.tag == selectedTag
-                            is RouteOutboundItem.Server -> item.resolveTag() == selectedTag
-                        }
+        val matchingGroup = groups.firstOrNull { group ->
+            if (
+                selectedTag.isBlank() || selectedTag == "PROXY" || selectedTag == DefaultRouteOutboundTag ||
+                selectedTag.equals("DIRECT", ignoreCase = true) || selectedTag.equals("REJECT", ignoreCase = true) ||
+                selectedTag.equals("block", ignoreCase = true)
+            ) {
+                group.key == "routing-system-targets"
+            } else {
+                group.items.any { item ->
+                    when (item) {
+                        is RouteOutboundItem.Static -> item.tag == selectedTag
+                        is RouteOutboundItem.Server -> item.resolveTag() == selectedTag
                     }
-                }?.key ?: "routing-system-targets"
+                }
             }
         }
+        matchingGroup?.key ?: groups.firstOrNull()?.key
     }
 
     Scaffold(
@@ -347,9 +354,10 @@ fun RouteOutboundSelectorPage(
                 groups.forEach { group ->
                     val expanded = expandedGroups[group.key] ?: (group.key == initiallyExpandedGroupKey)
                     item(key = "route-outbound-group-${group.key}") {
-                        RouteOutboundPickerGroupHeader(
+                        ServerPickerGroupHeader(
                             title = group.title,
-                            itemsCount = group.items.size,
+                            count = group.items.size,
+                            subscriptionGroup = group.subscriptionGroup,
                             expanded = expanded,
                             onExpandedChange = { expandedGroups[group.key] = it },
                         )
@@ -357,19 +365,50 @@ fun RouteOutboundSelectorPage(
                     if (expanded) {
                         if (group.items.isEmpty()) {
                             item(key = "route-outbound-empty-${group.key}") {
-                                RouteOutboundPickerEmptyGroupCard()
+                                ServerPickerEmptyGroupRow()
                             }
                         } else {
+                            val lastItemKey = group.items.last().key
                             items(
                                 items = group.items,
                                 key = { item -> "route-outbound-entry-${group.key}-${item.key}" },
                                 contentType = { "route-outbound-entry" },
                             ) { item ->
-                                RouteOutboundPickerItemCard(
-                                    item = item,
-                                    defaultProxyServerTemplate = defaultProxyServerTemplate,
-                                    targetTag = targetTag,
-                                    onTargetSelected = { resolvedTag -> targetTag = resolvedTag },
+                                val tag = when (item) {
+                                    is RouteOutboundItem.Static -> item.tag
+                                    is RouteOutboundItem.Server -> item.resolveTag()
+                                }
+                                val (flag, title, subtitle) = when (item) {
+                                    is RouteOutboundItem.Static -> {
+                                        val staticFlag = when (item.tag) {
+                                            "PROXY", DefaultRouteOutboundTag -> "⚡"
+                                            "DIRECT", "direct" -> "🔄"
+                                            "REJECT", "block" -> "🚫"
+                                            else -> if (item.tag.startsWith("CONFIG:")) "⚙️" else "🌐"
+                                        }
+                                        Triple(staticFlag, item.title, item.summary.takeIf { it.isNotBlank() })
+                                    }
+                                    is RouteOutboundItem.Server -> {
+                                        val info = item.serverState.server.getInfo()
+                                        val rawRemarks = info.remarks
+                                        val flag = CountryFlagUtils.extractLeadingCountryFlag(rawRemarks)
+                                        val displayTitle = if (flag != null) {
+                                            CountryFlagUtils.stripLeadingCountryFlag(rawRemarks)
+                                        } else {
+                                            rawRemarks.ifBlank { defaultProxyServerTemplate.replace("{id}", item.serverState.id.toString()) }
+                                        }
+                                        val transport = item.serverState.server.getTransportDisplay()
+                                        val subtitle = if (!transport.isNullOrBlank()) "${info.protocol} • $transport" else info.protocol
+                                        Triple(flag, displayTitle, subtitle)
+                                    }
+                                }
+                                ServerPickerItemRow(
+                                    flag = flag,
+                                    displayTitle = title,
+                                    subtitle = subtitle,
+                                    selected = tag == targetTag,
+                                    isLast = item.key == lastItemKey,
+                                    onClick = { targetTag = tag },
                                 )
                             }
                         }
@@ -380,142 +419,6 @@ fun RouteOutboundSelectorPage(
                 adapter = rememberScrollBarAdapter(listState),
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = contentPadding,
-            )
-        }
-    }
-}
-
-@Composable
-private fun RouteOutboundPickerGroupHeader(
-    title: String,
-    itemsCount: Int,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
-        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-        insideMargin = PaddingValues(0.dp),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(onClick = { onExpandedChange(!expanded) })
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = { onExpandedChange(!expanded) }) {
-                Icon(
-                    imageVector = if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
-                    contentDescription = null,
-                )
-            }
-            Spacer(Modifier.width(4.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = stringResource(
-                        R.string.proxy_editor_strategy_group_servers_count,
-                        itemsCount,
-                    ),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RouteOutboundPickerEmptyGroupCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
-        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-        insideMargin = PaddingValues(0.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.proxy_editor_strategy_group_no_servers),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-        )
-    }
-}
-
-@Composable
-private fun RouteOutboundPickerItemCard(
-    item: RouteOutboundItem,
-    defaultProxyServerTemplate: String,
-    targetTag: String,
-    onTargetSelected: (String) -> Unit,
-) {
-    val (tag, title, summary) = remember(item, defaultProxyServerTemplate) {
-        when (item) {
-            is RouteOutboundItem.Static -> Triple(item.tag, item.title, item.summary)
-            is RouteOutboundItem.Server -> {
-                val info = item.serverState.server.getInfo()
-                val tag = item.resolveTag()
-                val title = info.remarks.ifBlank {
-                    defaultProxyServerTemplate.replace("{id}", item.serverState.id.toString())
-                }
-                Triple(tag, title, info.protocol)
-            }
-        }
-    }
-    val isSelected = tag == targetTag
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
-        colors = CardDefaults.defaultColors(
-            color = if (isSelected) AppTheme.colors.accent else AppTheme.colors.surface,
-        ),
-        insideMargin = PaddingValues(0.dp),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(onClick = { onTargetSelected(tag) })
-                .padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (summary.isNotBlank()) {
-                    Text(
-                        text = summary,
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            Checkbox(
-                state = ToggleableState(isSelected),
-                onClick = { onTargetSelected(tag) },
             )
         }
     }

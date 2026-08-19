@@ -56,6 +56,7 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
+import features.proxy.server.model.getTransportDisplay
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionProviderBody
 import features.subscription.subscriptionExpirySummary
@@ -245,8 +246,10 @@ fun StrategyGroupMemberSelectorPage(
                     }
 
                     item(key = "strategy-member-group-${group.key}") {
-                        StrategyMemberSelectorGroupHeader(
-                            group = group,
+                        ServerPickerGroupHeader(
+                            title = group.title,
+                            count = group.servers.size,
+                            subscriptionGroup = group.subscriptionGroup,
                             expanded = expanded,
                             toggleState = groupToggleState,
                             onToggleGroup = { toggleGroup(group) },
@@ -256,7 +259,7 @@ fun StrategyGroupMemberSelectorPage(
                     if (expanded) {
                         if (group.servers.isEmpty()) {
                             item(key = "strategy-member-empty-${group.key}") {
-                                StrategyMemberSelectorEmptyGroupRow()
+                                ServerPickerEmptyGroupRow()
                             }
                         } else {
                             val lastServerId = group.servers.last().id
@@ -265,12 +268,23 @@ fun StrategyGroupMemberSelectorPage(
                                 key = { server -> "strategy-member-server-${group.key}-${server.id}" },
                                 contentType = { "strategy-member-server" },
                             ) { server ->
-                                StrategyMemberSelectorServerRow(
-                                    server = server,
+                                val info = server.server.getInfo()
+                                val rawRemarks = info.remarks
+                                val flag = remember(rawRemarks) { CountryFlagUtils.extractLeadingCountryFlag(rawRemarks) }
+                                val displayTitle = if (flag != null) {
+                                    CountryFlagUtils.stripLeadingCountryFlag(rawRemarks)
+                                } else {
+                                    rawRemarks.ifBlank { defaultProxyServerTemplate.replace("{id}", server.id.toString()) }
+                                }
+                                val transport = server.server.getTransportDisplay()
+                                val subtitle = if (!transport.isNullOrBlank()) "${info.protocol} • $transport" else info.protocol
+                                ServerPickerItemRow(
+                                    flag = flag,
+                                    displayTitle = displayTitle,
+                                    subtitle = subtitle,
                                     selected = server.id in selectedIds,
                                     isLast = server.id == lastServerId,
-                                    defaultProxyServerTemplate = defaultProxyServerTemplate,
-                                    onToggle = { toggle(server.id) },
+                                    onClick = { toggle(server.id) },
                                 )
                             }
                         }
@@ -282,236 +296,6 @@ fun StrategyGroupMemberSelectorPage(
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = contentPadding,
             )
-        }
-    }
-}
-
-@Composable
-private fun StrategyMemberSelectorGroupHeader(
-    group: StrategyMemberSelectorGroup,
-    expanded: Boolean,
-    toggleState: ToggleableState,
-    onToggleGroup: () -> Unit,
-    onExpandedChange: (Boolean) -> Unit,
-) {
-    val sub = group.subscriptionGroup
-    val traffic = sub?.subscriptionTrafficSummary()
-    val expiry = sub?.subscriptionExpirySummary()
-    val lastUpdated = sub?.lastUpdatedAtMillis?.takeIf { it > 0L }?.let { millis ->
-        DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(millis))
-    }
-
-    val providerBorderColor = AppTheme.colors.onSurface.copy(alpha = 0.14f)
-    val providerColor = AppTheme.colors.surfaceVariant.copy(alpha = 0.65f)
-    val providerCornerRadius = 18.dp
-    val headerShape = if (expanded && group.servers.isNotEmpty()) {
-        RoundedCornerShape(topStart = providerCornerRadius, topEnd = providerCornerRadius)
-    } else {
-        RoundedCornerShape(providerCornerRadius)
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(top = 10.dp)
-            .clip(headerShape)
-            .background(providerColor)
-            .border(width = 1.dp, color = providerBorderColor, shape = headerShape),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .combinedClickable(onClick = { onExpandedChange(!expanded) })
-                    .padding(vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { onExpandedChange(!expanded) }) {
-                    Icon(
-                        imageVector = if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-                Spacer(Modifier.width(4.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = group.title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = stringResource(R.string.subscription_provider_servers, group.servers.size),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-                Checkbox(
-                    state = toggleState,
-                    onClick = onToggleGroup,
-                    enabled = group.servers.isNotEmpty(),
-                )
-            }
-            if (traffic != null || expiry != null) {
-                Spacer(Modifier.height(10.dp))
-                traffic?.let { value ->
-                    Text(
-                        text = stringResource(R.string.subscription_provider_traffic)
-                            .formatTemplate("value" to value),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-                expiry?.let { value ->
-                    if (traffic != null) Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = value,
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-                sub.subscriptionTrafficProgress()?.let { progress ->
-                    Spacer(Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(AppTheme.colors.onSurface.copy(alpha = 0.12f)),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(progress)
-                                .height(6.dp)
-                                .background(AppTheme.colors.onSurface.copy(alpha = 0.70f)),
-                        )
-                    }
-                }
-            }
-            if (expanded && sub != null && sub.announce.isNotBlank()) {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = sub.announce,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-            lastUpdated?.let { value ->
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.subscription_provider_updated).formatTemplate("value" to value),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StrategyMemberSelectorEmptyGroupRow() {
-    val providerBorderColor = AppTheme.colors.onSurface.copy(alpha = 0.14f)
-    val providerColor = AppTheme.colors.surfaceVariant.copy(alpha = 0.65f)
-    val providerCornerRadius = 18.dp
-
-    SubscriptionProviderBody(
-        color = providerColor,
-        borderColor = providerBorderColor,
-        isLastItem = true,
-        bottomCornerRadius = providerCornerRadius,
-        modifier = Modifier.padding(horizontal = 12.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.proxy_editor_strategy_group_no_servers),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-        )
-    }
-}
-
-@Composable
-private fun StrategyMemberSelectorServerRow(
-    server: ProxyServerState,
-    selected: Boolean,
-    isLast: Boolean,
-    defaultProxyServerTemplate: String,
-    onToggle: () -> Unit,
-) {
-    val info = server.server.getInfo()
-    val rawRemarks = info.remarks
-    val flag = remember(rawRemarks) { CountryFlagUtils.extractLeadingCountryFlag(rawRemarks) }
-    val displayTitle = if (flag != null) {
-        CountryFlagUtils.stripLeadingCountryFlag(rawRemarks)
-    } else {
-        rawRemarks.ifBlank { defaultProxyServerTemplate.replace("{id}", server.id.toString()) }
-    }
-
-    val providerBorderColor = AppTheme.colors.onSurface.copy(alpha = 0.14f)
-    val providerColor = AppTheme.colors.surfaceVariant.copy(alpha = 0.65f)
-    val dividerColor = AppTheme.colors.onSurface.copy(alpha = 0.08f)
-    val providerCornerRadius = 18.dp
-
-    SubscriptionProviderBody(
-        color = providerColor,
-        borderColor = providerBorderColor,
-        isLastItem = isLast,
-        bottomCornerRadius = providerCornerRadius,
-        modifier = Modifier.padding(horizontal = 12.dp),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .combinedClickable(onClick = onToggle)
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CountryFlagBadge(
-                    flag = flag,
-                    size = 32.dp,
-                )
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = displayTitle,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (selected) AppTheme.colors.accent else MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = info.protocol,
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Spacer(Modifier.width(12.dp))
-                Checkbox(
-                    state = ToggleableState(selected),
-                    onClick = onToggle,
-                )
-            }
-            if (!isLast) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    color = dividerColor,
-                )
-            }
         }
     }
 }
