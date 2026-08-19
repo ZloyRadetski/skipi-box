@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
 import android.net.VpnService
 import android.os.Build
 import android.service.quicksettings.Tile
@@ -186,6 +187,7 @@ class ProxyQuickSettingsTileService : TileService() {
         processing: Boolean = false,
     ) {
         val tile = qsTile ?: return
+        tile.icon = Icon.createWithResource(this, R.drawable.ic_qs_proxy)
         tile.label = getString(R.string.quick_settings_tile_label)
         tile.state = if (running) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
