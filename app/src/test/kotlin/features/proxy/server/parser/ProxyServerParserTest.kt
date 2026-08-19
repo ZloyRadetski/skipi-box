@@ -8,6 +8,7 @@ import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
+import features.proxy.server.model.getTransportDisplay
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -61,5 +62,29 @@ class ProxyServerParserTest {
         assertEquals("chacha20-ietf-poly1305", server.method)
         assertEquals("MyPassword", server.password)
         assertEquals("MyShadowsocks", server.remarks)
+    }
+
+    @Test
+    fun testGetTransportDisplay() {
+        val vlessReality = ProxyServer.parse("vless://uuid@example.com:443?security=reality&type=tcp&sni=example.com#VlessReality")
+        assertEquals("Reality", vlessReality.getTransportDisplay())
+
+        val vlessGrpcReality = ProxyServer.parse("vless://uuid@example.com:443?security=reality&type=grpc&serviceName=grpc-service#VlessGrpcReality")
+        assertEquals("gRPC • Reality", vlessGrpcReality.getTransportDisplay())
+
+        val vlessWsTls = ProxyServer.parse("vless://uuid@example.com:443?security=tls&type=ws&path=%2Fws#VlessWs")
+        assertEquals("WS • TLS", vlessWsTls.getTransportDisplay())
+
+        val hy2 = ProxyServer.parse("hysteria2://pass@example.com:8443#Hy2")
+        assertEquals("QUIC", hy2.getTransportDisplay())
+
+        val ss = ProxyServer.parse("ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpNeVBhc3N3b3Jk@ss.example.com:8388#SS")
+        assertEquals("TCP", ss.getTransportDisplay())
+
+        val wireguard = features.proxy.server.model.Wireguard()
+        assertEquals("UDP", wireguard.getTransportDisplay())
+
+        val strategy = features.proxy.server.model.StrategyGroup()
+        assertEquals(null, strategy.getTransportDisplay())
     }
 }

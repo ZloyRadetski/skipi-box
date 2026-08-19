@@ -533,6 +533,13 @@ private fun ProxyServerListExpandedItemCard(
                     text = displayText.protocol,
                     selected = selected,
                 )
+                if (!displayText.transport.isNullOrBlank()) {
+                    Spacer(Modifier.width(6.dp))
+                    TransportChip(
+                        text = displayText.transport,
+                        selected = selected,
+                    )
+                }
                 if (latencyText == ProxyServerLatencyTesting) {
                     Spacer(Modifier.width(8.dp))
                     InfiniteProgressIndicator(
@@ -705,6 +712,15 @@ private fun ProxyServerListCompactItemCard(
                             compact = true,
                             selected = selected,
                         )
+                        if (!displayText.transport.isNullOrBlank()) {
+                            Spacer(Modifier.width(5.dp))
+                            TransportChip(
+                                text = displayText.transport,
+                                modifier = Modifier.weight(1f, fill = false),
+                                compact = true,
+                                selected = selected,
+                            )
+                        }
                         Spacer(Modifier.width(8.dp))
                         Text(
                             text = displayText.summary,
@@ -986,6 +1002,41 @@ private fun ProtocolChip(
             text = text,
             fontSize = if (compact) 10.sp else 11.sp,
             fontWeight = FontWeight.SemiBold,
+            color = chipColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun TransportChip(
+    text: String,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+    selected: Boolean = false,
+) {
+    val darkTheme = isInDarkTheme()
+    val chipColor = if (selected) {
+        AppTheme.colors.onSurface.copy(alpha = 0.85f)
+    } else {
+        if (darkTheme) Color(0xFFB0BEC5) else Color(0xFF546E7A)
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(
+                if (selected) AppTheme.colors.onSurface.copy(alpha = 0.12f)
+                else if (darkTheme) Color(0xFF37474F).copy(alpha = 0.5f)
+                else Color(0xFFECEFF1),
+            )
+            .padding(horizontal = 7.dp, vertical = 3.dp),
+    ) {
+        Text(
+            text = text,
+            fontSize = if (compact) 10.sp else 11.sp,
+            fontWeight = FontWeight.Medium,
             color = chipColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

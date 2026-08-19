@@ -376,3 +376,47 @@ private fun String?.appendWebSocketEarlyData(ed: String?, eh: String?): String? 
 }
 
 private const val WebSocketEarlyDataHeader = "Sec-WebSocket-Protocol"
+
+fun V2RayParameters.getTransportDisplay(): String {
+    val transportLabel = when (type.toCanonicalV2RayTransportType()) {
+        V2RayTransportWebSocket -> "WS"
+        V2RayTransportGrpc -> "gRPC"
+        V2RayTransportHttpUpgrade -> "HTTPUpgrade"
+        V2RayTransportXhttp -> "xHTTP"
+        V2RayTransportMkcp -> "mKCP"
+        else -> "TCP"
+    }
+    return when {
+        security.equals("reality", ignoreCase = true) -> {
+            if (transportLabel == "TCP") "Reality" else "$transportLabel • Reality"
+        }
+        security.equals("tls", ignoreCase = true) -> {
+            if (transportLabel == "TCP") "TLS" else "$transportLabel • TLS"
+        }
+        else -> transportLabel
+    }
+}
+
+fun ProxyServer<*>.getTransportDisplay(): String? {
+    return when (this) {
+        is VLESS -> parms.getTransportDisplay()
+        is VMess -> parms.getTransportDisplay()
+        is LegacyVMess -> convertToAEAD().parms.getTransportDisplay()
+        is Trojan -> parms.getTransportDisplay()
+        is Shadowsocks -> {
+            if (parms.type != "raw" && parms.type != "tcp") {
+                parms.getTransportDisplay()
+            } else if (parms.headerType == "http") {
+                "HTTP-OBFS"
+            } else {
+                "TCP"
+            }
+        }
+        is Hysteria2 -> "QUIC"
+        is Wireguard -> "UDP"
+        is HTTP -> "TCP"
+        is Socks -> "TCP"
+        is StrategyGroup, is ChainProxy, is Custom -> null
+        else -> null
+    }
+}

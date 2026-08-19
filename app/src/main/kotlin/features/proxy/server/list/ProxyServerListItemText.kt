@@ -11,12 +11,14 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
 import androidx.compose.ui.res.stringResource
+import features.proxy.server.model.getTransportDisplay
 import ui.text.formatTemplate
 
 internal data class ProxyServerListItemDisplayText(
     val title: String,
     val summary: String,
     val protocol: String,
+    val transport: String? = null,
 )
 
 internal class ProxyServerListItemTextFormatter(
@@ -41,6 +43,7 @@ internal class ProxyServerListItemTextFormatter(
             title = info.remarks.ifBlank { info.protocol },
             summary = summaryOf(serverState, servers),
             protocol = info.protocol,
+            transport = serverState.server.getTransportDisplay(),
         )
     }
 
