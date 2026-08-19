@@ -76,30 +76,35 @@ internal fun buildXrayBalancers(plans: List<XrayBalancerPlan>): List<JsonObject>
     }
 }
 
-internal fun buildXrayObservatory(selectors: List<String>): JsonObject? {
+internal fun buildXrayObservatory(
+    selectors: List<String>,
+    probeUrl: String? = null,
+    probeInterval: String? = null,
+): JsonObject? {
     if (selectors.isEmpty()) return null
     return buildJsonObject {
         put("subjectSelector", selectors.distinct().toJsonStringArray())
-        put("probeURL", XrayObservatoryProbeUrl)
-        // leastPing/leastLoad cannot select members until the observatory has
-        // produced a result.  Keep the first probe short so a newly started
-        // custom balancer begins making informed decisions promptly.
-        put("probeInterval", XrayObservatoryProbeInterval)
+        put("probeURL", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
+        put("probeInterval", probeInterval?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeInterval)
         put("enableConcurrency", true)
     }
 }
 
-internal fun buildXrayBurstObservatory(selectors: List<String>): JsonObject? {
+internal fun buildXrayBurstObservatory(
+    selectors: List<String>,
+    probeUrl: String? = null,
+    probeInterval: String? = null,
+): JsonObject? {
     if (selectors.isEmpty()) return null
     return buildJsonObject {
         put("subjectSelector", selectors.distinct().toJsonStringArray())
         put(
             "pingConfig",
             buildJsonObject {
-                put("destination", XrayObservatoryProbeUrl)
-                put("interval", "5m")
+                put("destination", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
+                put("interval", probeInterval?.takeIf(String::isNotBlank) ?: "1m")
                 put("sampling", 2)
-                put("timeout", "30s")
+                put("timeout", "3s")
             },
         )
     }

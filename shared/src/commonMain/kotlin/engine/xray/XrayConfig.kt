@@ -62,8 +62,16 @@ internal object XraySpeedTestConfigFactory {
                 proxyOutbounds = outboundPlan.proxyOutbounds,
                 primaryOutboundTag = XrayTags.PROXY,
             ),
-            observatory = buildXrayObservatory(outboundPlan.observatorySelectors),
-            burstObservatory = buildXrayBurstObservatory(outboundPlan.burstObservatorySelectors),
+            observatory = buildXrayObservatory(
+                selectors = outboundPlan.observatorySelectors,
+                probeUrl = outboundPlan.observatoryProbeUrl,
+                probeInterval = outboundPlan.observatoryProbeInterval,
+            ),
+            burstObservatory = buildXrayBurstObservatory(
+                selectors = outboundPlan.burstObservatorySelectors,
+                probeUrl = outboundPlan.observatoryProbeUrl,
+                probeInterval = outboundPlan.observatoryProbeInterval,
+            ),
             statsApiConfig = request.statsApiConfig,
         ).encodeToJsonString()
     }
@@ -96,8 +104,16 @@ private fun buildGeneratedXrayConfig(request: XrayConfigRequest): GeneratedXrayC
         ),
         routing = buildXrayRouting(routingPlan),
         fakeDns = dnsPlan.fakeDns,
-        observatory = buildXrayObservatory(outboundPlan.observatorySelectors),
-        burstObservatory = buildXrayBurstObservatory(outboundPlan.burstObservatorySelectors),
+        observatory = buildXrayObservatory(
+            selectors = outboundPlan.observatorySelectors,
+            probeUrl = outboundPlan.observatoryProbeUrl,
+            probeInterval = outboundPlan.observatoryProbeInterval,
+        ),
+        burstObservatory = buildXrayBurstObservatory(
+            selectors = outboundPlan.burstObservatorySelectors,
+            probeUrl = outboundPlan.observatoryProbeUrl,
+            probeInterval = outboundPlan.observatoryProbeInterval,
+        ),
         statsApiConfig = request.statsApiConfig,
     )
 }

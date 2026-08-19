@@ -244,7 +244,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
             )
             val probeIntervalIndex = remember(strategyGroupEdit.probeInterval) {
                 mutableIntStateOf(
-                    probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 1 },
+                    probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 3 },
                 )
             }
             val initialProbeUrl = remember(strategyGroupEdit.probeUrl, defaultProbeUrl) {

@@ -111,6 +111,15 @@ private class XrayOutboundPlanner(
                     "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
                     else -> StrategyGroupConstants.TYPE_LEAST_PING
                 }
+                val customProbeUrl = group.url.trim().takeIf(String::isNotEmpty)
+                    ?: appState.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
+                val customProbeInterval = group.intervalSeconds?.let { "${it}s" }
+                if (customProbeUrl != null && observatoryProbeUrl == null) {
+                    observatoryProbeUrl = customProbeUrl
+                }
+                if (customProbeInterval != null && observatoryProbeInterval == null) {
+                    observatoryProbeInterval = customProbeInterval
+                }
                 balancers += XrayBalancerPlan(
                     tag = tag,
                     selector = selector,

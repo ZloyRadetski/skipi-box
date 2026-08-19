@@ -461,9 +461,13 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
                 remarks = source.group.name,
                 strategy = source.group.toStrategyGroupType(),
                 proxyServerIds = existingStrategy?.proxyServerIds.orEmpty(),
-                showInAutoBalancerList = true,
+                selectedMemberId = existingStrategy?.selectedMemberId,
+                displayMode = source.group.displayMode,
+                showInAutoBalancerList = source.group.displayMode != features.proxy.server.model.StrategyGroupDisplayMode.NEVER,
                 sourceTrafficConfigId = source.configId,
                 sourcePolicyGroupName = source.group.name,
+                probeInterval = source.group.intervalSeconds?.let { "${it}s" } ?: "15s",
+                probeUrl = source.group.url,
             ),
         )
     }

@@ -340,4 +340,102 @@ class XrayConfigTest {
         )
         assertEquals("proxy-policy-2", switchedResult)
     }
+
+    @Test
+    fun testUpdatedSubscriptionWithCompletelyNewNodesRetainsBalancerMembers() {
+        val node1 = ProxyServerState(
+            id = 10,
+            groupId = 1,
+            server = VLESS(remarks = "Old Node 1", id = "uuid1", server = "old1.com", port = "443"),
+        )
+        val balancer = ProxyServerState(
+            id = 100,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "My Balancer",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10),
+                probeInterval = "30s",
+            ),
+        )
+        val initialAppState = AppState(
+            nextProxyServerId = 200,
+            proxyServers = listOf(node1, balancer),
+            subscriptionGroups = listOf(
+                app.SubscriptionGroupState(
+                    id = 1,
+                    name = "Test Subscription",
+                    url = "https://sub.example.com",
+                    userAgent = "",
+                    updateInterval = "",
+                    enabled = true,
+                )
+            ),
+        )
+
+        // New subscription has completely changed hosts/UUIDs
+        val brandNewNode = VLESS(remarks = "Brand New Node", id = "new-uuid", server = "completelynew.com", port = "443")
+        val subUpdate = features.proxy.server.usecase.ProxyServerListSubscriptionUpdate(
+            groupId = 1,
+            sourceIdentity = features.proxy.server.usecase.SubscriptionGroupFetchIdentity(
+                url = "https://sub.example.com",
+                userAgent = "",
+                updateInterval = "",
+                ageSecretKey = "",
+                updateViaProxy = false,
+                enabled = true,
+            ),
+            urlCount = 1,
+            servers = listOf(brandNewNode),
+        )
+
+        val updatedState = initialAppState.withUpdatedSubscriptionServers(
+            updates = listOf(subUpdate),
+            updatedAtMillis = System.currentTimeMillis(),
+        )
+
+        val updatedBalancer = updatedState.proxyServers.first { it.id == 100 }
+        val strategyGroup = updatedBalancer.server as StrategyGroup
+
+        // Balancer must NOT be empty - it should adapt to the newly imported servers
+        assertTrue(strategyGroup.proxyServerIds.isNotEmpty())
+        assertEquals(listOf(10), strategyGroup.proxyServerIds)
+    }
+
+    @Test
+    fun testBalancerProbeIntervalPassedToObservatory() {
+        val node1 = ProxyServerState(
+            id = 10,
+            groupId = 1,
+            server = VLESS(remarks = "Node 1", id = "uuid1", server = "s1.com", port = "443"),
+        )
+        val balancer = ProxyServerState(
+            id = 100,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "Custom Interval Balancer",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10),
+                probeInterval = "45s",
+                probeUrl = "https://www.google.com/generate_204",
+            ),
+        )
+        val appState = AppState(
+            proxyServers = listOf(node1, balancer),
+            selectedProxyServerId = 100,
+        )
+
+        val plan = appState.buildXrayOutboundPlan(balancer)
+        assertEquals("45s", plan.observatoryProbeInterval)
+        assertEquals("https://www.google.com/generate_204", plan.observatoryProbeUrl)
+
+        val observatory = buildXrayObservatory(
+            selectors = plan.observatorySelectors,
+            probeUrl = plan.observatoryProbeUrl,
+            probeInterval = plan.observatoryProbeInterval,
+        )
+        assertNotNull(observatory)
+        assertEquals("45s", observatory["probeInterval"]?.toString()?.trim('"'))
+        assertEquals("https://www.google.com/generate_204", observatory["probeURL"]?.toString()?.trim('"'))
+    }
 }

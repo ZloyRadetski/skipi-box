@@ -287,8 +287,15 @@ internal fun AppState.withUpdatedSubscriptionServers(
                 if (currentIds.isNotEmpty()) {
                     val remappedIds = currentIds.map { oldIdToNewId[it] ?: it }
                     val filteredIds = remappedIds.filter { it in validServerIds }
-                    if (filteredIds != currentIds) {
-                        composite.proxyServerIds = filteredIds
+                    val finalIds = if (filteredIds.isNotEmpty()) {
+                        filteredIds
+                    } else if (importedServers.isNotEmpty()) {
+                        importedServers.take(currentIds.size).map { it.id }
+                    } else {
+                        currentIds
+                    }
+                    if (finalIds != currentIds) {
+                        composite.proxyServerIds = finalIds
                     }
                 }
                 val selectedId = composite.selectedMemberId
@@ -296,6 +303,8 @@ internal fun AppState.withUpdatedSubscriptionServers(
                     val remappedSelectedId = oldIdToNewId[selectedId] ?: selectedId
                     if (remappedSelectedId in validServerIds) {
                         composite.selectedMemberId = remappedSelectedId
+                    } else if (composite.proxyServerIds.isNotEmpty()) {
+                        composite.selectedMemberId = composite.proxyServerIds.first()
                     }
                 }
                 server
@@ -432,7 +441,30 @@ internal fun List<ProxyServerState>.deleteInvalidServersInGroup(
 
 internal fun AppState.withDeletedProxyServers(deletedServerIds: Set<Int>): AppState {
     if (deletedServerIds.isEmpty()) return this
-    val nextServers = proxyServers.filterNot { server -> server.id in deletedServerIds }
+    val nextServers = proxyServers
+        .filterNot { server -> server.id in deletedServerIds }
+        .map { state ->
+            when (val server = state.server) {
+                is StrategyGroup -> {
+                    val remaining = server.proxyServerIds.filterNot { it in deletedServerIds }
+                    if (remaining != server.proxyServerIds) {
+                        server.proxyServerIds = remaining
+                    }
+                    if (server.selectedMemberId in deletedServerIds) {
+                        server.selectedMemberId = remaining.firstOrNull()
+                    }
+                    state
+                }
+                is ChainProxy -> {
+                    val remaining = server.proxyServerIds.filterNot { it in deletedServerIds }
+                    if (remaining != server.proxyServerIds) {
+                        server.proxyServerIds = remaining
+                    }
+                    state
+                }
+                else -> state
+            }
+        }
     val selectedServerDeleted = selectedProxyServerId in deletedServerIds
     return copy(
         proxyServers = nextServers,
