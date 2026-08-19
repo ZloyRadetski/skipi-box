@@ -95,8 +95,11 @@ internal fun LazyListScope.strategyGroupProxyServer(
         val effectiveGroupOptions = groupOptions.ifEmpty {
             listOf(ProxyServerEditorGroupOption(null, stringResource(R.string.proxy_editor_strategy_group_all_groups)))
         }
-        val strategyIndex = remember(strategyGroupEdit.strategy) {
-            mutableIntStateOf(strategyValues.indexOf(strategyGroupEdit.strategy).coerceAtLeast(0))
+        var currentStrategy by remember(strategyGroupEdit.strategy) {
+            mutableStateOf(strategyGroupEdit.strategy)
+        }
+        val strategyIndex = remember(currentStrategy) {
+            mutableIntStateOf(strategyValues.indexOf(currentStrategy).coerceAtLeast(0))
         }
         val groupIndex = remember(strategyGroupEdit.subscriptionGroupId, effectiveGroupOptions) {
             mutableIntStateOf(
@@ -130,6 +133,53 @@ internal fun LazyListScope.strategyGroupProxyServer(
         LaunchedEffect(filterState.text) {
             strategyGroupEdit.filter = filterState.text.toString()
         }
+
+        val probeIntervalValues = remember { listOf("3s", "5s", "10s", "15s", "30s", "1m", "2m", "5m") }
+        val probeIntervalLabels = listOf(
+            "3s",
+            "5s",
+            "10s",
+            "15s",
+            "30s",
+            "1m",
+            "2m",
+            "5m",
+        )
+        val probeIntervalIndex = remember(strategyGroupEdit.probeInterval) {
+            mutableIntStateOf(
+                probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 3 },
+            )
+        }
+        val initialProbeUrl = remember(strategyGroupEdit.probeUrl, defaultProbeUrl) {
+            strategyGroupEdit.probeUrl.ifBlank { defaultProbeUrl }
+        }
+        val probeUrlState = rememberTextFieldState(initialText = initialProbeUrl)
+        LaunchedEffect(probeUrlState.text) {
+            strategyGroupEdit.probeUrl = probeUrlState.text.toString()
+        }
+        val burstProbeState = remember(strategyGroupEdit.enableBurstProbe) {
+            mutableStateOf(strategyGroupEdit.enableBurstProbe)
+        }
+
+        val toleranceValues = remember {
+            listOf("0ms", "20ms", "50ms", "100ms", "150ms", "200ms", "300ms", "500ms")
+        }
+        val toleranceLabels = listOf(
+            "0 ms",
+            "20 ms",
+            "50 ms",
+            "100 ms",
+            "150 ms",
+            "200 ms",
+            "300 ms",
+            "500 ms",
+        )
+        val toleranceIndex = remember(strategyGroupEdit.tolerance) {
+            mutableIntStateOf(
+                toleranceValues.indexOf(strategyGroupEdit.tolerance).let { if (it >= 0) it else 2 },
+            )
+        }
+
         SmallTitle(text = stringResource(R.string.proxy_editor_properties))
         TextField(
             label = stringResource(R.string.proxy_editor_remarks),
@@ -156,7 +206,9 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 selectedIndex = strategyIndex.intValue,
                 onSelectedIndexChange = { index ->
                     strategyIndex.intValue = index
-                    strategyGroupEdit.strategy = strategyValues[index]
+                    val chosen = strategyValues[index]
+                    currentStrategy = chosen
+                    strategyGroupEdit.strategy = chosen
                 },
             )
             if (isConfigGroup) {
@@ -205,6 +257,12 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 onClick = {
                     strategyGroupEdit.remarks = remarksState.text.toString()
                     strategyGroupEdit.filter = filterState.text.toString()
+                    strategyGroupEdit.strategy = currentStrategy
+                    strategyGroupEdit.subscriptionGroupId = effectiveGroupOptions.getOrNull(groupIndex.intValue)?.id
+                    strategyGroupEdit.probeInterval = probeIntervalValues.getOrElse(probeIntervalIndex.intValue) { "15s" }
+                    strategyGroupEdit.tolerance = toleranceValues.getOrElse(toleranceIndex.intValue) { "50ms" }
+                    strategyGroupEdit.enableBurstProbe = burstProbeState.value
+                    strategyGroupEdit.probeUrl = probeUrlState.text.toString()
                     onOpenMembers?.invoke()
                 },
             )
@@ -232,53 +290,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 .padding(bottom = 16.dp),
         )
 
-        if (strategyGroupEdit.strategy != StrategyGroupConstants.TYPE_SELECT) {
-            val probeIntervalValues = remember { listOf("3s", "5s", "10s", "15s", "30s", "1m", "2m", "5m") }
-            val probeIntervalLabels = listOf(
-                "3s",
-                "5s",
-                "10s",
-                "15s",
-                "30s",
-                "1m",
-                "2m",
-                "5m",
-            )
-            val probeIntervalIndex = remember(strategyGroupEdit.probeInterval) {
-                mutableIntStateOf(
-                    probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 3 },
-                )
-            }
-            val initialProbeUrl = remember(strategyGroupEdit.probeUrl, defaultProbeUrl) {
-                strategyGroupEdit.probeUrl.ifBlank { defaultProbeUrl }
-            }
-            val probeUrlState = rememberTextFieldState(initialText = initialProbeUrl)
-            LaunchedEffect(probeUrlState.text) {
-                strategyGroupEdit.probeUrl = probeUrlState.text.toString()
-            }
-            val burstProbeState = remember(strategyGroupEdit.enableBurstProbe) {
-                mutableStateOf(strategyGroupEdit.enableBurstProbe)
-            }
-
-            val toleranceValues = remember {
-                listOf("0ms", "20ms", "50ms", "100ms", "150ms", "200ms", "300ms", "500ms")
-            }
-            val toleranceLabels = listOf(
-                "0 ms",
-                "20 ms",
-                "50 ms",
-                "100 ms",
-                "150 ms",
-                "200 ms",
-                "300 ms",
-                "500 ms",
-            )
-            val toleranceIndex = remember(strategyGroupEdit.tolerance) {
-                mutableIntStateOf(
-                    toleranceValues.indexOf(strategyGroupEdit.tolerance).let { if (it >= 0) it else 2 },
-                )
-            }
-
+        if (currentStrategy != StrategyGroupConstants.TYPE_SELECT) {
             SmallTitle(text = stringResource(R.string.proxy_editor_strategy_group_health_check))
             Card(
                 modifier = Modifier
