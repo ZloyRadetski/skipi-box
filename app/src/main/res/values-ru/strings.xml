@@ -359,7 +359,7 @@
     <string name="settings_dns_hosts_invalid">Некорректная запись DNS hosts</string>
     <string name="settings_dns_server_invalid">Недопустимый сервер DNS Xray</string>
 
-    <string name="option_follow_system">Системный</string>
+    <string name="option_follow_system">Как в системе</string>
     <string name="option_light">Светлая</string>
     <string name="option_dark">Тёмная</string>
     <string name="option_theme_system">Системный (Monet)</string>

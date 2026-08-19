@@ -23,6 +23,7 @@ import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeLight
 import app.modes.ColorModeThemeSystem
 import app.modes.normalizeColorMode
+import app.modes.normalizeLanguageMode
 import app.modes.normalizeAppIcon
 import features.settings.servicecontrol.normalizeServiceControlSettings
 import features.subscription.normalizeSkipiUserAgent
@@ -101,7 +102,7 @@ internal class AppSettingsPreferences(
                     else -> normalizeColorMode(storedMode)
                 }
             },
-            languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode),
+            languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode).let(::normalizeLanguageMode),
             enableMaterialYou = preferences.getBoolean(KeyEnableMaterialYou, defaults.enableMaterialYou),
             seedIndex = preferences.getInt(KeySeedIndex, defaults.seedIndex),
             customMaterialYouSeed = if (preferences.contains(KeyCustomMaterialYouSeed)) preferences.getLong(KeyCustomMaterialYouSeed, 0L) else defaults.customMaterialYouSeed,

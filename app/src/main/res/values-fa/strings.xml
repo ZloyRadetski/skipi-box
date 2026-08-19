@@ -355,7 +355,7 @@
     <string name="settings_dns_hosts_empty">هیچ میزبان DNS اضافه نشده است</string>
     <string name="settings_dns_hosts_invalid">ورودی میزبان DNS نامعتبر است</string>
     <string name="settings_dns_server_invalid">سرور Xray DNS نامعتبر است</string>
-    <string name="option_follow_system">سیستم را دنبال کنید</string>
+    <string name="option_follow_system">مطابق سیستم</string>
     <string name="option_light">نور</string>
     <string name="option_dark">تاریک</string>
     <string name="option_theme_system">سیستم فالو (مونت)</string>

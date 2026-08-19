@@ -24,15 +24,17 @@ import app.modes.LanguageModeChinese
 import app.modes.LanguageModeEnglish
 import app.modes.LanguageModePersian
 import app.modes.LanguageModeRussian
+import app.modes.LanguageModeSystem
 import app.modes.normalizeColorMode
 import java.util.Locale
 
 private fun languageTagForMode(mode: Int): String? = when (mode) {
+    LanguageModeSystem -> null
     LanguageModeEnglish -> "en"
     LanguageModeChinese -> "zh-CN"
     LanguageModeRussian -> "ru"
     LanguageModePersian -> "fa"
-    else -> "en"
+    else -> null
 }
 
 @Composable

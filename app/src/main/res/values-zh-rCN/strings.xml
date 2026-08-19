@@ -355,7 +355,7 @@
     <string name="settings_dns_hosts_empty">未添加 DNS 主机</string>
     <string name="settings_dns_hosts_invalid">DNS 主机条目无效</string>
     <string name="settings_dns_server_invalid">Xray DNS 服务器无效</string>
-    <string name="option_follow_system">关注系统</string>
+    <string name="option_follow_system">跟随系统</string>
     <string name="option_light">光</string>
     <string name="option_dark">黑暗的</string>
     <string name="option_theme_system">跟随系统（莫奈）</string>

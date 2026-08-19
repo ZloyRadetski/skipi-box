@@ -5,7 +5,7 @@ package app
 
 import app.modes.AppIconDefault
 import app.modes.ColorModeSystem
-import app.modes.LanguageModeEnglish
+import app.modes.LanguageModeSystem
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyServerListLayoutSingle
@@ -38,7 +38,7 @@ import features.config.ShadowrocketPolicyGroup
 data class AppState(
     val appIcon: Int = AppIconDefault,
     val colorMode: Int = ColorModeSystem,
-    val languageMode: Int = LanguageModeEnglish,
+    val languageMode: Int = LanguageModeSystem,
     val enableMaterialYou: Boolean = true,
     val seedIndex: Int = 0,
     val customMaterialYouSeed: Long? = null,

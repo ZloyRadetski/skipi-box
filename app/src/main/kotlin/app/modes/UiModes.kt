@@ -18,10 +18,16 @@ fun normalizeColorMode(value: Int): Int = when (value) {
     else -> ColorModeSystem
 }
 
+const val LanguageModeSystem = 0
 const val LanguageModeEnglish = 1
 const val LanguageModeChinese = 2
 const val LanguageModeRussian = 3
 const val LanguageModePersian = 4
+
+fun normalizeLanguageMode(value: Int): Int = when (value) {
+    in LanguageModeSystem..LanguageModePersian -> value
+    else -> LanguageModeSystem
+}
 
 const val AppIconDefault = 0
 const val AppIconDark = 1

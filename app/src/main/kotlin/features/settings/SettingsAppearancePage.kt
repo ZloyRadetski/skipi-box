@@ -58,6 +58,7 @@ import app.modes.LanguageModeChinese
 import app.modes.LanguageModeEnglish
 import app.modes.LanguageModePersian
 import app.modes.LanguageModeRussian
+import app.modes.LanguageModeSystem
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -158,12 +159,14 @@ fun SettingsAppearancePage(
         stringResource(R.string.option_theme_dark),
     )
     val languageOptions = listOf(
+        stringResource(R.string.option_follow_system),
         stringResource(R.string.option_english),
         stringResource(R.string.option_russian),
         stringResource(R.string.option_chinese),
         stringResource(R.string.option_persian),
     )
     val languageModes = listOf(
+        LanguageModeSystem,
         LanguageModeEnglish,
         LanguageModeRussian,
         LanguageModeChinese,
