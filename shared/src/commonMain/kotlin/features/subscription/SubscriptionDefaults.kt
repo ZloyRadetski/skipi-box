@@ -10,6 +10,24 @@ val DefaultSubscriptionUserAgent = "SKIPI/${ProjectInfo.VERSION_NAME}/Android"
 const val ClashMetaSubscriptionUserAgent = "clash.meta"
 const val FlClashXSubscriptionUserAgent = "FlClash X/v0.4.2 Platform/android"
 
+fun isSkipiUserAgent(userAgent: String): Boolean {
+    val trimmed = userAgent.trim()
+    return trimmed.isBlank() || (trimmed.startsWith("SKIPI/") && trimmed.endsWith("/Android"))
+}
+
+fun normalizeSkipiUserAgent(userAgent: String): String {
+    return if (isSkipiUserAgent(userAgent)) DefaultSubscriptionUserAgent else userAgent
+}
+
+fun normalizeSkipiUserAgents(userAgents: List<String>): List<String> {
+    val normalized = userAgents.map { normalizeSkipiUserAgent(it) }.distinct()
+    return if (DefaultSubscriptionUserAgent !in normalized) {
+        listOf(DefaultSubscriptionUserAgent) + normalized
+    } else {
+        normalized
+    }
+}
+
 /** Presets shown in Settings and in each subscription editor. Users may add more. */
 val DefaultSubscriptionUserAgents = listOf(
     DefaultSubscriptionUserAgent,
@@ -44,10 +62,11 @@ internal fun SubscriptionUserAgentSelection.userAgentOrNull(): String? = when (t
 }
 
 internal fun SubscriptionUserAgentSelection.resolveUserAgent(customUserAgent: String): String {
-    return userAgentOrNull() ?: customUserAgent.trim().ifBlank { DefaultSubscriptionUserAgent }
+    return userAgentOrNull() ?: normalizeSkipiUserAgent(customUserAgent)
 }
 
 internal fun subscriptionUserAgentSelectionFor(userAgent: String): SubscriptionUserAgentSelection {
+    if (isSkipiUserAgent(userAgent)) return SubscriptionUserAgentSelection.V2rayNg
     val trimmedUserAgent = userAgent.trim()
     return SubscriptionUserAgentSelections.firstOrNull { selection ->
         selection.userAgentOrNull() == trimmedUserAgent

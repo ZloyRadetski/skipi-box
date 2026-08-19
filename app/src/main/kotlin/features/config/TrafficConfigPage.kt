@@ -64,6 +64,7 @@ import features.proxy.server.model.StrategyGroup
 import features.proxy.server.usecase.withDeletedProxyServers
 import features.proxy.server.usecase.withSavedProxyServer
 import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.normalizeSkipiUserAgent
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -241,7 +242,7 @@ fun TrafficConfigPage(
                     services.tipNotifier.show(context.getString(R.string.configs_updating))
                     val fetched = services.subscriptionFetcher.fetch(
                         url = url,
-                        userAgent = config.resourceSettings.userAgent.ifBlank { DefaultSubscriptionUserAgent },
+                        userAgent = normalizeSkipiUserAgent(config.resourceSettings.userAgent),
                         options = AndroidSubscriptionFetchOptions(),
                     )
                     val normalized = fetched.trimEnd() + "\n"

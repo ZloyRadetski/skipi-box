@@ -463,7 +463,7 @@ private fun AppBackupSubscriptionGroup.toState(): SubscriptionGroupState {
         id = id,
         name = name,
         url = url,
-        userAgent = userAgent,
+        userAgent = features.subscription.normalizeSkipiUserAgent(userAgent),
         updateInterval = updateInterval,
         hwid = hwid,
         ageSecretKey = ageSecretKey,

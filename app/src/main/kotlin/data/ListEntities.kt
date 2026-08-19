@@ -11,6 +11,7 @@ import app.ProxyServerState
 import app.SubscriptionGroupState
 import features.logs.AndroidAppLogger
 import features.routing.model.RouteRule
+import features.subscription.normalizeSkipiUserAgent
 
 @Entity(
     tableName = "subscription_groups",
@@ -42,7 +43,7 @@ internal data class SubscriptionGroupEntity(
             id = id,
             name = name,
             url = url,
-            userAgent = userAgent,
+            userAgent = normalizeSkipiUserAgent(userAgent),
             updateInterval = updateInterval,
             hwid = hwid,
             ageSecretKey = ageSecretKey,

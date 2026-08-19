@@ -25,6 +25,8 @@ import app.modes.ColorModeThemeSystem
 import app.modes.normalizeColorMode
 import app.modes.normalizeAppIcon
 import features.settings.servicecontrol.normalizeServiceControlSettings
+import features.subscription.normalizeSkipiUserAgent
+import features.subscription.normalizeSkipiUserAgents
 import java.util.UUID
 import java.nio.charset.StandardCharsets
 import java.security.KeyStore
@@ -65,7 +67,13 @@ internal class AppSettingsPreferences(
         val trafficConfigs = preferences.getTrafficConfigList(
             KeyTrafficConfigs,
             defaults.trafficConfigs,
-        ).ifEmpty { defaults.trafficConfigs }
+        ).ifEmpty { defaults.trafficConfigs }.map { config ->
+            config.copy(
+                resourceSettings = config.resourceSettings.copy(
+                    userAgent = normalizeSkipiUserAgent(config.resourceSettings.userAgent),
+                ),
+            )
+        }
         val nextTrafficConfigId = maxOf(
             preferences.getInt(KeyNextTrafficConfigId, defaults.nextTrafficConfigId),
             (trafficConfigs.maxOfOrNull { config -> config.id } ?: 0) + 1,
@@ -190,10 +198,12 @@ internal class AppSettingsPreferences(
                 KeySubscriptionPingConcurrency,
                 defaults.subscriptionPingConcurrency,
             ).coerceIn(1, 64),
-            subscriptionUserAgents = preferences.getStringList(
-                KeySubscriptionUserAgents,
-                defaults.subscriptionUserAgents,
-            ).ifEmpty { defaults.subscriptionUserAgents },
+            subscriptionUserAgents = normalizeSkipiUserAgents(
+                preferences.getStringList(
+                    KeySubscriptionUserAgents,
+                    defaults.subscriptionUserAgents,
+                ).ifEmpty { defaults.subscriptionUserAgents },
+            ),
             enableSubscriptionDeviceHeaders = preferences.getBoolean(
                 KeyEnableSubscriptionDeviceHeaders,
                 defaults.enableSubscriptionDeviceHeaders,
@@ -236,10 +246,12 @@ internal class AppSettingsPreferences(
             ) ?: defaults.customResourceFileDirectCidrIpv6Url,
             customResourceFiles = customResourceFiles,
             nextCustomResourceFileId = nextCustomResourceFileId,
-            resourceFileUserAgent = preferences.getString(
-                KeyResourceFileUserAgent,
-                defaults.resourceFileUserAgent,
-            ) ?: defaults.resourceFileUserAgent,
+            resourceFileUserAgent = normalizeSkipiUserAgent(
+                preferences.getString(
+                    KeyResourceFileUserAgent,
+                    defaults.resourceFileUserAgent,
+                ) ?: defaults.resourceFileUserAgent,
+            ),
             enableSniffing = preferences.getBoolean(KeyEnableSniffing, defaults.enableSniffing),
             enableSniffingRouteOnly = preferences.getBoolean(
                 KeyEnableSniffingRouteOnly,

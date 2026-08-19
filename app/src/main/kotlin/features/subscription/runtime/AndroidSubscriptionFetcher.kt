@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.Build
 import data.AppSettingsPreferences
 import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.normalizeSkipiUserAgent
 import features.subscription.SubscriptionHttpException
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
@@ -54,7 +55,7 @@ internal class AndroidSubscriptionFetcher(
         proxy.withAuthenticator {
             fetchWithRedirects(
                 url = url.toIdnUrl(),
-                userAgent = userAgent.ifBlank { DefaultSubscriptionUserAgent },
+                userAgent = normalizeSkipiUserAgent(userAgent),
                 requestCredentials = requestCredentials,
                 proxy = proxy,
                 timeoutSeconds = options.timeoutSeconds,

@@ -96,9 +96,11 @@ internal fun SubscriptionGroupEditorDialog(
     }
     var url by remember(show, group?.id) { mutableStateOf(group?.url ?: "") }
     var ageSecretKey by remember(show, group?.id) { mutableStateOf(group?.ageSecretKey ?: "") }
-    val initialUserAgent = group?.userAgent ?: DefaultSubscriptionUserAgent
+    val initialUserAgent = remember(show, group?.id, group?.userAgent) {
+        normalizeSkipiUserAgent(group?.userAgent.orEmpty())
+    }
     val userAgentPresets = remember(appState.subscriptionUserAgents) {
-        appState.subscriptionUserAgents.map(String::trim).filter(String::isNotBlank).distinct()
+        normalizeSkipiUserAgents(appState.subscriptionUserAgents)
             .ifEmpty { DefaultSubscriptionUserAgents }
     }
     val customUserAgentIndex = userAgentPresets.size
@@ -127,7 +129,7 @@ internal fun SubscriptionGroupEditorDialog(
         DropdownItem(text = stringResource(R.string.subscription_user_agent_custom), summary = customSummary)
     val selectedUserAgentIndex = userAgentIndex.coerceIn(0, customUserAgentIndex)
     val resolvedUserAgent = userAgentPresets.getOrNull(userAgentIndex)
-        ?: customUserAgent.trim().ifBlank { DefaultSubscriptionUserAgent }
+        ?: normalizeSkipiUserAgent(customUserAgent)
 
     fun saveGroup(allowPlainHttp: Boolean = false) {
         if (!isValidSubscriptionIntervalInput(interval)) return
@@ -143,7 +145,7 @@ internal fun SubscriptionGroupEditorDialog(
 
         showHttpSubscriptionWarning = false
         val savedUserAgent = userAgentPresets.getOrNull(userAgentIndex)
-            ?: customUserAgent.trim().ifBlank { DefaultSubscriptionUserAgent }
+            ?: normalizeSkipiUserAgent(customUserAgent)
         val savedGroup = group?.copy(
             name = if (group.builtIn) group.name else name.trim().ifBlank { unnamedGroupName },
             url = savedUrl,

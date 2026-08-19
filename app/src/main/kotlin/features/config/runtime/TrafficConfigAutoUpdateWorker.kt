@@ -13,7 +13,7 @@ import features.config.withConfigProxyGroupsReflected
 import features.config.withSkipiSettingsInRawConfig
 import features.config.withSkipiSettingsReadFromRawConfig
 import features.config.withUpdatedTrafficConfig
-import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.normalizeSkipiUserAgent
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 
 internal class TrafficConfigAutoUpdateWorker(
@@ -33,7 +33,7 @@ internal class TrafficConfigAutoUpdateWorker(
             val url = config.sourceUrl.trim()
             val fetched = application.subscriptionFetcher.fetch(
                 url = url,
-                userAgent = config.resourceSettings.userAgent.ifBlank { DefaultSubscriptionUserAgent },
+                userAgent = normalizeSkipiUserAgent(config.resourceSettings.userAgent),
                 options = AndroidSubscriptionFetchOptions(),
             )
             val normalized = fetched.trimEnd() + "\n"
