@@ -216,8 +216,8 @@
     <string name="settings_theme_color_custom_seed">自定义材料您的颜色</string>
     <string name="settings_theme_color_custom_seed_summary">选择自定义颜色来生成动态主题</string>
     <string name="settings_custom_colors_title">自定义用户界面颜色</string>
-    <string name="settings_enable_custom_colors">自定义应用程序颜色</string>
-    <string name="settings_enable_custom_colors_summary">手动自定义背景、表面、文本和强调调色板</string>
+    <string name="settings_enable_custom_colors">自定义颜色</string>
+    <string name="settings_enable_custom_colors_summary">手动自定义调色板</string>
     <string name="settings_color_accent">强调色</string>
     <string name="settings_color_accent_summary">按钮、指示器和活动元素</string>
     <string name="settings_color_background">背景颜色</string>
@@ -236,7 +236,7 @@
     <string name="color_picker_hex">十六进制代码</string>
     <string name="color_picker_quick_presets">快速预设</string>
     <string name="color_picker_apply">申请</string>
-    <string name="settings_category_appearance">外观&amp;接口</string>
+    <string name="settings_category_appearance">外观与界面</string>
     <string name="settings_category_appearance_summary">主题、语言、连接方式</string>
     <string name="settings_category_vpn">VPN 和 TUN 服务</string>
     <string name="settings_category_vpn_summary">TUN 设置、HevTun、本地 DNS</string>
@@ -926,8 +926,8 @@
     <string name="subscription_ping_mode_section">延迟测试方法</string>
     <string name="common_show">展示</string>
     <string name="common_hide">隐藏</string>
-    <string name="settings_enable_material_you">Material You（动态色彩）</string>
-    <string name="settings_enable_material_you_summary">根据壁纸或主题颜色使用莫奈动态颜色和调色板</string>
+    <string name="settings_enable_material_you">动态色彩</string>
+    <string name="settings_enable_material_you_summary">基于壁纸的主题调色板</string>
     <string name="settings_custom_colors_categories_title">类别图标颜色</string>
     <string name="settings_custom_colors_status_title">连接状态和延迟</string>
     <string name="settings_color_status_running">状态“已连接”</string>

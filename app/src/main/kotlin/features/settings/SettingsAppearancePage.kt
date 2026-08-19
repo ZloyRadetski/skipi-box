@@ -243,7 +243,6 @@ fun SettingsAppearancePage(
                     SettingsSectionCard {
                         OverlayDropdownPreference(
                             title = stringResource(R.string.settings_color_mode),
-                            summary = stringResource(R.string.settings_color_mode_summary),
                             items = colorModeOptions,
                             selectedIndex = appState.colorMode,
                             onSelectedIndexChange = { index -> updateAppState { it.copy(colorMode = index) } },
@@ -267,7 +266,6 @@ fun SettingsAppearancePage(
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 OverlayDropdownPreference(
                                     title = stringResource(R.string.settings_theme_color),
-                                    summary = stringResource(R.string.settings_theme_color_summary),
                                     items = keyColorOptions,
                                     selectedIndex = appState.seedIndex.coerceIn(0, keyColorOptions.lastIndex),
                                     onSelectedIndexChange = { index ->
@@ -295,7 +293,6 @@ fun SettingsAppearancePage(
                         }
                         OverlayDropdownPreference(
                             title = stringResource(R.string.settings_language),
-                            summary = stringResource(R.string.settings_language_summary),
                             items = languageOptions,
                             selectedIndex = languageSelectionIndex,
                             onSelectedIndexChange = { index ->

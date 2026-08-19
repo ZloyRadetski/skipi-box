@@ -222,8 +222,8 @@
     <string name="settings_theme_color_custom_seed">Custom Material You color</string>
     <string name="settings_theme_color_custom_seed_summary">Select a custom color to generate the dynamic theme</string>
     <string name="settings_custom_colors_title">Custom UI Colors</string>
-    <string name="settings_enable_custom_colors">Customize application colors</string>
-    <string name="settings_enable_custom_colors_summary">Manually customize background, surface, text and accent palette</string>
+    <string name="settings_enable_custom_colors">Custom colors</string>
+    <string name="settings_enable_custom_colors_summary">Manual palette customization</string>
     <string name="settings_color_accent">Accent color</string>
     <string name="settings_color_accent_summary">Buttons, indicators and active elements</string>
     <string name="settings_color_background">Background color</string>
@@ -242,7 +242,7 @@
     <string name="color_picker_hex">HEX code</string>
     <string name="color_picker_quick_presets">Quick presets</string>
     <string name="color_picker_apply">Apply</string>
-    <string name="settings_category_appearance">Appearance &amp; Interface</string>
+    <string name="settings_category_appearance">Appearance</string>
     <string name="settings_category_appearance_summary">Theme, language, connection style</string>
     <string name="settings_category_vpn">VPN &amp; TUN Service</string>
     <string name="settings_category_vpn_summary">TUN settings, HevTun, local DNS</string>
@@ -947,8 +947,8 @@
     <string name="subscription_ping_mode_section">Latency test method</string>
     <string name="common_show">Show</string>
     <string name="common_hide">Hide</string>
-    <string name="settings_enable_material_you">Material You (Dynamic color)</string>
-    <string name="settings_enable_material_you_summary">Use Monet dynamic colors and palette based on wallpaper or theme color</string>
+    <string name="settings_enable_material_you">Dynamic colors</string>
+    <string name="settings_enable_material_you_summary">Palette based on wallpaper</string>
     <string name="settings_custom_colors_categories_title">Category Icon Colors</string>
     <string name="settings_custom_colors_status_title">Connection Status &amp; Latency</string>
     <string name="settings_color_status_running">Status «Connected»</string>

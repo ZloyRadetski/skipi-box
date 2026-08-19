@@ -221,8 +221,8 @@
     <string name="settings_theme_color_custom_seed">Кастомный цвет Material You</string>
     <string name="settings_theme_color_custom_seed_summary">Выбрать произвольный цвет для генератора темы</string>
     <string name="settings_custom_colors_title">Цвета интерфейса</string>
-    <string name="settings_enable_custom_colors">Кастомизация цветов приложения</string>
-    <string name="settings_enable_custom_colors_summary">Ручная настройка палитры фона, карточек, текста и акцентов</string>
+    <string name="settings_enable_custom_colors">Пользовательские цвета</string>
+    <string name="settings_enable_custom_colors_summary">Ручная настройка палитры</string>
     <string name="settings_color_accent">Акцентный цвет</string>
     <string name="settings_color_accent_summary">Кнопки, индикаторы и активные элементы</string>
     <string name="settings_color_background">Фон приложения</string>
@@ -241,7 +241,7 @@
     <string name="color_picker_hex">HEX-код</string>
     <string name="color_picker_quick_presets">Быстрые цвета</string>
     <string name="color_picker_apply">Применить</string>
-    <string name="settings_category_appearance">Оформление и интерфейс</string>
+    <string name="settings_category_appearance">Внешний вид</string>
     <string name="settings_category_appearance_summary">Тема, язык, стиль главного экрана</string>
     <string name="settings_category_vpn">Служба VPN и TUN</string>
     <string name="settings_category_vpn_summary">Параметры TUN, HevTun, локальный DNS</string>
@@ -369,7 +369,7 @@
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
     <string name="option_persian">فارسی</string>
-    <string name="theme_color_default">Системный по умолчанию</string>
+    <string name="theme_color_default">Системный</string>
     <string name="theme_color_blue">Классический синий</string>
     <string name="theme_color_green">Свежий зелёный</string>
     <string name="theme_color_violet">Фиолетовый</string>
@@ -937,8 +937,8 @@
     <string name="subscription_ping_mode_section">Метод проверки задержки</string>
     <string name="common_show">Показать</string>
     <string name="common_hide">Скрыть</string>
-    <string name="settings_enable_material_you">Динамические цвета (Material You)</string>
-    <string name="settings_enable_material_you_summary">Использовать динамическую палитру Monet на основе обоев или цвета темы</string>
+    <string name="settings_enable_material_you">Динамические цвета</string>
+    <string name="settings_enable_material_you_summary">Палитра темы на основе обоев</string>
     <string name="settings_custom_colors_categories_title">Цвета иконок категорий</string>
     <string name="settings_custom_colors_status_title">Статусы подключения и задержка</string>
     <string name="settings_color_status_running">Статус «Подключено»</string>
