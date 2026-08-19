@@ -1047,4 +1047,35 @@
     <string name="network_automation_rule_deleted">Rule deleted</string>
     <string name="network_automation_rule_saved">Rule saved</string>
     <string name="network_automation_no_wifi_detected">Wi-Fi network not detected or location service is off</string>
+
+    <!-- DNS Section in Traffic Config -->
+    <string name="configs_dns_title">DNS Settings</string>
+    <string name="configs_dns_summary">VPN Local DNS, Proxy &amp; Direct DNS (DoH, DoT, DoU, TCP), FakeDNS</string>
+    <string name="configs_dns_master_switches">DNS Behavior</string>
+    <string name="configs_dns_proxy_section">Remote DNS (Proxy)</string>
+    <string name="configs_dns_proxy_summary">DNS servers queried through the proxy tunnel for blocked and overseas domains</string>
+    <string name="configs_dns_direct_section">Direct DNS (Local)</string>
+    <string name="configs_dns_direct_summary">DNS servers queried directly without proxy for local domains</string>
+    <string name="configs_dns_direct_domains_title">Direct DNS Domains</string>
+    <string name="configs_dns_direct_domains_summary">Domain rules and GeoSite tags routed exclusively to Direct DNS</string>
+    <string name="configs_dns_direct_domains_empty">No direct DNS domain rules configured</string>
+    <string name="configs_dns_direct_fallback_proxy">Direct DNS for proxy servers</string>
+    <string name="configs_dns_direct_fallback_proxy_summary">Resolve proxy server hostnames via Direct DNS</string>
+    <string name="configs_dns_hosts_title">Static DNS Hosts</string>
+    <string name="configs_dns_hosts_summary">Local static domain-to-IP mappings (domain: IP)</string>
+    <string name="configs_dns_hosts_empty">No static DNS hosts configured</string>
+    <string name="configs_dns_hosts_input">domain.com: 1.2.3.4</string>
+    <string name="configs_dns_tun_dns">TUN Adapter DNS</string>
+    <string name="configs_dns_tun_dns_summary">Virtual IPv4 DNS address assigned to Android TUN adapter</string>
+    <string name="configs_dns_protocol_doh">DoH</string>
+    <string name="configs_dns_protocol_dot">DoT</string>
+    <string name="configs_dns_protocol_dou">DoU (UDP)</string>
+    <string name="configs_dns_protocol_tcp">TCP</string>
+    <string name="configs_dns_add_server">Add DNS server</string>
+    <string name="configs_dns_server_address">DNS server address or URL</string>
+    <string name="configs_dns_server_invalid">Enter a valid DNS address (e.g. https://1.1.1.1/dns-query, tls://1.1.1.1:853, tcp://1.1.1.1:53 or 1.1.1.1)</string>
+    <string name="configs_dns_empty_servers">No DNS servers configured</string>
+    <string name="configs_dns_domain_rule_input">Domain rule (e.g. geosite:cn, domain:example.com)</string>
+    <string name="configs_dns_domain_invalid">Enter a valid domain rule (e.g. geosite:cn, domain:example.com, full:google.com)</string>
+    <string name="configs_dns_hosts_invalid">Enter format domain: IP (e.g. example.com: 1.2.3.4)</string>
 </resources>

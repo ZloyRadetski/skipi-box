@@ -92,7 +92,7 @@ fun SettingsVpnPage(
         vpnDns = appState.tunVpnDns,
         ipv4Cidr = appState.tunIpv4Cidr,
         ipv6Cidr = appState.tunIpv6Cidr,
-        showVpnDns = true,
+        showVpnDns = false,
     )
 
     Scaffold(
@@ -148,27 +148,11 @@ fun SettingsVpnPage(
                             },
                         )
                         SwitchPreference(
-                            title = stringResource(R.string.configs_local_dns),
-                            summary = stringResource(R.string.configs_local_dns_summary),
-                            checked = appState.enableVpnLocalDns,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableVpnLocalDns = enabled) }
-                            },
-                        )
-                        SwitchPreference(
                             title = stringResource(R.string.configs_append_http_proxy),
                             summary = stringResource(R.string.configs_append_http_proxy_summary),
                             checked = appState.enableVpnAppendHttpProxy,
                             onCheckedChange = { enabled ->
                                 updateAppState { it.copy(enableVpnAppendHttpProxy = enabled) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_traffic_stats_notification),
-                            summary = stringResource(R.string.settings_traffic_stats_notification_summary),
-                            checked = appState.enableTrafficStatsNotification,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableTrafficStatsNotification = enabled) }
                             },
                         )
                     }

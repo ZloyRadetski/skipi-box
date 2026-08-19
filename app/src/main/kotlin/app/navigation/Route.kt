@@ -146,6 +146,7 @@ sealed interface Route : NavKey {
 @Serializable
 enum class TrafficConfigEditorSection {
     General,
+    Dns,
     Tunnel,
     Network,
     Routing,

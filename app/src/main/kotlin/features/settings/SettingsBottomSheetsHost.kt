@@ -71,7 +71,7 @@ internal fun SettingsBottomSheetsHost(
         ipv6Cidr = sheetState.tunSettingsDraft.ipv6Cidr,
         tcpKeepAliveInterval = sheetState.tunSettingsDraft.tcpKeepAliveInterval,
         tcpUserTimeout = sheetState.tunSettingsDraft.tcpUserTimeout,
-        showVpnDns = appState.runMode == RunModeVpnService,
+        showVpnDns = false,
         onMtuChange = {
             sheetState.tunSettingsDraft = sheetState.tunSettingsDraft.copy(mtu = it)
         },

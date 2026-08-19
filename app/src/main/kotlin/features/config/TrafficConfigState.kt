@@ -48,12 +48,17 @@ data class TrafficConfigAndroidSettings(
     val fragmentInterval: String = DefaultFragmentInterval,
     val enableVpnLocalDns: Boolean = true,
     val enableFakeDns: Boolean = false,
+    val enableDirectDnsForProxyServerDomains: Boolean = false,
     val enableVpnAppendHttpProxy: Boolean = false,
     val enableVpnHevTun: Boolean = false,
     val tunMtu: String = VpnDefaults.MTU.toString(),
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
     val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
+    val proxyDns: List<String> = VpnDefaults.PROXY_DNS_SERVERS,
+    val directDns: List<String> = VpnDefaults.DIRECT_DNS_SERVERS,
+    val directDnsDomains: List<String> = emptyList(),
+    val dnsHosts: List<String> = emptyList(),
 )
 
 @Serializable
@@ -143,6 +148,11 @@ private const val SkipiFragmentLength = "fragment-length"
 private const val SkipiFragmentInterval = "fragment-interval"
 private const val SkipiVpnLocalDns = "vpn-local-dns"
 private const val SkipiFakeDns = "fake-dns"
+private const val SkipiDirectDnsForProxyServerDomains = "direct-dns-fallback-proxy"
+private const val SkipiProxyDns = "proxy-dns"
+private const val SkipiDirectDns = "direct-dns"
+private const val SkipiDirectDnsDomains = "direct-dns-domains"
+private const val SkipiDnsHosts = "dns-hosts"
 private const val SkipiVpnAppendHttpProxy = "vpn-append-http-proxy"
 private const val SkipiVpnHevTun = "vpn-hev-tun"
 private const val SkipiTunMtu = "tun-mtu"
@@ -266,59 +276,77 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
         .distinctBy(CustomResourceFileState::id)
     val android = androidSettings
     val resources = resourceSettings
-    return copy(
-        name = value(SkipiProfileName, name).trim().ifBlank { name },
-        sourceUrl = value(SkipiProfileUpdateUrl, sourceUrl).trim(),
-        updateLocked = bool(SkipiProfileUpdateLocked, updateLocked),
-        autoUpdate = bool(SkipiProfileAutoUpdate, autoUpdate),
-        updateInterval = value(SkipiProfileUpdateInterval, updateInterval).trim(),
-        proxyAppListMode = mode,
-        proxyAppListSelectedApps = values[SkipiPerAppPackage].orEmpty()
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-            .distinct(),
-        androidSettings = android.copy(
-            enableSniffing = bool(SkipiSniffing, android.enableSniffing),
-            enableSniffingRouteOnly = bool(SkipiSniffingRouteOnly, android.enableSniffingRouteOnly),
-            enableMux = bool(SkipiMux, android.enableMux),
-            muxConcurrency = value(SkipiMuxConcurrency, android.muxConcurrency),
-            muxXudpConcurrency = value(SkipiMuxXudpConcurrency, android.muxXudpConcurrency),
-            muxXudpProxyUdp443 = int(SkipiMuxUdp443, android.muxXudpProxyUdp443),
-            enableFragment = bool(SkipiFragment, android.enableFragment),
-            fragmentPackets = value(SkipiFragmentPackets, android.fragmentPackets),
-            fragmentLength = value(SkipiFragmentLength, android.fragmentLength),
-            fragmentInterval = value(SkipiFragmentInterval, android.fragmentInterval),
-            enableVpnLocalDns = bool(SkipiVpnLocalDns, android.enableVpnLocalDns),
-            enableFakeDns = bool(SkipiFakeDns, android.enableFakeDns),
-            enableVpnAppendHttpProxy = bool(SkipiVpnAppendHttpProxy, android.enableVpnAppendHttpProxy),
-            enableVpnHevTun = bool(SkipiVpnHevTun, android.enableVpnHevTun),
-            tunMtu = value(SkipiTunMtu, android.tunMtu),
-            tunVpnDns = value(SkipiTunDns, android.tunVpnDns),
-            tunIpv4Cidr = value(SkipiTunIpv4, android.tunIpv4Cidr),
-            tunIpv6Cidr = value(SkipiTunIpv6, android.tunIpv6Cidr),
-        ),
-        networkActivation = TrafficConfigNetworkActivation(
-            enabled = bool(SkipiNetworkActivation, networkActivation.enabled),
-            transport = when (value(SkipiNetworkTransport, networkActivation.transport.toString()).lowercase()) {
-                "cellular", "mobile", TrafficConfigNetworkTransportCellular.toString() -> TrafficConfigNetworkTransportCellular
-                else -> TrafficConfigNetworkTransportWifi
-            },
-        ),
-        resourceSettings = resources.copy(
-            source = int(SkipiResourceSource, resources.source),
-            customGeoIpUrl = value(SkipiResourceGeoIpUrl, resources.customGeoIpUrl),
-            customGeoSiteUrl = value(SkipiResourceGeoSiteUrl, resources.customGeoSiteUrl),
-            customGeoIpOnlyCnPrivateUrl = value(SkipiResourceGeoIpOnlyCnPrivateUrl, resources.customGeoIpOnlyCnPrivateUrl),
-            customDirectCidrIpv4Url = value(SkipiResourceDirectCidrIpv4Url, resources.customDirectCidrIpv4Url),
-            customDirectCidrIpv6Url = value(SkipiResourceDirectCidrIpv6Url, resources.customDirectCidrIpv6Url),
-            customFiles = parsedCustomFiles,
-            nextCustomFileId = (parsedCustomFiles.maxOfOrNull(CustomResourceFileState::id) ?: 0) + 1,
-            userAgent = value(SkipiResourceUserAgent, resources.userAgent),
-            autoUpdate = bool(SkipiResourceAutoUpdate, resources.autoUpdate),
-            updateInterval = value(SkipiResourceUpdateInterval, resources.updateInterval).trim(),
-        ),
-    )
-}
+        val parsedProxyDns = values[SkipiProxyDns]?.flatMap { it.split(',') }
+            ?.map(String::trim)?.filter(String::isNotEmpty)?.distinct()
+            ?: android.proxyDns
+        val parsedDirectDns = values[SkipiDirectDns]?.flatMap { it.split(',') }
+            ?.map(String::trim)?.filter(String::isNotEmpty)?.distinct()
+            ?: android.directDns
+        val parsedDirectDnsDomains = values[SkipiDirectDnsDomains]?.flatMap { it.split(',') }
+            ?.map(String::trim)?.filter(String::isNotEmpty)?.distinct()
+            ?: android.directDnsDomains
+        val parsedDnsHosts = values[SkipiDnsHosts]?.map(String::trim)
+            ?.filter(String::isNotEmpty)?.distinct()
+            ?: android.dnsHosts
+
+        return copy(
+            name = value(SkipiProfileName, name).trim().ifBlank { name },
+            sourceUrl = value(SkipiProfileUpdateUrl, sourceUrl).trim(),
+            updateLocked = bool(SkipiProfileUpdateLocked, updateLocked),
+            autoUpdate = bool(SkipiProfileAutoUpdate, autoUpdate),
+            updateInterval = value(SkipiProfileUpdateInterval, updateInterval).trim(),
+            proxyAppListMode = mode,
+            proxyAppListSelectedApps = values[SkipiPerAppPackage].orEmpty()
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .distinct(),
+            androidSettings = android.copy(
+                enableSniffing = bool(SkipiSniffing, android.enableSniffing),
+                enableSniffingRouteOnly = bool(SkipiSniffingRouteOnly, android.enableSniffingRouteOnly),
+                enableMux = bool(SkipiMux, android.enableMux),
+                muxConcurrency = value(SkipiMuxConcurrency, android.muxConcurrency),
+                muxXudpConcurrency = value(SkipiMuxXudpConcurrency, android.muxXudpConcurrency),
+                muxXudpProxyUdp443 = int(SkipiMuxUdp443, android.muxXudpProxyUdp443),
+                enableFragment = bool(SkipiFragment, android.enableFragment),
+                fragmentPackets = value(SkipiFragmentPackets, android.fragmentPackets),
+                fragmentLength = value(SkipiFragmentLength, android.fragmentLength),
+                fragmentInterval = value(SkipiFragmentInterval, android.fragmentInterval),
+                enableVpnLocalDns = bool(SkipiVpnLocalDns, android.enableVpnLocalDns),
+                enableFakeDns = bool(SkipiFakeDns, android.enableFakeDns),
+                enableDirectDnsForProxyServerDomains = bool(SkipiDirectDnsForProxyServerDomains, android.enableDirectDnsForProxyServerDomains),
+                enableVpnAppendHttpProxy = bool(SkipiVpnAppendHttpProxy, android.enableVpnAppendHttpProxy),
+                enableVpnHevTun = bool(SkipiVpnHevTun, android.enableVpnHevTun),
+                tunMtu = value(SkipiTunMtu, android.tunMtu),
+                tunVpnDns = value(SkipiTunDns, android.tunVpnDns),
+                tunIpv4Cidr = value(SkipiTunIpv4, android.tunIpv4Cidr),
+                tunIpv6Cidr = value(SkipiTunIpv6, android.tunIpv6Cidr),
+                proxyDns = parsedProxyDns,
+                directDns = parsedDirectDns,
+                directDnsDomains = parsedDirectDnsDomains,
+                dnsHosts = parsedDnsHosts,
+            ),
+            networkActivation = TrafficConfigNetworkActivation(
+                enabled = bool(SkipiNetworkActivation, networkActivation.enabled),
+                transport = when (value(SkipiNetworkTransport, networkActivation.transport.toString()).lowercase()) {
+                    "cellular", "mobile", TrafficConfigNetworkTransportCellular.toString() -> TrafficConfigNetworkTransportCellular
+                    else -> TrafficConfigNetworkTransportWifi
+                },
+            ),
+            resourceSettings = resources.copy(
+                source = int(SkipiResourceSource, resources.source),
+                customGeoIpUrl = value(SkipiResourceGeoIpUrl, resources.customGeoIpUrl),
+                customGeoSiteUrl = value(SkipiResourceGeoSiteUrl, resources.customGeoSiteUrl),
+                customGeoIpOnlyCnPrivateUrl = value(SkipiResourceGeoIpOnlyCnPrivateUrl, resources.customGeoIpOnlyCnPrivateUrl),
+                customDirectCidrIpv4Url = value(SkipiResourceDirectCidrIpv4Url, resources.customDirectCidrIpv4Url),
+                customDirectCidrIpv6Url = value(SkipiResourceDirectCidrIpv6Url, resources.customDirectCidrIpv6Url),
+                customFiles = parsedCustomFiles,
+                nextCustomFileId = (parsedCustomFiles.maxOfOrNull(CustomResourceFileState::id) ?: 0) + 1,
+                userAgent = value(SkipiResourceUserAgent, resources.userAgent),
+                autoUpdate = bool(SkipiResourceAutoUpdate, resources.autoUpdate),
+                updateInterval = value(SkipiResourceUpdateInterval, resources.updateInterval).trim(),
+            ),
+        )
+    }
 
 private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
     val android = androidSettings
@@ -352,12 +380,25 @@ private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
         add("$SkipiFragmentInterval = ${android.fragmentInterval}")
         add("$SkipiVpnLocalDns = ${android.enableVpnLocalDns}")
         add("$SkipiFakeDns = ${android.enableFakeDns}")
+        add("$SkipiDirectDnsForProxyServerDomains = ${android.enableDirectDnsForProxyServerDomains}")
         add("$SkipiVpnAppendHttpProxy = ${android.enableVpnAppendHttpProxy}")
         add("$SkipiVpnHevTun = ${android.enableVpnHevTun}")
         add("$SkipiTunMtu = ${android.tunMtu}")
         add("$SkipiTunDns = ${android.tunVpnDns}")
         add("$SkipiTunIpv4 = ${android.tunIpv4Cidr}")
         add("$SkipiTunIpv6 = ${android.tunIpv6Cidr}")
+        if (android.proxyDns.isNotEmpty()) {
+            add("$SkipiProxyDns = ${android.proxyDns.joinToString(",")}")
+        }
+        if (android.directDns.isNotEmpty()) {
+            add("$SkipiDirectDns = ${android.directDns.joinToString(",")}")
+        }
+        if (android.directDnsDomains.isNotEmpty()) {
+            add("$SkipiDirectDnsDomains = ${android.directDnsDomains.joinToString(",")}")
+        }
+        android.dnsHosts.forEach { host ->
+            add("$SkipiDnsHosts = $host")
+        }
         add("$SkipiNetworkActivation = ${networkActivation.enabled}")
         add("$SkipiNetworkTransport = ${if (networkActivation.transport == TrafficConfigNetworkTransportCellular) "cellular" else "wifi"}")
         add("$SkipiResourceSource = ${resources.source}")

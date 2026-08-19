@@ -1037,4 +1037,35 @@
     <string name="network_automation_rule_deleted">Правило удалено</string>
     <string name="network_automation_rule_saved">Правило сохранено</string>
     <string name="network_automation_no_wifi_detected">Сеть Wi-Fi не обнаружена или выключена геолокация</string>
+
+    <!-- DNS Section in Traffic Config -->
+    <string name="configs_dns_title">Настройки DNS</string>
+    <string name="configs_dns_summary">Локальный DNS VPN, Proxy и Direct DNS (DoH, DoT, DoU, TCP), FakeDNS</string>
+    <string name="configs_dns_master_switches">Поведение DNS</string>
+    <string name="configs_dns_proxy_section">Удаленный DNS (Proxy)</string>
+    <string name="configs_dns_proxy_summary">DNS-серверы, опрашиваемые через прокси для заблокированных и зарубежных доменов</string>
+    <string name="configs_dns_direct_section">Прямой DNS (Direct)</string>
+    <string name="configs_dns_direct_summary">DNS-серверы, опрашиваемые напрямую без прокси для локальных доменов</string>
+    <string name="configs_dns_direct_domains_title">Домены прямого DNS</string>
+    <string name="configs_dns_direct_domains_summary">Правила доменов и теги GeoSite, направляемые исключительно в прямой DNS</string>
+    <string name="configs_dns_direct_domains_empty">Нет настроенных правил доменов прямого DNS</string>
+    <string name="configs_dns_direct_fallback_proxy">Прямой DNS для серверов прокси</string>
+    <string name="configs_dns_direct_fallback_proxy_summary">Резолвить адреса самих прокси-серверов через прямой DNS</string>
+    <string name="configs_dns_hosts_title">Статические DNS Hosts</string>
+    <string name="configs_dns_hosts_summary">Локальные статические сопоставления доменов и IP (домен: IP)</string>
+    <string name="configs_dns_hosts_empty">Нет статических записей DNS Hosts</string>
+    <string name="configs_dns_hosts_input">domain.com: 1.2.3.4</string>
+    <string name="configs_dns_tun_dns">DNS адаптера TUN</string>
+    <string name="configs_dns_tun_dns_summary">Виртуальный IPv4 DNS-адрес адаптера Android VPN (например, 8.8.8.8)</string>
+    <string name="configs_dns_protocol_doh">DoH</string>
+    <string name="configs_dns_protocol_dot">DoT</string>
+    <string name="configs_dns_protocol_dou">DoU (UDP)</string>
+    <string name="configs_dns_protocol_tcp">TCP</string>
+    <string name="configs_dns_add_server">Добавить DNS-сервер</string>
+    <string name="configs_dns_server_address">Адрес сервера или URL</string>
+    <string name="configs_dns_server_invalid">Введите корректный адрес DNS (например, https://1.1.1.1/dns-query, tls://1.1.1.1:853, tcp://1.1.1.1:53 или 1.1.1.1)</string>
+    <string name="configs_dns_empty_servers">DNS-серверы не настроены</string>
+    <string name="configs_dns_domain_rule_input">Правило домена (напр. geosite:cn, domain:example.com)</string>
+    <string name="configs_dns_domain_invalid">Введите корректное правило домена (напр. geosite:cn, domain:example.com, full:google.com)</string>
+    <string name="configs_dns_hosts_invalid">Введите в формате домен: IP (напр. example.com: 1.2.3.4)</string>
 </resources>

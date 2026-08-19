@@ -305,6 +305,14 @@ fun SettingsAppearancePage(
                                 updateAppState { it.copy(languageMode = languageModes[index]) }
                             },
                         )
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_traffic_stats_notification),
+                            summary = stringResource(R.string.settings_traffic_stats_notification_summary),
+                            checked = appState.enableTrafficStatsNotification,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(enableTrafficStatsNotification = enabled) }
+                            },
+                        )
                     }
                 }
 

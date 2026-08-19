@@ -85,10 +85,14 @@ import ui.AppTheme
 import ui.clipboard.setPlainText
 import ui.components.BackNavigationIcon
 import ui.components.NavigationIcon
+import ui.components.StringListEditor
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import engine.network.isIpAddress
+import engine.vpn.VpnDefaults
+import features.settings.sheets.isPort
 
 /** The full-screen Material entry point for a single SKIPI traffic profile. */
 @Composable
@@ -280,6 +284,16 @@ fun TrafficConfigEditorPage(
                         onClick = {
                             saveBasics()
                             navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.General))
+                        },
+                    )
+                }
+                item(key = "section_dns") {
+                    ConfigEditorGroupCard(
+                        title = stringResource(R.string.configs_dns_title),
+                        summary = stringResource(R.string.configs_dns_summary),
+                        onClick = {
+                            saveBasics()
+                            navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Dns))
                         },
                     )
                 }
@@ -510,6 +524,7 @@ fun TrafficConfigSectionPage(
 ) {
     when (section) {
         TrafficConfigEditorSection.General -> TrafficConfigGeneralSectionPage(padding, trafficConfigId)
+        TrafficConfigEditorSection.Dns -> TrafficConfigDnsSectionPage(padding, trafficConfigId)
         TrafficConfigEditorSection.Tunnel -> TrafficConfigTunnelSectionPage(padding, trafficConfigId)
         TrafficConfigEditorSection.Network -> TrafficConfigNetworkSectionPage(padding, trafficConfigId)
         TrafficConfigEditorSection.Routing -> TrafficConfigRoutingSectionPage(padding, trafficConfigId)
@@ -526,25 +541,6 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
     val general = remember(config.rawConfig) { config.rawConfig.analyzeShadowrocketConfig().general }
-    var dns by remember(config.id, config.rawConfig) { mutableStateOf(general["dns-server"] ?: "system") }
-    val dnsPresetValues = listOf(
-        "1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4",
-        "8.8.8.8,8.8.4.4",
-        "1.1.1.1,1.0.0.1",
-        "9.9.9.9,149.112.112.112",
-        "94.140.14.14,94.140.15.15",
-    )
-    val dnsPresetLabels = listOf(
-        stringResource(R.string.configs_dns_cloudflare_google),
-        stringResource(R.string.configs_dns_google),
-        stringResource(R.string.configs_dns_cloudflare),
-        stringResource(R.string.configs_dns_quad9),
-        stringResource(R.string.configs_dns_adblockdns),
-        stringResource(R.string.configs_dns_custom),
-    )
-    var dnsPreset by remember(config.id, config.rawConfig) {
-        mutableIntStateOf(dnsPresetValues.indexOf(dns).takeIf { it >= 0 } ?: dnsPresetValues.size)
-    }
     var ipv6 by remember(config.id, config.rawConfig) { mutableStateOf(general["ipv6"].isConfigEditorBoolean()) }
     var preferIpv6 by remember(config.id, config.rawConfig) { mutableStateOf(general["prefer-ipv6"].isConfigEditorBoolean()) }
     fun save() {
@@ -552,7 +548,6 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
             state.withUpdatedTrafficConfig(config.id) { current ->
                 current.copy(
                     rawConfig = current.rawConfig
-                        .withShadowrocketGeneralValue("dns-server", dns.trim().ifBlank { "system" })
                         .withShadowrocketGeneralValue("ipv6", ipv6.toString())
                         .withShadowrocketGeneralValue("prefer-ipv6", preferIpv6.toString()),
                 )
@@ -575,16 +570,6 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                     colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
                 ) {
-                    WindowDropdownPreference(
-                        title = stringResource(R.string.configs_dns_servers),
-                        items = dnsPresetLabels,
-                        selectedIndex = dnsPreset,
-                        onSelectedIndexChange = { selection ->
-                            dnsPreset = selection
-                            dnsPresetValues.getOrNull(selection)?.let { preset -> dns = preset }
-                        },
-                    )
-                    ConfigPageHint(stringResource(R.string.configs_dns_servers_summary))
                     SwitchPreference(
                         title = stringResource(R.string.configs_ipv6),
                         summary = stringResource(R.string.configs_ipv6_summary),
@@ -599,15 +584,388 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
                         onCheckedChange = { preferIpv6 = it },
                     )
                 }
-                if (dnsPreset == dnsPresetValues.size) {
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId: Int) {
+    val appState by LocalAppStateStore.current.collectAppState()
+    val updateAppState = LocalUpdateAppState.current
+    val navigator = LocalNavigator.current
+    val isWideScreen = LocalIsWideScreen.current
+    val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
+    var settings by remember(config.id) { mutableStateOf(config.androidSettings) }
+    var tunVpnDns by remember(config.id) { mutableStateOf(settings.tunVpnDns) }
+    var proxyDns by remember(config.id) { mutableStateOf(settings.proxyDns) }
+    var directDns by remember(config.id) { mutableStateOf(settings.directDns) }
+    var directDnsDomains by remember(config.id) { mutableStateOf(settings.directDnsDomains) }
+    var dnsHosts by remember(config.id) { mutableStateOf(settings.dnsHosts) }
+
+    val proxyDnsPresets = listOf(
+        "https://1.1.1.1/dns-query,https://1.0.0.1/dns-query" to "Cloudflare DoH",
+        "https://8.8.8.8/dns-query,https://8.8.4.4/dns-query" to "Google DoH",
+        "https://dns.adguard-dns.com/dns-query" to "AdGuard DoH",
+        "https://dns.quad9.net/dns-query" to "Quad9 DoH",
+        "tls://1.1.1.1:853,tls://1.0.0.1:853" to "Cloudflare DoT",
+        "tls://8.8.8.8:853,tls://8.8.4.4:853" to "Google DoT",
+        "tcp://8.8.8.8:53,tcp://8.8.4.4:53" to "Google TCP",
+        "8.8.8.8,8.8.4.4" to "Google DoU",
+        "1.1.1.1,1.0.0.1" to "Cloudflare DoU",
+    )
+    val proxyPresetLabels = proxyDnsPresets.map { it.second } + stringResource(R.string.configs_dns_custom)
+    val currentProxyJoined = proxyDns.joinToString(",")
+    var proxyPresetIndex by remember(config.id, currentProxyJoined) {
+        val idx = proxyDnsPresets.indexOfFirst { it.first == currentProxyJoined }
+        mutableIntStateOf(if (idx >= 0) idx else proxyDnsPresets.size)
+    }
+
+    val directDnsPresets = listOf(
+        "https://77.88.8.8/dns-query" to "Yandex DoH",
+        "https://1.1.1.1/dns-query" to "Cloudflare DoH",
+        "https://8.8.8.8/dns-query" to "Google DoH",
+        "tls://77.88.8.8:853" to "Yandex DoT",
+        "77.88.8.8,77.88.8.1" to "Yandex DoU",
+        "1.1.1.1,8.8.8.8" to "Cloudflare + Google DoU",
+    )
+    val directPresetLabels = directDnsPresets.map { it.second } + stringResource(R.string.configs_dns_custom)
+    val currentDirectJoined = directDns.joinToString(",")
+    var directPresetIndex by remember(config.id, currentDirectJoined) {
+        val idx = directDnsPresets.indexOfFirst { it.first == currentDirectJoined }
+        mutableIntStateOf(if (idx >= 0) idx else directDnsPresets.size)
+    }
+
+    val dnsServerInvalidMessage = stringResource(R.string.configs_dns_server_invalid)
+    val dnsDomainInvalidMessage = stringResource(R.string.configs_dns_domain_invalid)
+    val dnsHostsInvalidMessage = stringResource(R.string.configs_dns_hosts_invalid)
+
+    fun save() {
+        updateAppState { state ->
+            state.withUpdatedTrafficConfig(config.id) { current ->
+                current.copy(
+                    androidSettings = settings.copy(
+                        tunVpnDns = tunVpnDns.trim().ifBlank { VpnDefaults.IPV4_DNS },
+                        proxyDns = proxyDns.map(String::trim).filter(String::isNotEmpty).distinct(),
+                        directDns = directDns.map(String::trim).filter(String::isNotEmpty).distinct(),
+                        directDnsDomains = directDnsDomains.map(String::trim).filter(String::isNotEmpty).distinct(),
+                        dnsHosts = dnsHosts.map(String::trim).filter(String::isNotEmpty).distinct(),
+                    ),
+                    rawConfig = current.rawConfig.withShadowrocketGeneralValue(
+                        "dns-server",
+                        directDns.firstOrNull()?.trim() ?: "system",
+                    ),
+                )
+            }
+        }
+    }
+
+    TrafficConfigFullScreenScaffold(
+        title = stringResource(R.string.configs_dns_title),
+        padding = padding,
+        isWideScreen = isWideScreen,
+        onBack = { save(); navigator.pop() },
+        onSave = { save(); navigator.pop() },
+    ) { listPadding ->
+        LazyColumn(
+            contentPadding = listPadding,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item(key = "master_switches_title") {
+                SmallTitle(text = stringResource(R.string.configs_dns_master_switches))
+            }
+            item(key = "master_switches_card") {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
+                ) {
+                    SwitchPreference(
+                        title = stringResource(R.string.configs_local_dns),
+                        summary = stringResource(R.string.configs_local_dns_summary),
+                        checked = settings.enableVpnLocalDns,
+                        onCheckedChange = { settings = settings.copy(enableVpnLocalDns = it) },
+                    )
+                    SwitchPreference(
+                        title = stringResource(R.string.configs_fake_dns),
+                        summary = stringResource(R.string.configs_fake_dns_summary),
+                        checked = settings.enableFakeDns,
+                        enabled = settings.enableVpnLocalDns,
+                        onCheckedChange = { settings = settings.copy(enableFakeDns = it) },
+                    )
+                    SwitchPreference(
+                        title = stringResource(R.string.configs_dns_direct_fallback_proxy),
+                        summary = stringResource(R.string.configs_dns_direct_fallback_proxy_summary),
+                        checked = settings.enableDirectDnsForProxyServerDomains,
+                        onCheckedChange = { settings = settings.copy(enableDirectDnsForProxyServerDomains = it) },
+                    )
                     ConfigPageTextField(
-                        value = dns,
-                        onValueChange = { dns = it },
-                        label = stringResource(R.string.configs_dns_custom_value),
+                        value = tunVpnDns,
+                        onValueChange = { tunVpnDns = it },
+                        label = stringResource(R.string.configs_dns_tun_dns),
+                        summary = stringResource(R.string.configs_dns_tun_dns_summary),
                     )
                 }
             }
+
+            item(key = "proxy_dns_title") {
+                SmallTitle(text = stringResource(R.string.configs_dns_proxy_section))
+            }
+            item(key = "proxy_dns_preset") {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
+                ) {
+                    WindowDropdownPreference(
+                        title = stringResource(R.string.configs_dns_servers),
+                        items = proxyPresetLabels,
+                        selectedIndex = proxyPresetIndex,
+                        onSelectedIndexChange = { selection ->
+                            proxyPresetIndex = selection
+                            proxyDnsPresets.getOrNull(selection)?.let { preset ->
+                                proxyDns = preset.first.split(',').map(String::trim).filter(String::isNotEmpty)
+                            }
+                        },
+                    )
+                }
+            }
+            item(key = "proxy_dns_list") {
+                StringListEditor(
+                    editorKey = "proxy_dns_${config.id}",
+                    title = stringResource(R.string.configs_dns_proxy_section),
+                    description = stringResource(R.string.configs_dns_proxy_summary),
+                    values = proxyDns,
+                    onValuesChange = { proxyDns = it },
+                    emptyText = stringResource(R.string.configs_dns_empty_servers),
+                    validateInput = { configDnsServerInputError(it, dnsServerInvalidMessage) },
+                    suggestionContent = { onApplySuggestion ->
+                        DnsProtocolSuggestions(
+                            onSelect = { server -> onApplySuggestion(server, true) },
+                        )
+                    },
+                )
+            }
+
+            item(key = "direct_dns_title") {
+                SmallTitle(text = stringResource(R.string.configs_dns_direct_section))
+            }
+            item(key = "direct_dns_preset") {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
+                ) {
+                    WindowDropdownPreference(
+                        title = stringResource(R.string.configs_dns_servers),
+                        items = directPresetLabels,
+                        selectedIndex = directPresetIndex,
+                        onSelectedIndexChange = { selection ->
+                            directPresetIndex = selection
+                            directDnsPresets.getOrNull(selection)?.let { preset ->
+                                directDns = preset.first.split(',').map(String::trim).filter(String::isNotEmpty)
+                            }
+                        },
+                    )
+                }
+            }
+            item(key = "direct_dns_list") {
+                StringListEditor(
+                    editorKey = "direct_dns_${config.id}",
+                    title = stringResource(R.string.configs_dns_direct_section),
+                    description = stringResource(R.string.configs_dns_direct_summary),
+                    values = directDns,
+                    onValuesChange = { directDns = it },
+                    emptyText = stringResource(R.string.configs_dns_empty_servers),
+                    validateInput = { configDnsServerInputError(it, dnsServerInvalidMessage) },
+                    suggestionContent = { onApplySuggestion ->
+                        DirectDnsProtocolSuggestions(
+                            onSelect = { server -> onApplySuggestion(server, true) },
+                        )
+                    },
+                )
+            }
+
+            item(key = "direct_dns_domains_title") {
+                SmallTitle(text = stringResource(R.string.configs_dns_direct_domains_title))
+            }
+            item(key = "direct_dns_domains_list") {
+                StringListEditor(
+                    editorKey = "direct_dns_domains_${config.id}",
+                    title = stringResource(R.string.configs_dns_direct_domains_title),
+                    description = stringResource(R.string.configs_dns_direct_domains_summary),
+                    values = directDnsDomains,
+                    onValuesChange = { directDnsDomains = it },
+                    emptyText = stringResource(R.string.configs_dns_direct_domains_empty),
+                    validateInput = { configDnsDomainInputError(it, dnsDomainInvalidMessage) },
+                    suggestionContent = { onApplySuggestion ->
+                        DomainRuleSuggestions(
+                            onSelect = { domain -> onApplySuggestion(domain, true) },
+                        )
+                    },
+                )
+            }
+
+            item(key = "dns_hosts_title") {
+                SmallTitle(text = stringResource(R.string.configs_dns_hosts_title))
+            }
+            item(key = "dns_hosts_list") {
+                StringListEditor(
+                    editorKey = "dns_hosts_${config.id}",
+                    title = stringResource(R.string.configs_dns_hosts_title),
+                    description = stringResource(R.string.configs_dns_hosts_summary),
+                    values = dnsHosts,
+                    onValuesChange = { dnsHosts = it },
+                    emptyText = stringResource(R.string.configs_dns_hosts_empty),
+                    validateInput = { configDnsHostInputError(it, dnsHostsInvalidMessage) },
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun DnsProtocolSuggestions(onSelect: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        SuggestionChip(label = "DoH (1.1.1.1)", onClick = { onSelect("https://1.1.1.1/dns-query") })
+        SuggestionChip(label = "DoT (1.1.1.1)", onClick = { onSelect("tls://1.1.1.1:853") })
+        SuggestionChip(label = "TCP (8.8.8.8)", onClick = { onSelect("tcp://8.8.8.8:53") })
+        SuggestionChip(label = "DoU (8.8.8.8)", onClick = { onSelect("8.8.8.8") })
+    }
+}
+
+@Composable
+private fun DirectDnsProtocolSuggestions(onSelect: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        SuggestionChip(label = "DoH (Yandex)", onClick = { onSelect("https://77.88.8.8/dns-query") })
+        SuggestionChip(label = "DoT (Yandex)", onClick = { onSelect("tls://77.88.8.8:853") })
+        SuggestionChip(label = "DoU (Yandex)", onClick = { onSelect("77.88.8.8") })
+        SuggestionChip(label = "DoH (Cloudflare)", onClick = { onSelect("https://1.1.1.1/dns-query") })
+    }
+}
+
+@Composable
+private fun DomainRuleSuggestions(onSelect: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        SuggestionChip(label = "geosite:cn", onClick = { onSelect("geosite:cn") })
+        SuggestionChip(label = "geosite:category-gov-ru", onClick = { onSelect("geosite:category-gov-ru") })
+        SuggestionChip(label = "domain:ru", onClick = { onSelect("domain:ru") })
+    }
+}
+
+@Composable
+private fun SuggestionChip(label: String, onClick: () -> Unit) {
+    TextButton(
+        text = label,
+        onClick = onClick,
+        modifier = Modifier.padding(vertical = 2.dp),
+    )
+}
+
+private const val ConfigDnsHostSeparator = ':'
+private val ConfigXrayDnsUrlSchemes = setOf(
+    "https",
+    "h2c",
+    "https+local",
+    "h2c+local",
+    "quic+local",
+    "tls",
+    "tls+local",
+    "tcp",
+    "tcp+local",
+    "udp",
+    "udp+local",
+)
+
+private fun configDnsServerInputError(input: String, invalidMessage: String): String? {
+    val trimmed = input.trim()
+    if (trimmed.isEmpty() || trimmed.any(Char::isWhitespace)) return invalidMessage
+    return if (isConfigXrayDnsServer(trimmed)) null else invalidMessage
+}
+
+private fun isConfigXrayDnsServer(value: String): Boolean {
+    if (value.equals("localhost", ignoreCase = true) || value.equals("fakedns", ignoreCase = true)) {
+        return true
+    }
+    val schemeEnd = value.indexOf("://")
+    if (schemeEnd >= 0) {
+        val scheme = value.substring(0, schemeEnd).lowercase()
+        if (scheme !in ConfigXrayDnsUrlSchemes) return false
+        val authority = value.substring(schemeEnd + 3)
+            .substringBefore('/')
+            .substringBefore('?')
+            .substringBefore('#')
+            .substringAfterLast('@')
+        return isConfigXrayDnsAuthority(authority)
+    }
+    return isIpAddress(value) || (!value.contains(":") && isConfigDnsHostDomain(value))
+}
+
+private fun isConfigXrayDnsAuthority(authority: String): Boolean {
+    val trimmed = authority.trim()
+    if (trimmed.isBlank()) return false
+    if (trimmed.startsWith("[")) {
+        val closeBracketIndex = trimmed.indexOf(']')
+        if (closeBracketIndex <= 1) return false
+        val host = trimmed.substring(1, closeBracketIndex)
+        val rest = trimmed.substring(closeBracketIndex + 1)
+        return isIpAddress(host) && (rest.isEmpty() || (rest.startsWith(":") && isPort(rest.drop(1))))
+    }
+    val colonCount = trimmed.count { it == ':' }
+    if (colonCount == 0) {
+        return isIpAddress(trimmed) || isConfigDnsHostDomain(trimmed)
+    }
+    if (colonCount == 1) {
+        val host = trimmed.substringBefore(':')
+        val port = trimmed.substringAfter(':')
+        return (isIpAddress(host) || isConfigDnsHostDomain(host)) && isPort(port)
+    }
+    return isIpAddress(trimmed)
+}
+
+private fun configDnsDomainInputError(input: String, invalidMessage: String): String? {
+    val trimmed = input.trim()
+    if (trimmed.isEmpty() || trimmed.any(Char::isWhitespace)) return invalidMessage
+    if (trimmed.startsWith("regexp:", ignoreCase = true)) {
+        return if (trimmed.substringAfter(":").isBlank()) invalidMessage else null
+    }
+    val supportedPrefix = trimmed.substringBefore(":", missingDelimiterValue = "")
+        .lowercase()
+        .takeIf { it in setOf("domain", "full", "keyword", "geosite", "ext") }
+    if (supportedPrefix != null) {
+        return if (trimmed.substringAfter(":").isBlank()) invalidMessage else null
+    }
+    return if (trimmed.contains("://") || trimmed.contains("/")) invalidMessage else null
+}
+
+private fun configDnsHostInputError(input: String, invalidMessage: String): String? {
+    val separatorIndex = input.indexOf(ConfigDnsHostSeparator)
+    if (separatorIndex <= 0 || separatorIndex == input.lastIndex) return invalidMessage
+    val domain = input.substring(0, separatorIndex).trim()
+    val addresses = input.substring(separatorIndex + 1)
+        .split(",")
+        .map { it.trim().trim('[', ']') }
+    if (!isConfigDnsHostDomain(domain)) return invalidMessage
+    if (addresses.isEmpty() || addresses.any { it.isEmpty() || !isIpAddress(it) }) return invalidMessage
+    return null
+}
+
+private fun isConfigDnsHostDomain(domain: String): Boolean {
+    val normalized = domain.removeSuffix(".")
+    if (normalized.isEmpty() || normalized.length > 253) return false
+    if (normalized.any { it.isWhitespace() || it == '/' || it == ConfigDnsHostSeparator }) return false
+    return normalized.split(".").all { label ->
+        label.isNotEmpty() &&
+            label.length <= 63 &&
+            label.first() != '-' &&
+            label.last() != '-' &&
+            label.all { it.isLetterOrDigit() || it == '-' }
     }
 }
 
@@ -666,12 +1024,6 @@ private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfig
                         summary = stringResource(R.string.configs_fragment_summary),
                         checked = settings.enableFragment,
                         onCheckedChange = { settings = settings.copy(enableFragment = it) },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_fake_dns),
-                        summary = stringResource(R.string.configs_fake_dns_summary),
-                        checked = settings.enableFakeDns,
-                        onCheckedChange = { settings = settings.copy(enableFakeDns = it) },
                     )
                 }
                 if (settings.enableMux) {
