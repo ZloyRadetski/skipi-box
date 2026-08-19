@@ -98,7 +98,7 @@ internal fun produceActiveTunnelRuntimeSample(
                     ).use { client -> client.queryOutboundTraffic(reset = false) }
                 }.getOrDefault(emptyMap())
             }
-            totals.maxTrafficDeltaComparedTo(previousTotals)?.let { tag ->
+            totals.maxTrafficDeltaComparedTo(previousTotals, currentActiveTag = lastActiveOutboundTag)?.let { tag ->
                 lastActiveOutboundTag = tag
             }
             previousTotals = totals

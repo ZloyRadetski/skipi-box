@@ -16,6 +16,7 @@ import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.VLESS
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
+import engine.stats.maxTrafficDeltaComparedTo
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -307,5 +308,36 @@ class XrayConfigTest {
 
         // Balancer must retain its member IDs
         assertEquals(listOf(10, 20), strategyGroup.proxyServerIds)
+    }
+
+    @Test
+    fun testMaxTrafficDeltaIgnoresSmallProbeNoiseAndMaintainsStability() {
+        val previousTotals = mapOf(
+            "proxy-policy-1" to engine.stats.XrayTrafficBytes(uplink = 1000, downlink = 5000),
+            "proxy-policy-2" to engine.stats.XrayTrafficBytes(uplink = 2000, downlink = 8000),
+        )
+        // Background observatory probe on node 2: ~400 bytes delta (less than 2KB)
+        val probeTotals = mapOf(
+            "proxy-policy-1" to engine.stats.XrayTrafficBytes(uplink = 1000, downlink = 5000),
+            "proxy-policy-2" to engine.stats.XrayTrafficBytes(uplink = 2100, downlink = 8300),
+        )
+
+        // When currently active on node 1, small probe on node 2 should NOT override node 1
+        val result = probeTotals.maxTrafficDeltaComparedTo(
+            previous = previousTotals,
+            currentActiveTag = "proxy-policy-1",
+        )
+        assertEquals("proxy-policy-1", result)
+
+        // Substantial user payload traffic on node 2 (e.g. 50 KB) SHOULD switch active tag
+        val userTrafficTotals = mapOf(
+            "proxy-policy-1" to engine.stats.XrayTrafficBytes(uplink = 1000, downlink = 5000),
+            "proxy-policy-2" to engine.stats.XrayTrafficBytes(uplink = 12000, downlink = 48000),
+        )
+        val switchedResult = userTrafficTotals.maxTrafficDeltaComparedTo(
+            previous = previousTotals,
+            currentActiveTag = "proxy-policy-1",
+        )
+        assertEquals("proxy-policy-2", switchedResult)
     }
 }

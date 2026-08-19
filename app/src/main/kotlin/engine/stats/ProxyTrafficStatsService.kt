@@ -190,7 +190,7 @@ class ProxyTrafficStatsService : Service() {
                             nextOutboundPollAt = now + OutboundPollIntervalMillis
                             runCatching { client.queryOutboundTraffic(reset = false) }
                                 .onSuccess { totals ->
-                                    totals.maxTrafficDeltaComparedTo(previousOutboundTotals)?.let { tag ->
+                                    totals.maxTrafficDeltaComparedTo(previousOutboundTotals, currentActiveTag = activeOutboundTag)?.let { tag ->
                                         activeOutboundTag = tag
                                     }
                                     previousOutboundTotals = totals

@@ -290,5 +290,5 @@ private fun Int.toMuxUdp443Mode(): String {
     return MuxUdp443Values.getOrElse(this) { MuxUdp443Values.first() }
 }
 
-private const val XrayObservatoryProbeUrl = "http://cp.cloudflare.com/generate_204"
-private const val XrayObservatoryProbeInterval = "5s"
+private const val XrayObservatoryProbeUrl = NetworkDefaults.CONNECTIVITY_CHECK_URL
+private const val XrayObservatoryProbeInterval = "15s"

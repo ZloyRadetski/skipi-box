@@ -34,19 +34,38 @@ internal data class XrayTrafficSessionSample(
     val totalBytes: XrayTrafficBytes,
 )
 
+internal const val MinimumMeaningfulTrafficDeltaBytes = 2_048L
+
 /** Returns the outbound that carried the most new traffic since the prior sample. */
 internal fun Map<String, XrayTrafficBytes>.maxTrafficDeltaComparedTo(
     previous: Map<String, XrayTrafficBytes>,
+    currentActiveTag: String? = null,
+    minDeltaBytes: Long = MinimumMeaningfulTrafficDeltaBytes,
 ): String? {
-    return entries
+    val deltas = entries
         .map { (tag, current) ->
             val before = previous[tag] ?: XrayTrafficBytes()
             tag to ((current.uplink - before.uplink).coerceAtLeast(0L) +
                 (current.downlink - before.downlink).coerceAtLeast(0L))
         }
         .filter { (_, delta) -> delta > 0L }
-        .maxByOrNull { (_, delta) -> delta }
-        ?.first
+
+    if (deltas.isEmpty()) return currentActiveTag
+
+    val maxEntry = deltas.maxByOrNull { (_, delta) -> delta } ?: return currentActiveTag
+
+    if (currentActiveTag != null) {
+        val currentDelta = deltas.firstOrNull { it.first == currentActiveTag }?.second ?: 0L
+        if (currentDelta > 0L && maxEntry.second < currentDelta * 2) {
+            return currentActiveTag
+        }
+    }
+
+    return if (maxEntry.second >= minDeltaBytes) {
+        maxEntry.first
+    } else {
+        currentActiveTag ?: maxEntry.first
+    }
 }
 
 private data class XrayTrafficSpeedSample(

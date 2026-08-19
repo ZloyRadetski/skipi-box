@@ -195,6 +195,7 @@ private class XrayOutboundPlanner(
             ?.second ?: memberTags.first()
 
         val customProbeUrl = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)
+            ?: appState.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
         val customProbeInterval = strategyGroup.probeInterval.trim().takeIf(String::isNotEmpty)
         if (customProbeUrl != null && observatoryProbeUrl == null) {
             observatoryProbeUrl = customProbeUrl
