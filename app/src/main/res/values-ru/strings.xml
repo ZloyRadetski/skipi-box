@@ -152,6 +152,7 @@
     <string name="settings_local_proxy_port_invalid">Порт должен быть в диапазоне 1–65535</string>
     <string name="settings_local_proxy_summary_fixed">127.0.0.1:{port}</string>
     <string name="settings_local_proxy_summary_all_interfaces">0.0.0.0:{port}</string>
+    <string name="tun">TUN</string>
     <string name="settings_tun">Настройки TUN</string>
     <string name="settings_tun_summary">MTU {mtu}, VPN DNS {vpnDns}, IPv4 {ipv4}, IPv6 {ipv6}</string>
     <string name="settings_tun_summary_without_dns">MTU {mtu}, IPv4 {ipv4}, IPv6 {ipv6}</string>

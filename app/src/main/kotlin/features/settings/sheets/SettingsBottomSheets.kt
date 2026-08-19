@@ -70,7 +70,7 @@ internal fun TunSettingsBottomSheet(
 
     WindowBottomSheet(
         show = show,
-        title = stringResource(R.string.settings_tun),
+        title = stringResource(R.string.tun),
         startAction = {
             TextButton(
                 text = stringResource(R.string.common_cancel),
