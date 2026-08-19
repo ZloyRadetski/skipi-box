@@ -46,7 +46,7 @@
             android:strokeLineJoin="round" />
         <!-- Orbital loop -->
         <path
-            android:pathData="M453.5,69 C746,543 -34.9998,717.326 -34.9998,196 M453.5,165.5 V69 L513,75.5"
+            android:pathData="M453.5,69 C746,543 -35,717.326 -35,196 M526.5,115.5 L453.5,69 V165.5"
             android:strokeWidth="38.82"
             android:strokeColor="#FFFFFF"
             android:strokeLineCap="round"

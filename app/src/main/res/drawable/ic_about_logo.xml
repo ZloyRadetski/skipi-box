@@ -21,42 +21,42 @@
     </path>
     <!-- S -->
     <path
-        android:pathData="M372.987,208.251 L316,237.135 L372.987,275.365 L316,303.4"
+        android:pathData="M382.987,206.251 L326,235.135 L382.987,273.365 L326,301.4"
         android:strokeWidth="38.8185"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <!-- K -->
     <path
-        android:pathData="M421.62,208 V301.45 M421.62,257.274 L487.241,208 M421.62,262.371 L487.241,301.45"
+        android:pathData="M431.62,206 V299.45 M431.62,255.274 L497.241,206 M431.62,260.371 L497.241,299.45"
         android:strokeWidth="40.2562"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <!-- I -->
     <path
-        android:pathData="M532.139,208 V301.45"
+        android:pathData="M542.139,206 V299.45"
         android:strokeWidth="38.8185"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <!-- P -->
     <path
-        android:pathData="M580.491,301.45 V208 H659.927 V254.725 H580.491"
+        android:pathData="M590.491,299.45 V206 H669.927 V252.725 H590.491"
         android:strokeWidth="38.8185"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <!-- I -->
     <path
-        android:pathData="M708,208.389 V301.578"
+        android:pathData="M718,206.389 V299.578"
         android:strokeWidth="38.8185"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
     <!-- Orbital Loop -->
     <path
-        android:pathData="M709.5,69 C1002,543 221,717.326 221,196 M769,75.5 L709.5,69 V165.5"
+        android:pathData="M719.5,67 C1012,541 231,715.326 231,194 M792.5,113.5 L719.5,67 V163.5"
         android:strokeWidth="38.82"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
