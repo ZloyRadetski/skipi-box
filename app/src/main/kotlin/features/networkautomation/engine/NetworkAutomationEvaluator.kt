@@ -88,7 +88,26 @@ object NetworkAutomationEvaluator {
             }
         }
 
-        // 2. Try looking across all Wi-Fi networks if not yet found
+        // 2. Try getting SSID from active network
+        if ((rawSsid.isNullOrBlank() || rawSsid == "<unknown ssid>") && cm != null) {
+            val active = cm.activeNetwork
+            if (active != null) {
+                val caps = cm.getNetworkCapabilities(active)
+                if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val transportInfo = caps.transportInfo
+                        if (transportInfo is WifiInfo) {
+                            val candidate = transportInfo.ssid
+                            if (!candidate.isNullOrBlank() && candidate != "<unknown ssid>") {
+                                rawSsid = candidate
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Try looking across all Wi-Fi networks if not yet found
         if ((rawSsid.isNullOrBlank() || rawSsid == "<unknown ssid>") && cm != null) {
             val networks = runCatching { cm.allNetworks }.getOrNull() ?: emptyArray()
             for (net in networks) {
@@ -108,7 +127,7 @@ object NetworkAutomationEvaluator {
             }
         }
 
-        // 3. Fallback to WifiManager
+        // 4. Fallback to WifiManager
         if (rawSsid.isNullOrBlank() || rawSsid == "<unknown ssid>") {
             runCatching {
                 val wm = appContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager

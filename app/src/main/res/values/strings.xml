@@ -1026,4 +1026,5 @@
     <string name="network_automation_save">Save</string>
     <string name="network_automation_rule_deleted">Rule deleted</string>
     <string name="network_automation_rule_saved">Rule saved</string>
+    <string name="network_automation_no_wifi_detected">Wi-Fi network not detected or location service is off</string>
 </resources>

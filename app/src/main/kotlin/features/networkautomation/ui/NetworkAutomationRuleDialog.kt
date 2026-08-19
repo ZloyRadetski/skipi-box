@@ -1,8 +1,11 @@
-// Copyright 2026, Radetski
-// SPDX-License-Identifier: GPL-3.0
-
 package features.networkautomation.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -17,9 +20,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import app.ProxyServerState
 import app.R
 import features.networkautomation.engine.NetworkAutomationEvaluator
@@ -77,8 +80,60 @@ internal fun NetworkAutomationRuleDialog(
         )
     }
 
-    var ssid by remember(show, rule) {
-        mutableStateOf(rule?.ssid.orEmpty())
+    val ssidState = remember(show, rule) {
+        TextFieldState(initialText = rule?.ssid.orEmpty())
+    }
+    val ssid = ssidState.text.toString()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && permissions[Manifest.permission.NEARBY_WIFI_DEVICES] == true)
+        if (granted) {
+            val current = NetworkAutomationEvaluator.getCurrentWifiSsid(context)
+            if (!current.isNullOrBlank()) {
+                ssidState.edit {
+                    replace(0, length, current)
+                }
+            } else {
+                Toast.makeText(context, context.getString(R.string.network_automation_no_wifi_detected), Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(context, context.getString(R.string.network_automation_no_wifi_detected), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val onUseCurrentWifiClick = {
+        val current = NetworkAutomationEvaluator.getCurrentWifiSsid(context)
+        if (!current.isNullOrBlank()) {
+            ssidState.edit {
+                replace(0, length, current)
+            }
+        } else {
+            val hasFineLocation = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED
+            val hasNearbyDevices = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.NEARBY_WIFI_DEVICES,
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasFineLocation || !hasNearbyDevices) {
+                val permissionsToRequest = mutableListOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissionsToRequest.add(Manifest.permission.NEARBY_WIFI_DEVICES)
+                }
+                permissionLauncher.launch(permissionsToRequest.toTypedArray())
+            } else {
+                Toast.makeText(context, context.getString(R.string.network_automation_no_wifi_detected), Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     val actionOptions = listOf(
@@ -174,10 +229,7 @@ internal fun NetworkAutomationRuleDialog(
                         .padding(bottom = 12.dp),
                 ) {
                     TextField(
-                        state = rememberTextFieldState(initialText = ssid),
-                        inputTransformation = InputTransformation {
-                            ssid = asCharSequence().toString()
-                        },
+                        state = ssidState,
                         label = stringResource(R.string.network_automation_ssid_label),
                         lineLimits = TextFieldLineLimits.SingleLine,
                         modifier = Modifier
@@ -191,12 +243,7 @@ internal fun NetworkAutomationRuleDialog(
                     ) {
                         TextButton(
                             text = stringResource(R.string.network_automation_use_current_wifi),
-                            onClick = {
-                                val current = NetworkAutomationEvaluator.getCurrentWifiSsid(context)
-                                if (!current.isNullOrBlank()) {
-                                    ssid = current
-                                }
-                            },
+                            onClick = onUseCurrentWifiClick,
                         )
                     }
 
