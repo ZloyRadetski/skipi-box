@@ -154,14 +154,30 @@ object NetworkAutomationEvaluator {
 
         val isWifi = physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
         val isCellular = physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+        val currentSsid = if (isWifi) getCurrentWifiSsid(context, physicalCaps) else null
 
-        val matchedRule: NetworkAutomationRule? = when {
+        val matchedRule = findMatchingRule(
+            enabledRules = enabledRules,
+            isWifi = isWifi,
+            isCellular = isCellular,
+            currentSsid = currentSsid,
+        )
+
+        return makeDecision(matchedRule, state)
+    }
+
+    fun findMatchingRule(
+        enabledRules: List<NetworkAutomationRule>,
+        isWifi: Boolean,
+        isCellular: Boolean,
+        currentSsid: String?,
+    ): NetworkAutomationRule? {
+        return when {
             isWifi -> {
-                val currentSsid = getCurrentWifiSsid(context, physicalCaps)
                 val specificMatch = if (!currentSsid.isNullOrBlank()) {
                     enabledRules.firstOrNull { rule ->
                         rule.type == NetworkRuleType.SPECIFIC_WIFI &&
-                            rule.ssid?.trim()?.equals(currentSsid, ignoreCase = true) == true
+                            rule.ssid?.trim()?.equals(currentSsid.trim(), ignoreCase = true) == true
                     }
                 } else {
                     null
@@ -173,7 +189,12 @@ object NetworkAutomationEvaluator {
             }
             else -> null
         }
+    }
 
+    fun makeDecision(
+        matchedRule: NetworkAutomationRule?,
+        state: AppState,
+    ): NetworkAutomationDecision {
         if (matchedRule == null) {
             return NetworkAutomationDecision.NoChange
         }

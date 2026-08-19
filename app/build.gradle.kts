@@ -102,6 +102,12 @@ android {
             "IconLauncherShape",
         )
     }
+
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 tasks.named("preBuild") {
@@ -140,6 +146,9 @@ dependencies {
     implementation(libs.zxing.android.embedded)
     compileOnly(libs.javax.annotation.api)
     ksp(libs.androidx.room.compiler)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
 ksp {
@@ -186,10 +195,6 @@ val generateProjectInfo = tasks.register<GenerateProjectInfoTask>("generateProje
 androidComponents {
     beforeVariants(selector().all()) { variant ->
         variant.enableAndroidTest = false
-        (variant as? HasHostTestsBuilder)
-            ?.hostTests
-            ?.get(HostTestBuilder.UNIT_TEST_TYPE)
-            ?.enable = false
     }
 
     onVariants { variant ->
