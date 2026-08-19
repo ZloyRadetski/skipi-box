@@ -15,6 +15,7 @@ import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.VLESS
+import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -208,5 +209,63 @@ class XrayConfigTest {
         // When another config is active (2)
         assertTrue(alwaysServer.isVisibleOnProxyServerList(activeTrafficConfigId = 2))
         assertFalse(activeConfigServer.isVisibleOnProxyServerList(activeTrafficConfigId = 2))
+    }
+
+    @Test
+    fun testStrategyGroupPreservedDuringSubscriptionUpdate() {
+        val node1 = ProxyServerState(id = 10, server = VLESS(remarks = "Sub Node 1", id = "u1", server = "s1.com", port = "443"), groupId = 1)
+        val node2 = ProxyServerState(id = 20, server = VLESS(remarks = "Sub Node 2", id = "u2", server = "s2.com", port = "443"), groupId = 1)
+        val balancer = ProxyServerState(
+            id = 100,
+            server = StrategyGroup(
+                remarks = "My Balancer",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10, 20),
+            ),
+            groupId = AutoBalancerGroupId,
+        )
+
+        val initialAppState = AppState(
+            proxyServers = listOf(node1, node2, balancer),
+            subscriptionGroups = listOf(
+                app.SubscriptionGroupState(
+                    id = 1,
+                    name = "Test Subscription",
+                    url = "https://sub.example.com",
+                    userAgent = "",
+                    updateInterval = "",
+                    enabled = true,
+                )
+            ),
+        )
+
+        // Updated subscription with new server instances (same fingerprint)
+        val updatedNode1 = VLESS(remarks = "Sub Node 1 [Updated]", id = "u1", server = "s1.com", port = "443")
+        val updatedNode2 = VLESS(remarks = "Sub Node 2 [Updated]", id = "u2", server = "s2.com", port = "443")
+
+        val subUpdate = features.proxy.server.usecase.ProxyServerListSubscriptionUpdate(
+            groupId = 1,
+            sourceIdentity = features.proxy.server.usecase.SubscriptionGroupFetchIdentity(
+                url = "https://sub.example.com",
+                userAgent = "",
+                updateInterval = "",
+                ageSecretKey = "",
+                updateViaProxy = false,
+                enabled = true,
+            ),
+            urlCount = 2,
+            servers = listOf(updatedNode1, updatedNode2),
+        )
+
+        val updatedState = initialAppState.withUpdatedSubscriptionServers(
+            updates = listOf(subUpdate),
+            updatedAtMillis = System.currentTimeMillis(),
+        )
+
+        val updatedBalancer = updatedState.proxyServers.first { it.id == 100 }
+        val strategyGroup = updatedBalancer.server as StrategyGroup
+
+        // Balancer must retain its member IDs
+        assertEquals(listOf(10, 20), strategyGroup.proxyServerIds)
     }
 }

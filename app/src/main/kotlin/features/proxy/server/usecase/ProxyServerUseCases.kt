@@ -166,6 +166,8 @@ internal fun AppState.withUpdatedSubscriptionServers(
         .filter { server -> server.groupId in updatedGroupIds && !server.server.isCompositeProxyServer() }
         .groupBy { server -> server.groupId }
 
+    val oldIdToNewId = mutableMapOf<Int, Int>()
+
     val importedServers = applicableUpdates.flatMap { update ->
         val candidates = existingDownloadedServersByGroup[update.groupId].orEmpty()
         val consumedIds = mutableSetOf<Int>()
@@ -217,8 +219,19 @@ internal fun AppState.withUpdatedSubscriptionServers(
                 }
             }
 
+            val assignedId: Int
             if (preserved != null) {
                 consumedIds += preserved.id
+                assignedId = preserved.id
+                oldIdToNewId[preserved.id] = assignedId
+            } else {
+                assignedId = nextServerId++
+                val fallbackCandidate = candidates.getOrNull(index)?.takeIf { it.id !in consumedIds }
+                    ?: candidates.firstOrNull { it.id !in consumedIds }
+                if (fallbackCandidate != null) {
+                    consumedIds += fallbackCandidate.id
+                    oldIdToNewId[fallbackCandidate.id] = assignedId
+                }
             }
 
             val group = subscriptionGroups.firstOrNull { it.id == update.groupId }
@@ -227,7 +240,7 @@ internal fun AppState.withUpdatedSubscriptionServers(
             }
 
             ProxyServerState(
-                id = preserved?.id ?: nextServerId++,
+                id = assignedId,
                 groupId = update.groupId,
                 server = newServer,
                 latency = preserved?.latency.orEmpty(),
@@ -250,9 +263,17 @@ internal fun AppState.withUpdatedSubscriptionServers(
             is StrategyGroup -> {
                 val currentIds = composite.proxyServerIds
                 if (currentIds.isNotEmpty()) {
-                    val filteredIds = currentIds.filter { it in validServerIds }
+                    val remappedIds = currentIds.map { oldIdToNewId[it] ?: it }
+                    val filteredIds = remappedIds.filter { it in validServerIds }
                     if (filteredIds != currentIds) {
                         composite.proxyServerIds = filteredIds
+                    }
+                }
+                val selectedId = composite.selectedMemberId
+                if (selectedId != null) {
+                    val remappedSelectedId = oldIdToNewId[selectedId] ?: selectedId
+                    if (remappedSelectedId in validServerIds) {
+                        composite.selectedMemberId = remappedSelectedId
                     }
                 }
                 server
@@ -260,7 +281,8 @@ internal fun AppState.withUpdatedSubscriptionServers(
             is ChainProxy -> {
                 val currentIds = composite.proxyServerIds
                 if (currentIds.isNotEmpty()) {
-                    val filteredIds = currentIds.filter { it in validServerIds }
+                    val remappedIds = currentIds.map { oldIdToNewId[it] ?: it }
+                    val filteredIds = remappedIds.filter { it in validServerIds }
                     if (filteredIds != currentIds) {
                         composite.proxyServerIds = filteredIds
                     }

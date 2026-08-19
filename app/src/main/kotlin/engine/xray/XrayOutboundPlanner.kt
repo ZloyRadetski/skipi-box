@@ -266,19 +266,6 @@ internal fun AppState.strategyGroupMembers(
     strategyGroup: StrategyGroup,
     visitingStrategyGroupIds: Set<Int> = emptySet(),
 ): List<ProxyServerState> {
-    strategyGroup.sourceTrafficConfigId?.let { configId ->
-        val sourceGroups = trafficConfigs.firstOrNull { config -> config.id == configId }
-            ?.rawConfig
-            ?.analyzeShadowrocketConfig()
-            ?.proxyGroups
-            .orEmpty()
-        val sourceGroup = sourceGroups.firstOrNull { group ->
-            group.name.equals(strategyGroup.sourcePolicyGroupName, ignoreCase = true)
-        }
-        if (sourceGroup != null) {
-            return shadowrocketPolicyGroupMembers(sourceGroup, policyGroups = sourceGroups)
-        }
-    }
     if (strategyGroup.proxyServerIds.isNotEmpty()) {
         return strategyGroup.proxyServerIds.flatMap { memberId ->
             val member = proxyServers.firstOrNull { server -> server.id == memberId }
@@ -301,6 +288,19 @@ internal fun AppState.strategyGroupMembers(
                 else -> listOf(member)
             }
         }.distinctBy(ProxyServerState::id)
+    }
+    strategyGroup.sourceTrafficConfigId?.let { configId ->
+        val sourceGroups = trafficConfigs.firstOrNull { config -> config.id == configId }
+            ?.rawConfig
+            ?.analyzeShadowrocketConfig()
+            ?.proxyGroups
+            .orEmpty()
+        val sourceGroup = sourceGroups.firstOrNull { group ->
+            group.name.equals(strategyGroup.sourcePolicyGroupName, ignoreCase = true)
+        }
+        if (sourceGroup != null) {
+            return shadowrocketPolicyGroupMembers(sourceGroup, policyGroups = sourceGroups)
+        }
     }
     val regex = strategyGroup.filter.takeIf(String::isNotBlank)?.let { filter ->
         runCatching { Regex(filter) }.getOrNull()

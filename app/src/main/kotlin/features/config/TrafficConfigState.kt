@@ -469,6 +469,7 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
                 strategy.sourcePolicyGroupName.equals(source.group.name, ignoreCase = true)
         }
         val id = existing?.id ?: nextId++
+        val existingStrategy = existing?.server as? StrategyGroup
         ProxyServerState(
             id = id,
             groupId = AutoBalancerGroupId,
@@ -476,7 +477,8 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
             server = StrategyGroup(
                 remarks = source.group.name,
                 strategy = source.group.toStrategyGroupType(),
-                selectedMemberId = (existing?.server as? StrategyGroup)?.selectedMemberId,
+                proxyServerIds = existingStrategy?.proxyServerIds.orEmpty(),
+                selectedMemberId = existingStrategy?.selectedMemberId,
                 displayMode = source.group.displayMode,
                 showInAutoBalancerList = source.group.displayMode != features.proxy.server.model.StrategyGroupDisplayMode.NEVER,
                 sourceTrafficConfigId = source.configId,
