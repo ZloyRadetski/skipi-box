@@ -114,6 +114,33 @@ class NetworkAutomationEvaluatorTest {
     }
 
     @Test
+    fun testFindMatchingRuleWifiTakesPrecedenceOverCellularWhenBothReported() {
+        val cellularRule = NetworkAutomationRule(
+            id = "r1",
+            type = NetworkRuleType.CELLULAR,
+            action = NetworkRuleAction.SWITCH_SERVER,
+            targetServerId = 10,
+        )
+        val wifiRule = NetworkAutomationRule(
+            id = "r2",
+            type = NetworkRuleType.ANY_WIFI,
+            action = NetworkRuleAction.DISCONNECT_VPN,
+        )
+        val rules = listOf(cellularRule, wifiRule)
+
+        // Even if both isWifi and isCellular flags are true (e.g. background cellular radio on Wi-Fi),
+        // Wi-Fi rule MUST take absolute precedence!
+        val matched = NetworkAutomationEvaluator.findMatchingRule(
+            enabledRules = rules,
+            isWifi = true,
+            isCellular = true,
+            currentSsid = "MyHome_5G",
+        )
+
+        assertEquals(wifiRule, matched)
+    }
+
+    @Test
     fun testMakeDecisionForSwitchServerAlways() {
         val rule = NetworkAutomationRule(
             id = "r1",

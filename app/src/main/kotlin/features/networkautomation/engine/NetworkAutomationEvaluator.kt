@@ -40,7 +40,45 @@ object NetworkAutomationEvaluator {
         val appContext = context.applicationContext
         val cm = appContext.getSystemService(ConnectivityManager::class.java) ?: return capabilities
 
-        // If passed capabilities is already physical (not VPN), use it
+        // 1. If activeNetwork is directly a physical network (not VPN), use it
+        val active = cm.activeNetwork
+        val activeCaps = active?.let { cm.getNetworkCapabilities(it) }
+        if (activeCaps != null && !activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+            if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            ) {
+                return activeCaps
+            }
+        }
+
+        // 2. If VPN is active, inspect physical networks.
+        // Wi-Fi or Ethernet ALWAYS take strict priority over Cellular.
+        val networks = runCatching { cm.allNetworks }.getOrNull() ?: emptyArray()
+        var wifiCaps: NetworkCapabilities? = null
+        var ethernetCaps: NetworkCapabilities? = null
+        var cellularCaps: NetworkCapabilities? = null
+
+        for (network in networks) {
+            val caps = cm.getNetworkCapabilities(network) ?: continue
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) continue
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                wifiCaps = caps
+                break // Found active Wi-Fi, take priority
+            }
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+                ethernetCaps = caps
+            }
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                cellularCaps = caps
+            }
+        }
+
+        if (wifiCaps != null) return wifiCaps
+        if (ethernetCaps != null) return ethernetCaps
+        if (cellularCaps != null) return cellularCaps
+
+        // 3. Fallback to passed capabilities only if physical
         if (capabilities != null && !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
             if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
@@ -50,29 +88,7 @@ object NetworkAutomationEvaluator {
             }
         }
 
-        // Search allNetworks for an active physical network
-        val networks = runCatching { cm.allNetworks }.getOrNull() ?: emptyArray()
-        var wifiCaps: NetworkCapabilities? = null
-        var cellularCaps: NetworkCapabilities? = null
-        for (network in networks) {
-            val caps = cm.getNetworkCapabilities(network) ?: continue
-            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) continue
-            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                wifiCaps = caps
-                break // Prefer Wi-Fi if available
-            }
-            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-            ) {
-                cellularCaps = caps
-            }
-        }
-
-        return wifiCaps ?: cellularCaps ?: run {
-            val active = cm.activeNetwork ?: return@run null
-            val activeCaps = cm.getNetworkCapabilities(active) ?: return@run null
-            if (!activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) activeCaps else null
-        } ?: capabilities
+        return null
     }
 
     @Suppress("DEPRECATION")
