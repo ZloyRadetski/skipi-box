@@ -7,6 +7,7 @@ import app.AppState
 import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigNetworkActivation
 import features.config.TrafficConfigResourceSettings
+import features.networkautomation.model.NetworkAutomationRule
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -93,6 +94,9 @@ internal data class AppBackupSettings(
     val tunIpv6Cidr: String = BackupDefaults.tunIpv6Cidr,
     val enableWakeLock: Boolean = BackupDefaults.enableWakeLock,
     val enableSeamlessNetworkSwitching: Boolean = BackupDefaults.enableSeamlessNetworkSwitching,
+    val enableNetworkAutomation: Boolean = BackupDefaults.enableNetworkAutomation,
+    val enableOnDemandVpn: Boolean = BackupDefaults.enableOnDemandVpn,
+    val networkAutomationRules: List<NetworkAutomationRule> = emptyList(),
     val tunTcpKeepAliveInterval: String = BackupDefaults.tunTcpKeepAliveInterval,
     val tunTcpUserTimeout: String = BackupDefaults.tunTcpUserTimeout,
     val selectedProxyServerId: Int = BackupDefaults.selectedProxyServerId,

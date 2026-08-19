@@ -88,6 +88,7 @@ import features.settings.SettingsLogsPage
 import features.settings.SettingsPage
 import features.settings.SettingsSubscriptionsPage
 import features.settings.SettingsVpnPage
+import features.networkautomation.ui.SettingsNetworkAutomationPage
 import features.settings.SkipiUrlSchemesPage
 import features.settings.SubscriptionPingSettingsPage
 import features.settings.SubscriptionUserAgentsPage
@@ -181,6 +182,11 @@ fun AppContent(
                 entry<Route.SettingsVpn> {
                     key(languageMode) {
                         SettingsVpnPage(padding = padding)
+                    }
+                }
+                entry<Route.SettingsNetworkAutomation> {
+                    key(languageMode) {
+                        SettingsNetworkAutomationPage(padding = padding)
                     }
                 }
                 entry<Route.SettingsSubscriptions> {

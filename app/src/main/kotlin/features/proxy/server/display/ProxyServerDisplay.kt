@@ -36,3 +36,8 @@ internal fun ProxyServerState.displayNameWithGroup(
     val groupName = groupNames[groupId] ?: unknownGroupName
     return "$proxyServerName ($groupName)"
 }
+
+internal fun ProxyServerState.displayName(): String {
+    val info = server.getInfo()
+    return info.remarks.ifBlank { info.protocol.ifBlank { "#$id" } }
+}

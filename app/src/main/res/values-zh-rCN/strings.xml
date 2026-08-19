@@ -976,4 +976,31 @@
     <string name="settings_check_updates_now_action">立即检查更新</string>
     <string name="app_update_checking">正在检查更新…</string>
     <string name="app_update_already_latest">您正在使用最新版本的 SKIPI</string>
+
+    <string name="settings_network_automation_title">网络自动化与按需</string>
+    <string name="settings_network_automation_summary">按网络类型自动切换服务器及按需 VPN</string>
+    <string name="network_automation_switch_title">自动切换服务器</string>
+    <string name="network_automation_switch_summary">当活动网络更改时自动切换服务器</string>
+    <string name="network_automation_on_demand_title">按需 VPN (On-Demand)</string>
+    <string name="network_automation_on_demand_summary">根据网络规则自动连接或断开 VPN</string>
+    <string name="network_automation_rules_section">网络规则</string>
+    <string name="network_automation_add_rule">添加规则</string>
+    <string name="network_automation_rule_type">网络类型</string>
+    <string name="network_automation_type_cellular">蜂窝网络 (LTE / 5G)</string>
+    <string name="network_automation_type_any_wifi">任何 Wi-Fi</string>
+    <string name="network_automation_type_specific_wifi">指定 Wi-Fi SSID</string>
+    <string name="network_automation_rule_action">操作</string>
+    <string name="network_automation_action_switch_server">连接服务器</string>
+    <string name="network_automation_action_disconnect">断开 VPN</string>
+    <string name="network_automation_ssid_label">网络名称 (SSID)</string>
+    <string name="network_automation_ssid_placeholder">输入 SSID (例如 Home_5G)</string>
+    <string name="network_automation_use_current_wifi">插入当前 Wi-Fi</string>
+    <string name="network_automation_server_label">目标服务器</string>
+    <string name="network_automation_ssid_exists_error">此 SSID 的规则已存在</string>
+    <string name="network_automation_no_rules">尚未配置自动化规则。点击 «+» 添加。</string>
+    <string name="network_automation_edit_rule">编辑规则</string>
+    <string name="network_automation_delete_rule">删除规则</string>
+    <string name="network_automation_save">保存</string>
+    <string name="network_automation_rule_deleted">规则已删除</string>
+    <string name="network_automation_rule_saved">规则已保存</string>
 </resources>

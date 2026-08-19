@@ -997,4 +997,31 @@
     <string name="settings_check_updates_now_action">Check for updates now</string>
     <string name="app_update_checking">Checking for updates…</string>
     <string name="app_update_already_latest">You are using the latest version of SKIPI</string>
+
+    <string name="settings_network_automation_title">Network Automation &amp; On-Demand</string>
+    <string name="settings_network_automation_summary">Auto-switch servers by network and On-Demand VPN</string>
+    <string name="network_automation_switch_title">Auto-switch server</string>
+    <string name="network_automation_switch_summary">Automatically switch server when active network changes</string>
+    <string name="network_automation_on_demand_title">On-Demand VPN</string>
+    <string name="network_automation_on_demand_summary">Automatically connect or disconnect VPN based on network rules</string>
+    <string name="network_automation_rules_section">Network rules</string>
+    <string name="network_automation_add_rule">Add rule</string>
+    <string name="network_automation_rule_type">Network type</string>
+    <string name="network_automation_type_cellular">Cellular (LTE / 5G)</string>
+    <string name="network_automation_type_any_wifi">Any Wi-Fi</string>
+    <string name="network_automation_type_specific_wifi">Specific Wi-Fi SSID</string>
+    <string name="network_automation_rule_action">Action</string>
+    <string name="network_automation_action_switch_server">Connect server</string>
+    <string name="network_automation_action_disconnect">Disconnect VPN</string>
+    <string name="network_automation_ssid_label">Network name (SSID)</string>
+    <string name="network_automation_ssid_placeholder">Enter SSID (e.g. Home_5G)</string>
+    <string name="network_automation_use_current_wifi">Insert current Wi-Fi</string>
+    <string name="network_automation_server_label">Target server</string>
+    <string name="network_automation_ssid_exists_error">A rule for this SSID already exists</string>
+    <string name="network_automation_no_rules">No automation rules configured. Tap «+» to add.</string>
+    <string name="network_automation_edit_rule">Edit rule</string>
+    <string name="network_automation_delete_rule">Delete rule</string>
+    <string name="network_automation_save">Save</string>
+    <string name="network_automation_rule_deleted">Rule deleted</string>
+    <string name="network_automation_rule_saved">Rule saved</string>
 </resources>

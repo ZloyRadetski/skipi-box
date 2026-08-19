@@ -5,6 +5,8 @@ package features.proxy.server.list
 
 import android.os.SystemClock
 import app.effects.resolveActiveNetworkConfig
+import features.networkautomation.engine.NetworkAutomationDecision
+import features.networkautomation.engine.NetworkAutomationEvaluator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -190,15 +192,27 @@ internal fun ProxyServerListTopBar(
 
     fun toggleProxy() {
         runProxyServiceOperation {
-            val currentState = stateStore.state.value
+            var currentState = stateStore.state.value
             val resolvedState = currentState.resolveActiveNetworkConfig(context)
             if (resolvedState.activeTrafficConfigId != currentState.activeTrafficConfigId) {
+                currentState = resolvedState
                 updateAppState { it.copy(activeTrafficConfigId = resolvedState.activeTrafficConfigId) }
             }
+            if (currentState.enableNetworkAutomation || currentState.enableOnDemandVpn) {
+                val decision = NetworkAutomationEvaluator.evaluate(context, currentState)
+                if (decision is NetworkAutomationDecision.SwitchServer) {
+                    val serverIdInt = decision.serverId
+                    if (currentState.selectedProxyServerId != serverIdInt) {
+                        currentState = currentState.copy(selectedProxyServerId = serverIdInt)
+                        updateAppState { it.copy(selectedProxyServerId = serverIdInt) }
+                    }
+                }
+            }
+            val activeServer = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId } ?: selectedServer
             when (
                 val result = proxyServiceUseCase.toggle(
-                    state = resolvedState,
-                    selectedServer = selectedServer,
+                    state = currentState,
+                    selectedServer = activeServer,
                 )
             ) {
                 is ProxyServiceResult.Success -> {

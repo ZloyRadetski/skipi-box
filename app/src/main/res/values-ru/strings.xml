@@ -987,4 +987,31 @@
     <string name="settings_check_updates_now_action">Проверить обновления сейчас</string>
     <string name="app_update_checking">Проверка наличия обновлений…</string>
     <string name="app_update_already_latest">У вас установлена последняя версия SKIPI</string>
+
+    <string name="settings_network_automation_title">Автоматизация сетей и On-Demand</string>
+    <string name="settings_network_automation_summary">Автосмена сервера по сетям и On-Demand VPN</string>
+    <string name="network_automation_switch_title">Автосмена сервера</string>
+    <string name="network_automation_switch_summary">Автоматически переключать сервер при смене активной сети</string>
+    <string name="network_automation_on_demand_title">VPN по требованию (On-Demand)</string>
+    <string name="network_automation_on_demand_summary">Автоматически подключать или отключать VPN по правилам сети</string>
+    <string name="network_automation_rules_section">Правила для сетей</string>
+    <string name="network_automation_add_rule">Добавить правило</string>
+    <string name="network_automation_rule_type">Тип сети</string>
+    <string name="network_automation_type_cellular">Мобильная сеть (LTE / 5G)</string>
+    <string name="network_automation_type_any_wifi">Любой Wi-Fi</string>
+    <string name="network_automation_type_specific_wifi">Конкретный Wi-Fi SSID</string>
+    <string name="network_automation_rule_action">Действие</string>
+    <string name="network_automation_action_switch_server">Подключить сервер</string>
+    <string name="network_automation_action_disconnect">Отключить VPN</string>
+    <string name="network_automation_ssid_label">Имя сети (SSID)</string>
+    <string name="network_automation_ssid_placeholder">Введите SSID (например, Home_5G)</string>
+    <string name="network_automation_use_current_wifi">Вставить текущий Wi-Fi</string>
+    <string name="network_automation_server_label">Целевой сервер</string>
+    <string name="network_automation_ssid_exists_error">Правило для этого SSID уже существует</string>
+    <string name="network_automation_no_rules">Нет правил автоматизации. Нажмите «+», чтобы добавить.</string>
+    <string name="network_automation_edit_rule">Редактировать правило</string>
+    <string name="network_automation_delete_rule">Удалить правило</string>
+    <string name="network_automation_save">Сохранить</string>
+    <string name="network_automation_rule_deleted">Правило удалено</string>
+    <string name="network_automation_rule_saved">Правило сохранено</string>
 </resources>

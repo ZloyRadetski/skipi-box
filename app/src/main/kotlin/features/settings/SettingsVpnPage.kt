@@ -39,6 +39,7 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
+import app.navigation.Route
 import app.R
 import app.collectAppState
 import features.settings.sheets.tunSettingsSummary
@@ -209,6 +210,11 @@ fun SettingsVpnPage(
                             onCheckedChange = { enabled ->
                                 updateAppState { it.copy(enableSeamlessNetworkSwitching = enabled) }
                             },
+                        )
+                        ArrowPreference(
+                            title = stringResource(R.string.settings_network_automation_title),
+                            summary = stringResource(R.string.settings_network_automation_summary),
+                            onClick = { navigator.push(Route.SettingsNetworkAutomation) },
                         )
                     }
                 }

@@ -10,6 +10,7 @@ import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigNetworkActivation
 import features.config.TrafficConfigResourceSettings
 import features.logs.AndroidAppLogger
+import features.networkautomation.model.NetworkAutomationRule
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -62,6 +63,22 @@ internal object TrafficConfigListJson {
                 .mapNotNull(PersistedTrafficConfig::toStateOrNull)
         }.onFailure { error ->
             AndroidAppLogger.warn(LogTag, "Failed to decode persisted traffic configs", error)
+        }.getOrDefault(emptyList())
+    }
+
+    private const val LogTag = "AppStateJson"
+}
+
+internal object NetworkAutomationRuleListJson {
+    fun encode(values: List<NetworkAutomationRule>): String {
+        return appStateJson.encodeToString(values)
+    }
+
+    fun decode(payload: String): List<NetworkAutomationRule> {
+        return runCatching {
+            appStateJson.decodeFromString<List<NetworkAutomationRule>>(payload)
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to decode persisted network automation rules", error)
         }.getOrDefault(emptyList())
     }
 

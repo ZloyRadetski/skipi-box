@@ -20,6 +20,8 @@ import android.os.ParcelFileDescriptor
 import android.os.PowerManager
 import app.R
 import app.effects.matchingNetworkConfigId
+import features.networkautomation.engine.NetworkAutomationDecision
+import features.networkautomation.engine.NetworkAutomationEvaluator
 import data.AndroidAppStateStore
 import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
@@ -341,6 +343,7 @@ class SkipiVpnService : VpnService() {
                     setUnderlyingNetworks(arrayOf(network))
                 }
                 reconcileNetworkConfig(networkCapabilities)
+                reconcileNetworkAutomation(networkCapabilities)
             }
 
             override fun onLost(network: Network) {
@@ -411,6 +414,44 @@ class SkipiVpnService : VpnService() {
                     )
                 }
             }
+        }
+    }
+
+    private fun reconcileNetworkAutomation(capabilities: NetworkCapabilities?) {
+        val current = stateStore.state.value
+        if (!current.enableNetworkAutomation && !current.enableOnDemandVpn) return
+        val decision = NetworkAutomationEvaluator.evaluate(this, current, capabilities)
+
+        when (decision) {
+            NetworkAutomationDecision.DisconnectVpn -> {
+                if (current.enableOnDemandVpn && running) {
+                    serviceScope.launch {
+                        networkSwitchMutex.withLock {
+                            if (running) {
+                                AndroidAppLogger.info(LogTag, "On-Demand VPN: Disconnecting VPN due to network rule")
+                                networkProxyServiceUseCase.stop(current.runMode)
+                            }
+                        }
+                    }
+                }
+            }
+            is NetworkAutomationDecision.SwitchServer -> {
+                val targetServerId = decision.serverId
+                if (current.selectedProxyServerId != targetServerId && current.enableNetworkAutomation) {
+                    serviceScope.launch {
+                        networkSwitchMutex.withLock {
+                            val latest = stateStore.state.value
+                            if (!running || latest.selectedProxyServerId == targetServerId) return@withLock
+                            val targetServer = latest.proxyServers.firstOrNull { it.id == targetServerId } ?: return@withLock
+                            AndroidAppLogger.info(LogTag, "Auto-switching server to #${targetServer.id} due to network rule")
+                            stateStore.update { it.copy(selectedProxyServerId = targetServerId) }
+                            val switched = stateStore.state.value
+                            networkProxyServiceUseCase.restart(switched, targetServer)
+                        }
+                    }
+                }
+            }
+            NetworkAutomationDecision.NoChange -> Unit
         }
     }
 

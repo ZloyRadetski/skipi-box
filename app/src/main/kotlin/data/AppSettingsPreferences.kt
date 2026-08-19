@@ -14,6 +14,7 @@ import android.util.Base64
 import androidx.core.content.edit
 import app.AppState
 import features.config.TrafficConfigState
+import features.networkautomation.model.NetworkAutomationRule
 import app.CustomResourceFileState
 import app.ServiceControlSchedule
 import app.ServiceControlSettings
@@ -185,6 +186,18 @@ internal class AppSettingsPreferences(
             enableSeamlessNetworkSwitching = preferences.getBoolean(
                 KeyEnableSeamlessNetworkSwitching,
                 defaults.enableSeamlessNetworkSwitching,
+            ),
+            enableNetworkAutomation = preferences.getBoolean(
+                KeyEnableNetworkAutomation,
+                defaults.enableNetworkAutomation,
+            ),
+            enableOnDemandVpn = preferences.getBoolean(
+                KeyEnableOnDemandVpn,
+                defaults.enableOnDemandVpn,
+            ),
+            networkAutomationRules = preferences.getNetworkAutomationRuleList(
+                KeyNetworkAutomationRules,
+                defaults.networkAutomationRules,
             ),
             tunTcpKeepAliveInterval = preferences.getString(
                 KeyTunTcpKeepAliveInterval,
@@ -404,6 +417,9 @@ internal class AppSettingsPreferences(
             .putString(KeyTunIpv6Cidr, state.tunIpv6Cidr)
             .putBoolean(KeyEnableWakeLock, state.enableWakeLock)
             .putBoolean(KeyEnableSeamlessNetworkSwitching, state.enableSeamlessNetworkSwitching)
+            .putBoolean(KeyEnableNetworkAutomation, state.enableNetworkAutomation)
+            .putBoolean(KeyEnableOnDemandVpn, state.enableOnDemandVpn)
+            .putNetworkAutomationRuleList(KeyNetworkAutomationRules, state.networkAutomationRules)
             .putString(KeyTunTcpKeepAliveInterval, state.tunTcpKeepAliveInterval)
             .putString(KeyTunTcpUserTimeout, state.tunTcpUserTimeout)
             .putInt(KeyNextProxyServerId, state.nextProxyServerId)
@@ -599,6 +615,20 @@ internal class AppSettingsPreferences(
     ): SharedPreferences.Editor {
         return putString(key, TrafficConfigListJson.encode(values))
     }
+
+    private fun SharedPreferences.getNetworkAutomationRuleList(
+        key: String,
+        defaultValue: List<NetworkAutomationRule>,
+    ): List<NetworkAutomationRule> {
+        return getString(key, null)?.let(NetworkAutomationRuleListJson::decode) ?: defaultValue
+    }
+
+    private fun SharedPreferences.Editor.putNetworkAutomationRuleList(
+        key: String,
+        values: List<NetworkAutomationRule>,
+    ): SharedPreferences.Editor {
+        return putString(key, NetworkAutomationRuleListJson.encode(values))
+    }
 }
 
 private fun encryptSubscriptionInstallationUuid(value: String): String {
@@ -738,6 +768,9 @@ private const val KeyTunIpv4Cidr = "tun_ipv4_cidr"
 private const val KeyTunIpv6Cidr = "tun_ipv6_cidr"
 private const val KeyEnableWakeLock = "enable_wake_lock"
 private const val KeyEnableSeamlessNetworkSwitching = "enable_seamless_network_switching"
+private const val KeyEnableNetworkAutomation = "enable_network_automation"
+private const val KeyEnableOnDemandVpn = "enable_on_demand_vpn"
+private const val KeyNetworkAutomationRules = "network_automation_rules"
 private const val KeyTunTcpKeepAliveInterval = "tun_tcp_keep_alive_interval"
 private const val KeyTunTcpUserTimeout = "tun_tcp_user_timeout"
 private const val KeyNextProxyServerId = "next_proxy_server_id"

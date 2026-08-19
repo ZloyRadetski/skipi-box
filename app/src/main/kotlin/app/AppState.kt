@@ -18,6 +18,7 @@ import engine.network.NetworkDefaults
 import engine.xray.DefaultDirectDnsDomains
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
+import features.networkautomation.model.NetworkAutomationRule
 import engine.xray.DefaultFragmentPackets
 import engine.xray.DefaultMuxConcurrency
 import engine.xray.DefaultMuxUdp443Mode
@@ -99,6 +100,9 @@ data class AppState(
     val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
     val enableWakeLock: Boolean = true,
     val enableSeamlessNetworkSwitching: Boolean = true,
+    val enableNetworkAutomation: Boolean = false,
+    val enableOnDemandVpn: Boolean = false,
+    val networkAutomationRules: List<NetworkAutomationRule> = emptyList(),
     val tunTcpKeepAliveInterval: String = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL,
     val tunTcpUserTimeout: String = VpnDefaults.TCP_USER_TIMEOUT,
 
