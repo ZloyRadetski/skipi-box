@@ -93,24 +93,28 @@ import features.settings.SkipiUrlSchemesPage
 import features.settings.SubscriptionPingSettingsPage
 import features.settings.SubscriptionUserAgentsPage
 import features.subscription.SubscriptionGroupListPage
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -502,118 +506,244 @@ private fun ExpressiveFloatingNavigationBar(
     val haptic = LocalHapticFeedback.current
     val isDark = AppTheme.colors.isDark
 
-    val islandBackground = if (isDark) {
-        AppTheme.colors.surface.copy(alpha = 0.96f)
-    } else {
-        AppTheme.colors.surface
-    }
-    val islandBorderColor = if (isDark) {
-        Color.White.copy(alpha = 0.10f)
-    } else {
-        Color.Black.copy(alpha = 0.08f)
-    }
-    val islandShape = RoundedCornerShape(36.dp)
+    // Modern glass island styling: layered translucent gradient, specular rim highlight, and soft floating elevation
+    val islandShape = RoundedCornerShape(26.dp)
+
+    // Glass rim highlight gradient (specular reflection on top edge, softer at bottom)
+    val islandBorderBrush = Brush.verticalGradient(
+        colors = if (isDark) {
+            listOf(
+                Color.White.copy(alpha = 0.22f),
+                Color.White.copy(alpha = 0.08f),
+                Color.White.copy(alpha = 0.03f),
+                Color.Black.copy(alpha = 0.35f),
+            )
+        } else {
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                Color.White.copy(alpha = 0.45f),
+                Color.Black.copy(alpha = 0.04f),
+                Color.Black.copy(alpha = 0.08f),
+            )
+        }
+    )
+
+    val islandBackgroundBrush = Brush.verticalGradient(
+        colors = if (isDark) {
+            listOf(
+                AppTheme.colors.surface.copy(alpha = 0.96f),
+                AppTheme.colors.surface.copy(alpha = 0.90f),
+            )
+        } else {
+            listOf(
+                Color.White.copy(alpha = 0.98f),
+                AppTheme.colors.surface.copy(alpha = 0.92f),
+            )
+        }
+    )
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .then(modifier),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
+                .widthIn(max = 440.dp)
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 10.dp,
+                    elevation = 12.dp,
                     shape = islandShape,
-                    ambientColor = if (isDark) Color.Black else Color.Black.copy(alpha = 0.35f),
-                    spotColor = if (isDark) Color.Black else Color.Black.copy(alpha = 0.35f),
+                    ambientColor = if (isDark) Color.Black.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.22f),
+                    spotColor = if (isDark) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.28f),
                 )
                 .clip(islandShape)
-                .background(islandBackground)
+                .background(islandBackgroundBrush)
                 .border(
                     width = 1.dp,
-                    color = islandBorderColor,
+                    brush = islandBorderBrush,
                     shape = islandShape,
-                )
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                ),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                navigationItems.forEachIndexed { index, item ->
-                    val isSelected = selectedPage == index
-
-                    val animatedBackground by animateColorAsState(
-                        targetValue = if (isSelected) AppTheme.colors.accent else Color.Transparent,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                        label = "nav_tab_bg_$index",
-                    )
-                    val animatedIconTint by animateColorAsState(
-                        targetValue = if (isSelected) {
-                            AppTheme.colors.onAccent
-                        } else {
-                            AppTheme.colors.onSurfaceVariant.copy(alpha = 0.75f)
-                        },
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                        label = "nav_tab_icon_$index",
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(28.dp))
-                            .background(animatedBackground)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = {
-                                    if (!isSelected) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        mainPagerState.animateToPage(index)
-                                    }
-                                },
+            // Glass top specular sheen overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(24.dp)
+                    .clip(islandShape)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = if (isDark) 0.10f else 0.40f),
+                                Color.Transparent,
                             )
-                            .animateContentSize(
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                    stiffness = Spring.StiffnessMediumLow,
+                        )
+                    )
+            )
+
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 6.dp, vertical = 6.dp)
+            ) {
+                val tabCount = navigationItems.size.coerceAtLeast(1)
+                val totalWidth = maxWidth
+                val tabWidth = totalWidth / tabCount
+                val indicatorShape = RoundedCornerShape(20.dp)
+
+                // Smooth fluid gliding pill indicator
+                val targetIndicatorOffset = tabWidth * selectedPage
+                val indicatorOffsetX by animateDpAsState(
+                    targetValue = targetIndicatorOffset,
+                    animationSpec = spring(
+                        dampingRatio = 0.78f,
+                        stiffness = Spring.StiffnessMediumLow,
+                    ),
+                    label = "liquid_indicator_offset",
+                )
+
+                // Active Tab Sliding Indicator ("Liquid Capsule")
+                val indicatorBrush = Brush.verticalGradient(
+                    colors = if (isDark) {
+                        listOf(
+                            AppTheme.colors.accent.copy(alpha = 0.96f),
+                            AppTheme.colors.accent.copy(alpha = 0.88f),
+                        )
+                    } else {
+                        listOf(
+                            AppTheme.colors.accent,
+                            AppTheme.colors.accent.copy(alpha = 0.92f),
+                        )
+                    }
+                )
+
+                val indicatorBorderBrush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = if (isDark) 0.35f else 0.45f),
+                        Color.White.copy(alpha = 0.05f),
+                    )
+                )
+
+                // Sliding indicator pill
+                Box(
+                    modifier = Modifier
+                        .offset(x = indicatorOffsetX)
+                        .width(tabWidth)
+                        .matchParentSize()
+                        .padding(horizontal = 2.dp, vertical = 1.dp)
+                        .shadow(
+                            elevation = 3.dp,
+                            shape = indicatorShape,
+                            ambientColor = if (isDark) Color.Black.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f),
+                            spotColor = if (isDark) Color.Black.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f),
+                        )
+                        .clip(indicatorShape)
+                        .background(indicatorBrush)
+                        .border(
+                            width = 0.75.dp,
+                            brush = indicatorBorderBrush,
+                            shape = indicatorShape,
+                        )
+                ) {
+                    // Top gloss sheen on the indicator pill
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(14.dp)
+                            .clip(indicatorShape)
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = if (isDark) 0.18f else 0.30f),
+                                        Color.Transparent,
+                                    )
                                 )
                             )
-                            .padding(
-                                horizontal = if (isSelected) 22.dp else 16.dp,
-                                vertical = 13.dp,
+                    )
+                }
+
+                // Tab items (Icons & Labels are ALWAYS visible)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    navigationItems.forEachIndexed { index, item ->
+                        val isSelected = selectedPage == index
+
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.08f else 1.0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMediumLow,
                             ),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label,
-                            tint = animatedIconTint,
-                            modifier = Modifier.size(25.dp),
+                            label = "tab_icon_scale_$index",
                         )
 
-                        AnimatedVisibility(
-                            visible = isSelected,
-                            enter = fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) +
-                                    expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow)),
-                            exit = fadeOut(spring(stiffness = Spring.StiffnessMediumLow)) +
-                                   shrinkHorizontally(spring(stiffness = Spring.StiffnessMediumLow)),
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = item.label,
-                                    color = AppTheme.colors.onAccent,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 14.5.sp,
-                                    maxLines = 1,
+                        val iconOffsetY by animateDpAsState(
+                            targetValue = if (isSelected) (-1).dp else 0.dp,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                            label = "tab_icon_offset_y_$index",
+                        )
+
+                        val contentColor by animateColorAsState(
+                            targetValue = if (isSelected) {
+                                AppTheme.colors.onAccent
+                            } else {
+                                AppTheme.colors.onSurfaceVariant.copy(alpha = 0.72f)
+                            },
+                            animationSpec = tween(durationMillis = 200),
+                            label = "tab_color_$index",
+                        )
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(indicatorShape)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = {
+                                        if (!isSelected) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            mainPagerState.animateToPage(index)
+                                        } else if (index == MainNavigation.PROXY_PAGE_INDEX) {
+                                            mainPagerState.animateToPage(index)
+                                        }
+                                    },
                                 )
-                            }
+                                .padding(vertical = 7.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = item.label,
+                                tint = contentColor,
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .offset(y = iconOffsetY)
+                                    .graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                    },
+                            )
+
+                            Spacer(modifier = Modifier.height(2.5.dp))
+
+                            Text(
+                                text = item.label,
+                                color = contentColor,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                fontSize = 11.5.sp,
+                                maxLines = 1,
+                                letterSpacing = 0.2.sp,
+                            )
                         }
                     }
                 }
