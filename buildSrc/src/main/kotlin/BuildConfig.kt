@@ -11,7 +11,7 @@ import org.gradle.api.tasks.TaskAction
 object ProjectConfig {
     const val JVM_VERSION = 26
     const val PROJECT_NAME = "SKIPI"
-    const val VERSION_NAME = "0.1.2"
+    const val VERSION_NAME = "0.1.3"
     const val PACKAGE_NAME = "com.radetski.skipi"
     const val XRAY_CORE_VERSION = "v26.7.28"
     const val ANDROID_LIB_XRAY_LITE_VERSION = "v26.7.31"
