@@ -112,7 +112,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -506,41 +505,12 @@ private fun ExpressiveFloatingNavigationBar(
     val haptic = LocalHapticFeedback.current
     val isDark = AppTheme.colors.isDark
 
-    // Modern glass island styling: layered translucent gradient, specular rim highlight, and soft floating elevation
     val islandShape = RoundedCornerShape(26.dp)
-
-    // Glass rim highlight gradient (specular reflection on top edge, softer at bottom)
-    val islandBorderBrush = Brush.verticalGradient(
-        colors = if (isDark) {
-            listOf(
-                Color.White.copy(alpha = 0.22f),
-                Color.White.copy(alpha = 0.08f),
-                Color.White.copy(alpha = 0.03f),
-                Color.Black.copy(alpha = 0.35f),
-            )
-        } else {
-            listOf(
-                Color.White.copy(alpha = 0.90f),
-                Color.White.copy(alpha = 0.45f),
-                Color.Black.copy(alpha = 0.04f),
-                Color.Black.copy(alpha = 0.08f),
-            )
-        }
-    )
-
-    val islandBackgroundBrush = Brush.verticalGradient(
-        colors = if (isDark) {
-            listOf(
-                AppTheme.colors.surface.copy(alpha = 0.96f),
-                AppTheme.colors.surface.copy(alpha = 0.90f),
-            )
-        } else {
-            listOf(
-                Color.White.copy(alpha = 0.98f),
-                AppTheme.colors.surface.copy(alpha = 0.92f),
-            )
-        }
-    )
+    val islandBorderColor = if (isDark) {
+        Color.White.copy(alpha = 0.08f)
+    } else {
+        Color.Black.copy(alpha = 0.06f)
+    }
 
     Box(
         modifier = Modifier
@@ -555,115 +525,69 @@ private fun ExpressiveFloatingNavigationBar(
                 .widthIn(max = 440.dp)
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 12.dp,
+                    elevation = 8.dp,
                     shape = islandShape,
-                    ambientColor = if (isDark) Color.Black.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.22f),
-                    spotColor = if (isDark) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.28f),
+                    ambientColor = if (isDark) Color.Black.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.15f),
+                    spotColor = if (isDark) Color.Black.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.20f),
                 )
                 .clip(islandShape)
-                .background(islandBackgroundBrush)
+                .background(AppTheme.colors.surface)
                 .border(
                     width = 1.dp,
-                    brush = islandBorderBrush,
+                    color = islandBorderColor,
                     shape = islandShape,
-                ),
+                )
+                .padding(horizontal = 6.dp, vertical = 6.dp),
         ) {
-            // Glass top specular sheen overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(24.dp)
-                    .clip(islandShape)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = if (isDark) 0.10f else 0.40f),
-                                Color.Transparent,
-                            )
-                        )
-                    )
-            )
-
-            BoxWithConstraints(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 6.dp, vertical = 6.dp)
-            ) {
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val tabCount = navigationItems.size.coerceAtLeast(1)
                 val totalWidth = maxWidth
                 val tabWidth = totalWidth / tabCount
+                val innerPaddingHorizontal = 3.dp
+                val indicatorPaddingVertical = 2.dp
                 val indicatorShape = RoundedCornerShape(20.dp)
 
-                // Smooth fluid gliding pill indicator
-                val targetIndicatorOffset = tabWidth * selectedPage
-                val indicatorOffsetX by animateDpAsState(
-                    targetValue = targetIndicatorOffset,
-                    animationSpec = spring(
-                        dampingRatio = 0.78f,
-                        stiffness = Spring.StiffnessMediumLow,
-                    ),
-                    label = "liquid_indicator_offset",
+                var previousPage by remember { mutableIntStateOf(selectedPage) }
+                val isMovingForward = selectedPage >= previousPage
+
+                val leadSpring = spring<Dp>(
+                    dampingRatio = 0.72f,
+                    stiffness = Spring.StiffnessMediumLow,
+                )
+                val trailSpring = spring<Dp>(
+                    dampingRatio = 0.68f,
+                    stiffness = Spring.StiffnessLow,
                 )
 
-                // Active Tab Sliding Indicator ("Liquid Capsule")
-                val indicatorBrush = Brush.verticalGradient(
-                    colors = if (isDark) {
-                        listOf(
-                            AppTheme.colors.accent.copy(alpha = 0.96f),
-                            AppTheme.colors.accent.copy(alpha = 0.88f),
-                        )
-                    } else {
-                        listOf(
-                            AppTheme.colors.accent,
-                            AppTheme.colors.accent.copy(alpha = 0.92f),
-                        )
-                    }
+                val targetLeft = tabWidth * selectedPage + innerPaddingHorizontal
+                val targetRight = tabWidth * (selectedPage + 1) - innerPaddingHorizontal
+
+                val animatedLeft by animateDpAsState(
+                    targetValue = targetLeft,
+                    animationSpec = if (isMovingForward) trailSpring else leadSpring,
+                    label = "liquid_capsule_left",
+                )
+                val animatedRight by animateDpAsState(
+                    targetValue = targetRight,
+                    animationSpec = if (isMovingForward) leadSpring else trailSpring,
+                    label = "liquid_capsule_right",
                 )
 
-                val indicatorBorderBrush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = if (isDark) 0.35f else 0.45f),
-                        Color.White.copy(alpha = 0.05f),
-                    )
-                )
+                LaunchedEffect(selectedPage) {
+                    previousPage = selectedPage
+                }
 
-                // Sliding indicator pill
+                // Fluid elastic rubber capsule indicator
+                val indicatorWidth = (animatedRight - animatedLeft).coerceAtLeast(0.dp)
                 Box(
                     modifier = Modifier
-                        .offset(x = indicatorOffsetX)
-                        .width(tabWidth)
+                        .offset(x = animatedLeft)
+                        .width(indicatorWidth)
                         .matchParentSize()
-                        .padding(horizontal = 2.dp, vertical = 1.dp)
-                        .shadow(
-                            elevation = 3.dp,
-                            shape = indicatorShape,
-                            ambientColor = if (isDark) Color.Black.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f),
-                            spotColor = if (isDark) Color.Black.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f),
-                        )
+                        .padding(vertical = indicatorPaddingVertical)
                         .clip(indicatorShape)
-                        .background(indicatorBrush)
-                        .border(
-                            width = 0.75.dp,
-                            brush = indicatorBorderBrush,
-                            shape = indicatorShape,
-                        )
-                ) {
-                    // Top gloss sheen on the indicator pill
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(14.dp)
-                            .clip(indicatorShape)
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = if (isDark) 0.18f else 0.30f),
-                                        Color.Transparent,
-                                    )
-                                )
-                            )
-                    )
-                }
+                        .background(AppTheme.colors.accent),
+                )
 
                 // Tab items (Icons & Labels are ALWAYS visible)
                 Row(
