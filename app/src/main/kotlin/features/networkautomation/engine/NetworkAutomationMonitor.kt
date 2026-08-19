@@ -22,12 +22,15 @@ import features.proxy.server.usecase.ProxyServiceUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 class NetworkAutomationMonitor(
     context: Context,
@@ -100,6 +103,7 @@ class NetworkAutomationMonitor(
         runCatching {
             val request = NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
                 .build()
             cm.registerNetworkCallback(request, callback)
             AndroidAppLogger.info(LogTag, "Network automation observer registered (initial network: $lastKnownNetworkId)")
@@ -138,8 +142,10 @@ class NetworkAutomationMonitor(
     fun scheduleEvaluation(capabilities: NetworkCapabilities?) {
         debounceJob?.cancel()
         debounceJob = scope.launch(Dispatchers.Default) {
-            delay(750)
-            reconcile(capabilities)
+            delay(1000)
+            withContext(NonCancellable) {
+                reconcile(capabilities)
+            }
         }
     }
 
@@ -187,16 +193,15 @@ class NetworkAutomationMonitor(
                                     LogTag,
                                     "Network automation: Auto-switching server to #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network $currentNetworkId",
                                 )
-                                stateStore.update {
-                                    it.copy(
-                                        selectedProxyServerId = targetServerId,
-                                        activeTrafficConfigId = resolvedState.activeTrafficConfigId,
-                                    )
-                                }
-                                val updatedState = stateStore.state.value
+                                val updatedState = state.copy(
+                                    selectedProxyServerId = targetServerId,
+                                    activeTrafficConfigId = resolvedState.activeTrafficConfigId,
+                                )
                                 when (val result = proxyServiceUseCase.restart(updatedState, targetServer)) {
                                     is ProxyServiceResult.Success -> stateStore.update {
                                         it.copy(
+                                            selectedProxyServerId = targetServerId,
+                                            activeTrafficConfigId = resolvedState.activeTrafficConfigId,
                                             proxyRunning = result.proxyRunning,
                                             localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
                                         )
@@ -210,16 +215,15 @@ class NetworkAutomationMonitor(
                                     LogTag,
                                     "On-Demand VPN: Auto-starting VPN on server #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network transition to $currentNetworkId",
                                 )
-                                stateStore.update {
-                                    it.copy(
-                                        selectedProxyServerId = targetServerId,
-                                        activeTrafficConfigId = resolvedState.activeTrafficConfigId,
-                                    )
-                                }
-                                val updatedState = stateStore.state.value
+                                val updatedState = state.copy(
+                                    selectedProxyServerId = targetServerId,
+                                    activeTrafficConfigId = resolvedState.activeTrafficConfigId,
+                                )
                                 when (val result = proxyServiceUseCase.toggle(updatedState, targetServer)) {
                                     is ProxyServiceResult.Success -> stateStore.update {
                                         it.copy(
+                                            selectedProxyServerId = targetServerId,
+                                            activeTrafficConfigId = resolvedState.activeTrafficConfigId,
                                             proxyRunning = result.proxyRunning,
                                             localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
                                         )
@@ -233,7 +237,9 @@ class NetworkAutomationMonitor(
                     NetworkAutomationDecision.NoChange -> Unit
                 }
             }.onFailure { error ->
-                AndroidAppLogger.error(LogTag, "Error during network automation reconciliation", error)
+                if (error !is CancellationException) {
+                    AndroidAppLogger.error(LogTag, "Error during network automation reconciliation", error)
+                }
             }
         }
     }

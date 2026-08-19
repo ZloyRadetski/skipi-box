@@ -29,17 +29,16 @@ class AndroidProxyEngine(
 ) {
     private val appContext = context.applicationContext
     private val vpnXrayEngine = VpnXrayEngine(appContext, requestVpnPermission)
-    private val operationMutex = Mutex()
 
-    suspend fun start(request: ProxyEngineStartRequest): ProxyEngineStatus = operationMutex.withLock {
+    suspend fun start(request: ProxyEngineStartRequest): ProxyEngineStatus = globalOperationMutex.withLock {
         startUnlocked(request, restart = false)
     }
 
-    suspend fun restart(request: ProxyEngineStartRequest): ProxyEngineStatus = operationMutex.withLock {
+    suspend fun restart(request: ProxyEngineStartRequest): ProxyEngineStatus = globalOperationMutex.withLock {
         startUnlocked(request, restart = true)
     }
 
-    suspend fun stop(preferredRunMode: Int? = null): ProxyEngineStatus = operationMutex.withLock {
+    suspend fun stop(preferredRunMode: Int? = null): ProxyEngineStatus = globalOperationMutex.withLock {
         withContext(Dispatchers.Default) {
             ProxyTrafficStatsService.reconcile(appContext, null)
             ProxyTrafficStatsRuntimeStore.clear(appContext)
@@ -55,7 +54,7 @@ class AndroidProxyEngine(
     suspend fun status(
         preferredRunMode: Int? = null,
         appState: AppState? = null,
-    ): ProxyEngineStatus = operationMutex.withLock {
+    ): ProxyEngineStatus = globalOperationMutex.withLock {
         withContext(Dispatchers.Default) {
             vpnXrayEngine.status()
                 .copy(runMode = RunModeVpnService)
@@ -134,6 +133,10 @@ class AndroidProxyEngine(
             }
         }
         return this
+    }
+
+    companion object {
+        private val globalOperationMutex = Mutex()
     }
 }
 

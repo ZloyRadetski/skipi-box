@@ -380,15 +380,17 @@ class SkipiVpnService : VpnService() {
         @Volatile
         private var running = false
 
+        private val startMutex = Mutex()
+
         @Volatile
         private var pendingStart: CompletableDeferred<Result<Unit>>? = null
 
-        internal suspend fun start(context: Context, config: VpnServiceStartConfig) {
+        internal suspend fun start(context: Context, config: VpnServiceStartConfig) = startMutex.withLock {
             val result = CompletableDeferred<Result<Unit>>()
             pendingStart = result
             try {
                 context.startService(SkipiVpnServiceIntents.startIntent(context, config))
-                withTimeout(10_000.milliseconds) {
+                withTimeout(15_000.milliseconds) {
                     result.await()
                 }.getOrThrow()
             } finally {
