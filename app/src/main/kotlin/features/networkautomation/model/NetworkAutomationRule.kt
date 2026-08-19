@@ -16,6 +16,7 @@ enum class NetworkRuleType {
 @Serializable
 enum class NetworkRuleAction {
     SWITCH_SERVER,
+    SWITCH_IF_CONNECTED,
     DISCONNECT_VPN,
 }
 

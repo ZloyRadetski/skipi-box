@@ -1003,7 +1003,8 @@
     <string name="network_automation_type_any_wifi">Любой Wi-Fi</string>
     <string name="network_automation_type_specific_wifi">Конкретный Wi-Fi SSID</string>
     <string name="network_automation_rule_action">Действие</string>
-    <string name="network_automation_action_switch_server">Подключить сервер</string>
+    <string name="network_automation_action_switch_server">Всегда подключать сервер</string>
+    <string name="network_automation_action_switch_if_connected">Подключить, если включен</string>
     <string name="network_automation_action_disconnect">Отключить VPN</string>
     <string name="network_automation_ssid_label">Имя сети (SSID)</string>
     <string name="network_automation_ssid_placeholder">Введите SSID (например, Home_5G)</string>

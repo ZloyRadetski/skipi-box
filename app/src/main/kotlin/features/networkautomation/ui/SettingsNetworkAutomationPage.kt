@@ -176,6 +176,10 @@ fun SettingsNetworkAutomationPage(
                                 val serverName = targetServer?.displayName() ?: "—"
                                 "${stringResource(R.string.network_automation_action_switch_server)}: $serverName"
                             }
+                            NetworkRuleAction.SWITCH_IF_CONNECTED -> {
+                                val serverName = targetServer?.displayName() ?: "—"
+                                "${stringResource(R.string.network_automation_action_switch_if_connected)}: $serverName"
+                            }
                         }
 
                         Card(

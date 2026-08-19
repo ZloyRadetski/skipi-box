@@ -138,10 +138,12 @@ internal fun NetworkAutomationRuleDialog(
 
     val actionOptions = listOf(
         stringResource(R.string.network_automation_action_switch_server),
+        stringResource(R.string.network_automation_action_switch_if_connected),
         stringResource(R.string.network_automation_action_disconnect),
     )
     val actionValues = listOf(
         NetworkRuleAction.SWITCH_SERVER,
+        NetworkRuleAction.SWITCH_IF_CONNECTED,
         NetworkRuleAction.DISCONNECT_VPN,
     )
 
@@ -168,6 +170,7 @@ internal fun NetworkAutomationRuleDialog(
 
     val selectedType = typeValues[selectedTypeIndex]
     val selectedAction = actionValues[selectedActionIndex]
+    val requiresServer = selectedAction == NetworkRuleAction.SWITCH_SERVER || selectedAction == NetworkRuleAction.SWITCH_IF_CONNECTED
 
     // Validation
     val isSsidDuplicate = remember(selectedType, ssid, rule, existingRules) {
@@ -191,7 +194,7 @@ internal fun NetworkAutomationRuleDialog(
     val canSave = when {
         selectedType == NetworkRuleType.SPECIFIC_WIFI && (ssid.isBlank() || isSsidDuplicate) -> false
         isTypeDuplicate -> false
-        selectedAction == NetworkRuleAction.SWITCH_SERVER && servers.isEmpty() -> false
+        requiresServer && servers.isEmpty() -> false
         else -> true
     }
 
@@ -279,7 +282,7 @@ internal fun NetworkAutomationRuleDialog(
                     onSelectedIndexChange = { selectedActionIndex = it },
                 )
 
-                if (selectedAction == NetworkRuleAction.SWITCH_SERVER && servers.isNotEmpty()) {
+                if (requiresServer && servers.isNotEmpty()) {
                     WindowDropdownPreference(
                         title = stringResource(R.string.network_automation_server_label),
                         items = serverOptions,
@@ -306,7 +309,7 @@ internal fun NetworkAutomationRuleDialog(
                     text = stringResource(R.string.network_automation_save),
                     enabled = canSave,
                     onClick = {
-                        val targetServer = if (selectedAction == NetworkRuleAction.SWITCH_SERVER && servers.isNotEmpty()) {
+                        val targetServer = if (requiresServer && servers.isNotEmpty()) {
                             serverIds.getOrNull(selectedServerIndex)
                         } else null
 

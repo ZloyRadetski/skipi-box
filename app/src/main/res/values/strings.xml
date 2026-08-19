@@ -1013,7 +1013,8 @@
     <string name="network_automation_type_any_wifi">Any Wi-Fi</string>
     <string name="network_automation_type_specific_wifi">Specific Wi-Fi SSID</string>
     <string name="network_automation_rule_action">Action</string>
-    <string name="network_automation_action_switch_server">Connect server</string>
+    <string name="network_automation_action_switch_server">Always connect server</string>
+    <string name="network_automation_action_switch_if_connected">Connect only if VPN is active</string>
     <string name="network_automation_action_disconnect">Disconnect VPN</string>
     <string name="network_automation_ssid_label">Network name (SSID)</string>
     <string name="network_automation_ssid_placeholder">Enter SSID (e.g. Home_5G)</string>

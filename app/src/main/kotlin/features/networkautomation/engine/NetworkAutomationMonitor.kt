@@ -211,7 +211,7 @@ class NetworkAutomationMonitor(
                                 }
                             }
                         } else {
-                            if (state.enableOnDemandVpn && isNetworkTransition) {
+                            if (state.enableOnDemandVpn && isNetworkTransition && !decision.requireAlreadyRunning) {
                                 AndroidAppLogger.info(
                                     LogTag,
                                     "On-Demand VPN: Auto-starting VPN on server #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network transition to $currentNetworkId",

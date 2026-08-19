@@ -15,7 +15,7 @@ import features.networkautomation.model.NetworkRuleAction
 import features.networkautomation.model.NetworkRuleType
 
 sealed interface NetworkAutomationDecision {
-    data class SwitchServer(val serverId: Int) : NetworkAutomationDecision
+    data class SwitchServer(val serverId: Int, val requireAlreadyRunning: Boolean = false) : NetworkAutomationDecision
     data object DisconnectVpn : NetworkAutomationDecision
     data object NoChange : NetworkAutomationDecision
 }
@@ -183,7 +183,15 @@ object NetworkAutomationEvaluator {
             NetworkRuleAction.SWITCH_SERVER -> {
                 val targetServerId = matchedRule.targetServerId
                 if (targetServerId != null && state.proxyServers.any { it.id == targetServerId }) {
-                    NetworkAutomationDecision.SwitchServer(targetServerId)
+                    NetworkAutomationDecision.SwitchServer(targetServerId, requireAlreadyRunning = false)
+                } else {
+                    NetworkAutomationDecision.NoChange
+                }
+            }
+            NetworkRuleAction.SWITCH_IF_CONNECTED -> {
+                val targetServerId = matchedRule.targetServerId
+                if (targetServerId != null && state.proxyServers.any { it.id == targetServerId }) {
+                    NetworkAutomationDecision.SwitchServer(targetServerId, requireAlreadyRunning = true)
                 } else {
                     NetworkAutomationDecision.NoChange
                 }
