@@ -54,7 +54,9 @@ import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
 @Composable
@@ -310,12 +312,13 @@ private fun updateSubscriptionGroup(
                 fetchOptions = { updateGroup -> stateStore.state.value.toSubscriptionFetchOptions(updateGroup) },
             )
             if (result.updates.isNotEmpty()) {
-                updateAppState { state ->
-                    state.withUpdatedSubscriptionServers(
+                val nextState = withContext(Dispatchers.Default) {
+                    stateStore.state.value.withUpdatedSubscriptionServers(
                         updates = result.updates,
                         updatedAtMillis = result.updatedAtMillis,
                     )
                 }
+                updateAppState { nextState }
             }
             services.tipNotifier.show(
                 subscriptionUpdateMessage(

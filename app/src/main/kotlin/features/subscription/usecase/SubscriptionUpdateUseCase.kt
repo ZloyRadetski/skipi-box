@@ -18,11 +18,13 @@ import features.subscription.runtime.SubscriptionFetchResponse
 import features.subscription.subscriptionMetadata
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import ui.text.formatTemplate
 import kotlin.time.Clock
 
@@ -59,30 +61,32 @@ private suspend fun updateSubscriptionsFromResponses(
     fetchOptions: (SubscriptionGroupState) -> AndroidSubscriptionFetchOptions,
     fetchResponse: suspend (String, String, AndroidSubscriptionFetchOptions) -> SubscriptionFetchResponse,
     coordinator: SubscriptionUpdateCoordinator = DefaultSubscriptionUpdateCoordinator,
-): ProxyServerListSubscriptionUpdateResult = supervisorScope {
-    val results = groups.map { group ->
-        async {
-            group to coordinator.withGroup(group.id) {
-                updateSubscriptionGroup(
-                    group = group,
-                    fetchResponse = fetchResponse,
-                    fetchOptions = fetchOptions(group),
-                )
+): ProxyServerListSubscriptionUpdateResult = withContext(Dispatchers.Default) {
+    supervisorScope {
+        val results = groups.map { group ->
+            async {
+                group to coordinator.withGroup(group.id) {
+                    updateSubscriptionGroup(
+                        group = group,
+                        fetchResponse = fetchResponse,
+                        fetchOptions = fetchOptions(group),
+                    )
+                }
+            }
+        }.awaitAll()
+        val updates = results
+            .mapNotNull { (_, result) -> result.getOrNull() }
+        val failures = results.mapNotNull { (group, result) ->
+            result.exceptionOrNull()?.let { error ->
+                ProxyServerListSubscriptionFailure(groupId = group.id, error = error)
             }
         }
-    }.awaitAll()
-    val updates = results
-        .mapNotNull { (_, result) -> result.getOrNull() }
-    val failures = results.mapNotNull { (group, result) ->
-        result.exceptionOrNull()?.let { error ->
-            ProxyServerListSubscriptionFailure(groupId = group.id, error = error)
-        }
+        ProxyServerListSubscriptionUpdateResult(
+            updates = updates,
+            failures = failures,
+            updatedAtMillis = Clock.System.now().toEpochMilliseconds(),
+        )
     }
-    ProxyServerListSubscriptionUpdateResult(
-        updates = updates,
-        failures = failures,
-        updatedAtMillis = Clock.System.now().toEpochMilliseconds(),
-    )
 }
 
 private suspend fun updateSubscriptionGroup(

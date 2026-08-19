@@ -206,12 +206,13 @@ fun ProxyServerListPage(
             },
         )
         if (result.updates.isNotEmpty()) {
-            updateAppState { state ->
-                state.withUpdatedSubscriptionServers(
+            val nextState = withContext(Dispatchers.Default) {
+                stateStore.state.value.withUpdatedSubscriptionServers(
                     updates = result.updates,
                     updatedAtMillis = result.updatedAtMillis,
                 )
             }
+            updateAppState { nextState }
         }
         tipNotifier.show(
             subscriptionUpdateMessage(
@@ -235,12 +236,13 @@ fun ProxyServerListPage(
                 fetchOptions = { group -> stateStore.state.value.toSubscriptionFetchOptions(group) },
             )
             if (result.updates.isNotEmpty()) {
-                updateAppState { state ->
-                    state.withUpdatedSubscriptionServers(
+                val nextState = withContext(Dispatchers.Default) {
+                    stateStore.state.value.withUpdatedSubscriptionServers(
                         updates = result.updates,
                         updatedAtMillis = result.updatedAtMillis,
                     )
                 }
+                updateAppState { nextState }
             }
             tipNotifier.show(
                 subscriptionUpdateMessage(

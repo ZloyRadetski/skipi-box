@@ -31,6 +31,14 @@ internal data class ProxyServerListSubscriptionUpdate(
     val metadata: SubscriptionMetadata = SubscriptionMetadata(),
 )
 
+private data class CandidateIndexEntry(
+    val state: ProxyServerState,
+    val fingerprint: String,
+    val remarks: String,
+    val endpointKey: String?,
+    val index: Int,
+)
+
 internal data class SubscriptionGroupFetchIdentity(
     val url: String,
     val userAgent: String,
@@ -170,6 +178,24 @@ internal fun AppState.withUpdatedSubscriptionServers(
 
     val importedServers = applicableUpdates.flatMap { update ->
         val candidates = existingDownloadedServersByGroup[update.groupId].orEmpty()
+        val candidateEntries = candidates.mapIndexed { index, candidate ->
+            CandidateIndexEntry(
+                state = candidate,
+                fingerprint = candidate.server.connectionFingerprint(),
+                remarks = candidate.server.getInfo().remarks.trim(),
+                endpointKey = candidate.server.endpointKey(),
+                index = index,
+            )
+        }
+        val byFingerprint = mutableMapOf<String, MutableList<CandidateIndexEntry>>()
+        val byEndpoint = mutableMapOf<String, MutableList<CandidateIndexEntry>>()
+        for (entry in candidateEntries) {
+            byFingerprint.getOrPut(entry.fingerprint) { mutableListOf() }.add(entry)
+            entry.endpointKey?.let { endpoint ->
+                byEndpoint.getOrPut(endpoint) { mutableListOf() }.add(entry)
+            }
+        }
+
         val consumedIds = mutableSetOf<Int>()
 
         update.servers.mapIndexed { index, newServer ->
@@ -178,47 +204,43 @@ internal fun AppState.withUpdatedSubscriptionServers(
             val newEndpoint = newServer.endpointKey()
 
             // 1. Primary: match by exact canonical connection fingerprint (ignoring remarks/name)
-            val fingerprintMatches = candidates.filter { existing ->
-                existing.id !in consumedIds && existing.server.connectionFingerprint() == newFingerprint
-            }
+            val fingerprintMatches = byFingerprint[newFingerprint]?.filter { it.state.id !in consumedIds }.orEmpty()
 
-            var preserved: ProxyServerState? = when {
+            var preservedEntry: CandidateIndexEntry? = when {
                 fingerprintMatches.isEmpty() -> null
                 fingerprintMatches.size == 1 -> fingerprintMatches.first()
                 else -> {
                     // Among multiple candidates with identical fingerprints, pick closest remarks
-                    fingerprintMatches.firstOrNull { it.server.getInfo().remarks.trim() == newRemarks }
+                    fingerprintMatches.firstOrNull { it.remarks == newRemarks }
                         ?: fingerprintMatches.firstOrNull {
-                            val existRemark = it.server.getInfo().remarks.trim()
-                            existRemark.contains(newRemarks, ignoreCase = true) || newRemarks.contains(existRemark, ignoreCase = true)
+                            it.remarks.contains(newRemarks, ignoreCase = true) || newRemarks.contains(it.remarks, ignoreCase = true)
                         }
                         ?: fingerprintMatches.first()
                 }
             }
 
             // 2. Secondary fallback: match by (protocol + host:port) if stream parameters slightly changed
-            if (preserved == null && newEndpoint != null) {
-                val endpointMatches = candidates.filter { existing ->
-                    existing.id !in consumedIds && existing.server.endpointKey() == newEndpoint
-                }
-                preserved = when {
+            if (preservedEntry == null && newEndpoint != null) {
+                val endpointMatches = byEndpoint[newEndpoint]?.filter { it.state.id !in consumedIds }.orEmpty()
+                preservedEntry = when {
                     endpointMatches.isEmpty() -> null
                     endpointMatches.size == 1 -> endpointMatches.first()
                     else -> {
-                        endpointMatches.firstOrNull { it.server.getInfo().remarks.trim() == newRemarks }
+                        endpointMatches.firstOrNull { it.remarks == newRemarks }
                             ?: endpointMatches.first()
                     }
                 }
             }
 
             // 3. Tertiary fallback: match by position index within group if class types match
-            if (preserved == null && index < candidates.size) {
-                val candidateAtSlot = candidates[index]
-                if (candidateAtSlot.id !in consumedIds && candidateAtSlot.server::class == newServer::class) {
-                    preserved = candidateAtSlot
+            if (preservedEntry == null && index < candidateEntries.size) {
+                val candidateAtSlot = candidateEntries[index]
+                if (candidateAtSlot.state.id !in consumedIds && candidateAtSlot.state.server::class == newServer::class) {
+                    preservedEntry = candidateAtSlot
                 }
             }
 
+            val preserved = preservedEntry?.state
             val assignedId: Int
             if (preserved != null) {
                 consumedIds += preserved.id
@@ -226,11 +248,11 @@ internal fun AppState.withUpdatedSubscriptionServers(
                 oldIdToNewId[preserved.id] = assignedId
             } else {
                 assignedId = nextServerId++
-                val fallbackCandidate = candidates.getOrNull(index)?.takeIf { it.id !in consumedIds }
-                    ?: candidates.firstOrNull { it.id !in consumedIds }
+                val fallbackCandidate = candidateEntries.getOrNull(index)?.takeIf { it.state.id !in consumedIds }
+                    ?: candidateEntries.firstOrNull { it.state.id !in consumedIds }
                 if (fallbackCandidate != null) {
-                    consumedIds += fallbackCandidate.id
-                    oldIdToNewId[fallbackCandidate.id] = assignedId
+                    consumedIds += fallbackCandidate.state.id
+                    oldIdToNewId[fallbackCandidate.state.id] = assignedId
                 }
             }
 

@@ -127,8 +127,10 @@ import features.subscription.toSubscriptionInstallConfigOrNull
 import features.settings.currentTunnelMemoryPssKb
 import features.settings.formatTunnelMemory
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -1541,12 +1543,13 @@ private fun updateSubscriptionGroups(
             fetchOptions = { group -> stateStore.state.value.toSubscriptionFetchOptions(group) },
         )
         if (result.updates.isNotEmpty()) {
-            updateAppState { state ->
-                state.withUpdatedSubscriptionServers(
+            val nextState = withContext(Dispatchers.Default) {
+                stateStore.state.value.withUpdatedSubscriptionServers(
                     updates = result.updates,
                     updatedAtMillis = result.updatedAtMillis,
                 )
             }
+            updateAppState { nextState }
         }
         tipNotifier.show(
             subscriptionUpdateMessage(
