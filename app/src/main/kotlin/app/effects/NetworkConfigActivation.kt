@@ -26,8 +26,8 @@ internal fun AppState.matchingNetworkConfigId(capabilities: NetworkCapabilities)
 internal fun AppState.resolveActiveNetworkConfig(context: Context): AppState {
     return runCatching {
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return@runCatching this
-        val activeNetwork = cm.activeNetwork ?: return@runCatching this
-        val capabilities = cm.getNetworkCapabilities(activeNetwork) ?: return@runCatching this
+        val capabilities = features.networkautomation.engine.NetworkAutomationEvaluator.getActivePhysicalCapabilities(context, null)
+            ?: return@runCatching this
         val matchingId = matchingNetworkConfigId(capabilities) ?: return@runCatching this
         if (activeTrafficConfigId != matchingId && trafficConfigs.any { it.id == matchingId }) {
             copy(activeTrafficConfigId = matchingId)
