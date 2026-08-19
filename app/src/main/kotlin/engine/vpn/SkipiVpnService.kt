@@ -342,8 +342,6 @@ class SkipiVpnService : VpnService() {
                 if (stateStore.state.value.enableSeamlessNetworkSwitching) {
                     setUnderlyingNetworks(arrayOf(network))
                 }
-                reconcileNetworkConfig(networkCapabilities)
-                reconcileNetworkAutomation(networkCapabilities)
             }
 
             override fun onLost(network: Network) {
@@ -362,7 +360,7 @@ class SkipiVpnService : VpnService() {
             }
         }.onFailure { error ->
             networkCallback = null
-            AndroidAppLogger.warn(LogTag, "Failed to observe network changes for configuration switching", error)
+            AndroidAppLogger.warn(LogTag, "Failed to observe network changes for seamless routing", error)
         }
     }
 
@@ -372,86 +370,7 @@ class SkipiVpnService : VpnService() {
         runCatching {
             getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop network configuration observer", error)
-        }
-    }
-
-    private fun reconcileNetworkConfig(capabilities: NetworkCapabilities?) {
-        val targetConfigId = capabilities?.let { stateStore.state.value.matchingNetworkConfigId(it) } ?: return
-        val current = stateStore.state.value
-        if (!running || current.activeTrafficConfigId == targetConfigId) return
-        val target = current.trafficConfigs.firstOrNull { config -> config.id == targetConfigId } ?: return
-
-        serviceScope.launch {
-            networkSwitchMutex.withLock {
-                val latestState = stateStore.state.value
-                if (!running || latestState.activeTrafficConfigId == targetConfigId) return@withLock
-                AndroidAppLogger.info(LogTag, "Auto-switching traffic config to '${target.name}' (id=$targetConfigId) on network change")
-                stateStore.update { state ->
-                    if (state.activeTrafficConfigId == latestState.activeTrafficConfigId) {
-                        state.copy(activeTrafficConfigId = target.id)
-                    } else {
-                        state
-                    }
-                }
-                val switched = stateStore.state.value
-                val selectedServer = switched.proxyServers.firstOrNull { server ->
-                    server.id == switched.selectedProxyServerId
-                }
-                when (val result = runCatching { networkProxyServiceUseCase.restart(switched, selectedServer) }.getOrNull()) {
-                    is ProxyServiceResult.Success -> stateStore.update { state ->
-                        state.copy(
-                            proxyRunning = result.proxyRunning,
-                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
-                        )
-                    }
-
-                    ProxyServiceResult.MissingServer, null -> Unit
-                    is ProxyServiceResult.Failed -> AndroidAppLogger.warn(
-                        LogTag,
-                        "Failed to restart VPN after network configuration switch",
-                        result.error,
-                    )
-                }
-            }
-        }
-    }
-
-    private fun reconcileNetworkAutomation(capabilities: NetworkCapabilities?) {
-        val current = stateStore.state.value
-        if (!current.enableNetworkAutomation && !current.enableOnDemandVpn) return
-        val decision = NetworkAutomationEvaluator.evaluate(this, current, capabilities)
-
-        when (decision) {
-            NetworkAutomationDecision.DisconnectVpn -> {
-                if (current.enableOnDemandVpn && running) {
-                    serviceScope.launch {
-                        networkSwitchMutex.withLock {
-                            if (running) {
-                                AndroidAppLogger.info(LogTag, "On-Demand VPN: Disconnecting VPN due to network rule")
-                                networkProxyServiceUseCase.stop(current.runMode)
-                            }
-                        }
-                    }
-                }
-            }
-            is NetworkAutomationDecision.SwitchServer -> {
-                val targetServerId = decision.serverId
-                if (current.selectedProxyServerId != targetServerId && current.enableNetworkAutomation) {
-                    serviceScope.launch {
-                        networkSwitchMutex.withLock {
-                            val latest = stateStore.state.value
-                            if (!running || latest.selectedProxyServerId == targetServerId) return@withLock
-                            val targetServer = latest.proxyServers.firstOrNull { it.id == targetServerId } ?: return@withLock
-                            AndroidAppLogger.info(LogTag, "Auto-switching server to #${targetServer.id} due to network rule")
-                            stateStore.update { it.copy(selectedProxyServerId = targetServerId) }
-                            val switched = stateStore.state.value
-                            networkProxyServiceUseCase.restart(switched, targetServer)
-                        }
-                    }
-                }
-            }
-            NetworkAutomationDecision.NoChange -> Unit
+            AndroidAppLogger.warn(LogTag, "Failed to stop network observer", error)
         }
     }
 

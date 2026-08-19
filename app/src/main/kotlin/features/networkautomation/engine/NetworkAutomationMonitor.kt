@@ -3,12 +3,16 @@
 
 package features.networkautomation.engine
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import androidx.core.content.ContextCompat
+import app.effects.resolveActiveNetworkConfig
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.SkipiVpnService
@@ -63,7 +67,12 @@ class NetworkAutomationMonitor(
         if (networkCallback != null) return
         val cm = appContext.getSystemService(ConnectivityManager::class.java) ?: return
 
-        val callback = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val hasFineLocation = ContextCompat.checkSelfPermission(
+            appContext,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val callback = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && hasFineLocation) {
             runCatching {
                 object : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
                     override fun onAvailable(network: Network) {
@@ -126,66 +135,90 @@ class NetworkAutomationMonitor(
     fun scheduleEvaluation(capabilities: NetworkCapabilities?) {
         debounceJob?.cancel()
         debounceJob = scope.launch(Dispatchers.Default) {
-            delay(500)
+            delay(750)
             reconcile(capabilities)
         }
     }
 
     private suspend fun reconcile(capabilities: NetworkCapabilities?) {
         operationMutex.withLock {
-            val state = stateStore.state.value
-            if (!state.enableNetworkAutomation && !state.enableOnDemandVpn) return
+            runCatching {
+                val state = stateStore.state.value
+                if (!state.enableNetworkAutomation && !state.enableOnDemandVpn) return@withLock
 
-            val decision = NetworkAutomationEvaluator.evaluate(appContext, state, capabilities)
-            val isRunning = SkipiVpnService.isRunning()
+                val decision = NetworkAutomationEvaluator.evaluate(appContext, state, capabilities)
+                val isRunning = SkipiVpnService.isRunning()
 
-            when (decision) {
-                is NetworkAutomationDecision.DisconnectVpn -> {
-                    if (state.enableOnDemandVpn && isRunning) {
-                        AndroidAppLogger.info(LogTag, "On-Demand VPN: Disconnecting VPN due to network rule")
-                        proxyServiceUseCase.stop(state.runMode)
-                        stateStore.update { it.copy(proxyRunning = false) }
-                    }
-                }
-
-                is NetworkAutomationDecision.SwitchServer -> {
-                    val targetServerId = decision.serverId
-                    val targetServer = state.proxyServers.firstOrNull { it.id == targetServerId } ?: return
-
-                    if (isRunning) {
-                        if (state.enableNetworkAutomation && state.selectedProxyServerId != targetServerId) {
-                            AndroidAppLogger.info(
-                                LogTag,
-                                "Network automation: Auto-switching server to #${targetServer.id} (${targetServer.server.getInfo().remarks})",
-                            )
-                            stateStore.update { it.copy(selectedProxyServerId = targetServerId) }
-                            val updatedState = stateStore.state.value
-                            when (val result = proxyServiceUseCase.restart(updatedState, targetServer)) {
-                                is ProxyServiceResult.Success -> stateStore.update {
-                                    it.copy(proxyRunning = result.proxyRunning)
-                                }
-                                else -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server")
-                            }
-                        }
-                    } else {
-                        if (state.enableOnDemandVpn) {
-                            AndroidAppLogger.info(
-                                LogTag,
-                                "On-Demand VPN: Auto-starting VPN on server #${targetServer.id} (${targetServer.server.getInfo().remarks})",
-                            )
-                            stateStore.update { it.copy(selectedProxyServerId = targetServerId) }
-                            val updatedState = stateStore.state.value
-                            when (val result = proxyServiceUseCase.toggle(updatedState, targetServer)) {
-                                is ProxyServiceResult.Success -> stateStore.update {
-                                    it.copy(proxyRunning = result.proxyRunning)
-                                }
-                                else -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN")
-                            }
+                when (decision) {
+                    is NetworkAutomationDecision.DisconnectVpn -> {
+                        if (state.enableOnDemandVpn && isRunning) {
+                            AndroidAppLogger.info(LogTag, "On-Demand VPN: Disconnecting VPN due to network rule")
+                            proxyServiceUseCase.stop(state.runMode)
+                            stateStore.update { it.copy(proxyRunning = false) }
                         }
                     }
-                }
 
-                NetworkAutomationDecision.NoChange -> Unit
+                    is NetworkAutomationDecision.SwitchServer -> {
+                        val targetServerId = decision.serverId
+                        val targetServer = state.proxyServers.firstOrNull { it.id == targetServerId } ?: return@withLock
+
+                        val resolvedState = state.resolveActiveNetworkConfig(appContext)
+                        val needsServerChange = state.selectedProxyServerId != targetServerId
+                        val needsConfigChange = state.activeTrafficConfigId != resolvedState.activeTrafficConfigId
+
+                        if (isRunning) {
+                            if (state.enableNetworkAutomation && (needsServerChange || needsConfigChange)) {
+                                AndroidAppLogger.info(
+                                    LogTag,
+                                    "Network automation: Auto-switching server to #${targetServer.id} (${targetServer.server.getInfo().remarks})",
+                                )
+                                stateStore.update {
+                                    it.copy(
+                                        selectedProxyServerId = targetServerId,
+                                        activeTrafficConfigId = resolvedState.activeTrafficConfigId,
+                                    )
+                                }
+                                val updatedState = stateStore.state.value
+                                when (val result = proxyServiceUseCase.restart(updatedState, targetServer)) {
+                                    is ProxyServiceResult.Success -> stateStore.update {
+                                        it.copy(
+                                            proxyRunning = result.proxyRunning,
+                                            localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
+                                        )
+                                    }
+                                    else -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server")
+                                }
+                            }
+                        } else {
+                            if (state.enableOnDemandVpn) {
+                                AndroidAppLogger.info(
+                                    LogTag,
+                                    "On-Demand VPN: Auto-starting VPN on server #${targetServer.id} (${targetServer.server.getInfo().remarks})",
+                                )
+                                stateStore.update {
+                                    it.copy(
+                                        selectedProxyServerId = targetServerId,
+                                        activeTrafficConfigId = resolvedState.activeTrafficConfigId,
+                                    )
+                                }
+                                val updatedState = stateStore.state.value
+                                when (val result = proxyServiceUseCase.toggle(updatedState, targetServer)) {
+                                    is ProxyServiceResult.Success -> stateStore.update {
+                                        it.copy(
+                                            proxyRunning = result.proxyRunning,
+                                            localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
+                                        )
+                                    }
+                                    else -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN")
+                                }
+                            }
+                        }
+                    }
+
+                    NetworkAutomationDecision.NoChange -> Unit
+                }
+            }.onFailure { error ->
+                AndroidAppLogger.error(LogTag, "Error during network automation reconciliation", error)
             }
         }
     }
