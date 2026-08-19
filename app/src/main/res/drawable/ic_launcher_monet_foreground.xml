@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group
+        android:pivotX="256"
+        android:pivotY="256"
+        android:scaleX="0.65"
+        android:scaleY="0.65">
+        <!-- S -->
+        <path
+            android:pathData="M116.987,208.251 L60,237.135 L116.987,275.365 L60,303.4"
+            android:strokeWidth="38.8185"
+            android:strokeColor="@color/ic_launcher_monet_foreground"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- K -->
+        <path
+            android:pathData="M165.62,208 V301.45 M165.62,257.274 L231.241,208 M165.62,262.371 L231.241,301.45"
+            android:strokeWidth="40.2562"
+            android:strokeColor="@color/ic_launcher_monet_foreground"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- I -->
+        <path
+            android:pathData="M276.139,208 V301.45"
+            android:strokeWidth="38.8185"
+            android:strokeColor="@color/ic_launcher_monet_foreground"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- P -->
+        <path
+            android:pathData="M324.491,301.45 V208 H403.927 V254.725 H324.491"
+            android:strokeWidth="38.8185"
+            android:strokeColor="@color/ic_launcher_monet_foreground"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- I -->
+        <path
+            android:pathData="M452,208.389 V301.578"
+            android:strokeWidth="38.8185"
+            android:strokeColor="@color/ic_launcher_monet_foreground"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- Orbital loop -->
+        <path
+            android:pathData="M453.5,69 C746,543 -34.9998,717.326 -34.9998,196 M453.5,165.5 V69 L513,75.5"
+            android:strokeWidth="38.82"
+            android:strokeColor="@color/ic_launcher_monet_foreground"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

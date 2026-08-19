@@ -1,0 +1,498 @@
+// Copyright 2026, Radetski
+// SPDX-License-Identifier: GPL-3.0
+
+package features.subscription
+
+import app.SubscriptionGroupState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.byValue
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.foundation.text.input.then
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import app.R
+import app.LocalAppStateStore
+import app.collectAppState
+import androidx.compose.ui.res.stringResource
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Edit
+import ui.AppTheme
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
+import features.proxy.server.display.displayName
+import ui.components.WarningConfirmDialog
+import ui.text.formatTemplate
+
+@Composable
+internal fun SubscriptionGroupEditorDialog(
+    show: Boolean,
+    group: SubscriptionGroupState?,
+    nextGroupId: Int,
+    onDismissRequest: () -> Unit,
+    onDismissFinished: () -> Unit,
+    onSave: (SubscriptionGroupState, isNew: Boolean) -> Unit,
+    onInvalidUrl: () -> Unit,
+) {
+    val isEditing = group != null
+    val builtIn = group?.builtIn == true
+    val newGroupName = stringResource(R.string.subscription_new_group)
+    val defaultGroupName = stringResource(R.string.subscription_default_group)
+    val unnamedGroupName = stringResource(R.string.subscription_unnamed_group)
+    val appState by LocalAppStateStore.current.collectAppState()
+
+    var name by remember(show, group?.id, newGroupName, defaultGroupName, builtIn) {
+        mutableStateOf(
+            when {
+                builtIn -> group.displayName(defaultGroupName)
+                else -> group?.name ?: newGroupName
+            },
+        )
+    }
+    var url by remember(show, group?.id) { mutableStateOf(group?.url ?: "") }
+    var ageSecretKey by remember(show, group?.id) { mutableStateOf(group?.ageSecretKey ?: "") }
+    val initialUserAgent = group?.userAgent ?: DefaultSubscriptionUserAgent
+    val userAgentPresets = remember(appState.subscriptionUserAgents) {
+        appState.subscriptionUserAgents.map(String::trim).filter(String::isNotBlank).distinct()
+            .ifEmpty { DefaultSubscriptionUserAgents }
+    }
+    val customUserAgentIndex = userAgentPresets.size
+    var userAgentIndex by remember(show, group?.id, initialUserAgent, userAgentPresets) {
+        mutableIntStateOf(userAgentPresets.indexOf(initialUserAgent).takeIf { it >= 0 } ?: customUserAgentIndex)
+    }
+    var customUserAgent by remember(show, group?.id, initialUserAgent) {
+        mutableStateOf(initialUserAgent.takeIf { it !in userAgentPresets }.orEmpty())
+    }
+    var interval by remember(show, group?.id) {
+        mutableStateOf(sanitizeSubscriptionIntervalInput(group?.updateInterval.orEmpty()))
+    }
+    var updateViaProxy by remember(show, group?.id) {
+        mutableStateOf(group?.updateViaProxy ?: false)
+    }
+    var autoOverrideRules by remember(show, group?.id) {
+        mutableStateOf(group?.autoOverrideRules ?: true)
+    }
+    var showCustomUserAgentDialog by remember { mutableStateOf(false) }
+    var showHttpSubscriptionWarning by remember { mutableStateOf(false) }
+    val customUserAgentDraftState = rememberTextFieldState(initialText = customUserAgent)
+    val customSummary = customUserAgent.trim().ifBlank {
+        stringResource(R.string.subscription_user_agent_custom_summary)
+    }
+    val userAgentItems = userAgentPresets.map { preset -> DropdownItem(text = preset, summary = preset) } +
+        DropdownItem(text = stringResource(R.string.subscription_user_agent_custom), summary = customSummary)
+    val selectedUserAgentIndex = userAgentIndex.coerceIn(0, customUserAgentIndex)
+    val resolvedUserAgent = userAgentPresets.getOrNull(userAgentIndex)
+        ?: customUserAgent.trim().ifBlank { DefaultSubscriptionUserAgent }
+
+    fun saveGroup(allowPlainHttp: Boolean = false) {
+        if (!isValidSubscriptionIntervalInput(interval)) return
+        val savedUrl = url.trim()
+        if (savedUrl.isNotBlank() && !savedUrl.isValidManualSubscriptionUrl()) {
+            onInvalidUrl()
+            return
+        }
+        if (!allowPlainHttp && savedUrl.isPlainHttpSubscriptionUrl()) {
+            showHttpSubscriptionWarning = true
+            return
+        }
+
+        showHttpSubscriptionWarning = false
+        val savedUserAgent = userAgentPresets.getOrNull(userAgentIndex)
+            ?: customUserAgent.trim().ifBlank { DefaultSubscriptionUserAgent }
+        val savedGroup = group?.copy(
+            name = if (group.builtIn) group.name else name.trim().ifBlank { unnamedGroupName },
+            url = savedUrl,
+            hwid = "",
+            ageSecretKey = ageSecretKey.trim(),
+            userAgent = savedUserAgent,
+            updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
+            updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
+            autoOverrideRules = autoOverrideRules,
+        ) ?: SubscriptionGroupState(
+                id = nextGroupId,
+                name = name.trim().ifBlank { unnamedGroupName },
+                url = savedUrl,
+                hwid = "",
+                ageSecretKey = ageSecretKey.trim(),
+                userAgent = savedUserAgent,
+                updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
+                updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
+                autoOverrideRules = autoOverrideRules,
+                enabled = true,
+            )
+        onSave(savedGroup, group == null)
+        onDismissRequest()
+    }
+
+    WindowDialog(
+        show = show,
+        title = if (isEditing) stringResource(R.string.subscription_edit) else stringResource(R.string.subscription_add),
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = onDismissFinished,
+    ) {
+        key(show, group?.id, builtIn) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                ) {
+                    TextField(
+                        state = rememberTextFieldState(initialText = name),
+                        inputTransformation = InputTransformation {
+                            name = asCharSequence().toString()
+                        },
+                        label = stringResource(R.string.subscription_group_name),
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        enabled = !builtIn,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    TextField(
+                        state = rememberTextFieldState(initialText = url),
+                        inputTransformation = InputTransformation {
+                            url = asCharSequence().toString()
+                        },
+                        label = stringResource(R.string.subscription_url),
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    SwitchPreference(
+                        title = stringResource(R.string.subscription_auto_override_rules),
+                        summary = stringResource(R.string.subscription_auto_override_rules_summary),
+                        checked = autoOverrideRules,
+                        onCheckedChange = { autoOverrideRules = it },
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    AnimatedVisibility(
+                        visible = url.isNotBlank(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = shrinkVertically(),
+                    ) {
+                        Column {
+                            TextField(
+                                state = rememberTextFieldState(initialText = ageSecretKey),
+                                inputTransformation = InputTransformation {
+                                    ageSecretKey = asCharSequence().toString()
+                                },
+                                label = stringResource(R.string.subscription_age_secret_key),
+                                lineLimits = TextFieldLineLimits.SingleLine,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                            WindowSpinnerPreference(
+                                title = stringResource(R.string.subscription_user_agent),
+                                summary = resolvedUserAgent,
+                                items = userAgentItems,
+                                selectedIndex = selectedUserAgentIndex,
+                                onSelectedIndexChange = { index ->
+                                    if (index == customUserAgentIndex) {
+                                        customUserAgentDraftState.setTextAndPlaceCursorAtEnd(
+                                            customUserAgent.ifBlank { resolvedUserAgent },
+                                        )
+                                        showCustomUserAgentDialog = true
+                                    } else {
+                                        userAgentIndex = index
+                                    }
+                                },
+                            )
+                            CustomUserAgentDialog(
+                                show = showCustomUserAgentDialog,
+                                state = customUserAgentDraftState,
+                                onDismissRequest = { showCustomUserAgentDialog = false },
+                                onSave = {
+                                    customUserAgent = customUserAgentDraftState.text.toString().trim()
+                                        .ifBlank { DefaultSubscriptionUserAgent }
+                                    userAgentIndex = customUserAgentIndex
+                                    showCustomUserAgentDialog = false
+                                },
+                            )
+                            SwitchPreference(
+                                title = stringResource(R.string.subscription_update_via_proxy),
+                                summary = stringResource(R.string.subscription_update_via_proxy_summary),
+                                checked = updateViaProxy,
+                                onCheckedChange = { updateViaProxy = it },
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                            TextField(
+                                state = rememberTextFieldState(initialText = interval),
+                                inputTransformation = InputTransformation
+                                    .byValue { _, proposed ->
+                                        sanitizeSubscriptionIntervalInput(proposed.toString())
+                                    }
+                                    .then { interval = asCharSequence().toString() },
+                                label = stringResource(R.string.subscription_auto_update_interval),
+                                lineLimits = TextFieldLineLimits.SingleLine,
+                            )
+                        }
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        text = stringResource(R.string.common_cancel),
+                        onClick = onDismissRequest,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        text = stringResource(R.string.common_save),
+                        onClick = { saveGroup() },
+                        enabled = isValidSubscriptionIntervalInput(interval),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+    HttpSubscriptionWarningDialog(
+        show = showHttpSubscriptionWarning,
+        onDismissRequest = { showHttpSubscriptionWarning = false },
+        onConfirm = { saveGroup(allowPlainHttp = true) },
+    )
+}
+
+@Composable
+private fun HttpSubscriptionWarningDialog(
+    show: Boolean,
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    WarningConfirmDialog(
+        show = show,
+        title = stringResource(R.string.subscription_http_warning_title),
+        summary = stringResource(R.string.subscription_http_warning_message),
+        dismissText = stringResource(R.string.common_cancel),
+        confirmText = stringResource(R.string.subscription_http_warning_confirm),
+        onDismissRequest = onDismissRequest,
+        onConfirm = onConfirm,
+    )
+}
+
+@Composable
+private fun CustomUserAgentDialog(
+    show: Boolean,
+    state: TextFieldState,
+    onDismissRequest: () -> Unit,
+    onSave: () -> Unit,
+) {
+    WindowDialog(
+        show = show,
+        title = stringResource(R.string.subscription_custom_user_agent),
+        onDismissRequest = onDismissRequest,
+        content = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                TextField(
+                    state = state,
+                    label = stringResource(R.string.subscription_custom_user_agent),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    TextButton(
+                        text = stringResource(R.string.common_cancel),
+                        onClick = onDismissRequest,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(20.dp))
+                    TextButton(
+                        text = stringResource(R.string.common_save),
+                        onClick = onSave,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        },
+    )
+}
+
+private fun SubscriptionUserAgentSelection.labelResId(): Int = when (this) {
+    SubscriptionUserAgentSelection.V2rayNg -> R.string.subscription_user_agent_v2rayng
+    SubscriptionUserAgentSelection.ClashMeta -> R.string.subscription_user_agent_clash_meta
+    SubscriptionUserAgentSelection.FlClashX -> R.string.subscription_user_agent_flclash_x
+    SubscriptionUserAgentSelection.Custom -> R.string.subscription_user_agent_custom
+}
+
+@Composable
+internal fun SubscriptionGroupCard(
+    group: SubscriptionGroupState,
+    onToggle: (Boolean) -> Unit,
+    onUpdate: (() -> Unit)?,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    isUpdating: Boolean = false,
+) {
+    val defaultGroupName = stringResource(R.string.subscription_default_group)
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+        colors = CardDefaults.defaultColors(
+            color = AppTheme.colors.surface,
+            contentColor = AppTheme.colors.onSurface,
+        ),
+        insideMargin = PaddingValues(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = group.displayName(defaultGroupName),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = group.url.ifBlank {
+                        stringResource(R.string.subscription_manual_group)
+                    },
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (group.url.isNotBlank()) {
+                    if (group.updateInterval.isNotBlank()) {
+                        Text(
+                            text = stringResource(R.string.subscription_update_interval)
+                                .formatTemplate("interval" to group.updateInterval),
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.subscription_user_agent_value)
+                            .formatTemplate("userAgent" to group.userAgent),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Switch(
+                checked = group.enabled,
+                enabled = !group.builtIn,
+                onCheckedChange = onToggle,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onUpdate != null) {
+                IconButton(
+                    onClick = onUpdate,
+                    enabled = !isUpdating,
+                ) {
+                    if (isUpdating) {
+                        val updatingDescription = stringResource(R.string.subscription_update_group)
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .semantics { contentDescription = updatingDescription },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            InfiniteProgressIndicator(
+                                color = MiuixTheme.colorScheme.primary,
+                                size = 20.dp,
+                                strokeWidth = 2.dp,
+                            )
+                        }
+                    } else {
+                        Icon(
+                            imageVector = MiuixIcons.Refresh,
+                            contentDescription = stringResource(R.string.subscription_update_group),
+                            tint = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = MiuixIcons.Edit,
+                    contentDescription = stringResource(R.string.subscription_edit_group),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+            IconButton(
+                onClick = onDelete,
+                enabled = !group.builtIn,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Delete,
+                    contentDescription = stringResource(R.string.subscription_delete_group),
+                    tint = if (group.builtIn) {
+                        MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                    } else {
+                        MiuixTheme.colorScheme.onSurface
+                    },
+                )
+            }
+        }
+    }
+}
