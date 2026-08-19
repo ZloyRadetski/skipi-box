@@ -22,6 +22,7 @@ import engine.proxy.latency.ProxyServerLatencyTestMode
 import engine.proxy.latency.ProxyServerLatencyTestResult
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.ProxyEngineStartRequest
+import engine.stats.ProxyTrafficStatsRuntimeStore
 import data.AndroidAppStateStore
 import ui.feedback.AndroidToastTipNotifier
 import ui.text.formatTemplate
@@ -53,6 +54,11 @@ internal fun restartProxyServiceAfterSelection(
                 return@withLock
             }
             if (!status.running) return@withLock
+
+            val currentActiveServerId = ProxyTrafficStatsRuntimeStore.read(stateStore.context)?.selectedServerId
+            if (currentActiveServerId == serverId) {
+                return@withLock
+            }
 
             val server = stateSnapshot.proxyServers.firstOrNull { it.id == serverId } ?: return@withLock
             try {

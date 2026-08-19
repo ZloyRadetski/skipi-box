@@ -77,9 +77,6 @@ class AndroidProxyEngine(
             .copy(runMode = RunModeVpnService)
             .withResolvedDynamicLocalProxyPort()
         val (resolvedRequest, trafficStatsRuntime) = request.copy(appState = vpnState).withTrafficStatsConfig()
-        if (restart && vpnXrayEngine.status().running) {
-            vpnXrayEngine.stop()
-        }
         runCatching { vpnXrayEngine.start(resolvedRequest).copy(appState = vpnState, runMode = RunModeVpnService) }
             .onSuccess { status ->
                 if (status.running && trafficStatsRuntime != null) {

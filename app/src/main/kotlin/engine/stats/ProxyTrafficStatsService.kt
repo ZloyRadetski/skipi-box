@@ -250,7 +250,9 @@ class ProxyTrafficStatsService : Service() {
         )
         activeRuntime = pausedRuntime
         ProxyTrafficStatsRuntimeStore.write(applicationContext, pausedRuntime)
-        SkipiVpnService.stop(applicationContext)
+        serviceScope.launch {
+            SkipiVpnService.stop(applicationContext)
+        }
         stateStore.update { state -> state.copy(proxyRunning = false) }
         notificationManager.notify(NotificationId, buildNotification(pausedRuntime, latestSample))
     }
@@ -293,7 +295,9 @@ class ProxyTrafficStatsService : Service() {
 
     /** Completely disconnects the VPN and removes the persistent notification. */
     private fun disconnectVpn() {
-        SkipiVpnService.stop(applicationContext)
+        serviceScope.launch {
+            SkipiVpnService.stop(applicationContext)
+        }
         stateStore.update { state -> state.copy(proxyRunning = false) }
         ProxyTrafficStatsRuntimeStore.clear(applicationContext)
         stopStats()

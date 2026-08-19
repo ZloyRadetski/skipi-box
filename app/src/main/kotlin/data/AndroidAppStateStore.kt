@@ -41,6 +41,7 @@ class AndroidAppStateStore private constructor(
         hasPersistedState.set(loadedState.loadedFromDatabase)
     }
 
+    val context: Context get() = appContext
     val state: StateFlow<AppState> = mutableState.asStateFlow()
 
     fun update(transform: (AppState) -> AppState) {

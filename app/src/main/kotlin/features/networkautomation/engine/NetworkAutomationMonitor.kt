@@ -206,7 +206,8 @@ class NetworkAutomationMonitor(
                                             localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
                                         )
                                     }
-                                    else -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server")
+                                    is ProxyServiceResult.Failed -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server", result.error)
+                                    ProxyServiceResult.MissingServer -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server: server missing")
                                 }
                             }
                         } else {
@@ -228,7 +229,8 @@ class NetworkAutomationMonitor(
                                             localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
                                         )
                                     }
-                                    else -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN")
+                                    is ProxyServiceResult.Failed -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN", result.error)
+                                    ProxyServiceResult.MissingServer -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN: server missing")
                                 }
                             }
                         }

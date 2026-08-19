@@ -76,6 +76,7 @@ class SkipiVpnService : VpnService() {
                             stopVpn()
                         }
                     } finally {
+                        completeStop()
                         stopSelfOnMain(startId)
                     }
                 }
@@ -400,9 +401,26 @@ class SkipiVpnService : VpnService() {
             }
         }
 
-        internal fun stop(context: Context) {
+        @Volatile
+        private var pendingStop: CompletableDeferred<Unit>? = null
+
+        internal suspend fun stop(context: Context) = startMutex.withLock {
+            if (!running) return@withLock
+            val result = CompletableDeferred<Unit>()
+            pendingStop = result
             running = false
-            context.startService(SkipiVpnServiceIntents.stopIntent(context))
+            try {
+                context.startService(SkipiVpnServiceIntents.stopIntent(context))
+                withTimeout(5_000.milliseconds) {
+                    result.await()
+                }
+            } catch (_: Throwable) {
+                // Ignore stop timeout
+            } finally {
+                if (pendingStop === result) {
+                    pendingStop = null
+                }
+            }
         }
 
         internal fun isRunning(): Boolean {
@@ -412,6 +430,11 @@ class SkipiVpnService : VpnService() {
         private fun completeStart(result: Result<Unit>) {
             pendingStart?.complete(result)
             pendingStart = null
+        }
+
+        private fun completeStop() {
+            pendingStop?.complete(Unit)
+            pendingStop = null
         }
 
     }
