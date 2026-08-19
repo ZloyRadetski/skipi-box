@@ -40,7 +40,7 @@ data class AppState(
     val colorMode: Int = ColorModeSystem,
     val languageMode: Int = LanguageModeEnglish,
     val enableMaterialYou: Boolean = true,
-    val seedIndex: Int = 1,
+    val seedIndex: Int = 0,
     val customMaterialYouSeed: Long? = null,
     val enableCustomColors: Boolean = false,
     val customAccentColor: Long? = null,

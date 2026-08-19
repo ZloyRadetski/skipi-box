@@ -85,6 +85,8 @@ data class TrafficConfigResourceSettings(
     val customFiles: List<CustomResourceFileState> = emptyList(),
     val nextCustomFileId: Int = 1,
     val userAgent: String = DefaultSubscriptionUserAgent,
+    val autoUpdate: Boolean = true,
+    val updateInterval: String = "24",
 )
 
 /** A user-visible traffic profile. [rawConfig] is the complete portable profile document. */

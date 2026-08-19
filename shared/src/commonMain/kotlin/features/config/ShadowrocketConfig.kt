@@ -366,7 +366,7 @@ internal fun ShadowrocketRule.toShadowrocketLine(
 internal fun defaultShadowrocketConfig(): String = """
     # SKIPI configuration
     [General]
-    dns-server = system
+    dns-server = 94.140.14.14,94.140.15.15
     ipv6 = false
 
     [Rule]
