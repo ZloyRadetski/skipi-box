@@ -44,7 +44,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
@@ -155,7 +155,7 @@ internal fun NetworkAutomationRuleDialog(
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
             ) {
-                OverlayDropdownPreference(
+                WindowDropdownPreference(
                     title = stringResource(R.string.network_automation_rule_type),
                     items = typeOptions,
                     selectedIndex = selectedTypeIndex,
@@ -225,7 +225,7 @@ internal fun NetworkAutomationRuleDialog(
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
             ) {
-                OverlayDropdownPreference(
+                WindowDropdownPreference(
                     title = stringResource(R.string.network_automation_rule_action),
                     items = actionOptions,
                     selectedIndex = selectedActionIndex,
@@ -233,7 +233,7 @@ internal fun NetworkAutomationRuleDialog(
                 )
 
                 if (selectedAction == NetworkRuleAction.SWITCH_SERVER && servers.isNotEmpty()) {
-                    OverlayDropdownPreference(
+                    WindowDropdownPreference(
                         title = stringResource(R.string.network_automation_server_label),
                         items = serverOptions,
                         selectedIndex = selectedServerIndex.coerceIn(0, serverOptions.lastIndex),
