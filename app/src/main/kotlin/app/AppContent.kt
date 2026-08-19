@@ -545,23 +545,25 @@ private fun ExpressiveFloatingNavigationBar(
             var totalHeightPx by remember { mutableIntStateOf(0) }
 
             val tabCount = navigationItems.size.coerceAtLeast(1)
-            val tabWidthDp = if (totalWidthPx > 0) with(density) { (totalWidthPx.toFloat() / tabCount).toDp() } else 0.dp
+            val tabWidthPx = if (totalWidthPx > 0) totalWidthPx.toFloat() / tabCount else 0f
+            val tabWidthDp = if (totalWidthPx > 0) with(density) { tabWidthPx.toDp() } else 0.dp
             val totalHeightDp = if (totalHeightPx > 0) with(density) { totalHeightPx.toDp() } else 0.dp
+
             val innerPaddingHorizontal = 3.dp
             val innerPaddingVertical = 2.dp
             val indicatorShape = RoundedCornerShape(24.dp)
 
             val indicatorWidth = (tabWidthDp - innerPaddingHorizontal * 2).coerceAtLeast(0.dp)
             val indicatorHeight = (totalHeightDp - innerPaddingVertical * 2).coerceAtLeast(0.dp)
-            val targetOffset = tabWidthDp * selectedPage + innerPaddingHorizontal
+            val targetOffsetPx = tabWidthPx * selectedPage
 
-            val animatedOffsetX by animateDpAsState(
-                targetValue = targetOffset,
+            val animatedOffsetPx by animateFloatAsState(
+                targetValue = targetOffsetPx,
                 animationSpec = spring(
                     dampingRatio = 0.74f,
                     stiffness = Spring.StiffnessMediumLow,
                 ),
-                label = "capsule_offset",
+                label = "capsule_offset_px",
             )
 
             Box(
@@ -572,12 +574,15 @@ private fun ExpressiveFloatingNavigationBar(
                         totalHeightPx = it.height
                     },
             ) {
-                // Active tab sliding capsule indicator
+                // Active tab sliding capsule indicator (Rendered directly in GPU Draw phase via graphicsLayer)
                 if (totalWidthPx > 0 && totalHeightPx > 0) {
                     Box(
                         modifier = Modifier
-                            .offset(x = animatedOffsetX, y = innerPaddingVertical)
+                            .padding(start = innerPaddingHorizontal, top = innerPaddingVertical)
                             .size(width = indicatorWidth, height = indicatorHeight)
+                            .graphicsLayer {
+                                translationX = animatedOffsetPx
+                            }
                             .clip(indicatorShape)
                             .background(AppTheme.colors.accent),
                     )
@@ -600,8 +605,9 @@ private fun ExpressiveFloatingNavigationBar(
                             label = "tab_icon_scale_$index",
                         )
 
-                        val iconOffsetY by animateDpAsState(
-                            targetValue = if (isSelected) (-1).dp else 0.dp,
+                        val targetOffsetYPx = if (isSelected) with(density) { (-1).dp.toPx() } else 0f
+                        val iconOffsetYPx by animateFloatAsState(
+                            targetValue = targetOffsetYPx,
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioMediumBouncy,
                                 stiffness = Spring.StiffnessMediumLow,
@@ -645,10 +651,10 @@ private fun ExpressiveFloatingNavigationBar(
                                 tint = contentColor,
                                 modifier = Modifier
                                     .size(25.dp)
-                                    .offset(y = iconOffsetY)
                                     .graphicsLayer {
                                         scaleX = iconScale
                                         scaleY = iconScale
+                                        translationY = iconOffsetYPx
                                     },
                             )
 
@@ -754,28 +760,10 @@ class MainPagerState(
         navJob = coroutineScope.launch {
             val myJob = coroutineContext.job
             try {
-                pagerState.scroll(MutatePriority.UserInput) {
-                    val distance = abs(targetIndex - pagerState.currentPage).coerceAtLeast(2)
-                    val duration = 100 * distance + 100
-                    val layoutInfo = pagerState.layoutInfo
-                    val pageSize = layoutInfo.pageSize + layoutInfo.pageSpacing
-                    val currentDistanceInPages =
-                        targetIndex - pagerState.currentPage - pagerState.currentPageOffsetFraction
-                    val scrollPixels = currentDistanceInPages * pageSize
-
-                    var previousValue = 0f
-                    animate(
-                        initialValue = 0f,
-                        targetValue = scrollPixels,
-                        animationSpec = tween(easing = EaseInOut, durationMillis = duration),
-                    ) { currentValue, _ ->
-                        previousValue += scrollBy(currentValue - previousValue)
-                    }
-                }
-
-                if (pagerState.currentPage != targetIndex) {
-                    pagerState.scrollToPage(targetIndex)
-                }
+                pagerState.animateScrollToPage(
+                    page = targetIndex,
+                    animationSpec = tween(durationMillis = 280, easing = EaseInOut),
+                )
             } finally {
                 if (navJob == myJob) {
                     isNavigating = false
