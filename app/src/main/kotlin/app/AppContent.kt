@@ -506,7 +506,7 @@ private fun ExpressiveFloatingNavigationBar(
     val haptic = LocalHapticFeedback.current
     val isDark = AppTheme.colors.isDark
 
-    val islandShape = RoundedCornerShape(26.dp)
+    val islandShape = RoundedCornerShape(32.dp)
     val islandBorderColor = if (isDark) {
         Color.White.copy(alpha = 0.08f)
     } else {
@@ -517,19 +517,19 @@ private fun ExpressiveFloatingNavigationBar(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .then(modifier),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
-                .widthIn(max = 440.dp)
+                .widthIn(max = 460.dp)
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 8.dp,
+                    elevation = 10.dp,
                     shape = islandShape,
-                    ambientColor = if (isDark) Color.Black.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.15f),
-                    spotColor = if (isDark) Color.Black.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.20f),
+                    ambientColor = if (isDark) Color.Black.copy(alpha = 0.45f) else Color.Black.copy(alpha = 0.18f),
+                    spotColor = if (isDark) Color.Black.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.22f),
                 )
                 .clip(islandShape)
                 .background(AppTheme.colors.surface)
@@ -549,7 +549,7 @@ private fun ExpressiveFloatingNavigationBar(
             val totalHeightDp = if (totalHeightPx > 0) with(density) { totalHeightPx.toDp() } else 0.dp
             val innerPaddingHorizontal = 3.dp
             val innerPaddingVertical = 2.dp
-            val indicatorShape = RoundedCornerShape(20.dp)
+            val indicatorShape = RoundedCornerShape(24.dp)
 
             val indicatorWidth = (tabWidthDp - innerPaddingHorizontal * 2).coerceAtLeast(0.dp)
             val indicatorHeight = (totalHeightDp - innerPaddingVertical * 2).coerceAtLeast(0.dp)
@@ -635,7 +635,7 @@ private fun ExpressiveFloatingNavigationBar(
                                         }
                                     },
                                 )
-                                .padding(vertical = 7.dp),
+                                .padding(vertical = 11.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
@@ -644,7 +644,7 @@ private fun ExpressiveFloatingNavigationBar(
                                 contentDescription = item.label,
                                 tint = contentColor,
                                 modifier = Modifier
-                                    .size(22.dp)
+                                    .size(25.dp)
                                     .offset(y = iconOffsetY)
                                     .graphicsLayer {
                                         scaleX = iconScale
@@ -652,15 +652,15 @@ private fun ExpressiveFloatingNavigationBar(
                                     },
                             )
 
-                            Spacer(modifier = Modifier.height(2.5.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
                                 text = item.label,
                                 color = contentColor,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                                fontSize = 11.5.sp,
+                                fontSize = 13.sp,
                                 maxLines = 1,
-                                letterSpacing = 0.2.sp,
+                                letterSpacing = 0.25.sp,
                             )
                         }
                     }
