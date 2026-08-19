@@ -525,10 +525,18 @@ fun TrafficConfigPage(
                     config = config,
                     selected = config.id == appState.activeTrafficConfigId,
                     isUpdating = config.id in updatingConfigIds,
+                    canDelete = appState.trafficConfigs.size > 1,
                     onSelect = {
                         updateAppState { state -> state.copy(activeTrafficConfigId = config.id) }
                     },
                     onUiEdit = { navigator.push(Route.TrafficConfigEditor(config.id)) },
+                    onDelete = {
+                        if (appState.enableDeletionConfirmation) {
+                            pendingConfigDeletion = config
+                        } else {
+                            deleteConfig(config)
+                        }
+                    },
                     onUpdate = { onTriggerConfigUpdate(config) },
                     onLongPress = { contextMenuConfig = config },
                 )
@@ -755,8 +763,10 @@ private fun TrafficConfigCard(
     config: TrafficConfigState,
     selected: Boolean,
     isUpdating: Boolean,
+    canDelete: Boolean = true,
     onSelect: () -> Unit,
     onUiEdit: () -> Unit,
+    onDelete: () -> Unit,
     onUpdate: () -> Unit,
     onLongPress: () -> Unit,
 ) {
@@ -840,6 +850,16 @@ private fun TrafficConfigCard(
                         imageVector = MiuixIcons.Edit,
                         contentDescription = stringResource(R.string.configs_ui_edit),
                         tint = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+                IconButton(
+                    onClick = onDelete,
+                    enabled = canDelete,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Delete,
+                        contentDescription = stringResource(R.string.common_delete),
+                        tint = if (canDelete) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
                     )
                 }
             }

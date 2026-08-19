@@ -45,12 +45,17 @@ import features.settings.SettingsSectionCard
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -185,34 +190,61 @@ fun SettingsNetworkAutomationPage(
                                 color = AppTheme.colors.surface,
                                 contentColor = AppTheme.colors.onSurface,
                             ),
+                            insideMargin = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = typeTitle,
-                                            style = MiuixTheme.textStyles.main.copy(
-                                                fontWeight = FontWeight.SemiBold,
-                                                fontSize = 16.sp,
-                                            ),
-                                            color = AppTheme.colors.onSurface,
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = actionSummary,
-                                            style = MiuixTheme.textStyles.body2,
-                                            color = AppTheme.colors.onSurfaceVariant,
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = typeTitle,
+                                        style = MiuixTheme.textStyles.main.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 16.sp,
+                                        ),
+                                        color = AppTheme.colors.onSurface,
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = actionSummary,
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = AppTheme.colors.onSurfaceVariant,
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(6.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(
+                                        onClick = {
+                                            editingRule = rule
+                                            showRuleDialog = true
+                                        },
+                                    ) {
+                                        Icon(
+                                            imageVector = MiuixIcons.Edit,
+                                            contentDescription = stringResource(R.string.network_automation_edit_rule),
+                                            tint = MiuixTheme.colorScheme.onSurface,
                                         )
                                     }
-
+                                    IconButton(
+                                        onClick = {
+                                            updateAppState { state ->
+                                                state.copy(
+                                                    networkAutomationRules = state.networkAutomationRules.filter { it.id != rule.id },
+                                                )
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            imageVector = MiuixIcons.Delete,
+                                            contentDescription = stringResource(R.string.network_automation_delete_rule),
+                                            tint = MiuixTheme.colorScheme.onSurface,
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(2.dp))
                                     Switch(
                                         checked = rule.enabled,
                                         onCheckedChange = { enabled ->
@@ -221,35 +253,6 @@ fun SettingsNetworkAutomationPage(
                                                     networkAutomationRules = state.networkAutomationRules.map {
                                                         if (it.id == rule.id) it.copy(enabled = enabled) else it
                                                     },
-                                                )
-                                            }
-                                        },
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-                                HorizontalDivider(modifier = Modifier.fillMaxWidth())
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    TextButton(
-                                        text = stringResource(R.string.network_automation_edit_rule),
-                                        onClick = {
-                                            editingRule = rule
-                                            showRuleDialog = true
-                                        },
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    TextButton(
-                                        text = stringResource(R.string.network_automation_delete_rule),
-                                        onClick = {
-                                            updateAppState { state ->
-                                                state.copy(
-                                                    networkAutomationRules = state.networkAutomationRules.filter { it.id != rule.id },
                                                 )
                                             }
                                         },
