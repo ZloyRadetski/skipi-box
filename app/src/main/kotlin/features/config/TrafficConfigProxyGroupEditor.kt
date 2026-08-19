@@ -8,22 +8,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -35,10 +27,12 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
+import app.navigation.ProxyServerEditResult
 import app.navigation.Route
-import app.navigation.StrategyGroupMemberSelectionResult
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
+import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import top.yukonga.miuix.kmp.basic.Card
@@ -47,15 +41,10 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
 import ui.AppTheme
 
 /** Full-screen Material editor for standard Shadowrocket [Proxy Group] aliases. */
@@ -88,16 +77,69 @@ internal fun TrafficConfigProxyGroupsPage(
             }
             .filter { choice -> choice.rawName.isNotBlank() }
     }
-    var editingGroupLineNumber by rememberSaveable(trafficConfigId) { mutableStateOf<Int?>(null) }
-    var creatingGroup by rememberSaveable(trafficConfigId) { mutableStateOf(false) }
-    val editingGroup = editingGroupLineNumber?.let { lineNumber ->
-        groups.firstOrNull { group -> group.lineNumber == lineNumber }
-    }
 
     fun updateRaw(raw: String) {
         updateAppState { state ->
             state.withUpdatedTrafficConfig(config.id) { it.copy(rawConfig = raw) }
         }
+    }
+
+    val proxyGroupResultKey = remember(config.id) {
+        "traffic-config-proxy-group-result-${config.id}"
+    }
+
+    LaunchedEffect(navigator, proxyGroupResultKey, serverChoices) {
+        navigator.observeResult<ProxyServerEditResult>(proxyGroupResultKey).collect { result ->
+            val strategy = result.server as? StrategyGroup ?: return@collect
+            if (strategy.remarks.isBlank()) return@collect
+            val line = strategy.toShadowrocketLine(serverChoices)
+            if (result.serverId > 0) {
+                updateRaw(config.rawConfig.withShadowrocketProxyGroupLine(result.serverId, line))
+            } else {
+                updateRaw(config.rawConfig.withShadowrocketProxyGroupAdded(line))
+            }
+            navigator.clearResult(proxyGroupResultKey)
+        }
+    }
+
+    fun openNewGroup() {
+        val newStrategy = StrategyGroup(
+            strategy = StrategyGroupConstants.TYPE_SELECT,
+            sourceTrafficConfigId = config.id,
+            displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
+        )
+        navigator.navigateForResult(
+            route = Route.ProxyServerEditor(
+                ps = newStrategy,
+                serverId = -1,
+                resultKey = proxyGroupResultKey,
+            ),
+            requestKey = proxyGroupResultKey,
+        )
+    }
+
+    fun openEditGroup(group: ShadowrocketPolicyGroup) {
+        val memberIds = group.members.mapNotNull { memberName ->
+            serverChoices.firstOrNull { choice -> choice.rawName.equals(memberName, ignoreCase = true) }?.id
+        }
+        val editStrategy = StrategyGroup(
+            remarks = group.name,
+            strategy = group.toStrategyGroupType(),
+            proxyServerIds = memberIds,
+            displayMode = group.displayMode,
+            sourceTrafficConfigId = config.id,
+            sourcePolicyGroupName = group.name,
+            probeInterval = group.intervalSeconds?.let { "${it}s" } ?: "15s",
+            probeUrl = group.url,
+        )
+        navigator.navigateForResult(
+            route = Route.ProxyServerEditor(
+                ps = editStrategy,
+                serverId = group.lineNumber,
+                resultKey = proxyGroupResultKey,
+            ),
+            requestKey = proxyGroupResultKey,
+        )
     }
 
     TrafficConfigFullScreenScaffold(
@@ -122,7 +164,7 @@ internal fun TrafficConfigProxyGroupsPage(
             item(key = "add") {
                 TextButton(
                     text = stringResource(R.string.configs_proxy_groups_add),
-                    onClick = { creatingGroup = true },
+                    onClick = ::openNewGroup,
                     modifier = Modifier.padding(horizontal = 12.dp),
                 )
             }
@@ -140,7 +182,7 @@ internal fun TrafficConfigProxyGroupsPage(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { editingGroupLineNumber = group.lineNumber },
+                        .clickable { openEditGroup(group) },
                     cornerRadius = 16.dp,
                     insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
                     colors = CardDefaults.defaultColors(
@@ -158,7 +200,7 @@ internal fun TrafficConfigProxyGroupsPage(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        IconButton(onClick = { editingGroupLineNumber = group.lineNumber }) {
+                        IconButton(onClick = { openEditGroup(group) }) {
                             Icon(MiuixIcons.Edit, contentDescription = stringResource(R.string.configs_edit))
                         }
                         IconButton(onClick = {
@@ -171,35 +213,6 @@ internal fun TrafficConfigProxyGroupsPage(
             }
         }
     }
-
-    TrafficConfigProxyGroupDialog(
-        show = creatingGroup || editingGroup != null,
-        initialGroup = editingGroup,
-        serverChoices = serverChoices,
-        onDismissRequest = {
-            creatingGroup = false
-            editingGroupLineNumber = null
-        },
-        onSave = { name, type, members, url, interval, displayMode ->
-            val line = buildString {
-                append(name.trim()).append(" = ").append(type)
-                members.forEach { member -> append(", ").append(member) }
-                url.trim().takeIf(String::isNotBlank)?.let { append(", url=").append(it) }
-                interval.trim().toIntOrNull()?.takeIf { it > 0 }?.let { append(", interval=").append(it) }
-                when (displayMode) {
-                    StrategyGroupDisplayMode.ALWAYS -> append(", skipi-display=always")
-                    StrategyGroupDisplayMode.ACTIVE_CONFIG -> append(", skipi-display=active_config")
-                    StrategyGroupDisplayMode.NEVER -> append(", skipi-display=never")
-                }
-            }
-            updateRaw(
-                editingGroup?.let { group -> config.rawConfig.withShadowrocketProxyGroupLine(group.lineNumber, line) }
-                    ?: config.rawConfig.withShadowrocketProxyGroupAdded(line),
-            )
-            creatingGroup = false
-            editingGroupLineNumber = null
-        },
-    )
 }
 
 private data class ProxyGroupServerChoice(
@@ -207,167 +220,47 @@ private data class ProxyGroupServerChoice(
     val rawName: String,
 )
 
-@Composable
-private fun TrafficConfigProxyGroupDialog(
-    show: Boolean,
-    initialGroup: ShadowrocketPolicyGroup?,
-    serverChoices: List<ProxyGroupServerChoice>,
-    onDismissRequest: () -> Unit,
-    onSave: (name: String, type: String, members: List<String>, url: String, interval: String, displayMode: String) -> Unit,
-) {
-    if (!show) return
-    val navigator = LocalNavigator.current
-    val appState by LocalAppStateStore.current.collectAppState()
-    val defaultProbeUrl = remember(appState.subscriptionPingUrl) {
-        appState.subscriptionPingUrl.ifBlank { engine.network.NetworkDefaults.CONNECTIVITY_CHECK_URL }
+private fun StrategyGroup.toShadowrocketLine(serverChoices: List<ProxyGroupServerChoice>): String {
+    val type = when (strategy) {
+        StrategyGroupConstants.TYPE_SELECT -> "select"
+        StrategyGroupConstants.TYPE_LEAST_PING -> "url-test"
+        StrategyGroupConstants.TYPE_LEAST_LOAD -> "least-load"
+        StrategyGroupConstants.TYPE_RANDOM -> "load-balance"
+        StrategyGroupConstants.TYPE_ROUND_ROBIN -> "round-robin"
+        else -> "select"
     }
-    // The member selector is a separate screen. Save the entire draft so opening it
-    // cannot reset the name, check URL, interval, or selected proxy-group type.
-    var name by rememberSaveable(initialGroup?.lineNumber) { mutableStateOf(initialGroup?.name.orEmpty()) }
-    var members by rememberSaveable(initialGroup?.lineNumber) { mutableStateOf(initialGroup?.members.orEmpty()) }
-    var url by rememberSaveable(initialGroup?.lineNumber) {
-        mutableStateOf(initialGroup?.url.orEmpty().ifBlank { if (initialGroup == null) defaultProbeUrl else "" })
-    }
-    var interval by rememberSaveable(initialGroup?.lineNumber) { mutableStateOf(initialGroup?.intervalSeconds?.toString().orEmpty()) }
-    val displayModeValues = listOf(
-        StrategyGroupDisplayMode.ALWAYS,
-        StrategyGroupDisplayMode.ACTIVE_CONFIG,
-        StrategyGroupDisplayMode.NEVER,
-    )
-    val displayModeLabels = listOf(
-        stringResource(R.string.proxy_group_display_mode_always),
-        stringResource(R.string.proxy_group_display_mode_active_config),
-        stringResource(R.string.proxy_group_display_mode_never),
-    )
-    var displayModeIndex by rememberSaveable(initialGroup?.lineNumber) {
-        val initialMode = initialGroup?.displayMode ?: StrategyGroupDisplayMode.ACTIVE_CONFIG
-        mutableIntStateOf(displayModeValues.indexOf(initialMode).coerceAtLeast(0))
-    }
-    var typeIndex by rememberSaveable(initialGroup?.lineNumber) {
-        mutableIntStateOf(ShadowrocketProxyGroupTypes.indexOf(initialGroup?.type).coerceAtLeast(0))
-    }
-    val type = ShadowrocketProxyGroupTypes[typeIndex]
-    val typeLabels = listOf(
-        stringResource(R.string.proxy_editor_strategy_group_select),
-        stringResource(R.string.proxy_editor_strategy_group_least_ping),
-        stringResource(R.string.proxy_editor_strategy_group_least_load),
-        stringResource(R.string.proxy_editor_strategy_group_random),
-        stringResource(R.string.proxy_editor_strategy_group_round_robin),
-        "Fallback",
-    )
-    val memberSelectorResultKey = remember(initialGroup?.lineNumber) {
-        "traffic-config-proxy-group-members-${initialGroup?.lineNumber ?: "new"}"
-    }
-    val selectedServerIds = remember(members, serverChoices) {
-        members.mapNotNull { member ->
-            serverChoices.firstOrNull { choice -> choice.rawName.equals(member, ignoreCase = true) }?.id
-        }.distinct()
-    }
-    LaunchedEffect(navigator, memberSelectorResultKey, serverChoices) {
-        navigator.observeResult<StrategyGroupMemberSelectionResult>(memberSelectorResultKey).collect { result ->
-            val selectedNames = serverChoices
-                .filter { choice -> choice.id in result.serverIds }
-                .map(ProxyGroupServerChoice::rawName)
-            val unresolvedMembers = members.filter { member ->
-                serverChoices.none { choice -> choice.rawName.equals(member, ignoreCase = true) }
-            }
-            members = (unresolvedMembers + selectedNames).distinct()
-            navigator.clearResult(memberSelectorResultKey)
+    val memberNames = if (proxyServerIds.isNotEmpty()) {
+        proxyServerIds.mapNotNull { id ->
+            serverChoices.firstOrNull { it.id == id }?.rawName
         }
+    } else {
+        emptyList()
     }
+    val intervalSeconds = probeInterval.trim().removeSuffix("s").toIntOrNull()
+        ?: if (probeInterval.endsWith("m")) probeInterval.removeSuffix("m").toIntOrNull()?.times(60) else null
 
-    WindowDialog(
-        show = true,
-        title = stringResource(if (initialGroup == null) R.string.configs_proxy_groups_add else R.string.configs_proxy_groups_edit),
-        onDismissRequest = onDismissRequest,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            TextField(
-                state = rememberTextFieldState(name),
-                inputTransformation = { name = asCharSequence().toString() },
-                label = stringResource(R.string.configs_proxy_groups_name),
-                lineLimits = TextFieldLineLimits.SingleLine,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            WindowDropdownPreference(
-                title = stringResource(R.string.configs_proxy_groups_type),
-                items = typeLabels,
-                selectedIndex = typeIndex,
-                onSelectedIndexChange = { typeIndex = it },
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            WindowDropdownPreference(
-                title = stringResource(R.string.proxy_group_display_mode_title),
-                items = displayModeLabels,
-                selectedIndex = displayModeIndex,
-                onSelectedIndexChange = { displayModeIndex = it },
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            Text(
-                text = stringResource(R.string.configs_proxy_groups_members),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            )
-            ArrowPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_select_servers),
-                summary = if (selectedServerIds.isNotEmpty()) {
-                    stringResource(
-                        R.string.proxy_editor_strategy_group_selected_servers_summary,
-                        selectedServerIds.size,
-                    )
-                } else {
-                    stringResource(R.string.proxy_editor_strategy_group_select_servers_summary)
-                },
-                onClick = {
-                    navigator.navigateForResult(
-                        route = Route.StrategyGroupMemberSelector(
-                            selectedServerIds = selectedServerIds,
-                            resultKey = memberSelectorResultKey,
-                            requireServerRemarks = true,
-                        ),
-                        requestKey = memberSelectorResultKey,
-                    )
-                },
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            if (type != "select") {
-                TextField(
-                    state = rememberTextFieldState(url),
-                    inputTransformation = { url = asCharSequence().toString() },
-                    label = stringResource(R.string.configs_proxy_groups_url),
-                    lineLimits = TextFieldLineLimits.SingleLine,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-                TextField(
-                    state = rememberTextFieldState(interval),
-                    inputTransformation = { interval = asCharSequence().toString() },
-                    label = stringResource(R.string.configs_proxy_groups_interval),
-                    lineLimits = TextFieldLineLimits.SingleLine,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-            }
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Spacer(Modifier.weight(1f))
-                TextButton(text = stringResource(R.string.common_cancel), onClick = onDismissRequest)
-                Spacer(Modifier.width(12.dp))
-                TextButton(
-                    text = stringResource(R.string.common_save),
-                    enabled = name.isNotBlank() && members.isNotEmpty(),
-                    onClick = {
-                        onSave(name, type, members, url, interval, displayModeValues[displayModeIndex])
-                    },
-                )
-            }
+    return buildString {
+        append(remarks.trim()).append(" = ").append(type)
+        memberNames.forEach { member -> append(", ").append(member) }
+        if (strategy != StrategyGroupConstants.TYPE_SELECT) {
+            probeUrl.trim().takeIf(String::isNotBlank)?.let { append(", url=").append(it) }
+            intervalSeconds?.takeIf { it > 0 }?.let { append(", interval=").append(it) }
+        }
+        when (displayMode) {
+            StrategyGroupDisplayMode.ALWAYS -> append(", skipi-display=always")
+            StrategyGroupDisplayMode.ACTIVE_CONFIG -> append(", skipi-display=active_config")
+            StrategyGroupDisplayMode.NEVER -> append(", skipi-display=never")
         }
     }
 }
 
-private val ShadowrocketProxyGroupTypes = listOf(
-    "select",
-    "url-test",
-    "least-load",
-    "load-balance",
-    "round-robin",
-    "fallback",
-)
+private fun ShadowrocketPolicyGroup.toStrategyGroupType(): String {
+    return when (type.lowercase()) {
+        "select" -> StrategyGroupConstants.TYPE_SELECT
+        "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
+        "round-robin", "roundrobin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
+        "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
+        "url-test", "fallback", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
+        else -> StrategyGroupConstants.TYPE_SELECT
+    }
+}

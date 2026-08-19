@@ -103,6 +103,20 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     .coerceAtLeast(0),
             )
         }
+        val isConfigGroup = strategyGroupEdit.sourceTrafficConfigId != null
+        val displayModeValues = listOf(
+            StrategyGroupDisplayMode.ALWAYS,
+            StrategyGroupDisplayMode.ACTIVE_CONFIG,
+            StrategyGroupDisplayMode.NEVER,
+        )
+        val displayModeLabels = listOf(
+            stringResource(R.string.proxy_group_display_mode_always),
+            stringResource(R.string.proxy_group_display_mode_active_config),
+            stringResource(R.string.proxy_group_display_mode_never),
+        )
+        val displayModeIndex = remember(strategyGroupEdit.displayMode) {
+            mutableIntStateOf(displayModeValues.indexOf(strategyGroupEdit.displayMode).coerceAtLeast(0))
+        }
         val showInAutoBalancerListState = remember(strategyGroupEdit.displayMode, strategyGroupEdit.showInAutoBalancerList) {
             mutableStateOf(strategyGroupEdit.displayMode != StrategyGroupDisplayMode.NEVER && strategyGroupEdit.showInAutoBalancerList)
         }
@@ -143,16 +157,30 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     strategyGroupEdit.strategy = strategyValues[index]
                 },
             )
-            SwitchPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_show_on_home),
-                summary = stringResource(R.string.proxy_editor_strategy_group_show_on_home_summary),
-                checked = showInAutoBalancerListState.value,
-                onCheckedChange = { showInList ->
-                    showInAutoBalancerListState.value = showInList
-                    strategyGroupEdit.showInAutoBalancerList = showInList
-                    strategyGroupEdit.displayMode = if (showInList) StrategyGroupDisplayMode.ALWAYS else StrategyGroupDisplayMode.NEVER
-                },
-            )
+            if (isConfigGroup) {
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.proxy_group_display_mode_title),
+                    items = displayModeLabels,
+                    selectedIndex = displayModeIndex.intValue,
+                    onSelectedIndexChange = { index ->
+                        displayModeIndex.intValue = index
+                        val mode = displayModeValues[index]
+                        strategyGroupEdit.displayMode = mode
+                        strategyGroupEdit.showInAutoBalancerList = mode != StrategyGroupDisplayMode.NEVER
+                    },
+                )
+            } else {
+                SwitchPreference(
+                    title = stringResource(R.string.proxy_editor_strategy_group_show_on_home),
+                    summary = stringResource(R.string.proxy_editor_strategy_group_show_on_home_summary),
+                    checked = showInAutoBalancerListState.value,
+                    onCheckedChange = { showInList ->
+                        showInAutoBalancerListState.value = showInList
+                        strategyGroupEdit.showInAutoBalancerList = showInList
+                        strategyGroupEdit.displayMode = if (showInList) StrategyGroupDisplayMode.ALWAYS else StrategyGroupDisplayMode.NEVER
+                    },
+                )
+            }
         }
 
         SmallTitle(text = stringResource(R.string.proxy_editor_strategy_group_select_servers))
