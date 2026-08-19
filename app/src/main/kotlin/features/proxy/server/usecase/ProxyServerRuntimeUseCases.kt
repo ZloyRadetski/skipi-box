@@ -131,8 +131,8 @@ internal fun runProxyServerLatencyTest(
             }
 
             val concurrency = when (mode) {
-                ProxyServerLatencyTestMode.TcpConnect -> (stateSnapshot.subscriptionPingConcurrency * 2).coerceIn(16, 48)
-                ProxyServerLatencyTestMode.RealConnection -> stateSnapshot.subscriptionPingConcurrency.coerceIn(1, 16)
+                ProxyServerLatencyTestMode.TcpConnect -> (stateSnapshot.subscriptionPingConcurrency * 4).coerceIn(32, 64)
+                ProxyServerLatencyTestMode.RealConnection -> (stateSnapshot.subscriptionPingConcurrency * 4).coerceIn(24, 48)
             }
             val semaphore = Semaphore(concurrency)
             val sessionCache = ConcurrentHashMap<Int, Long>()

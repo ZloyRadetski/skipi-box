@@ -86,6 +86,7 @@ import app.navigation.Navigator
 import app.navigation.Route
 import data.AndroidAppStateStore
 import engine.proxy.latency.ProxyServerLatencyTestMode
+import engine.xray.strategyGroupMembers
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import features.proxy.server.usecase.ProxyServerImportFileUseCase
@@ -251,9 +252,8 @@ internal fun ProxyServerListTopBar(
         } else {
             val targetServers = if (server.server is StrategyGroup) {
                 val strategyGroup = server.server
-                val members = appState.proxyServers.filter { member ->
-                    member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
-                }
+                val members = appState.strategyGroupMembers(strategyGroup)
+                    .filter { member -> member.server !is StrategyGroup }
                 if (members.isNotEmpty()) listOf(server) + members else listOf(server)
             } else {
                 listOf(server)
