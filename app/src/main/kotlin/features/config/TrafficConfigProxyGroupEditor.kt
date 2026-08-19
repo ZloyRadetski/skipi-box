@@ -215,15 +215,16 @@ internal fun TrafficConfigProxyGroupsPage(
     }
 }
 
-private data class ProxyGroupServerChoice(
+internal data class ProxyGroupServerChoice(
     val id: Int,
     val rawName: String,
 )
 
-private fun StrategyGroup.toShadowrocketLine(serverChoices: List<ProxyGroupServerChoice>): String {
+internal fun StrategyGroup.toShadowrocketLine(serverChoices: List<ProxyGroupServerChoice>): String {
     val type = when (strategy) {
         StrategyGroupConstants.TYPE_SELECT -> "select"
         StrategyGroupConstants.TYPE_LEAST_PING -> "url-test"
+        StrategyGroupConstants.TYPE_FALLBACK -> "fallback"
         StrategyGroupConstants.TYPE_LEAST_LOAD -> "least-load"
         StrategyGroupConstants.TYPE_RANDOM -> "load-balance"
         StrategyGroupConstants.TYPE_ROUND_ROBIN -> "round-robin"

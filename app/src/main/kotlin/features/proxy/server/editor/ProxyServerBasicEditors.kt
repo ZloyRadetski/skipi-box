@@ -36,9 +36,7 @@ internal fun LazyListScope.httpProxyServer(httpEdit: HTTP) {
             inputTransformation = InputTransformation {
                 httpEdit.remarks = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -49,9 +47,7 @@ internal fun LazyListScope.httpProxyServer(httpEdit: HTTP) {
             inputTransformation = InputTransformation {
                 httpEdit.server = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -66,9 +62,7 @@ internal fun LazyListScope.httpProxyServer(httpEdit: HTTP) {
                 }
                 httpEdit.port = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -79,9 +73,7 @@ internal fun LazyListScope.httpProxyServer(httpEdit: HTTP) {
             inputTransformation = InputTransformation {
                 httpEdit.user = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -92,9 +84,7 @@ internal fun LazyListScope.httpProxyServer(httpEdit: HTTP) {
             inputTransformation = InputTransformation {
                 httpEdit.password = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -112,9 +102,7 @@ internal fun LazyListScope.socksProxyServer(socksEdit: Socks) {
             inputTransformation = InputTransformation {
                 socksEdit.remarks = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -125,9 +113,7 @@ internal fun LazyListScope.socksProxyServer(socksEdit: Socks) {
             inputTransformation = InputTransformation {
                 socksEdit.server = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -142,9 +128,7 @@ internal fun LazyListScope.socksProxyServer(socksEdit: Socks) {
                 }
                 socksEdit.port = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -155,9 +139,7 @@ internal fun LazyListScope.socksProxyServer(socksEdit: Socks) {
             inputTransformation = InputTransformation {
                 socksEdit.user = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -168,9 +150,7 @@ internal fun LazyListScope.socksProxyServer(socksEdit: Socks) {
             inputTransformation = InputTransformation {
                 socksEdit.password = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -206,9 +186,7 @@ internal fun LazyListScope.shadowsocksProxyServer(ssEdit: Shadowsocks) {
             inputTransformation = InputTransformation {
                 ssEdit.remarks = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -219,9 +197,7 @@ internal fun LazyListScope.shadowsocksProxyServer(ssEdit: Shadowsocks) {
             inputTransformation = InputTransformation {
                 ssEdit.server = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -236,9 +212,7 @@ internal fun LazyListScope.shadowsocksProxyServer(ssEdit: Shadowsocks) {
                 }
                 ssEdit.port = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -250,18 +224,14 @@ internal fun LazyListScope.shadowsocksProxyServer(ssEdit: Shadowsocks) {
             inputTransformation = InputTransformation {
                 ssEdit.password = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         OverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_method),
             items = methodOptions,
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             selectedIndex = method.intValue,
             onSelectedIndexChange = { newMethod ->
                 method.intValue = newMethod

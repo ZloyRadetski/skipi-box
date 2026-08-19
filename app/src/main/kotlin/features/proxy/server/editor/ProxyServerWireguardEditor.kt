@@ -31,9 +31,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             inputTransformation = InputTransformation {
                 wgEdit.remarks = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -44,9 +42,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             inputTransformation = InputTransformation {
                 wgEdit.server = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -61,9 +57,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
                 }
                 wgEdit.port = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -74,9 +68,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             inputTransformation = InputTransformation {
                 wgEdit.secretKey = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -87,9 +79,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             inputTransformation = InputTransformation {
                 wgEdit.publicKey = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -100,9 +90,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             inputTransformation = InputTransformation {
                 wgEdit.preSharedKey = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -113,9 +101,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             inputTransformation = InputTransformation {
                 wgEdit.reserved = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -126,9 +112,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             inputTransformation = InputTransformation {
                 wgEdit.address = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -143,9 +127,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
                 }
                 wgEdit.mtu = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -156,9 +138,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             inputTransformation = InputTransformation {
                 wgEdit.finalMask = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )

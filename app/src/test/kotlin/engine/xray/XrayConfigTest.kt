@@ -19,6 +19,8 @@ import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import engine.stats.maxTrafficDeltaComparedTo
 import data.encodePersistedProxyServer
 import data.decodePersistedProxyServer
+import features.config.ProxyGroupServerChoice
+import features.config.toShadowrocketLine
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -503,5 +505,41 @@ class XrayConfigTest {
         // Fallback strategy always prioritizes the first member as fallbackTag
         assertEquals("proxy-policy-10", balancer.fallbackTag)
         assertEquals("leastPing", balancer.strategy)
+    }
+
+    @Test
+    fun testStrategyGroupToShadowrocketLineForFallback() {
+        val group = StrategyGroup(
+            remarks = "FallbackGroup",
+            strategy = StrategyGroupConstants.TYPE_FALLBACK,
+            proxyServerIds = listOf(1, 2),
+            probeUrl = "http://cp.cloudflare.com/generate_204",
+            probeInterval = "10s",
+            displayMode = StrategyGroupDisplayMode.NEVER,
+        )
+        val choices = listOf(
+            ProxyGroupServerChoice(id = 1, rawName = "Server A"),
+            ProxyGroupServerChoice(id = 2, rawName = "Server B"),
+        )
+        val line = group.toShadowrocketLine(choices)
+        assertEquals("FallbackGroup = fallback, Server A, Server B, url=http://cp.cloudflare.com/generate_204, interval=10, skipi-display=never", line)
+    }
+
+    @Test
+    fun testStrategyGroupToShadowrocketLineForUrlTest() {
+        val group = StrategyGroup(
+            remarks = "AutoLeastPing",
+            strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+            proxyServerIds = listOf(1, 2),
+            probeUrl = "http://www.google.com/generate_204",
+            probeInterval = "15s",
+            displayMode = StrategyGroupDisplayMode.ALWAYS,
+        )
+        val choices = listOf(
+            ProxyGroupServerChoice(id = 1, rawName = "Server A"),
+            ProxyGroupServerChoice(id = 2, rawName = "Server B"),
+        )
+        val line = group.toShadowrocketLine(choices)
+        assertEquals("AutoLeastPing = url-test, Server A, Server B, url=http://www.google.com/generate_204, interval=15, skipi-display=always", line)
     }
 }

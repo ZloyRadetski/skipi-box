@@ -75,6 +75,7 @@ import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -790,6 +791,15 @@ internal fun TrafficConfigFullScreenScaffold(
                 isWideScreen = isWideScreen,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { BackNavigationIcon(onClick = onBack) },
+                actions = {
+                    if (onSave != null) {
+                        NavigationIcon(
+                            onClick = onSave,
+                            imageVector = MiuixIcons.Ok,
+                            contentDescription = stringResource(R.string.common_save),
+                        )
+                    }
+                },
             )
         },
     ) { innerPadding ->

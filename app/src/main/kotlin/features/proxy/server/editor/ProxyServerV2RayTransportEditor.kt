@@ -64,9 +64,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             title = stringResource(R.string.proxy_editor_transport_type),
             items = typeLabels,
             selectedIndex = type.intValue,
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onSelectedIndexChange = { newType ->
                 type.intValue = newType
                 params.type = typeOptions[newType].value
@@ -92,9 +90,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     title = stringResource(R.string.proxy_editor_header_type),
                     items = headerTypeOptions,
                     selectedIndex = headerType.intValue,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onSelectedIndexChange = { newHeaderType ->
                         headerType.intValue = newHeaderType
                         params.headerType = headerTypeOptions[newHeaderType]
@@ -108,9 +104,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.host = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -135,9 +129,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                         }
                         params.mtu = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -152,9 +144,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                         }
                         params.tti = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -175,9 +165,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.host = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -188,9 +176,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.path = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -211,9 +197,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.host = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -224,9 +208,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.path = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -252,9 +234,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     title = stringResource(R.string.proxy_editor_xhttp_mode),
                     items = modeOptions,
                     selectedIndex = mode.intValue,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onSelectedIndexChange = { newMode ->
                         mode.intValue = newMode
                         params.mode = modeOptions[newMode]
@@ -267,9 +247,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.host = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -280,9 +258,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.path = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -293,9 +269,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.extra = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -321,9 +295,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     title = stringResource(R.string.proxy_editor_grpc_mode),
                     items = modeOptions,
                     selectedIndex = mode.intValue,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onSelectedIndexChange = { newMode ->
                         mode.intValue = newMode
                         params.mode = modeOptions[newMode]
@@ -336,9 +308,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.authority = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -349,9 +319,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.serviceName = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -364,9 +332,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             inputTransformation = InputTransformation {
                 params.fm = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -410,9 +376,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         OverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_security),
             items = securityOptions,
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             selectedIndex = security.intValue,
             onSelectedIndexChange = { newSecurity ->
                 security.intValue = newSecurity
@@ -434,9 +398,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.sni = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -444,9 +406,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     title = stringResource(R.string.proxy_editor_tls_fingerprint),
                     items = fingerprintOptions,
                     selectedIndex = fingerprint.intValue,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onSelectedIndexChange = { newFingerprint ->
                         fingerprint.intValue = newFingerprint
                         params.fp = fingerprintOptions[newFingerprint]
@@ -456,9 +416,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     title = "ALPN",
                     items = alpnOptions,
                     selectedIndex = alpn.intValue,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onSelectedIndexChange = { newAlpn ->
                         alpn.intValue = newAlpn
                         params.alpn = alpnOptions[newAlpn]
@@ -471,9 +429,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.ech = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -484,9 +440,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.pcs = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -497,9 +451,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.vcn = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -520,9 +472,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.sni = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -530,9 +480,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     title = stringResource(R.string.proxy_editor_tls_fingerprint),
                     items = fingerprintOptions,
                     selectedIndex = fingerprint.intValue,
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onSelectedIndexChange = { newFingerprint ->
                         fingerprint.intValue = newFingerprint
                         params.fp = fingerprintOptions[newFingerprint]
@@ -545,9 +493,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.pbk = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -558,9 +504,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.sid = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -571,9 +515,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.spx = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
@@ -584,9 +526,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     inputTransformation = InputTransformation {
                         params.pqv = asCharSequence().toString()
                     },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 12.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
                     onKeyboardAction = { focusManager.clearFocus() },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )

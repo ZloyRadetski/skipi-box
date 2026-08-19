@@ -644,9 +644,11 @@ fun ProxyServerListPage(
             }
             if (proxyRunning) {
                 runProxyServiceOperation {
+                    val currentState = stateStore.state.value
+                    val currentSelected = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId }
                     proxyServiceUseCase.restart(
-                        state = stateStore.state.value,
-                        selectedServer = selectedServer,
+                        state = currentState,
+                        selectedServer = currentSelected,
                     )
                 }
             }

@@ -69,12 +69,14 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import ui.AppTheme
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import ui.components.BackNavigationIcon
+import ui.components.NavigationIcon
 import ui.components.StringListEditor
 import ui.components.StringListStatusText
 import ui.components.draggedCardShadow
@@ -305,10 +307,10 @@ fun RouteRuleEditorPage(
                 scrollBehavior = MiuixScrollBehavior(),
                 navigationIcon = { BackNavigationIcon(onClick = navigator::pop) },
                 actions = {
-                    TextButton(
-                        text = stringResource(R.string.common_save),
-                        enabled = canSave,
+                    NavigationIcon(
                         onClick = ::save,
+                        imageVector = MiuixIcons.Ok,
+                        contentDescription = stringResource(R.string.common_save),
                     )
                 },
             )

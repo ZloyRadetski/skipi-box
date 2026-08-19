@@ -284,7 +284,7 @@ fun SettingsBackupResetPage(
                                         return@launch
                                     }
                                 }
-                                updateAppState { AppState() }
+                                stateStore.resetToStockState()
                                 tipNotifier.show(appResetCompletedMessage)
                             } catch (error: Throwable) {
                                 tipNotifier.showError(error, resetFailedMessage)

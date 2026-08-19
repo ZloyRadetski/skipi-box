@@ -49,9 +49,7 @@ internal fun LazyListScope.vmessProxyServer(vmessEdit: VMess) {
             inputTransformation = InputTransformation {
                 vmessEdit.remarks = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -62,9 +60,7 @@ internal fun LazyListScope.vmessProxyServer(vmessEdit: VMess) {
             inputTransformation = InputTransformation {
                 vmessEdit.server = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -79,9 +75,7 @@ internal fun LazyListScope.vmessProxyServer(vmessEdit: VMess) {
                 }
                 vmessEdit.port = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -92,18 +86,14 @@ internal fun LazyListScope.vmessProxyServer(vmessEdit: VMess) {
             inputTransformation = InputTransformation {
                 vmessEdit.id = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         OverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_encryption),
             items = encryptionOptions,
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             selectedIndex = encryption.intValue,
             onSelectedIndexChange = { newEncryption ->
                 encryption.intValue = newEncryption
@@ -125,9 +115,7 @@ internal fun LazyListScope.trojanProxyServer(trojanEdit: Trojan) {
             inputTransformation = InputTransformation {
                 trojanEdit.remarks = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -138,9 +126,7 @@ internal fun LazyListScope.trojanProxyServer(trojanEdit: Trojan) {
             inputTransformation = InputTransformation {
                 trojanEdit.server = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -155,9 +141,7 @@ internal fun LazyListScope.trojanProxyServer(trojanEdit: Trojan) {
                 }
                 trojanEdit.port = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -168,9 +152,7 @@ internal fun LazyListScope.trojanProxyServer(trojanEdit: Trojan) {
             inputTransformation = InputTransformation {
                 trojanEdit.password = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -201,9 +183,7 @@ internal fun LazyListScope.vlessProxyServer(vlessEdit: VLESS) {
             inputTransformation = InputTransformation {
                 vlessEdit.remarks = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -214,9 +194,7 @@ internal fun LazyListScope.vlessProxyServer(vlessEdit: VLESS) {
             inputTransformation = InputTransformation {
                 vlessEdit.server = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -231,9 +209,7 @@ internal fun LazyListScope.vlessProxyServer(vlessEdit: VLESS) {
                 }
                 vlessEdit.port = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -244,9 +220,7 @@ internal fun LazyListScope.vlessProxyServer(vlessEdit: VLESS) {
             inputTransformation = InputTransformation {
                 vlessEdit.id = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
@@ -257,18 +231,14 @@ internal fun LazyListScope.vlessProxyServer(vlessEdit: VLESS) {
             inputTransformation = InputTransformation {
                 vlessEdit.encryption = asCharSequence().toString()
             },
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         OverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_flow),
             items = flowOptions,
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 12.dp),
             selectedIndex = flow.intValue,
             onSelectedIndexChange = { newFlow ->
                 flow.intValue = newFlow
