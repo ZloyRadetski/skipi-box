@@ -106,6 +106,7 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_theme">Тема оформления</string>
     <string name="settings_color_mode">Цветовой режим</string>
+    <string name="app_icon">Иконка</string>
     <string name="settings_app_icon">Иконка приложения</string>
     <string name="settings_app_icon_summary">Стиль и цветовая тема иконки на рабочем столе</string>
     <string name="app_icon_default">Фирменная (Градиент)</string>

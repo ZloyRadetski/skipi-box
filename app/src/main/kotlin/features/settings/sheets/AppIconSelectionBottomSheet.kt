@@ -174,7 +174,7 @@ internal fun AppIconSelectionBottomSheet(
 ) {
     WindowBottomSheet(
         show = show,
-        title = stringResource(R.string.settings_app_icon),
+        title = stringResource(R.string.app_icon),
         startAction = {
             TextButton(
                 text = stringResource(R.string.common_cancel),

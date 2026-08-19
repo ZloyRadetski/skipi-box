@@ -83,6 +83,7 @@
     <string name="settings_title">تنظیمات</string>
     <string name="settings_theme">موضوع</string>
     <string name="settings_color_mode">موضوع</string>
+    <string name="app_icon">آیکون</string>
     <string name="settings_app_icon">آیکون برنامه</string>
     <string name="settings_app_icon_summary">سبک و تم آیکون برنامه را انتخاب کنید</string>
     <string name="app_icon_default">پیش‌فرض (گرادیان)</string>
