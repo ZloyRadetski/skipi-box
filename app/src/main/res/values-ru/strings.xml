@@ -536,6 +536,10 @@
     <string name="proxy_editor_tls_fingerprint">Отпечаток TLS (Fingerprint)</string>
     <string name="proxy_editor_reality_settings">Настройки REALITY</string>
     <string name="proxy_editor_strategy_group_type">Тип группы прокси</string>
+    <string name="proxy_group_display_mode_title">Отображение в группах прокси</string>
+    <string name="proxy_group_display_mode_always">Всегда</string>
+    <string name="proxy_group_display_mode_active_config">Только если конфиг активен</string>
+    <string name="proxy_group_display_mode_never">Никогда</string>
     <string name="proxy_editor_strategy_group_show_on_home">Отображать в группах прокси</string>
     <string name="proxy_editor_strategy_group_show_on_home_summary">Показывает эту группу во вкладке «Группы прокси» на главном экране.</string>
     <string name="proxy_editor_strategy_group_select">Ручной выбор (Select)</string>

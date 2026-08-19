@@ -3,6 +3,8 @@
 
 package features.config
 
+import features.proxy.server.model.StrategyGroupDisplayMode
+
 /**
  * A deliberately lossless, small parser for Shadowrocket's INI-like format.
  *
@@ -31,8 +33,9 @@ data class ShadowrocketPolicyGroup(
     val members: List<String>,
     val url: String = "",
     val intervalSeconds: Int? = null,
-    /** SKIPI extension: exposes this config-owned group on the home Auto-balancers tab. */
-    val showInAutoBalancerList: Boolean = false,
+    /** SKIPI extension: display policy for proxy groups tab on home screen. */
+    val displayMode: String = StrategyGroupDisplayMode.NEVER,
+    val showInAutoBalancerList: Boolean = displayMode != StrategyGroupDisplayMode.NEVER,
     val raw: String = "",
 ) {
     val outboundTag: String
@@ -431,6 +434,16 @@ private fun parseProxyGroupLine(
         .associate { value ->
             value.substringBefore('=').trim().lowercase() to value.substringAfter('=').trim()
         }
+    val displayOpt = options["skipi-display"]?.trim()?.lowercase()
+    val showOnHomeLegacy = options["skipi-show-on-home"]
+        ?.trim()
+        ?.lowercase() in setOf("true", "yes", "1")
+    val displayMode = when (displayOpt) {
+        StrategyGroupDisplayMode.NEVER -> StrategyGroupDisplayMode.NEVER
+        StrategyGroupDisplayMode.ALWAYS -> StrategyGroupDisplayMode.ALWAYS
+        StrategyGroupDisplayMode.ACTIVE_CONFIG, "only_active_config", "active" -> StrategyGroupDisplayMode.ACTIVE_CONFIG
+        else -> if (showOnHomeLegacy) StrategyGroupDisplayMode.ALWAYS else StrategyGroupDisplayMode.NEVER
+    }
     return ShadowrocketPolicyGroup(
         lineNumber = lineNumber,
         name = name,
@@ -438,9 +451,7 @@ private fun parseProxyGroupLine(
         members = values.drop(1).filterNot { value -> '=' in value },
         url = options["url"].orEmpty(),
         intervalSeconds = options["interval"]?.toIntOrNull()?.takeIf { it > 0 },
-        showInAutoBalancerList = options["skipi-show-on-home"]
-            ?.trim()
-            ?.lowercase() in setOf("true", "yes", "1"),
+        displayMode = displayMode,
         raw = raw,
     )
 }

@@ -70,6 +70,7 @@ data class ProxyServerListState(
     val showTunnelMemoryOnHome: Boolean,
     val availableAppUpdate: features.updater.AppUpdateInfo?,
     val dismissedUpdateVersion: String,
+    val activeTrafficConfigId: Int? = null,
 )
 
 val LocalAppStateStore = staticCompositionLocalOf<AndroidAppStateStore> {
@@ -181,5 +182,6 @@ private fun AppState.toProxyServerListState(): ProxyServerListState {
         showTunnelMemoryOnHome = showTunnelMemoryOnHome,
         availableAppUpdate = availableAppUpdate,
         dismissedUpdateVersion = dismissedUpdateVersion,
+        activeTrafficConfigId = activeTrafficConfigId,
     )
 }

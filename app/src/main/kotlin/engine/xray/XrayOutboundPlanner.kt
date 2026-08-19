@@ -99,16 +99,17 @@ private class XrayOutboundPlanner(
                 val targetMember = members.firstOrNull { it.id == matchingStrategy?.selectedMemberId } ?: members.first()
                 addNormalOutbound(tag = tag, server = targetMember)
             }
-            "url-test", "fallback", "load-balance" -> {
+            "url-test", "fallback", "leastping", "load-balance", "random", "round-robin", "roundrobin", "least-load", "leastload" -> {
                 val selector = "$tag-policy-"
                 val memberTags = members.map { member -> "$selector${member.id}" }
                 members.zip(memberTags).forEach { (member, memberTag) ->
                     addNormalOutbound(tag = memberTag, server = member)
                 }
-                val strategy = if (group.type == "load-balance") {
-                    StrategyGroupConstants.TYPE_RANDOM
-                } else {
-                    StrategyGroupConstants.TYPE_LEAST_PING
+                val strategy = when (group.type.lowercase()) {
+                    "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
+                    "round-robin", "roundrobin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
+                    "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
+                    else -> StrategyGroupConstants.TYPE_LEAST_PING
                 }
                 balancers += XrayBalancerPlan(
                     tag = tag,

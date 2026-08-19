@@ -30,6 +30,7 @@ import app.collectAppState
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
+import features.proxy.server.model.StrategyGroupDisplayMode
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -102,8 +103,18 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     .coerceAtLeast(0),
             )
         }
-        val showInAutoBalancerListState = remember(strategyGroupEdit.showInAutoBalancerList) {
-            mutableStateOf(strategyGroupEdit.showInAutoBalancerList)
+        val displayModeValues = listOf(
+            StrategyGroupDisplayMode.ALWAYS,
+            StrategyGroupDisplayMode.ACTIVE_CONFIG,
+            StrategyGroupDisplayMode.NEVER,
+        )
+        val displayModeLabels = listOf(
+            stringResource(R.string.proxy_group_display_mode_always),
+            stringResource(R.string.proxy_group_display_mode_active_config),
+            stringResource(R.string.proxy_group_display_mode_never),
+        )
+        val displayModeIndex = remember(strategyGroupEdit.displayMode) {
+            mutableIntStateOf(displayModeValues.indexOf(strategyGroupEdit.displayMode).coerceAtLeast(0))
         }
         val remarksState = rememberTextFieldState(initialText = strategyGroupEdit.remarks)
         LaunchedEffect(remarksState.text) {
@@ -142,13 +153,15 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     strategyGroupEdit.strategy = strategyValues[index]
                 },
             )
-            SwitchPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_show_on_home),
-                summary = stringResource(R.string.proxy_editor_strategy_group_show_on_home_summary),
-                checked = showInAutoBalancerListState.value,
-                onCheckedChange = { showInList ->
-                    showInAutoBalancerListState.value = showInList
-                    strategyGroupEdit.showInAutoBalancerList = showInList
+            OverlayDropdownPreference(
+                title = stringResource(R.string.proxy_group_display_mode_title),
+                items = displayModeLabels,
+                selectedIndex = displayModeIndex.intValue,
+                onSelectedIndexChange = { index ->
+                    displayModeIndex.intValue = index
+                    val mode = displayModeValues[index]
+                    strategyGroupEdit.displayMode = mode
+                    strategyGroupEdit.showInAutoBalancerList = mode != StrategyGroupDisplayMode.NEVER
                 },
             )
         }

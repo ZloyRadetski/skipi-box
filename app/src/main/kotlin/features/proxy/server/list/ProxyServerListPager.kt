@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import app.collectAppState
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -156,6 +157,9 @@ internal fun ProxyServerListPager(
         )
     }
 
+    val appState by stateStore.collectAppState()
+    val activeTrafficConfigId = appState.activeTrafficConfigId
+
     AppPullToRefresh(
         isRefreshing = allSubscriptionsRefreshing,
         onRefresh = {
@@ -202,12 +206,14 @@ internal fun ProxyServerListPager(
             groupState.visibleGroupIds,
             keyword,
             sort,
+            activeTrafficConfigId,
         ) {
             servers.filterPageServers(
                 pageGroupId = pageGroupId,
                 pageIsAllGroupsSelected = pageIsAllGroupsSelected,
                 visibleGroupIds = groupState.visibleGroupIds,
                 keyword = keyword,
+                activeTrafficConfigId = activeTrafficConfigId,
             ).sortedForProxyServerList(sort)
         }
         val reorderEnabled = columns == 1 && sort == ProxyServerListSortDefault
@@ -852,6 +858,7 @@ private fun List<ProxyServerState>.filterPageServers(
     pageIsAllGroupsSelected: Boolean,
     visibleGroupIds: Set<Int>,
     keyword: String,
+    activeTrafficConfigId: Int? = null,
 ): List<ProxyServerState> {
     return filter { server ->
         val groupMatches = if (pageIsAllGroupsSelected) {
@@ -859,7 +866,7 @@ private fun List<ProxyServerState>.filterPageServers(
         } else {
             server.groupId == pageGroupId
         }
-        groupMatches && server.isVisibleOnProxyServerList() && (
+        groupMatches && server.isVisibleOnProxyServerList(activeTrafficConfigId) && (
             keyword.isEmpty() ||
                 server.server.getInfo().remarks.contains(keyword, ignoreCase = true)
             )

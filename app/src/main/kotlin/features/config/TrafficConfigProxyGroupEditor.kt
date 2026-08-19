@@ -39,6 +39,7 @@ import app.navigation.Route
 import app.navigation.StrategyGroupMemberSelectionResult
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
+import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -179,13 +180,17 @@ internal fun TrafficConfigProxyGroupsPage(
             creatingGroup = false
             editingGroupLineNumber = null
         },
-        onSave = { name, type, members, url, interval, showOnHome ->
+        onSave = { name, type, members, url, interval, displayMode ->
             val line = buildString {
                 append(name.trim()).append(" = ").append(type)
                 members.forEach { member -> append(", ").append(member) }
                 url.trim().takeIf(String::isNotBlank)?.let { append(", url=").append(it) }
                 interval.trim().toIntOrNull()?.takeIf { it > 0 }?.let { append(", interval=").append(it) }
-                if (showOnHome) append(", skipi-show-on-home=true")
+                when (displayMode) {
+                    StrategyGroupDisplayMode.ALWAYS -> append(", skipi-display=always")
+                    StrategyGroupDisplayMode.ACTIVE_CONFIG -> append(", skipi-display=active_config")
+                    StrategyGroupDisplayMode.NEVER -> append(", skipi-display=never")
+                }
             }
             updateRaw(
                 editingGroup?.let { group -> config.rawConfig.withShadowrocketProxyGroupLine(group.lineNumber, line) }
@@ -208,7 +213,7 @@ private fun TrafficConfigProxyGroupDialog(
     initialGroup: ShadowrocketPolicyGroup?,
     serverChoices: List<ProxyGroupServerChoice>,
     onDismissRequest: () -> Unit,
-    onSave: (name: String, type: String, members: List<String>, url: String, interval: String, showOnHome: Boolean) -> Unit,
+    onSave: (name: String, type: String, members: List<String>, url: String, interval: String, displayMode: String) -> Unit,
 ) {
     if (!show) return
     val navigator = LocalNavigator.current
@@ -224,8 +229,19 @@ private fun TrafficConfigProxyGroupDialog(
         mutableStateOf(initialGroup?.url.orEmpty().ifBlank { if (initialGroup == null) defaultProbeUrl else "" })
     }
     var interval by rememberSaveable(initialGroup?.lineNumber) { mutableStateOf(initialGroup?.intervalSeconds?.toString().orEmpty()) }
-    var showOnHome by rememberSaveable(initialGroup?.lineNumber) {
-        mutableStateOf(initialGroup?.showInAutoBalancerList == true)
+    val displayModeValues = listOf(
+        StrategyGroupDisplayMode.ALWAYS,
+        StrategyGroupDisplayMode.ACTIVE_CONFIG,
+        StrategyGroupDisplayMode.NEVER,
+    )
+    val displayModeLabels = listOf(
+        stringResource(R.string.proxy_group_display_mode_always),
+        stringResource(R.string.proxy_group_display_mode_active_config),
+        stringResource(R.string.proxy_group_display_mode_never),
+    )
+    var displayModeIndex by rememberSaveable(initialGroup?.lineNumber) {
+        val initialMode = initialGroup?.displayMode ?: StrategyGroupDisplayMode.ACTIVE_CONFIG
+        mutableIntStateOf(displayModeValues.indexOf(initialMode).coerceAtLeast(0))
     }
     var typeIndex by rememberSaveable(initialGroup?.lineNumber) {
         mutableIntStateOf(ShadowrocketProxyGroupTypes.indexOf(initialGroup?.type).coerceAtLeast(0))
@@ -234,8 +250,10 @@ private fun TrafficConfigProxyGroupDialog(
     val typeLabels = listOf(
         stringResource(R.string.proxy_editor_strategy_group_select),
         stringResource(R.string.proxy_editor_strategy_group_least_ping),
-        "Fallback",
+        stringResource(R.string.proxy_editor_strategy_group_least_load),
         stringResource(R.string.proxy_editor_strategy_group_random),
+        stringResource(R.string.proxy_editor_strategy_group_round_robin),
+        "Fallback",
     )
     val memberSelectorResultKey = remember(initialGroup?.lineNumber) {
         "traffic-config-proxy-group-members-${initialGroup?.lineNumber ?: "new"}"
@@ -278,11 +296,11 @@ private fun TrafficConfigProxyGroupDialog(
                 onSelectedIndexChange = { typeIndex = it },
                 modifier = Modifier.padding(bottom = 12.dp),
             )
-            SwitchPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_show_on_home),
-                summary = stringResource(R.string.proxy_editor_strategy_group_show_on_home_summary),
-                checked = showOnHome,
-                onCheckedChange = { showOnHome = it },
+            WindowDropdownPreference(
+                title = stringResource(R.string.proxy_group_display_mode_title),
+                items = displayModeLabels,
+                selectedIndex = displayModeIndex,
+                onSelectedIndexChange = { displayModeIndex = it },
                 modifier = Modifier.padding(bottom = 12.dp),
             )
             Text(
@@ -336,11 +354,20 @@ private fun TrafficConfigProxyGroupDialog(
                 TextButton(
                     text = stringResource(R.string.common_save),
                     enabled = name.isNotBlank() && members.isNotEmpty(),
-                    onClick = { onSave(name, type, members, url, interval, showOnHome) },
+                    onClick = {
+                        onSave(name, type, members, url, interval, displayModeValues[displayModeIndex])
+                    },
                 )
             }
         }
     }
 }
 
-private val ShadowrocketProxyGroupTypes = listOf("select", "url-test", "fallback", "load-balance")
+private val ShadowrocketProxyGroupTypes = listOf(
+    "select",
+    "url-test",
+    "least-load",
+    "load-balance",
+    "round-robin",
+    "fallback",
+)

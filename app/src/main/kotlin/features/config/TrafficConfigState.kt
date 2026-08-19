@@ -454,7 +454,7 @@ internal fun AppState.withUpdatedTrafficConfig(
 internal fun AppState.withConfigProxyGroupsReflected(): AppState {
     val desired = trafficConfigs.flatMap { config ->
         config.rawConfig.analyzeShadowrocketConfig().proxyGroups
-            .filter(ShadowrocketPolicyGroup::showInAutoBalancerList)
+            .filter { it.displayMode != features.proxy.server.model.StrategyGroupDisplayMode.NEVER }
             .map { group -> ConfigAutoBalancerSource(config.id, group) }
     }
     val existingGenerated = proxyServers.filter { server ->
@@ -477,7 +477,8 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
                 remarks = source.group.name,
                 strategy = source.group.toStrategyGroupType(),
                 selectedMemberId = (existing?.server as? StrategyGroup)?.selectedMemberId,
-                showInAutoBalancerList = true,
+                displayMode = source.group.displayMode,
+                showInAutoBalancerList = source.group.displayMode != features.proxy.server.model.StrategyGroupDisplayMode.NEVER,
                 sourceTrafficConfigId = source.configId,
                 sourcePolicyGroupName = source.group.name,
                 probeInterval = source.group.intervalSeconds?.let { "${it}s" } ?: "15s",
@@ -504,10 +505,10 @@ private data class ConfigAutoBalancerSource(
 private fun ShadowrocketPolicyGroup.toStrategyGroupType(): String {
     return when (type.lowercase()) {
         "select" -> StrategyGroupConstants.TYPE_SELECT
-        "load-balance" -> StrategyGroupConstants.TYPE_RANDOM
+        "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
         "round-robin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
         "least-load" -> StrategyGroupConstants.TYPE_LEAST_LOAD
-        "url-test", "fallback" -> StrategyGroupConstants.TYPE_LEAST_PING
+        "url-test", "fallback", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
         else -> StrategyGroupConstants.TYPE_SELECT
     }
 }

@@ -551,6 +551,10 @@
     <string name="proxy_editor_tls_fingerprint">TLS fingerprint</string>
     <string name="proxy_editor_reality_settings">Reality settings</string>
     <string name="proxy_editor_strategy_group_type">Proxy group type</string>
+    <string name="proxy_group_display_mode_title">Display in Proxy groups</string>
+    <string name="proxy_group_display_mode_always">Always</string>
+    <string name="proxy_group_display_mode_active_config">Only when config is active</string>
+    <string name="proxy_group_display_mode_never">Never</string>
     <string name="proxy_editor_strategy_group_show_on_home">Show in Proxy groups</string>
     <string name="proxy_editor_strategy_group_show_on_home_summary">Show this group in the Proxy groups list on the Proxies screen.</string>
     <string name="proxy_editor_strategy_group_select">Manual selection (Select)</string>

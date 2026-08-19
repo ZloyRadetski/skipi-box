@@ -21,6 +21,14 @@ object StrategyGroupConstants {
     )
 }
 
+object StrategyGroupDisplayMode {
+    const val NEVER = "never"
+    const val ALWAYS = "always"
+    const val ACTIVE_CONFIG = "active_config"
+
+    val MODES = listOf(ALWAYS, ACTIVE_CONFIG, NEVER)
+}
+
 @Serializable
 data class StrategyGroup(
     var remarks: String = "",
@@ -31,6 +39,8 @@ data class StrategyGroup(
     var proxyServerIds: List<Int> = emptyList(),
     /** Currently chosen member ID for `select` strategy groups. */
     var selectedMemberId: Int? = null,
+    /** Display policy for home proxy groups list. */
+    var displayMode: String = StrategyGroupDisplayMode.ALWAYS,
     /** Hidden groups still work in routing, but are omitted from the main Proxy groups tab. */
     var showInAutoBalancerList: Boolean = true,
     /** Config-owned groups keep resolving their current named members after subscription refreshes. */
@@ -64,6 +74,7 @@ data class StrategyGroup(
         filter = other.filter
         proxyServerIds = other.proxyServerIds
         selectedMemberId = other.selectedMemberId
+        displayMode = other.displayMode
         showInAutoBalancerList = other.showInAutoBalancerList
         sourceTrafficConfigId = other.sourceTrafficConfigId
         sourcePolicyGroupName = other.sourcePolicyGroupName
@@ -80,6 +91,6 @@ data class StrategyGroup(
     }
 
     override fun connectionFingerprint(): String {
-        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$selectedMemberId"
+        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$selectedMemberId|$displayMode"
     }
 }
