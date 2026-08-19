@@ -20,6 +20,7 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class XrayConfigTest {
@@ -85,7 +86,8 @@ class XrayConfigTest {
         assertTrue(plan.balancers.isNotEmpty())
         assertEquals("leastPing", plan.balancers.first().strategy)
         assertEquals(1, plan.observatorySelectors.size)
-        assertEquals(1, plan.burstObservatorySelectors.size)
+        assertEquals(0, plan.burstObservatorySelectors.size)
+        assertEquals("30s", plan.observatoryProbeInterval)
     }
 
     @Test
@@ -127,7 +129,45 @@ class XrayConfigTest {
         val jsonBalancers = buildXrayBalancers(plan.balancers)
         assertEquals(1, jsonBalancers.size)
         val strategySettings = jsonBalancers.first()["strategy"]?.let { it as? kotlinx.serialization.json.JsonObject }?.get("settings") as? kotlinx.serialization.json.JsonObject
-        assertEquals("burstObservatory", strategySettings?.get("observerTag")?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content })
+        // For default leastPing, observerTag must be null to use standard observatory
+        assertNull(strategySettings?.get("observerTag"))
+    }
+
+    @Test
+    fun testBuildXrayOutboundPlanForBurstProbeStrategyGroup() {
+        val server1 = ProxyServerState(
+            id = 10,
+            server = VLESS(remarks = "Node 1", id = "uuid-1", server = "s1.example.com", port = "443"),
+            groupId = 0,
+        )
+        val group = StrategyGroup(
+            remarks = "Burst Balancer",
+            strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+            enableBurstProbe = true,
+            probeInterval = "45s",
+            proxyServerIds = listOf(10),
+        )
+        val groupState = ProxyServerState(
+            id = 100,
+            server = group,
+            groupId = 0,
+        )
+        val appState = AppState(
+            proxyServers = listOf(server1, groupState),
+            selectedProxyServerId = 100,
+        )
+
+        val plan = appState.buildXrayOutboundPlan(groupState)
+
+        assertNotNull(plan)
+        assertEquals(1, plan.burstObservatorySelectors.size)
+        assertEquals(0, plan.observatorySelectors.size)
+        assertEquals("burstObservatory", plan.balancers.first().observerTag)
+        assertEquals("45s", plan.observatoryProbeInterval)
+
+        val jsonBalancers = buildXrayBalancers(plan.balancers)
+        val strategySettings = jsonBalancers.first()["strategy"]?.let { it as? kotlinx.serialization.json.JsonObject }?.get("settings") as? kotlinx.serialization.json.JsonObject
+        assertEquals("burstObservatory", (strategySettings?.get("observerTag") as? kotlinx.serialization.json.JsonPrimitive)?.content)
     }
 
     @Test

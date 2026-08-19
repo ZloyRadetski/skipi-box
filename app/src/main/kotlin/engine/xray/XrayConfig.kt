@@ -124,6 +124,7 @@ private fun buildGeneratedXrayConfig(request: XrayConfigRequest): GeneratedXrayC
         burstObservatory = buildXrayBurstObservatory(
             selectors = outboundPlan.burstObservatorySelectors,
             probeUrl = outboundPlan.observatoryProbeUrl,
+            probeInterval = outboundPlan.observatoryProbeInterval,
         ),
         statsApiConfig = request.statsApiConfig,
     )

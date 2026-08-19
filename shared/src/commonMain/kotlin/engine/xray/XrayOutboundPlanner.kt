@@ -36,6 +36,8 @@ private class XrayOutboundPlanner(
     private val routeTargets = linkedMapOf<String, XrayRouteTarget>()
     private val addedOutboundTags = mutableSetOf<String>()
     private val dnsHostServers = mutableListOf<String>()
+    private var observatoryProbeUrl: String? = null
+    private var observatoryProbeInterval: String? = null
 
     fun build(selectedServer: ProxyServerState): XrayOutboundPlan {
         addRouteTarget(XrayTags.PROXY, selectedServer)
@@ -51,6 +53,8 @@ private class XrayOutboundPlanner(
             burstObservatorySelectors = burstObservatorySelectors.distinct(),
             routeTargets = routeTargets,
             dnsHostServers = dnsHostServers.distinct(),
+            observatoryProbeUrl = observatoryProbeUrl,
+            observatoryProbeInterval = observatoryProbeInterval,
         )
     }
 
@@ -169,6 +173,15 @@ private class XrayOutboundPlanner(
         if (members.isEmpty()) {
             error("Strategy group '${strategyGroup.remarks}' has no available proxy servers")
         }
+        if (strategyGroup.strategy == StrategyGroupConstants.TYPE_SELECT) {
+            val targetMember = members.firstOrNull { it.id == strategyGroup.selectedMemberId } ?: members.first()
+            addNormalOutbound(
+                tag = tag,
+                server = targetMember,
+            )
+            routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
+            return
+        }
         val selector = "$tag-policy-"
         val memberTags = members.map { member -> "$selector${member.id}" }
         members.zip(memberTags).forEach { (member, memberTag) ->
@@ -177,16 +190,33 @@ private class XrayOutboundPlanner(
                 server = member,
             )
         }
+        val bestFallbackTag = members.zip(memberTags)
+            .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+            ?.second ?: memberTags.first()
+
+        val customProbeUrl = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)
+        val customProbeInterval = strategyGroup.probeInterval.trim().takeIf(String::isNotEmpty)
+        if (customProbeUrl != null && observatoryProbeUrl == null) {
+            observatoryProbeUrl = customProbeUrl
+        }
+        if (customProbeInterval != null && observatoryProbeInterval == null) {
+            observatoryProbeInterval = customProbeInterval
+        }
+
+        val observerTag = if (strategyGroup.enableBurstProbe) "burstObservatory" else null
+        if (strategyGroup.enableBurstProbe) {
+            burstObservatorySelectors += selector
+        } else {
+            observatorySelectors += selector
+        }
+
         balancers += XrayBalancerPlan(
             tag = tag,
             selector = selector,
             strategy = strategyGroup.strategy,
-            fallbackTag = memberTags.first(),
+            fallbackTag = bestFallbackTag,
+            observerTag = observerTag,
         )
-        when (strategyGroup.strategy) {
-            StrategyGroupConstants.TYPE_LEAST_LOAD -> burstObservatorySelectors += selector
-            StrategyGroupConstants.TYPE_LEAST_PING -> observatorySelectors += selector
-        }
         routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
     }
 

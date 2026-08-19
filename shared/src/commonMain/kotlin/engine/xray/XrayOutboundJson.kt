@@ -59,6 +59,14 @@ internal fun buildXrayBalancers(plans: List<XrayBalancerPlan>): List<JsonObject>
                 "strategy",
                 buildJsonObject {
                     put("type", plan.strategy)
+                    if (plan.observerTag != null) {
+                        put(
+                            "settings",
+                            buildJsonObject {
+                                put("observerTag", plan.observerTag)
+                            },
+                        )
+                    }
                 },
             )
             plan.fallbackTag?.let { fallbackTag ->

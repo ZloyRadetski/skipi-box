@@ -33,6 +33,7 @@ internal data class XrayBalancerPlan(
      * generated loopback default outbound, or a balancer can route to itself.
      */
     val fallbackTag: String? = null,
+    val observerTag: String? = null,
 )
 
 internal data class XrayOutboundPlan(

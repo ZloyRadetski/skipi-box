@@ -60,12 +60,14 @@ internal fun buildXrayBalancers(plans: List<XrayBalancerPlan>): List<JsonObject>
                 "strategy",
                 buildJsonObject {
                     put("type", plan.strategy)
-                    put(
-                        "settings",
-                        buildJsonObject {
-                            put("observerTag", "burstObservatory")
-                        },
-                    )
+                    if (plan.observerTag != null) {
+                        put(
+                            "settings",
+                            buildJsonObject {
+                                put("observerTag", plan.observerTag)
+                            },
+                        )
+                    }
                 },
             )
             plan.fallbackTag?.let { fallbackTag ->
@@ -92,6 +94,7 @@ internal fun buildXrayObservatory(
 internal fun buildXrayBurstObservatory(
     selectors: List<String>,
     probeUrl: String? = null,
+    probeInterval: String? = null,
 ): JsonObject? {
     if (selectors.isEmpty()) return null
     return buildJsonObject {
@@ -100,9 +103,9 @@ internal fun buildXrayBurstObservatory(
             "pingConfig",
             buildJsonObject {
                 put("destination", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
-                put("interval", "5s")
+                put("interval", probeInterval?.takeIf(String::isNotBlank) ?: "1m")
                 put("sampling", 2)
-                put("timeout", "1s")
+                put("timeout", "3s")
             },
         )
     }

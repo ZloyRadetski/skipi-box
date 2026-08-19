@@ -33,6 +33,7 @@ internal data class XrayBalancerPlan(
      * generated loopback default outbound, or a balancer can route to itself.
      */
     val fallbackTag: String? = null,
+    val observerTag: String? = null,
 )
 
 internal data class XrayOutboundPlan(
@@ -42,4 +43,6 @@ internal data class XrayOutboundPlan(
     val burstObservatorySelectors: List<String>,
     val routeTargets: Map<String, XrayRouteTarget>,
     val dnsHostServers: List<String>,
+    val observatoryProbeUrl: String? = null,
+    val observatoryProbeInterval: String? = null,
 )

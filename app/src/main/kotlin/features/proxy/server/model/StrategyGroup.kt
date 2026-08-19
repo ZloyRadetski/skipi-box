@@ -46,9 +46,9 @@ data class StrategyGroup(
     /** Config-owned groups keep resolving their current named members after subscription refreshes. */
     var sourceTrafficConfigId: Int? = null,
     var sourcePolicyGroupName: String = "",
-    var probeInterval: String = "5s",
+    var probeInterval: String = "15s",
     var probeUrl: String = "",
-    var enableBurstProbe: Boolean = true,
+    var enableBurstProbe: Boolean = false,
 ) : ProxyServer<StrategyGroup> {
     override fun getInfo(): ProxyServerInfo {
         val source = if (proxyServerIds.isNotEmpty()) {
