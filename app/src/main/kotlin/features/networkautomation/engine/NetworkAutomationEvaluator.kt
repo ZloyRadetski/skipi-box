@@ -35,6 +35,7 @@ object NetworkAutomationEvaluator {
         }
     }
 
+    @Suppress("DEPRECATION")
     fun getActivePhysicalCapabilities(context: Context, capabilities: NetworkCapabilities? = null): NetworkCapabilities? {
         val appContext = context.applicationContext
         val cm = appContext.getSystemService(ConnectivityManager::class.java) ?: return capabilities
@@ -74,6 +75,7 @@ object NetworkAutomationEvaluator {
         } ?: capabilities
     }
 
+    @Suppress("DEPRECATION")
     fun getCurrentWifiSsid(context: Context, capabilities: NetworkCapabilities? = null): String? {
         val appContext = context.applicationContext
         val cm = appContext.getSystemService(ConnectivityManager::class.java)

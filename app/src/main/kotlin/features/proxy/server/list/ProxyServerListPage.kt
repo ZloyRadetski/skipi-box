@@ -635,7 +635,7 @@ fun ProxyServerListPage(
             updateAppState { state ->
                 val updatedServers = state.proxyServers.map { serverState ->
                     if (serverState.id == targetGroup.id && serverState.server is StrategyGroup) {
-                        val updatedStrategy = (serverState.server as StrategyGroup).copy(selectedMemberId = memberId)
+                        val updatedStrategy = serverState.server.copy(selectedMemberId = memberId)
                         serverState.copy(server = updatedStrategy)
                     } else {
                         serverState

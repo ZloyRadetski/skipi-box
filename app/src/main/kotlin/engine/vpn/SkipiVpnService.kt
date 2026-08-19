@@ -354,7 +354,11 @@ class SkipiVpnService : VpnService() {
                     val active = connectivityManager.activeNetwork
                     val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
                     val isPhysical = active != null && activeCaps != null && !activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-                    setUnderlyingNetworks(if (isPhysical) arrayOf(active!!) else null)
+                    if (isPhysical) {
+                        setUnderlyingNetworks(arrayOf(active))
+                    } else {
+                        setUnderlyingNetworks(null)
+                    }
                 }
             }
         }
