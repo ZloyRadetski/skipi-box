@@ -92,8 +92,13 @@ private class XrayOutboundPlanner(
         if (members.isEmpty()) {
             return
         }
-        when (group.type) {
-            "select" -> addNormalOutbound(tag = tag, server = members.first())
+        when (group.type.lowercase()) {
+            "select" -> {
+                val matchingStrategy = appState.proxyServers.mapNotNull { it.server as? StrategyGroup }
+                    .firstOrNull { it.sourcePolicyGroupName.equals(group.name, ignoreCase = true) }
+                val targetMember = members.firstOrNull { it.id == matchingStrategy?.selectedMemberId } ?: members.first()
+                addNormalOutbound(tag = tag, server = targetMember)
+            }
             "url-test", "fallback", "load-balance" -> {
                 val selector = "$tag-policy-"
                 val memberTags = members.map { member -> "$selector${member.id}" }
@@ -173,6 +178,15 @@ private class XrayOutboundPlanner(
         if (members.isEmpty()) {
             error("Strategy group '${strategyGroup.remarks}' has no available proxy servers")
         }
+        if (strategyGroup.strategy == StrategyGroupConstants.TYPE_SELECT) {
+            val targetMember = members.firstOrNull { it.id == strategyGroup.selectedMemberId } ?: members.first()
+            addNormalOutbound(
+                tag = tag,
+                server = targetMember,
+            )
+            routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
+            return
+        }
         val selector = "$tag-policy-"
         val memberTags = members.map { member -> "$selector${member.id}" }
         members.zip(memberTags).forEach { (member, memberTag) ->
@@ -234,7 +248,7 @@ private fun AppState.routeTargetServers(): List<ProxyServerState> {
     return proxyServers.filter { server -> server.proxyServerOutboundTag() in routeOutboundTags }
 }
 
-private fun AppState.strategyGroupMembers(
+internal fun AppState.strategyGroupMembers(
     strategyGroup: StrategyGroup,
     visitingStrategyGroupIds: Set<Int> = emptySet(),
 ): List<ProxyServerState> {

@@ -212,11 +212,17 @@ private fun TrafficConfigProxyGroupDialog(
 ) {
     if (!show) return
     val navigator = LocalNavigator.current
+    val appState by LocalAppStateStore.current.collectAppState()
+    val defaultProbeUrl = remember(appState.subscriptionPingUrl) {
+        appState.subscriptionPingUrl.ifBlank { engine.network.NetworkDefaults.CONNECTIVITY_CHECK_URL }
+    }
     // The member selector is a separate screen. Save the entire draft so opening it
     // cannot reset the name, check URL, interval, or selected proxy-group type.
     var name by rememberSaveable(initialGroup?.lineNumber) { mutableStateOf(initialGroup?.name.orEmpty()) }
     var members by rememberSaveable(initialGroup?.lineNumber) { mutableStateOf(initialGroup?.members.orEmpty()) }
-    var url by rememberSaveable(initialGroup?.lineNumber) { mutableStateOf(initialGroup?.url.orEmpty()) }
+    var url by rememberSaveable(initialGroup?.lineNumber) {
+        mutableStateOf(initialGroup?.url.orEmpty().ifBlank { if (initialGroup == null) defaultProbeUrl else "" })
+    }
     var interval by rememberSaveable(initialGroup?.lineNumber) { mutableStateOf(initialGroup?.intervalSeconds?.toString().orEmpty()) }
     var showOnHome by rememberSaveable(initialGroup?.lineNumber) {
         mutableStateOf(initialGroup?.showInAutoBalancerList == true)
@@ -225,6 +231,12 @@ private fun TrafficConfigProxyGroupDialog(
         mutableIntStateOf(ShadowrocketProxyGroupTypes.indexOf(initialGroup?.type).coerceAtLeast(0))
     }
     val type = ShadowrocketProxyGroupTypes[typeIndex]
+    val typeLabels = listOf(
+        stringResource(R.string.proxy_editor_strategy_group_select),
+        stringResource(R.string.proxy_editor_strategy_group_least_ping),
+        "Fallback",
+        stringResource(R.string.proxy_editor_strategy_group_random),
+    )
     val memberSelectorResultKey = remember(initialGroup?.lineNumber) {
         "traffic-config-proxy-group-members-${initialGroup?.lineNumber ?: "new"}"
     }
@@ -261,7 +273,7 @@ private fun TrafficConfigProxyGroupDialog(
             )
             WindowDropdownPreference(
                 title = stringResource(R.string.configs_proxy_groups_type),
-                items = ShadowrocketProxyGroupTypes,
+                items = typeLabels,
                 selectedIndex = typeIndex,
                 onSelectedIndexChange = { typeIndex = it },
                 modifier = Modifier.padding(bottom = 12.dp),
@@ -301,20 +313,22 @@ private fun TrafficConfigProxyGroupDialog(
                 },
                 modifier = Modifier.padding(bottom = 12.dp),
             )
-            TextField(
-                state = rememberTextFieldState(url),
-                inputTransformation = { url = asCharSequence().toString() },
-                label = stringResource(R.string.configs_proxy_groups_url),
-                lineLimits = TextFieldLineLimits.SingleLine,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-            TextField(
-                state = rememberTextFieldState(interval),
-                inputTransformation = { interval = asCharSequence().toString() },
-                label = stringResource(R.string.configs_proxy_groups_interval),
-                lineLimits = TextFieldLineLimits.SingleLine,
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
+            if (type != "select") {
+                TextField(
+                    state = rememberTextFieldState(url),
+                    inputTransformation = { url = asCharSequence().toString() },
+                    label = stringResource(R.string.configs_proxy_groups_url),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                TextField(
+                    state = rememberTextFieldState(interval),
+                    inputTransformation = { interval = asCharSequence().toString() },
+                    label = stringResource(R.string.configs_proxy_groups_interval),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+            }
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.weight(1f))
                 TextButton(text = stringResource(R.string.common_cancel), onClick = onDismissRequest)

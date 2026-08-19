@@ -476,9 +476,12 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
             server = StrategyGroup(
                 remarks = source.group.name,
                 strategy = source.group.toStrategyGroupType(),
+                selectedMemberId = (existing?.server as? StrategyGroup)?.selectedMemberId,
                 showInAutoBalancerList = true,
                 sourceTrafficConfigId = source.configId,
                 sourcePolicyGroupName = source.group.name,
+                probeInterval = source.group.intervalSeconds?.let { "${it}s" } ?: "15s",
+                probeUrl = source.group.url,
             ),
         )
     }
@@ -499,9 +502,12 @@ private data class ConfigAutoBalancerSource(
 )
 
 private fun ShadowrocketPolicyGroup.toStrategyGroupType(): String {
-    return when (type) {
+    return when (type.lowercase()) {
+        "select" -> StrategyGroupConstants.TYPE_SELECT
         "load-balance" -> StrategyGroupConstants.TYPE_RANDOM
-        "url-test", "fallback", "select" -> StrategyGroupConstants.TYPE_LEAST_PING
-        else -> StrategyGroupConstants.TYPE_LEAST_PING
+        "round-robin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
+        "least-load" -> StrategyGroupConstants.TYPE_LEAST_LOAD
+        "url-test", "fallback" -> StrategyGroupConstants.TYPE_LEAST_PING
+        else -> StrategyGroupConstants.TYPE_SELECT
     }
 }

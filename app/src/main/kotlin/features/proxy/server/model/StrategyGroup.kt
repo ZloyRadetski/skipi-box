@@ -6,12 +6,14 @@ package features.proxy.server.model
 import kotlinx.serialization.Serializable
 
 object StrategyGroupConstants {
+    const val TYPE_SELECT = "select"
     const val TYPE_LEAST_PING = "leastPing"
     const val TYPE_LEAST_LOAD = "leastLoad"
     const val TYPE_RANDOM = "random"
     const val TYPE_ROUND_ROBIN = "roundRobin"
 
     val TYPES = setOf(
+        TYPE_SELECT,
         TYPE_LEAST_PING,
         TYPE_LEAST_LOAD,
         TYPE_RANDOM,
@@ -22,12 +24,14 @@ object StrategyGroupConstants {
 @Serializable
 data class StrategyGroup(
     var remarks: String = "",
-    var strategy: String = StrategyGroupConstants.TYPE_LEAST_PING,
+    var strategy: String = StrategyGroupConstants.TYPE_SELECT,
     var subscriptionGroupId: Int? = null,
     var filter: String = "",
     /** Explicit user-selected members. Empty retains the legacy group/filter selector. */
     var proxyServerIds: List<Int> = emptyList(),
-    /** Hidden groups still work in routing, but are omitted from the main Auto-balancers tab. */
+    /** Currently chosen member ID for `select` strategy groups. */
+    var selectedMemberId: Int? = null,
+    /** Hidden groups still work in routing, but are omitted from the main Proxy groups tab. */
     var showInAutoBalancerList: Boolean = true,
     /** Config-owned groups keep resolving their current named members after subscription refreshes. */
     var sourceTrafficConfigId: Int? = null,
@@ -59,6 +63,7 @@ data class StrategyGroup(
         subscriptionGroupId = other.subscriptionGroupId
         filter = other.filter
         proxyServerIds = other.proxyServerIds
+        selectedMemberId = other.selectedMemberId
         showInAutoBalancerList = other.showInAutoBalancerList
         sourceTrafficConfigId = other.sourceTrafficConfigId
         sourcePolicyGroupName = other.sourcePolicyGroupName
@@ -75,6 +80,6 @@ data class StrategyGroup(
     }
 
     override fun connectionFingerprint(): String {
-        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds"
+        return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$selectedMemberId"
     }
 }

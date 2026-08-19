@@ -36,6 +36,7 @@ import app.modes.SubscriptionPingModeHttp
 import app.collectProxyServerListState
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import features.proxy.server.model.Custom
+import features.proxy.server.model.StrategyGroup
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.restartProxyServiceAfterSelection
 import features.proxy.server.usecase.runProxyServerLatencyTest
@@ -107,7 +108,8 @@ fun ProxyServerListPage(
     var selectedGroupId by rememberSaveable { mutableIntStateOf(initialSelectedGroupId) }
     var serviceOperationInProgress by rememberSaveable { mutableStateOf(false) }
     var pendingProxyServerDeletion by remember { mutableStateOf<ProxyServerState?>(null) }
-    var editingSubscriptionGroupId by remember { mutableStateOf<Int?>(null) }
+    var editingSubscriptionGroupId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var selectingGroupMemberForServer by remember { mutableStateOf<ProxyServerState?>(null) }
     var pingingGroupIds by remember { mutableStateOf(emptySet<Int>()) }
     val servers = proxyListState.proxyServers
     val editingSubscriptionGroup = editingSubscriptionGroupId?.let { groupId ->
@@ -505,6 +507,7 @@ fun ProxyServerListPage(
                 onUpdateAllSubscriptions = ::updateAllSubscriptions,
                 onPingSubscription = ::pingSubscription,
                 onEditSubscription = { groupId -> editingSubscriptionGroupId = groupId },
+                onOpenSelectGroupMember = { selectingGroupMemberForServer = it },
                 pingingGroupIds = pingingGroupIds,
                 activeOutboundTag = activeOutboundTag,
             )
@@ -621,6 +624,33 @@ fun ProxyServerListPage(
         },
         onInvalidUrl = {
             scope.launch { tipNotifier.show(invalidSubscriptionUrlMessage) }
+        },
+    )
+    SelectGroupMemberDialog(
+        show = selectingGroupMemberForServer != null,
+        groupServer = selectingGroupMemberForServer,
+        onDismissRequest = { selectingGroupMemberForServer = null },
+        onSelectMember = { memberId ->
+            val targetGroup = selectingGroupMemberForServer ?: return@SelectGroupMemberDialog
+            updateAppState { state ->
+                val updatedServers = state.proxyServers.map { serverState ->
+                    if (serverState.id == targetGroup.id && serverState.server is StrategyGroup) {
+                        val updatedStrategy = (serverState.server as StrategyGroup).copy(selectedMemberId = memberId)
+                        serverState.copy(server = updatedStrategy)
+                    } else {
+                        serverState
+                    }
+                }
+                state.copy(proxyServers = updatedServers)
+            }
+            if (proxyRunning) {
+                runProxyServiceOperation {
+                    proxyServiceUseCase.restart(
+                        state = stateStore.state.value,
+                        selectedServer = selectedServer,
+                    )
+                }
+            }
         },
     )
 }

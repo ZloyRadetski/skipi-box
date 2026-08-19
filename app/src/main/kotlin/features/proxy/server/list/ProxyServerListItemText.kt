@@ -23,6 +23,7 @@ internal class ProxyServerListItemTextFormatter(
     private val groupNames: Map<Int, String>,
     private val unknownGroupName: String,
     private val allGroupsName: String,
+    private val selectName: String,
     private val leastPingName: String,
     private val leastLoadName: String,
     private val randomName: String,
@@ -48,7 +49,26 @@ internal class ProxyServerListItemTextFormatter(
         servers: List<ProxyServerState>,
     ): String {
         return when (val proxyServer = serverState.server) {
-            is StrategyGroup -> proxyServer.strategyGroupSummary()
+            is StrategyGroup -> {
+                if (proxyServer.strategy == StrategyGroupConstants.TYPE_SELECT) {
+                    val serverById = servers.associateBy { it.id }
+                    val activeMember = proxyServer.selectedMemberId?.let { serverById[it] }
+                        ?: proxyServer.proxyServerIds.firstNotNullOfOrNull { serverById[it] }
+                    val memberCount = if (proxyServer.proxyServerIds.isNotEmpty()) {
+                        proxyServer.proxyServerIds.size
+                    } else {
+                        servers.count { s -> s.groupId == proxyServer.subscriptionGroupId || proxyServer.subscriptionGroupId == null }
+                    }
+                    if (activeMember != null) {
+                        val activeName = activeMember.server.getInfo().remarks.ifBlank { activeMember.server.getInfo().protocol }
+                        "$selectName: $activeName ($memberCount)"
+                    } else {
+                        "$selectName ($memberCount)"
+                    }
+                } else {
+                    proxyServer.strategyGroupSummary()
+                }
+            }
             is ChainProxy -> proxyServer.chainProxySummary(servers)
             else -> proxyServer.getInfo().address
         }
@@ -82,6 +102,7 @@ internal class ProxyServerListItemTextFormatter(
 
     private fun StrategyGroup.strategyDisplayName(): String {
         return when (strategy) {
+            StrategyGroupConstants.TYPE_SELECT -> selectName
             StrategyGroupConstants.TYPE_LEAST_PING -> leastPingName
             StrategyGroupConstants.TYPE_LEAST_LOAD -> leastLoadName
             StrategyGroupConstants.TYPE_RANDOM -> randomName
@@ -101,6 +122,7 @@ internal fun rememberProxyServerListItemTextFormatter(
     unknownGroupName: String,
 ): ProxyServerListItemTextFormatter {
     val allGroupsName = stringResource(R.string.proxy_editor_strategy_group_all_groups)
+    val selectName = stringResource(R.string.proxy_editor_strategy_group_select)
     val leastPingName = stringResource(R.string.proxy_editor_strategy_group_least_ping)
     val leastLoadName = stringResource(R.string.proxy_editor_strategy_group_least_load)
     val randomName = stringResource(R.string.proxy_editor_strategy_group_random)
@@ -114,6 +136,7 @@ internal fun rememberProxyServerListItemTextFormatter(
         groupNames,
         unknownGroupName,
         allGroupsName,
+        selectName,
         leastPingName,
         leastLoadName,
         randomName,
@@ -126,6 +149,7 @@ internal fun rememberProxyServerListItemTextFormatter(
             groupNames = groupNames,
             unknownGroupName = unknownGroupName,
             allGroupsName = allGroupsName,
+            selectName = selectName,
             leastPingName = leastPingName,
             leastLoadName = leastLoadName,
             randomName = randomName,

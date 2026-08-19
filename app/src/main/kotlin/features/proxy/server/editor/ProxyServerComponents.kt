@@ -24,7 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import app.LocalAppStateStore
 import app.R
+import app.collectAppState
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
@@ -67,8 +69,13 @@ internal fun LazyListScope.strategyGroupProxyServer(
 ) {
     item(key = "properties") {
         val focusManager = LocalFocusManager.current
+        val appState by LocalAppStateStore.current.collectAppState()
+        val defaultProbeUrl = remember(appState.subscriptionPingUrl) {
+            appState.subscriptionPingUrl.ifBlank { engine.network.NetworkDefaults.CONNECTIVITY_CHECK_URL }
+        }
         val strategyValues = remember {
             listOf(
+                StrategyGroupConstants.TYPE_SELECT,
                 StrategyGroupConstants.TYPE_LEAST_PING,
                 StrategyGroupConstants.TYPE_LEAST_LOAD,
                 StrategyGroupConstants.TYPE_RANDOM,
@@ -76,6 +83,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
             )
         }
         val strategyLabels = listOf(
+            stringResource(R.string.proxy_editor_strategy_group_select),
             stringResource(R.string.proxy_editor_strategy_group_least_ping),
             stringResource(R.string.proxy_editor_strategy_group_least_load),
             stringResource(R.string.proxy_editor_strategy_group_random),
@@ -192,68 +200,73 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 .padding(bottom = 16.dp),
         )
 
-        val probeIntervalValues = remember { listOf("5s", "10s", "15s", "30s", "1m", "2m", "5m") }
-        val probeIntervalLabels = listOf(
-            "5s",
-            "10s",
-            "15s",
-            "30s",
-            "1m",
-            "2m",
-            "5m",
-        )
-        val probeIntervalIndex = remember(strategyGroupEdit.probeInterval) {
-            mutableIntStateOf(
-                probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 2 },
+        if (strategyGroupEdit.strategy != StrategyGroupConstants.TYPE_SELECT) {
+            val probeIntervalValues = remember { listOf("5s", "10s", "15s", "30s", "1m", "2m", "5m") }
+            val probeIntervalLabels = listOf(
+                "5s",
+                "10s",
+                "15s",
+                "30s",
+                "1m",
+                "2m",
+                "5m",
             )
-        }
-        val probeUrlState = rememberTextFieldState(initialText = strategyGroupEdit.probeUrl)
-        LaunchedEffect(probeUrlState.text) {
-            strategyGroupEdit.probeUrl = probeUrlState.text.toString()
-        }
-        val burstProbeState = remember(strategyGroupEdit.enableBurstProbe) {
-            mutableStateOf(strategyGroupEdit.enableBurstProbe)
-        }
+            val probeIntervalIndex = remember(strategyGroupEdit.probeInterval) {
+                mutableIntStateOf(
+                    probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 2 },
+                )
+            }
+            val initialProbeUrl = remember(strategyGroupEdit.probeUrl, defaultProbeUrl) {
+                strategyGroupEdit.probeUrl.ifBlank { defaultProbeUrl }
+            }
+            val probeUrlState = rememberTextFieldState(initialText = initialProbeUrl)
+            LaunchedEffect(probeUrlState.text) {
+                strategyGroupEdit.probeUrl = probeUrlState.text.toString()
+            }
+            val burstProbeState = remember(strategyGroupEdit.enableBurstProbe) {
+                mutableStateOf(strategyGroupEdit.enableBurstProbe)
+            }
 
-        SmallTitle(text = stringResource(R.string.proxy_editor_strategy_group_health_check))
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp),
-            colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-        ) {
-            OverlayDropdownPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_probe_interval),
-                items = probeIntervalLabels,
-                selectedIndex = probeIntervalIndex.intValue,
-                onSelectedIndexChange = { index ->
-                    probeIntervalIndex.intValue = index
-                    strategyGroupEdit.probeInterval = probeIntervalValues[index]
+            SmallTitle(text = stringResource(R.string.proxy_editor_strategy_group_health_check))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
+            ) {
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.proxy_editor_strategy_group_probe_interval),
+                    items = probeIntervalLabels,
+                    selectedIndex = probeIntervalIndex.intValue,
+                    onSelectedIndexChange = { index ->
+                        probeIntervalIndex.intValue = index
+                        strategyGroupEdit.probeInterval = probeIntervalValues[index]
+                    },
+                )
+                SwitchPreference(
+                    title = stringResource(R.string.proxy_editor_strategy_group_burst_probe),
+                    summary = stringResource(R.string.proxy_editor_strategy_group_burst_probe_summary),
+                    checked = burstProbeState.value,
+                    onCheckedChange = { checked ->
+                        burstProbeState.value = checked
+                        strategyGroupEdit.enableBurstProbe = checked
+                    },
+                )
+            }
+            TextField(
+                label = stringResource(R.string.proxy_editor_strategy_group_probe_url),
+                state = probeUrlState,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                inputTransformation = InputTransformation {
+                    strategyGroupEdit.probeUrl = asCharSequence().toString()
                 },
-            )
-            SwitchPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_burst_probe),
-                summary = stringResource(R.string.proxy_editor_strategy_group_burst_probe_summary),
-                checked = burstProbeState.value,
-                onCheckedChange = { checked ->
-                    burstProbeState.value = checked
-                    strategyGroupEdit.enableBurstProbe = checked
-                },
+                onKeyboardAction = { focusManager.clearFocus() },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
             )
         }
-        TextField(
-            label = stringResource(R.string.proxy_editor_strategy_group_probe_url),
-            state = probeUrlState,
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                strategyGroupEdit.probeUrl = asCharSequence().toString()
-            },
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp),
-        )
     }
 }
 internal fun LazyListScope.chainProxyServer(

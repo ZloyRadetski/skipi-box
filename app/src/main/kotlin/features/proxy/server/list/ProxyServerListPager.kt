@@ -64,6 +64,7 @@ import app.navigation.Route
 import data.AndroidAppStateStore
 import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.UrlProxyServer
 import features.proxy.server.validation.rememberProxyServerValidationMessageResolver
 import features.proxy.server.usecase.ProxyServerCopyTextResult
@@ -125,6 +126,7 @@ internal fun ProxyServerListPager(
     onUpdateAllSubscriptions: suspend () -> Unit,
     onPingSubscription: (Int) -> Unit,
     onEditSubscription: (Int) -> Unit,
+    onOpenSelectGroupMember: (ProxyServerState) -> Unit = {},
     pingingGroupIds: Set<Int> = emptySet(),
     activeOutboundTag: String? = null,
 ) {
@@ -242,6 +244,7 @@ internal fun ProxyServerListPager(
                 onUpdateSubscription = handleUpdateSubscription,
                 onPingSubscription = onPingSubscription,
                 onEditSubscription = onEditSubscription,
+                onOpenSelectGroupMember = onOpenSelectGroupMember,
                 allSubscriptionsRefreshing = allSubscriptionsRefreshing,
                 updatingGroupIds = updatingGroupIds,
                 pingingGroupIds = pingingGroupIds,
@@ -286,6 +289,7 @@ private fun SubscriptionProxyServerList(
     onUpdateSubscription: (Int) -> Unit,
     onPingSubscription: (Int) -> Unit,
     onEditSubscription: (Int) -> Unit,
+    onOpenSelectGroupMember: (ProxyServerState) -> Unit = {},
     allSubscriptionsRefreshing: Boolean = false,
     updatingGroupIds: Set<Int> = emptySet(),
     pingingGroupIds: Set<Int> = emptySet(),
@@ -393,6 +397,7 @@ private fun SubscriptionProxyServerList(
                                 onSelectedServerIdChange = onSelectedServerIdChange,
                                 onDeleteServer = onDeleteServer,
                                 onShowQrCode = onShowQrCode,
+                                onOpenSelectGroupMember = onOpenSelectGroupMember,
                                 compact = true,
                                 inSubscriptionGroup = true,
                                 isDragging = false,
@@ -458,6 +463,7 @@ private fun ProxyServerLazyGrid(
     onUpdateSubscription: (Int) -> Unit,
     onPingSubscription: (Int) -> Unit,
     onEditSubscription: (Int) -> Unit,
+    onOpenSelectGroupMember: (ProxyServerState) -> Unit = {},
     allSubscriptionsRefreshing: Boolean = false,
     updatingGroupIds: Set<Int> = emptySet(),
     pingingGroupIds: Set<Int> = emptySet(),
@@ -624,6 +630,7 @@ private fun ProxyServerLazyGrid(
                             onSelectedServerIdChange = onSelectedServerIdChange,
                             onDeleteServer = onDeleteServer,
                             onShowQrCode = onShowQrCode,
+                            onOpenSelectGroupMember = onOpenSelectGroupMember,
                             compact = compact || subscriptionGroupEnabled,
                             inSubscriptionGroup = subscriptionGroupEnabled,
                             isDragging = isDragging && reorderEnabled,
@@ -698,6 +705,7 @@ private fun ProxyServerListItem(
     onSelectedServerIdChange: (Int) -> Unit,
     onDeleteServer: (ProxyServerState) -> Unit,
     onShowQrCode: (title: String, text: String) -> Unit,
+    onOpenSelectGroupMember: (ProxyServerState) -> Unit = {},
     compact: Boolean,
     inSubscriptionGroup: Boolean,
     isDragging: Boolean,
@@ -728,9 +736,15 @@ private fun ProxyServerListItem(
     val activeMemberFlag = remember(server.server, activeOutboundTag, servers) {
         val strategyGroup = server.server as? StrategyGroup
         if (strategyGroup != null) {
-            val activeServerId = activeOutboundTag?.proxyServerIdFromOutboundTag()
-            if (activeServerId != null && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, activeServerId, servers)) {
-                val activeMember = servers.firstOrNull { it.id == activeServerId }
+            val targetMemberId = if (strategyGroup.strategy == StrategyGroupConstants.TYPE_SELECT) {
+                strategyGroup.selectedMemberId ?: strategyGroup.proxyServerIds.firstOrNull()
+            } else {
+                activeOutboundTag?.proxyServerIdFromOutboundTag()?.takeIf {
+                    CountryFlagUtils.strategyGroupContainsMember(strategyGroup, it, servers)
+                }
+            }
+            if (targetMemberId != null) {
+                val activeMember = servers.firstOrNull { it.id == targetMemberId }
                 activeMember?.let { CountryFlagUtils.extractLeadingCountryFlag(it.server.getInfo().remarks) }
             } else {
                 null
@@ -764,6 +778,10 @@ private fun ProxyServerListItem(
                 } else {
                     state.copy(selectedProxyServerId = server.id)
                 }
+            }
+            val strategyGroup = server.server as? StrategyGroup
+            if (strategyGroup?.strategy == StrategyGroupConstants.TYPE_SELECT) {
+                onOpenSelectGroupMember(server)
             }
         },
         copyActions = copyActions,
