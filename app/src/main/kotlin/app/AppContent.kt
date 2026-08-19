@@ -103,7 +103,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -539,7 +541,11 @@ private fun ExpressiveFloatingNavigationBar(
                 )
                 .padding(horizontal = 6.dp, vertical = 6.dp),
         ) {
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+            ) {
                 val tabCount = navigationItems.size.coerceAtLeast(1)
                 val totalWidth = maxWidth
                 val tabWidth = totalWidth / tabCount
@@ -563,7 +569,7 @@ private fun ExpressiveFloatingNavigationBar(
                     modifier = Modifier
                         .offset(x = animatedOffsetX)
                         .width(indicatorWidth)
-                        .matchParentSize()
+                        .fillMaxHeight()
                         .padding(vertical = indicatorPaddingVertical)
                         .clip(indicatorShape)
                         .background(AppTheme.colors.accent),
