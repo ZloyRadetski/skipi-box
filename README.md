@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <strong><a href="README.md">Русский</a> | <a href="README_EN.md">English</a> | <a href="README_ZH.md">简体中文</a> | <a href="README_FA.md">فارسی</a></strong>
+</p>
+
+<p align="center">
   <strong>Красивый, быстрый и удобный прокси-клиент для Android</strong>
 </p>
 
