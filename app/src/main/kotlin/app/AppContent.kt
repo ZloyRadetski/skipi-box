@@ -3,12 +3,14 @@
 
 package app
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +46,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -508,6 +515,7 @@ private fun ExpressiveFloatingNavigationBar(
     val haptic = LocalHapticFeedback.current
     val isDark = AppTheme.colors.isDark
     val bottomBarSize = LocalAppChromeState.current.bottomBarSize
+    val coroutineScope = rememberCoroutineScope()
 
     val (islandRadius, indicatorRadius) = when (bottomBarSize) {
         BottomBarSizeSmall -> 24.dp to 18.dp
@@ -604,16 +612,114 @@ private fun ExpressiveFloatingNavigationBar(
 
             val indicatorWidth = (tabWidthDp - innerPaddingHorizontal * 2).coerceAtLeast(0.dp)
             val indicatorHeight = (totalHeightDp - innerPaddingVertical * 2).coerceAtLeast(0.dp)
-            val targetOffsetPx = tabWidthPx * selectedPage
+            val maxOffsetPx = if (tabWidthPx > 0f) tabWidthPx * (tabCount - 1) else 0f
 
-            val animatedOffsetPx by animateFloatAsState(
-                targetValue = targetOffsetPx,
-                animationSpec = spring(
-                    dampingRatio = 0.74f,
-                    stiffness = Spring.StiffnessMediumLow,
-                ),
-                label = "capsule_offset_px",
-            )
+            val dragOffsetAnimatable = remember { Animatable(0f) }
+            var isDragging by remember { mutableStateOf(false) }
+            var dragVelocity by remember { mutableFloatStateOf(0f) }
+            var lastHapticIndex by remember { mutableIntStateOf(selectedPage) }
+
+            // Sync animation when page changes outside of active dragging (e.g. pager swipe or tab tap)
+            LaunchedEffect(selectedPage, tabWidthPx) {
+                if (!isDragging && tabWidthPx > 0f) {
+                    val targetPx = selectedPage * tabWidthPx
+                    if (abs(dragOffsetAnimatable.value - targetPx) > 0.5f) {
+                        dragOffsetAnimatable.animateTo(
+                            targetValue = targetPx,
+                            animationSpec = spring(
+                                dampingRatio = 0.74f,
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                        )
+                    }
+                }
+            }
+
+            val currentBlobOffsetPx = dragOffsetAnimatable.value
+            val currentBlobProgress = if (tabWidthPx > 0f) currentBlobOffsetPx / tabWidthPx else selectedPage.toFloat()
+
+            // Subtle liquid squash & stretch physics during drag and rubberbanding
+            val stretchX = if (isDragging && tabWidthPx > 0f) {
+                val overdrag = if (currentBlobOffsetPx < 0f) {
+                    -currentBlobOffsetPx / tabWidthPx
+                } else if (currentBlobOffsetPx > maxOffsetPx) {
+                    (currentBlobOffsetPx - maxOffsetPx) / tabWidthPx
+                } else 0f
+                1f + (abs(dragVelocity) / 5000f).coerceAtMost(0.15f) - (overdrag * 0.25f).coerceAtMost(0.12f)
+            } else 1f
+
+            val stretchY = if (isDragging) {
+                1f / stretchX.coerceAtLeast(0.5f)
+            } else 1f
+
+            val dragGestureModifier = if (tabWidthPx > 0f) {
+                Modifier.pointerInput(tabCount, tabWidthPx, selectedPage) {
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            isDragging = true
+                            dragVelocity = 0f
+                            coroutineScope.launch {
+                                dragOffsetAnimatable.stop()
+                            }
+                            lastHapticIndex = ((dragOffsetAnimatable.value + tabWidthPx / 2f) / tabWidthPx)
+                                .toInt().coerceIn(0, tabCount - 1)
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            val current = dragOffsetAnimatable.value
+                            val rawNew = current + dragAmount
+                            val dampedNew = if (rawNew < 0f) {
+                                rawNew * 0.35f
+                            } else if (rawNew > maxOffsetPx) {
+                                maxOffsetPx + (rawNew - maxOffsetPx) * 0.35f
+                            } else {
+                                rawNew
+                            }
+                            dragVelocity = dragAmount * 60f
+                            coroutineScope.launch {
+                                dragOffsetAnimatable.snapTo(dampedNew)
+                            }
+                            val hoverIndex = ((dampedNew + tabWidthPx / 2f) / tabWidthPx)
+                                .toInt().coerceIn(0, tabCount - 1)
+                            if (hoverIndex != lastHapticIndex) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                lastHapticIndex = hoverIndex
+                            }
+                        },
+                        onDragEnd = {
+                            isDragging = false
+                            val current = dragOffsetAnimatable.value
+                            val projectedOffset = current + (dragVelocity * 0.08f)
+                            val targetIndex = (projectedOffset / tabWidthPx).roundToInt().coerceIn(0, tabCount - 1)
+                            coroutineScope.launch {
+                                dragOffsetAnimatable.animateTo(
+                                    targetValue = targetIndex * tabWidthPx,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.74f,
+                                        stiffness = Spring.StiffnessMediumLow,
+                                    ),
+                                )
+                            }
+                            if (targetIndex != selectedPage) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                mainPagerState.animateToPage(targetIndex)
+                            }
+                        },
+                        onDragCancel = {
+                            isDragging = false
+                            coroutineScope.launch {
+                                dragOffsetAnimatable.animateTo(
+                                    targetValue = selectedPage * tabWidthPx,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.74f,
+                                        stiffness = Spring.StiffnessMediumLow,
+                                    ),
+                                )
+                            }
+                        },
+                    )
+                }
+            } else Modifier
 
             Box(
                 modifier = Modifier
@@ -621,7 +727,8 @@ private fun ExpressiveFloatingNavigationBar(
                     .onSizeChanged {
                         totalWidthPx = it.width
                         totalHeightPx = it.height
-                    },
+                    }
+                    .then(dragGestureModifier),
             ) {
                 // Active tab sliding capsule indicator (Rendered directly in GPU Draw phase via graphicsLayer)
                 if (totalWidthPx > 0 && totalHeightPx > 0) {
@@ -630,7 +737,9 @@ private fun ExpressiveFloatingNavigationBar(
                             .padding(start = innerPaddingHorizontal, top = innerPaddingVertical)
                             .size(width = indicatorWidth, height = indicatorHeight)
                             .graphicsLayer {
-                                translationX = animatedOffsetPx
+                                translationX = currentBlobOffsetPx
+                                scaleX = stretchX
+                                scaleY = stretchY
                             }
                             .clip(indicatorShape)
                             .background(AppTheme.colors.accent),
@@ -642,37 +751,17 @@ private fun ExpressiveFloatingNavigationBar(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val activeColor = AppTheme.colors.onAccent
+                    val inactiveColor = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.72f)
+
                     navigationItems.forEachIndexed { index, item ->
+                        val distance = abs(currentBlobProgress - index)
+                        val activeFraction = (1f - distance).coerceIn(0f, 1f)
                         val isSelected = selectedPage == index
 
-                        val iconScale by animateFloatAsState(
-                            targetValue = if (isSelected) 1.08f else 1.0f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
-                            label = "tab_icon_scale_$index",
-                        )
-
-                        val targetOffsetYPx = if (isSelected) with(density) { (-1).dp.toPx() } else 0f
-                        val iconOffsetYPx by animateFloatAsState(
-                            targetValue = targetOffsetYPx,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
-                            label = "tab_icon_offset_y_$index",
-                        )
-
-                        val contentColor by animateColorAsState(
-                            targetValue = if (isSelected) {
-                                AppTheme.colors.onAccent
-                            } else {
-                                AppTheme.colors.onSurfaceVariant.copy(alpha = 0.72f)
-                            },
-                            animationSpec = tween(durationMillis = 200),
-                            label = "tab_color_$index",
-                        )
+                        val iconScale = 1.0f + (0.08f * activeFraction)
+                        val iconOffsetYPx = with(density) { (-1).dp.toPx() } * activeFraction
+                        val contentColor = lerp(inactiveColor, activeColor, activeFraction)
 
                         Column(
                             modifier = Modifier
@@ -682,11 +771,13 @@ private fun ExpressiveFloatingNavigationBar(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null,
                                     onClick = {
-                                        if (!isSelected) {
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            mainPagerState.animateToPage(index)
-                                        } else if (index == MainNavigation.PROXY_PAGE_INDEX) {
-                                            mainPagerState.animateToPage(index)
+                                        if (!isDragging) {
+                                            if (!isSelected) {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                mainPagerState.animateToPage(index)
+                                            } else if (index == MainNavigation.PROXY_PAGE_INDEX) {
+                                                mainPagerState.animateToPage(index)
+                                            }
                                         }
                                     },
                                 )
@@ -712,7 +803,7 @@ private fun ExpressiveFloatingNavigationBar(
                             Text(
                                 text = item.label,
                                 color = contentColor,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                fontWeight = if (activeFraction > 0.5f) FontWeight.SemiBold else FontWeight.Medium,
                                 fontSize = textFontSize,
                                 maxLines = 1,
                                 letterSpacing = 0.25.sp,
