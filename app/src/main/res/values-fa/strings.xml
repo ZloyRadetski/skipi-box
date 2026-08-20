@@ -171,7 +171,7 @@
     <string name="settings_battery_optimization_unrestricted">بدون محدودیت (توصیه می‌شود)</string>
     <string name="settings_battery_optimization_restricted">محدود شده توسط سیستم</string>
     <string name="settings_wake_lock">بیدار نگه داشتن پردازنده (WakeLock)</string>
-    <string name="settings_wake_lock_summary">جلوگیری از قطع سوکت‌ها هنگام خاموش بودن صفحه</string>
+    <string name="settings_wake_lock_summary">جلوگیری از قطع سوکت‌ها هنگام خاموش بودن صفحه (مصرف زیاد باتری)</string>
     <string name="settings_seamless_network_switching">جابه‌جایی بدون قطعی شبکه</string>
     <string name="settings_seamless_network_switching_summary">جابه‌جایی آنی تونل بین Wi-Fi و داده همراه</string>
     <string name="settings_inbound">تنظیمات پروکسی ورودی</string>

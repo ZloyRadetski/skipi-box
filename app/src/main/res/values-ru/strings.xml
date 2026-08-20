@@ -179,7 +179,7 @@
     <string name="settings_battery_optimization_unrestricted">Разрешено (Рекомендуется)</string>
     <string name="settings_battery_optimization_restricted">Ограничено системой</string>
     <string name="settings_wake_lock">Удержание процессора (WakeLock)</string>
-    <string name="settings_wake_lock_summary">Предотвращает засыпание сокетов при выключенном экране</string>
+    <string name="settings_wake_lock_summary">Предотвращает засыпание при выключенном экране (Высокий расход батареи)</string>
     <string name="settings_seamless_network_switching">Бесшовный роуминг сетей</string>
     <string name="settings_seamless_network_switching_summary">Мгновенное переключение туннеля при смене Wi-Fi и сотовой сети</string>
     <string name="settings_inbound">Настройки входящих подключений (Inbound)</string>

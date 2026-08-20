@@ -171,7 +171,7 @@
     <string name="settings_battery_optimization_unrestricted">无限制（推荐）</string>
     <string name="settings_battery_optimization_restricted">受系统限制</string>
     <string name="settings_wake_lock">保持唤醒 (WakeLock)</string>
-    <string name="settings_wake_lock_summary">息屏时防止套接字休眠</string>
+    <string name="settings_wake_lock_summary">息屏时防止套接字休眠（耗电量较高）</string>
     <string name="settings_seamless_network_switching">无缝网络漫游</string>
     <string name="settings_seamless_network_switching_summary">Wi-Fi与移动数据切换时即时重绑定隧道</string>
     <string name="settings_inbound">入站代理设置</string>

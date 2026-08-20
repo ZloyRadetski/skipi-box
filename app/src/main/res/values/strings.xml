@@ -177,7 +177,7 @@
     <string name="settings_battery_optimization_unrestricted">Unrestricted (Recommended)</string>
     <string name="settings_battery_optimization_restricted">Restricted by system</string>
     <string name="settings_wake_lock">CPU WakeLock</string>
-    <string name="settings_wake_lock_summary">Prevents sockets from sleeping when the screen is off</string>
+    <string name="settings_wake_lock_summary">Prevents CPU and sockets from sleeping when the screen is off (High battery drain)</string>
     <string name="settings_seamless_network_switching">Seamless network switching</string>
     <string name="settings_seamless_network_switching_summary">Instantly rebinds tunnel on Wi-Fi and Cellular handover</string>
     <string name="settings_inbound">Inbound proxy settings</string>
