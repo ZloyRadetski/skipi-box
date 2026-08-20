@@ -1165,4 +1165,14 @@
     <string name="subscription_custom_reminders_toggle_summary">Override global reminder intervals with custom list</string>
     <string name="about_telegram_channel">Telegram Channel</string>
     <string name="onboarding_telegram_channel_title">Official Telegram Channel</string>
+    <string name="onboarding_telegram_title">Official Telegram Channel</string>
+    <string name="onboarding_telegram_subtitle">Join our community for the latest updates, news, discussions, and support:</string>
+    <string name="onboarding_telegram_feature_releases_title">Latest Releases &amp; APKs</string>
+    <string name="onboarding_telegram_feature_releases_desc">Get early access to test builds and newest features</string>
+    <string name="onboarding_telegram_feature_chat_title">Community &amp; Discussions</string>
+    <string name="onboarding_telegram_feature_chat_desc">Ask questions, share configs, and get help</string>
+    <string name="onboarding_telegram_feature_news_title">Project News &amp; Updates</string>
+    <string name="onboarding_telegram_feature_news_desc">Stay tuned with development progress and announcements</string>
+    <string name="onboarding_telegram_open_button">Join Telegram Channel</string>
+    <string name="onboarding_telegram_copied_link">Link copied to clipboard</string>
 </resources>

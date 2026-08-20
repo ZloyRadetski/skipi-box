@@ -1155,4 +1155,14 @@
     <string name="subscription_custom_reminders_toggle_summary">Использовать индивидуальный список интервалов вместо глобального</string>
     <string name="about_telegram_channel">Telegram-канал</string>
     <string name="onboarding_telegram_channel_title">Официальный Telegram-канал</string>
+    <string name="onboarding_telegram_title">Официальный Telegram-канал</string>
+    <string name="onboarding_telegram_subtitle">Присоединяйтесь к нашему сообществу, чтобы быть в курсе новостей и получать свежие обновления:</string>
+    <string name="onboarding_telegram_feature_releases_title">Свежие релизы и APK</string>
+    <string name="onboarding_telegram_feature_releases_desc">Получайте обновления и тестовые сборки первыми</string>
+    <string name="onboarding_telegram_feature_chat_title">Сообщество и обсуждение</string>
+    <string name="onboarding_telegram_feature_chat_desc">Задавайте вопросы, делитесь конфигами и общайтесь</string>
+    <string name="onboarding_telegram_feature_news_title">Новости разработки</string>
+    <string name="onboarding_telegram_feature_news_desc">Следите за развитием проекта и планами обновлений</string>
+    <string name="onboarding_telegram_open_button">Перейти в Telegram-канал</string>
+    <string name="onboarding_telegram_copied_link">Ссылка скопирована в буфер обмена</string>
 </resources>

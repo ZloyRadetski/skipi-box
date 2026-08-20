@@ -52,7 +52,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import ui.AppTheme
 
-private const val OnboardingPageCount = 5
+private const val OnboardingPageCount = 6
 
 @Composable
 fun OnboardingPage(
@@ -146,16 +146,17 @@ fun OnboardingPage(
                         appState = appState,
                         updateAppState = updateAppState,
                     )
-                    1 -> OnboardingPermissionsPage()
-                    2 -> OnboardingAppearancePage(
+                    1 -> OnboardingTelegramPage()
+                    2 -> OnboardingPermissionsPage()
+                    3 -> OnboardingAppearancePage(
                         appState = appState,
                         updateAppState = updateAppState,
                     )
-                    3 -> OnboardingImportPage(
+                    4 -> OnboardingImportPage(
                         appState = appState,
                         updateAppState = updateAppState,
                     )
-                    4 -> OnboardingCompletePage(
+                    5 -> OnboardingCompletePage(
                         appState = appState,
                     )
                 }

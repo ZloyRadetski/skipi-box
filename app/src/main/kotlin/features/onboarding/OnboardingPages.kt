@@ -96,6 +96,7 @@ import top.yukonga.miuix.kmp.icon.extended.Tune
 import ui.AppTheme
 import ui.KeyColors
 import ui.clipboard.getPlainText
+import ui.clipboard.setPlainText
 
 @Composable
 internal fun onboardingCardBackground(): Color {
@@ -391,15 +392,217 @@ internal fun OnboardingWelcomePage(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        OnboardingTelegramChannelCard()
     }
 }
 
 // ----------------------------------------------------------------------------
-// PAGE 1: System Permissions
+// PAGE 1: Official Telegram Channel
+// ----------------------------------------------------------------------------
+
+@Composable
+internal fun OnboardingTelegramPage(
+    modifier: Modifier = Modifier,
+) {
+    val uriHandler = LocalUriHandler.current
+    val clipboard = LocalClipboard.current
+    val tipNotifier = LocalAppServices.current.tipNotifier
+    val scope = rememberCoroutineScope()
+    val copiedText = stringResource(R.string.onboarding_telegram_copied_link)
+    val tgColor = Color(0xFF2AABEE)
+    val cardBg = onboardingCardBackground()
+    val cardBorder = onboardingCardBorder()
+    val isDark = AppTheme.colors.isDark
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Telegram Logo / Icon Hero
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            tgColor.copy(alpha = if (isDark) 0.35f else 0.20f),
+                            tgColor.copy(alpha = if (isDark) 0.10f else 0.05f),
+                            Color.Transparent,
+                        ),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(68.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                tgColor.copy(alpha = if (isDark) 0.30f else 0.18f),
+                                tgColor.copy(alpha = if (isDark) 0.15f else 0.08f),
+                            ),
+                        ),
+                    )
+                    .border(
+                        width = 2.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                tgColor,
+                                tgColor.copy(alpha = 0.5f),
+                            ),
+                        ),
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "✈️",
+                    fontSize = 32.sp,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        Text(
+            text = stringResource(R.string.onboarding_telegram_title),
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = AppTheme.colors.onSurface,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = stringResource(R.string.onboarding_telegram_subtitle),
+            fontSize = 14.sp,
+            color = AppTheme.colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            lineHeight = 20.sp,
+            modifier = Modifier.fillMaxWidth(0.9f),
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Features list card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(cardBg)
+                .border(1.dp, cardBorder, RoundedCornerShape(20.dp))
+                .padding(18.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                TelegramFeatureItem(
+                    emoji = "🚀",
+                    title = stringResource(R.string.onboarding_telegram_feature_releases_title),
+                    description = stringResource(R.string.onboarding_telegram_feature_releases_desc),
+                )
+                TelegramFeatureItem(
+                    emoji = "💬",
+                    title = stringResource(R.string.onboarding_telegram_feature_chat_title),
+                    description = stringResource(R.string.onboarding_telegram_feature_chat_desc),
+                )
+                TelegramFeatureItem(
+                    emoji = "📢",
+                    title = stringResource(R.string.onboarding_telegram_feature_news_title),
+                    description = stringResource(R.string.onboarding_telegram_feature_news_desc),
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Primary Action: Join Channel
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(tgColor)
+                .clickable {
+                    uriHandler.openUri("https://t.me/skipi_public")
+                }
+                .padding(vertical = 15.dp, horizontal = 20.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "✈️  " + stringResource(R.string.onboarding_telegram_open_button),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Copy link action
+        Text(
+            text = "@skipi_public",
+            color = tgColor,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable {
+                    scope.launch {
+                        clipboard.setPlainText("https://t.me/skipi_public")
+                        tipNotifier.show(copiedText)
+                    }
+                }
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+    }
+}
+
+@Composable
+private fun TelegramFeatureItem(
+    emoji: String,
+    title: String,
+    description: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color(0xFF2AABEE).copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = emoji, fontSize = 18.sp)
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = AppTheme.colors.onSurface,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = description,
+                fontSize = 12.sp,
+                color = AppTheme.colors.onSurfaceVariant,
+                lineHeight = 16.sp,
+            )
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+// PAGE 2: System Permissions
 // ----------------------------------------------------------------------------
 
 @Composable
@@ -1345,66 +1548,6 @@ internal fun OnboardingCompletePage(
                     },
                     fontSize = 13.sp,
                     color = AppTheme.colors.onSurfaceVariant,
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        OnboardingTelegramChannelCard()
-    }
-}
-
-@Composable
-internal fun OnboardingTelegramChannelCard(
-    modifier: Modifier = Modifier,
-) {
-    val uriHandler = LocalUriHandler.current
-    val cardBg = onboardingCardBackground()
-    val cardBorder = onboardingCardBorder()
-    val tgColor = Color(0xFF2AABEE)
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(cardBg)
-            .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
-            .clickable { uriHandler.openUri("https://t.me/skipi_public") }
-            .padding(16.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(tgColor.copy(alpha = 0.16f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "✈️",
-                    fontSize = 20.sp,
-                )
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.onboarding_telegram_channel_title),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = AppTheme.colors.onSurface,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "@skipi_public",
-                    fontSize = 13.sp,
-                    color = tgColor,
-                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }
