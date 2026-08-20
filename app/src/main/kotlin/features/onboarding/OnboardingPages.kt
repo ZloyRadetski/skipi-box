@@ -402,6 +402,8 @@ internal fun OnboardingPermissionsPage(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val services = LocalAppServices.current
+    val scope = rememberCoroutineScope()
     var isVpnGranted by remember { mutableStateOf(VpnService.prepare(context) == null) }
     var isNotificationGranted by remember {
         mutableStateOf(
@@ -469,8 +471,10 @@ internal fun OnboardingPermissionsPage(
             onGrantClick = {
                 val intent = VpnService.prepare(context)
                 if (intent != null) {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    runCatching { context.startActivity(intent) }
+                    scope.launch {
+                        val granted = runCatching { services.requestVpnPermission(intent) }.getOrDefault(false)
+                        isVpnGranted = granted || VpnService.prepare(context) == null
+                    }
                 } else {
                     isVpnGranted = true
                 }

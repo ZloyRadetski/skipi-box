@@ -37,6 +37,7 @@ internal data class AppServices(
     val coreLogRepository: CoreLogRepository,
     val accessLogRepository: CoreLogRepository,
     val logcatRepository: CoreLogRepository,
+    val requestVpnPermission: suspend (android.content.Intent) -> Boolean = { false },
 )
 
 internal val LocalAppServices = staticCompositionLocalOf<AppServices> {

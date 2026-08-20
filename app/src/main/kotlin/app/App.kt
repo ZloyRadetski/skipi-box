@@ -149,6 +149,7 @@ fun App(
             coreLogRepository = AndroidCoreLogRepository,
             accessLogRepository = AndroidAccessLogRepository,
             logcatRepository = AndroidLogcatRepository,
+            requestVpnPermission = requestVpnPermission,
         )
     }
     val chromeState by stateStore.collectAppChromeState()
