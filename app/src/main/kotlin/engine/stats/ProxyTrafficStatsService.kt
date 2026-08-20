@@ -8,12 +8,15 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import app.R
@@ -39,6 +42,7 @@ class ProxyTrafficStatsService : Service() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.IO)
     private val notificationManager by lazy { getSystemService(NotificationManager::class.java) }
+    private val powerManager by lazy { getSystemService(PowerManager::class.java) }
     private val stateStore by lazy { AndroidAppStateStore.get(applicationContext) }
     private val contentIntent by lazy {
         packageManager.getLaunchIntentForPackage(packageName)?.let { intent ->
@@ -88,10 +92,42 @@ class ProxyTrafficStatsService : Service() {
     private var activeOutboundTag: String? = null
     private var activeTargetName = ""
     private var resumeInProgress = false
+    private var isScreenInteractive = true
+
+    private val screenStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_SCREEN_ON -> {
+                    isScreenInteractive = true
+                    val runtime = activeRuntime
+                    if (runtime != null && !runtime.paused) {
+                        notificationManager.notify(
+                            NotificationId,
+                            buildNotification(runtime, latestSample),
+                        )
+                    }
+                }
+                Intent.ACTION_SCREEN_OFF -> {
+                    isScreenInteractive = false
+                }
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        isScreenInteractive = powerManager?.isInteractive ?: true
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+        }
+        ContextCompat.registerReceiver(
+            this,
+            screenStateReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -118,8 +154,6 @@ class ProxyTrafficStatsService : Service() {
             return START_NOT_STICKY
         }
 
-        // The persisted runtime carries the resolved FINAL target and pause
-        // state; intent extras are only a fallback for a just-created service.
         val runtime = ProxyTrafficStatsRuntimeStore.read(this) ?: intent?.readRuntime()
         if (runtime == null) {
             stopStats()
@@ -142,6 +176,7 @@ class ProxyTrafficStatsService : Service() {
     }
 
     override fun onDestroy() {
+        runCatching { unregisterReceiver(screenStateReceiver) }
         pollingJob?.cancel()
         pollingJob = null
         activeRuntime = null
@@ -178,7 +213,12 @@ class ProxyTrafficStatsService : Service() {
                 apiTag = runtime.apiTag,
             ).use { client ->
                 while (isActive) {
-                    delay(PollIntervalMillis.milliseconds)
+                    val currentPollInterval = if (isScreenInteractive) {
+                        PollIntervalMillis
+                    } else {
+                        ScreenOffPollIntervalMillis
+                    }
+                    delay(currentPollInterval.milliseconds)
                     val now = SystemClock.elapsedRealtime()
                     val elapsedMillis = now - lastPollAt
                     lastPollAt = now
@@ -186,7 +226,7 @@ class ProxyTrafficStatsService : Service() {
                         client.queryInboundTraffic(reset = true)
                     }.onSuccess { delta ->
                         failures = 0
-                        if (now >= nextOutboundPollAt) {
+                        if (isScreenInteractive && now >= nextOutboundPollAt) {
                             nextOutboundPollAt = now + OutboundPollIntervalMillis
                             runCatching { client.queryOutboundTraffic(reset = false) }
                                 .onSuccess { totals ->
@@ -201,13 +241,15 @@ class ProxyTrafficStatsService : Service() {
                                 }
                         }
                         latestSample = sessionAccumulator.record(delta, elapsedMillis)
-                        notificationManager.notify(
-                            NotificationId,
-                            buildNotification(
-                                runtime = runtime,
-                                sample = latestSample,
-                            ),
-                        )
+                        if (isScreenInteractive) {
+                            notificationManager.notify(
+                                NotificationId,
+                                buildNotification(
+                                    runtime = runtime,
+                                    sample = latestSample,
+                                ),
+                            )
+                        }
                     }.onFailure { error ->
                         failures += 1
                         AndroidAppLogger.warn(LogTag, "Failed to query Xray traffic stats", error)
@@ -485,8 +527,9 @@ private const val NotificationId = 3001
 private const val PauseRequestCode = 3002
 private const val ResumeRequestCode = 3003
 private const val DisconnectRequestCode = 3004
-private const val PollIntervalMillis = 1_000L
-private const val OutboundPollIntervalMillis = 1_000L
+private const val PollIntervalMillis = 2_000L
+private const val ScreenOffPollIntervalMillis = 15_000L
+private const val OutboundPollIntervalMillis = 3_000L
 private const val MaxConsecutiveFailures = 5
 private val EmptyTrafficSample = XrayTrafficSessionSample(
     speedBytesPerSecond = XrayTrafficBytes(),

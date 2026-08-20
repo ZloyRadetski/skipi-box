@@ -32,9 +32,7 @@ import engine.proxy.LocalProxyRuntime
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.hevtun.HevTunRuntime
 import engine.xray.clearCoreLogs
-import engine.xray.startCoreLogTailers
 import features.logs.AndroidAppLogger
-import features.logs.CoreLogFileTailer
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import kotlinx.coroutines.CompletableDeferred
@@ -52,7 +50,6 @@ import kotlin.time.Duration.Companion.milliseconds
 @SuppressLint("VpnServicePolicy")
 class SkipiVpnService : VpnService() {
     private var tunFileDescriptor: ParcelFileDescriptor? = null
-    private var logFileTailers: List<CoreLogFileTailer> = emptyList()
     private var hevTunRuntime: HevTunRuntime? = null
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.IO)
@@ -141,7 +138,6 @@ class SkipiVpnService : VpnService() {
             acquireWakeLock()
         }
         config.coreLogPaths.clearCoreLogs(LogTag)
-        logFileTailers = config.coreLogPaths.startCoreLogTailers(config.enableAccessLog)
         tunFileDescriptor = establishTun(config)
         val tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
         AndroidLibXrayLiteRuntime.start(
@@ -282,8 +278,6 @@ class SkipiVpnService : VpnService() {
     private fun stopVpn() {
         unregisterNetworkConfigCallback()
         releaseWakeLock()
-        logFileTailers.forEach { tailer -> tailer.stop() }
-        logFileTailers = emptyList()
         runCatching {
             hevTunRuntime?.stop()
         }.onFailure { error ->

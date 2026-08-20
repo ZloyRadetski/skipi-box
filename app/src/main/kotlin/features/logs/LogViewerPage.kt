@@ -34,6 +34,7 @@ import app.R
 import ui.components.BackNavigationIcon
 import ui.components.NavigationIcon
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.stringResource
@@ -124,8 +125,11 @@ private fun LogViewerPage(
     val exportFailedMessage = stringResource(R.string.logs_export_failed)
 
     LaunchedEffect(repository) {
-        repository.refresh()
-        logEntries = repository.entries.value
+        while (true) {
+            repository.refresh()
+            logEntries = repository.entries.value
+            delay(1500)
+        }
     }
 
     Scaffold(

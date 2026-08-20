@@ -101,7 +101,7 @@ data class AppState(
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
     val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
-    val enableWakeLock: Boolean = true,
+    val enableWakeLock: Boolean = false,
     val enableSeamlessNetworkSwitching: Boolean = true,
     val enableNetworkAutomation: Boolean = false,
     val enableOnDemandVpn: Boolean = false,

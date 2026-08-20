@@ -14,7 +14,7 @@ object VpnDefaults {
     val DIRECT_DNS_SERVERS = listOf("https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query")
     const val IPV4_CIDR = "172.19.0.1/30"
     const val IPV6_CIDR = "fdfe:dcba:9876::1/126"
-    const val TCP_KEEP_ALIVE_INTERVAL = "15"
+    const val TCP_KEEP_ALIVE_INTERVAL = "60"
     const val TCP_KEEP_ALIVE_INTERVAL_MIN = 1
     const val TCP_KEEP_ALIVE_INTERVAL_MAX = 300
     const val TCP_USER_TIMEOUT = "10000"

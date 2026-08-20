@@ -46,7 +46,7 @@ internal data class VpnServiceStartConfig(
     val appendHttpProxyOptions: VpnAppendHttpProxyOptions,
     val coreLogPaths: XrayCoreLogPaths,
     val enableAccessLog: Boolean = false,
-    val enableWakeLock: Boolean = true,
+    val enableWakeLock: Boolean = false,
     val enableSeamlessNetworkSwitching: Boolean = true,
     val dataDir: String = "",
     val hevSocks5TunnelConfig: HevSocks5TunnelConfig? = null,

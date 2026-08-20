@@ -70,7 +70,7 @@ internal fun Intent.readVpnServiceStartConfig(): VpnServiceStartConfig? {
             errorLogPath = getStringExtra(EXTRA_ERROR_LOG_PATH).orEmpty(),
         ),
         enableAccessLog = getBooleanExtra(EXTRA_ENABLE_ACCESS_LOG, false),
-        enableWakeLock = getBooleanExtra(EXTRA_ENABLE_WAKE_LOCK, true),
+        enableWakeLock = getBooleanExtra(EXTRA_ENABLE_WAKE_LOCK, false),
         enableSeamlessNetworkSwitching = getBooleanExtra(EXTRA_ENABLE_SEAMLESS_NETWORK_SWITCHING, true),
         dataDir = getStringExtra(EXTRA_DATA_DIR).orEmpty(),
         hevSocks5TunnelConfig = readHevSocks5TunnelConfig(),
