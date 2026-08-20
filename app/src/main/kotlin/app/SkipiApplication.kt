@@ -49,9 +49,10 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         AppSettingsPreferences(applicationContext).getOrCreateSubscriptionHwid()
-        AndroidLogcatRepository.initialize(applicationContext)
-        AndroidCoreLogRepository.initialize(applicationContext)
-        AndroidAccessLogRepository.initialize(applicationContext)
+        val retentionDays = stateStore.state.value.logRetentionDays
+        AndroidLogcatRepository.initialize(applicationContext, retentionDays)
+        AndroidCoreLogRepository.initialize(applicationContext, retentionDays)
+        AndroidAccessLogRepository.initialize(applicationContext, retentionDays)
         networkAutomationMonitor.start()
         appScope.launch {
             stateStore.state

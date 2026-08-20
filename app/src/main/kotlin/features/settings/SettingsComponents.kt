@@ -40,6 +40,15 @@ import ui.text.formatTemplate
 
 internal val SettingsLogLevelOptions = listOf("debug", "info", "warning", "error", "none")
 
+internal val SettingsLogRetentionOptionValues = listOf(
+    1 to R.string.settings_log_retention_1_day,
+    3 to R.string.settings_log_retention_3_days,
+    7 to R.string.settings_log_retention_7_days,
+    14 to R.string.settings_log_retention_14_days,
+    30 to R.string.settings_log_retention_30_days,
+    0 to R.string.settings_log_retention_unlimited,
+)
+
 @Composable
 internal fun SettingsSectionCard(
     modifier: Modifier = Modifier,

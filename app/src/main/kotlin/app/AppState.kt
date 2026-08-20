@@ -137,6 +137,7 @@ data class AppState(
 
     val coreLogLevel: Int = 3,
     val enableAccessLog: Boolean = false,
+    val logRetentionDays: Int = 7,
     val resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
     val customResourceFileGeoIpUrl: String = ResourceFileLoyalsoldierGeoIpUrl,
     val customResourceFileGeoSiteUrl: String = ResourceFileLoyalsoldierGeoSiteUrl,

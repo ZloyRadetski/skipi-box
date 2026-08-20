@@ -21,9 +21,18 @@ internal object AndroidLogcatRepository : InMemoryCoreLogRepository() {
         onFailure = { message, error -> AndroidAppLogger.platformWarn(LogTag, message, error) },
     )
 
-    fun initialize(context: Context) {
+    fun initialize(context: Context, retentionDays: Int = 0) {
         appContext = context.applicationContext
-        restorePreviousLogs()
+        restorePreviousLogs(retentionDays)
+    }
+
+    override fun pruneOlderThanDays(days: Int) {
+        super.pruneOlderThanDays(days)
+        if (days <= 0) return
+        fileStore.prune { line ->
+            val entry = decodeLogLine(0L, line) ?: return@prune true
+            !entry.isOlderThanDays(days)
+        }
     }
 
     override fun append(level: String, message: String, time: String) {
@@ -43,9 +52,16 @@ internal object AndroidLogcatRepository : InMemoryCoreLogRepository() {
         replaceEntries(restoredEntries)
     }
 
-    private fun restorePreviousLogs() {
+    private fun restorePreviousLogs(retentionDays: Int = 0) {
         if (!restoredPreviousLogs.compareAndSet(false, true)) {
+            if (retentionDays > 0) pruneOlderThanDays(retentionDays)
             return
+        }
+        if (retentionDays > 0) {
+            fileStore.prune { line ->
+                val entry = decodeLogLine(0L, line) ?: return@prune true
+                !entry.isOlderThanDays(retentionDays)
+            }
         }
         val pendingEntries = entries.value
         replaceEntries(readPersistedEntries() + pendingEntries)

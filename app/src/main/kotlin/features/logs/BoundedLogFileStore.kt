@@ -44,6 +44,24 @@ internal class BoundedLogFileStore(
         }
     }
 
+    fun prune(predicate: (String) -> Boolean) {
+        val logFile = file() ?: return
+        synchronized(lock) {
+            runCatching {
+                val lines = readLastLinesLocked(logFile)
+                val filtered = lines.filter(predicate)
+                if (filtered.size != lines.size) {
+                    logFile.writeText(
+                        filtered.joinToString(separator = "\n", postfix = if (filtered.isEmpty()) "" else "\n")
+                    )
+                    lineCount = filtered.size
+                }
+            }.onFailure { error ->
+                reportFailure("prune", logFile, error)
+            }
+        }
+    }
+
     fun readLastLines(): List<String> {
         val logFile = file() ?: return emptyList()
         val lines = synchronized(lock) {

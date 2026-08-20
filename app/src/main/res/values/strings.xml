@@ -1078,4 +1078,14 @@
     <string name="configs_dns_domain_rule_input">Domain rule (e.g. geosite:cn, domain:example.com)</string>
     <string name="configs_dns_domain_invalid">Enter a valid domain rule (e.g. geosite:cn, domain:example.com, full:google.com)</string>
     <string name="configs_dns_hosts_invalid">Enter format domain: IP (e.g. example.com: 1.2.3.4)</string>
+
+    <!-- Log Retention Settings -->
+    <string name="settings_log_retention">Log retention</string>
+    <string name="settings_log_retention_summary">Automatically delete logs older than the selected period</string>
+    <string name="settings_log_retention_1_day">1 day</string>
+    <string name="settings_log_retention_3_days">3 days</string>
+    <string name="settings_log_retention_7_days">7 days</string>
+    <string name="settings_log_retention_14_days">14 days</string>
+    <string name="settings_log_retention_30_days">30 days</string>
+    <string name="settings_log_retention_unlimited">Keep indefinitely</string>
 </resources>

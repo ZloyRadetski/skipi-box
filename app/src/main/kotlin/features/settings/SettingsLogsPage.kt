@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -109,6 +110,23 @@ fun SettingsLogsPage(
                             selectedIndex = appState.coreLogLevel,
                             onSelectedIndexChange = { index ->
                                 updateAppState { it.copy(coreLogLevel = index) }
+                            },
+                        )
+                        val retentionIndex = remember(appState.logRetentionDays) {
+                            SettingsLogRetentionOptionValues.indexOfFirst { it.first == appState.logRetentionDays }
+                                .takeIf { it >= 0 } ?: 2
+                        }
+                        OverlayDropdownPreference(
+                            title = stringResource(R.string.settings_log_retention),
+                            summary = stringResource(R.string.settings_log_retention_summary),
+                            items = SettingsLogRetentionOptionValues.map { stringResource(it.second) },
+                            selectedIndex = retentionIndex,
+                            onSelectedIndexChange = { index ->
+                                val days = SettingsLogRetentionOptionValues.getOrNull(index)?.first ?: 7
+                                updateAppState { it.copy(logRetentionDays = days) }
+                                features.logs.AndroidCoreLogRepository.pruneOlderThanDays(days)
+                                features.logs.AndroidAccessLogRepository.pruneOlderThanDays(days)
+                                features.logs.AndroidLogcatRepository.pruneOlderThanDays(days)
                             },
                         )
                         SwitchPreference(

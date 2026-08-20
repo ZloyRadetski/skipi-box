@@ -31,9 +31,20 @@ internal abstract class AndroidXrayLogRepository(
         onFailure = { message, error -> AndroidAppLogger.warn(logTag, message, error) },
     )
 
-    fun initialize(context: Context) {
+    fun initialize(context: Context, retentionDays: Int = 0) {
         appContext = context.applicationContext
-        restorePreviousLogs()
+        restorePreviousLogs(retentionDays)
+    }
+
+    override fun pruneOlderThanDays(days: Int) {
+        super.pruneOlderThanDays(days)
+        val context = appContext ?: return
+        if (days <= 0) return
+        val file = logFile(context)
+        fileStore.prune { line ->
+            val parsed = parseCoreLogLine(line, file.defaultLevel) ?: return@prune true
+            !parsed.isOlderThanDays(days)
+        }
     }
 
     override suspend fun refresh() {
@@ -44,12 +55,20 @@ internal abstract class AndroidXrayLogRepository(
         replaceRestoredLines(restoredLines)
     }
 
-    private fun restorePreviousLogs() {
+    private fun restorePreviousLogs(retentionDays: Int = 0) {
         val context = appContext ?: return
         if (!restoredPreviousLogs.compareAndSet(false, true) || entries.value.isNotEmpty()) {
+            if (retentionDays > 0) pruneOlderThanDays(retentionDays)
             return
         }
 
+        if (retentionDays > 0) {
+            val file = logFile(context)
+            fileStore.prune { line ->
+                val parsed = parseCoreLogLine(line, file.defaultLevel) ?: return@prune true
+                !parsed.isOlderThanDays(retentionDays)
+            }
+        }
         replaceRestoredLines(readRestoredLines(context))
     }
 

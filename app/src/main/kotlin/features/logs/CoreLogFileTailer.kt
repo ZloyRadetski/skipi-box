@@ -127,6 +127,24 @@ private fun toLocalXrayLogTime(rawXrayTime: String): String? {
     return runCatching { formatter.format(instant) }.getOrNull()
 }
 
+internal fun parseCoreLogTimeMillis(time: String): Long? {
+    val formatter = localXrayLogTimeFormatter.get() ?: return null
+    formatter.timeZone = TimeZone.getDefault()
+    return runCatching { formatter.parse(time.trim())?.time }.getOrNull()
+}
+
+internal fun ParsedCoreLogLine.isOlderThanDays(days: Int, nowMillis: Long = System.currentTimeMillis()): Boolean {
+    if (days <= 0 || time == null) return false
+    val millis = parseCoreLogTimeMillis(time) ?: return false
+    return millis < (nowMillis - days * 24L * 60L * 60L * 1000L)
+}
+
+internal fun CoreLogEntry.isOlderThanDays(days: Int, nowMillis: Long = System.currentTimeMillis()): Boolean {
+    if (days <= 0) return false
+    val millis = parseCoreLogTimeMillis(time) ?: return false
+    return millis < (nowMillis - days * 24L * 60L * 60L * 1000L)
+}
+
 internal fun CoreLogRepository.appendParsedCoreLogLine(line: String, defaultLevel: String) {
     val parsedLine = parseCoreLogLine(line, defaultLevel) ?: return
     if (parsedLine.time == null) {

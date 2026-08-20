@@ -23,6 +23,8 @@ interface CoreLogRepository {
 
     fun clear()
 
+    fun pruneOlderThanDays(days: Int) = Unit
+
     suspend fun refresh() = Unit
 }
 
@@ -33,6 +35,13 @@ open class InMemoryCoreLogRepository(
     private val mutableEntries = MutableStateFlow(initialEntries.takeLast(maxEntries))
 
     override val entries: StateFlow<List<CoreLogEntry>> = mutableEntries.asStateFlow()
+
+    override fun pruneOlderThanDays(days: Int) {
+        if (days <= 0) return
+        mutableEntries.update { entries ->
+            entries.filter { !it.isOlderThanDays(days) }
+        }
+    }
 
     override fun append(level: String, message: String, time: String) {
         val normalizedMessage = message.trim()

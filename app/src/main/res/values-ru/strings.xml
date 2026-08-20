@@ -1068,4 +1068,14 @@
     <string name="configs_dns_domain_rule_input">Правило домена (напр. geosite:cn, domain:example.com)</string>
     <string name="configs_dns_domain_invalid">Введите корректное правило домена (напр. geosite:cn, domain:example.com, full:google.com)</string>
     <string name="configs_dns_hosts_invalid">Введите в формате домен: IP (напр. example.com: 1.2.3.4)</string>
+
+    <!-- Log Retention Settings -->
+    <string name="settings_log_retention">Время хранения логов</string>
+    <string name="settings_log_retention_summary">Автоматически удалять логи старше выбранного периода</string>
+    <string name="settings_log_retention_1_day">1 день</string>
+    <string name="settings_log_retention_3_days">3 дня</string>
+    <string name="settings_log_retention_7_days">7 дней</string>
+    <string name="settings_log_retention_14_days">14 дней</string>
+    <string name="settings_log_retention_30_days">30 дней</string>
+    <string name="settings_log_retention_unlimited">Хранить всегда</string>
 </resources>
