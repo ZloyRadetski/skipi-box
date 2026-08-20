@@ -8,6 +8,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import app.ProxyServerState
+import app.SubscriptionExpiryReminder
 import app.SubscriptionGroupState
 import features.logs.AndroidAppLogger
 import features.routing.model.RouteRule
@@ -37,6 +38,8 @@ internal data class SubscriptionGroupEntity(
     @ColumnInfo(defaultValue = "-1") val trafficDownloadBytes: Long,
     @ColumnInfo(defaultValue = "-1") val trafficTotalBytes: Long,
     @ColumnInfo(defaultValue = "-1") val trafficExpireAtSeconds: Long,
+    @ColumnInfo(defaultValue = "1") val notifyOnExpiry: Boolean = true,
+    @ColumnInfo(defaultValue = "''") val customExpiryReminders: String = "",
 ) {
     fun toState(): SubscriptionGroupState {
         return SubscriptionGroupState(
@@ -58,6 +61,10 @@ internal data class SubscriptionGroupEntity(
             trafficDownloadBytes = trafficDownloadBytes,
             trafficTotalBytes = trafficTotalBytes,
             trafficExpireAtSeconds = trafficExpireAtSeconds,
+            notifyOnExpiry = notifyOnExpiry,
+            customExpiryReminders = customExpiryReminders.takeIf { it.isNotBlank() }
+                ?.split(";")
+                ?.mapNotNull { SubscriptionExpiryReminder.fromSerializedStringOrNull(it) },
         )
     }
 
@@ -83,6 +90,8 @@ internal data class SubscriptionGroupEntity(
                 trafficDownloadBytes = group.trafficDownloadBytes,
                 trafficTotalBytes = group.trafficTotalBytes,
                 trafficExpireAtSeconds = group.trafficExpireAtSeconds,
+                notifyOnExpiry = group.notifyOnExpiry,
+                customExpiryReminders = group.customExpiryReminders?.joinToString(";") { it.toSerializedString() }.orEmpty(),
             )
         }
     }

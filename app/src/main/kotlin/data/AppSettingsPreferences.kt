@@ -239,6 +239,15 @@ internal class AppSettingsPreferences(
                 KeySubscriptionFetchTimeoutSeconds,
                 defaults.subscriptionFetchTimeoutSeconds,
             ),
+            enableSubscriptionExpiryNotifications = preferences.getBoolean(
+                KeyEnableSubscriptionExpiryNotifications,
+                defaults.enableSubscriptionExpiryNotifications,
+            ),
+            subscriptionExpiryReminders = preferences.getStringList(
+                KeySubscriptionExpiryReminders,
+                defaults.subscriptionExpiryReminders.map { it.toSerializedString() },
+            ).mapNotNull { app.SubscriptionExpiryReminder.fromSerializedStringOrNull(it) }
+                .ifEmpty { defaults.subscriptionExpiryReminders },
             trafficConfigs = trafficConfigs,
             nextTrafficConfigId = nextTrafficConfigId,
             activeTrafficConfigId = activeTrafficConfigId,
@@ -490,6 +499,11 @@ internal class AppSettingsPreferences(
             .putInt(KeyProxyAppListMode, state.proxyAppListMode)
             .putBoolean(KeyAutoCheckAppUpdates, state.autoCheckAppUpdates)
             .putBoolean(KeyAutoInstallAppUpdatesAtNight, state.autoInstallAppUpdatesAtNight)
+            .putBoolean(KeyEnableSubscriptionExpiryNotifications, state.enableSubscriptionExpiryNotifications)
+            .putStringList(
+                KeySubscriptionExpiryReminders,
+                state.subscriptionExpiryReminders.map { it.toSerializedString() },
+            )
             .putString(KeyDismissedUpdateVersion, state.dismissedUpdateVersion)
     }
 
@@ -859,6 +873,8 @@ private const val KeyServiceControlWifiDisconnectStopBssids = "service_control_w
 private const val KeyProxyAppListMode = "proxy_app_list_mode"
 private const val KeyAutoCheckAppUpdates = "auto_check_app_updates"
 private const val KeyAutoInstallAppUpdatesAtNight = "auto_install_app_updates_at_night"
+private const val KeyEnableSubscriptionExpiryNotifications = "enable_subscription_expiry_notifications"
+private const val KeySubscriptionExpiryReminders = "subscription_expiry_reminders"
 private const val KeyDismissedUpdateVersion = "dismissed_update_version"
 private const val KeyHasCompletedOnboarding = "has_completed_onboarding"
 

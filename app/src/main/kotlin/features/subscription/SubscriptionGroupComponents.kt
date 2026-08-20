@@ -119,6 +119,15 @@ internal fun SubscriptionGroupEditorDialog(
     var autoOverrideRules by remember(show, group?.id) {
         mutableStateOf(group?.autoOverrideRules ?: true)
     }
+    var notifyOnExpiry by remember(show, group?.id) {
+        mutableStateOf(group?.notifyOnExpiry ?: true)
+    }
+    var useCustomReminders by remember(show, group?.id) {
+        mutableStateOf(group?.customExpiryReminders != null)
+    }
+    var customReminders by remember(show, group?.id) {
+        mutableStateOf(group?.customExpiryReminders ?: appState.subscriptionExpiryReminders)
+    }
     var showCustomUserAgentDialog by remember { mutableStateOf(false) }
     var showHttpSubscriptionWarning by remember { mutableStateOf(false) }
     val customUserAgentDraftState = rememberTextFieldState(initialText = customUserAgent)
@@ -155,6 +164,8 @@ internal fun SubscriptionGroupEditorDialog(
             updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
             updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
             autoOverrideRules = autoOverrideRules,
+            notifyOnExpiry = notifyOnExpiry,
+            customExpiryReminders = if (useCustomReminders) customReminders else null,
         ) ?: SubscriptionGroupState(
                 id = nextGroupId,
                 name = name.trim().ifBlank { unnamedGroupName },
@@ -166,6 +177,8 @@ internal fun SubscriptionGroupEditorDialog(
                 updateViaProxy = updateViaProxy && savedUrl.isNotBlank(),
                 autoOverrideRules = autoOverrideRules,
                 enabled = true,
+                notifyOnExpiry = notifyOnExpiry,
+                customExpiryReminders = if (useCustomReminders) customReminders else null,
             )
         onSave(savedGroup, group == null)
         onDismissRequest()
@@ -272,7 +285,36 @@ internal fun SubscriptionGroupEditorDialog(
                                     .then { interval = asCharSequence().toString() },
                                 label = stringResource(R.string.subscription_auto_update_interval),
                                 lineLimits = TextFieldLineLimits.SingleLine,
+                                modifier = Modifier.padding(bottom = 12.dp),
                             )
+                            SwitchPreference(
+                                title = stringResource(R.string.subscription_notify_on_expiry),
+                                summary = stringResource(R.string.subscription_notify_on_expiry_summary),
+                                checked = notifyOnExpiry,
+                                onCheckedChange = { notifyOnExpiry = it },
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                            AnimatedVisibility(
+                                visible = notifyOnExpiry,
+                                enter = fadeIn() + expandVertically(),
+                                exit = shrinkVertically(),
+                            ) {
+                                Column(modifier = Modifier.padding(bottom = 12.dp)) {
+                                    SwitchPreference(
+                                        title = stringResource(R.string.subscription_custom_reminders_toggle),
+                                        summary = stringResource(R.string.subscription_custom_reminders_toggle_summary),
+                                        checked = useCustomReminders,
+                                        onCheckedChange = { useCustomReminders = it },
+                                        modifier = Modifier.padding(bottom = 8.dp),
+                                    )
+                                    if (useCustomReminders) {
+                                        SubscriptionExpiryReminderList(
+                                            reminders = customReminders,
+                                            onRemindersChange = { customReminders = it },
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

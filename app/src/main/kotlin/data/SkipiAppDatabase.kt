@@ -17,7 +17,7 @@ internal const val SkipiDatabaseName = "skipi.db"
         RouteRuleEntity::class,
         ProxyAppListSelectedAppEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 internal abstract class SkipiAppDatabase : RoomDatabase() {
@@ -49,5 +49,12 @@ internal val Migration2To3 = object : Migration(2, 3) {
 internal val Migration3To4 = object : Migration(3, 4) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE subscription_groups ADD COLUMN autoOverrideRules INTEGER NOT NULL DEFAULT 1")
+    }
+}
+
+internal val Migration4To5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE subscription_groups ADD COLUMN notifyOnExpiry INTEGER NOT NULL DEFAULT 1")
+        db.execSQL("ALTER TABLE subscription_groups ADD COLUMN customExpiryReminders TEXT NOT NULL DEFAULT ''")
     }
 }

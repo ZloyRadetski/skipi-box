@@ -33,6 +33,49 @@ import features.resources.XrayCoreVersion
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.Serializable
 
+@Serializable
+enum class ExpiryReminderUnit {
+    Minutes,
+    Hours,
+    Days,
+    Weeks,
+    AtExpiration,
+}
+
+@Serializable
+data class SubscriptionExpiryReminder(
+    val value: Int = 1,
+    val unit: ExpiryReminderUnit = ExpiryReminderUnit.Days,
+) {
+    val totalSeconds: Long
+        get() = when (unit) {
+            ExpiryReminderUnit.AtExpiration -> 0L
+            ExpiryReminderUnit.Minutes -> value.coerceAtLeast(1) * 60L
+            ExpiryReminderUnit.Hours -> value.coerceAtLeast(1) * 3600L
+            ExpiryReminderUnit.Days -> value.coerceAtLeast(1) * 86400L
+            ExpiryReminderUnit.Weeks -> value.coerceAtLeast(1) * 7 * 86400L
+        }
+
+    fun toSerializedString(): String {
+        return "$value:${unit.name}"
+    }
+
+    companion object {
+        fun fromSerializedStringOrNull(str: String): SubscriptionExpiryReminder? {
+            val parts = str.split(":")
+            if (parts.size != 2) return null
+            val v = parts[0].toIntOrNull() ?: return null
+            val u = runCatching { ExpiryReminderUnit.valueOf(parts[1]) }.getOrNull() ?: return null
+            return SubscriptionExpiryReminder(v, u)
+        }
+    }
+}
+
+val DefaultSubscriptionExpiryReminders: List<SubscriptionExpiryReminder> = listOf(
+    SubscriptionExpiryReminder(3, ExpiryReminderUnit.Days),
+    SubscriptionExpiryReminder(1, ExpiryReminderUnit.Days),
+)
+
 @Stable
 data class SubscriptionGroupState(
     val id: Int,
@@ -53,6 +96,8 @@ data class SubscriptionGroupState(
     val trafficDownloadBytes: Long = -1L,
     val trafficTotalBytes: Long = -1L,
     val trafficExpireAtSeconds: Long = -1L,
+    val notifyOnExpiry: Boolean = true,
+    val customExpiryReminders: List<SubscriptionExpiryReminder>? = null,
 )
 
 data class ProxyServerState(

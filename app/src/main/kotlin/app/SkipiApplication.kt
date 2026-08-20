@@ -107,6 +107,30 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                     }
                 }
         }
+        appScope.launch {
+            stateStore.state
+                .map { state ->
+                    SubscriptionExpiryStateKey(
+                        enabled = state.enableSubscriptionExpiryNotifications,
+                        globalReminders = state.subscriptionExpiryReminders,
+                        groups = state.subscriptionGroups.map {
+                            SubscriptionExpiryGroupKey(
+                                id = it.id,
+                                enabled = it.enabled,
+                                notify = it.notifyOnExpiry,
+                                expire = it.trafficExpireAtSeconds,
+                                customReminders = it.customExpiryReminders,
+                            )
+                        },
+                    )
+                }
+                .distinctUntilChanged()
+                .collect {
+                    val currentState = stateStore.state.value
+                    features.subscription.notification.SubscriptionExpiryNotifier.checkAndNotify(applicationContext, currentState)
+                    features.subscription.notification.SubscriptionExpiryScheduler.schedule(applicationContext, currentState)
+                }
+        }
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader {
@@ -123,6 +147,20 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
         val url: String,
         val interval: String,
         val enabled: Boolean,
+    )
+
+    private data class SubscriptionExpiryStateKey(
+        val enabled: Boolean,
+        val globalReminders: List<app.SubscriptionExpiryReminder>,
+        val groups: List<SubscriptionExpiryGroupKey>,
+    )
+
+    private data class SubscriptionExpiryGroupKey(
+        val id: Int,
+        val enabled: Boolean,
+        val notify: Boolean,
+        val expire: Long,
+        val customReminders: List<app.SubscriptionExpiryReminder>?,
     )
 
     private data class TrafficConfigScheduleKey(

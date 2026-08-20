@@ -1118,4 +1118,35 @@
     <string name="onboarding_ready_status_ready">Готово к подключению</string>
     <string name="about_replay_onboarding">Мастер первого запуска</string>
     <string name="about_replay_onboarding_summary">Пройти первоначальную настройку и приветствие заново</string>
+
+    <!-- Subscription Expiry Notifications -->
+    <string name="notification_channel_subscription_expiry">Окончание подписок</string>
+    <string name="notification_channel_subscription_expiry_desc">Уведомления о скором окончании срока действия подписок</string>
+    <string name="subscription_expiry_notification_title_expiring">Подписка скоро закончится</string>
+    <string name="subscription_expiry_notification_title_expired">Подписка истекла</string>
+    <string name="subscription_expiry_notification_body_expiring">Подписка «%1$s» заканчивается через %2$s (%3$s)</string>
+    <string name="subscription_expiry_notification_body_expired">Срок действия подписки «%1$s» истёк (%2$s)</string>
+    <string name="subscription_expiry_notifications_section">Уведомления об окончании</string>
+    <string name="subscription_expiry_notifications_enable">Уведомления об окончании подписок</string>
+    <string name="subscription_expiry_notifications_enable_summary">Оповещать о скором окончании срока действия подписок</string>
+    <string name="subscription_expiry_reminders_title">Интервалы напоминаний</string>
+    <string name="subscription_expiry_reminders_summary">Напоминать за выбранное время до окончания</string>
+    <string name="subscription_expiry_reminders_empty">Нет настроенных напоминаний. Нажмите Добавить для создания.</string>
+    <string name="subscription_expiry_reminder_add">Добавить напоминание</string>
+    <string name="subscription_expiry_reminder_edit">Изменить напоминание</string>
+    <string name="subscription_expiry_reminder_value_label">Значение времени</string>
+    <string name="subscription_expiry_reminder_unit_minutes">Минут</string>
+    <string name="subscription_expiry_reminder_unit_hours">Часов</string>
+    <string name="subscription_expiry_reminder_unit_days">Дней</string>
+    <string name="subscription_expiry_reminder_unit_weeks">Недель</string>
+    <string name="subscription_expiry_reminder_unit_at_expiration">В момент окончания (0 мин)</string>
+    <string name="subscription_expiry_reminder_format_minutes">За %1$d мин</string>
+    <string name="subscription_expiry_reminder_format_hours">За %1$d ч</string>
+    <string name="subscription_expiry_reminder_format_days">За %1$d дн</string>
+    <string name="subscription_expiry_reminder_format_weeks">За %1$d нед</string>
+    <string name="subscription_expiry_reminder_format_at_expiration">В момент окончания</string>
+    <string name="subscription_notify_on_expiry">Уведомления об окончании</string>
+    <string name="subscription_notify_on_expiry_summary">Напоминать о скором истечении срока действия этой подписки</string>
+    <string name="subscription_custom_reminders_toggle">Свои интервалы для этой подписки</string>
+    <string name="subscription_custom_reminders_toggle_summary">Использовать индивидуальный список интервалов вместо глобального</string>
 </resources>

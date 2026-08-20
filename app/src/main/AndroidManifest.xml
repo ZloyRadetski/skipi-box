@@ -243,6 +243,10 @@
             android:exported="false" />
 
         <receiver
+            android:name="features.subscription.notification.SubscriptionExpiryReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name="features.resources.runtime.AndroidResourceFileDownloadCancelReceiver"
             android:exported="false" />
 

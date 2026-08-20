@@ -123,6 +123,8 @@ data class AppState(
     /** Sends the app-scoped subscription identifier and basic Android metadata. */
     val enableSubscriptionDeviceHeaders: Boolean = true,
     val subscriptionFetchTimeoutSeconds: Int = 10,
+    val enableSubscriptionExpiryNotifications: Boolean = true,
+    val subscriptionExpiryReminders: List<SubscriptionExpiryReminder> = DefaultSubscriptionExpiryReminders,
     val proxyRunning: Boolean = false,
 
     val trafficConfigs: List<TrafficConfigState> = DefaultTrafficConfigs,

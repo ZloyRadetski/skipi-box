@@ -148,6 +148,8 @@ internal data class AppBackupSettings(
     val dnsHosts: List<String> = BackupDefaults.dnsHosts,
     val serviceControl: AppBackupServiceControl = AppBackupServiceControl(),
     val proxyAppListMode: Int = BackupDefaults.proxyAppListMode,
+    val enableSubscriptionExpiryNotifications: Boolean = BackupDefaults.enableSubscriptionExpiryNotifications,
+    val subscriptionExpiryReminders: List<app.SubscriptionExpiryReminder> = app.DefaultSubscriptionExpiryReminders,
 )
 
 @Serializable
@@ -207,6 +209,8 @@ internal data class AppBackupSubscriptionGroup(
     val trafficDownloadBytes: Long = -1L,
     val trafficTotalBytes: Long = -1L,
     val trafficExpireAtSeconds: Long = -1L,
+    val notifyOnExpiry: Boolean = true,
+    val customExpiryReminders: List<app.SubscriptionExpiryReminder>? = null,
 )
 
 @Serializable

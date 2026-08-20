@@ -1128,4 +1128,35 @@
     <string name="onboarding_ready_status_ready">Ready for connection</string>
     <string name="about_replay_onboarding">Welcome Guide</string>
     <string name="about_replay_onboarding_summary">Replay the initial setup and onboarding walkthrough</string>
+
+    <!-- Subscription Expiry Notifications -->
+    <string name="notification_channel_subscription_expiry">Subscription Expiration</string>
+    <string name="notification_channel_subscription_expiry_desc">Alerts when your proxy subscriptions are about to expire</string>
+    <string name="subscription_expiry_notification_title_expiring">Subscription expiring soon</string>
+    <string name="subscription_expiry_notification_title_expired">Subscription expired</string>
+    <string name="subscription_expiry_notification_body_expiring">Subscription \"%1$s\" expires in %2$s (%3$s)</string>
+    <string name="subscription_expiry_notification_body_expired">Subscription \"%1$s\" has expired (%2$s)</string>
+    <string name="subscription_expiry_notifications_section">Expiry Notifications</string>
+    <string name="subscription_expiry_notifications_enable">Subscription Expiry Alerts</string>
+    <string name="subscription_expiry_notifications_enable_summary">Receive reminders before your proxy subscriptions expire</string>
+    <string name="subscription_expiry_reminders_title">Reminder Intervals</string>
+    <string name="subscription_expiry_reminders_summary">Custom alerts before expiration</string>
+    <string name="subscription_expiry_reminders_empty">No reminder intervals configured. Tap Add to create one.</string>
+    <string name="subscription_expiry_reminder_add">Add Reminder</string>
+    <string name="subscription_expiry_reminder_edit">Edit Reminder</string>
+    <string name="subscription_expiry_reminder_value_label">Time value</string>
+    <string name="subscription_expiry_reminder_unit_minutes">Minutes</string>
+    <string name="subscription_expiry_reminder_unit_hours">Hours</string>
+    <string name="subscription_expiry_reminder_unit_days">Days</string>
+    <string name="subscription_expiry_reminder_unit_weeks">Weeks</string>
+    <string name="subscription_expiry_reminder_unit_at_expiration">At expiration (0 min)</string>
+    <string name="subscription_expiry_reminder_format_minutes">%1$d min before</string>
+    <string name="subscription_expiry_reminder_format_hours">%1$d h before</string>
+    <string name="subscription_expiry_reminder_format_days">%1$d d before</string>
+    <string name="subscription_expiry_reminder_format_weeks">%1$d w before</string>
+    <string name="subscription_expiry_reminder_format_at_expiration">At expiration</string>
+    <string name="subscription_notify_on_expiry">Expiry Notifications</string>
+    <string name="subscription_notify_on_expiry_summary">Notify before this subscription expires</string>
+    <string name="subscription_custom_reminders_toggle">Custom intervals for this subscription</string>
+    <string name="subscription_custom_reminders_toggle_summary">Override global reminder intervals with custom list</string>
 </resources>

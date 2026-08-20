@@ -167,6 +167,8 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         dnsHosts = dnsHosts,
         serviceControl = serviceControl.toBackup(),
         proxyAppListMode = proxyAppListMode,
+        enableSubscriptionExpiryNotifications = enableSubscriptionExpiryNotifications,
+        subscriptionExpiryReminders = subscriptionExpiryReminders,
     )
 }
 
@@ -234,6 +236,8 @@ private fun SubscriptionGroupState.toBackup(): AppBackupSubscriptionGroup {
         trafficDownloadBytes = trafficDownloadBytes,
         trafficTotalBytes = trafficTotalBytes,
         trafficExpireAtSeconds = trafficExpireAtSeconds,
+        notifyOnExpiry = notifyOnExpiry,
+        customExpiryReminders = customExpiryReminders,
     )
 }
 
@@ -473,6 +477,8 @@ private fun AppBackupData.toAppState(): AppState {
         serviceControl = settings.serviceControl.toState(),
         proxyAppListMode = settings.proxyAppListMode,
         proxyAppListSelectedApps = proxyAppListSelectedApps,
+        enableSubscriptionExpiryNotifications = settings.enableSubscriptionExpiryNotifications,
+        subscriptionExpiryReminders = settings.subscriptionExpiryReminders,
     ).withConfigProxyGroupsReflected()
 }
 
@@ -496,6 +502,8 @@ private fun AppBackupSubscriptionGroup.toState(): SubscriptionGroupState {
         trafficDownloadBytes = trafficDownloadBytes,
         trafficTotalBytes = trafficTotalBytes,
         trafficExpireAtSeconds = trafficExpireAtSeconds,
+        notifyOnExpiry = notifyOnExpiry,
+        customExpiryReminders = customExpiryReminders,
     )
 }
 

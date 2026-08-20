@@ -45,6 +45,13 @@ import app.collectAppState
 import app.modes.SubscriptionPingModeHttp
 import app.modes.SubscriptionPingModeTcp
 import kotlinx.coroutines.launch
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import features.subscription.SubscriptionExpiryReminderList
+import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -420,6 +427,69 @@ fun SubscriptionPingSettingsPage(
                                             else MiuixTheme.colorScheme.primary,
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Section: Subscription Expiry Notifications
+                item(key = "section_expiry_notifications_title") {
+                    SmallTitle(text = stringResource(R.string.subscription_expiry_notifications_section))
+                }
+
+                item(key = "section_expiry_notifications_card") {
+                    SettingsSectionCard {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                    Text(
+                                        text = stringResource(R.string.subscription_expiry_notifications_enable),
+                                        style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                                        color = AppTheme.colors.onSurface,
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.subscription_expiry_notifications_enable_summary),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = AppTheme.colors.onSurfaceVariant,
+                                    )
+                                }
+                                Switch(
+                                    checked = appState.enableSubscriptionExpiryNotifications,
+                                    onCheckedChange = { isChecked ->
+                                        updateAppState { it.copy(enableSubscriptionExpiryNotifications = isChecked) }
+                                    },
+                                )
+                            }
+
+                            AnimatedVisibility(
+                                visible = appState.enableSubscriptionExpiryNotifications,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically(),
+                            ) {
+                                Column(modifier = Modifier.padding(top = 16.dp)) {
+                                    Text(
+                                        text = stringResource(R.string.subscription_expiry_reminders_title),
+                                        style = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.Medium),
+                                        color = AppTheme.colors.onSurface,
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.subscription_expiry_reminders_summary),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = AppTheme.colors.onSurfaceVariant,
+                                        modifier = Modifier.padding(bottom = 8.dp),
+                                    )
+
+                                    SubscriptionExpiryReminderList(
+                                        reminders = appState.subscriptionExpiryReminders,
+                                        onRemindersChange = { updated ->
+                                            updateAppState { it.copy(subscriptionExpiryReminders = updated) }
+                                        },
+                                    )
                                 }
                             }
                         }
