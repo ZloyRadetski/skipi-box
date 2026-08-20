@@ -176,7 +176,8 @@ fun ProxyServerPage(
             .filter { server ->
                 server.id != serverId &&
                     !server.server.isCompositeProxyServer() &&
-                    (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan())
+                    (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
+                    (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
             }
             .map { server ->
                 ProxyServerEditorMemberOption(

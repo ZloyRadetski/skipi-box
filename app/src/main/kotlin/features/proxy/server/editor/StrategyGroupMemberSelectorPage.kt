@@ -124,7 +124,8 @@ fun StrategyGroupMemberSelectorPage(
             server.id != excludedServerId &&
                 server.server !is ChainProxy &&
                 (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
-                (!requireServerRemarks || server.server.getInfo().remarks.isNotBlank())
+                (!requireServerRemarks || server.server.getInfo().remarks.isNotBlank()) &&
+                (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
         }
     }
     val groups = remember(

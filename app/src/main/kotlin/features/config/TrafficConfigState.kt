@@ -494,8 +494,16 @@ internal fun AppState.withUpdatedTrafficConfig(
  */
 internal fun AppState.withConfigProxyGroupsReflected(): AppState {
     val desired = trafficConfigs.flatMap { config ->
+        val isConfigActive = config.id == activeTrafficConfigId
         config.rawConfig.analyzeShadowrocketConfig().proxyGroups
-            .filter { it.displayMode != features.proxy.server.model.StrategyGroupDisplayMode.NEVER }
+            .filter { group ->
+                when (group.displayMode) {
+                    features.proxy.server.model.StrategyGroupDisplayMode.ALWAYS -> true
+                    features.proxy.server.model.StrategyGroupDisplayMode.NEVER -> false
+                    features.proxy.server.model.StrategyGroupDisplayMode.ACTIVE_CONFIG -> isConfigActive
+                    else -> isConfigActive
+                }
+            }
             .map { group -> ConfigAutoBalancerSource(config.id, group) }
     }
     val existingGenerated = proxyServers.filter { server ->

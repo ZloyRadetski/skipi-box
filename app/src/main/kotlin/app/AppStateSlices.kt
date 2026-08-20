@@ -166,7 +166,7 @@ private fun AppState.toAppChromeState(): AppChromeState {
     )
 }
 
-private fun AppState.toProxyServerListState(): ProxyServerListState {
+internal fun AppState.toProxyServerListState(): ProxyServerListState {
     return ProxyServerListState(
         subscriptionGroups = subscriptionGroups,
         enableAllProxyGroup = enableAllProxyGroup,

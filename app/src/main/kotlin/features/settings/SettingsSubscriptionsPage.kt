@@ -7,11 +7,21 @@ package features.settings
 
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -23,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import app.LocalAppChromeState
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -31,14 +43,18 @@ import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
 import app.navigation.Route
+import features.subscription.SubscriptionExpiryReminderList
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
 import ui.components.BackNavigationIcon
 import ui.components.WarningConfirmDialog
@@ -155,6 +171,65 @@ fun SettingsSubscriptionsPage(
                                 updateAppState { it.copy(enableDeletionConfirmation = enabled) }
                             },
                         )
+                    }
+                }
+
+                item(key = "subscriptions_expiry_notifications_card") {
+                    SmallTitle(text = stringResource(R.string.subscription_expiry_notifications_section))
+                    SettingsSectionCard {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                    Text(
+                                        text = stringResource(R.string.subscription_expiry_notifications_enable),
+                                        style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                                        color = AppTheme.colors.onSurface,
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.subscription_expiry_notifications_enable_summary),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = AppTheme.colors.onSurfaceVariant,
+                                    )
+                                }
+                                Switch(
+                                    checked = appState.enableSubscriptionExpiryNotifications,
+                                    onCheckedChange = { isChecked ->
+                                        updateAppState { it.copy(enableSubscriptionExpiryNotifications = isChecked) }
+                                    },
+                                )
+                            }
+
+                            AnimatedVisibility(
+                                visible = appState.enableSubscriptionExpiryNotifications,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically(),
+                            ) {
+                                Column(modifier = Modifier.padding(top = 16.dp)) {
+                                    Text(
+                                        text = stringResource(R.string.subscription_expiry_reminders_title),
+                                        style = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.Medium),
+                                        color = AppTheme.colors.onSurface,
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.subscription_expiry_reminders_summary),
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = AppTheme.colors.onSurfaceVariant,
+                                        modifier = Modifier.padding(bottom = 8.dp),
+                                    )
+
+                                    SubscriptionExpiryReminderList(
+                                        reminders = appState.subscriptionExpiryReminders,
+                                        onRemindersChange = { updated ->
+                                            updateAppState { it.copy(subscriptionExpiryReminders = updated) }
+                                        },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
