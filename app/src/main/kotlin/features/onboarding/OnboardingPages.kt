@@ -11,8 +11,6 @@ import android.net.VpnService
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -78,9 +76,7 @@ import app.modes.LanguageModeSystem
 import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.importProxyServersFromText
 import features.subscription.DefaultSubscriptionGroupId
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -295,7 +291,7 @@ internal fun OnboardingPermissionsPage(
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 isVpnGranted = VpnService.prepare(context) == null
@@ -311,18 +307,6 @@ internal fun OnboardingPermissionsPage(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    val vpnLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) {
-        isVpnGranted = VpnService.prepare(context) == null
-    }
-
-    val notificationLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        isNotificationGranted = granted
     }
 
     Column(
@@ -351,7 +335,8 @@ internal fun OnboardingPermissionsPage(
             onGrantClick = {
                 val intent = VpnService.prepare(context)
                 if (intent != null) {
-                    vpnLauncher.launch(intent)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    runCatching { context.startActivity(intent) }
                 } else {
                     isVpnGranted = true
                 }
@@ -368,7 +353,11 @@ internal fun OnboardingPermissionsPage(
                 description = stringResource(R.string.onboarding_perm_notifications_desc),
                 isGranted = isNotificationGranted,
                 onGrantClick = {
-                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    runCatching { context.startActivity(intent) }
                 },
             )
 
@@ -382,11 +371,19 @@ internal fun OnboardingPermissionsPage(
             description = stringResource(R.string.onboarding_perm_battery_desc),
             isGranted = isBatteryOptIgnored,
             onGrantClick = {
+                val directIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
                 runCatching {
-                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                        data = Uri.parse("package:${context.packageName}")
+                    context.startActivity(directIntent)
+                }.onFailure {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        val settingsIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        runCatching { context.startActivity(settingsIntent) }
                     }
-                    context.startActivity(intent)
                 }
             },
         )
@@ -743,8 +740,11 @@ internal fun OnboardingImportPage(
     var clipboardText by remember { mutableStateOf<String?>(null) }
 
     suspend fun importRawText(text: String) {
-        val importResult = importProxyServersFromText(text, ProxyServerImportSource.Clipboard)
-        if (importResult.servers.isNotEmpty()) {
+        val importResult = runCatching {
+            importProxyServersFromText(text, ProxyServerImportSource.Clipboard)
+        }.getOrNull()
+
+        if (importResult != null && importResult.servers.isNotEmpty()) {
             stateStore.update { current ->
                 val nextId = current.nextProxyServerId
                 var currentId = nextId
@@ -765,7 +765,7 @@ internal fun OnboardingImportPage(
     }
 
     LaunchedEffect(Unit) {
-        val clip = clipboard.getPlainText()?.trim()
+        val clip = runCatching { clipboard.getPlainText()?.trim() }.getOrNull()
         if (!clip.isNullOrBlank() && (
             clip.startsWith("vless://") ||
             clip.startsWith("vmess://") ||
@@ -777,21 +777,6 @@ internal fun OnboardingImportPage(
             clip.startsWith("https://")
         )) {
             clipboardText = clip
-        }
-    }
-
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-    ) { uri ->
-        if (uri != null) {
-            scope.launch {
-                val text = withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-                }
-                if (!text.isNullOrBlank()) {
-                    importRawText(text)
-                }
-            }
         }
     }
 
@@ -945,7 +930,12 @@ internal fun OnboardingImportPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    filePickerLauncher.launch(arrayOf("*/*"))
+                    scope.launch {
+                        val text = runCatching { services.proxyServerImportFileUseCase.readText() }.getOrNull()
+                        if (!text.isNullOrBlank()) {
+                            importRawText(text)
+                        }
+                    }
                 },
             colors = CardDefaults.defaultColors(
                 color = AppTheme.colors.surface,

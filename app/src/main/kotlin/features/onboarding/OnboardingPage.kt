@@ -109,7 +109,7 @@ fun OnboardingPage(
                             .clip(RoundedCornerShape(20.dp))
                             .background(AppTheme.colors.surfaceVariant.copy(alpha = 0.4f))
                             .clickable {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                 onFinish()
                             }
                             .padding(horizontal = 14.dp, vertical = 6.dp),
@@ -172,7 +172,7 @@ fun OnboardingPage(
                                 .clip(CircleShape)
                                 .background(AppTheme.colors.surface)
                                 .clickable {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                     scope.launch {
                                         pagerState.animateScrollToPage(currentPage - 1)
                                     }
@@ -223,7 +223,7 @@ fun OnboardingPage(
                             .clip(RoundedCornerShape(24.dp))
                             .background(AppTheme.colors.accent)
                             .clickable {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                 if (isLastPage) {
                                     onFinish()
                                 } else {
