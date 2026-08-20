@@ -134,13 +134,13 @@ internal fun OnboardingHeroSection(
         if (logoPainter != null) {
             Box(
                 modifier = Modifier
-                    .size(width = 170.dp, height = 90.dp)
-                    .clip(RoundedCornerShape(24.dp))
+                    .size(width = 260.dp, height = 135.dp)
+                    .clip(RoundedCornerShape(32.dp))
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                glowColor.copy(alpha = if (isDark) 0.35f else 0.20f),
-                                glowColor.copy(alpha = if (isDark) 0.12f else 0.05f),
+                                glowColor.copy(alpha = if (isDark) 0.38f else 0.22f),
+                                glowColor.copy(alpha = if (isDark) 0.14f else 0.06f),
                                 Color.Transparent,
                             ),
                         ),
@@ -152,9 +152,9 @@ internal fun OnboardingHeroSection(
                     contentDescription = "SKIPI Logo",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
-                        .height(72.dp)
+                        .height(105.dp)
                         .aspectRatio(2f)
-                        .clip(RoundedCornerShape(18.dp)),
+                        .clip(RoundedCornerShape(22.dp)),
                 )
             }
         } else if (icon != null) {
