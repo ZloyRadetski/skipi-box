@@ -10,18 +10,35 @@
   <a href="https://github.com/ZloyRadetski/skipi-box"><img src="https://img.shields.io/badge/Platform-Android_8.0+-3DDC84.svg?style=flat-square&logo=android&logoColor=white" alt="Platform"></a>
   <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.0+-7F52FF.svg?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin"></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4.svg?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose"></a>
+  <a href="https://t.me/skipi_public"><img src="https://img.shields.io/badge/Telegram-@skipi__public-2CA5E0.svg?style=flat-square&logo=telegram&logoColor=white" alt="Telegram Channel"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=flat-square" alt="License"></a>
+</p>
+
+---
+
+## 📢 Сообщество и Telegram-канал
+
+Подписывайтесь на официальный канал проекта: **[@skipi_public](https://t.me/skipi_public)** ✈️
+
+* 🚀 **Свежие релизы и APK-сборки:** скачивайте обновления и тестируйте новые фичи первыми.
+* 💬 **Обсуждения и поддержка:** делитесь конфигами, правилами маршрутизации и задавайте вопросы.
+* 📢 **Новости и дорожная карта:** будьте в курсе планов разработки и улучшений.
+
+<p align="center">
+  <a href="https://t.me/skipi_public">
+    <img src="https://img.shields.io/badge/Вступить%20в%20Telegram-@skipi__public-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Join Telegram" height="42" />
+  </a>
 </p>
 
 ---
 
 ## О проекте
 
-**SKIPI(СКИПИ)** - это современный клиент для обхода блокировок и управления сетевым трафиком на Android.
+**SKIPI (СКИПИ)** — это современный клиент для обхода блокировок и управления сетевым трафиком на Android.
 
-Главная идея проекта - сделать мощный инструмент с возможностями комбайна, но с приятным, аккуратным интерфейсом, которым приятно и удобно пользоваться каждый день. Все плавно, понятно и нативно.
+Главная идея проекта — сделать мощный инструмент с возможностями комбайна, но с приятным, аккуратным интерфейсом, которым приятно и удобно пользоваться каждый день. Все плавно, понятно и нативно.
 
-Внутри трудится связка из [Xray-core](https://github.com/XTLS/Xray-core), [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) и [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), а снаружи - полностью кастомизируемый UI на Jetpack Compose с поддержкой динамических цветов Material You и полной кастомизацией оформления.
+Внутри трудится связка из [Xray-core](https://github.com/XTLS/Xray-core), [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) и [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), а снаружи — полностью кастомизируемый UI на Jetpack Compose с поддержкой динамических цветов Material You и полной кастомизацией оформления.
 
 ---
 
