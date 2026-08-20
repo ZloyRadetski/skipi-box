@@ -1078,4 +1078,41 @@
     <string name="settings_log_retention_14_days">14 дней</string>
     <string name="settings_log_retention_30_days">30 дней</string>
     <string name="settings_log_retention_unlimited">Хранить всегда</string>
+
+    <!-- Onboarding Flow -->
+    <string name="onboarding_skip">Пропустить</string>
+    <string name="onboarding_next">Далее</string>
+    <string name="onboarding_back">Назад</string>
+    <string name="onboarding_get_started">Начать работу</string>
+    <string name="onboarding_welcome_title">SKIPI — быстрый и свободный клиент</string>
+    <string name="onboarding_welcome_subtitle">Клиент с открытым исходным кодом, без рекламы и сбора данных. Поддержка VLESS, VMess, Trojan, Shadowsocks, Hysteria 2 и гибкой маршрутизации.</string>
+    <string name="onboarding_language_title">Язык приложения</string>
+    <string name="onboarding_permissions_title">Системные разрешения</string>
+    <string name="onboarding_permissions_subtitle">Необходимы для надежной и непрерывной работы VPN-туннеля:</string>
+    <string name="onboarding_perm_vpn_title">Служба VPN</string>
+    <string name="onboarding_perm_vpn_desc">Позволяет создать безопасный локальный туннель для трафика</string>
+    <string name="onboarding_perm_notifications_title">Уведомления</string>
+    <string name="onboarding_perm_notifications_desc">Отображают статус подключения и скорость в шторке</string>
+    <string name="onboarding_perm_battery_title">Работа в фоне</string>
+    <string name="onboarding_perm_battery_desc">Предотвращает отключение VPN при выключенном экране</string>
+    <string name="onboarding_perm_grant">Разрешить</string>
+    <string name="onboarding_perm_granted">Разрешено</string>
+    <string name="onboarding_appearance_title">Внешний вид</string>
+    <string name="onboarding_appearance_subtitle">Настройте тему и оформление под ваш вкус:</string>
+    <string name="onboarding_theme_mode">Тема оформления</string>
+    <string name="onboarding_accent_color">Акцентный цвет</string>
+    <string name="onboarding_bottom_bar_size">Размер нижней панели</string>
+    <string name="onboarding_import_title">Добавление подключений</string>
+    <string name="onboarding_import_subtitle">Добавьте ваш первый сервер или подписку для начала работы:</string>
+    <string name="onboarding_clipboard_detected_title">Обнаружено в буфере</string>
+    <string name="onboarding_clipboard_import_btn">Импортировать сейчас</string>
+    <string name="onboarding_scan_qr_btn">Сканировать QR-код</string>
+    <string name="onboarding_import_file_btn">Импорт из файла / Резервная копия</string>
+    <string name="onboarding_servers_added_count">Добавлено серверов: %1$d</string>
+    <string name="onboarding_import_later_hint">Вы также можете пропустить этот шаг и добавить серверы позже</string>
+    <string name="onboarding_complete_title">Всё готово к работе!</string>
+    <string name="onboarding_complete_subtitle">Базовая настройка завершена. Теперь весь ваш интернет-трафик под надежной защитой.</string>
+    <string name="onboarding_ready_status_ready">Готово к подключению</string>
+    <string name="about_replay_onboarding">Мастер первого запуска</string>
+    <string name="about_replay_onboarding_summary">Пройти первоначальную настройку и приветствие заново</string>
 </resources>

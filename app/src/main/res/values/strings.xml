@@ -1088,4 +1088,41 @@
     <string name="settings_log_retention_14_days">14 days</string>
     <string name="settings_log_retention_30_days">30 days</string>
     <string name="settings_log_retention_unlimited">Keep indefinitely</string>
+
+    <!-- Onboarding Flow -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_welcome_title">SKIPI — Fast &amp; Free Client</string>
+    <string name="onboarding_welcome_subtitle">Open-source client with zero ads and no tracking. Supporting VLESS, VMess, Trojan, Shadowsocks, Hysteria 2 and powerful routing.</string>
+    <string name="onboarding_language_title">Application Language</string>
+    <string name="onboarding_permissions_title">System Permissions</string>
+    <string name="onboarding_permissions_subtitle">Required for establishing a reliable and uninterrupted VPN tunnel:</string>
+    <string name="onboarding_perm_vpn_title">VPN Service</string>
+    <string name="onboarding_perm_vpn_desc">Allows creating a secure local VPN tunnel for your traffic</string>
+    <string name="onboarding_perm_notifications_title">Notifications</string>
+    <string name="onboarding_perm_notifications_desc">Displays live connection status and speed stats in status bar</string>
+    <string name="onboarding_perm_battery_title">Background Execution</string>
+    <string name="onboarding_perm_battery_desc">Prevents the system from terminating the VPN when screen is off</string>
+    <string name="onboarding_perm_grant">Grant</string>
+    <string name="onboarding_perm_granted">Granted</string>
+    <string name="onboarding_appearance_title">Appearance &amp; Style</string>
+    <string name="onboarding_appearance_subtitle">Customize the theme and interface to match your preferences:</string>
+    <string name="onboarding_theme_mode">Theme Mode</string>
+    <string name="onboarding_accent_color">Accent Color</string>
+    <string name="onboarding_bottom_bar_size">Bottom Bar Size</string>
+    <string name="onboarding_import_title">Add Connections</string>
+    <string name="onboarding_import_subtitle">Import your first proxy server or subscription to get started:</string>
+    <string name="onboarding_clipboard_detected_title">Found in Clipboard</string>
+    <string name="onboarding_clipboard_import_btn">Import Now</string>
+    <string name="onboarding_scan_qr_btn">Scan QR Code</string>
+    <string name="onboarding_import_file_btn">Import from File / Backup</string>
+    <string name="onboarding_servers_added_count">Added servers: %1$d</string>
+    <string name="onboarding_import_later_hint">You can also skip this and add servers anytime later</string>
+    <string name="onboarding_complete_title">You\'re All Set!</string>
+    <string name="onboarding_complete_subtitle">Configuration is complete. Your internet traffic is now ready to be protected.</string>
+    <string name="onboarding_ready_status_ready">Ready for connection</string>
+    <string name="about_replay_onboarding">Welcome Guide</string>
+    <string name="about_replay_onboarding_summary">Replay the initial setup and onboarding walkthrough</string>
 </resources>

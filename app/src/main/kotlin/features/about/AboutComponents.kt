@@ -135,6 +135,12 @@ internal fun AboutLinksCard(
         modifier = modifier,
         bottomPadding = 12.dp,
     ) {
+        val navigator = app.LocalNavigator.current
+        ArrowPreference(
+            title = stringResource(R.string.about_replay_onboarding),
+            summary = stringResource(R.string.about_replay_onboarding_summary),
+            onClick = { navigator.push(app.navigation.Route.Onboarding) },
+        )
         ArrowPreference(
             title = stringResource(R.string.about_bug_report),
             summary = stringResource(R.string.about_bug_report_summary),

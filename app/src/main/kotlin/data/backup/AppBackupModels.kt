@@ -134,6 +134,7 @@ internal data class AppBackupSettings(
     val enableTrafficStatsNotification: Boolean = BackupDefaults.enableTrafficStatsNotification,
     val showServerSearch: Boolean = BackupDefaults.showServerSearch,
     val connectionDisplayMode: Int = BackupDefaults.connectionDisplayMode,
+    val hasCompletedOnboarding: Boolean = true,
     val classicShowFloatingPowerButton: Boolean = BackupDefaults.classicShowFloatingPowerButton,
     val showTunnelMemoryOnHome: Boolean = BackupDefaults.showTunnelMemoryOnHome,
     val enableBroadcastControl: Boolean = BackupDefaults.enableBroadcastControl,

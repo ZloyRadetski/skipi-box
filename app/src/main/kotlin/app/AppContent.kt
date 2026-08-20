@@ -180,13 +180,16 @@ fun AppContent(
     padding: PaddingValues,
 ) {
     val languageMode = LocalAppChromeState.current.languageMode
+    val stateStore = LocalAppStateStore.current
+    val hasCompletedOnboarding = stateStore.state.value.hasCompletedOnboarding
+    val initialRoute = if (hasCompletedOnboarding) Route.Main else Route.Onboarding
     val pagerState = rememberPagerState(pageCount = { MainNavigation.NAVIGATION_ITEMS_COUNT })
     val mainPagerState = rememberMainPagerState(pagerState)
     LaunchedEffect(mainPagerState.pagerState.currentPage) {
         mainPagerState.syncPage()
     }
 
-    val backStack = remember { mutableStateListOf<NavKey>().apply { add(Route.Main) } }
+    val backStack = remember { mutableStateListOf<NavKey>().apply { add(initialRoute) } }
     val navigator = remember { Navigator(backStack) }
 
     MainScreenBackHandler(mainPagerState, navigator)
@@ -200,6 +203,21 @@ fun AppContent(
     ) {
         val entryProvider = remember(backStack, languageMode) {
             entryProvider<NavKey> {
+                entry<Route.Onboarding> {
+                    key(languageMode) {
+                        features.onboarding.OnboardingPage(
+                            padding = padding,
+                            onFinish = {
+                                stateStore.update { it.copy(hasCompletedOnboarding = true) }
+                                if (backStack.contains(Route.Main)) {
+                                    navigator.pop()
+                                } else {
+                                    navigator.replace(Route.Main)
+                                }
+                            },
+                        )
+                    }
+                }
                 entry<Route.Main> {
                     key(languageMode) {
                         Home(

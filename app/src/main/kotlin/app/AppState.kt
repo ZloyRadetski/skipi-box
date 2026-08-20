@@ -83,6 +83,7 @@ data class AppState(
     val connectionDisplayMode: Int = ConnectionDisplayModeCompact,
     val classicShowFloatingPowerButton: Boolean = false,
     val bottomBarSize: Int = BottomBarSizeLarge,
+    val hasCompletedOnboarding: Boolean = false,
 
     val runMode: Int = RunModeVpnService,
     val enableResolveProxyServerDomain: Boolean = false,

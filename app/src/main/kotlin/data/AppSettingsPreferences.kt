@@ -321,6 +321,10 @@ internal class AppSettingsPreferences(
                 KeyBottomBarSize,
                 defaults.bottomBarSize,
             ),
+            hasCompletedOnboarding = preferences.getBoolean(
+                KeyHasCompletedOnboarding,
+                defaults.hasCompletedOnboarding,
+            ),
             classicShowFloatingPowerButton = preferences.getBoolean(
                 KeyClassicShowFloatingPowerButton,
                 defaults.classicShowFloatingPowerButton,
@@ -470,6 +474,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyShowServerSearch, state.showServerSearch)
             .putInt(KeyConnectionDisplayMode, state.connectionDisplayMode)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
+            .putBoolean(KeyHasCompletedOnboarding, state.hasCompletedOnboarding)
             .putBoolean(KeyClassicShowFloatingPowerButton, state.classicShowFloatingPowerButton)
             .putBoolean(KeyShowTunnelMemoryOnHome, state.showTunnelMemoryOnHome)
             .putBoolean(KeyEnableBroadcastControl, state.enableBroadcastControl)
@@ -855,5 +860,6 @@ private const val KeyProxyAppListMode = "proxy_app_list_mode"
 private const val KeyAutoCheckAppUpdates = "auto_check_app_updates"
 private const val KeyAutoInstallAppUpdatesAtNight = "auto_install_app_updates_at_night"
 private const val KeyDismissedUpdateVersion = "dismissed_update_version"
+private const val KeyHasCompletedOnboarding = "has_completed_onboarding"
 
 private val SubscriptionHwidLock = Any()
