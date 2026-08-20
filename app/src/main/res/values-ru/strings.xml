@@ -1145,6 +1145,10 @@
     <string name="subscription_expiry_reminder_format_days">За %1$d дн</string>
     <string name="subscription_expiry_reminder_format_weeks">За %1$d нед</string>
     <string name="subscription_expiry_reminder_format_at_expiration">В момент окончания</string>
+    <string name="subscription_expiry_duration_minutes">%1$d мин.</string>
+    <string name="subscription_expiry_duration_hours">%1$d ч.</string>
+    <string name="subscription_expiry_duration_days">%1$d дн.</string>
+    <string name="subscription_expiry_duration_weeks">%1$d нед.</string>
     <string name="subscription_notify_on_expiry">Уведомления об окончании</string>
     <string name="subscription_notify_on_expiry_summary">Напоминать о скором истечении срока действия этой подписки</string>
     <string name="subscription_custom_reminders_toggle">Свои интервалы для этой подписки</string>

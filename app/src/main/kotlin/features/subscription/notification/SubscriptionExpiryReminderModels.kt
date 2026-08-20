@@ -29,12 +29,12 @@ internal fun formatRemainingDuration(context: Context, seconds: Long): String {
     val weeks = seconds / (7 * 86400L)
 
     return when {
-        weeks > 0 && seconds % (7 * 86400L) == 0L -> context.getString(R.string.subscription_expiry_reminder_format_weeks, weeks)
-        days > 0 && seconds % 86400L == 0L -> context.getString(R.string.subscription_expiry_reminder_format_days, days)
-        hours > 0 && seconds % 3600L == 0L -> context.getString(R.string.subscription_expiry_reminder_format_hours, hours)
-        days > 0 -> context.getString(R.string.subscription_expiry_reminder_format_days, days)
-        hours > 0 -> context.getString(R.string.subscription_expiry_reminder_format_hours, hours)
-        else -> context.getString(R.string.subscription_expiry_reminder_format_minutes, minutes.coerceAtLeast(1))
+        weeks > 0 && seconds % (7 * 86400L) == 0L -> context.getString(R.string.subscription_expiry_duration_weeks, weeks)
+        days > 0 && seconds % 86400L == 0L -> context.getString(R.string.subscription_expiry_duration_days, days)
+        hours > 0 && seconds % 3600L == 0L -> context.getString(R.string.subscription_expiry_duration_hours, hours)
+        days > 0 -> context.getString(R.string.subscription_expiry_duration_days, days)
+        hours > 0 -> context.getString(R.string.subscription_expiry_duration_hours, hours)
+        else -> context.getString(R.string.subscription_expiry_duration_minutes, minutes.coerceAtLeast(1))
     }
 }
 

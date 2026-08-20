@@ -1155,6 +1155,10 @@
     <string name="subscription_expiry_reminder_format_days">%1$d d before</string>
     <string name="subscription_expiry_reminder_format_weeks">%1$d w before</string>
     <string name="subscription_expiry_reminder_format_at_expiration">At expiration</string>
+    <string name="subscription_expiry_duration_minutes">%1$d min</string>
+    <string name="subscription_expiry_duration_hours">%1$d h</string>
+    <string name="subscription_expiry_duration_days">%1$d d</string>
+    <string name="subscription_expiry_duration_weeks">%1$d w</string>
     <string name="subscription_notify_on_expiry">Expiry Notifications</string>
     <string name="subscription_notify_on_expiry_summary">Notify before this subscription expires</string>
     <string name="subscription_custom_reminders_toggle">Custom intervals for this subscription</string>
