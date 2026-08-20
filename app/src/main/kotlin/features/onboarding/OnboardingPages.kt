@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,9 +45,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,6 +65,7 @@ import app.LocalAppServices
 import app.LocalAppStateStore
 import app.ProxyServerState
 import app.R
+import app.SubscriptionGroupState
 import app.modes.BottomBarSizeLarge
 import app.modes.BottomBarSizeMedium
 import app.modes.BottomBarSizeSmall
@@ -112,11 +118,12 @@ internal fun onboardingItemInactiveBorder(): Color {
 
 @Composable
 internal fun OnboardingHeroSection(
-    icon: ImageVector,
     title: String,
     subtitle: String,
-    glowColor: Color = AppTheme.colors.accent,
     modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    logoPainter: Painter? = null,
+    glowColor: Color = AppTheme.colors.accent,
 ) {
     val isDark = AppTheme.colors.isDark
 
@@ -124,51 +131,79 @@ internal fun OnboardingHeroSection(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .size(104.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            glowColor.copy(alpha = if (isDark) 0.35f else 0.22f),
-                            glowColor.copy(alpha = if (isDark) 0.12f else 0.06f),
-                            Color.Transparent,
-                        ),
-                    ),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
+        if (logoPainter != null) {
             Box(
                 modifier = Modifier
-                    .size(68.dp)
-                    .clip(CircleShape)
+                    .size(width = 170.dp, height = 90.dp)
+                    .clip(RoundedCornerShape(24.dp))
                     .background(
-                        Brush.linearGradient(
+                        Brush.radialGradient(
                             colors = listOf(
-                                glowColor.copy(alpha = if (isDark) 0.3f else 0.18f),
-                                glowColor.copy(alpha = if (isDark) 0.15f else 0.08f),
+                                glowColor.copy(alpha = if (isDark) 0.35f else 0.20f),
+                                glowColor.copy(alpha = if (isDark) 0.12f else 0.05f),
+                                Color.Transparent,
                             ),
                         ),
-                    )
-                    .border(
-                        width = 2.dp,
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                glowColor.copy(alpha = if (isDark) 0.8f else 0.6f),
-                                glowColor.copy(alpha = if (isDark) 0.3f else 0.2f),
-                            ),
-                        ),
-                        shape = CircleShape,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = glowColor,
-                    modifier = Modifier.size(34.dp),
+                Image(
+                    painter = logoPainter,
+                    contentDescription = "SKIPI Logo",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .height(72.dp)
+                        .aspectRatio(2f)
+                        .clip(RoundedCornerShape(18.dp)),
                 )
+            }
+        } else if (icon != null) {
+            Box(
+                modifier = Modifier
+                    .size(104.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                glowColor.copy(alpha = if (isDark) 0.35f else 0.22f),
+                                glowColor.copy(alpha = if (isDark) 0.12f else 0.06f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(68.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    glowColor.copy(alpha = if (isDark) 0.3f else 0.18f),
+                                    glowColor.copy(alpha = if (isDark) 0.15f else 0.08f),
+                                ),
+                            ),
+                        )
+                        .border(
+                            width = 2.dp,
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    glowColor.copy(alpha = if (isDark) 0.8f else 0.6f),
+                                    glowColor.copy(alpha = if (isDark) 0.3f else 0.2f),
+                                ),
+                            ),
+                            shape = CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = glowColor,
+                        modifier = Modifier.size(34.dp),
+                    )
+                }
             }
         }
 
@@ -228,7 +263,7 @@ internal fun OnboardingWelcomePage(
         Spacer(modifier = Modifier.height(8.dp))
 
         OnboardingHeroSection(
-            icon = MiuixIcons.Ok,
+            logoPainter = painterResource(R.drawable.ic_about_logo),
             title = stringResource(R.string.onboarding_welcome_title),
             subtitle = stringResource(R.string.onboarding_welcome_subtitle),
             glowColor = AppTheme.colors.accent,
