@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -390,6 +391,10 @@ internal fun OnboardingWelcomePage(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        OnboardingTelegramChannelCard()
     }
 }
 
@@ -1340,6 +1345,66 @@ internal fun OnboardingCompletePage(
                     },
                     fontSize = 13.sp,
                     color = AppTheme.colors.onSurfaceVariant,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        OnboardingTelegramChannelCard()
+    }
+}
+
+@Composable
+internal fun OnboardingTelegramChannelCard(
+    modifier: Modifier = Modifier,
+) {
+    val uriHandler = LocalUriHandler.current
+    val cardBg = onboardingCardBackground()
+    val cardBorder = onboardingCardBorder()
+    val tgColor = Color(0xFF2AABEE)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(cardBg)
+            .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+            .clickable { uriHandler.openUri("https://t.me/skipi_public") }
+            .padding(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(tgColor.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "✈️",
+                    fontSize = 20.sp,
+                )
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.onboarding_telegram_channel_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = AppTheme.colors.onSurface,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "@skipi_public",
+                    fontSize = 13.sp,
+                    color = tgColor,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }

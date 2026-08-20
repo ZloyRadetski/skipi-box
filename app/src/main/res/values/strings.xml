@@ -1163,4 +1163,6 @@
     <string name="subscription_notify_on_expiry_summary">Notify before this subscription expires</string>
     <string name="subscription_custom_reminders_toggle">Custom intervals for this subscription</string>
     <string name="subscription_custom_reminders_toggle_summary">Override global reminder intervals with custom list</string>
+    <string name="about_telegram_channel">Telegram Channel</string>
+    <string name="onboarding_telegram_channel_title">Official Telegram Channel</string>
 </resources>

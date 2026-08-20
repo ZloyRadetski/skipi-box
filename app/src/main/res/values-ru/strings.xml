@@ -1153,4 +1153,6 @@
     <string name="subscription_notify_on_expiry_summary">Напоминать о скором истечении срока действия этой подписки</string>
     <string name="subscription_custom_reminders_toggle">Свои интервалы для этой подписки</string>
     <string name="subscription_custom_reminders_toggle_summary">Использовать индивидуальный список интервалов вместо глобального</string>
+    <string name="about_telegram_channel">Telegram-канал</string>
+    <string name="onboarding_telegram_channel_title">Официальный Telegram-канал</string>
 </resources>

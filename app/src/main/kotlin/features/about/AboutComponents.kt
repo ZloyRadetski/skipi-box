@@ -58,6 +58,7 @@ import androidx.compose.foundation.layout.aspectRatio
 
 private const val SkipiProjectSourceUri = "https://github.com/ZloyRadetski/skipi-box"
 internal const val SkipiBugReportUri = "https://github.com/ZloyRadetski/skipi-box/issues/new"
+internal const val SkipiTelegramChannelUri = "https://t.me/skipi_public"
 
 @Composable
 internal fun AboutHeader(
@@ -140,6 +141,11 @@ internal fun AboutLinksCard(
             title = stringResource(R.string.about_replay_onboarding),
             summary = stringResource(R.string.about_replay_onboarding_summary),
             onClick = { navigator.push(app.navigation.Route.Onboarding) },
+        )
+        ArrowPreference(
+            title = stringResource(R.string.about_telegram_channel),
+            summary = "@skipi_public",
+            onClick = { uriHandler.openUri(SkipiTelegramChannelUri) },
         )
         ArrowPreference(
             title = stringResource(R.string.about_bug_report),
