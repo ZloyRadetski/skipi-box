@@ -184,7 +184,7 @@ fun RouteOutboundSelectorPage(
         )
 
         val autoBalancerItems = serversByGroup[AutoBalancerGroupId].orEmpty()
-            .filter { server -> server.server is StrategyGroup }
+            .filter { server -> server.server is StrategyGroup && server.server.sourceTrafficConfigId == null }
             .map { RouteOutboundItem.Server(it, shadowrocketPolicyMode) }
 
         val subscriptionGroupItems = appState.subscriptionGroups

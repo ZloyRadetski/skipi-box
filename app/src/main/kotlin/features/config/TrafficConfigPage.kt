@@ -431,7 +431,11 @@ fun TrafficConfigPage(
                 }
             }
             items(
-                items = appState.proxyServers.filter { it.groupId == AutoBalancerGroupId && it.server is StrategyGroup },
+                items = appState.proxyServers.filter {
+                    it.groupId == AutoBalancerGroupId &&
+                        it.server is StrategyGroup &&
+                        it.server.sourceTrafficConfigId == null
+                },
                 key = { it.id },
             ) { proxyGroup ->
                 TrafficConfigGlobalProxyGroupCard(

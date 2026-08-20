@@ -176,4 +176,38 @@ class TrafficConfigProxyGroupIsolationTest {
         assertTrue("UserManualBalancer should be in All tab", remarks.contains("UserManualBalancer"))
         assertFalse("ActiveConfigGroup should NOT be in All tab", remarks.contains("ActiveConfigGroup"))
     }
+
+    @Test
+    fun trafficConfigPage_global_proxy_groups_excludes_config_sourced_groups() {
+        val configGroupServer = ProxyServerState(
+            id = 101,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "ConfigGroup",
+                sourceTrafficConfigId = 1,
+            ),
+        )
+
+        val userManualStrategyGroup = ProxyServerState(
+            id = 102,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "UserManualBalancer",
+                sourceTrafficConfigId = null,
+            ),
+        )
+
+        val appState = AppState(
+            proxyServers = listOf(configGroupServer, userManualStrategyGroup),
+        )
+
+        val globalProxyGroups = appState.proxyServers.filter {
+            it.groupId == AutoBalancerGroupId &&
+                it.server is StrategyGroup &&
+                it.server.sourceTrafficConfigId == null
+        }
+
+        assertEquals(1, globalProxyGroups.size)
+        assertEquals("UserManualBalancer", (globalProxyGroups.first().server as StrategyGroup).remarks)
+    }
 }
