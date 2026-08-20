@@ -18,8 +18,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,6 +60,7 @@ import app.LocalAppServices
 import app.LocalAppStateStore
 import app.ProxyServerState
 import app.R
+import app.SubscriptionGroupState
 import app.modes.BottomBarSizeLarge
 import app.modes.BottomBarSizeMedium
 import app.modes.BottomBarSizeSmall
@@ -76,9 +75,9 @@ import app.modes.LanguageModeSystem
 import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.importProxyServersFromText
 import features.subscription.DefaultSubscriptionGroupId
+import features.subscription.SubscriptionInstallConfigUseCase
+import features.subscription.toSubscriptionInstallConfigOrNull
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -93,11 +92,20 @@ import ui.AppTheme
 import ui.KeyColors
 import ui.clipboard.getPlainText
 
+// Surface color tokens for high-contrast dark theme onboarding
+internal val OnboardingCardBackground = Color(0xFF18191E)
+internal val OnboardingCardBorder = Color(0xFF282932)
+internal val OnboardingItemInactive = Color(0xFF22232B)
+internal val OnboardingItemInactiveBorder = Color(0xFF30313C)
+internal val OnboardingPrimaryGreen = Color(0xFF10B981)
+internal val OnboardingPrimaryBlue = Color(0xFF0070F3)
+
 @Composable
 internal fun OnboardingHeroSection(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    glowColor: Color = OnboardingPrimaryGreen,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -106,13 +114,13 @@ internal fun OnboardingHeroSection(
     ) {
         Box(
             modifier = Modifier
-                .size(96.dp)
+                .size(104.dp)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            AppTheme.colors.accent.copy(alpha = 0.28f),
-                            AppTheme.colors.accent.copy(alpha = 0.08f),
+                            glowColor.copy(alpha = 0.35f),
+                            glowColor.copy(alpha = 0.12f),
                             Color.Transparent,
                         ),
                     ),
@@ -121,12 +129,24 @@ internal fun OnboardingHeroSection(
         ) {
             Box(
                 modifier = Modifier
-                    .size(64.dp)
+                    .size(68.dp)
                     .clip(CircleShape)
-                    .background(AppTheme.colors.accent.copy(alpha = 0.2f))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                glowColor.copy(alpha = 0.3f),
+                                glowColor.copy(alpha = 0.15f),
+                            ),
+                        ),
+                    )
                     .border(
-                        width = 1.5.dp,
-                        color = AppTheme.colors.accent.copy(alpha = 0.5f),
+                        width = 2.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                glowColor.copy(alpha = 0.8f),
+                                glowColor.copy(alpha = 0.3f),
+                            ),
+                        ),
                         shape = CircleShape,
                     ),
                 contentAlignment = Alignment.Center,
@@ -134,19 +154,19 @@ internal fun OnboardingHeroSection(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = AppTheme.colors.accent,
-                    modifier = Modifier.size(32.dp),
+                    tint = glowColor,
+                    modifier = Modifier.size(34.dp),
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Text(
             text = title,
-            fontSize = 23.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = AppTheme.colors.onSurface,
+            color = Color.White,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(0.92f),
         )
@@ -156,7 +176,7 @@ internal fun OnboardingHeroSection(
         Text(
             text = subtitle,
             fontSize = 14.sp,
-            color = AppTheme.colors.onSurfaceVariant,
+            color = Color(0xFF9E9EA8),
             textAlign = TextAlign.Center,
             lineHeight = 20.sp,
             modifier = Modifier.fillMaxWidth(0.88f),
@@ -168,7 +188,6 @@ internal fun OnboardingHeroSection(
 // PAGE 0: Welcome & Language Selection
 // ----------------------------------------------------------------------------
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun OnboardingWelcomePage(
     appState: AppState,
@@ -180,84 +199,141 @@ internal fun OnboardingWelcomePage(
         Triple(LanguageModeEnglish, "English", "🇬🇧"),
         Triple(LanguageModeChinese, "简体中文", "🇨🇳"),
         Triple(LanguageModePersian, "فارسی", "🇮🇷"),
-        Triple(LanguageModeSystem, stringResource(R.string.option_follow_system), "🌐"),
     )
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         OnboardingHeroSection(
-            icon = MiuixIcons.Search,
+            icon = MiuixIcons.Ok,
             title = stringResource(R.string.onboarding_welcome_title),
             subtitle = stringResource(R.string.onboarding_welcome_subtitle),
+            glowColor = OnboardingPrimaryGreen,
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.defaultColors(
-                color = AppTheme.colors.surface,
-                contentColor = AppTheme.colors.onSurface,
-            ),
+        // Language Selector Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(OnboardingCardBackground)
+                .border(1.dp, OnboardingCardBorder, RoundedCornerShape(20.dp))
+                .padding(18.dp),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = MiuixIcons.Tune,
-                        contentDescription = null,
-                        tint = AppTheme.colors.accent,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(OnboardingPrimaryGreen.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Tune,
+                            contentDescription = null,
+                            tint = OnboardingPrimaryGreen,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.onboarding_language_title),
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = AppTheme.colors.onSurface,
+                        color = Color.White,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    languages.forEach { (mode, name, flag) ->
-                        val isSelected = appState.languageMode == mode
-                        val bg by animateColorAsState(
-                            targetValue = if (isSelected) AppTheme.colors.accent else AppTheme.colors.surfaceVariant.copy(alpha = 0.5f),
-                            label = "lang_bg_$mode",
-                        )
-                        val textColor by animateColorAsState(
-                            targetValue = if (isSelected) AppTheme.colors.onAccent else AppTheme.colors.onSurface,
-                            label = "lang_text_$mode",
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(bg)
-                                .clickable {
-                                    updateAppState { it.copy(languageMode = mode) }
-                                }
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                // 2x2 Grid of specific languages
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (i in languages.indices step 2) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Text(
-                                text = "$flag  $name",
-                                color = textColor,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                                fontSize = 14.sp,
-                            )
+                            for (j in i until (i + 2).coerceAtMost(languages.size)) {
+                                val (mode, name, flag) = languages[j]
+                                val isSelected = appState.languageMode == mode
+                                val bg by animateColorAsState(
+                                    targetValue = if (isSelected) OnboardingPrimaryGreen else OnboardingItemInactive,
+                                    label = "lang_bg_$mode",
+                                )
+                                val textColor by animateColorAsState(
+                                    targetValue = if (isSelected) Color(0xFF062E1A) else Color.White,
+                                    label = "lang_text_$mode",
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(bg)
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (isSelected) Color.Transparent else OnboardingItemInactiveBorder,
+                                            shape = RoundedCornerShape(12.dp),
+                                        )
+                                        .clickable {
+                                            updateAppState { it.copy(languageMode = mode) }
+                                        }
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "$flag  $name",
+                                        color = textColor,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 14.sp,
+                                    )
+                                }
+                            }
                         }
+                    }
+
+                    // Follow System Full Width
+                    val isSystemSelected = appState.languageMode == LanguageModeSystem
+                    val sysBg by animateColorAsState(
+                        targetValue = if (isSystemSelected) OnboardingPrimaryGreen else OnboardingItemInactive,
+                        label = "sys_lang_bg",
+                    )
+                    val sysTextColor by animateColorAsState(
+                        targetValue = if (isSystemSelected) Color(0xFF062E1A) else Color.White,
+                        label = "sys_lang_text",
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(sysBg)
+                            .border(
+                                width = 1.dp,
+                                color = if (isSystemSelected) Color.Transparent else OnboardingItemInactiveBorder,
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            .clickable {
+                                updateAppState { it.copy(languageMode = LanguageModeSystem) }
+                            }
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "🌐  " + stringResource(R.string.option_follow_system),
+                            color = sysTextColor,
+                            fontWeight = if (isSystemSelected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 14.sp,
+                        )
                     }
                 }
             }
@@ -313,22 +389,24 @@ internal fun OnboardingPermissionsPage(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         OnboardingHeroSection(
             icon = MiuixIcons.Tune,
             title = stringResource(R.string.onboarding_permissions_title),
             subtitle = stringResource(R.string.onboarding_permissions_subtitle),
+            glowColor = OnboardingPrimaryBlue,
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // 1. VPN Service Permission
         PermissionCard(
             icon = MiuixIcons.Ok,
+            iconColor = OnboardingPrimaryBlue,
             title = stringResource(R.string.onboarding_perm_vpn_title),
             description = stringResource(R.string.onboarding_perm_vpn_desc),
             isGranted = isVpnGranted,
@@ -349,6 +427,7 @@ internal fun OnboardingPermissionsPage(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             PermissionCard(
                 icon = MiuixIcons.Copy,
+                iconColor = Color(0xFFF59E0B),
                 title = stringResource(R.string.onboarding_perm_notifications_title),
                 description = stringResource(R.string.onboarding_perm_notifications_desc),
                 isGranted = isNotificationGranted,
@@ -367,6 +446,7 @@ internal fun OnboardingPermissionsPage(
         // 3. Battery Optimization
         PermissionCard(
             icon = MiuixIcons.Refresh,
+            iconColor = OnboardingPrimaryGreen,
             title = stringResource(R.string.onboarding_perm_battery_title),
             description = stringResource(R.string.onboarding_perm_battery_desc),
             isGranted = isBatteryOptIgnored,
@@ -393,39 +473,39 @@ internal fun OnboardingPermissionsPage(
 @Composable
 private fun PermissionCard(
     icon: ImageVector,
+    iconColor: Color,
     title: String,
     description: String,
     isGranted: Boolean,
     onGrantClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(
-            color = AppTheme.colors.surface,
-            contentColor = AppTheme.colors.onSurface,
-        ),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(OnboardingCardBackground)
+            .border(1.dp, OnboardingCardBorder, RoundedCornerShape(18.dp))
+            .padding(16.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
+                    .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(
-                        if (isGranted) Color(0xFF10B981).copy(alpha = 0.15f)
-                        else AppTheme.colors.accent.copy(alpha = 0.15f),
+                        if (isGranted) OnboardingPrimaryGreen.copy(alpha = 0.16f)
+                        else iconColor.copy(alpha = 0.16f),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = if (isGranted) MiuixIcons.Ok else icon,
                     contentDescription = null,
-                    tint = if (isGranted) Color(0xFF10B981) else AppTheme.colors.accent,
-                    modifier = Modifier.size(22.dp),
+                    tint = if (isGranted) OnboardingPrimaryGreen else iconColor,
+                    modifier = Modifier.size(24.dp),
                 )
             }
 
@@ -434,32 +514,32 @@ private fun PermissionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = AppTheme.colors.onSurface,
+                    color = Color.White,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = description,
                     fontSize = 12.sp,
-                    color = AppTheme.colors.onSurfaceVariant,
+                    color = Color(0xFF9E9EA8),
                     lineHeight = 16.sp,
                 )
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             if (isGranted) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF10B981).copy(alpha = 0.12f))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(OnboardingPrimaryGreen.copy(alpha = 0.14f))
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
                 ) {
                     Text(
-                        text = stringResource(R.string.onboarding_perm_granted),
-                        color = Color(0xFF10B981),
-                        fontWeight = FontWeight.SemiBold,
+                        text = "✓ " + stringResource(R.string.onboarding_perm_granted),
+                        color = OnboardingPrimaryGreen,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 12.sp,
                     )
                 }
@@ -467,14 +547,14 @@ private fun PermissionCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
-                        .background(AppTheme.colors.accent)
+                        .background(iconColor)
                         .clickable(onClick = onGrantClick)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.onboarding_perm_grant),
-                        color = AppTheme.colors.onAccent,
-                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 12.sp,
                     )
                 }
@@ -509,33 +589,35 @@ internal fun OnboardingAppearancePage(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         OnboardingHeroSection(
             icon = MiuixIcons.Edit,
             title = stringResource(R.string.onboarding_appearance_title),
             subtitle = stringResource(R.string.onboarding_appearance_subtitle),
+            glowColor = Color(0xFFA855F7),
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // 1. Theme Mode
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.defaultColors(
-                color = AppTheme.colors.surface,
-                contentColor = AppTheme.colors.onSurface,
-            ),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(OnboardingCardBackground)
+                .border(1.dp, OnboardingCardBorder, RoundedCornerShape(18.dp))
+                .padding(16.dp),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column {
                 Text(
                     text = stringResource(R.string.onboarding_theme_mode),
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = AppTheme.colors.onSurface,
+                    color = Color.White,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -547,29 +629,34 @@ internal fun OnboardingAppearancePage(
                     themeModes.forEach { (mode, label) ->
                         val isSelected = appState.colorMode == mode
                         val bg by animateColorAsState(
-                            targetValue = if (isSelected) AppTheme.colors.accent else AppTheme.colors.surfaceVariant.copy(alpha = 0.5f),
+                            targetValue = if (isSelected) OnboardingPrimaryGreen else OnboardingItemInactive,
                             label = "theme_mode_bg_$mode",
                         )
                         val textColor by animateColorAsState(
-                            targetValue = if (isSelected) AppTheme.colors.onAccent else AppTheme.colors.onSurface,
+                            targetValue = if (isSelected) Color(0xFF062E1A) else Color.White,
                             label = "theme_mode_text_$mode",
                         )
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(bg)
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) Color.Transparent else OnboardingItemInactiveBorder,
+                                    shape = RoundedCornerShape(12.dp),
+                                )
                                 .clickable {
                                     updateAppState { it.copy(colorMode = mode) }
                                 }
-                                .padding(vertical = 10.dp),
+                                .padding(vertical = 11.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = label,
                                 color = textColor,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 13.sp,
                             )
                         }
@@ -581,19 +668,20 @@ internal fun OnboardingAppearancePage(
         Spacer(modifier = Modifier.height(12.dp))
 
         // 2. Color Palette / Material You
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.defaultColors(
-                color = AppTheme.colors.surface,
-                contentColor = AppTheme.colors.onSurface,
-            ),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(OnboardingCardBackground)
+                .border(1.dp, OnboardingCardBorder, RoundedCornerShape(18.dp))
+                .padding(16.dp),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column {
                 Text(
                     text = stringResource(R.string.onboarding_accent_color),
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = AppTheme.colors.onSurface,
+                    color = Color.White,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -607,12 +695,12 @@ internal fun OnboardingAppearancePage(
                     val isSystemAccent = appState.seedIndex == 0
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
-                            .background(if (isSystemAccent) AppTheme.colors.accent else AppTheme.colors.surfaceVariant)
+                            .background(if (isSystemAccent) OnboardingPrimaryGreen else OnboardingItemInactive)
                             .border(
-                                width = if (isSystemAccent) 2.dp else 1.dp,
-                                color = if (isSystemAccent) AppTheme.colors.onSurface else Color.Transparent,
+                                width = if (isSystemAccent) 2.5.dp else 1.dp,
+                                color = if (isSystemAccent) Color.White else OnboardingItemInactiveBorder,
                                 shape = CircleShape,
                             )
                             .clickable {
@@ -622,8 +710,8 @@ internal fun OnboardingAppearancePage(
                     ) {
                         Text(
                             text = "✦",
-                            color = if (isSystemAccent) AppTheme.colors.onAccent else AppTheme.colors.onSurfaceVariant,
-                            fontSize = 14.sp,
+                            color = if (isSystemAccent) Color(0xFF062E1A) else Color.White,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                         )
                     }
@@ -634,12 +722,12 @@ internal fun OnboardingAppearancePage(
                         val isSelected = appState.seedIndex == seedIdx
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(color)
                                 .border(
                                     width = if (isSelected) 3.dp else 0.dp,
-                                    color = if (isSelected) AppTheme.colors.onSurface else Color.Transparent,
+                                    color = if (isSelected) Color.White else Color.Transparent,
                                     shape = CircleShape,
                                 )
                                 .clickable {
@@ -652,7 +740,7 @@ internal fun OnboardingAppearancePage(
                                     imageVector = MiuixIcons.Ok,
                                     contentDescription = null,
                                     tint = Color.White,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                         }
@@ -664,19 +752,20 @@ internal fun OnboardingAppearancePage(
         Spacer(modifier = Modifier.height(12.dp))
 
         // 3. Bottom Bar Size
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.defaultColors(
-                color = AppTheme.colors.surface,
-                contentColor = AppTheme.colors.onSurface,
-            ),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(OnboardingCardBackground)
+                .border(1.dp, OnboardingCardBorder, RoundedCornerShape(18.dp))
+                .padding(16.dp),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column {
                 Text(
                     text = stringResource(R.string.onboarding_bottom_bar_size),
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    color = AppTheme.colors.onSurface,
+                    color = Color.White,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -688,29 +777,34 @@ internal fun OnboardingAppearancePage(
                     bottomBarSizes.forEach { (size, label) ->
                         val isSelected = appState.bottomBarSize == size
                         val bg by animateColorAsState(
-                            targetValue = if (isSelected) AppTheme.colors.accent else AppTheme.colors.surfaceVariant.copy(alpha = 0.5f),
+                            targetValue = if (isSelected) OnboardingPrimaryGreen else OnboardingItemInactive,
                             label = "bar_size_bg_$size",
                         )
                         val textColor by animateColorAsState(
-                            targetValue = if (isSelected) AppTheme.colors.onAccent else AppTheme.colors.onSurface,
+                            targetValue = if (isSelected) Color(0xFF062E1A) else Color.White,
                             label = "bar_size_text_$size",
                         )
 
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(bg)
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) Color.Transparent else OnboardingItemInactiveBorder,
+                                    shape = RoundedCornerShape(12.dp),
+                                )
                                 .clickable {
                                     updateAppState { it.copy(bottomBarSize = size) }
                                 }
-                                .padding(vertical = 10.dp),
+                                .padding(vertical = 11.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = label,
                                 color = textColor,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 13.sp,
                             )
                         }
@@ -722,7 +816,7 @@ internal fun OnboardingAppearancePage(
 }
 
 // ----------------------------------------------------------------------------
-// PAGE 3: Quick Import (Clipboard / QR / File)
+// PAGE 3: Quick Import (Clipboard Paste / QR Scan)
 // ----------------------------------------------------------------------------
 
 @Composable
@@ -739,9 +833,34 @@ internal fun OnboardingImportPage(
     val scope = rememberCoroutineScope()
     var clipboardText by remember { mutableStateOf<String?>(null) }
 
-    suspend fun importRawText(text: String) {
+    suspend fun importRawText(text: String, isExplicitPaste: Boolean = false) {
+        val trimmed = text.trim()
+        if (trimmed.isBlank()) {
+            if (isExplicitPaste) {
+                tipNotifier.show(context.getString(R.string.onboarding_clipboard_empty))
+            }
+            return
+        }
+
+        // Try installing as subscription URL
+        val config = trimmed.toSubscriptionInstallConfigOrNull()
+        if (config != null) {
+            runCatching {
+                SubscriptionInstallConfigUseCase(
+                    stateStore = stateStore,
+                    subscriptionFetcher = services.subscriptionFetcher,
+                ).install(config)
+            }.onSuccess {
+                tipNotifier.show("Подписка успешно добавлена!")
+            }.onFailure { error ->
+                tipNotifier.showError(error)
+            }
+            return
+        }
+
+        // Otherwise import as proxy servers (vless, vmess, ss, etc.)
         val importResult = runCatching {
-            importProxyServersFromText(text, ProxyServerImportSource.Clipboard)
+            importProxyServersFromText(trimmed, ProxyServerImportSource.Clipboard)
         }.getOrNull()
 
         if (importResult != null && importResult.servers.isNotEmpty()) {
@@ -761,6 +880,8 @@ internal fun OnboardingImportPage(
                 )
             }
             tipNotifier.show(context.getString(R.string.onboarding_servers_added_count, importResult.servers.size))
+        } else if (isExplicitPaste) {
+            tipNotifier.show(context.getString(R.string.onboarding_clipboard_empty))
         }
     }
 
@@ -784,45 +905,45 @@ internal fun OnboardingImportPage(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         OnboardingHeroSection(
             icon = MiuixIcons.Add,
             title = stringResource(R.string.onboarding_import_title),
             subtitle = stringResource(R.string.onboarding_import_subtitle),
+            glowColor = OnboardingPrimaryGreen,
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Detected in clipboard banner
+        // Detected in clipboard banner (if present)
         clipboardText?.let { clip ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.defaultColors(
-                    color = AppTheme.colors.accent.copy(alpha = 0.15f),
-                    contentColor = AppTheme.colors.onSurface,
-                ),
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(OnboardingPrimaryGreen.copy(alpha = 0.14f))
+                    .border(1.dp, OnboardingPrimaryGreen.copy(alpha = 0.4f), RoundedCornerShape(18.dp))
+                    .padding(16.dp),
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(AppTheme.colors.accent),
+                            .background(OnboardingPrimaryGreen),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Copy,
                             contentDescription = null,
-                            tint = AppTheme.colors.onAccent,
+                            tint = Color(0xFF062E1A),
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -834,13 +955,13 @@ internal fun OnboardingImportPage(
                             text = stringResource(R.string.onboarding_clipboard_detected_title),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
-                            color = AppTheme.colors.onSurface,
+                            color = Color.White,
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = clip.take(36) + "...",
+                            text = clip.take(34) + "...",
                             fontSize = 11.sp,
-                            color = AppTheme.colors.onSurfaceVariant,
+                            color = Color(0xFF9E9EA8),
                             maxLines = 1,
                         )
                     }
@@ -849,20 +970,20 @@ internal fun OnboardingImportPage(
 
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(AppTheme.colors.accent)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(OnboardingPrimaryGreen)
                             .clickable {
                                 scope.launch {
-                                    importRawText(clip)
+                                    importRawText(clip, isExplicitPaste = false)
                                     clipboardText = null
                                 }
                             }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
                     ) {
                         Text(
                             text = stringResource(R.string.onboarding_clipboard_import_btn),
-                            color = AppTheme.colors.onAccent,
-                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF062E1A),
+                            fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
                         )
                     }
@@ -872,41 +993,37 @@ internal fun OnboardingImportPage(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // Action 1: Scan QR Code
-        Card(
+        // Action 1: Paste from Clipboard Button
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(OnboardingCardBackground)
+                .border(1.dp, OnboardingCardBorder, RoundedCornerShape(18.dp))
                 .clickable {
                     scope.launch {
-                        val scanText = runCatching { services.qrScanner() }.getOrNull()
-                        if (!scanText.isNullOrBlank()) {
-                            importRawText(scanText)
-                        }
+                        val text = runCatching { clipboard.getPlainText() }.getOrNull()
+                        importRawText(text.orEmpty(), isExplicitPaste = true)
                     }
-                },
-            colors = CardDefaults.defaultColors(
-                color = AppTheme.colors.surface,
-                contentColor = AppTheme.colors.onSurface,
-            ),
+                }
+                .padding(16.dp),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(AppTheme.colors.accent.copy(alpha = 0.15f)),
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(OnboardingPrimaryGreen.copy(alpha = 0.16f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = MiuixIcons.Add,
+                        imageVector = MiuixIcons.Copy,
                         contentDescription = null,
-                        tint = AppTheme.colors.accent,
-                        modifier = Modifier.size(22.dp),
+                        tint = OnboardingPrimaryGreen,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
 
@@ -914,10 +1031,16 @@ internal fun OnboardingImportPage(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.onboarding_scan_qr_btn),
-                        fontWeight = FontWeight.SemiBold,
+                        text = stringResource(R.string.onboarding_import_clipboard_title),
+                        fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = AppTheme.colors.onSurface,
+                        color = Color.White,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.onboarding_import_clipboard_desc),
+                        fontSize = 12.sp,
+                        color = Color(0xFF9E9EA8),
                     )
                 }
             }
@@ -925,41 +1048,39 @@ internal fun OnboardingImportPage(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Action 2: Import from File
-        Card(
+        // Action 2: Scan QR Code Button
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(OnboardingCardBackground)
+                .border(1.dp, OnboardingCardBorder, RoundedCornerShape(18.dp))
                 .clickable {
                     scope.launch {
-                        val text = runCatching { services.proxyServerImportFileUseCase.readText() }.getOrNull()
-                        if (!text.isNullOrBlank()) {
-                            importRawText(text)
+                        val scanText = runCatching { services.qrScanner() }.getOrNull()
+                        if (!scanText.isNullOrBlank()) {
+                            importRawText(scanText, isExplicitPaste = false)
                         }
                     }
-                },
-            colors = CardDefaults.defaultColors(
-                color = AppTheme.colors.surface,
-                contentColor = AppTheme.colors.onSurface,
-            ),
+                }
+                .padding(16.dp),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(AppTheme.colors.accent.copy(alpha = 0.15f)),
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(OnboardingPrimaryBlue.copy(alpha = 0.16f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = MiuixIcons.Edit,
+                        imageVector = MiuixIcons.Add,
                         contentDescription = null,
-                        tint = AppTheme.colors.accent,
-                        modifier = Modifier.size(22.dp),
+                        tint = OnboardingPrimaryBlue,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
 
@@ -967,30 +1088,37 @@ internal fun OnboardingImportPage(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.onboarding_import_file_btn),
-                        fontWeight = FontWeight.SemiBold,
+                        text = stringResource(R.string.onboarding_scan_qr_title),
+                        fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = AppTheme.colors.onSurface,
+                        color = Color.White,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.onboarding_scan_qr_desc),
+                        fontSize = 12.sp,
+                        color = Color(0xFF9E9EA8),
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         // Status badge
-        val count = appState.proxyServers.size
+        val count = appState.proxyServers.size + appState.subscriptionGroups.size
         if (count > 0) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF10B981).copy(alpha = 0.12f))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(OnboardingPrimaryGreen.copy(alpha = 0.14f))
+                    .border(1.dp, OnboardingPrimaryGreen.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.onboarding_servers_added_count, count),
-                    color = Color(0xFF10B981),
-                    fontWeight = FontWeight.SemiBold,
+                    text = "✓ " + stringResource(R.string.onboarding_servers_added_count, count),
+                    color = OnboardingPrimaryGreen,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                 )
             }
@@ -998,7 +1126,7 @@ internal fun OnboardingImportPage(
             Text(
                 text = stringResource(R.string.onboarding_import_later_hint),
                 fontSize = 12.sp,
-                color = AppTheme.colors.onSurfaceVariant,
+                color = Color(0xFF9E9EA8),
                 textAlign = TextAlign.Center,
             )
         }
@@ -1018,20 +1146,20 @@ internal fun OnboardingCompletePage(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Box(
             modifier = Modifier
-                .size(100.dp)
+                .size(110.dp)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFF10B981).copy(alpha = 0.3f),
-                            Color(0xFF10B981).copy(alpha = 0.08f),
+                            OnboardingPrimaryGreen.copy(alpha = 0.4f),
+                            OnboardingPrimaryGreen.copy(alpha = 0.12f),
                             Color.Transparent,
                         ),
                     ),
@@ -1040,12 +1168,24 @@ internal fun OnboardingCompletePage(
         ) {
             Box(
                 modifier = Modifier
-                    .size(68.dp)
+                    .size(72.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF10B981).copy(alpha = 0.2f))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                OnboardingPrimaryGreen.copy(alpha = 0.35f),
+                                OnboardingPrimaryGreen.copy(alpha = 0.18f),
+                            ),
+                        ),
+                    )
                     .border(
-                        width = 2.dp,
-                        color = Color(0xFF10B981).copy(alpha = 0.6f),
+                        width = 2.5.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                OnboardingPrimaryGreen,
+                                OnboardingPrimaryGreen.copy(alpha = 0.5f),
+                            ),
+                        ),
                         shape = CircleShape,
                     ),
                 contentAlignment = Alignment.Center,
@@ -1053,19 +1193,19 @@ internal fun OnboardingCompletePage(
                 Icon(
                     imageVector = MiuixIcons.Ok,
                     contentDescription = null,
-                    tint = Color(0xFF10B981),
-                    modifier = Modifier.size(36.dp),
+                    tint = OnboardingPrimaryGreen,
+                    modifier = Modifier.size(38.dp),
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
         Text(
             text = stringResource(R.string.onboarding_complete_title),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = AppTheme.colors.onSurface,
+            color = Color.White,
             textAlign = TextAlign.Center,
         )
 
@@ -1074,52 +1214,53 @@ internal fun OnboardingCompletePage(
         Text(
             text = stringResource(R.string.onboarding_complete_subtitle),
             fontSize = 14.sp,
-            color = AppTheme.colors.onSurfaceVariant,
+            color = Color(0xFF9E9EA8),
             textAlign = TextAlign.Center,
             lineHeight = 20.sp,
             modifier = Modifier.fillMaxWidth(0.85f),
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.defaultColors(
-                color = AppTheme.colors.surface,
-                contentColor = AppTheme.colors.onSurface,
-            ),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(OnboardingCardBackground)
+                .border(1.dp, OnboardingCardBorder, RoundedCornerShape(18.dp))
+                .padding(18.dp),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
+                            .size(12.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF10B981)),
+                            .background(OnboardingPrimaryGreen),
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.onboarding_ready_status_ready),
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = AppTheme.colors.onSurface,
+                        color = Color.White,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                val serverCount = appState.proxyServers.size
+                val totalItems = appState.proxyServers.size + appState.subscriptionGroups.size
                 Text(
-                    text = if (serverCount > 0) {
-                        stringResource(R.string.onboarding_servers_added_count, serverCount)
+                    text = if (totalItems > 0) {
+                        stringResource(R.string.onboarding_servers_added_count, totalItems)
                     } else {
                         stringResource(R.string.onboarding_import_later_hint)
                     },
                     fontSize = 13.sp,
-                    color = AppTheme.colors.onSurfaceVariant,
+                    color = Color(0xFF9E9EA8),
                 )
             }
         }

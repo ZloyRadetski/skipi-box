@@ -8,6 +8,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -48,9 +50,11 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import ui.AppTheme
 
 private const val OnboardingPageCount = 5
+private val OnboardingRootBackground = Color(0xFF0F1014)
+private val OnboardingHeaderChipBg = Color(0xFF1C1D24)
+private val OnboardingHeaderChipBorder = Color(0xFF2C2D38)
 
 @Composable
 fun OnboardingPage(
@@ -71,7 +75,7 @@ fun OnboardingPage(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .background(OnboardingRootBackground),
     ) {
         Column(
             modifier = Modifier
@@ -91,14 +95,15 @@ fun OnboardingPage(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(AppTheme.colors.surfaceVariant.copy(alpha = 0.6f))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .background(OnboardingHeaderChipBg)
+                        .border(1.dp, OnboardingHeaderChipBorder, RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
                 ) {
                     Text(
                         text = "${currentPage + 1} / $OnboardingPageCount",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppTheme.colors.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
                     )
                 }
 
@@ -107,18 +112,19 @@ fun OnboardingPage(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(AppTheme.colors.surfaceVariant.copy(alpha = 0.4f))
+                            .background(OnboardingHeaderChipBg)
+                            .border(1.dp, OnboardingHeaderChipBorder, RoundedCornerShape(20.dp))
                             .clickable {
                                 runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                 onFinish()
                             }
-                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
                     ) {
                         Text(
                             text = stringResource(R.string.onboarding_skip),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = AppTheme.colors.onSurfaceVariant,
+                            color = Color(0xFF9E9EA8),
                         )
                     }
                 } else {
@@ -168,9 +174,10 @@ fun OnboardingPage(
                     if (currentPage > 0) {
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(50.dp)
                                 .clip(CircleShape)
-                                .background(AppTheme.colors.surface)
+                                .background(OnboardingHeaderChipBg)
+                                .border(1.dp, OnboardingHeaderChipBorder, CircleShape)
                                 .clickable {
                                     runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                     scope.launch {
@@ -182,12 +189,12 @@ fun OnboardingPage(
                             Icon(
                                 imageVector = MiuixIcons.Back,
                                 contentDescription = stringResource(R.string.onboarding_back),
-                                tint = AppTheme.colors.onSurface,
+                                tint = Color.White,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
                     } else {
-                        Spacer(modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.size(50.dp))
                     }
 
                     // Expanding Pill Page Indicator
@@ -198,12 +205,12 @@ fun OnboardingPage(
                         repeat(OnboardingPageCount) { index ->
                             val isSelected = currentPage == index
                             val width by animateDpAsState(
-                                targetValue = if (isSelected) 24.dp else 8.dp,
+                                targetValue = if (isSelected) 28.dp else 8.dp,
                                 animationSpec = spring(dampingRatio = 0.74f, stiffness = Spring.StiffnessMediumLow),
                                 label = "dot_w_$index",
                             )
                             val color by animateColorAsState(
-                                targetValue = if (isSelected) AppTheme.colors.accent else AppTheme.colors.surfaceVariant,
+                                targetValue = if (isSelected) OnboardingPrimaryGreen else Color(0xFF2C2D38),
                                 label = "dot_c_$index",
                             )
 
@@ -219,9 +226,9 @@ fun OnboardingPage(
                     // Next / Get Started Action Button
                     Box(
                         modifier = Modifier
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(AppTheme.colors.accent)
+                            .height(50.dp)
+                            .clip(RoundedCornerShape(25.dp))
+                            .background(OnboardingPrimaryGreen)
                             .clickable {
                                 runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                 if (isLastPage) {
@@ -232,7 +239,7 @@ fun OnboardingPage(
                                     }
                                 }
                             }
-                            .padding(horizontal = 22.dp),
+                            .padding(horizontal = 26.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -241,7 +248,7 @@ fun OnboardingPage(
                             } else {
                                 stringResource(R.string.onboarding_next)
                             },
-                            color = AppTheme.colors.onAccent,
+                            color = Color(0xFF062E1A),
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                         )
