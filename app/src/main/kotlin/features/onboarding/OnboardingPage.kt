@@ -50,11 +50,9 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import ui.AppTheme
 
 private const val OnboardingPageCount = 5
-private val OnboardingRootBackground = Color(0xFF0F1014)
-private val OnboardingHeaderChipBg = Color(0xFF1C1D24)
-private val OnboardingHeaderChipBorder = Color(0xFF2C2D38)
 
 @Composable
 fun OnboardingPage(
@@ -71,11 +69,15 @@ fun OnboardingPage(
 
     val currentPage = pagerState.currentPage
     val isLastPage = currentPage == OnboardingPageCount - 1
+    val isDark = AppTheme.colors.isDark
+
+    val headerChipBg = if (isDark) Color(0xFF1C1D24) else Color(0xFFFFFFFF)
+    val headerChipBorder = if (isDark) Color(0xFF2C2D38) else Color(0xFFE5E7EB)
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(OnboardingRootBackground),
+            .background(AppTheme.colors.background),
     ) {
         Column(
             modifier = Modifier
@@ -95,15 +97,15 @@ fun OnboardingPage(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(OnboardingHeaderChipBg)
-                        .border(1.dp, OnboardingHeaderChipBorder, RoundedCornerShape(20.dp))
+                        .background(headerChipBg)
+                        .border(1.dp, headerChipBorder, RoundedCornerShape(20.dp))
                         .padding(horizontal = 14.dp, vertical = 6.dp),
                 ) {
                     Text(
                         text = "${currentPage + 1} / $OnboardingPageCount",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = AppTheme.colors.onSurface,
                     )
                 }
 
@@ -112,8 +114,8 @@ fun OnboardingPage(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(OnboardingHeaderChipBg)
-                            .border(1.dp, OnboardingHeaderChipBorder, RoundedCornerShape(20.dp))
+                            .background(headerChipBg)
+                            .border(1.dp, headerChipBorder, RoundedCornerShape(20.dp))
                             .clickable {
                                 runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                 onFinish()
@@ -124,7 +126,7 @@ fun OnboardingPage(
                             text = stringResource(R.string.onboarding_skip),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF9E9EA8),
+                            color = AppTheme.colors.onSurfaceVariant,
                         )
                     }
                 } else {
@@ -176,8 +178,8 @@ fun OnboardingPage(
                             modifier = Modifier
                                 .size(50.dp)
                                 .clip(CircleShape)
-                                .background(OnboardingHeaderChipBg)
-                                .border(1.dp, OnboardingHeaderChipBorder, CircleShape)
+                                .background(headerChipBg)
+                                .border(1.dp, headerChipBorder, CircleShape)
                                 .clickable {
                                     runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                     scope.launch {
@@ -189,7 +191,7 @@ fun OnboardingPage(
                             Icon(
                                 imageVector = MiuixIcons.Back,
                                 contentDescription = stringResource(R.string.onboarding_back),
-                                tint = Color.White,
+                                tint = AppTheme.colors.onSurface,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
@@ -210,7 +212,7 @@ fun OnboardingPage(
                                 label = "dot_w_$index",
                             )
                             val color by animateColorAsState(
-                                targetValue = if (isSelected) OnboardingPrimaryGreen else Color(0xFF2C2D38),
+                                targetValue = if (isSelected) AppTheme.colors.accent else if (isDark) Color(0xFF2C2D38) else Color(0xFFD1D5DB),
                                 label = "dot_c_$index",
                             )
 
@@ -224,11 +226,20 @@ fun OnboardingPage(
                     }
 
                     // Next / Get Started Action Button
+                    val nextButtonBg by animateColorAsState(
+                        targetValue = AppTheme.colors.accent,
+                        label = "onb_next_bg",
+                    )
+                    val nextButtonText by animateColorAsState(
+                        targetValue = AppTheme.colors.onAccent,
+                        label = "onb_next_text",
+                    )
+
                     Box(
                         modifier = Modifier
                             .height(50.dp)
                             .clip(RoundedCornerShape(25.dp))
-                            .background(OnboardingPrimaryGreen)
+                            .background(nextButtonBg)
                             .clickable {
                                 runCatching { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                                 if (isLastPage) {
@@ -248,7 +259,7 @@ fun OnboardingPage(
                             } else {
                                 stringResource(R.string.onboarding_next)
                             },
-                            color = Color(0xFF062E1A),
+                            color = nextButtonText,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                         )
