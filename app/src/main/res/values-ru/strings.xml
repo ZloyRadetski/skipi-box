@@ -526,6 +526,8 @@
     <string name="proxy_editor_transport_raw">Настройки RAW</string>
     <string name="proxy_editor_header_type">Тип заголовка (Header type)</string>
     <string name="proxy_editor_transport_kcp">Настройки mKCP</string>
+    <string name="proxy_editor_mkcp_seed">mKCP Seed / Пароль (опционально)</string>
+    <string name="proxy_editor_mkcp_host">mKCP DNS Домен / Host (опционально)</string>
     <string name="proxy_editor_mkcp_mtu">mKCP MTU (опционально, по умолчанию 1350)</string>
     <string name="proxy_editor_mkcp_tti">mKCP TTI (опционально, по умолчанию 50)</string>
     <string name="proxy_editor_transport_ws">Настройки WebSocket</string>

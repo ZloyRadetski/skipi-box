@@ -530,6 +530,8 @@ lid">CIDR نامعتبر است</string>
     <string name="proxy_editor_transport_raw">تنظیمات RAW</string>
     <string name="proxy_editor_header_type">نوع سربرگ</string>
     <string name="proxy_editor_transport_kcp">تنظیمات mKCP</string>
+    <string name="proxy_editor_mkcp_seed">mKCP Seed / رمز عبور (اختیاری)</string>
+    <string name="proxy_editor_mkcp_host">دامنه / Host mKCP DNS (اختیاری)</string>
     <string name="proxy_editor_mkcp_mtu">mKCP MTU (اختیاری، پیش‌فرض 1350)</string>
     <string name="proxy_editor_mkcp_tti">mKCP TTI (اختیاری، پیش‌فرض 50)</string>
     <string name="proxy_editor_transport_ws">تنظیمات WebSocket</string>

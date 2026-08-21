@@ -107,6 +107,9 @@ class ProxyServerParserTest {
         val ss = ProxyServer.parse("ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpNeVBhc3N3b3Jk@ss.example.com:8388#SS")
         assertEquals("TCP", ss.getTransportDisplay())
 
+        val vlessMkcp = ProxyServer.parse("vless://uuid@example.com:443?type=kcp#VlessMkcp")
+        assertEquals("mKCP", vlessMkcp.getTransportDisplay())
+
         val wireguard = features.proxy.server.model.Wireguard()
         assertEquals("UDP", wireguard.getTransportDisplay())
 

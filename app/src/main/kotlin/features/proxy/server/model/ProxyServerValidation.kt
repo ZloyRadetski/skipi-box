@@ -147,6 +147,11 @@ internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(par
     when (type) {
         "tcp", "raw" -> validateAllowed(params.headerType ?: "none", "header type", setOf("none", "http"))
         "kcp", "mkcp" -> {
+            validateAllowed(
+                params.headerType ?: "none",
+                "mKCP header type",
+                setOf("none", "srtp", "utp", "wechat-video", "dtls", "wireguard", "dns"),
+            )
             validateOptionalIntRange(params.mtu, "mKCP MTU", KcpMtuMin, KcpMtuMax)
             validateOptionalIntRange(params.tti, "mKCP TTI", KcpTtiMin, KcpTtiMax)
         }

@@ -117,7 +117,49 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             exit = ExitTransition.None,
         ) {
             Column {
+                val kcpHeaderTypeOptions = remember {
+                    listOf("none", "srtp", "utp", "wechat-video", "dtls", "wireguard", "dns")
+                }
+                val kcpHeaderType = remember {
+                    mutableIntStateOf(
+                        kcpHeaderTypeOptions.indexOf(params.headerType).coerceAtLeast(0)
+                    )
+                }
                 SmallTitle(text = stringResource(R.string.proxy_editor_transport_kcp))
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.proxy_editor_header_type),
+                    items = kcpHeaderTypeOptions,
+                    selectedIndex = kcpHeaderType.intValue,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    onSelectedIndexChange = { newHeaderType ->
+                        kcpHeaderType.intValue = newHeaderType
+                        params.headerType = kcpHeaderTypeOptions[newHeaderType]
+                    },
+                )
+                if (kcpHeaderType.intValue == kcpHeaderTypeOptions.indexOf("dns")) {
+                    TextField(
+                        label = stringResource(R.string.proxy_editor_mkcp_host),
+                        state = rememberTextFieldState(initialText = params.host ?: ""),
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        inputTransformation = InputTransformation {
+                            params.host = asCharSequence().toString()
+                        },
+                        modifier = Modifier.padding(bottom = 12.dp),
+                        onKeyboardAction = { focusManager.clearFocus() },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    )
+                }
+                TextField(
+                    label = stringResource(R.string.proxy_editor_mkcp_seed),
+                    state = rememberTextFieldState(initialText = params.seed ?: ""),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    inputTransformation = InputTransformation {
+                        params.seed = asCharSequence().toString()
+                    },
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    onKeyboardAction = { focusManager.clearFocus() },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                )
                 TextField(
                     label = stringResource(R.string.proxy_editor_mkcp_mtu),
                     state = rememberTextFieldState(initialText = params.mtu ?: ""),
