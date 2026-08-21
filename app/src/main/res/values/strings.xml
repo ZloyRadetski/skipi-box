@@ -1177,4 +1177,38 @@
     <string name="onboarding_telegram_feature_news_desc">Stay tuned with development progress and announcements</string>
     <string name="onboarding_telegram_open_button">Join Telegram Channel</string>
     <string name="onboarding_telegram_copied_link">Link copied to clipboard</string>
+<!-- Tools: speed test -->
+    <string name="settings_category_speed_test">Speed test</string>
+    <string name="settings_category_speed_test_summary">Measure ping, download and upload speed</string>
+    <string name="tools_speed_test_title">Speed test</string>
+    <string name="tools_speed_mbps">Mbps</string>
+    <string name="tools_speed_start">Start test</string>
+    <string name="tools_speed_stop">Stop</string>
+    <string name="tools_speed_phase_idle">Ready to measure your connection</string>
+    <string name="tools_speed_phase_ping">Measuring latency…</string>
+    <string name="tools_speed_phase_download">Testing download speed…</string>
+    <string name="tools_speed_phase_upload">Testing upload speed…</string>
+    <string name="tools_speed_phase_finished">Test finished</string>
+    <string name="tools_speed_phase_failed">Test failed</string>
+    <string name="tools_speed_failed">Test failed: %1$s</string>
+    <string name="tools_speed_result_ping">Ping</string>
+    <string name="tools_speed_result_jitter">Jitter</string>
+    <string name="tools_speed_result_download">Download</string>
+    <string name="tools_speed_result_upload">Upload</string>
+<!-- Tools: DNS leak test -->
+    <string name="settings_category_dns_leak">DNS leak test</string>
+    <string name="settings_category_dns_leak_summary">Check which DNS resolvers see your queries</string>
+    <string name="tools_dns_leak_title">DNS leak test</string>
+    <string name="tools_dns_start">Run test</string>
+    <string name="tools_dns_stop">Stop</string>
+    <string name="tools_dns_idle">Run the test to detect your DNS resolvers</string>
+    <string name="tools_dns_running">Resolving probes and collecting results…</string>
+    <string name="tools_dns_failed">Test failed: could not collect results. Check the connection.</string>
+    <string name="tools_dns_no_leak">No DNS leak detected. Queries follow a controlled resolver path.</string>
+    <string name="tools_dns_suspected_leak">DNS leak detected! Queries reach multiple unrelated resolvers.</string>
+    <string name="tools_dns_unknown">Not enough data to judge</string>
+    <string name="tools_dns_resolvers_title">Detected resolvers</string>
+    <string name="tools_dns_description">Unique probe domains are resolved through your current network path (including VPN), then the service reports which resolvers handled them.</string>
+    <string name="tools_dns_resolver_entry">Resolver %1$d</string>
+    <string name="tools_dns_isp_unknown">Unknown provider</string>
 </resources>

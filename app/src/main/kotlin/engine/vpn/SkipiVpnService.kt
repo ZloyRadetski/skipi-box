@@ -67,13 +67,16 @@ class SkipiVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             SkipiVpnServiceIntents.ACTION_STOP -> {
+                // Capture the deferred for this stop request so a late
+                // completion can never resolve a newer caller's deferred.
+                val deferredStop = pendingStop
                 serviceScope.launch {
                     try {
                         operationMutex.withLock {
                             stopVpn()
                         }
                     } finally {
-                        completeStop()
+                        completeStop(deferredStop)
                         stopSelfOnMain(startId)
                     }
                 }
@@ -82,20 +85,24 @@ class SkipiVpnService : VpnService() {
             SkipiVpnServiceIntents.ACTION_START -> {
                 val config = intent.readVpnServiceStartConfig()
                 if (config == null) {
-                    completeStart(Result.failure(IllegalStateException(getString(R.string.error_vpn_start_config_missing))))
+                    completeStart(pendingStart, Result.failure(IllegalStateException(getString(R.string.error_vpn_start_config_missing))))
                     stopSelf(startId)
                     return Service.START_NOT_STICKY
                 }
+                // Capture the deferred for this start request so a late
+                // completion of an earlier (timed-out) start can never
+                // resolve a newer caller's deferred.
+                val deferredStart = pendingStart
                 serviceScope.launch {
                     operationMutex.withLock {
                         runCatching {
                             startVpn(config)
                         }.onSuccess {
-                            completeStart(Result.success(Unit))
+                            completeStart(deferredStart, Result.success(Unit))
                         }.onFailure { error ->
                             AndroidAppLogger.error(LogTag, "Failed to start VPN Service", error)
                             stopVpn()
-                            completeStart(Result.failure(error))
+                            completeStart(deferredStart, Result.failure(error))
                             stopSelfOnMain(startId)
                         }
                     }
@@ -442,14 +449,18 @@ class SkipiVpnService : VpnService() {
             return running && SkipiCoreRuntime.isRunning()
         }
 
-        private fun completeStart(result: Result<Unit>) {
-            pendingStart?.complete(result)
-            pendingStart = null
+        private fun completeStart(target: CompletableDeferred<Result<Unit>>?, result: Result<Unit>) {
+            if (target != null && pendingStart === target) {
+                target.complete(result)
+                pendingStart = null
+            }
         }
 
-        private fun completeStop() {
-            pendingStop?.complete(Unit)
-            pendingStop = null
+        private fun completeStop(target: CompletableDeferred<Unit>?) {
+            if (target != null && pendingStop === target) {
+                target.complete(Unit)
+                pendingStop = null
+            }
         }
 
     }

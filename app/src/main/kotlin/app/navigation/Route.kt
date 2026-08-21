@@ -57,6 +57,14 @@ sealed interface Route : NavKey {
     @Serializable
     data object AccessLogs : Route
 
+    /** Full-screen connection speed test (ping/jitter/download/upload). */
+    @Serializable
+    data object SpeedTest : Route
+
+    /** Full-screen DNS leak test showing which resolvers see the queries. */
+    @Serializable
+    data object DnsLeakTest : Route
+
     @Serializable
     data object LogcatLogs : Route
 

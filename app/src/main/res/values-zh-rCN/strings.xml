@@ -1146,4 +1146,38 @@
     <string name="network_automation_action_switch_if_connected">仅在 VPN 已连接时切换</string>
     <string name="network_automation_type_exists_error">已存在此网络类型的规则</string>
     <string name="network_automation_no_wifi_detected">未连接 Wi-Fi</string>
+<!-- Tools: speed test -->
+    <string name="settings_category_speed_test">测速</string>
+    <string name="settings_category_speed_test_summary">测量延迟、下载和上传速度</string>
+    <string name="tools_speed_test_title">测速</string>
+    <string name="tools_speed_mbps">Mbps</string>
+    <string name="tools_speed_start">开始测试</string>
+    <string name="tools_speed_stop">停止</string>
+    <string name="tools_speed_phase_idle">准备测量您的连接</string>
+    <string name="tools_speed_phase_ping">正在测量延迟…</string>
+    <string name="tools_speed_phase_download">正在测试下载速度…</string>
+    <string name="tools_speed_phase_upload">正在测试上传速度…</string>
+    <string name="tools_speed_phase_finished">测试完成</string>
+    <string name="tools_speed_phase_failed">测试失败</string>
+    <string name="tools_speed_failed">测试失败：%1$s</string>
+    <string name="tools_speed_result_ping">延迟</string>
+    <string name="tools_speed_result_jitter">抖动</string>
+    <string name="tools_speed_result_download">下载</string>
+    <string name="tools_speed_result_upload">上传</string>
+<!-- Tools: DNS leak test -->
+    <string name="settings_category_dns_leak">DNS 泄漏测试</string>
+    <string name="settings_category_dns_leak_summary">检查哪些 DNS 解析器能看到您的查询</string>
+    <string name="tools_dns_leak_title">DNS 泄漏测试</string>
+    <string name="tools_dns_start">运行测试</string>
+    <string name="tools_dns_stop">停止</string>
+    <string name="tools_dns_idle">运行测试以检测您的 DNS 解析器</string>
+    <string name="tools_dns_running">正在解析探测请求并收集结果…</string>
+    <string name="tools_dns_failed">测试失败：无法收集结果。请检查网络连接。</string>
+    <string name="tools_dns_no_leak">未检测到 DNS 泄漏。查询经由受控的解析路径。</string>
+    <string name="tools_dns_suspected_leak">检测到 DNS 泄漏！查询到达了多个无关的解析器。</string>
+    <string name="tools_dns_unknown">数据不足，无法判断</string>
+    <string name="tools_dns_resolvers_title">检测到的解析器</string>
+    <string name="tools_dns_description">通过您当前的网络路径（包括 VPN）解析唯一的探测域名，然后服务会报告哪些解析器处理了这些请求。</string>
+    <string name="tools_dns_resolver_entry">解析器 %1$d</string>
+    <string name="tools_dns_isp_unknown">未知提供商</string>
 </resources>

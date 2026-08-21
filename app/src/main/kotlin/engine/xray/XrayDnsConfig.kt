@@ -144,6 +144,11 @@ private fun AppState.xrayDnsServers(
     val effectiveDirectDnsServers = xrayDirectDnsServers(directDnsServers)
         .takeIf { effectiveDirectDnsDomains.isNotEmpty() }
         .orEmpty()
+    val proxyDns = xrayProxyDnsServers(
+        proxyDnsServers = proxyDnsServers,
+        directDnsServers = directDnsServers,
+        directDnsDomains = effectiveDirectDnsDomains,
+    )
     return buildJsonArray {
         if (effectiveFakeDnsEnabled) {
             add(JsonPrimitive("fakedns"))
@@ -158,11 +163,18 @@ private fun AppState.xrayDnsServers(
                 },
             )
         }
-        xrayProxyDnsServers(
-            proxyDnsServers = proxyDnsServers,
-            directDnsServers = directDnsServers,
-            directDnsDomains = effectiveDirectDnsDomains,
-        ).forEach { server -> add(JsonPrimitive(server)) }
+        proxyDns.forEach { server -> add(JsonPrimitive(server)) }
+        // Direct-DNS entries use skipFallback, so they only resolve their own
+        // domains.  Without fakedns or a proxy DNS entry there would be no
+        // fallback resolver left for every other domain, which breaks DNS
+        // resolution entirely.  Always keep a fallback-capable server.
+        if (!effectiveFakeDnsEnabled && proxyDns.isEmpty()) {
+            add(
+                JsonPrimitive(
+                    tunVpnDns.trim().takeIf(::isIpv4Address) ?: VpnDefaults.IPV4_DNS,
+                ),
+            )
+        }
     }
 }
 

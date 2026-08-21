@@ -1167,4 +1167,38 @@
     <string name="onboarding_telegram_feature_news_desc">Следите за развитием проекта и планами обновлений</string>
     <string name="onboarding_telegram_open_button">Перейти в Telegram-канал</string>
     <string name="onboarding_telegram_copied_link">Ссылка скопирована в буфер обмена</string>
+<!-- Tools: speed test -->
+    <string name="settings_category_speed_test">Тест скорости</string>
+    <string name="settings_category_speed_test_summary">Измерить пинг, скорость загрузки и отдачи</string>
+    <string name="tools_speed_test_title">Тест скорости</string>
+    <string name="tools_speed_mbps">Мбит/с</string>
+    <string name="tools_speed_start">Запустить тест</string>
+    <string name="tools_speed_stop">Остановить</string>
+    <string name="tools_speed_phase_idle">Готов к измерению вашего соединения</string>
+    <string name="tools_speed_phase_ping">Измерение задержки…</string>
+    <string name="tools_speed_phase_download">Проверка скорости загрузки…</string>
+    <string name="tools_speed_phase_upload">Проверка скорости отдачи…</string>
+    <string name="tools_speed_phase_finished">Тест завершён</string>
+    <string name="tools_speed_phase_failed">Ошибка теста</string>
+    <string name="tools_speed_failed">Ошибка теста: %1$s</string>
+    <string name="tools_speed_result_ping">Пинг</string>
+    <string name="tools_speed_result_jitter">Джиттер</string>
+    <string name="tools_speed_result_download">Загрузка</string>
+    <string name="tools_speed_result_upload">Отдача</string>
+<!-- Tools: DNS leak test -->
+    <string name="settings_category_dns_leak">DNS-тест на утечки</string>
+    <string name="settings_category_dns_leak_summary">Проверить, какие DNS-резолверы видят ваши запросы</string>
+    <string name="tools_dns_leak_title">DNS-тест на утечки</string>
+    <string name="tools_dns_start">Запустить тест</string>
+    <string name="tools_dns_stop">Остановить</string>
+    <string name="tools_dns_idle">Запустите тест, чтобы определить ваши DNS-резолверы</string>
+    <string name="tools_dns_running">Разрешение пробных запросов и сбор результатов…</string>
+    <string name="tools_dns_failed">Ошибка теста: не удалось собрать результаты. Проверьте соединение.</string>
+    <string name="tools_dns_no_leak">Утечек DNS не обнаружено. Запросы идут через контролируемый резолвер.</string>
+    <string name="tools_dns_suspected_leak">Обнаружена утечка DNS! Запросы достигают нескольких посторонних резолверов.</string>
+    <string name="tools_dns_unknown">Недостаточно данных для вывода</string>
+    <string name="tools_dns_resolvers_title">Обнаруженные резолверы</string>
+    <string name="tools_dns_description">Уникальные пробные домены разрешаются через ваш текущий сетевой путь (включая VPN), после чего сервис сообщает, какие резолверы их обработали.</string>
+    <string name="tools_dns_resolver_entry">Резолвер %1$d</string>
+    <string name="tools_dns_isp_unknown">Неизвестный провайдер</string>
 </resources>

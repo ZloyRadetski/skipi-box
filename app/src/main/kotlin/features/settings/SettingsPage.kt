@@ -192,6 +192,22 @@ private fun SettingsContent(
                         title = stringResource(R.string.settings_category_backup_reset),
                         summary = stringResource(R.string.settings_category_backup_reset_summary),
                         onClick = { navigator.push(Route.SettingsBackupReset) },
+                        showDivider = true,
+                    )
+                    SettingsCategoryEntry(
+                        icon = SettingsIcons.Bolt,
+                        iconBackgroundColor = MiuixTheme.colorScheme.primary,
+                        title = stringResource(R.string.settings_category_speed_test),
+                        summary = stringResource(R.string.settings_category_speed_test_summary),
+                        onClick = { navigator.push(Route.SpeedTest) },
+                        showDivider = true,
+                    )
+                    SettingsCategoryEntry(
+                        icon = SettingsIcons.Shield,
+                        iconBackgroundColor = MiuixTheme.colorScheme.primary,
+                        title = stringResource(R.string.settings_category_dns_leak),
+                        summary = stringResource(R.string.settings_category_dns_leak_summary),
+                        onClick = { navigator.push(Route.DnsLeakTest) },
                     )
                 }
             }

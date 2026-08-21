@@ -13,6 +13,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import utils.toCsvValues
 import utils.proxyUrlRemarks
+import utils.userInfoOrNull
 
 @Serializable
 data class Wireguard(
@@ -73,7 +74,7 @@ data class Wireguard(
         this.remarks = url.proxyUrlRemarks()
         this.server = url.proxyUrlHost()
         this.port = url.port.toString()
-        this.secretKey = url.user ?: ""
+        this.secretKey = url.userInfoOrNull() ?: ""
         this.publicKey = url.parameters["publickey"] ?: ""
         this.preSharedKey = url.parameters["presharedkey"] ?: ""
         this.reserved = url.parameters["reserved"] ?: "0,0,0"

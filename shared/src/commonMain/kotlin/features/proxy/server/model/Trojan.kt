@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import utils.proxyUrlRemarks
+import utils.userInfoOrNull
 
 @Serializable
 data class Trojan(
@@ -38,7 +39,7 @@ data class Trojan(
 
     override fun parse(url: Url): Trojan {
         this.remarks = url.proxyUrlRemarks()
-        this.password = url.user ?: ""
+        this.password = url.userInfoOrNull() ?: ""
         this.server = url.proxyUrlHost()
         this.port = url.port.toString()
         this.parms = this.parms.parse(url, "raw", "tls")

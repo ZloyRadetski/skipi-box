@@ -13,6 +13,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import utils.proxyUrlRemarks
+import utils.userInfoOrNull
 
 @Serializable
 data class Hysteria2(
@@ -70,7 +71,7 @@ data class Hysteria2(
         this.remarks = url.proxyUrlRemarks()
         this.server = url.proxyUrlHost()
         this.port = url.port.toString()
-        this.auth = url.user ?: ""
+        this.auth = url.userInfoOrNull() ?: ""
         this.obfs = url.parameters["obfs"] ?: ""
         this.obfsPassword = url.parameters["obfs-password"] ?: ""
         this.sni = url.parameters["sni"] ?: ""

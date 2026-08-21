@@ -1166,4 +1166,38 @@ lid">CIDR نامعتبر است</string>
     <string name="settings_private_addresses_selected">{count} مورد</string>
     <string name="settings_private_addresses_input">محدوده CIDR</string>
     <string name="settings_private_addresses_invalid">فرمت CIDR نامعتبر است</string>
+<!-- Tools: speed test -->
+    <string name="settings_category_speed_test">تست سرعت</string>
+    <string name="settings_category_speed_test_summary">اندازه‌گیری پینگ، سرعت دانلود و آپلود</string>
+    <string name="tools_speed_test_title">تست سرعت</string>
+    <string name="tools_speed_mbps">مگابیت بر ثانیه</string>
+    <string name="tools_speed_start">شروع تست</string>
+    <string name="tools_speed_stop">توقف</string>
+    <string name="tools_speed_phase_idle">آماده اندازه‌گیری اتصال شما</string>
+    <string name="tools_speed_phase_ping">در حال اندازه‌گیری تأخیر…</string>
+    <string name="tools_speed_phase_download">در حال تست سرعت دانلود…</string>
+    <string name="tools_speed_phase_upload">در حال تست سرعت آپلود…</string>
+    <string name="tools_speed_phase_finished">تست کامل شد</string>
+    <string name="tools_speed_phase_failed">تست ناموفق بود</string>
+    <string name="tools_speed_failed">تست ناموفق بود: %1$s</string>
+    <string name="tools_speed_result_ping">پینگ</string>
+    <string name="tools_speed_result_jitter">جیتر</string>
+    <string name="tools_speed_result_download">دانلود</string>
+    <string name="tools_speed_result_upload">آپلود</string>
+<!-- Tools: DNS leak test -->
+    <string name="settings_category_dns_leak">تست نشتی DNS</string>
+    <string name="settings_category_dns_leak_summary">بررسی اینکه کدام مبدل‌های DNS درخواست‌های شما را می‌بینند</string>
+    <string name="tools_dns_leak_title">تست نشتی DNS</string>
+    <string name="tools_dns_start">اجرای تست</string>
+    <string name="tools_dns_stop">توقف</string>
+    <string name="tools_dns_idle">برای تشخیص مبدل‌های DNS خود تست را اجرا کنید</string>
+    <string name="tools_dns_running">در حال حل درخواست‌های آزمایشی و جمع‌آوری نتایج…</string>
+    <string name="tools_dns_failed">تست ناموفق بود: جمع‌آوری نتایج ممکن نشد. اتصال را بررسی کنید.</string>
+    <string name="tools_dns_no_leak">نشتی DNS شناسایی نشد. درخواست‌ها از مسیر مبدل کنترل‌شده عبور می‌کنند.</string>
+    <string name="tools_dns_suspected_leak">نشتی DNS شناسایی شد! درخواست‌ها به چند مبدل بی‌ربط می‌رسند.</string>
+    <string name="tools_dns_unknown">داده کافی برای قضاوت وجود ندارد</string>
+    <string name="tools_dns_resolvers_title">مبدل‌های شناسایی‌شده</string>
+    <string name="tools_dns_description">دامنه‌های آزمایشی یکتا از طریق مسیر شبکه فعلی شما (از جمله VPN) حل می‌شوند و سپس سرویس گزارش می‌دهد کدام مبدل‌ها آن‌ها را پردازش کرده‌اند.</string>
+    <string name="tools_dns_resolver_entry">مبدل %1$d</string>
+    <string name="tools_dns_isp_unknown">ارائه‌دهنده ناشناس</string>
 </resources>

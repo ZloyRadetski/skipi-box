@@ -286,6 +286,16 @@ fun AppContent(
                         LogcatLogsPage(padding = padding)
                     }
                 }
+                entry<Route.SpeedTest> {
+                    key(languageMode) {
+                        features.tools.speedtest.SpeedTestPage(padding = padding)
+                    }
+                }
+                entry<Route.DnsLeakTest> {
+                    key(languageMode) {
+                        features.tools.dnsleak.DnsLeakTestPage(padding = padding)
+                    }
+                }
                 entry<Route.ResourceManagement> { route ->
                     key(languageMode) {
                         ResourceManagementPage(
