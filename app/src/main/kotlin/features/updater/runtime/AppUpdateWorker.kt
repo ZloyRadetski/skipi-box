@@ -33,7 +33,7 @@ internal class AppUpdateWorker(
         }
 
         AndroidAppLogger.debug(LogTag, "Checking for app updates in background worker...")
-        val checker = GitHubReleaseChecker()
+        val checker = GitHubReleaseChecker(applicationContext)
         val update = checker.checkLatestRelease()
 
         if (update != null) {

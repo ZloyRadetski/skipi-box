@@ -35,11 +35,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.net.ConnectivityManager
 import android.net.Network
-import android.net.NetworkCapabilities
 import app.LocalAppChromeState
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.R
+import engine.network.TunnelNetworks
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -88,7 +88,7 @@ fun DnsLeakTestPage(
                 // The app is excluded from its own VPN tunnel, so the probe
                 // sockets must be explicitly bound to the VPN network to
                 // traverse it like any other app's traffic would.
-                val vpnNetwork = locateVpnNetwork(connectivity)
+                val vpnNetwork = TunnelNetworks.locateVpnNetwork(context)
                 DnsLeakTestEngine(
                     systemDnsServers = locateSystemDnsServers(connectivity, vpnNetwork),
                     onProgress = {},
@@ -277,14 +277,6 @@ private fun ResolverCard(resolver: DnsLeakResolver) {
                 )
             }
         }
-    }
-}
-
-/** The device's active VPN network, if any. */
-private fun locateVpnNetwork(connectivity: ConnectivityManager?): Network? {
-    return connectivity?.allNetworks?.firstOrNull { network ->
-        connectivity.getNetworkCapabilities(network)
-            ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
     }
 }
 

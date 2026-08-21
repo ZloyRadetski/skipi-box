@@ -249,7 +249,7 @@ internal fun AboutUpdatesCard(
                 }
                 isChecking = true
                 scope.launch {
-                    val update = GitHubReleaseChecker().checkLatestRelease()
+                    val update = GitHubReleaseChecker(context).checkLatestRelease()
                     isChecking = false
                     if (update != null) {
                         updateAppState { it.copy(availableAppUpdate = update, dismissedUpdateVersion = "") }

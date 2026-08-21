@@ -9,6 +9,7 @@ import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import features.logs.AndroidAppLogger
+import engine.network.TunnelNetworks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -105,7 +106,9 @@ internal class AppUpdateDownloader(
         var currentUrl = initialUrl
         var redirectCount = 0
         while (redirectCount < maxRedirects) {
-            val connection = (URL(currentUrl).openConnection() as HttpURLConnection).apply {
+            // The app is excluded from its own VPN, so bind to the tunnel
+            // explicitly when it is up to download the APK through it.
+            val connection = (TunnelNetworks.openHttpConnection(context, URL(currentUrl)) as HttpURLConnection).apply {
                 instanceFollowRedirects = false
                 connectTimeout = 30000
                 readTimeout = 60000

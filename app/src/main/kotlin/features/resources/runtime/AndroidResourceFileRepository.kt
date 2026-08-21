@@ -22,7 +22,7 @@ internal class AndroidResourceFileRepository(
 ) {
     private val appContext = context.applicationContext
     private val store = AndroidResourceFileStore(appContext)
-    private val downloader = AndroidResourceFileDownloader()
+    private val downloader = AndroidResourceFileDownloader(appContext)
 
     suspend fun status(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus =
         withContext(Dispatchers.IO) {

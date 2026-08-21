@@ -3,8 +3,10 @@
 
 package features.updater
 
+import android.content.Context
 import android.os.Build
 import app.ProjectInfo
+import engine.network.TunnelNetworks
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,12 +27,15 @@ private const val LogTag = "GitHubReleaseChecker"
 private const val GitHubApiUrl = "https://api.github.com/repos/ZloyRadetski/skipi-box/releases/latest"
 
 internal class GitHubReleaseChecker(
+    private val context: Context? = null,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     suspend fun checkLatestRelease(): AppUpdateInfo? = withContext(Dispatchers.IO) {
         runCatching {
             val url = URL(GitHubApiUrl)
-            val connection = (url.openConnection() as HttpURLConnection).apply {
+            // The app is excluded from its own VPN, so bind to the tunnel
+            // explicitly when it is up; otherwise check via the direct path.
+            val connection = (TunnelNetworks.openHttpConnection(context, url) as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 15000
                 readTimeout = 20000

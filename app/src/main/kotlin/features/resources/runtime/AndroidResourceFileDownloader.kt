@@ -3,6 +3,8 @@
 
 package features.resources.runtime
 
+import android.content.Context
+import android.net.Network
 import java.io.File
 import java.io.IOException
 import java.net.Authenticator
@@ -11,8 +13,11 @@ import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URI
+import engine.network.TunnelNetworks
 
-internal class AndroidResourceFileDownloader {
+internal class AndroidResourceFileDownloader(
+    private val context: Context? = null,
+) {
     fun download(
         url: String,
         target: File,
@@ -67,9 +72,12 @@ internal class AndroidResourceFileDownloader {
         userAgent: String?,
         onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit,
     ) {
+        // The app is excluded from its own VPN, so without an explicit bind
+        // geo file downloads would bypass the active tunnel.
+        val vpnNetwork = TunnelNetworks.locateVpnNetwork(context)
         var currentUrl = url
         repeat(MaxRedirects) {
-            val connection = URI.create(currentUrl).toUrlConnection(proxy, userAgent)
+            val connection = URI.create(currentUrl).toUrlConnection(proxy, userAgent, vpnNetwork)
             try {
                 AndroidResourceFileDownloadCancellation.track(connection)
                 AndroidResourceFileDownloadCancellation.throwIfCancelled()
@@ -107,12 +115,17 @@ internal data class AndroidResourceFileDownloadProxy(
     val password: String,
 )
 
-private fun URI.toUrlConnection(proxy: AndroidResourceFileDownloadProxy?, userAgent: String? = null): HttpURLConnection {
+private fun URI.toUrlConnection(
+    proxy: AndroidResourceFileDownloadProxy?,
+    userAgent: String? = null,
+    vpnNetwork: Network? = null,
+): HttpURLConnection {
     val url = toURL()
-    val connection = if (proxy == null) {
-        url.openConnection()
-    } else {
-        url.openConnection(proxy.toJavaProxy())
+    val connection = when {
+        proxy != null -> url.openConnection(proxy.toJavaProxy())
+        // Explicit SOCKS proxy wins; otherwise prefer the VPN tunnel when up.
+        vpnNetwork != null -> vpnNetwork.openConnection(url)
+        else -> url.openConnection()
     }
     return (connection as HttpURLConnection).apply {
         connectTimeout = 15_000

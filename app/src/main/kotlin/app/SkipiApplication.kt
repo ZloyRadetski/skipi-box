@@ -99,7 +99,7 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                     appUpdateScheduleGateway.schedulePeriodicCheck(autoCheck, autoInstall)
                     if (autoCheck) {
                         launch(Dispatchers.IO) {
-                            val update = features.updater.GitHubReleaseChecker().checkLatestRelease()
+                            val update = features.updater.GitHubReleaseChecker(applicationContext).checkLatestRelease()
                             if (update != null) {
                                 stateStore.update { it.copy(availableAppUpdate = update) }
                             }
