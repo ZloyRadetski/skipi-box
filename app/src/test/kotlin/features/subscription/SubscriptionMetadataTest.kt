@@ -125,4 +125,20 @@ class SubscriptionMetadataTest {
         assertTrue(metadataAutoRouting.embeddedConfig?.isUrl == true)
         assertTrue(metadataAutoRouting.embeddedConfig?.activate == true)
     }
+
+    @Test
+    fun parse_embedded_config_from_routing_header_with_direct_url() {
+        val response = SubscriptionFetchResponse(
+            body = "vless://uuid@server:443#Node1",
+            headers = mapOf(
+                "routing" to "https://example.com/configs/direct_routing.conf",
+            ),
+        )
+
+        val metadata = response.subscriptionMetadata()
+        assertNotNull(metadata.embeddedConfig)
+        assertEquals("https://example.com/configs/direct_routing.conf", metadata.embeddedConfig?.payload)
+        assertTrue(metadata.embeddedConfig?.isUrl == true)
+        assertTrue(metadata.embeddedConfig?.activate == true)
+    }
 }

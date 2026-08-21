@@ -91,7 +91,7 @@ internal fun SubscriptionFetchResponse.subscriptionMetadata(): SubscriptionMetad
             ?.takeIf { it > 0 }
             ?.toString()
 
-    val embeddedConfig = parseSubscriptionEmbeddedConfig(normalizedHeaders, body)
+    val embeddedConfig = parseSubscriptionEmbeddedConfig(normalizedHeaders, bodyComments, body)
 
     return SubscriptionMetadata(
         profileTitle = profileTitle,
@@ -129,11 +129,15 @@ private fun parseBodyCommentMetadata(body: String): Map<String, String> {
 
 private fun parseSubscriptionEmbeddedConfig(
     headers: Map<String, String>,
+    bodyComments: Map<String, String>,
     body: String,
 ): SubscriptionEmbeddedConfig? {
     // 1. Check response headers
     val autoroutingHeader = headers[AutoroutingHeader]?.trim()?.takeIf(String::isNotEmpty)
+        ?: bodyComments[AutoroutingHeader]?.trim()?.takeIf(String::isNotEmpty)
     if (autoroutingHeader != null) {
+        val fromScheme = autoroutingHeader.toSubscriptionEmbeddedConfigOrNull()
+        if (fromScheme != null) return fromScheme
         val isUrl = autoroutingHeader.startsWith("http://", ignoreCase = true) ||
             autoroutingHeader.startsWith("https://", ignoreCase = true)
         return SubscriptionEmbeddedConfig(payload = autoroutingHeader, activate = true, isUrl = isUrl)
@@ -142,6 +146,9 @@ private fun parseSubscriptionEmbeddedConfig(
     val routingHeader = headers[RoutingHeader]?.trim()?.takeIf(String::isNotEmpty)
         ?: headers[SkipiConfigHeader]?.trim()?.takeIf(String::isNotEmpty)
         ?: headers[ConfigHeader]?.trim()?.takeIf(String::isNotEmpty)
+        ?: bodyComments[RoutingHeader]?.trim()?.takeIf(String::isNotEmpty)
+        ?: bodyComments[SkipiConfigHeader]?.trim()?.takeIf(String::isNotEmpty)
+        ?: bodyComments[ConfigHeader]?.trim()?.takeIf(String::isNotEmpty)
     if (routingHeader != null) {
         val fromScheme = routingHeader.toSubscriptionEmbeddedConfigOrNull()
         if (fromScheme != null) return fromScheme
@@ -176,7 +183,7 @@ private fun String.toSubscriptionEmbeddedConfigOrNull(): SubscriptionEmbeddedCon
         "://routing/onadd/" to true,
         "://routing/add/" to false,
         "://onadd/" to true,
-        "://routing/" to false,
+        "://routing/" to true,
     )
 
     for ((prefix, activate) in prefixes) {
@@ -192,6 +199,14 @@ private fun String.toSubscriptionEmbeddedConfigOrNull(): SubscriptionEmbeddedCon
                 )
             }
         }
+    }
+
+    if (trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)) {
+        return SubscriptionEmbeddedConfig(
+            payload = trimmed,
+            activate = true,
+            isUrl = true,
+        )
     }
 
     return null
