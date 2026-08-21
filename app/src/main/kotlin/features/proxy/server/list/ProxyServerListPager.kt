@@ -61,6 +61,7 @@ import app.collectProxyServerLatency
 import app.proxyServerIdFromOutboundTag
 import app.navigation.Navigator
 import app.navigation.Route
+import app.navigation.TrafficConfigEditorSection
 import data.AndroidAppStateStore
 import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.model.StrategyGroup
@@ -830,16 +831,26 @@ private fun ProxyServerListItem(
             }
         },
         onEdit = {
-            navigator.navigateForResult(
-                route = Route.ProxyServerEditor(
-                    ps = server.server,
-                    serverId = server.id,
-                    groupId = server.groupId,
-                    returnGroupId = pageGroupId,
-                    resultKey = resultKey,
-                ),
-                requestKey = resultKey,
-            )
+            val sourceTrafficConfigId = (server.server as? StrategyGroup)?.sourceTrafficConfigId
+            if (sourceTrafficConfigId != null) {
+                navigator.push(
+                    Route.TrafficConfigSection(
+                        trafficConfigId = sourceTrafficConfigId,
+                        section = TrafficConfigEditorSection.ProxyGroups,
+                    ),
+                )
+            } else {
+                navigator.navigateForResult(
+                    route = Route.ProxyServerEditor(
+                        ps = server.server,
+                        serverId = server.id,
+                        groupId = server.groupId,
+                        returnGroupId = pageGroupId,
+                        resultKey = resultKey,
+                    ),
+                    requestKey = resultKey,
+                )
+            }
         },
         onDelete = {
             onDeleteServer(server)
