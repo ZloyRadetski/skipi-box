@@ -3,6 +3,7 @@
 
 package features.tools.dnsleak
 
+import android.net.Network
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,10 +25,17 @@ import java.net.URL
  * with the device's HTTP exit network (api.ipify.org + ipwho.is): when the VPN
  * tunnels DNS properly, all paths expose the exit network; a path that
  * resolves through the home ISP instead is a leak.
+ *
+ * The app itself is excluded from its own VPN tunnel (to protect Xray's
+ * outbound connections from looping), so without help every socket created
+ * here would bypass the tunnel. When [vpnNetwork] is set, all sockets are
+ * bound to it, making the probes and the exit check traverse the tunnel
+ * exactly like other apps' traffic.
  */
 internal class DnsLeakTestEngine(
     private val systemDnsServers: List<String>,
     private val onProgress: (Int) -> Unit,
+    private val vpnNetwork: Network? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     suspend fun run(): DnsLeakTestOutcome = withContext(ioDispatcher) {
@@ -67,7 +75,11 @@ internal class DnsLeakTestEngine(
         }.distinctBy { it.first }
         servers.map { (server, isSystemServer) ->
             async {
-                val records = RawDnsClient.queryTxt(server, EchoDomain)
+                val records = RawDnsClient.queryTxt(
+                    server = server,
+                    domain = EchoDomain,
+                    network = vpnNetwork,
+                )
                 DnsProbeResult(
                     server = server,
                     isSystemServer = isSystemServer,
@@ -102,7 +114,10 @@ internal class DnsLeakTestEngine(
         }
 
     private fun httpGetText(url: String): String? {
-        val connection = URL(url).openConnection() as HttpURLConnection
+        // Bound to the VPN network when present, so the exit check reflects
+        // the tunnel egress rather than the app's direct (VPN-excluded) path.
+        val connection = vpnNetwork?.openConnection(URL(url)) as? HttpURLConnection
+            ?: URL(url).openConnection() as HttpURLConnection
         try {
             connection.connectTimeout = 10_000
             connection.readTimeout = 15_000

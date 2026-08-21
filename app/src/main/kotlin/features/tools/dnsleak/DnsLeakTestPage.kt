@@ -34,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import app.LocalAppChromeState
 import app.LocalIsWideScreen
 import app.LocalNavigator
@@ -64,13 +66,7 @@ fun DnsLeakTestPage(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val systemDnsServers = remember {
-        val connectivity = context.getSystemService(ConnectivityManager::class.java)
-        connectivity?.activeNetwork
-            ?.let { connectivity.getLinkProperties(it)?.dnsServers }
-            ?.mapNotNull { it.hostAddress }
-            .orEmpty()
-    }
+    val connectivity = remember { context.getSystemService(ConnectivityManager::class.java) }
 
     var running by remember { mutableStateOf(false) }
     var outcome by remember { mutableStateOf<DnsLeakTestOutcome?>(null) }
@@ -89,9 +85,14 @@ fun DnsLeakTestPage(
         outcome = null
         job = scope.launch {
             runCatching {
+                // The app is excluded from its own VPN tunnel, so the probe
+                // sockets must be explicitly bound to the VPN network to
+                // traverse it like any other app's traffic would.
+                val vpnNetwork = locateVpnNetwork(connectivity)
                 DnsLeakTestEngine(
-                    systemDnsServers = systemDnsServers,
+                    systemDnsServers = locateSystemDnsServers(connectivity, vpnNetwork),
                     onProgress = {},
+                    vpnNetwork = vpnNetwork,
                 ).run()
             }
                 .onSuccess { result ->
@@ -277,4 +278,28 @@ private fun ResolverCard(resolver: DnsLeakResolver) {
             }
         }
     }
+}
+
+/** The device's active VPN network, if any. */
+private fun locateVpnNetwork(connectivity: ConnectivityManager?): Network? {
+    return connectivity?.allNetworks?.firstOrNull { network ->
+        connectivity.getNetworkCapabilities(network)
+            ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+    }
+}
+
+/**
+ * DNS servers of the reference network: the VPN's own servers while a tunnel
+ * is up (that is what other apps resolve through), otherwise the physical
+ * network's servers.
+ */
+private fun locateSystemDnsServers(
+    connectivity: ConnectivityManager?,
+    vpnNetwork: Network?,
+): List<String> {
+    val connectivityManager = connectivity ?: return emptyList()
+    val network = vpnNetwork ?: connectivityManager.activeNetwork ?: return emptyList()
+    return connectivityManager.getLinkProperties(network)?.dnsServers
+        ?.mapNotNull { it.hostAddress }
+        .orEmpty()
 }

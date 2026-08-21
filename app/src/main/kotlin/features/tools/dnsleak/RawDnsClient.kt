@@ -3,6 +3,7 @@
 
 package features.tools.dnsleak
 
+import android.net.Network
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -13,14 +14,25 @@ import kotlin.random.Random
  * returns the character strings of the first TXT answer record. Used to ask
  * Google's echo record which resolver egress and EDNS Client Subnet our
  * queries expose. No external DNS library is required.
+ *
+ * When [network] is provided the socket is bound to it, forcing the query
+ * through that network (the VPN tunnel) instead of the default one - the app
+ * itself is excluded from its own VPN, so binding is required to probe the
+ * same path other apps' DNS traffic takes.
  */
 internal object RawDnsClient {
 
     /** Returns the TXT strings of the answer, or null on any failure/timeout. */
-    fun queryTxt(server: String, domain: String, timeoutMillis: Int = 4_000): List<String>? {
+    fun queryTxt(
+        server: String,
+        domain: String,
+        timeoutMillis: Int = 4_000,
+        network: Network? = null,
+    ): List<String>? {
         return runCatching {
             DatagramSocket().use { socket ->
                 socket.soTimeout = timeoutMillis
+                network?.bindSocket(socket)
                 val transactionId = Random.nextInt(0, 0xFFFF)
                 val query = buildQuery(transactionId, domain)
                 val address = InetAddress.getByName(server)
