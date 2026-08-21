@@ -27,6 +27,7 @@ import features.subscription.SubscriptionMetadata
 internal data class ResolvedEmbeddedTrafficConfig(
     val content: String,
     val sourceUrl: String = "",
+    val fallbackName: String = "Config",
     val activate: Boolean = false,
 )
 
@@ -394,6 +395,7 @@ internal fun AppState.withUpdatedSubscriptionServers(
                 finalState.withImportedTrafficConfig(
                     content = config.content,
                     activate = config.activate,
+                    fallbackName = config.fallbackName,
                     sourceUrl = config.sourceUrl,
                 )
             }.getOrDefault(finalState)

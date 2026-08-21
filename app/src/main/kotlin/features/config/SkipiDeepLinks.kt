@@ -100,28 +100,47 @@ internal fun AppState.withImportedTrafficConfig(
     require(analysis.diagnostics.none { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
         analysis.diagnostics.first { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }.message
     }
-    val existing = trafficConfigs.firstOrNull { it.sourceUrl.isNotBlank() && it.sourceUrl.equals(sourceUrl.trim(), ignoreCase = true) }
-    if (existing != null) {
-        val updated = existing.copy(rawConfig = normalized).withSkipiSettingsReadFromRawConfig()
-        return withUpdatedTrafficConfig(existing.id) { updated }.let { state ->
-            if (activate) state.copy(activeTrafficConfigId = existing.id) else state
-        }.withConfigProxyGroupsReflected()
-    }
-    val configId = nextTrafficConfigId
-    val name = normalized.lineSequence()
+    val configName = normalized.lineSequence()
         .firstOrNull { line -> line.trim().startsWith("#") && line.contains("name", ignoreCase = true) }
         ?.substringAfter(':')
         ?.trim()
         ?.takeIf(String::isNotBlank)
-        ?: "$fallbackName $configId"
+
+    val cleanSourceUrl = sourceUrl.trim()
+    val existing = trafficConfigs.firstOrNull { config ->
+        when {
+            cleanSourceUrl.isNotBlank() && config.sourceUrl.isNotBlank() && config.sourceUrl.trim().equals(cleanSourceUrl, ignoreCase = true) -> true
+            configName != null && config.name.trim().equals(configName, ignoreCase = true) -> true
+            fallbackName.isNotBlank() && fallbackName != "Config" && config.name.trim().equals(fallbackName.trim(), ignoreCase = true) -> true
+            else -> false
+        }
+    }
+    if (existing != null) {
+        val effectiveSourceUrl = if (cleanSourceUrl.isNotBlank()) cleanSourceUrl else existing.sourceUrl
+        val updated = existing.copy(
+            rawConfig = normalized,
+            name = configName ?: existing.name,
+            sourceUrl = effectiveSourceUrl,
+        ).withSkipiSettingsReadFromRawConfig().let { parsed ->
+            parsed.copy(
+                sourceUrl = effectiveSourceUrl.ifBlank { parsed.sourceUrl },
+                name = configName ?: existing.name,
+            ).withSkipiSettingsInRawConfig()
+        }
+        return withUpdatedTrafficConfig(existing.id) { updated }.let { state ->
+            if (activate) state.copy(activeTrafficConfigId = existing.id) else state
+        }
+    }
+    val configId = nextTrafficConfigId
+    val name = configName ?: if (fallbackName.isNotBlank() && fallbackName != "Config") fallbackName else "$fallbackName $configId"
     val imported = TrafficConfigState(
         id = configId,
         name = name,
-        sourceUrl = sourceUrl.trim(),
+        sourceUrl = cleanSourceUrl,
         rawConfig = normalized,
     ).withSkipiSettingsReadFromRawConfig().let { parsed ->
         parsed.copy(
-            sourceUrl = sourceUrl.trim().ifBlank { parsed.sourceUrl },
+            sourceUrl = cleanSourceUrl.ifBlank { parsed.sourceUrl },
         ).withSkipiSettingsInRawConfig()
     }
     return copy(

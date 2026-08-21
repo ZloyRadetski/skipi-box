@@ -117,7 +117,8 @@ private suspend fun updateSubscriptionGroup(
             content?.takeIf(String::isNotBlank)?.let { configContent ->
                 features.proxy.server.usecase.ResolvedEmbeddedTrafficConfig(
                     content = configContent,
-                    sourceUrl = if (embedded.isUrl) embedded.payload else "",
+                    sourceUrl = if (embedded.isUrl) embedded.payload.trim() else "subscription://${group.id}",
+                    fallbackName = group.name.ifBlank { "Subscription Config" },
                     activate = embedded.activate,
                 )
             }
