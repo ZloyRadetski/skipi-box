@@ -44,8 +44,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ui.AppTheme
 
+import android.graphics.Matrix
+import android.graphics.ImageDecoder
+import android.media.ExifInterface
+import android.os.Build
+
 private const val BackgroundPhotoFileName = "custom_background.jpg"
-private const val MaxPhotoDimension = 2048
+private const val MaxPhotoDimension = 2560
 
 var backgroundPhotoUpdateSeed by mutableLongStateOf(0L)
     private set
@@ -61,34 +66,45 @@ fun customBackgroundPhotoPath(context: Context): String? {
     return if (file.exists()) file.absolutePath else null
 }
 
+fun loadCustomBackgroundBitmap(context: Context): ImageBitmap? {
+    val file = customBackgroundPhotoFile(context)
+    if (!file.exists() || file.length() == 0L) return null
+    return runCatching {
+        val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, boundsOptions)
+        val width = boundsOptions.outWidth
+        val height = boundsOptions.outHeight
+        if (width <= 0 || height <= 0) return null
+
+        val displayMetrics = context.resources.displayMetrics
+        val maxTarget = maxOf(displayMetrics.widthPixels, displayMetrics.heightPixels, MaxPhotoDimension)
+        var sampleSize = 1
+        while (width / (sampleSize * 2) >= maxTarget && height / (sampleSize * 2) >= maxTarget) {
+            sampleSize *= 2
+        }
+
+        val decodeOptions = BitmapFactory.Options().apply {
+            inSampleSize = sampleSize
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val bitmap = BitmapFactory.decodeFile(file.absolutePath, decodeOptions) ?: return null
+        bitmap.asImageBitmap()
+    }.getOrNull()
+}
+
 suspend fun saveCustomBackgroundPhoto(context: Context, uri: Uri): Boolean =
     withContext(Dispatchers.IO) {
         runCatching {
-            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@runCatching false
-            if (bytes.isEmpty()) return@runCatching false
-
-            val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, boundsOptions)
-
-            val width = boundsOptions.outWidth
-            val height = boundsOptions.outHeight
-            if (width <= 0 || height <= 0) return@runCatching false
-
-            var sampleSize = 1
-            while (width / sampleSize > MaxPhotoDimension || height / sampleSize > MaxPhotoDimension) {
-                sampleSize *= 2
-            }
-
-            val decodeOptions = BitmapFactory.Options().apply {
-                inSampleSize = sampleSize
-                inPreferredConfig = Bitmap.Config.ARGB_8888
-            }
-
-            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions) ?: return@runCatching false
-
+            val bitmap = decodeBitmapFromUri(context, uri) ?: return@runCatching false
             val targetFile = customBackgroundPhotoFile(context)
-            FileOutputStream(targetFile).use { output ->
+            val tempFile = File(context.filesDir, "custom_background_tmp.jpg")
+            FileOutputStream(tempFile).use { output ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)
+            }
+            bitmap.recycle()
+            if (tempFile.exists() && tempFile.length() > 0) {
+                if (targetFile.exists()) targetFile.delete()
+                tempFile.renameTo(targetFile)
             }
             withContext(Dispatchers.Main.immediate) {
                 backgroundPhotoUpdateSeed = System.currentTimeMillis()
@@ -96,6 +112,73 @@ suspend fun saveCustomBackgroundPhoto(context: Context, uri: Uri): Boolean =
             true
         }.getOrDefault(false)
     }
+
+private fun decodeBitmapFromUri(context: Context, uri: Uri): Bitmap? {
+    return runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val source = ImageDecoder.createSource(context.contentResolver, uri)
+            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                val width = info.size.width
+                val height = info.size.height
+                var sampleSize = 1
+                while (width / (sampleSize * 2) >= MaxPhotoDimension || height / (sampleSize * 2) >= MaxPhotoDimension) {
+                    sampleSize *= 2
+                }
+                if (sampleSize > 1) {
+                    decoder.setTargetSampleSize(sampleSize)
+                }
+            }
+        } else {
+            val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, boundsOptions)
+            }
+            val width = boundsOptions.outWidth
+            val height = boundsOptions.outHeight
+            if (width <= 0 || height <= 0) return null
+
+            var sampleSize = 1
+            while (width / (sampleSize * 2) >= MaxPhotoDimension || height / (sampleSize * 2) >= MaxPhotoDimension) {
+                sampleSize *= 2
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+            val decoded = context.contentResolver.openInputStream(uri)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, decodeOptions)
+            } ?: return null
+
+            val rotationDegrees = getExifRotation(context, uri)
+            if (rotationDegrees != 0) {
+                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+                val rotated = Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+                if (rotated != decoded) {
+                    decoded.recycle()
+                }
+                rotated
+            } else {
+                decoded
+            }
+        }
+    }.getOrNull()
+}
+
+private fun getExifRotation(context: Context, uri: Uri): Int {
+    return runCatching {
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            val exif = ExifInterface(stream)
+            when (exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270
+                else -> 0
+            }
+        } ?: 0
+    }.getOrDefault(0)
+}
 
 fun clearCustomBackgroundPhoto(context: Context): Boolean {
     val file = customBackgroundPhotoFile(context)
@@ -120,14 +203,7 @@ fun AppBackground(
     when (appState.backgroundStyle) {
         BackgroundStylePhoto -> {
             val photoBitmap: ImageBitmap? = remember(photoSeed, appState.backgroundStyle) {
-                val file = customBackgroundPhotoFile(context)
-                if (file.exists()) {
-                    runCatching {
-                        BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                    }.getOrNull()
-                } else {
-                    null
-                }
+                loadCustomBackgroundBitmap(context)
             }
 
             Box(

@@ -400,7 +400,6 @@ fun TrafficConfigPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppTheme.colors.background)
             .statusBarsPadding(),
     ) {
         LazyColumn(
