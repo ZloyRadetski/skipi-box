@@ -1173,6 +1173,7 @@
     <string name="tools_dns_idle">运行测试以检测您的 DNS 解析器</string>
     <string name="tools_dns_running">正在解析探测请求并收集结果…</string>
     <string name="tools_dns_failed">测试失败：无法收集结果。请检查网络连接。</string>
+    <string name="tools_dns_failed_detail">原因：%1$s</string>
     <string name="tools_dns_no_leak">未检测到 DNS 泄漏。查询经由受控的解析路径。</string>
     <string name="tools_dns_suspected_leak">检测到 DNS 泄漏！查询到达了多个无关的解析器。</string>
     <string name="tools_dns_unknown">数据不足，无法判断</string>

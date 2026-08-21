@@ -1204,6 +1204,7 @@
     <string name="tools_dns_idle">Run the test to detect your DNS resolvers</string>
     <string name="tools_dns_running">Resolving probes and collecting results…</string>
     <string name="tools_dns_failed">Test failed: could not collect results. Check the connection.</string>
+    <string name="tools_dns_failed_detail">Reason: %1$s</string>
     <string name="tools_dns_no_leak">No DNS leak detected. Queries follow a controlled resolver path.</string>
     <string name="tools_dns_suspected_leak">DNS leak detected! Queries reach multiple unrelated resolvers.</string>
     <string name="tools_dns_unknown">Not enough data to judge</string>

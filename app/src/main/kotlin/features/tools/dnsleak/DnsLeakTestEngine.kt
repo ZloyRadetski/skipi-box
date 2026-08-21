@@ -65,12 +65,36 @@ internal class DnsLeakTestEngine(
     private suspend fun fetchResults(token: String): List<DnsLeakRecord> {
         // Give the probe service a moment to collect all resolver hits.
         kotlinx.coroutines.delay(ResultSettleDelayMillis)
+        var lastError: Throwable? = null
+        repeat(ResultFetchAttempts) { attempt ->
+            try {
+                return fetchResultsOnce(token)
+            } catch (error: Throwable) {
+                lastError = error
+                AndroidAppLogger.warn(
+                    LogTag,
+                    "Result fetch attempt ${attempt + 1}/$ResultFetchAttempts failed",
+                    error,
+                )
+                if (attempt < ResultFetchAttempts - 1) {
+                    kotlinx.coroutines.delay(ResultRetryDelayMillis)
+                }
+            }
+        }
+        throw IOException("Could not collect DNS leak results", lastError)
+    }
+
+    private fun fetchResultsOnce(token: String): List<DnsLeakRecord> {
         val connection = URL("https://$ProbeDomain/dnsleak/test/$token?json")
             .openConnection() as HttpURLConnection
         try {
             connection.connectTimeout = 15_000
             connection.readTimeout = 20_000
             connection.instanceFollowRedirects = true
+            // The result feed rejects requests without a browser-like
+            // User-Agent, so always send one.
+            connection.setRequestProperty("User-Agent", ResultUserAgent)
+            connection.setRequestProperty("Accept", "application/json, text/plain, */*")
             connection.connect()
             val code = connection.responseCode
             if (code != HttpURLConnection.HTTP_OK) {
@@ -98,7 +122,11 @@ internal class DnsLeakTestEngine(
         private const val ProbeDomain = "bash.ws"
         internal const val ProbeCount = 10
         private const val TokenBytes = 8
-        private const val ResultSettleDelayMillis = 3_000L
+        private const val ResultSettleDelayMillis = 4_000L
+        private const val ResultFetchAttempts = 3
+        private const val ResultRetryDelayMillis = 2_000L
+        private const val ResultUserAgent =
+            "Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
     }
 }
 

@@ -72,7 +72,10 @@ internal class SpeedTestTransfer {
                     onSample(progress, emaMbps ?: 0.0)
                 }
             }
-            repeat(streamCount) {
+            // Launch the transfer loops and WAIT for them: setting the flag
+            // before joining would kill the sampler immediately and the UI
+            // would never see live throughput updates.
+            val workerJobs = (0 until streamCount).map {
                 launch {
                     while (System.currentTimeMillis() < deadlineMillis &&
                         transferredBytes.get() < byteBudgetBytes
@@ -83,6 +86,7 @@ internal class SpeedTestTransfer {
                     }
                 }
             }
+            workerJobs.forEach { it.join() }
             workersDone.set(true)
             sampler.cancel()
         }
@@ -143,8 +147,8 @@ internal class SpeedTestTransfer {
     companion object {
         private const val DownloadStreams = 4
         private const val UploadStreams = 3
-        private const val DownloadMaxDurationMillis = 15_000L
-        private const val UploadMaxDurationMillis = 12_000L
+        private const val DownloadMaxDurationMillis = 12_000L
+        private const val UploadMaxDurationMillis = 10_000L
         private const val DownloadByteBudgetBytes = 48L * 1024 * 1024
         private const val UploadByteBudgetBytes = 16L * 1024 * 1024
         private const val PayloadBytes = 8 * 1024 * 1024

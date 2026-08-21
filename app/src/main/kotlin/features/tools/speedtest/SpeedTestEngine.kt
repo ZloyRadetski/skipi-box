@@ -120,7 +120,7 @@ internal class SpeedTestEngine(
     companion object {
         private const val LogTag = "SpeedTest"
         private const val NANOS_PER_MILLI = 1_000_000.0
-        private const val PingRequestCount = 10
+        private const val PingRequestCount = 6
         private const val PingConnectTimeoutMillis = 5_000
     }
 }

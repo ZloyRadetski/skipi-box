@@ -1194,6 +1194,7 @@
     <string name="tools_dns_idle">Запустите тест, чтобы определить ваши DNS-резолверы</string>
     <string name="tools_dns_running">Разрешение пробных запросов и сбор результатов…</string>
     <string name="tools_dns_failed">Ошибка теста: не удалось собрать результаты. Проверьте соединение.</string>
+    <string name="tools_dns_failed_detail">Причина: %1$s</string>
     <string name="tools_dns_no_leak">Утечек DNS не обнаружено. Запросы идут через контролируемый резолвер.</string>
     <string name="tools_dns_suspected_leak">Обнаружена утечка DNS! Запросы достигают нескольких посторонних резолверов.</string>
     <string name="tools_dns_unknown">Недостаточно данных для вывода</string>

@@ -64,6 +64,7 @@ fun DnsLeakTestPage(
     var running by remember { mutableStateOf(false) }
     var outcome by remember { mutableStateOf<DnsLeakTestOutcome?>(null) }
     var failed by remember { mutableStateOf(false) }
+    var failedReason by remember { mutableStateOf<String?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
 
     DisposableEffect(Unit) {
@@ -73,6 +74,7 @@ fun DnsLeakTestPage(
     fun startTest() {
         running = true
         failed = false
+        failedReason = null
         outcome = null
         job = scope.launch {
             runCatching { DnsLeakTestEngine(onProgress = {}).run() }
@@ -83,6 +85,7 @@ fun DnsLeakTestPage(
                 .onFailure { error ->
                     if (error !is kotlinx.coroutines.CancellationException) {
                         failed = true
+                        failedReason = error.message
                         running = false
                     }
                 }
@@ -129,7 +132,7 @@ fun DnsLeakTestPage(
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                         Spacer(Modifier.height(12.dp))
-                        verdictBanner(outcome, failed, running)
+                        verdictBanner(outcome, failed, running, failedReason)
                         Spacer(Modifier.height(12.dp))
                         TextButton(
                             text = stringResource(
@@ -155,6 +158,7 @@ private fun verdictBanner(
     outcome: DnsLeakTestOutcome?,
     failed: Boolean,
     running: Boolean,
+    failedReason: String?,
 ) {
     val text = when {
         failed -> stringResource(R.string.tools_dns_failed)
@@ -172,20 +176,30 @@ private fun verdictBanner(
         outcome.verdict == DnsLeakVerdict.NoLeak -> MiuixTheme.colorScheme.primary
         else -> MiuixTheme.colorScheme.error
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(bannerColor),
-        )
-        Spacer(Modifier.size(8.dp))
-        Text(
-            text = text,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = AppTheme.colors.onSurface,
-        )
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(bannerColor),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = text,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = AppTheme.colors.onSurface,
+            )
+        }
+        if (failed && !failedReason.isNullOrBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.tools_dns_failed_detail, failedReason),
+                fontSize = 12.sp,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+        }
     }
 }
 
