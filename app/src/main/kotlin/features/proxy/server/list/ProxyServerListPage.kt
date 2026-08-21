@@ -225,6 +225,17 @@ fun ProxyServerListPage(
 
     suspend fun updateAllSubscriptions() {
         allSubscriptionsUpdateMutex.withLock {
+            services.appScope.launch(Dispatchers.IO) {
+                runCatching {
+                    val update = features.updater.GitHubReleaseChecker(context).checkLatestRelease()
+                    if (update != null) {
+                        updateAppState { state ->
+                            state.copy(availableAppUpdate = update)
+                        }
+                    }
+                }
+            }
+
             val subscriptionGroups = stateStore.state.value.subscriptionGroups.updatableSubscriptionGroups()
             if (subscriptionGroups.isEmpty()) {
                 tipNotifier.show(messages.noSubscriptionUpdates)
