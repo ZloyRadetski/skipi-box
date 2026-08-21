@@ -50,7 +50,6 @@ fun AboutPage(
                 title = stringResource(R.string.about_title),
                 isWideScreen = isWideScreen,
                 scrollBehavior = topAppBarScrollBehavior,
-                color = Color.Transparent,
                 navigationIcon = {
                     BackNavigationIcon(
                         onClick = { navigator.pop() },
