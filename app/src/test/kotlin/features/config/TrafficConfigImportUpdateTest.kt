@@ -33,7 +33,11 @@ class TrafficConfigImportUpdateTest {
             FINAL,DIRECT
         """.trimIndent()
 
-        var state = AppState()
+        var state = AppState(
+            trafficConfigs = emptyList(),
+            activeTrafficConfigId = 0,
+            nextTrafficConfigId = 1,
+        )
 
         // 1. First import
         state = state.withImportedTrafficConfig(
@@ -119,7 +123,12 @@ class TrafficConfigImportUpdateTest {
             updateInterval = "24",
             enabled = true,
         )
-        var state = AppState(subscriptionGroups = listOf(group42))
+        var state = AppState(
+            subscriptionGroups = listOf(group42),
+            trafficConfigs = emptyList(),
+            activeTrafficConfigId = 0,
+            nextTrafficConfigId = 1,
+        )
 
         // First update from subscription group 42
         state = state.withUpdatedSubscriptionServers(
