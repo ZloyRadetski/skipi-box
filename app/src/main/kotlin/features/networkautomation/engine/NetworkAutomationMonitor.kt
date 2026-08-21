@@ -16,6 +16,7 @@ import app.effects.resolveActiveNetworkConfig
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.SkipiVpnService
+import features.config.withActiveTrafficConfig
 import features.logs.AndroidAppLogger
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
@@ -193,15 +194,13 @@ class NetworkAutomationMonitor(
                                     LogTag,
                                     "Network automation: Auto-switching server to #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network $currentNetworkId",
                                 )
-                                val updatedState = state.copy(
+                                val updatedState = state.withActiveTrafficConfig(resolvedState.activeTrafficConfigId).copy(
                                     selectedProxyServerId = targetServerId,
-                                    activeTrafficConfigId = resolvedState.activeTrafficConfigId,
                                 )
                                 when (val result = proxyServiceUseCase.restart(updatedState, targetServer)) {
                                     is ProxyServiceResult.Success -> stateStore.update {
-                                        it.copy(
+                                        it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId).copy(
                                             selectedProxyServerId = targetServerId,
-                                            activeTrafficConfigId = resolvedState.activeTrafficConfigId,
                                             proxyRunning = result.proxyRunning,
                                             localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
                                         )
@@ -216,15 +215,13 @@ class NetworkAutomationMonitor(
                                     LogTag,
                                     "On-Demand VPN: Auto-starting VPN on server #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network transition to $currentNetworkId",
                                 )
-                                val updatedState = state.copy(
+                                val updatedState = state.withActiveTrafficConfig(resolvedState.activeTrafficConfigId).copy(
                                     selectedProxyServerId = targetServerId,
-                                    activeTrafficConfigId = resolvedState.activeTrafficConfigId,
                                 )
                                 when (val result = proxyServiceUseCase.start(updatedState, targetServer)) {
                                     is ProxyServiceResult.Success -> stateStore.update {
-                                        it.copy(
+                                        it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId).copy(
                                             selectedProxyServerId = targetServerId,
-                                            activeTrafficConfigId = resolvedState.activeTrafficConfigId,
                                             proxyRunning = result.proxyRunning,
                                             localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
                                         )

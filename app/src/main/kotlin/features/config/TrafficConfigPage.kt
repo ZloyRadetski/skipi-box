@@ -532,7 +532,7 @@ fun TrafficConfigPage(
                     isUpdating = config.id in updatingConfigIds,
                     canDelete = appState.trafficConfigs.size > 1,
                     onSelect = {
-                        updateAppState { state -> state.copy(activeTrafficConfigId = config.id) }
+                        updateAppState { state -> state.withActiveTrafficConfig(config.id) }
                     },
                     onUiEdit = { navigator.push(Route.TrafficConfigEditor(config.id)) },
                     onDelete = {
@@ -649,7 +649,7 @@ fun TrafficConfigPage(
             onDelete = { contextMenuConfig = null; pendingConfigDeletion = config },
             onEnable = {
                 contextMenuConfig = null
-                updateAppState { state -> state.copy(activeTrafficConfigId = config.id) }
+                updateAppState { state -> state.withActiveTrafficConfig(config.id) }
                 services.appScope.launch { services.tipNotifier.show(context.getString(R.string.configs_enabled)) }
             },
         )

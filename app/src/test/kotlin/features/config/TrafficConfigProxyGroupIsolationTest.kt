@@ -319,4 +319,50 @@ class TrafficConfigProxyGroupIsolationTest {
         assertNotNull(balancer)
         assertEquals("proxy-policy-3", balancer!!.fallbackTag)
     }
+
+    @Test
+    fun withActiveTrafficConfig_switches_active_groups_seamlessly() {
+        val config1Text = """
+            [Proxy Group]
+            Config1Group = select, DIRECT, REJECT, skipi-display=active_config
+        """.trimIndent()
+
+        val config2Text = """
+            [Proxy Group]
+            Config2Group = url-test, DIRECT, REJECT, skipi-display=active_config
+        """.trimIndent()
+
+        val config1 = TrafficConfigState(id = 1, name = "Config 1", rawConfig = config1Text)
+        val config2 = TrafficConfigState(id = 2, name = "Config 2", rawConfig = config2Text)
+
+        // Start with config 1 active
+        var state = AppState(
+            trafficConfigs = listOf(config1, config2),
+            activeTrafficConfigId = 1,
+        ).withConfigProxyGroupsReflected()
+
+        assertEquals(1, state.proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }.size)
+        val group1 = state.proxyServers.first { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
+        assertEquals("Config1Group", (group1.server as StrategyGroup).remarks)
+        assertTrue(group1.isVisibleOnProxyServerList(state.activeTrafficConfigId))
+
+        // Switch to config 2 via withActiveTrafficConfig
+        state = state.withActiveTrafficConfig(2)
+
+        assertEquals(2, state.activeTrafficConfigId)
+        val generatedGroups2 = state.proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
+        assertEquals(1, generatedGroups2.size)
+        val group2 = generatedGroups2.first()
+        assertEquals("Config2Group", (group2.server as StrategyGroup).remarks)
+        assertEquals(2, (group2.server as StrategyGroup).sourceTrafficConfigId)
+        assertTrue(group2.isVisibleOnProxyServerList(state.activeTrafficConfigId))
+
+        // Switch back to config 1
+        state = state.withActiveTrafficConfig(1)
+
+        assertEquals(1, state.activeTrafficConfigId)
+        val generatedGroups1 = state.proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
+        assertEquals(1, generatedGroups1.size)
+        assertEquals("Config1Group", (generatedGroups1.first().server as StrategyGroup).remarks)
+    }
 }

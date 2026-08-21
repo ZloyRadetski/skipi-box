@@ -9,6 +9,7 @@ import android.net.NetworkCapabilities
 import app.AppState
 import features.config.TrafficConfigNetworkTransportCellular
 import features.config.TrafficConfigNetworkTransportWifi
+import features.config.withActiveTrafficConfig
 
 /** Chooses the first explicitly configured profile for the currently active transport. */
 internal fun AppState.matchingNetworkConfigId(capabilities: NetworkCapabilities): Int? {
@@ -30,7 +31,7 @@ internal fun AppState.resolveActiveNetworkConfig(context: Context): AppState {
             ?: return@runCatching this
         val matchingId = matchingNetworkConfigId(capabilities) ?: return@runCatching this
         if (activeTrafficConfigId != matchingId && trafficConfigs.any { it.id == matchingId }) {
-            copy(activeTrafficConfigId = matchingId)
+            withActiveTrafficConfig(matchingId)
         } else {
             this
         }

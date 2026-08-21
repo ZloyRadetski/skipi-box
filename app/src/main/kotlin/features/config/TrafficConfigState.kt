@@ -580,6 +580,14 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
     )
 }
 
+/**
+ * Sets the active traffic config and synchronizes materialized proxy groups.
+ */
+internal fun AppState.withActiveTrafficConfig(configId: Int): AppState {
+    if (activeTrafficConfigId == configId) return this
+    return copy(activeTrafficConfigId = configId).withConfigProxyGroupsReflected()
+}
+
 private data class ConfigAutoBalancerSource(
     val configId: Int,
     val group: ShadowrocketPolicyGroup,

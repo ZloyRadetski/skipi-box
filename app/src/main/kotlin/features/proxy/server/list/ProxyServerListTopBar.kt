@@ -5,6 +5,7 @@ package features.proxy.server.list
 
 import android.os.SystemClock
 import app.effects.resolveActiveNetworkConfig
+import features.config.withActiveTrafficConfig
 import features.networkautomation.engine.NetworkAutomationDecision
 import features.networkautomation.engine.NetworkAutomationEvaluator
 import androidx.compose.animation.AnimatedContent
@@ -214,7 +215,7 @@ internal fun ProxyServerListTopBar(
             val resolvedState = currentState.resolveActiveNetworkConfig(context)
             if (resolvedState.activeTrafficConfigId != currentState.activeTrafficConfigId) {
                 currentState = resolvedState
-                updateAppState { it.copy(activeTrafficConfigId = resolvedState.activeTrafficConfigId) }
+                updateAppState { it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId) }
             }
             val activeServer = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId } ?: selectedServer
             when (
