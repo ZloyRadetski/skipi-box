@@ -292,7 +292,6 @@ internal fun ProxyServerListTopBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(AppTheme.colors.background)
             .statusBarsPadding()
             .padding(top = 4.dp),
     ) {

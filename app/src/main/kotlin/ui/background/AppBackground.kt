@@ -63,11 +63,11 @@ fun customBackgroundPhotoPath(context: Context): String? {
 suspend fun saveCustomBackgroundPhoto(context: Context, uri: Uri): Boolean =
     withContext(Dispatchers.IO) {
         runCatching {
-            val resolver = context.contentResolver
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@runCatching false
+            if (bytes.isEmpty()) return@runCatching false
+
             val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            resolver.openInputStream(uri)?.use { stream ->
-                BitmapFactory.decodeStream(stream, null, boundsOptions)
-            } ?: return@runCatching false
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, boundsOptions)
 
             val width = boundsOptions.outWidth
             val height = boundsOptions.outHeight
@@ -83,9 +83,7 @@ suspend fun saveCustomBackgroundPhoto(context: Context, uri: Uri): Boolean =
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             }
 
-            val bitmap = resolver.openInputStream(uri)?.use { stream ->
-                BitmapFactory.decodeStream(stream, null, decodeOptions)
-            } ?: return@runCatching false
+            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions) ?: return@runCatching false
 
             val targetFile = customBackgroundPhotoFile(context)
             FileOutputStream(targetFile).use { output ->
@@ -210,8 +208,8 @@ fun AppBackground(
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     if (isRunning) {
-                        val primaryAlpha = (if (isDark) 0.38f else 0.28f) * pulse
-                        val secondaryAlpha = (if (isDark) 0.22f else 0.15f) * pulse
+                        val primaryAlpha = (if (isDark) 0.62f else 0.42f) * pulse
+                        val secondaryAlpha = (if (isDark) 0.38f else 0.24f) * pulse
                         drawRect(
                             brush = Brush.radialGradient(
                                 colors = listOf(
@@ -219,31 +217,32 @@ fun AppBackground(
                                     activeColor2.copy(alpha = secondaryAlpha),
                                     solidFallback,
                                 ),
-                                center = Offset(size.width * 0.5f, size.height * 0.15f),
-                                radius = size.maxDimension * 0.75f * pulse,
+                                center = Offset(size.width * 0.5f, size.height * 0.22f),
+                                radius = size.maxDimension * 0.65f * pulse,
                             ),
                         )
                         drawRect(
                             brush = Brush.radialGradient(
                                 colors = listOf(
-                                    activeColor2.copy(alpha = (if (isDark) 0.12f else 0.08f) * pulse),
+                                    activeColor2.copy(alpha = (if (isDark) 0.25f else 0.15f) * pulse),
                                     solidFallback,
                                 ),
-                                center = Offset(size.width * 0.8f, size.height * 0.85f),
+                                center = Offset(size.width * 0.75f, size.height * 0.75f),
                                 radius = size.maxDimension * 0.5f,
                             ),
                         )
                     } else {
-                        val idleAlpha = if (isDark) 0.24f else 0.18f
+                        val idleAlpha = (if (isDark) 0.48f else 0.32f) * pulse
+                        val idleSecondaryAlpha = (if (isDark) 0.25f else 0.16f) * pulse
                         drawRect(
                             brush = Brush.radialGradient(
                                 colors = listOf(
-                                    activeColor1.copy(alpha = idleAlpha * pulse),
-                                    activeColor2.copy(alpha = (idleAlpha * 0.4f) * pulse),
+                                    activeColor1.copy(alpha = idleAlpha),
+                                    activeColor2.copy(alpha = idleSecondaryAlpha),
                                     solidFallback,
                                 ),
-                                center = Offset(size.width * 0.5f, size.height * 0.2f),
-                                radius = size.maxDimension * 0.7f,
+                                center = Offset(size.width * 0.5f, size.height * 0.22f),
+                                radius = size.maxDimension * 0.65f * pulse,
                             ),
                         )
                     }

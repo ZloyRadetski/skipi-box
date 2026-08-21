@@ -182,9 +182,7 @@ private inline fun <reified T : NavKey> androidx.navigation3.runtime.EntryProvid
     crossinline content: @Composable (T) -> Unit,
 ) {
     entry<T> { route ->
-        AppBackground {
-            content(route)
-        }
+        content(route)
     }
 }
 

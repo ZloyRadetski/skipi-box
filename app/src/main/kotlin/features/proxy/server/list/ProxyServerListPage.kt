@@ -432,7 +432,6 @@ fun ProxyServerListPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppTheme.colors.background)
             .pageWindowPadding(padding),
     ) {
         ProxyServerListTopBar(

@@ -101,14 +101,12 @@ private fun SettingsContent(
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
     ) {
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
-                .background(AppTheme.colors.background)
                 .pageScrollModifiers(topAppBarScrollBehavior),
             contentPadding = listPadding,
         ) {
