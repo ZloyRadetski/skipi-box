@@ -63,9 +63,12 @@ class TrafficConfigImportUpdateTest {
         assertTrue(updatedConfig.rawConfig.contains("ipv6 = false"))
 
         // 3. Third import via subscription update flow
+        val group1 = app.SubscriptionGroupState(id = 1, name = "Provider", url = "https://sub.com")
+        state = state.copy(subscriptionGroups = listOf(group1))
+
         val update = ProxyServerListSubscriptionUpdate(
             groupId = 1,
-            sourceIdentity = SubscriptionGroupFetchIdentity(url = "https://sub.com", userAgent = ""),
+            sourceIdentity = group1.subscriptionFetchIdentity(),
             urlCount = 1,
             servers = emptyList(),
             resolvedConfig = ResolvedEmbeddedTrafficConfig(
@@ -77,7 +80,7 @@ class TrafficConfigImportUpdateTest {
         )
 
         state = state.withUpdatedSubscriptionServers(
-            applicableUpdatesByGroupId = mapOf(1 to update),
+            updates = listOf(update),
             updatedAtMillis = System.currentTimeMillis(),
         )
 
@@ -100,14 +103,15 @@ class TrafficConfigImportUpdateTest {
             FINAL,DIRECT
         """.trimIndent()
 
-        var state = AppState()
+        val group42 = app.SubscriptionGroupState(id = 42, name = "Sub 42", url = "https://sub42.com")
+        var state = AppState(subscriptionGroups = listOf(group42))
 
         // First update from subscription group 42
         state = state.withUpdatedSubscriptionServers(
-            applicableUpdatesByGroupId = mapOf(
-                42 to ProxyServerListSubscriptionUpdate(
+            updates = listOf(
+                ProxyServerListSubscriptionUpdate(
                     groupId = 42,
-                    sourceIdentity = SubscriptionGroupFetchIdentity(url = "https://sub42.com", userAgent = ""),
+                    sourceIdentity = group42.subscriptionFetchIdentity(),
                     urlCount = 1,
                     servers = emptyList(),
                     resolvedConfig = ResolvedEmbeddedTrafficConfig(
@@ -127,10 +131,10 @@ class TrafficConfigImportUpdateTest {
 
         // Second update from subscription group 42
         state = state.withUpdatedSubscriptionServers(
-            applicableUpdatesByGroupId = mapOf(
-                42 to ProxyServerListSubscriptionUpdate(
+            updates = listOf(
+                ProxyServerListSubscriptionUpdate(
                     groupId = 42,
-                    sourceIdentity = SubscriptionGroupFetchIdentity(url = "https://sub42.com", userAgent = ""),
+                    sourceIdentity = group42.subscriptionFetchIdentity(),
                     urlCount = 1,
                     servers = emptyList(),
                     resolvedConfig = ResolvedEmbeddedTrafficConfig(
