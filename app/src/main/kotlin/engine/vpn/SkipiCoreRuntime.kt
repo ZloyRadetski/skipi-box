@@ -67,6 +67,24 @@ internal object SkipiCoreRuntime {
         }
     }
 
+    fun fastSelectBestOutbound(
+        configJson: String,
+        candidateTags: String,
+        probeUrl: String = "",
+        timeoutMs: Long = 1200L,
+    ): String {
+        return runCatching {
+            val method = Skipicore::class.java.getMethod(
+                "fastSelectBestOutbound",
+                String::class.java,
+                String::class.java,
+                String::class.java,
+                Long::class.javaPrimitiveType,
+            )
+            method.invoke(null, configJson, candidateTags, probeUrl, timeoutMs) as? String
+        }.getOrNull().orEmpty()
+    }
+
     private const val LogTag = "SkipiCore"
 }
 

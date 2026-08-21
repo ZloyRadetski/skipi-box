@@ -121,11 +121,23 @@ private class XrayOutboundPlanner(
                 if (customProbeInterval != null && observatoryProbeInterval == null) {
                     observatoryProbeInterval = customProbeInterval
                 }
+                val bestFallbackTag = members.zip(memberTags)
+                    .filter { (member, _) ->
+                        val lat = member.latency.trim()
+                        lat.isNotBlank() && !lat.contains("Failed", ignoreCase = true) && !lat.contains("Timeout", ignoreCase = true)
+                    }
+                    .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+                    ?.second
+                    ?: members.zip(memberTags)
+                        .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+                        ?.second
+                    ?: memberTags.first()
+
                 balancers += XrayBalancerPlan(
                     tag = tag,
                     selector = selector,
                     strategy = strategy,
-                    fallbackTag = memberTags.first(),
+                    fallbackTag = bestFallbackTag,
                 )
                 observatorySelectors += selector
                 routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
@@ -213,9 +225,20 @@ private class XrayOutboundPlanner(
         val bestFallbackTag = if (strategyGroup.strategy == StrategyGroupConstants.TYPE_FALLBACK) {
             memberTags.first()
         } else {
-            members.zip(memberTags)
+            val selectedTag = strategyGroup.selectedMemberId?.let { selectedId ->
+                members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
+            }
+            selectedTag ?: members.zip(memberTags)
+                .filter { (member, _) ->
+                    val lat = member.latency.trim()
+                    lat.isNotBlank() && !lat.contains("Failed", ignoreCase = true) && !lat.contains("Timeout", ignoreCase = true)
+                }
                 .minByOrNull { (member, _) -> member.latency.latencySortKey() }
-                ?.second ?: memberTags.first()
+                ?.second
+                ?: members.zip(memberTags)
+                    .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+                    ?.second
+                ?: memberTags.first()
         }
 
         val customProbeUrl = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)

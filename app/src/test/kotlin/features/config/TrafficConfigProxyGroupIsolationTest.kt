@@ -14,8 +14,11 @@ import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.VLESS
 import features.subscription.DefaultSubscriptionGroupId
+import engine.xray.buildXrayOutboundPlan
+import features.proxy.server.model.StrategyGroupConstants
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -273,5 +276,47 @@ class TrafficConfigProxyGroupIsolationTest {
 
         val udpHop = quicParams?.get("udpHop")?.let { it as kotlinx.serialization.json.JsonObject }
         assertEquals(5, udpHop?.get("interval")?.let { (it as kotlinx.serialization.json.JsonPrimitive).content.toInt() })
+    }
+
+    @Test
+    fun balancer_plan_picks_alive_node_as_fallback_ignoring_failed_nodes() {
+        val deadNode1 = ProxyServerState(
+            id = 1,
+            groupId = DefaultSubscriptionGroupId,
+            latency = "Failed (timeout)",
+            server = VLESS(remarks = "Dead Node 1", id = "u1", server = "s1", port = "443"),
+        )
+        val deadNode2 = ProxyServerState(
+            id = 2,
+            groupId = DefaultSubscriptionGroupId,
+            latency = "-1ms",
+            server = VLESS(remarks = "Dead Node 2", id = "u2", server = "s2", port = "443"),
+        )
+        val aliveNode = ProxyServerState(
+            id = 3,
+            groupId = DefaultSubscriptionGroupId,
+            latency = "120ms",
+            server = VLESS(remarks = "Fast Alive Node", id = "u3", server = "s3", port = "443"),
+        )
+
+        val autoBalancer = ProxyServerState(
+            id = 100,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "UrlTestGroup",
+                strategy = features.proxy.server.model.StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(1, 2, 3),
+            ),
+        )
+
+        val appState = AppState(
+            proxyServers = listOf(deadNode1, deadNode2, aliveNode, autoBalancer),
+            activeTrafficConfigId = 0,
+        )
+
+        val plan = appState.buildXrayOutboundPlan(autoBalancer)
+        val balancer = plan.balancers.firstOrNull { it.tag == "proxy" }
+        assertNotNull(balancer)
+        assertEquals("proxy-policy-3", balancer!!.fallbackTag)
     }
 }
