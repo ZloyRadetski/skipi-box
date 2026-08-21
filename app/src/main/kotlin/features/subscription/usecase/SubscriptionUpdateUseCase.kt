@@ -5,6 +5,7 @@ package features.subscription.usecase
 
 import app.AppState
 import app.SubscriptionGroupState
+import features.config.decodeSkipiPayload
 import features.logs.AndroidAppLogger
 import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.ProxyServerListSubscriptionFailure
@@ -104,12 +105,30 @@ private suspend fun updateSubscriptionGroup(
                 fetchResponse(providerUrl, group.userAgent, fetchOptions).body
             },
         )
+        val metadata = response.subscriptionMetadata()
+        val resolvedConfig = metadata.embeddedConfig?.let { embedded ->
+            val content = if (embedded.isUrl) {
+                runCatching {
+                    fetchResponse(embedded.payload, group.userAgent, fetchOptions).body
+                }.getOrNull()
+            } else {
+                embedded.payload.decodeSkipiPayload() ?: embedded.payload.trim()
+            }
+            content?.takeIf(String::isNotBlank)?.let { configContent ->
+                features.proxy.server.usecase.ResolvedEmbeddedTrafficConfig(
+                    content = configContent,
+                    sourceUrl = if (embedded.isUrl) embedded.payload else "",
+                    activate = embedded.activate,
+                )
+            }
+        }
         ProxyServerListSubscriptionUpdate(
             groupId = group.id,
             sourceIdentity = group.subscriptionFetchIdentity(),
             urlCount = importResult.urlCount,
             servers = importResult.servers,
-            metadata = response.subscriptionMetadata(),
+            metadata = metadata,
+            resolvedConfig = resolvedConfig,
         ).also { update ->
             if (update.servers.isEmpty()) {
                 AndroidAppLogger.warn(

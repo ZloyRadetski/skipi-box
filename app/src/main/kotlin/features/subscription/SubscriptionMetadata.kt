@@ -10,10 +10,22 @@ import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 
+/** Embedded traffic config payload discovered from subscription headers or body. */
+internal data class SubscriptionEmbeddedConfig(
+    val payload: String,
+    val activate: Boolean,
+    val isUrl: Boolean,
+)
+
 /** Metadata attached to a subscription response by common proxy subscription servers. */
 internal data class SubscriptionMetadata(
     val profileTitle: String? = null,
+    val profileDescription: String? = null,
     val announce: String? = null,
+    val supportUrl: String? = null,
+    val supportEmail: String? = null,
+    val profileWebPageUrl: String? = null,
+    val announceUrl: String? = null,
     val userInfoReceived: Boolean = false,
     val trafficUploadBytes: Long = -1L,
     val trafficDownloadBytes: Long = -1L,
@@ -21,6 +33,8 @@ internal data class SubscriptionMetadata(
     val trafficExpireAtSeconds: Long = -1L,
     /** Server-supplied interval in hours, used unless the user changes it manually. */
     val profileUpdateIntervalHours: String? = null,
+    /** Optional embedded or remote traffic configuration discovered in response. */
+    val embeddedConfig: SubscriptionEmbeddedConfig? = null,
 )
 
 internal fun SubscriptionFetchResponse.subscriptionMetadata(): SubscriptionMetadata {
@@ -35,20 +49,152 @@ internal fun SubscriptionFetchResponse.subscriptionMetadata(): SubscriptionMetad
             key to value
         }
         .orEmpty()
+
+    val bodyComments = parseBodyCommentMetadata(body)
+
+    val profileTitle = normalizedHeaders[ProfileTitleHeader]?.decodeSubscriptionHeaderValue()
+        ?: normalizedHeaders[SubscriptionNameHeader]?.decodeSubscriptionHeaderValue()
+        ?: bodyComments[ProfileTitleHeader]?.decodeSubscriptionHeaderValue()
+
+    val profileDescription = normalizedHeaders[ProfileDescriptionHeader]?.decodeSubscriptionHeaderValue()
+        ?: bodyComments[ProfileDescriptionHeader]?.decodeSubscriptionHeaderValue()
+
+    val announce = normalizedHeaders[AnnounceHeader]?.decodeSubscriptionHeaderValue()
+        ?: bodyComments[AnnounceHeader]?.decodeSubscriptionHeaderValue()
+
+    val supportUrl = normalizedHeaders[SupportUrlHeader]?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?: bodyComments[SupportUrlHeader]?.trim()?.takeIf(String::isNotEmpty)
+
+    val supportEmail = normalizedHeaders[SupportEmailHeader]?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?: bodyComments[SupportEmailHeader]?.trim()?.takeIf(String::isNotEmpty)
+
+    val profileWebPageUrl = normalizedHeaders[ProfileWebPageUrlHeader]?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?: normalizedHeaders[HomepageHeader]?.trim()?.takeIf(String::isNotEmpty)
+        ?: bodyComments[ProfileWebPageUrlHeader]?.trim()?.takeIf(String::isNotEmpty)
+        ?: bodyComments[HomepageHeader]?.trim()?.takeIf(String::isNotEmpty)
+
+    val announceUrl = normalizedHeaders[AnnounceUrlHeader]?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?: bodyComments[AnnounceUrlHeader]?.trim()?.takeIf(String::isNotEmpty)
+
+    val updateIntervalHours = normalizedHeaders[ProfileUpdateIntervalHeader]
+        ?.trim()
+        ?.toIntOrNull()
+        ?.takeIf { it > 0 }
+        ?.toString()
+        ?: bodyComments[ProfileUpdateIntervalHeader]
+            ?.trim()
+            ?.toIntOrNull()
+            ?.takeIf { it > 0 }
+            ?.toString()
+
+    val embeddedConfig = parseSubscriptionEmbeddedConfig(normalizedHeaders, body)
+
     return SubscriptionMetadata(
-        profileTitle = normalizedHeaders[ProfileTitleHeader]?.decodeSubscriptionHeaderValue(),
-        announce = normalizedHeaders[AnnounceHeader]?.decodeSubscriptionHeaderValue(),
+        profileTitle = profileTitle,
+        profileDescription = profileDescription,
+        announce = announce,
+        supportUrl = supportUrl,
+        supportEmail = supportEmail,
+        profileWebPageUrl = profileWebPageUrl,
+        announceUrl = announceUrl,
         userInfoReceived = userInfo != null,
         trafficUploadBytes = values["upload"].toSubscriptionLong(),
         trafficDownloadBytes = values["download"].toSubscriptionLong(),
         trafficTotalBytes = values["total"].toSubscriptionLong(),
         trafficExpireAtSeconds = values["expire"].toSubscriptionLong(),
-        profileUpdateIntervalHours = normalizedHeaders[ProfileUpdateIntervalHeader]
-            ?.trim()
-            ?.toIntOrNull()
-            ?.takeIf { it > 0 }
-            ?.toString(),
+        profileUpdateIntervalHours = updateIntervalHours,
+        embeddedConfig = embeddedConfig,
     )
+}
+
+private fun parseBodyCommentMetadata(body: String): Map<String, String> {
+    val results = mutableMapOf<String, String>()
+    body.lineSequence().forEach { line ->
+        val trimmed = line.trim()
+        if (trimmed.startsWith("#") && trimmed.contains(':')) {
+            val withoutHash = trimmed.removePrefix("#").trim()
+            val key = withoutHash.substringBefore(':').trim().lowercase()
+            val value = withoutHash.substringAfter(':').trim()
+            if (key.isNotEmpty() && value.isNotEmpty() && !results.containsKey(key)) {
+                results[key] = value
+            }
+        }
+    }
+    return results
+}
+
+private fun parseSubscriptionEmbeddedConfig(
+    headers: Map<String, String>,
+    body: String,
+): SubscriptionEmbeddedConfig? {
+    // 1. Check response headers
+    val autoroutingHeader = headers[AutoroutingHeader]?.trim()?.takeIf(String::isNotEmpty)
+    if (autoroutingHeader != null) {
+        val isUrl = autoroutingHeader.startsWith("http://", ignoreCase = true) ||
+            autoroutingHeader.startsWith("https://", ignoreCase = true)
+        return SubscriptionEmbeddedConfig(payload = autoroutingHeader, activate = true, isUrl = isUrl)
+    }
+
+    val routingHeader = headers[RoutingHeader]?.trim()?.takeIf(String::isNotEmpty)
+        ?: headers[SkipiConfigHeader]?.trim()?.takeIf(String::isNotEmpty)
+        ?: headers[ConfigHeader]?.trim()?.takeIf(String::isNotEmpty)
+    if (routingHeader != null) {
+        val fromScheme = routingHeader.toSubscriptionEmbeddedConfigOrNull()
+        if (fromScheme != null) return fromScheme
+        val isUrl = routingHeader.startsWith("http://", ignoreCase = true) ||
+            routingHeader.startsWith("https://", ignoreCase = true)
+        return SubscriptionEmbeddedConfig(payload = routingHeader, activate = true, isUrl = isUrl)
+    }
+
+    // 2. Check body lines
+    body.lineSequence().forEach { line ->
+        val trimmed = line.trim()
+        val embedded = trimmed.toSubscriptionEmbeddedConfigOrNull()
+        if (embedded != null) {
+            return embedded
+        }
+    }
+
+    return null
+}
+
+private fun String.toSubscriptionEmbeddedConfigOrNull(): SubscriptionEmbeddedConfig? {
+    val trimmed = trim()
+    if (trimmed.isEmpty()) return null
+
+    val prefixes = listOf(
+        "skipi://conf/onadd/" to true,
+        "skipi://conf/add/" to false,
+        "skipi://routing/onadd/" to true,
+        "skipi://routing/add/" to false,
+        "://autorouting/onadd/" to true,
+        "://autorouting/add/" to false,
+        "://routing/onadd/" to true,
+        "://routing/add/" to false,
+        "://onadd/" to true,
+        "://routing/" to false,
+    )
+
+    for ((prefix, activate) in prefixes) {
+        if (trimmed.startsWith(prefix, ignoreCase = true)) {
+            val payload = trimmed.substring(prefix.length).trim()
+            if (payload.isNotEmpty()) {
+                val isUrl = payload.startsWith("http://", ignoreCase = true) ||
+                    payload.startsWith("https://", ignoreCase = true)
+                return SubscriptionEmbeddedConfig(
+                    payload = payload,
+                    activate = activate,
+                    isUrl = isUrl,
+                )
+            }
+        }
+    }
+
+    return null
 }
 
 private fun String?.toSubscriptionLong(): Long {
@@ -105,7 +251,18 @@ private fun String.isReadableSubscriptionHeaderText(): Boolean {
 }
 
 private const val ProfileTitleHeader = "profile-title"
+private const val SubscriptionNameHeader = "subscription-name"
+private const val ProfileDescriptionHeader = "profile-description"
 private const val AnnounceHeader = "announce"
+private const val AnnounceUrlHeader = "announce-url"
+private const val SupportUrlHeader = "support-url"
+private const val SupportEmailHeader = "support-email"
+private const val ProfileWebPageUrlHeader = "profile-web-page-url"
+private const val HomepageHeader = "homepage"
 private const val ProfileUpdateIntervalHeader = "profile-update-interval"
 private const val SubscriptionUserInfoHeader = "subscription-userinfo"
 private const val SubscriptionUserInfoHeaderWithHash = "#subscription-userinfo"
+private const val AutoroutingHeader = "autorouting"
+private const val RoutingHeader = "routing"
+private const val SkipiConfigHeader = "skipi-config"
+private const val ConfigHeader = "config"

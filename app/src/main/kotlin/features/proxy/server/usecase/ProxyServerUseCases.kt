@@ -21,7 +21,14 @@ import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
 import features.proxy.server.model.getUrlOrNull
 import features.proxy.server.model.isCompositeProxyServer
+import features.config.withImportedTrafficConfig
 import features.subscription.SubscriptionMetadata
+
+internal data class ResolvedEmbeddedTrafficConfig(
+    val content: String,
+    val sourceUrl: String = "",
+    val activate: Boolean = false,
+)
 
 internal data class ProxyServerListSubscriptionUpdate(
     val groupId: Int,
@@ -29,6 +36,7 @@ internal data class ProxyServerListSubscriptionUpdate(
     val urlCount: Int,
     val servers: List<ProxyServer<*>>,
     val metadata: SubscriptionMetadata = SubscriptionMetadata(),
+    val resolvedConfig: ResolvedEmbeddedTrafficConfig? = null,
 )
 
 private data class CandidateIndexEntry(
@@ -332,7 +340,7 @@ internal fun AppState.withUpdatedSubscriptionServers(
             ?: selectedProxyServerId
     }
 
-    return copy(
+    val stateWithUpdatedGroups = copy(
         subscriptionGroups = subscriptionGroups.map { group ->
             val update = applicableUpdatesByGroupId[group.id]
             if (update != null) {
@@ -343,6 +351,10 @@ internal fun AppState.withUpdatedSubscriptionServers(
                         ?: group.name,
                     profileTitle = update.metadata.profileTitle ?: group.profileTitle,
                     announce = update.metadata.announce ?: group.announce,
+                    supportUrl = update.metadata.supportUrl ?: group.supportUrl,
+                    supportEmail = update.metadata.supportEmail ?: group.supportEmail,
+                    profileWebPageUrl = update.metadata.profileWebPageUrl ?: group.profileWebPageUrl,
+                    announceUrl = update.metadata.announceUrl ?: group.announceUrl,
                     updateInterval = update.metadata.profileUpdateIntervalHours ?: group.updateInterval,
                     trafficUploadBytes = if (update.metadata.userInfoReceived) {
                         update.metadata.trafficUploadBytes
@@ -373,6 +385,22 @@ internal fun AppState.withUpdatedSubscriptionServers(
         nextProxyServerId = maxOf(nextProxyServerId, nextServerId),
         selectedProxyServerId = selectedServerId,
     )
+
+    var finalState = stateWithUpdatedGroups
+    applicableUpdatesByGroupId.values.forEach { update ->
+        val config = update.resolvedConfig
+        if (config != null && config.content.isNotBlank()) {
+            finalState = runCatching {
+                finalState.withImportedTrafficConfig(
+                    content = config.content,
+                    activate = config.activate,
+                    sourceUrl = config.sourceUrl,
+                )
+            }.getOrDefault(finalState)
+        }
+    }
+
+    return finalState
 }
 
 private fun ProxyServer<*>.endpointKey(): String? {

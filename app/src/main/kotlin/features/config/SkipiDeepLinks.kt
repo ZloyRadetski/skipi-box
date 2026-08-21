@@ -100,6 +100,13 @@ internal fun AppState.withImportedTrafficConfig(
     require(analysis.diagnostics.none { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
         analysis.diagnostics.first { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }.message
     }
+    val existing = trafficConfigs.firstOrNull { it.sourceUrl.isNotBlank() && it.sourceUrl.equals(sourceUrl.trim(), ignoreCase = true) }
+    if (existing != null) {
+        val updated = existing.copy(rawConfig = normalized).withSkipiSettingsReadFromRawConfig()
+        return withUpdatedTrafficConfig(existing.id) { updated }.let { state ->
+            if (activate) state.copy(activeTrafficConfigId = existing.id) else state
+        }.withConfigProxyGroupsReflected()
+    }
     val configId = nextTrafficConfigId
     val name = normalized.lineSequence()
         .firstOrNull { line -> line.trim().startsWith("#") && line.contains("name", ignoreCase = true) }
@@ -143,7 +150,7 @@ private fun String.toSubscriptionOrServerLink(): SkipiDeepLink? {
     }
 }
 
-private fun String.decodeSkipiPayload(): String? {
+internal fun String.decodeSkipiPayload(): String? {
     return trim().decodeFlexibleBase64OrNull()
         ?.decodeToString()
         ?.trim()

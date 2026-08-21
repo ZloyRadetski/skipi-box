@@ -174,7 +174,7 @@ class AndroidAppStateStore private constructor(
         )
             // Keep committed state in the main DB file for file-based backup tools.
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
-            .addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5)
+            .addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }

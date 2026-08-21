@@ -762,6 +762,8 @@
     <string name="subscriptions_refreshing">Обновление подписок…</string>
     <string name="subscriptions_refreshed">Подписки обновлены</string>
     <string name="subscription_provider_days_remaining">Осталось %1$d дн.</string>
+    <string name="subscription_provider_support">Поддержка</string>
+    <string name="subscription_provider_website">Сайт</string>
     <string name="settings_color_mode_summary">Выберите: следовать системной теме или использовать светлую либо тёмную.</string>
     <string name="settings_theme_color_summary">Выберите основной цвет кнопок, выделений и индикаторов.</string>
     <string name="settings_language_summary">Выберите язык интерфейса SKIPI.</string>

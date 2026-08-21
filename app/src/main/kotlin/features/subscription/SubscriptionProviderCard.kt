@@ -4,7 +4,9 @@
 package features.subscription
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -68,6 +71,7 @@ internal fun SubscriptionProviderHeader(
     isUpdating: Boolean = false,
     isPinging: Boolean = false,
 ) {
+    val uriHandler = LocalUriHandler.current
     val defaultGroupName = stringResource(R.string.subscription_default_group)
     val title = group.profileTitle.ifBlank { group.displayName(defaultGroupName) }
     val traffic = group.subscriptionTrafficSummary()
@@ -205,11 +209,66 @@ internal fun SubscriptionProviderHeader(
         }
         if (expanded && group.announce.isNotBlank()) {
             Spacer(Modifier.height(12.dp))
+            val announceModifier = if (group.announceUrl.isNotBlank()) {
+                Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { runCatching { uriHandler.openUri(group.announceUrl) } }
+                    .padding(vertical = 2.dp)
+            } else {
+                Modifier
+            }
             Text(
                 text = group.announce,
                 style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                color = if (group.announceUrl.isNotBlank()) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = announceModifier,
             )
+        }
+        if (expanded && (group.supportUrl.isNotBlank() || group.supportEmail.isNotBlank() || group.profileWebPageUrl.isNotBlank())) {
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val effectiveSupportUrl = when {
+                    group.supportUrl.isNotBlank() -> group.supportUrl
+                    group.supportEmail.isNotBlank() -> "mailto:${group.supportEmail}"
+                    else -> null
+                }
+                if (effectiveSupportUrl != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            .clickable { runCatching { uriHandler.openUri(effectiveSupportUrl) } }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.subscription_provider_support),
+                            style = MiuixTheme.textStyles.body2,
+                            fontWeight = FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                if (group.profileWebPageUrl.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                            .clickable { runCatching { uriHandler.openUri(group.profileWebPageUrl) } }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.subscription_provider_website),
+                            style = MiuixTheme.textStyles.body2,
+                            fontWeight = FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
         }
         lastUpdated?.let { value ->
             Spacer(Modifier.height(10.dp))

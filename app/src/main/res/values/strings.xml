@@ -491,6 +491,8 @@
     <string name="subscription_provider_traffic">Traffic: {value}</string>
     <string name="subscription_provider_updated">Updated: {value}</string>
     <string name="subscription_provider_days_remaining">%1$d days remaining</string>
+    <string name="subscription_provider_support">Support</string>
+    <string name="subscription_provider_website">Website</string>
     <string name="proxy_server_list_service_started">Proxy service started</string>
     <string name="proxy_server_list_service_stopped">Proxy service stopped</string>
     <string name="proxy_server_list_select_first">Select a proxy server first</string>
