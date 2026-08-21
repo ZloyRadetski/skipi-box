@@ -175,9 +175,9 @@ fun TrafficConfigEditorPage(
     )
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.configs_edit),
@@ -458,9 +458,9 @@ fun TrafficConfigRawEditorPage(
     )
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.configs_raw),
@@ -1582,9 +1582,9 @@ internal fun TrafficConfigFullScreenScaffold(
         onBackCompleted = onBack,
     )
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = title,

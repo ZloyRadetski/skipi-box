@@ -195,10 +195,8 @@ fun AppTheme(
         val finalOnAccent = if (enableCustomColors && customTextColor != null) customTextColor else (if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E))
         val finalOnSurfaceVariant = if (enableCustomColors && customTextSecondaryColor != null) customTextSecondaryColor else baseOnSurfaceVariant
 
-        val effectiveBackground = if (backgroundStyle != BackgroundStyleClassic) Color.Transparent else finalBackground
-
         AppColors(
-            background = effectiveBackground,
+            background = finalBackground,
             onBackground = finalOnBackground,
             accent = finalAccent,
             onAccent = finalOnAccent,
@@ -217,7 +215,7 @@ fun AppTheme(
             surfaceContainer = appColors.surface,
             surfaceContainerHigh = appColors.surface,
             surfaceContainerHighest = appColors.surface,
-            background = if (backgroundStyle != BackgroundStyleClassic) Color.Transparent else appColors.background,
+            background = appColors.surface,
             surfaceVariant = appColors.surfaceVariant,
             onSurface = appColors.onSurface,
             onBackground = appColors.onBackground,

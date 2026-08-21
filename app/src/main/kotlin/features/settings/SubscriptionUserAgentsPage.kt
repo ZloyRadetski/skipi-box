@@ -38,6 +38,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import androidx.compose.ui.graphics.Color
 
 /** A dedicated page keeps a potentially long User-Agent list readable and keyboard-friendly. */
 @Composable
@@ -52,9 +53,9 @@ fun SubscriptionUserAgentsPage(
     val lazyListState = rememberLazyListState()
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.settings_user_agents),
@@ -71,14 +72,12 @@ fun SubscriptionUserAgentsPage(
         )
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
                     .pageScrollModifiers(scrollBehavior),
                 contentPadding = pageListPadding(contentPadding),
             ) {

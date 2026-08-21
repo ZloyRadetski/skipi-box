@@ -44,6 +44,7 @@ fun AboutPage(
     val topAppBarScrollBehavior = MiuixScrollBehavior()
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.about_title),
@@ -68,14 +69,12 @@ fun AboutPage(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
                     .pageScrollModifiers(topAppBarScrollBehavior),
                 contentPadding = listPadding,
             ) {

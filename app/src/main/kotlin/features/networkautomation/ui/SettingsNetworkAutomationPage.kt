@@ -99,6 +99,7 @@ fun SettingsNetworkAutomationPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.settings_network_automation_title),
@@ -121,14 +122,12 @@ fun SettingsNetworkAutomationPage(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
                     .pageScrollModifiers(topAppBarScrollBehavior),
                 contentPadding = innerListPadding,
             ) {

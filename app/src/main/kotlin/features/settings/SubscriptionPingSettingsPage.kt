@@ -68,6 +68,7 @@ import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import java.net.URI
 import kotlin.math.roundToInt
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -100,9 +101,9 @@ fun SubscriptionPingSettingsPage(
     )
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.subscription_ping_settings),
@@ -120,14 +121,12 @@ fun SubscriptionPingSettingsPage(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
                     .pageScrollModifiers(scrollBehavior),
                 contentPadding = pageListPadding(contentPadding),
             ) {

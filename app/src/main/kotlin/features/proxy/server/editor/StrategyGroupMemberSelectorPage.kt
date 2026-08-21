@@ -87,6 +87,7 @@ import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import ui.text.formatTemplate
+import androidx.compose.ui.graphics.Color
 
 private data class StrategyMemberSelectorGroup(
     val key: String,
@@ -193,9 +194,9 @@ fun StrategyGroupMemberSelectorPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.proxy_editor_strategy_group_select_servers),

@@ -115,7 +115,7 @@ fun AppBackground(
     val photoSeed = backgroundPhotoUpdateSeed
 
     val isDark = AppTheme.colors.isDark
-    val solidFallback = if (isDark) Color(0xFF16171A) else Color(0xFFF5F6F8)
+    val solidFallback = AppTheme.colors.background
 
     when (appState.backgroundStyle) {
         BackgroundStylePhoto -> {

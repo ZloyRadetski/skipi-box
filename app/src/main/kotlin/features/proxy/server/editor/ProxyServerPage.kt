@@ -84,6 +84,7 @@ import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageContentPaddingWithIme
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import androidx.compose.ui.graphics.Color
 
 private val ProxyServerSaver: Saver<ProxyServer<*>, String> = Saver(
     save = { it.encodePersistedProxyServer() },
@@ -214,9 +215,9 @@ fun ProxyServerPage(
     val title = psEdit.editorTitle()
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = title,

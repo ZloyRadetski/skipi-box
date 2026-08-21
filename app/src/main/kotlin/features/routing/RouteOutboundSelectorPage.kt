@@ -71,6 +71,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import androidx.compose.ui.graphics.Color
 
 private sealed interface RouteOutboundItem {
     val key: String
@@ -313,9 +314,9 @@ fun RouteOutboundSelectorPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(
@@ -343,8 +344,7 @@ fun RouteOutboundSelectorPage(
         )
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = listState,

@@ -84,6 +84,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import utils.toTrimmedNonEmptyDistinctList
+import androidx.compose.ui.graphics.Color
 
 internal data class RouteRuleOutboundOption(
     val tag: String,
@@ -300,6 +301,7 @@ fun RouteRuleEditorPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(if (initialRule == null) R.string.routing_add_rule else R.string.routing_edit_rule),

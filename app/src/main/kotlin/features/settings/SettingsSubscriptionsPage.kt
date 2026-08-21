@@ -62,6 +62,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun SettingsSubscriptionsPage(
@@ -98,6 +99,7 @@ fun SettingsSubscriptionsPage(
         .let { if (it >= 0) it else subscriptionFetchTimeoutValues.indexOf(30).coerceAtLeast(0) }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             key(languageMode) {
                 AdaptiveTopAppBar(
@@ -122,14 +124,12 @@ fun SettingsSubscriptionsPage(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
                     .pageScrollModifiers(topAppBarScrollBehavior),
                 contentPadding = innerListPadding,
             ) {

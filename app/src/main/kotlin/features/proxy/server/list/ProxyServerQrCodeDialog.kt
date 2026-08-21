@@ -32,6 +32,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.AppTheme
 import utils.generateQrCodeImageBitmap
 
 @Composable
@@ -59,8 +60,8 @@ internal fun ProxyServerQrCodeDialog(
                     .fillMaxWidth(),
                 insideMargin = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
                 colors = CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.background,
-                    contentColor = MiuixTheme.colorScheme.onBackground,
+                    color = AppTheme.colors.surface,
+                    contentColor = AppTheme.colors.onSurface,
                 ),
             ) {
                 Column(

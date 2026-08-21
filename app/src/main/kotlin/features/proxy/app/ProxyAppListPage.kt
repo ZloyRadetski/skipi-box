@@ -79,6 +79,7 @@ import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import ui.text.formatTemplate
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.compose.ui.graphics.Color
 
 private const val ProxyAppListAutomaticLoadingMinVisibleMillis = 500L
 
@@ -177,9 +178,9 @@ fun ProxyAppListPage(
     )
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             ProxyAppListTopBar(
                 modes = proxyAppListModes,

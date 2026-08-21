@@ -58,6 +58,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun SubscriptionGroupListPage(
@@ -166,6 +167,7 @@ fun SubscriptionGroupListPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.subscription_group_list_title),
@@ -198,14 +200,12 @@ fun SubscriptionGroupListPage(
         val listPadding = pageListPadding(contentPadding)
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
                     .pageScrollModifiers(
                         topAppBarScrollBehavior,
                     ),

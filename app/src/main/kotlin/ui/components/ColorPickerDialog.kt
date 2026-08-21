@@ -57,6 +57,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.AppTheme
 
 private val PresetPaletteColors = listOf(
     Color(0xFFE53935), // Red
@@ -133,8 +134,8 @@ fun ColorPickerDialog(
                     .fillMaxWidth(),
                 insideMargin = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
                 colors = CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.background,
-                    contentColor = MiuixTheme.colorScheme.onBackground,
+                    color = AppTheme.colors.surface,
+                    contentColor = AppTheme.colors.onSurface,
                 ),
             ) {
                 Column(

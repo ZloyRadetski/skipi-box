@@ -54,6 +54,7 @@ fun SettingsPage(
     val topAppBarScrollBehavior = MiuixScrollBehavior()
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             key(languageMode) {
                 AdaptiveTopAppBar(

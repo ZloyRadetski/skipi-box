@@ -74,10 +74,12 @@ import ui.components.BackNavigationIcon
 import ui.components.DeleteConfirmationDialog
 import ui.components.NavigationIcon
 import ui.layout.AdaptiveTopAppBar
+import ui.AppTheme
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import ui.text.formatTemplate
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun ResourceManagementPage(
@@ -315,9 +317,9 @@ fun ResourceManagementPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.configs_resources),

@@ -48,6 +48,7 @@ import ui.AppTheme
 import ui.components.BackNavigationIcon
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
+import androidx.compose.ui.graphics.Color
 
 /** Full-screen connection speed test: ping, jitter, download and upload. */
 @Composable
@@ -81,6 +82,7 @@ fun SpeedTestPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             key(languageMode) {
                 AdaptiveTopAppBar(
@@ -97,7 +99,6 @@ fun SpeedTestPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(AppTheme.colors.background)
                 .verticalScroll(rememberScrollState())
                 .padding(pageContentPaddingWithCutout(innerPadding, padding, isWideScreen))
                 .padding(horizontal = 16.dp),

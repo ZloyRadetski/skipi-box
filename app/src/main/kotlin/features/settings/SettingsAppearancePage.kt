@@ -224,6 +224,7 @@ fun SettingsAppearancePage(
     val resetCompletedMessage = stringResource(R.string.settings_colors_reset_completed)
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             key(languageMode) {
                 AdaptiveTopAppBar(

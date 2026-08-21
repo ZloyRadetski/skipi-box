@@ -80,6 +80,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun LocalProxySettingsPage(
@@ -121,9 +122,9 @@ fun LocalProxySettingsPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.settings_local_proxy),

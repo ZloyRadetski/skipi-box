@@ -75,10 +75,12 @@ import ui.components.rememberSkipiReorderableLazyListState
 import ui.components.rememberReorderableLazyListContentPaddingWithoutTop
 import ui.components.rememberReorderableScrollThresholdPadding
 import ui.layout.AdaptiveTopAppBar
+import ui.AppTheme
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import ui.text.formatTemplate
+import androidx.compose.ui.graphics.Color
 
 private val DomainStrategyOptions = listOf(
     "AsIs",
@@ -171,6 +173,7 @@ fun RoutingPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.routing_title),

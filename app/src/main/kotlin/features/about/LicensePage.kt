@@ -28,6 +28,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import ui.layout.AdaptiveTopAppBar
+import ui.AppTheme
 import features.about.license.Library
 import features.about.license.decodeAboutLibraries
 import ui.layout.pageContentPaddingWithCutout
@@ -35,6 +36,7 @@ import ui.layout.pageScrollModifiers
 import app.R
 import androidx.compose.runtime.getValue
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun LicensePage(
@@ -59,6 +61,7 @@ fun LicensePage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.license_title),

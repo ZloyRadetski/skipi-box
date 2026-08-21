@@ -51,6 +51,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun SettingsBackupResetPage(
@@ -87,6 +88,7 @@ fun SettingsBackupResetPage(
     val resetFailedMessage = stringResource(R.string.settings_reset_failed)
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         topBar = {
             key(languageMode) {
                 AdaptiveTopAppBar(
@@ -111,14 +113,12 @@ fun SettingsBackupResetPage(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
                     .pageScrollModifiers(topAppBarScrollBehavior),
                 contentPadding = innerListPadding,
             ) {

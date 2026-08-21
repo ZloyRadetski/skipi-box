@@ -459,6 +459,7 @@ private fun Home(
     val layoutDirection = LocalLayoutDirection.current
     val navigationItems = MainNavigation.navigationItems()
     Scaffold(
+        containerColor = Color.Transparent,
         modifier = Modifier
             .fillMaxSize(),
     ) {
@@ -499,6 +500,7 @@ private fun WideScreenContent(
             }
         }
         Scaffold(
+            containerColor = Color.Transparent,
             modifier = Modifier
                 .fillMaxSize(),
             contentWindowInsets =
@@ -526,6 +528,7 @@ private fun CompactScreenLayout(
     mainPagerState: MainPagerState,
 ) {
     Scaffold(
+        containerColor = Color.Transparent,
         modifier = Modifier
             .fillMaxSize(),
         bottomBar = {

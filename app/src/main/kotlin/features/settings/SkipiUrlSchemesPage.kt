@@ -59,6 +59,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import androidx.compose.ui.graphics.Color
 
 /** A comprehensive reference for the deep links handled by SKIPI. */
 @Composable
@@ -82,9 +83,9 @@ fun SkipiUrlSchemesPage(
     }
 
     Scaffold(
+        containerColor = AppTheme.colors.background,
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(R.string.settings_url_schemes),
@@ -101,14 +102,12 @@ fun SkipiUrlSchemesPage(
         )
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
                     .pageScrollModifiers(scrollBehavior),
                 contentPadding = pageListPadding(contentPadding),
             ) {
