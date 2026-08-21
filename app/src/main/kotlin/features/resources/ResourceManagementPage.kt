@@ -74,7 +74,6 @@ import ui.components.BackNavigationIcon
 import ui.components.DeleteConfirmationDialog
 import ui.components.NavigationIcon
 import ui.layout.AdaptiveTopAppBar
-import ui.AppTheme
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers

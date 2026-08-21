@@ -56,6 +56,7 @@ import ui.layout.pageScrollModifiers
 import ui.clipboard.setPlainText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import ui.AppTheme
 import androidx.compose.ui.graphics.Color
 
