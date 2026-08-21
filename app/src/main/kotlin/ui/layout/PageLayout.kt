@@ -136,7 +136,7 @@ fun AdaptiveTopAppBar(
     isWideScreen: Boolean,
     scrollBehavior: ScrollBehavior,
     modifier: Modifier = Modifier,
-    color: Color = if (LocalBackgroundStyle.current != BackgroundStyleClassic) Color.Transparent else AppTheme.colors.background,
+    color: Color = AppTheme.colors.background,
     subtitle: String = "",
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},

@@ -593,7 +593,7 @@ private fun ProxyHeroConnectionCardClassic(
     }
 
     val cardBgColor by animateColorAsState(
-        targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surfaceVariant.copy(alpha = 0.55f),
+        targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surface,
         animationSpec = tween(350),
         label = "classic_card_bg",
     )
@@ -604,7 +604,7 @@ private fun ProxyHeroConnectionCardClassic(
     )
 
     val buttonBgColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.18f) else AppTheme.colors.surfaceVariant.copy(alpha = 0.45f),
+        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.18f) else AppTheme.colors.surfaceVariant,
         animationSpec = tween(300),
         label = "classic_btn_bg",
     )
@@ -939,7 +939,7 @@ private fun ProxyHeroConnectionCardClassic(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(AppTheme.colors.surfaceVariant.copy(alpha = 0.45f))
+                            .background(AppTheme.colors.surfaceVariant)
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                     ) { measurables, constraints ->
                         val infoPlaceable = measurables[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
@@ -988,7 +988,7 @@ private fun ProxyHeroConnectionCardCompact(
     }
 
     val compactCardBgColor by animateColorAsState(
-        targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surfaceVariant.copy(alpha = 0.55f),
+        targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surface,
         animationSpec = tween(350),
         label = "compact_card_bg",
     )

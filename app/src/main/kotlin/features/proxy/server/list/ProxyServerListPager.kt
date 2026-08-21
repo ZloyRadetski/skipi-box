@@ -309,7 +309,7 @@ private fun SubscriptionProxyServerList(
     val serverCount = remember(servers, group.id) { servers.count { server -> server.groupId == group.id } }
     val providerBorderColor = AppTheme.colors.onSurface.copy(alpha = 0.14f)
     val dividerColor = AppTheme.colors.onSurface.copy(alpha = 0.08f)
-    val providerColor = AppTheme.colors.surfaceVariant.copy(alpha = 0.65f)
+    val providerColor = AppTheme.colors.surface
     val providerCornerRadius = 18.dp
     val headerShape = if (expanded) {
         RoundedCornerShape(topStart = providerCornerRadius, topEnd = providerCornerRadius)
@@ -670,7 +670,7 @@ private fun ProxyServerLazyGrid(
                     .clip(providerShape)
                     .border(width = 1.dp, color = providerBorderColor, shape = providerShape),
                 colors = CardDefaults.defaultColors(
-                    color = AppTheme.colors.surfaceVariant.copy(alpha = 0.65f),
+                    color = AppTheme.colors.surface,
                 ),
                 insideMargin = PaddingValues(0.dp),
             ) {

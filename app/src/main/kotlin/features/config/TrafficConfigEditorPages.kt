@@ -1007,7 +1007,7 @@ private fun DnsQuickChipsRow(
         chips.forEach { (label, address) ->
             Box(
                 modifier = Modifier
-                    .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
+                    .background(MiuixTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
                     .clip(RoundedCornerShape(16.dp))
                     .clickable { onAdd(address) }
                     .padding(horizontal = 10.dp, vertical = 6.dp),

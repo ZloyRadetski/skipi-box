@@ -64,7 +64,7 @@ fun ServerPickerGroupHeader(
     }
 
     val providerBorderColor = AppTheme.colors.onSurface.copy(alpha = 0.14f)
-    val providerColor = AppTheme.colors.surfaceVariant.copy(alpha = 0.65f)
+    val providerColor = AppTheme.colors.surface
     val providerCornerRadius = 18.dp
     val headerShape = if (expanded && count > 0) {
         RoundedCornerShape(topStart = providerCornerRadius, topEnd = providerCornerRadius)
@@ -188,7 +188,7 @@ fun ServerPickerEmptyGroupRow(
     message: String = stringResource(R.string.proxy_editor_strategy_group_no_servers),
 ) {
     val providerBorderColor = AppTheme.colors.onSurface.copy(alpha = 0.14f)
-    val providerColor = AppTheme.colors.surfaceVariant.copy(alpha = 0.65f)
+    val providerColor = AppTheme.colors.surface
     val providerCornerRadius = 18.dp
 
     SubscriptionProviderBody(
@@ -217,7 +217,7 @@ fun ServerPickerItemRow(
     onClick: () -> Unit,
 ) {
     val providerBorderColor = AppTheme.colors.onSurface.copy(alpha = 0.14f)
-    val providerColor = AppTheme.colors.surfaceVariant.copy(alpha = 0.65f)
+    val providerColor = AppTheme.colors.surface
     val dividerColor = AppTheme.colors.onSurface.copy(alpha = 0.08f)
     val providerCornerRadius = 18.dp
 
