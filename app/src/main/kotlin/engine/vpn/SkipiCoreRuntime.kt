@@ -53,6 +53,20 @@ internal object SkipiCoreRuntime {
         return coreController?.isRunning == true
     }
 
+    fun readMemoryStats(): String {
+        return runCatching {
+            val method = Skipicore::class.java.getMethod("readMemoryStats")
+            method.invoke(null) as? String
+        }.getOrNull().orEmpty()
+    }
+
+    fun forceFreeMemory() {
+        runCatching {
+            val method = Skipicore::class.java.getMethod("forceFreeMemory")
+            method.invoke(null)
+        }
+    }
+
     private const val LogTag = "SkipiCore"
 }
 

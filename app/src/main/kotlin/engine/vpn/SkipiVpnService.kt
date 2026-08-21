@@ -124,6 +124,16 @@ class SkipiVpnService : VpnService() {
         super.onRevoke()
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        SkipiCoreRuntime.forceFreeMemory()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        SkipiCoreRuntime.forceFreeMemory()
+    }
+
     private fun stopSelfOnMain(startId: Int) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             stopSelf(startId)
