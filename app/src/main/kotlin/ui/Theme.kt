@@ -157,6 +157,7 @@ fun AppTheme(
         customSurfaceVariantColor,
         customTextColor,
         customTextSecondaryColor,
+        backgroundStyle,
     ) {
         val resolvedAccent = if (enableMaterialYou) {
             if (resolvedDark) {
@@ -194,8 +195,10 @@ fun AppTheme(
         val finalOnAccent = if (enableCustomColors && customTextColor != null) customTextColor else (if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E))
         val finalOnSurfaceVariant = if (enableCustomColors && customTextSecondaryColor != null) customTextSecondaryColor else baseOnSurfaceVariant
 
+        val effectiveBackground = if (backgroundStyle != BackgroundStyleClassic) Color.Transparent else finalBackground
+
         AppColors(
-            background = finalBackground,
+            background = effectiveBackground,
             onBackground = finalOnBackground,
             accent = finalAccent,
             onAccent = finalOnAccent,

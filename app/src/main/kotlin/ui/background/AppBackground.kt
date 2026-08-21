@@ -120,6 +120,9 @@ fun AppBackground(
     val context = LocalContext.current
     val photoSeed = backgroundPhotoUpdateSeed
 
+    val isDark = AppTheme.colors.isDark
+    val solidFallback = if (isDark) Color(0xFF16171A) else Color(0xFFF5F6F8)
+
     when (appState.backgroundStyle) {
         BackgroundStylePhoto -> {
             val photoBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = photoSeed) {
@@ -138,7 +141,7 @@ fun AppBackground(
             Box(
                 modifier = modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
+                    .background(solidFallback)
             ) {
                 val currentBitmap = photoBitmap
                 if (currentBitmap != null) {
@@ -163,12 +166,11 @@ fun AppBackground(
 
         BackgroundStyleConnection -> {
             val isRunning = appState.proxyRunning
-            val isDark = AppTheme.colors.isDark
             val accentColor by animateColorAsState(
                 targetValue = if (isRunning) AppTheme.colors.accent else AppTheme.colors.surfaceVariant,
                 label = "connectionAccent",
             )
-            val baseBackground = AppTheme.colors.background
+            val baseBackground = solidFallback
 
             val infiniteTransition = rememberInfiniteTransition(label = "ambientGlow")
             val pulse by infiniteTransition.animateFloat(
@@ -221,7 +223,7 @@ fun AppBackground(
             Box(
                 modifier = modifier
                     .fillMaxSize()
-                    .background(AppTheme.colors.background)
+                    .background(solidFallback)
             ) {
                 content()
             }
