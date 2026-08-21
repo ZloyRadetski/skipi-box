@@ -206,11 +206,11 @@ data class V2RayParameters(
             }
 
             V2RayTransportMkcp -> {
-                this.headerType = url.parameters["headerType"] ?: "none"
+                this.headerType = url.parameters["headerType"] ?: url.parameters["header"] ?: "none"
                 this.host = url.parameters["host"]
                 this.mtu = url.parameters["mtu"]
                 this.tti = url.parameters["tti"]
-                this.seed = url.parameters["seed"]
+                this.seed = url.parameters["seed"] ?: url.parameters["path"] ?: url.parameters["password"]
             }
 
             V2RayTransportWebSocket -> {

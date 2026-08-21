@@ -9,6 +9,7 @@ import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.getTransportDisplay
+import features.proxy.server.model.toXrayStreamSettings
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -62,6 +63,31 @@ class ProxyServerParserTest {
         assertEquals("chacha20-ietf-poly1305", server.method)
         assertEquals("MyPassword", server.password)
         assertEquals("MyShadowsocks", server.remarks)
+    }
+
+    @Test
+    fun testParseVlessMkcpUrlAndStreamSettings() {
+        val link = "vless://4219d973-8792-462f-8747-df766f70f137@nl02-mk01.tcp-reset-club.net:48007?type=kcp&headerType=srtp&seed=test-seed&mtu=1350&tti=40#VlessKcp"
+        val server = ProxyServer.parse(link)
+
+        assertIs<VLESS>(server)
+        assertEquals("4219d973-8792-462f-8747-df766f70f137", server.id)
+        assertEquals("nl02-mk01.tcp-reset-club.net", server.server)
+        assertEquals("48007", server.port)
+        assertEquals("srtp", server.parms.headerType)
+        assertEquals("test-seed", server.parms.seed)
+        assertEquals("1350", server.parms.mtu)
+        assertEquals("40", server.parms.tti)
+
+        val streamSettings = server.parms.toXrayStreamSettings()
+        assertEquals("mkcp", streamSettings["network"]?.toString()?.replace("\"", ""))
+        val kcpSettings = streamSettings["kcpSettings"] as kotlinx.serialization.json.JsonObject
+        assertEquals("1350", kcpSettings["mtu"]?.toString())
+        assertEquals("40", kcpSettings["tti"]?.toString())
+        assertEquals("test-seed", kcpSettings["seed"]?.toString()?.replace("\"", ""))
+        val header = kcpSettings["header"] as kotlinx.serialization.json.JsonObject
+        assertEquals("srtp", header["type"]?.toString()?.replace("\"", ""))
+        kotlin.test.assertNull(streamSettings["finalmask"])
     }
 
     @Test
