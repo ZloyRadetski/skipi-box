@@ -55,6 +55,17 @@ internal data class DnsLeakExitInfo(
     val asn: Int?,
 )
 
+/**
+ * Why the test could not collect any data at all; picks a localized UI hint.
+ */
+enum class DnsLeakFailureKind {
+    /** No tunnel was up, and nothing answered on the direct network path. */
+    NoInternet,
+
+    /** A VPN tunnel was detected, but no traffic passes through it. */
+    TunnelNotPassing,
+}
+
 /** Verdict of a completed DNS leak test. */
 enum class DnsLeakVerdict {
     /** Every tested path exposes the same network as the HTTP exit. */
@@ -134,6 +145,15 @@ internal object DnsLeakAnalysis {
         } else {
             DnsLeakVerdict.NoLeak
         }
+    }
+
+    /**
+     * Maps the presence of a bound VPN network onto the failure kind reported
+     * to the UI: with a tunnel detected the probes went through it, so total
+     * silence means the tunnel passes no traffic rather than being offline.
+     */
+    fun failureKind(hasVpnNetwork: Boolean): DnsLeakFailureKind {
+        return if (hasVpnNetwork) DnsLeakFailureKind.TunnelNotPassing else DnsLeakFailureKind.NoInternet
     }
 
     /** Converts a two-letter country code into its flag emoji, e.g. "DE" -> 🇩🇪. */

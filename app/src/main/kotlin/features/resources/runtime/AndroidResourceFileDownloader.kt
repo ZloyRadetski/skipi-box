@@ -124,7 +124,7 @@ private fun URI.toUrlConnection(
     val connection = when {
         proxy != null -> url.openConnection(proxy.toJavaProxy())
         // Explicit SOCKS proxy wins; otherwise prefer the VPN tunnel when up.
-        vpnNetwork != null -> vpnNetwork.openConnection(url)
+        vpnNetwork != null -> runCatching { vpnNetwork.openConnection(url) }.getOrElse { url.openConnection() }
         else -> url.openConnection()
     }
     return (connection as HttpURLConnection).apply {

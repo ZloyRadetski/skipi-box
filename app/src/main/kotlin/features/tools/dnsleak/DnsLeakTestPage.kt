@@ -40,6 +40,7 @@ import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.R
 import engine.network.TunnelNetworks
+import engine.proxy.LocalProxyRuntime
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -72,6 +73,7 @@ fun DnsLeakTestPage(
     var outcome by remember { mutableStateOf<DnsLeakTestOutcome?>(null) }
     var failed by remember { mutableStateOf(false) }
     var failedReason by remember { mutableStateOf<String?>(null) }
+    var failureKind by remember { mutableStateOf<DnsLeakFailureKind?>(null) }
     var job by remember { mutableStateOf<Job?>(null) }
 
     DisposableEffect(Unit) {
@@ -82,17 +84,19 @@ fun DnsLeakTestPage(
         running = true
         failed = false
         failedReason = null
+        failureKind = null
         outcome = null
         job = scope.launch {
             runCatching {
                 // The app is excluded from its own VPN tunnel, so the probe
-                // sockets must be explicitly bound to the VPN network to
-                // traverse it like any other app's traffic would.
+                // sockets traverse the tunnel via the local SOCKS proxy runtime.
                 val vpnNetwork = TunnelNetworks.locateVpnNetwork(context)
+                val proxyOptions = LocalProxyRuntime.current()
                 DnsLeakTestEngine(
                     systemDnsServers = locateSystemDnsServers(connectivity, vpnNetwork),
                     onProgress = {},
                     vpnNetwork = vpnNetwork,
+                    proxyOptions = proxyOptions,
                 ).run()
             }
                 .onSuccess { result ->
@@ -103,6 +107,7 @@ fun DnsLeakTestPage(
                     if (error !is kotlinx.coroutines.CancellationException) {
                         failed = true
                         failedReason = error.message
+                        failureKind = (error as? DnsLeakTestFailure)?.kind
                         running = false
                     }
                 }
@@ -149,7 +154,7 @@ fun DnsLeakTestPage(
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                         Spacer(Modifier.height(12.dp))
-                        verdictBanner(outcome, failed, running, failedReason)
+                        verdictBanner(outcome, failed, running, failedReason, failureKind)
                         outcome?.exit?.let { exit ->
                             Spacer(Modifier.height(6.dp))
                             Text(
@@ -188,6 +193,7 @@ private fun verdictBanner(
     failed: Boolean,
     running: Boolean,
     failedReason: String?,
+    failureKind: DnsLeakFailureKind? = null,
 ) {
     val text = when {
         failed -> stringResource(R.string.tools_dns_failed)
@@ -224,7 +230,11 @@ private fun verdictBanner(
         if (failed && !failedReason.isNullOrBlank()) {
             Spacer(Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.tools_dns_failed_detail, failedReason),
+                text = when (failureKind) {
+                    DnsLeakFailureKind.NoInternet -> stringResource(R.string.tools_dns_reason_no_internet)
+                    DnsLeakFailureKind.TunnelNotPassing -> stringResource(R.string.tools_dns_reason_tunnel_not_passing)
+                    null -> stringResource(R.string.tools_dns_failed_detail, failedReason.orEmpty())
+                },
                 fontSize = 12.sp,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )

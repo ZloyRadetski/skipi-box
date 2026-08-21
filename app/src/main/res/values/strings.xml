@@ -1205,6 +1205,8 @@
     <string name="tools_dns_running">Resolving probes and collecting results…</string>
     <string name="tools_dns_failed">Test failed: could not collect results. Check the connection.</string>
     <string name="tools_dns_failed_detail">Reason: %1$s</string>
+    <string name="tools_dns_reason_no_internet">No internet connection - check your network.</string>
+    <string name="tools_dns_reason_tunnel_not_passing">The VPN tunnel is up but passes no traffic - reconnect the VPN or change the server.</string>
     <string name="tools_dns_no_leak">No DNS leak detected. Queries follow a controlled resolver path.</string>
     <string name="tools_dns_suspected_leak">DNS leak detected! Queries reach multiple unrelated resolvers.</string>
     <string name="tools_dns_unknown">Not enough data to judge</string>

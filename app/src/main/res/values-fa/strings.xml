@@ -1194,6 +1194,8 @@ lid">CIDR نامعتبر است</string>
     <string name="tools_dns_running">در حال حل درخواست‌های آزمایشی و جمع‌آوری نتایج…</string>
     <string name="tools_dns_failed">تست ناموفق بود: جمع‌آوری نتایج ممکن نشد. اتصال را بررسی کنید.</string>
     <string name="tools_dns_failed_detail">دلیل: %1$s</string>
+    <string name="tools_dns_reason_no_internet">عدم اتصال به اینترنت - شبکه خود را بررسی کنید.</string>
+    <string name="tools_dns_reason_tunnel_not_passing">تونل VPN برقرار است اما ترافیکی از آن عبور نمی‌کند - VPN را دوباره متصل کنید یا سرور را عوض کنید.</string>
     <string name="tools_dns_no_leak">نشتی DNS شناسایی نشد. درخواست‌ها از مسیر مبدل کنترل‌شده عبور می‌کنند.</string>
     <string name="tools_dns_suspected_leak">نشتی DNS شناسایی شد! درخواست‌ها به چند مبدل بی‌ربط می‌رسند.</string>
     <string name="tools_dns_unknown">داده کافی برای قضاوت وجود ندارد</string>

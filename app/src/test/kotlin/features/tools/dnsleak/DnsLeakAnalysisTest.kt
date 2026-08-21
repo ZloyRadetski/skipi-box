@@ -4,7 +4,9 @@
 package features.tools.dnsleak
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DnsLeakAnalysisTest {
@@ -96,6 +98,26 @@ class DnsLeakAnalysisTest {
         assertNull(DnsLeakAnalysis.countryFlagEmoji(null))
         assertNull(DnsLeakAnalysis.countryFlagEmoji("DEU"))
         assertNull(DnsLeakAnalysis.countryFlagEmoji("D1"))
+    }
+
+    @Test
+    fun failure_kind_reflects_vpn_presence() {
+        assertEquals(DnsLeakFailureKind.TunnelNotPassing, DnsLeakAnalysis.failureKind(true))
+        assertEquals(DnsLeakFailureKind.NoInternet, DnsLeakAnalysis.failureKind(false))
+    }
+
+    @Test
+    fun test_failure_names_dead_tunnel_when_vpn_network_present() {
+        val failure = DnsLeakTestFailure(hasVpnNetwork = true)
+        assertEquals(DnsLeakFailureKind.TunnelNotPassing, failure.kind)
+        assertTrue(failure.message!!.contains("VPN"))
+    }
+
+    @Test
+    fun test_failure_reports_offline_when_no_vpn_network() {
+        val failure = DnsLeakTestFailure(hasVpnNetwork = false)
+        assertEquals(DnsLeakFailureKind.NoInternet, failure.kind)
+        assertFalse(failure.message!!.contains("VPN"))
     }
 
     private fun makeResolver(countryCode: String): DnsLeakResolver {
