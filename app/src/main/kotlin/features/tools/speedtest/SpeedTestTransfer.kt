@@ -81,8 +81,13 @@ internal class SpeedTestTransfer {
                         transferredBytes.get() < byteBudgetBytes
                     ) {
                         currentCoroutineContext().ensureActive()
-                        runCatching { chunk(transferredBytes) }
-                        delay(RetryDelayMillis)
+                        // Sleep only after a failure: an unconditional pause
+                        // between successful chunks would cut the measured
+                        // throughput by the idle fraction of every cycle.
+                        val result = runCatching { chunk(transferredBytes) }
+                        if (result.isFailure) {
+                            delay(RetryDelayMillis)
+                        }
                     }
                 }
             }
@@ -152,7 +157,7 @@ internal class SpeedTestTransfer {
         private const val DownloadByteBudgetBytes = 48L * 1024 * 1024
         private const val UploadByteBudgetBytes = 16L * 1024 * 1024
         private const val PayloadBytes = 8 * 1024 * 1024
-        private const val UploadPayloadBytes = 4L * 1024 * 1024
+        private const val UploadPayloadBytes = 8L * 1024 * 1024
         private const val BufferSizeBytes = 64 * 1024
         private const val UploadChunkSizeBytes = 256 * 1024
         private const val SampleIntervalMillis = 200L

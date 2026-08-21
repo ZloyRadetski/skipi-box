@@ -82,10 +82,13 @@ internal class SpeedTestEngine(
 
     private suspend fun runPingPhase(): List<Double> {
         emit(SpeedTestState(phase = SpeedTestPhase.Ping))
+        // Warm-up request: establishes DNS, TCP and TLS so the measured
+        // samples below reflect pure round-trip time, not the handshake.
+        runCatching { measureRoundTrip(keepAlive = true) }
         val samples = mutableListOf<Double>()
         repeat(PingRequestCount) { index ->
             currentCoroutineContext().ensureActive()
-            runCatching { measureRoundTrip() }
+            runCatching { measureRoundTrip(keepAlive = true) }
                 .getOrNull()
                 ?.takeIf { it > 0.0 }
                 ?.let(samples::add)
@@ -99,16 +102,30 @@ internal class SpeedTestEngine(
         return samples
     }
 
-    private fun measureRoundTrip(): Double {
+    /**
+     * One HTTP round trip against a zero-byte payload. With [keepAlive] the
+     * connection is returned to the JVM keep-alive cache (stream fully read,
+     * no explicit disconnect), so consecutive samples ride a warm connection
+     * instead of paying TCP+TLS on every request.
+     */
+    private fun measureRoundTrip(keepAlive: Boolean): Double {
         val startedAt = System.nanoTime()
         val connection = openConnection(downloadUrl(bytes = 0))
         try {
             configure(connection, connectTimeoutMillis = PingConnectTimeoutMillis)
             connection.requestMethod = "GET"
             connection.connect()
-            connection.inputStream.use { input -> input.read() }
+            connection.inputStream.use { input ->
+                while (input.read() != -1) {
+                    // Drain fully so the connection stays reusable.
+                }
+            }
         } finally {
-            connection.disconnect()
+            if (!keepAlive) {
+                connection.disconnect()
+            } else {
+                runCatching { connection.inputStream?.close() }
+            }
         }
         return (System.nanoTime() - startedAt) / NANOS_PER_MILLI
     }
