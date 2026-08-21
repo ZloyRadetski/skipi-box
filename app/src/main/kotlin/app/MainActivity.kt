@@ -66,6 +66,12 @@ class MainActivity : ComponentActivity() {
         },
     )
 
+    private val photoFilePicker = AndroidResourceFilePicker(
+        missingLauncherMessage = {
+            getString(R.string.error_resource_file_picker_missing)
+        },
+    )
+
     private val logFileCreator = AndroidLogFileCreator(
         missingLauncherMessage = {
             getString(R.string.error_log_export_launcher_missing)
@@ -113,6 +119,12 @@ class MainActivity : ComponentActivity() {
         resourceFilePicker.complete(uri)
     }
 
+    private val photoFilePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent(),
+    ) { uri ->
+        photoFilePicker.complete(uri)
+    }
+
     private val logFileCreatorLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("*/*"),
     ) { uri ->
@@ -140,6 +152,9 @@ class MainActivity : ComponentActivity() {
         resourceFilePicker.registerLauncher { mimeTypes ->
             resourceFilePickerLauncher.launch(mimeTypes)
         }
+        photoFilePicker.registerLauncher {
+            photoFilePickerLauncher.launch("image/*")
+        }
         logFileCreator.registerLauncher { fileName ->
             logFileCreatorLauncher.launch(fileName)
         }
@@ -165,6 +180,8 @@ class MainActivity : ComponentActivity() {
         qrCodeScanRequester.registerScanLauncher(null)
         resourceFilePicker.complete(null)
         resourceFilePicker.registerLauncher(null)
+        photoFilePicker.complete(null)
+        photoFilePicker.registerLauncher(null)
         logFileCreator.complete(null)
         logFileCreator.registerLauncher(null)
         super.onDestroy()
@@ -188,6 +205,7 @@ class MainActivity : ComponentActivity() {
                 padding = WindowInsets.systemBars.union(WindowInsets.displayCutout).asPaddingValues(),
                 qrCodeScanner = qrCodeScanRequester::scan,
                 resourceFilePicker = resourceFilePicker::pick,
+                photoFilePicker = photoFilePicker::pick,
                 logFileCreator = logFileCreator::create,
                 requestVpnPermission = vpnPermissionRequester::request,
             )

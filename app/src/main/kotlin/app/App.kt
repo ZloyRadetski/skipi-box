@@ -41,6 +41,7 @@ fun App(
     padding: PaddingValues = PaddingValues(0.dp),
     qrCodeScanner: suspend () -> String?,
     resourceFilePicker: suspend () -> Uri?,
+    photoFilePicker: suspend () -> Uri? = { null },
     logFileCreator: suspend (String) -> Uri?,
     requestVpnPermission: suspend (Intent) -> Boolean,
 ) {
@@ -150,6 +151,7 @@ fun App(
             accessLogRepository = AndroidAccessLogRepository,
             logcatRepository = AndroidLogcatRepository,
             requestVpnPermission = requestVpnPermission,
+            photoFilePicker = photoFilePicker,
         )
     }
     val chromeState by stateStore.collectAppChromeState()
