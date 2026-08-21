@@ -1178,7 +1178,12 @@
     <string name="tools_dns_suspected_leak">检测到 DNS 泄漏！查询到达了多个无关的解析器。</string>
     <string name="tools_dns_unknown">数据不足，无法判断</string>
     <string name="tools_dns_resolvers_title">检测到的解析器</string>
-    <string name="tools_dns_description">通过您当前的网络路径（包括 VPN）解析唯一的探测域名，然后服务会报告哪些解析器处理了这些请求。</string>
+    <string name="tools_dns_description">每个 DNS 路径（您的系统服务器和知名公共解析器）都会被直接查询一条回显记录，以揭示您的查询来自哪个网络。观察到的网络会与您的 HTTP 出口进行比较：经由不同网络解析的路径即为泄漏。</string>
+    <string name="tools_dns_exit_info">您的出口：%1$s (%2$s)</string>
+    <string name="tools_dns_server_system">系统</string>
+    <string name="tools_dns_server_public">公共</string>
+    <string name="tools_dns_observed_subnet">子网 %1$s</string>
+    <string name="tools_dns_observed_egress">经 %1$s</string>
     <string name="tools_dns_resolver_entry">解析器 %1$d</string>
     <string name="tools_dns_isp_unknown">未知提供商</string>
 </resources>

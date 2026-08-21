@@ -10,61 +10,83 @@ import org.junit.Test
 class DnsLeakAnalysisTest {
 
     @Test
-    fun parse_reads_dns_records_and_ignores_unknown_fields() {
+    fun parseIpWhoIs_reads_geo_and_connection() {
         val body = """
-            [
-              {"ip":"1.1.1.1","country_id":"US","country_name":"United States","asn":13335,"isp":"Cloudflare","type":"dns","extra":true},
-              {"ip":"","type":"conclusion","text":"ok"}
-            ]
+            {"ip":"8.8.8.8","success":true,"country":"United States","country_code":"US",
+             "connection":{"asn":15169,"org":"Google LLC","isp":"Google LLC"},"extra":1}
         """.trimIndent()
-        val records = DnsLeakAnalysis.parse(body)
-        assertEquals(2, records.size)
-        assertEquals("1.1.1.1", records[0].ip)
-        assertEquals("Cloudflare", records[0].isp)
+        val geo = DnsLeakAnalysis.parseIpWhoIs(body)
+        assertEquals("US", geo?.countryCode)
+        assertEquals("Google LLC", geo?.connection?.isp)
+        assertEquals(15169, geo?.connection?.asn)
     }
 
     @Test
-    fun parse_returns_empty_list_for_invalid_body() {
-        assertEquals(emptyList<DnsLeakRecord>(), DnsLeakAnalysis.parse("not json"))
+    fun parseIpWhoIs_rejects_failures_and_invalid_bodies() {
+        assertNull(DnsLeakAnalysis.parseIpWhoIs("""{"success":false}"""))
+        assertNull(DnsLeakAnalysis.parseIpWhoIs("not json"))
     }
 
     @Test
-    fun resolvers_keeps_only_dns_type_and_deduplicates_by_ip() {
-        val records = listOf(
-            DnsLeakRecord(ip = "1.1.1.1", type = "dns", asn = 13335),
-            DnsLeakRecord(ip = "1.1.1.1", type = "dns", asn = 13335),
-            DnsLeakRecord(ip = "9.9.9.9", countryId = "de", type = "dns", asn = 3356),
-            DnsLeakRecord(ip = "8.8.8.8", type = "ip"),
-            DnsLeakRecord(ip = "", type = "dns"),
+    fun egressIpFromTxt_finds_ipv4_record() {
+        val records = listOf("edns0-client-subnet 1.2.3.0/24", "172.217.37.147")
+        assertEquals("172.217.37.147", DnsLeakAnalysis.egressIpFromTxt(records))
+        assertNull(DnsLeakAnalysis.egressIpFromTxt(listOf("edns0-client-subnet 1.2.3.0/24")))
+    }
+
+    @Test
+    fun clientSubnetFromTxt_extracts_base_address() {
+        val records = listOf("172.217.37.147", "edns0-client-subnet 109.196.66.0/24")
+        assertEquals("109.196.66.0", DnsLeakAnalysis.clientSubnetFromTxt(records))
+        assertNull(DnsLeakAnalysis.clientSubnetFromTxt(listOf("172.217.37.147")))
+    }
+
+    @Test
+    fun resolvers_prefer_client_subnet_for_geo() {
+        val probes = listOf(
+            DnsProbeResult("192.168.31.1", true, "172.217.37.147", "109.196.66.0"),
+            DnsProbeResult("1.1.1.1", false, "", null),
         )
-        val resolvers = DnsLeakAnalysis.resolvers(records)
-        assertEquals(2, resolvers.size)
-        assertEquals("DE", resolvers[1].countryCode)
+        val geo = mapOf(
+            "109.196.66.0" to IpWhoIsResponse(
+                ip = "109.196.66.0",
+                success = true,
+                country = "Russia",
+                countryCode = "RU",
+                connection = IpWhoIsConnection(asn = 12389, isp = "Rostelecom"),
+            ),
+        )
+        val resolvers = DnsLeakAnalysis.resolvers(probes, geo)
+        assertEquals(1, resolvers.size)
+        assertEquals("RU", resolvers[0].observedCountryCode)
+        assertEquals("109.196.66.0", resolvers[0].observedIp)
+        assertEquals(true, resolvers[0].isSystemServer)
     }
 
     @Test
-    fun verdict_is_no_leak_when_at_most_two_distinct_asn() {
+    fun verdict_is_leak_when_any_path_country_differs_from_exit() {
         val resolvers = listOf(
-            DnsLeakResolver("1.1.1.1", "US", "United States", 13335, "Cloudflare"),
-            DnsLeakResolver("8.8.8.8", "US", "United States", 13335, "Google"),
-            DnsLeakResolver("9.9.9.9", "", "", null, ""),
+            makeResolver("NL"),
+            makeResolver("RU"),
         )
-        assertEquals(DnsLeakVerdict.NoLeak, DnsLeakAnalysis.verdict(resolvers))
+        val verdict = DnsLeakAnalysis.verdict(resolvers, DnsLeakExitInfo("1.1.1.1", "NL", "Netherlands", "", null))
+        assertEquals(DnsLeakVerdict.SuspectedLeak, verdict)
     }
 
     @Test
-    fun verdict_is_suspected_leak_when_three_or_more_distinct_asn() {
-        val resolvers = listOf(
-            DnsLeakResolver("1.1.1.1", "US", "United States", 13335, "Cloudflare"),
-            DnsLeakResolver("8.8.8.8", "US", "United States", 15169, "Google"),
-            DnsLeakResolver("9.9.9.9", "", "", 3356, "Quad9"),
-        )
-        assertEquals(DnsLeakVerdict.SuspectedLeak, DnsLeakAnalysis.verdict(resolvers))
+    fun verdict_is_no_leak_when_all_paths_match_exit() {
+        val resolvers = listOf(makeResolver("NL"), makeResolver("nl"))
+        val verdict = DnsLeakAnalysis.verdict(resolvers, DnsLeakExitInfo("1.1.1.1", "NL", "Netherlands", "", null))
+        assertEquals(DnsLeakVerdict.NoLeak, verdict)
     }
 
     @Test
-    fun verdict_is_unknown_without_resolvers() {
-        assertEquals(DnsLeakVerdict.Unknown, DnsLeakAnalysis.verdict(emptyList()))
+    fun verdict_is_unknown_without_data() {
+        assertEquals(DnsLeakVerdict.Unknown, DnsLeakAnalysis.verdict(emptyList(), null))
+        assertEquals(
+            DnsLeakVerdict.Unknown,
+            DnsLeakAnalysis.verdict(listOf(makeResolver("")), DnsLeakExitInfo("1.1.1.1", "NL", "Netherlands", "", null)),
+        )
     }
 
     @Test
@@ -74,5 +96,18 @@ class DnsLeakAnalysisTest {
         assertNull(DnsLeakAnalysis.countryFlagEmoji(null))
         assertNull(DnsLeakAnalysis.countryFlagEmoji("DEU"))
         assertNull(DnsLeakAnalysis.countryFlagEmoji("D1"))
+    }
+
+    private fun makeResolver(countryCode: String): DnsLeakResolver {
+        return DnsLeakResolver(
+            server = "1.1.1.1",
+            isSystemServer = false,
+            egressIp = "172.217.37.147",
+            clientSubnetIp = null,
+            observedCountryCode = countryCode,
+            observedCountryName = "",
+            isp = "",
+            asn = null,
+        )
     }
 }

@@ -1198,7 +1198,12 @@ lid">CIDR نامعتبر است</string>
     <string name="tools_dns_suspected_leak">نشتی DNS شناسایی شد! درخواست‌ها به چند مبدل بی‌ربط می‌رسند.</string>
     <string name="tools_dns_unknown">داده کافی برای قضاوت وجود ندارد</string>
     <string name="tools_dns_resolvers_title">مبدل‌های شناسایی‌شده</string>
-    <string name="tools_dns_description">دامنه‌های آزمایشی یکتا از طریق مسیر شبکه فعلی شما (از جمله VPN) حل می‌شوند و سپس سرویس گزارش می‌دهد کدام مبدل‌ها آن‌ها را پردازش کرده‌اند.</string>
+    <string name="tools_dns_description">هر مسیر DNS (سرورهای سیستم شما و مبدل‌های عمومی شناخته‌شده) مستقیماً با یک رکورد اکو پرس‌وجو می‌شود تا نشان دهد درخواست‌های شما از چه شبکه‌ای می‌آیند. شبکه مشاهده‌شده با خروجی HTTP شما مقایسه می‌شود: مسیری که از شبکه دیگری عبور کند یک نشتی است.</string>
+    <string name="tools_dns_exit_info">خروجی شما: %1$s (%2$s)</string>
+    <string name="tools_dns_server_system">سیستمی</string>
+    <string name="tools_dns_server_public">عمومی</string>
+    <string name="tools_dns_observed_subnet">زیرشبکه %1$s</string>
+    <string name="tools_dns_observed_egress">از طریق %1$s</string>
     <string name="tools_dns_resolver_entry">مبدل %1$d</string>
     <string name="tools_dns_isp_unknown">ارائه‌دهنده ناشناس</string>
 </resources>

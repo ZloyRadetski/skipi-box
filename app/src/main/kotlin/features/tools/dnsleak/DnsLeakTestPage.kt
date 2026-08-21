@@ -28,10 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.net.ConnectivityManager
 import app.LocalAppChromeState
 import app.LocalIsWideScreen
 import app.LocalNavigator
@@ -60,6 +62,15 @@ fun DnsLeakTestPage(
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val systemDnsServers = remember {
+        val connectivity = context.getSystemService(ConnectivityManager::class.java)
+        connectivity?.activeNetwork
+            ?.let { connectivity.getLinkProperties(it)?.dnsServers }
+            ?.mapNotNull { it.hostAddress }
+            .orEmpty()
+    }
 
     var running by remember { mutableStateOf(false) }
     var outcome by remember { mutableStateOf<DnsLeakTestOutcome?>(null) }
@@ -77,7 +88,12 @@ fun DnsLeakTestPage(
         failedReason = null
         outcome = null
         job = scope.launch {
-            runCatching { DnsLeakTestEngine(onProgress = {}).run() }
+            runCatching {
+                DnsLeakTestEngine(
+                    systemDnsServers = systemDnsServers,
+                    onProgress = {},
+                ).run()
+            }
                 .onSuccess { result ->
                     outcome = result
                     running = false
@@ -133,6 +149,18 @@ fun DnsLeakTestPage(
                         )
                         Spacer(Modifier.height(12.dp))
                         verdictBanner(outcome, failed, running, failedReason)
+                        outcome?.exit?.let { exit ->
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.tools_dns_exit_info,
+                                    exit.ip,
+                                    exit.countryName.ifBlank { exit.countryCode },
+                                ),
+                                fontSize = 12.sp,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
                         Spacer(Modifier.height(12.dp))
                         TextButton(
                             text = stringResource(
@@ -213,7 +241,7 @@ private fun ResolverCard(resolver: DnsLeakResolver) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = DnsLeakAnalysis.countryFlagEmoji(resolver.countryCode) ?: "🌐",
+                text = DnsLeakAnalysis.countryFlagEmoji(resolver.observedCountryCode) ?: "🌐",
                 fontSize = 22.sp,
             )
             Spacer(Modifier.size(12.dp))
@@ -228,9 +256,20 @@ private fun ResolverCard(resolver: DnsLeakResolver) {
                 )
                 Text(
                     text = listOfNotNull(
-                        resolver.ip,
-                        resolver.asn?.let { "AS$it" },
-                        resolver.countryName.ifBlank { null },
+                        stringResource(
+                            if (resolver.isSystemServer) {
+                                R.string.tools_dns_server_system
+                            } else {
+                                R.string.tools_dns_server_public
+                            },
+                        ) + " ${resolver.server}",
+                        resolver.observedIp?.let { observedIp ->
+                            if (resolver.clientSubnetIp != null) {
+                                stringResource(R.string.tools_dns_observed_subnet, observedIp)
+                            } else {
+                                stringResource(R.string.tools_dns_observed_egress, observedIp)
+                            }
+                        },
                     ).joinToString(" · "),
                     fontSize = 12.sp,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,

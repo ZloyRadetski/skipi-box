@@ -1199,7 +1199,12 @@
     <string name="tools_dns_suspected_leak">Обнаружена утечка DNS! Запросы достигают нескольких посторонних резолверов.</string>
     <string name="tools_dns_unknown">Недостаточно данных для вывода</string>
     <string name="tools_dns_resolvers_title">Обнаруженные резолверы</string>
-    <string name="tools_dns_description">Уникальные пробные домены разрешаются через ваш текущий сетевой путь (включая VPN), после чего сервис сообщает, какие резолверы их обработали.</string>
+    <string name="tools_dns_description">Каждый DNS-путь (ваши системные серверы и известные публичные резолверы) напрямую опрашивается эхо-записью, показывающей, из какой сети приходят ваши запросы. Наблюдаемая сеть сравнивается с вашим HTTP-exit: путь через другую сеть — это утечка.</string>
+    <string name="tools_dns_exit_info">Ваш exit: %1$s (%2$s)</string>
+    <string name="tools_dns_server_system">Системный</string>
+    <string name="tools_dns_server_public">Публичный</string>
+    <string name="tools_dns_observed_subnet">подсеть %1$s</string>
+    <string name="tools_dns_observed_egress">через %1$s</string>
     <string name="tools_dns_resolver_entry">Резолвер %1$d</string>
     <string name="tools_dns_isp_unknown">Неизвестный провайдер</string>
 </resources>
