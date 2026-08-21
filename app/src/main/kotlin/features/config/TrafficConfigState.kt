@@ -471,10 +471,12 @@ internal fun AppState.withUpdatedTrafficConfig(
     configId: Int,
     transform: (TrafficConfigState) -> TrafficConfigState,
 ): AppState {
-    return copy(
-        trafficConfigs = trafficConfigs.map { config ->
-            if (config.id == configId) {
-                val updated = transform(config)
+    var hasChanges = false
+    val updatedConfigs = trafficConfigs.map { config ->
+        if (config.id == configId) {
+            val updated = transform(config)
+            if (updated != config) {
+                hasChanges = true
                 val parsed = if (updated.rawConfig != config.rawConfig) {
                     updated.withSkipiSettingsReadFromRawConfig()
                 } else {
@@ -484,8 +486,12 @@ internal fun AppState.withUpdatedTrafficConfig(
             } else {
                 config
             }
-        },
-    ).withConfigProxyGroupsReflected()
+        } else {
+            config
+        }
+    }
+    if (!hasChanges) return this
+    return copy(trafficConfigs = updatedConfigs).withConfigProxyGroupsReflected()
 }
 
 /**
@@ -511,6 +517,17 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
         (server.server as? StrategyGroup)?.sourceTrafficConfigId != null
     }
     val regularServers = proxyServers.filterNot(existingGenerated::contains)
+
+    val serverIdsByRemark = HashMap<String, MutableList<Int>>(regularServers.size * 2)
+    regularServers.forEach { candidate ->
+        val remarks = candidate.server.getInfo().remarks.trim().lowercase()
+        val cleanRemarks = CountryFlagUtils.stripLeadingCountryFlag(remarks).trim().lowercase()
+        serverIdsByRemark.getOrPut(remarks) { mutableListOf() }.add(candidate.id)
+        if (cleanRemarks != remarks) {
+            serverIdsByRemark.getOrPut(cleanRemarks) { mutableListOf() }.add(candidate.id)
+        }
+    }
+
     var nextId = nextProxyServerId
     val generatedServers = desired.map { source ->
         val existing = existingGenerated.firstOrNull { server ->
@@ -521,14 +538,9 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
         val id = existing?.id ?: nextId++
         val existingStrategy = existing?.server as? StrategyGroup
         val resolvedMemberIds = source.group.members.flatMap { rawMember ->
-            val cleanMember = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim()
-            regularServers.filter { candidate ->
-                val remarks = candidate.server.getInfo().remarks.trim()
-                val cleanRemarks = CountryFlagUtils.stripLeadingCountryFlag(remarks).trim()
-                remarks.equals(cleanMember, ignoreCase = true) ||
-                    cleanRemarks.equals(cleanMember, ignoreCase = true) ||
-                    CountryFlagUtils.stripLeadingCountryFlag(cleanMember).trim().equals(cleanRemarks, ignoreCase = true)
-            }.map { it.id }
+            val cleanMember = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim().lowercase()
+            val cleanWithoutFlag = CountryFlagUtils.stripLeadingCountryFlag(cleanMember).trim().lowercase()
+            serverIdsByRemark[cleanMember] ?: serverIdsByRemark[cleanWithoutFlag].orEmpty()
         }.distinct()
         val effectiveMemberIds = if (existingStrategy?.proxyServerIds?.isNotEmpty() == true) {
             existingStrategy.proxyServerIds

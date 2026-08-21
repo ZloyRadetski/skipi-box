@@ -134,17 +134,32 @@ fun TrafficConfigEditorPage(
     }
 
     fun saveBasics() {
+        val trimmedName = name.trim().ifBlank { config.name }
+        val trimmedSourceUrl = sourceUrl.trim()
+        val trimmedUpdateInterval = updateInterval.trim()
+        val trimmedGeoUpdateInterval = geoUpdateInterval.trim()
+
+        val isUnchanged = trimmedName == config.name &&
+            trimmedSourceUrl == config.sourceUrl &&
+            updateLocked == config.updateLocked &&
+            autoUpdate == config.autoUpdate &&
+            trimmedUpdateInterval == sanitizeSubscriptionIntervalInput(config.updateInterval) &&
+            geoAutoUpdate == config.resourceSettings.autoUpdate &&
+            trimmedGeoUpdateInterval == sanitizeSubscriptionIntervalInput(config.resourceSettings.updateInterval)
+
+        if (isUnchanged) return
+
         updateAppState { state ->
             state.withUpdatedTrafficConfig(config.id) { current ->
                 current.copy(
-                    name = name.trim().ifBlank { current.name },
-                    sourceUrl = sourceUrl.trim(),
+                    name = trimmedName,
+                    sourceUrl = trimmedSourceUrl,
                     updateLocked = updateLocked,
                     autoUpdate = autoUpdate,
-                    updateInterval = updateInterval.trim(),
+                    updateInterval = trimmedUpdateInterval,
                     resourceSettings = current.resourceSettings.copy(
                         autoUpdate = geoAutoUpdate,
-                        updateInterval = geoUpdateInterval.trim(),
+                        updateInterval = trimmedGeoUpdateInterval,
                     ),
                 ).withSkipiSettingsInRawConfig()
             }

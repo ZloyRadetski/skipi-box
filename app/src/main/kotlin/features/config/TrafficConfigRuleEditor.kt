@@ -102,7 +102,9 @@ internal fun TrafficConfigRulesPage(
     var nextItemId by remember { mutableLongStateOf(1L) }
 
     LaunchedEffect(normalRules) {
-        if (rulesList.map { it.rule.raw } != normalRules.map { it.raw }) {
+        val isUnchanged = rulesList.size == normalRules.size &&
+            rulesList.indices.all { i -> rulesList[i].rule.raw == normalRules[i].raw }
+        if (!isUnchanged) {
             rulesList.clear()
             rulesList.addAll(
                 normalRules.map { rule ->

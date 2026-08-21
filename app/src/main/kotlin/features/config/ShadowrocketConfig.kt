@@ -73,7 +73,30 @@ internal val ShadowrocketUnsupportedAndroidSections = setOf(
     "header rewrite",
 )
 
+private const val MaxAnalysisCacheEntries = 16
+private val analysisCache = object : LinkedHashMap<Int, Pair<String, ShadowrocketConfigAnalysis>>(MaxAnalysisCacheEntries, 0.75f, true) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Pair<String, ShadowrocketConfigAnalysis>>?): Boolean {
+        return size > MaxAnalysisCacheEntries
+    }
+}
+private val analysisCacheLock = Any()
+
 internal fun String.analyzeShadowrocketConfig(): ShadowrocketConfigAnalysis {
+    val key = hashCode()
+    synchronized(analysisCacheLock) {
+        val cached = analysisCache[key]
+        if (cached != null && cached.first == this) {
+            return cached.second
+        }
+    }
+    val analysis = parseShadowrocketConfig(this)
+    synchronized(analysisCacheLock) {
+        analysisCache[key] = this to analysis
+    }
+    return analysis
+}
+
+private fun parseShadowrocketConfig(rawText: String): ShadowrocketConfigAnalysis {
     val sections = linkedMapOf<String, MutableList<String>>()
     val general = linkedMapOf<String, String>()
     val rules = mutableListOf<ShadowrocketRule>()
@@ -81,7 +104,7 @@ internal fun String.analyzeShadowrocketConfig(): ShadowrocketConfigAnalysis {
     val diagnostics = mutableListOf<ShadowrocketConfigDiagnostic>()
     var activeSection = ""
 
-    lineSequence().forEachIndexed { index, line ->
+    rawText.lineSequence().forEachIndexed { index, line ->
         val lineNumber = index + 1
         val trimmed = line.trim()
         if (trimmed.startsWith("[") && trimmed.endsWith("]") && trimmed.length > 2) {
