@@ -132,6 +132,11 @@
     <string name="settings_resolve_proxy_server_domain">دامنه های سرور پروکسی را حل کنید</string>
     <string name="settings_resolve_proxy_server_domain_summary">IP های سرور پروکسی را در هاست های DNS بنویسید</string>
     <string name="settings_proxy_vpn_service">تنظیمات پروکسی (سرویس VPN)</string>
+    <string name="settings_auto_connect_title">اتصال خودکار</string>
+    <string name="settings_auto_connect_on_app_open_title">هنگام اجرای برنامه</string>
+    <string name="settings_auto_connect_on_app_open_summary">اتصال خودکار به پروکسی فعال هنگام باز شدن برنامه</string>
+    <string name="settings_auto_connect_on_boot_title">هنگام روشن شدن دستگاه</string>
+    <string name="settings_auto_connect_on_boot_summary">شروع خودکار VPN پس از بالا آمدن دستگاه</string>
     <string name="settings_broadcast_control">کنترل پخش</string>
     <string name="settings_broadcast_control_summary">به پخش‌های خارجی اجازه شروع و توقف سرویس پراکسی را بدهید</string>
     <string name="settings_vpn_local_dns">DNS محلی را فعال کنید</string>

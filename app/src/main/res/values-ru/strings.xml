@@ -142,6 +142,11 @@
     <string name="settings_resolve_proxy_server_domain">Разрешать домены прокси-серверов</string>
     <string name="settings_resolve_proxy_server_domain_summary">Записывать IP-адреса прокси-серверов в DNS hosts локально</string>
     <string name="settings_proxy_vpn_service">Настройки прокси (VPN Service)</string>
+    <string name="settings_auto_connect_title">Автоподключение</string>
+    <string name="settings_auto_connect_on_app_open_title">При запуске приложения</string>
+    <string name="settings_auto_connect_on_app_open_summary">Автоматически подключаться к активному серверу при открытии SKIPI</string>
+    <string name="settings_auto_connect_on_boot_title">При включении устройства</string>
+    <string name="settings_auto_connect_on_boot_summary">Автоматически поднимать VPN при загрузке или перезагрузке телефона</string>
     <string name="settings_vpn_local_dns">Включить локальный DNS</string>
     <string name="settings_vpn_local_dns_summary">Использовать встроенное ядро для обработки DNS-запросов</string>
     <string name="settings_local_proxy">Настройки локального прокси</string>

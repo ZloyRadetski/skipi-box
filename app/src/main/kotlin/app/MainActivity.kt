@@ -40,6 +40,9 @@ import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.subscriptionInstallMessage
 import features.subscription.toSubscriptionInstallConfigOrNull
 import features.subscription.usecase.toSubscriptionFetchOptions
+import app.effects.resolveActiveNetworkConfig
+import features.config.withActiveTrafficConfig
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ui.feedback.AndroidToastTipNotifier
 
@@ -126,7 +129,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private val logFileCreatorLauncher = registerForActivityResult(
-        ActivityResultContracts.CreateDocument("*/*"),
+        ActivityResultContracts.CreateDocument("text/plain"),
     ) { uri ->
         logFileCreator.complete(uri)
     }
@@ -161,7 +164,10 @@ class MainActivity : ComponentActivity() {
         showAppContent()
         requestStartupPermissions()
         if (savedInstanceState == null) {
-            handleExternalIntent(intent)
+            val handledDeepLink = handleExternalIntent(intent)
+            if (!handledDeepLink) {
+                checkAutoConnectOnAppOpen()
+            }
         }
     }
 
@@ -212,21 +218,54 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handleExternalIntent(intent: Intent?) {
-        val data = intent?.data ?: return
+    private fun checkAutoConnectOnAppOpen() {
+        val application = application as SkipiApplication
+        val state = application.stateStore.state.value
+        if (!state.autoConnectOnAppOpen || state.proxyRunning) return
+        application.appScope.launch(Dispatchers.IO) {
+            val running = runCatching { deepLinkProxyEngine.status(state.runMode, state).running }
+                .getOrElse { state.proxyRunning }
+            if (running) return@launch
+
+            val resolvedState = state.resolveActiveNetworkConfig(applicationContext)
+            if (resolvedState.activeTrafficConfigId != state.activeTrafficConfigId) {
+                application.stateStore.update { it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId) }
+            }
+            val selectedServer = resolvedState.proxyServers.firstOrNull { it.id == resolvedState.selectedProxyServerId }
+                ?: return@launch
+
+            when (val result = deepLinkProxyServiceUseCase.start(resolvedState, selectedServer)) {
+                is ProxyServiceResult.Success -> {
+                    application.stateStore.update { current ->
+                        current.copy(
+                            proxyRunning = result.proxyRunning,
+                            localProxyPort = result.appState?.localProxyPort ?: current.localProxyPort,
+                        )
+                    }
+                }
+                is ProxyServiceResult.Failed -> {
+                    tipNotifier.showError(error = result.error)
+                }
+                ProxyServiceResult.MissingServer -> Unit
+            }
+        }
+    }
+
+    private fun handleExternalIntent(intent: Intent?): Boolean {
+        val data = intent?.data ?: return false
         data.toSkipiDeepLinkOrNull()?.let { link ->
             (application as SkipiApplication).appScope.launch {
                 handleSkipiDeepLink(link)
             }
-            return
+            return true
         }
-        if (!data.isSubscriptionInstallConfigUri()) return
+        if (!data.isSubscriptionInstallConfigUri()) return false
         val config = intent.toSubscriptionInstallConfigOrNull()
         if (config == null) {
             (application as SkipiApplication).appScope.launch {
                 tipNotifier.show(getString(R.string.subscription_install_config_invalid))
             }
-            return
+            return true
         }
         (application as SkipiApplication).appScope.launch {
             runCatching {
@@ -244,6 +283,7 @@ class MainActivity : ComponentActivity() {
                 tipNotifier.showError(error, getString(R.string.subscription_install_config_failed))
             }
         }
+        return true
     }
 
     private suspend fun handleSkipiDeepLink(link: SkipiDeepLink) {

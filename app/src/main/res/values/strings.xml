@@ -138,6 +138,11 @@
     <string name="settings_resolve_proxy_server_domain">Resolve proxy server domains</string>
     <string name="settings_resolve_proxy_server_domain_summary">Write proxy server IPs to DNS hosts</string>
     <string name="settings_proxy_vpn_service">Proxy settings (VPN Service)</string>
+    <string name="settings_auto_connect_title">Auto-connect</string>
+    <string name="settings_auto_connect_on_app_open_title">On app launch</string>
+    <string name="settings_auto_connect_on_app_open_summary">Automatically connect to the active proxy when SKIPI is opened</string>
+    <string name="settings_auto_connect_on_boot_title">On device boot</string>
+    <string name="settings_auto_connect_on_boot_summary">Automatically start VPN when the device finishes booting</string>
     <string name="settings_broadcast_control">Broadcast control</string>
     <string name="settings_broadcast_control_summary">Allow external broadcasts to start and stop the proxy service</string>
     <string name="settings_vpn_local_dns">Enable local DNS</string>

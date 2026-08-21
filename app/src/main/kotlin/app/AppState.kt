@@ -189,6 +189,9 @@ data class AppState(
     val autoInstallAppUpdatesAtNight: Boolean = true,
     val availableAppUpdate: features.updater.AppUpdateInfo? = null,
     val dismissedUpdateVersion: String = "",
+
+    val autoConnectOnBoot: Boolean = false,
+    val autoConnectOnAppOpen: Boolean = false,
 )
 
 val AppState.effectiveLocalDnsEnabled: Boolean

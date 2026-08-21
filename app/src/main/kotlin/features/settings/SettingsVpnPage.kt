@@ -158,6 +158,28 @@ fun SettingsVpnPage(
                     }
                 }
 
+                item(key = "vpn_auto_connect_card") {
+                    SmallTitle(text = stringResource(R.string.settings_auto_connect_title))
+                    SettingsSectionCard {
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_auto_connect_on_app_open_title),
+                            summary = stringResource(R.string.settings_auto_connect_on_app_open_summary),
+                            checked = appState.autoConnectOnAppOpen,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(autoConnectOnAppOpen = enabled) }
+                            },
+                        )
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_auto_connect_on_boot_title),
+                            summary = stringResource(R.string.settings_auto_connect_on_boot_summary),
+                            checked = appState.autoConnectOnBoot,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(autoConnectOnBoot = enabled) }
+                            },
+                        )
+                    }
+                }
+
                 item(key = "vpn_stability_card") {
                     SmallTitle(text = stringResource(R.string.settings_stability_and_background))
                     SettingsSectionCard {

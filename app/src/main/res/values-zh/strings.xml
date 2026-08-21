@@ -132,6 +132,11 @@
     <string name="settings_resolve_proxy_server_domain">解析代理服务器域</string>
     <string name="settings_resolve_proxy_server_domain_summary">将代理服务器 IP 写入 DNS 主机</string>
     <string name="settings_proxy_vpn_service">代理设置（VPN 服务）</string>
+    <string name="settings_auto_connect_title">自动连接</string>
+    <string name="settings_auto_connect_on_app_open_title">应用启动时</string>
+    <string name="settings_auto_connect_on_app_open_summary">打开 SKIPI 时自动连接到活动代理</string>
+    <string name="settings_auto_connect_on_boot_title">开机自启</string>
+    <string name="settings_auto_connect_on_boot_summary">设备开机或重启后自动启动 VPN</string>
     <string name="settings_broadcast_control">广播控制</string>
     <string name="settings_broadcast_control_summary">允许外部广播启动和停止代理服务</string>
     <string name="settings_vpn_local_dns">启用本地 DNS</string>

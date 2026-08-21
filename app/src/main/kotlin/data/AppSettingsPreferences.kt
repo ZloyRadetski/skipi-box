@@ -370,6 +370,8 @@ internal class AppSettingsPreferences(
             autoCheckAppUpdates = preferences.getBoolean(KeyAutoCheckAppUpdates, defaults.autoCheckAppUpdates),
             autoInstallAppUpdatesAtNight = preferences.getBoolean(KeyAutoInstallAppUpdatesAtNight, defaults.autoInstallAppUpdatesAtNight),
             dismissedUpdateVersion = preferences.getString(KeyDismissedUpdateVersion, defaults.dismissedUpdateVersion) ?: defaults.dismissedUpdateVersion,
+            autoConnectOnBoot = preferences.getBoolean(KeyAutoConnectOnBoot, defaults.autoConnectOnBoot),
+            autoConnectOnAppOpen = preferences.getBoolean(KeyAutoConnectOnAppOpen, defaults.autoConnectOnAppOpen),
         )
     }
 
@@ -507,6 +509,8 @@ internal class AppSettingsPreferences(
             .putInt(KeyProxyAppListMode, state.proxyAppListMode)
             .putBoolean(KeyAutoCheckAppUpdates, state.autoCheckAppUpdates)
             .putBoolean(KeyAutoInstallAppUpdatesAtNight, state.autoInstallAppUpdatesAtNight)
+            .putBoolean(KeyAutoConnectOnBoot, state.autoConnectOnBoot)
+            .putBoolean(KeyAutoConnectOnAppOpen, state.autoConnectOnAppOpen)
             .putInt(KeyBackgroundStyle, state.backgroundStyle)
             .putInt(KeyBackgroundPhotoDimPercent, state.backgroundPhotoDimPercent)
             .putBoolean(KeyEnableSubscriptionExpiryNotifications, state.enableSubscriptionExpiryNotifications)
@@ -885,6 +889,8 @@ private const val KeyServiceControlWifiDisconnectStopBssids = "service_control_w
 private const val KeyProxyAppListMode = "proxy_app_list_mode"
 private const val KeyAutoCheckAppUpdates = "auto_check_app_updates"
 private const val KeyAutoInstallAppUpdatesAtNight = "auto_install_app_updates_at_night"
+private const val KeyAutoConnectOnBoot = "auto_connect_on_boot"
+private const val KeyAutoConnectOnAppOpen = "auto_connect_on_app_open"
 private const val KeyEnableSubscriptionExpiryNotifications = "enable_subscription_expiry_notifications"
 private const val KeySubscriptionExpiryReminders = "subscription_expiry_reminders"
 private const val KeyDismissedUpdateVersion = "dismissed_update_version"
