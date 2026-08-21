@@ -53,7 +53,8 @@ data class Hysteria2(
                 }
                 put("security", "tls")
                 putJsonObject("tlsSettings") {
-                    putIfNotBlank("serverName", sni)
+                    val effectiveSni = sni.ifBlank { if (server.contains(":")) "" else server }
+                    putIfNotBlank("serverName", effectiveSni)
                     putIfNotBlank("pinnedPeerCertSha256", pinSHA256)
                 }
                 val finalMask = toXrayFinalMask()
@@ -174,6 +175,16 @@ private fun String?.isEnabledFlag(): Boolean {
     }
 }
 
+private fun String.normalizeBandwidth(): String {
+    val trimmed = trim()
+    if (trimmed.isBlank()) return ""
+    return if (trimmed.all { it.isDigit() }) {
+        "${trimmed} mbps"
+    } else {
+        trimmed
+    }
+}
+
 private fun Hysteria2.toXrayFinalMask(): JsonObject {
     return buildJsonObject {
         if (up.isNotBlank() || down.isNotBlank() || mport.isNotBlank()) {
@@ -181,12 +192,12 @@ private fun Hysteria2.toXrayFinalMask(): JsonObject {
                 if (up.isNotBlank() || down.isNotBlank()) {
                     put("congestion", "brutal")
                 }
-                putIfNotBlank("brutalUp", up)
-                putIfNotBlank("brutalDown", down)
+                putIfNotBlank("brutalUp", up.normalizeBandwidth())
+                putIfNotBlank("brutalDown", down.normalizeBandwidth())
                 if (mport.isNotBlank()) {
                     putJsonObject("udpHop") {
                         put("ports", mport)
-                        mportHopInt.toIntOrNull()?.let { put("interval", it) }
+                        mportHopInt.toIntOrNull()?.coerceAtLeast(5)?.let { put("interval", it) }
                     }
                 }
             }

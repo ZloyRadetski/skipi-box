@@ -22,6 +22,7 @@ import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
 import features.resources.ResourceFileSourceLoyalsoldierGithub
 import features.resources.ResourceFileV2FlyGeoIpOnlyCnPrivateUrl
 import features.subscription.DefaultSubscriptionUserAgent
+import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
@@ -519,6 +520,25 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
         }
         val id = existing?.id ?: nextId++
         val existingStrategy = existing?.server as? StrategyGroup
+        val resolvedMemberIds = source.group.members.flatMap { rawMember ->
+            val cleanMember = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim()
+            regularServers.filter { candidate ->
+                val remarks = candidate.server.getInfo().remarks.trim()
+                val cleanRemarks = CountryFlagUtils.stripLeadingCountryFlag(remarks).trim()
+                remarks.equals(cleanMember, ignoreCase = true) ||
+                    cleanRemarks.equals(cleanMember, ignoreCase = true) ||
+                    CountryFlagUtils.stripLeadingCountryFlag(cleanMember).trim().equals(cleanRemarks, ignoreCase = true)
+            }.map { it.id }
+        }.distinct()
+        val effectiveMemberIds = if (existingStrategy?.proxyServerIds?.isNotEmpty() == true) {
+            existingStrategy.proxyServerIds
+        } else {
+            resolvedMemberIds
+        }
+        val effectiveSelectedMemberId = existingStrategy?.selectedMemberId
+            ?.takeIf { mid -> mid in effectiveMemberIds || effectiveMemberIds.isEmpty() }
+            ?: effectiveMemberIds.firstOrNull()
+
         ProxyServerState(
             id = id,
             groupId = AutoBalancerGroupId,
@@ -526,8 +546,8 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
             server = StrategyGroup(
                 remarks = source.group.name,
                 strategy = source.group.toStrategyGroupType(),
-                proxyServerIds = existingStrategy?.proxyServerIds.orEmpty(),
-                selectedMemberId = existingStrategy?.selectedMemberId,
+                proxyServerIds = effectiveMemberIds,
+                selectedMemberId = effectiveSelectedMemberId,
                 displayMode = source.group.displayMode,
                 showInAutoBalancerList = source.group.displayMode != features.proxy.server.model.StrategyGroupDisplayMode.NEVER,
                 sourceTrafficConfigId = source.configId,

@@ -448,7 +448,10 @@ private fun parseProxyGroupLine(
         lineNumber = lineNumber,
         name = name,
         type = type.lowercase(),
-        members = values.drop(1).filterNot { value -> '=' in value },
+        members = values.drop(1)
+            .filterNot { value -> '=' in value }
+            .map { it.trim().removeSurrounding("\"").removeSurrounding("'").trim() }
+            .filter(String::isNotEmpty),
         url = options["url"].orEmpty(),
         intervalSeconds = options["interval"]?.toIntOrNull()?.takeIf { it > 0 },
         displayMode = displayMode,

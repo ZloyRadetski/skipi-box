@@ -210,4 +210,68 @@ class TrafficConfigProxyGroupIsolationTest {
         assertEquals(1, globalProxyGroups.size)
         assertEquals("UserManualBalancer", (globalProxyGroups.first().server as StrategyGroup).remarks)
     }
+
+    @Test
+    fun withConfigProxyGroupsReflected_resolves_members_with_quotes_and_country_flags() {
+        val node1 = ProxyServerState(
+            id = 10,
+            groupId = DefaultSubscriptionGroupId,
+            server = VLESS(remarks = "🇭🇰 HK Fast", id = "u1", server = "s1", port = "443"),
+        )
+        val node2 = ProxyServerState(
+            id = 20,
+            groupId = DefaultSubscriptionGroupId,
+            server = VLESS(remarks = "SG Clean", id = "u2", server = "s2", port = "443"),
+        )
+
+        val configText = """
+            [Proxy Group]
+            AutoProxy = select, "HK Fast", "🇸🇬 SG Clean", skipi-display=always
+        """.trimIndent()
+
+        val config = TrafficConfigState(id = 1, name = "Config 1", rawConfig = configText)
+
+        val state = AppState(
+            proxyServers = listOf(node1, node2),
+            trafficConfigs = listOf(config),
+            activeTrafficConfigId = 1,
+        ).withConfigProxyGroupsReflected()
+
+        val generatedGroup = state.proxyServers.firstOrNull {
+            (it.server as? StrategyGroup)?.sourceTrafficConfigId == 1
+        }
+
+        assertTrue("Generated group must exist", generatedGroup != null)
+        val strategy = generatedGroup!!.server as StrategyGroup
+        assertEquals("AutoProxy", strategy.remarks)
+        assertEquals(listOf(10, 20), strategy.proxyServerIds)
+        assertEquals(10, strategy.selectedMemberId)
+    }
+
+    @Test
+    fun hysteria2_toXrayOutbound_fallbacks_serverName_and_normalizes_bandwidth() {
+        val hy2 = features.proxy.server.model.Hysteria2(
+            remarks = "Hy2 Node",
+            server = "hy2.example.com",
+            port = "443",
+            auth = "pass123",
+            up = "100",
+            down = "200",
+            mport = "20000-30000",
+            mportHopInt = "2", // should be coerced to >= 5
+        )
+
+        val outbound = hy2.toXrayOutbound("proxy")
+        val streamSettings = outbound.streamSettings ?: error("missing streamSettings")
+        val tlsSettings = streamSettings["tlsSettings"]?.let { it as kotlinx.serialization.json.JsonObject }
+        assertEquals("hy2.example.com", tlsSettings?.get("serverName")?.let { (it as kotlinx.serialization.json.JsonPrimitive).content })
+
+        val finalmask = streamSettings["finalmask"]?.let { it as kotlinx.serialization.json.JsonObject }
+        val quicParams = finalmask?.get("quicParams")?.let { it as kotlinx.serialization.json.JsonObject }
+        assertEquals("100 mbps", quicParams?.get("brutalUp")?.let { (it as kotlinx.serialization.json.JsonPrimitive).content })
+        assertEquals("200 mbps", quicParams?.get("brutalDown")?.let { (it as kotlinx.serialization.json.JsonPrimitive).content })
+
+        val udpHop = quicParams?.get("udpHop")?.let { it as kotlinx.serialization.json.JsonObject }
+        assertEquals(5, udpHop?.get("interval")?.let { (it as kotlinx.serialization.json.JsonPrimitive).content.toInt() })
+    }
 }

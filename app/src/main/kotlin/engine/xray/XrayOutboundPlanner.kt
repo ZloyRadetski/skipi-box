@@ -21,6 +21,7 @@ import features.proxy.server.model.serverHost
 import features.config.ShadowrocketPolicyGroup
 import features.config.ShadowrocketPolicyGroupTagPrefix
 import features.config.analyzeShadowrocketConfig
+import features.proxy.server.display.CountryFlagUtils
 
 internal fun AppState.buildXrayOutboundPlan(selectedServer: ProxyServerState): XrayOutboundPlan {
     return XrayOutboundPlanner(this).build(selectedServer)
@@ -340,7 +341,8 @@ private fun AppState.shadowrocketPolicyGroupMembers(
 ): List<ProxyServerState> {
     if (group.name in visitingGroupNames) return emptyList()
     return group.members
-        .flatMap { member ->
+        .flatMap { rawMember ->
+            val member = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim()
             when {
                 member == ".*" -> proxyServers.filter { server ->
                     !server.server.isCompositeProxyServer() &&
@@ -349,7 +351,13 @@ private fun AppState.shadowrocketPolicyGroupMembers(
 
                 else -> {
                     val matchingServers = proxyServers.filter { server ->
-                        server.server.getInfo().remarks.equals(member, ignoreCase = true) &&
+                        val remarks = server.server.getInfo().remarks.trim()
+                        val cleanRemarks = CountryFlagUtils.stripLeadingCountryFlag(remarks).trim()
+                        val cleanMember = CountryFlagUtils.stripLeadingCountryFlag(member).trim()
+                        (remarks.equals(member, ignoreCase = true) ||
+                            cleanRemarks.equals(member, ignoreCase = true) ||
+                            cleanRemarks.equals(cleanMember, ignoreCase = true) ||
+                            remarks.equals(cleanMember, ignoreCase = true)) &&
                             (server.server !is ChainProxy) &&
                             (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan())
                     }
