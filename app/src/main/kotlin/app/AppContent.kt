@@ -634,6 +634,8 @@ private fun ExpressiveFloatingNavigationBar(
 
             val dragOffsetAnimatable = remember { Animatable(0f) }
             var isDragging by remember { mutableStateOf(false) }
+            var isGrabbed by remember { mutableStateOf(false) }
+            var grabTouchOffsetX by remember { mutableFloatStateOf(0f) }
             var dragVelocity by remember { mutableFloatStateOf(0f) }
             var lastHapticIndex by remember { mutableIntStateOf(selectedPage) }
 
@@ -673,66 +675,86 @@ private fun ExpressiveFloatingNavigationBar(
             val dragGestureModifier = if (tabWidthPx > 0f) {
                 Modifier.pointerInput(tabCount, tabWidthPx, selectedPage) {
                     detectHorizontalDragGestures(
-                        onDragStart = {
-                            isDragging = true
-                            dragVelocity = 0f
-                            coroutineScope.launch {
-                                dragOffsetAnimatable.stop()
+                        onDragStart = { offset ->
+                            val capsuleLeft = dragOffsetAnimatable.value
+                            val capsuleRight = capsuleLeft + tabWidthPx
+                            if (offset.x in (capsuleLeft - 12f)..(capsuleRight + 12f)) {
+                                isGrabbed = true
+                                isDragging = true
+                                dragVelocity = 0f
+                                grabTouchOffsetX = (offset.x - capsuleLeft).coerceIn(0f, tabWidthPx)
+                                coroutineScope.launch {
+                                    dragOffsetAnimatable.stop()
+                                }
+                                lastHapticIndex = ((dragOffsetAnimatable.value + tabWidthPx / 2f) / tabWidthPx)
+                                    .toInt().coerceIn(0, tabCount - 1)
+                            } else {
+                                isGrabbed = false
                             }
-                            lastHapticIndex = ((dragOffsetAnimatable.value + tabWidthPx / 2f) / tabWidthPx)
-                                .toInt().coerceIn(0, tabCount - 1)
                         },
                         onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            val current = dragOffsetAnimatable.value
-                            val rawNew = current + dragAmount
-                            val dampedNew = if (rawNew < 0f) {
-                                rawNew * 0.35f
-                            } else if (rawNew > maxOffsetPx) {
-                                maxOffsetPx + (rawNew - maxOffsetPx) * 0.35f
-                            } else {
-                                rawNew
-                            }
-                            dragVelocity = dragAmount * 60f
-                            coroutineScope.launch {
-                                dragOffsetAnimatable.snapTo(dampedNew)
-                            }
-                            val hoverIndex = ((dampedNew + tabWidthPx / 2f) / tabWidthPx)
-                                .toInt().coerceIn(0, tabCount - 1)
-                            if (hoverIndex != lastHapticIndex) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                lastHapticIndex = hoverIndex
+                            if (isGrabbed) {
+                                change.consume()
+                                val fingerX = change.position.x
+                                val rawNew = fingerX - grabTouchOffsetX
+                                val dampedNew = if (rawNew < 0f) {
+                                    rawNew * 0.35f
+                                } else if (rawNew > maxOffsetPx) {
+                                    maxOffsetPx + (rawNew - maxOffsetPx) * 0.35f
+                                } else {
+                                    rawNew
+                                }
+                                dragVelocity = dragAmount * 60f
+                                coroutineScope.launch {
+                                    dragOffsetAnimatable.snapTo(dampedNew)
+                                }
+                                val hoverIndex = ((dampedNew + tabWidthPx / 2f) / tabWidthPx)
+                                    .toInt().coerceIn(0, tabCount - 1)
+                                if (hoverIndex != lastHapticIndex) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    lastHapticIndex = hoverIndex
+                                }
                             }
                         },
                         onDragEnd = {
-                            isDragging = false
-                            val current = dragOffsetAnimatable.value
-                            val projectedOffset = current + (dragVelocity * 0.08f)
-                            val targetIndex = (projectedOffset / tabWidthPx).roundToInt().coerceIn(0, tabCount - 1)
-                            coroutineScope.launch {
-                                dragOffsetAnimatable.animateTo(
-                                    targetValue = targetIndex * tabWidthPx,
-                                    animationSpec = spring(
-                                        dampingRatio = 0.74f,
-                                        stiffness = Spring.StiffnessMediumLow,
-                                    ),
-                                )
-                            }
-                            if (targetIndex != selectedPage) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                mainPagerState.animateToPage(targetIndex)
+                            if (isGrabbed) {
+                                isGrabbed = false
+                                isDragging = false
+                                val current = dragOffsetAnimatable.value
+                                val projectedOffset = current + (dragVelocity * 0.08f)
+                                val targetIndex = (projectedOffset / tabWidthPx).roundToInt().coerceIn(0, tabCount - 1)
+                                coroutineScope.launch {
+                                    dragOffsetAnimatable.animateTo(
+                                        targetValue = targetIndex * tabWidthPx,
+                                        animationSpec = spring(
+                                            dampingRatio = 0.74f,
+                                            stiffness = Spring.StiffnessMediumLow,
+                                        ),
+                                    )
+                                }
+                                if (targetIndex != selectedPage) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    mainPagerState.animateToPage(targetIndex)
+                                }
+                            } else {
+                                isDragging = false
                             }
                         },
                         onDragCancel = {
-                            isDragging = false
-                            coroutineScope.launch {
-                                dragOffsetAnimatable.animateTo(
-                                    targetValue = selectedPage * tabWidthPx,
-                                    animationSpec = spring(
-                                        dampingRatio = 0.74f,
-                                        stiffness = Spring.StiffnessMediumLow,
-                                    ),
-                                )
+                            if (isGrabbed) {
+                                isGrabbed = false
+                                isDragging = false
+                                coroutineScope.launch {
+                                    dragOffsetAnimatable.animateTo(
+                                        targetValue = selectedPage * tabWidthPx,
+                                        animationSpec = spring(
+                                            dampingRatio = 0.74f,
+                                            stiffness = Spring.StiffnessMediumLow,
+                                        ),
+                                    )
+                                }
+                            } else {
+                                isDragging = false
                             }
                         },
                     )
