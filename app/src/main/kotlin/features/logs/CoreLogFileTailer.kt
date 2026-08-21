@@ -106,7 +106,7 @@ private const val XrayLogTimeFormat = "yyyy-MM-dd HH:mm:ss"
 
 // Xray-core (Go) timestamps are UTC on Android: Go's runtime stubs the local
 // timezone to UTC and ignores $TZ (src/time/zoneinfo_android.go initLocal), and
-// libv2ray embeds no tzdata. Parse the captured stamp as UTC, render in the
+// skipicore embeds no tzdata. Parse the captured stamp as UTC, render in the
 // device's local timezone so the viewer shows wall-clock time.
 private val utcXrayLogTimeParser = ThreadLocal.withInitial {
     SimpleDateFormat(XrayLogTimeFormat, Locale.ROOT).apply { timeZone = TimeZone.getTimeZone("UTC") }

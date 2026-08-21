@@ -30,8 +30,8 @@ dependencyResolutionManagement {
         }
         mavenCentral()
         ivy {
-            name = "AndroidLibXrayLiteGitHubRelease"
-            url = uri("https://github.com/2dust/AndroidLibXrayLite/releases/download")
+            name = "SkipiCoreGitHubRelease"
+            url = uri("https://github.com/ZloyRadetski/skipi-core/releases/download")
             patternLayout {
                 artifact("[revision]/[artifact].[ext]")
             }
@@ -39,7 +39,7 @@ dependencyResolutionManagement {
                 artifact()
             }
             content {
-                includeModule("com.github.2dust", "libv2ray")
+                includeModule("app.skipi.core", "skipicore")
             }
         }
         maven("https://jitpack.io") {

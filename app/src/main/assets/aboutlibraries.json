@@ -14,16 +14,16 @@
             ]
         },
         {
-            "uniqueId": "github:2dust/AndroidLibXrayLite",
-            "artifactVersion": "v26.7.31",
-            "name": "AndroidLibXrayLite",
-            "description": "Android AAR wrapper for Xray-core, built with gomobile.",
-            "website": "https://github.com/2dust/AndroidLibXrayLite",
+            "uniqueId": "github:ZloyRadetski/skipi-core",
+            "artifactVersion": "v1.0.0",
+            "name": "SKIPI Core",
+            "description": "High-performance Go mobile runtime wrapper for Xray-core.",
+            "website": "https://github.com/ZloyRadetski/skipi-core",
             "scm": {
-                "url": "https://github.com/2dust/AndroidLibXrayLite"
+                "url": "https://github.com/ZloyRadetski/skipi-core"
             },
             "licenses": [
-                "LGPL-3.0"
+                "GPL-3.0"
             ]
         },
         {

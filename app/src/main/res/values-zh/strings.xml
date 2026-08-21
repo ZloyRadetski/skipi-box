@@ -13,8 +13,8 @@
     <string name="error_backup_file_open_failed">无法打开备份文件</string>
     <string name="qr_scan_album_button">专辑</string>
     <string name="qr_scan_choose_image">从相册中选择</string>
-    <string name="error_android_lib_xray_lite_start_failed">无法启动 AndroidLibXrayLite：%1$s</string>
-    <string name="error_android_lib_xray_lite_data_dir_missing">AndroidLibXrayLite 数据目录丢失</string>
+    <string name="error_skipi_core_start_failed">无法启动 SKIPI Core：%1$s</string>
+    <string name="error_skipi_core_data_dir_missing">SKIPI Core 数据目录丢失</string>
     <string name="resource_file_download_notification_channel">资源文件更新</string>
     <string name="resource_file_download_notification_title">更新资源文件</string>
     <string name="resource_file_download_notification_progress">下载%1$s</string>

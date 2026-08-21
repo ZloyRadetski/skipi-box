@@ -14,7 +14,7 @@ object ProjectConfig {
     const val VERSION_NAME = "0.2.6"
     const val PACKAGE_NAME = "com.radetski.skipi"
     const val XRAY_CORE_VERSION = "v26.7.28"
-    const val ANDROID_LIB_XRAY_LITE_VERSION = "v26.7.31"
+    const val SKIPI_CORE_VERSION = "v1.0.0"
     const val HEV_SOCKS5_TUNNEL_VERSION = "2.17.1"
     const val TARGET_SDK = 37
     const val MIN_SDK = 24
@@ -44,7 +44,7 @@ abstract class GenerateProjectInfoTask : DefaultTask() {
     abstract val xrayCoreVersion: Property<String>
 
     @get:Input
-    abstract val androidLibXrayLiteVersion: Property<String>
+    abstract val skipiCoreVersion: Property<String>
 
     @get:Input
     abstract val hevSocks5TunnelVersion: Property<String>
@@ -66,7 +66,7 @@ abstract class GenerateProjectInfoTask : DefaultTask() {
                 const val VERSION_NAME = "${versionName.get()}"
                 const val VERSION_CODE = ${versionCode.get()}
                 const val XRAY_CORE_VERSION = "${xrayCoreVersion.get()}"
-                const val ANDROID_LIB_XRAY_LITE_VERSION = "${androidLibXrayLiteVersion.get()}"
+                const val SKIPI_CORE_VERSION = "${skipiCoreVersion.get()}"
                 const val HEV_SOCKS5_TUNNEL_VERSION = "${hevSocks5TunnelVersion.get()}"
             }
             """.trimIndent(),

@@ -110,8 +110,8 @@ internal fun AboutRuntimeCard(
         bottomPadding = 12.dp,
     ) {
         BasicComponent(
-            title = "AndroidLibXrayLite",
-            summary = ProjectInfo.ANDROID_LIB_XRAY_LITE_VERSION,
+            title = "SKIPI Core",
+            summary = ProjectInfo.SKIPI_CORE_VERSION,
         )
         BasicComponent(
             title = "Xray-core",

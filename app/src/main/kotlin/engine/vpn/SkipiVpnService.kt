@@ -140,7 +140,7 @@ class SkipiVpnService : VpnService() {
         config.coreLogPaths.clearCoreLogs(LogTag)
         tunFileDescriptor = establishTun(config)
         val tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
-        AndroidLibXrayLiteRuntime.start(
+        SkipiCoreRuntime.start(
             context = this,
             config = config,
             tunFd = config.xrayTunFd(tunFd),
@@ -284,9 +284,9 @@ class SkipiVpnService : VpnService() {
             AndroidAppLogger.warn(LogTag, "Failed to stop Hev TUN while stopping VPN Service", error)
         }
         runCatching {
-            AndroidLibXrayLiteRuntime.stop()
+            SkipiCoreRuntime.stop()
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop AndroidLibXrayLite while stopping VPN Service", error)
+            AndroidAppLogger.warn(LogTag, "Failed to stop SKIPI Core while stopping VPN Service", error)
         }
         runCatching {
             tunFileDescriptor?.close()
@@ -429,7 +429,7 @@ class SkipiVpnService : VpnService() {
         }
 
         internal fun isRunning(): Boolean {
-            return running && AndroidLibXrayLiteRuntime.isRunning()
+            return running && SkipiCoreRuntime.isRunning()
         }
 
         private fun completeStart(result: Result<Unit>) {

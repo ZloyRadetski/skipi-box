@@ -13,8 +13,8 @@
     <string name="error_backup_file_open_failed">فایل پشتیبان باز نشد</string>
     <string name="qr_scan_album_button">آلبوم</string>
     <string name="qr_scan_choose_image">از آلبوم انتخاب کنید</string>
-    <string name="error_android_lib_xray_lite_start_failed">AndroidLibXrayLite راه اندازی نشد:%1$s</string>
-    <string name="error_android_lib_xray_lite_data_dir_missing">فهرست راهنمای داده AndroidLibXrayLite وجود ندارد</string>
+    <string name="error_skipi_core_start_failed">SKIPI Core راه اندازی نشد:%1$s</string>
+    <string name="error_skipi_core_data_dir_missing">فهرست راهنمای داده SKIPI Core وجود ندارد</string>
     <string name="resource_file_download_notification_channel">به روز رسانی فایل منابع</string>
     <string name="resource_file_download_notification_title">به روز رسانی فایل های منابع</string>
     <string name="resource_file_download_notification_progress">در حال دانلود%1$s</string>

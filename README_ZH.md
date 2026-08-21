@@ -42,7 +42,7 @@
 
 项目的核心理念是打造一个功能强大全面、同时拥有丝滑整洁、适合日常舒适使用的现代用户界面。
 
-在底层，SKIPI 集成了 [Xray-core](https://github.com/XTLS/Xray-core)、[AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) 和 [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)。在前端，基于 Jetpack Compose 构建了高度可定制的用户界面，完美支持 Material You 动态主题取色与深度视觉个性化。
+在底层，SKIPI 集成了 [Xray-core](https://github.com/XTLS/Xray-core)、[SKIPI Core](https://github.com/ZloyRadetski/skipi-core) 和 [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)。在前端，基于 Jetpack Compose 构建了高度可定制的用户界面，完美支持 Material You 动态主题取色与深度视觉个性化。
 
 ---
 

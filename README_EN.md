@@ -42,7 +42,7 @@ Join our official Telegram channel: **[@skipi_public](https://t.me/skipi_public)
 
 The core philosophy of the project is to deliver a powerhouse tool with extensive capabilities while preserving a smooth, clean, and pleasant user interface designed for comfortable daily use.
 
-Under the hood, SKIPI integrates [Xray-core](https://github.com/XTLS/Xray-core), [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite), and [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel). On the outside, it features a fully customizable UI built with Jetpack Compose, supporting dynamic Material You theming and deep visual personalization.
+Under the hood, SKIPI integrates [Xray-core](https://github.com/XTLS/Xray-core), [SKIPI Core](https://github.com/ZloyRadetski/skipi-core), and [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel). On the outside, it features a fully customizable UI built with Jetpack Compose, supporting dynamic Material You theming and deep visual personalization.
 
 ---
 

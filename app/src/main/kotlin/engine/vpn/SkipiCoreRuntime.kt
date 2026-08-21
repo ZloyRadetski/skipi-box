@@ -7,11 +7,11 @@ import android.content.Context
 import app.R
 import features.logs.AndroidAppLogger
 import engine.xray.initializeAndroidXrayCoreEnvironment
-import libv2ray.CoreCallbackHandler
-import libv2ray.CoreController
-import libv2ray.Libv2ray
+import app.skipi.core.skipicore.CoreCallbackHandler
+import app.skipi.core.skipicore.CoreController
+import app.skipi.core.skipicore.Skipicore
 
-internal object AndroidLibXrayLiteRuntime {
+internal object SkipiCoreRuntime {
     private var coreController: CoreController? = null
 
     fun start(
@@ -20,19 +20,19 @@ internal object AndroidLibXrayLiteRuntime {
         tunFd: Int,
     ) {
         require(config.dataDir.isNotBlank()) {
-            context.getString(R.string.error_android_lib_xray_lite_data_dir_missing)
+            context.getString(R.string.error_skipi_core_data_dir_missing)
         }
         context.initializeAndroidXrayCoreEnvironment(config.dataDir)
-        val controller = Libv2ray.newCoreController(AndroidLibXrayLiteCallbackHandler())
+        val controller = Skipicore.newCoreController(SkipiCoreCallbackHandler())
         runCatching {
-            controller.startLoop(config.xrayConfigJson, tunFd)
+            controller.startLoop(config.xrayConfigJson, tunFd.toLong())
         }.onFailure { error ->
             runCatching { controller.stopLoop() }
                 .onFailure { stopError ->
-                    AndroidAppLogger.warn(LogTag, "Failed to stop AndroidLibXrayLite after start failure", stopError)
+                    AndroidAppLogger.warn(LogTag, "Failed to stop SKIPI Core after start failure", stopError)
                 }
             throw IllegalStateException(
-                context.getString(R.string.error_android_lib_xray_lite_start_failed, error.readableMessage()),
+                context.getString(R.string.error_skipi_core_start_failed, error.readableMessage()),
                 error,
             )
         }
@@ -44,7 +44,7 @@ internal object AndroidLibXrayLiteRuntime {
         runCatching {
             controller.stopLoop()
         }.onFailure { error ->
-            AndroidAppLogger.error(LogTag, "Failed to stop AndroidLibXrayLite", error)
+            AndroidAppLogger.error(LogTag, "Failed to stop SKIPI Core", error)
         }
         coreController = null
     }
@@ -53,23 +53,23 @@ internal object AndroidLibXrayLiteRuntime {
         return coreController?.isRunning == true
     }
 
-    private const val LogTag = "AndroidLibXrayLite"
+    private const val LogTag = "SkipiCore"
 }
 
-private class AndroidLibXrayLiteCallbackHandler : CoreCallbackHandler {
+private class SkipiCoreCallbackHandler : CoreCallbackHandler {
     override fun startup(): Long {
-        AndroidAppLogger.info("AndroidLibXrayLite", "AndroidLibXrayLite started")
+        AndroidAppLogger.info("SkipiCore", "SKIPI Core started")
         return 0
     }
 
     override fun shutdown(): Long {
-        AndroidAppLogger.info("AndroidLibXrayLite", "AndroidLibXrayLite stopped")
+        AndroidAppLogger.info("SkipiCore", "SKIPI Core stopped")
         return 0
     }
 
     override fun onEmitStatus(code: Long, message: String?): Long {
         val text = message.orEmpty().ifBlank { "status code: $code" }
-        AndroidAppLogger.info("AndroidLibXrayLite", text)
+        AndroidAppLogger.info("SkipiCore", text)
         return 0
     }
 }

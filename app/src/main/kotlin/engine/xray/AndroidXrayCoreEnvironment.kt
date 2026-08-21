@@ -7,7 +7,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.provider.Settings
 import go.Seq
-import libv2ray.Libv2ray
+import app.skipi.core.skipicore.Skipicore
 import utils.encodeUrlSafeBase64NoPadding
 import java.util.concurrent.atomic.AtomicReference
 
@@ -20,7 +20,7 @@ internal fun Context.initializeAndroidXrayCoreEnvironment(dataDir: String) {
             return
         }
         Seq.setContext(applicationContext)
-        Libv2ray.initCoreEnv(dataDir, xrayCoreBaseKey())
+        Skipicore.initCoreEnv(dataDir, xrayCoreBaseKey())
         InitializedDataDir.set(dataDir)
     }
 }

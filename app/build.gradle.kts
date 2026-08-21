@@ -125,7 +125,7 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.coil.compose)
     //noinspection UseTomlInstead
-    implementation("com.github.2dust:libv2ray:${ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION}@aar")
+    implementation("app.skipi.core:skipicore:${ProjectConfig.SKIPI_CORE_VERSION}@aar")
     implementation(dependencies.project(":hevtun"))
     implementation(libs.grpc.okhttp)
     implementation(libs.grpc.protobuf.lite)
@@ -187,7 +187,7 @@ val generateProjectInfo = tasks.register<GenerateProjectInfoTask>("generateProje
     versionName.set(ProjectConfig.VERSION_NAME)
     versionCode.set(getGitVersionCode())
     xrayCoreVersion.set(ProjectConfig.XRAY_CORE_VERSION)
-    androidLibXrayLiteVersion.set(ProjectConfig.ANDROID_LIB_XRAY_LITE_VERSION)
+    skipiCoreVersion.set(ProjectConfig.SKIPI_CORE_VERSION)
     hevSocks5TunnelVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
     outputDirectory.set(generatedSrcDir.map { it.dir("kotlin") })
 }

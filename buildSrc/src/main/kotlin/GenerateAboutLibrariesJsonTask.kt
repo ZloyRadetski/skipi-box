@@ -49,16 +49,16 @@ abstract class GenerateAboutLibrariesJsonTask : DefaultTask() {
         }
         val dependencyBucketSuffixes = listOf("api", "implementation", "compileonly", "runtimeonly")
         val libraryOverrides = mapOf(
-            "com.github.2dust:libv2ray" to
+            "app.skipi.core:skipicore" to
                 { version: String ->
                     library(
-                        "github:2dust/AndroidLibXrayLite",
+                        "github:ZloyRadetski/skipi-core",
                         version,
-                        "AndroidLibXrayLite",
-                        "Android AAR wrapper for Xray-core, built with gomobile.",
-                        "https://github.com/2dust/AndroidLibXrayLite",
-                        "https://github.com/2dust/AndroidLibXrayLite",
-                        listOf("LGPL-3.0"),
+                        "SKIPI Core",
+                        "High-performance Go mobile runtime wrapper for Xray-core.",
+                        "https://github.com/ZloyRadetski/skipi-core",
+                        "https://github.com/ZloyRadetski/skipi-core",
+                        listOf("GPL-3.0"),
                     )
                 },
             "javax.annotation:javax.annotation-api" to

@@ -42,7 +42,7 @@
 
 ایده اصلی این پروژه ارائه ابزاری قدرتمند و چندمنظوره با رابط کاربری روان، تمیز و دلنشین برای استفاده روزمره است.
 
-در بخش زیرساخت، برنامه از [Xray-core](https://github.com/XTLS/Xray-core)، [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) و [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) بهره می‌برد. در بخش ظاهری، رابط کاربری با Jetpack Compose ساخته شده و از رنگ‌های پویای Material You و شخصی‌سازی عمیق پشتیبانی می‌کند.
+در بخش زیرساخت، برنامه از [Xray-core](https://github.com/XTLS/Xray-core)، [SKIPI Core](https://github.com/ZloyRadetski/skipi-core) و [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) بهره می‌برد. در بخش ظاهری، رابط کاربری با Jetpack Compose ساخته شده و از رنگ‌های پویای Material You و شخصی‌سازی عمیق پشتیبانی می‌کند.
 
 ---
 

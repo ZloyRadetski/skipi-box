@@ -14,8 +14,8 @@
     <string name="error_backup_file_open_failed">Не удалось открыть файл резервной копии</string>
     <string name="qr_scan_album_button">Галерея</string>
     <string name="qr_scan_choose_image">Выбрать из галереи</string>
-    <string name="error_android_lib_xray_lite_start_failed">Не удалось запустить AndroidLibXrayLite: %1$s</string>
-    <string name="error_android_lib_xray_lite_data_dir_missing">Отсутствует директория данных AndroidLibXrayLite</string>
+    <string name="error_skipi_core_start_failed">Не удалось запустить SKIPI Core: %1$s</string>
+    <string name="error_skipi_core_data_dir_missing">Отсутствует директория данных SKIPI Core</string>
     <string name="resource_file_download_notification_channel">Обновление файлов ресурсов</string>
     <string name="resource_file_download_notification_title">Обновление файлов ресурсов</string>
     <string name="resource_file_download_notification_progress">Скачивание %1$s</string>

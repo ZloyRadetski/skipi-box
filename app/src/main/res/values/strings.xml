@@ -13,8 +13,8 @@
     <string name="error_backup_file_open_failed">Failed to open backup file</string>
     <string name="qr_scan_album_button">Album</string>
     <string name="qr_scan_choose_image">Choose from album</string>
-    <string name="error_android_lib_xray_lite_start_failed">Failed to start AndroidLibXrayLite: %1$s</string>
-    <string name="error_android_lib_xray_lite_data_dir_missing">AndroidLibXrayLite data directory is missing</string>
+    <string name="error_skipi_core_start_failed">Failed to start SKIPI Core: %1$s</string>
+    <string name="error_skipi_core_data_dir_missing">SKIPI Core data directory is missing</string>
     <string name="resource_file_download_notification_channel">Resource file updates</string>
     <string name="resource_file_download_notification_title">Updating resource files</string>
     <string name="resource_file_download_notification_progress">Downloading %1$s</string>

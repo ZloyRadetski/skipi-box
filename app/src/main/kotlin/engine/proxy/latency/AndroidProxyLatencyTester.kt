@@ -39,7 +39,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import libv2ray.Libv2ray
+import app.skipi.core.skipicore.Skipicore
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.UnknownHostException
@@ -301,7 +301,7 @@ internal class AndroidProxyLatencyTester(
                                 dataDir = xrayDataDir,
                             ),
                         )
-                        Libv2ray.measureOutboundDelay(configJson, pingUrl)
+                        Skipicore.measureOutboundDelay(configJson, pingUrl)
                     }.onSuccess { delay ->
                         AndroidAppLogger.debug(LogTag, "Real connection latency test serverId=${server.id} result=${delay}ms")
                     }.onFailure { error ->

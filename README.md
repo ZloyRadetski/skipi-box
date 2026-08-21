@@ -42,7 +42,7 @@
 
 Главная идея проекта — сделать мощный инструмент с возможностями комбайна, но с приятным, аккуратным интерфейсом, которым приятно и удобно пользоваться каждый день. Все плавно, понятно и нативно.
 
-Внутри трудится связка из [Xray-core](https://github.com/XTLS/Xray-core), [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) и [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), а снаружи — полностью кастомизируемый UI на Jetpack Compose с поддержкой динамических цветов Material You и полной кастомизацией оформления.
+Внутри трудится связка из [Xray-core](https://github.com/XTLS/Xray-core), [SKIPI Core](https://github.com/ZloyRadetski/skipi-core) и [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), а снаружи — полностью кастомизируемый UI на Jetpack Compose с поддержкой динамических цветов Material You и полной кастомизацией оформления.
 
 ---
 
