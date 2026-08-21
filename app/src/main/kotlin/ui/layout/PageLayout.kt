@@ -30,6 +30,8 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import ui.AppTheme
+import ui.LocalBackgroundStyle
+import app.modes.BackgroundStyleClassic
 
 fun Modifier.pageScrollModifiers(
     topAppBarScrollBehavior: ScrollBehavior,
@@ -134,7 +136,7 @@ fun AdaptiveTopAppBar(
     isWideScreen: Boolean,
     scrollBehavior: ScrollBehavior,
     modifier: Modifier = Modifier,
-    color: Color = AppTheme.colors.background,
+    color: Color = if (LocalBackgroundStyle.current != BackgroundStyleClassic) Color.Transparent else AppTheme.colors.background,
     subtitle: String = "",
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},

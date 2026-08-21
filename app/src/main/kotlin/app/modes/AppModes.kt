@@ -23,3 +23,12 @@ const val SubscriptionPingModeHttp = 1
 const val ConnectionDisplayModeCompact = 0
 const val ConnectionDisplayModeClassic = 1
 
+const val BackgroundStyleClassic = 0
+const val BackgroundStylePhoto = 1
+const val BackgroundStyleConnection = 2
+
+fun normalizeBackgroundStyle(style: Int): Int = when (style) {
+    BackgroundStylePhoto, BackgroundStyleConnection -> style
+    else -> BackgroundStyleClassic
+}
+

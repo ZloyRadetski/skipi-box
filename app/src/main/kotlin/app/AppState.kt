@@ -4,6 +4,7 @@
 package app
 
 import app.modes.AppIconDefault
+import app.modes.BackgroundStyleClassic
 import app.modes.BottomBarSizeLarge
 import app.modes.ColorModeSystem
 import app.modes.LanguageModeSystem
@@ -82,6 +83,8 @@ data class AppState(
     val enableDeletionConfirmation: Boolean = true,
     val connectionDisplayMode: Int = ConnectionDisplayModeCompact,
     val classicShowFloatingPowerButton: Boolean = false,
+    val backgroundStyle: Int = BackgroundStyleClassic,
+    val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = BottomBarSizeLarge,
     val hasCompletedOnboarding: Boolean = false,
 

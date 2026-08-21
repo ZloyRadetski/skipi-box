@@ -55,9 +55,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import ui.background.AppBackground
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.NavDisplayTransitionEffects
 import androidx.navigationevent.NavigationEventInfo
@@ -175,6 +178,16 @@ val LocalNavigator = staticCompositionLocalOf<Navigator> { error("No navigator f
 val LocalIsWideScreen = staticCompositionLocalOf { false }
 val LocalProxyPageScrollToTopRequest = staticCompositionLocalOf { 0 }
 
+private inline fun <reified T : NavKey> androidx.navigation3.runtime.EntryProviderScope<NavKey>.appEntry(
+    crossinline content: @Composable (T) -> Unit,
+) {
+    entry<T> { route ->
+        AppBackground {
+            content(route)
+        }
+    }
+}
+
 @Composable
 fun AppContent(
     padding: PaddingValues,
@@ -203,7 +216,7 @@ fun AppContent(
     ) {
         val entryProvider = remember(backStack, languageMode) {
             entryProvider<NavKey> {
-                entry<Route.Onboarding> {
+                appEntry<Route.Onboarding> {
                     key(languageMode) {
                         features.onboarding.OnboardingPage(
                             padding = padding,
@@ -218,7 +231,7 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.Main> {
+                appEntry<Route.Main> {
                     key(languageMode) {
                         Home(
                             padding = padding,
@@ -226,77 +239,77 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.SettingsAppearance> {
+                appEntry<Route.SettingsAppearance> {
                     key(languageMode) {
                         SettingsAppearancePage(padding = padding)
                     }
                 }
-                entry<Route.SettingsVpn> {
+                appEntry<Route.SettingsVpn> {
                     key(languageMode) {
                         SettingsVpnPage(padding = padding)
                     }
                 }
-                entry<Route.SettingsNetworkAutomation> {
+                appEntry<Route.SettingsNetworkAutomation> {
                     key(languageMode) {
                         SettingsNetworkAutomationPage(padding = padding)
                     }
                 }
-                entry<Route.SettingsSubscriptions> {
+                appEntry<Route.SettingsSubscriptions> {
                     key(languageMode) {
                         SettingsSubscriptionsPage(padding = padding)
                     }
                 }
-                entry<Route.SettingsIntegration> {
+                appEntry<Route.SettingsIntegration> {
                     key(languageMode) {
                         SettingsIntegrationPage(padding = padding)
                     }
                 }
-                entry<Route.SettingsLogs> {
+                appEntry<Route.SettingsLogs> {
                     key(languageMode) {
                         SettingsLogsPage(padding = padding)
                     }
                 }
-                entry<Route.SettingsBackupReset> {
+                appEntry<Route.SettingsBackupReset> {
                     key(languageMode) {
                         SettingsBackupResetPage(padding = padding)
                     }
                 }
-                entry<Route.About> {
+                appEntry<Route.About> {
                     key(languageMode) {
                         AboutPage(padding = padding)
                     }
                 }
-                entry<Route.License> {
+                appEntry<Route.License> {
                     key(languageMode) {
                         LicensePage(padding = padding)
                     }
                 }
-                entry<Route.CoreLogs> {
+                appEntry<Route.CoreLogs> {
                     key(languageMode) {
                         CoreLogsPage(padding = padding)
                     }
                 }
-                entry<Route.AccessLogs> {
+                appEntry<Route.AccessLogs> {
                     key(languageMode) {
                         AccessLogsPage(padding = padding)
                     }
                 }
-                entry<Route.LogcatLogs> {
+                appEntry<Route.LogcatLogs> {
                     key(languageMode) {
                         LogcatLogsPage(padding = padding)
                     }
                 }
-                entry<Route.SpeedTest> {
+                appEntry<Route.SpeedTest> {
                     key(languageMode) {
                         features.tools.speedtest.SpeedTestPage(padding = padding)
                     }
                 }
-                entry<Route.DnsLeakTest> {
+                appEntry<Route.DnsLeakTest> {
                     key(languageMode) {
                         features.tools.dnsleak.DnsLeakTestPage(padding = padding)
                     }
                 }
-                entry<Route.ResourceManagement> { route ->
+                appEntry<Route.ResourceManagement> { route ->
                     key(languageMode) {
                         ResourceManagementPage(
                             padding = padding,
@@ -304,7 +317,7 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.TrafficConfigEditor> { route ->
+                appEntry<Route.TrafficConfigEditor> { route ->
                     key(languageMode) {
                         TrafficConfigEditorPage(
                             padding = padding,
@@ -312,7 +325,7 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.TrafficConfigRawEditor> { route ->
+                appEntry<Route.TrafficConfigRawEditor> { route ->
                     key(languageMode) {
                         TrafficConfigRawEditorPage(
                             padding = padding,
@@ -320,7 +333,7 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.TrafficConfigSection> { route ->
+                appEntry<Route.TrafficConfigSection> { route ->
                     key(languageMode) {
                         TrafficConfigSectionPage(
                             padding = padding,
@@ -329,7 +342,7 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.TrafficConfigRuleEditor> { route ->
+                appEntry<Route.TrafficConfigRuleEditor> { route ->
                     key(languageMode) {
                         TrafficConfigRuleEditorPage(
                             padding = padding,
@@ -338,12 +351,12 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.SubscriptionGroupList> {
+                appEntry<Route.SubscriptionGroupList> {
                     key(languageMode) {
                         SubscriptionGroupListPage(padding = padding)
                     }
                 }
-                entry<Route.ProxyAppList> { route ->
+                appEntry<Route.ProxyAppList> { route ->
                     key(languageMode) {
                         ProxyAppListPage(
                             padding = padding,
@@ -351,27 +364,27 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.LocalProxySettings> {
+                appEntry<Route.LocalProxySettings> {
                     key(languageMode) {
                         LocalProxySettingsPage(padding = padding)
                     }
                 }
-                entry<Route.SubscriptionPingSettings> {
+                appEntry<Route.SubscriptionPingSettings> {
                     key(languageMode) {
                         SubscriptionPingSettingsPage(padding = padding)
                     }
                 }
-                entry<Route.SubscriptionUserAgents> {
+                appEntry<Route.SubscriptionUserAgents> {
                     key(languageMode) {
                         SubscriptionUserAgentsPage(padding = padding)
                     }
                 }
-                entry<Route.SkipiUrlSchemes> {
+                appEntry<Route.SkipiUrlSchemes> {
                     key(languageMode) {
                         SkipiUrlSchemesPage(padding = padding)
                     }
                 }
-                entry<Route.ProxyServerEditor> {
+                appEntry<Route.ProxyServerEditor> {
                     key(languageMode) {
                         ProxyServerPage(
                             padding = padding,
@@ -383,7 +396,7 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.StrategyGroupMemberSelector> { route ->
+                appEntry<Route.StrategyGroupMemberSelector> { route ->
                     key(languageMode) {
                         StrategyGroupMemberSelectorPage(
                             padding = padding,
@@ -394,7 +407,7 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.RouteOutboundSelector> { route ->
+                appEntry<Route.RouteOutboundSelector> { route ->
                     key(languageMode) {
                         RouteOutboundSelectorPage(
                             padding = padding,
@@ -404,7 +417,7 @@ fun AppContent(
                         )
                     }
                 }
-                entry<Route.RoutingRuleEditor> { route ->
+                appEntry<Route.RoutingRuleEditor> { route ->
                     key(languageMode) {
                         RouteRuleEditorPage(
                             padding = padding,

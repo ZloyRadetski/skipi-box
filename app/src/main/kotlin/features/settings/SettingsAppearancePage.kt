@@ -53,12 +53,21 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import app.modes.BackgroundStyleClassic
+import app.modes.BackgroundStyleConnection
+import app.modes.BackgroundStylePhoto
 import app.modes.ConnectionDisplayModeClassic
 import app.modes.LanguageModeChinese
 import app.modes.LanguageModeEnglish
 import app.modes.LanguageModePersian
 import app.modes.LanguageModeRussian
 import app.modes.LanguageModeSystem
+import app.modes.normalizeBackgroundStyle
+import ui.background.clearCustomBackgroundPhoto
+import ui.background.customBackgroundPhotoExists
+import ui.background.saveCustomBackgroundPhoto
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -200,6 +209,23 @@ fun SettingsAppearancePage(
         stringResource(R.string.settings_connection_display_mode_classic),
     )
 
+    val backgroundStyleOptions = listOf(
+        stringResource(R.string.settings_background_style_classic),
+        stringResource(R.string.settings_background_style_photo),
+        stringResource(R.string.settings_background_style_connection),
+    )
+    val backgroundDimOptions = listOf(0, 25, 45, 60, 75)
+    val backgroundPhotoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val saved = saveCustomBackgroundPhoto(context, uri)
+                if (saved) {
+                    updateAppState { it.copy(backgroundStyle = BackgroundStylePhoto) }
+                }
+            }
+        }
+    }
+
     val bottomBarSizeOptions = listOf(
         stringResource(R.string.settings_bottom_bar_size_small),
         stringResource(R.string.settings_bottom_bar_size_medium),
@@ -313,6 +339,51 @@ fun SettingsAppearancePage(
                                 updateAppState { it.copy(enableTrafficStatsNotification = enabled) }
                             },
                         )
+                    }
+                }
+
+                item(key = "appearance_background") {
+                    SmallTitle(text = stringResource(R.string.settings_background_title))
+                    SettingsSectionCard {
+                        OverlayDropdownPreference(
+                            title = stringResource(R.string.settings_background_style),
+                            items = backgroundStyleOptions,
+                            selectedIndex = appState.backgroundStyle.coerceIn(0, backgroundStyleOptions.lastIndex),
+                            onSelectedIndexChange = { index ->
+                                updateAppState { it.copy(backgroundStyle = normalizeBackgroundStyle(index)) }
+                            },
+                        )
+                        AnimatedVisibility(
+                            visible = appState.backgroundStyle == BackgroundStylePhoto,
+                            enter = fadeIn() + expandVertically(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                ArrowPreference(
+                                    title = stringResource(R.string.settings_background_photo_pick),
+                                    onClick = { backgroundPhotoPicker.launch("image/*") },
+                                )
+                                OverlayDropdownPreference(
+                                    title = stringResource(R.string.settings_background_dim),
+                                    items = backgroundDimOptions.map { percent -> "$percent%" },
+                                    selectedIndex = backgroundDimOptions.indexOf(appState.backgroundPhotoDimPercent).coerceAtLeast(0),
+                                    onSelectedIndexChange = { index ->
+                                        updateAppState {
+                                            it.copy(backgroundPhotoDimPercent = backgroundDimOptions[index])
+                                        }
+                                    },
+                                )
+                                if (customBackgroundPhotoExists(context)) {
+                                    ArrowPreference(
+                                        title = stringResource(R.string.settings_background_photo_remove),
+                                        onClick = {
+                                            clearCustomBackgroundPhoto(context)
+                                            updateAppState { it.copy(backgroundStyle = BackgroundStyleClassic) }
+                                        },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 

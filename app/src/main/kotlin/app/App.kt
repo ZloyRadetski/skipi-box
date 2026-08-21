@@ -187,6 +187,7 @@ fun App(
             customSurfaceVariantColor = chromeState.customSurfaceVariantColor?.let { Color(it) },
             customTextColor = chromeState.customTextColor?.let { Color(it) },
             customTextSecondaryColor = chromeState.customTextSecondaryColor?.let { Color(it) },
+            backgroundStyle = chromeState.backgroundStyle,
             systemDark = systemUiSnapshot.isDark,
         ) {
             CompositionLocalProvider(

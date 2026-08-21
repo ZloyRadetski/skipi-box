@@ -1208,4 +1208,12 @@ lid">CIDR نامعتبر است</string>
     <string name="tools_dns_observed_egress">از طریق %1$s</string>
     <string name="tools_dns_resolver_entry">مبدل %1$d</string>
     <string name="tools_dns_isp_unknown">ارائه‌دهنده ناشناس</string>
+    <string name="settings_background_title">پس‌زمینه</string>
+    <string name="settings_background_style">سبک پس‌زمینه</string>
+    <string name="settings_background_style_classic">کلاسیک</string>
+    <string name="settings_background_style_photo">تصویر سفارشی</string>
+    <string name="settings_background_style_connection">وضعیت اتصال</string>
+    <string name="settings_background_photo_pick">انتخاب تصویر</string>
+    <string name="settings_background_photo_remove">حذف تصویر</string>
+    <string name="settings_background_dim">میزان تاریکی پس‌زمینه</string>
 </resources>

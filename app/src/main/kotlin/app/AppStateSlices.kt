@@ -51,6 +51,8 @@ data class AppChromeState(
     val customProtocolStrategyColor: Long? = null,
     val customProtocolChainColor: Long? = null,
     val customProtocolJsonColor: Long? = null,
+    val backgroundStyle: Int = app.modes.BackgroundStyleClassic,
+    val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = app.modes.BottomBarSizeLarge,
 )
 
@@ -162,6 +164,8 @@ private fun AppState.toAppChromeState(): AppChromeState {
         customProtocolStrategyColor = customProtocolStrategyColor,
         customProtocolChainColor = customProtocolChainColor,
         customProtocolJsonColor = customProtocolJsonColor,
+        backgroundStyle = backgroundStyle,
+        backgroundPhotoDimPercent = backgroundPhotoDimPercent,
         bottomBarSize = bottomBarSize,
     )
 }

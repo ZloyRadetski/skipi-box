@@ -18,4 +18,15 @@ class UiModesTest {
         assertEquals(BottomBarSizeLarge, normalizeBottomBarSize(-1))
         assertEquals(BottomBarSizeLarge, normalizeBottomBarSize(99))
     }
+
+    @Test
+    fun testNormalizeBackgroundStyle() {
+        assertEquals(BackgroundStyleClassic, normalizeBackgroundStyle(BackgroundStyleClassic))
+        assertEquals(BackgroundStylePhoto, normalizeBackgroundStyle(BackgroundStylePhoto))
+        assertEquals(BackgroundStyleConnection, normalizeBackgroundStyle(BackgroundStyleConnection))
+
+        // Invalid values default to BackgroundStyleClassic
+        assertEquals(BackgroundStyleClassic, normalizeBackgroundStyle(-1))
+        assertEquals(BackgroundStyleClassic, normalizeBackgroundStyle(99))
+    }
 }

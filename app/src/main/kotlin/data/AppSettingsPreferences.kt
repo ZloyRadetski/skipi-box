@@ -326,6 +326,14 @@ internal class AppSettingsPreferences(
                 KeyConnectionDisplayMode,
                 defaults.connectionDisplayMode,
             ),
+            backgroundStyle = preferences.getInt(
+                KeyBackgroundStyle,
+                defaults.backgroundStyle,
+            ),
+            backgroundPhotoDimPercent = preferences.getInt(
+                KeyBackgroundPhotoDimPercent,
+                defaults.backgroundPhotoDimPercent,
+            ),
             bottomBarSize = preferences.getInt(
                 KeyBottomBarSize,
                 defaults.bottomBarSize,
@@ -499,6 +507,8 @@ internal class AppSettingsPreferences(
             .putInt(KeyProxyAppListMode, state.proxyAppListMode)
             .putBoolean(KeyAutoCheckAppUpdates, state.autoCheckAppUpdates)
             .putBoolean(KeyAutoInstallAppUpdatesAtNight, state.autoInstallAppUpdatesAtNight)
+            .putInt(KeyBackgroundStyle, state.backgroundStyle)
+            .putInt(KeyBackgroundPhotoDimPercent, state.backgroundPhotoDimPercent)
             .putBoolean(KeyEnableSubscriptionExpiryNotifications, state.enableSubscriptionExpiryNotifications)
             .putStringList(
                 KeySubscriptionExpiryReminders,
@@ -841,6 +851,8 @@ private const val KeyFragmentInterval = "fragment_interval"
 private const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_notification"
 private const val KeyShowServerSearch = "show_server_search"
 private const val KeyConnectionDisplayMode = "connection_display_mode"
+private const val KeyBackgroundStyle = "background_style"
+private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"
 private const val KeyClassicShowFloatingPowerButton = "classic_show_floating_power_button"
 private const val KeyShowTunnelMemoryOnHome = "show_tunnel_memory_on_home"

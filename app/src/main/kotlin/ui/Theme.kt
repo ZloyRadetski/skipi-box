@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import app.R
+import app.modes.BackgroundStyleClassic
 import app.modes.ColorModeDark
 import app.modes.ColorModeLight
 import app.modes.ColorModeSystem
@@ -31,6 +32,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemeController
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
+
+val LocalBackgroundStyle = compositionLocalOf { BackgroundStyleClassic }
 
 @Immutable
 data class AppColors(
@@ -92,6 +95,7 @@ fun AppTheme(
     customSurfaceVariantColor: Color? = null,
     customTextColor: Color? = null,
     customTextSecondaryColor: Color? = null,
+    backgroundStyle: Int = BackgroundStyleClassic,
     systemDark: Boolean,
     content: @Composable () -> Unit,
 ) {
@@ -204,13 +208,13 @@ fun AppTheme(
     }
 
     val baseMiuixColors = controller.currentColors()
-    val miuixColors = remember(baseMiuixColors, appColors, enableCustomColors, customAccentColor) {
+    val miuixColors = remember(baseMiuixColors, appColors, enableCustomColors, customAccentColor, backgroundStyle) {
         baseMiuixColors.copy(
             surface = appColors.surface,
             surfaceContainer = appColors.surface,
             surfaceContainerHigh = appColors.surface,
             surfaceContainerHighest = appColors.surface,
-            background = appColors.background,
+            background = if (backgroundStyle != BackgroundStyleClassic) Color.Transparent else appColors.background,
             surfaceVariant = appColors.surfaceVariant,
             onSurface = appColors.onSurface,
             onBackground = appColors.onBackground,
@@ -226,6 +230,7 @@ fun AppTheme(
         LocalColorMode provides colorMode,
         LocalResolvedDarkTheme provides resolvedDark,
         LocalAppColors provides appColors,
+        LocalBackgroundStyle provides backgroundStyle,
     ) {
         MiuixTheme(colors = miuixColors) {
             SystemBarAppearance(

@@ -1209,4 +1209,12 @@
     <string name="tools_dns_observed_egress">через %1$s</string>
     <string name="tools_dns_resolver_entry">Резолвер %1$d</string>
     <string name="tools_dns_isp_unknown">Неизвестный провайдер</string>
+    <string name="settings_background_title">Фон приложения</string>
+    <string name="settings_background_style">Стиль фона</string>
+    <string name="settings_background_style_classic">Классический</string>
+    <string name="settings_background_style_photo">Своё фото</string>
+    <string name="settings_background_style_connection">Реакция на статус VPN</string>
+    <string name="settings_background_photo_pick">Выбрать фото из галереи</string>
+    <string name="settings_background_photo_remove">Удалить фоновое фото</string>
+    <string name="settings_background_dim">Степень затемнения</string>
 </resources>
