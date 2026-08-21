@@ -419,12 +419,12 @@ private fun chainProxyOutboundTag(tag: String, index: Int): String {
 }
 
 private fun String.latencySortKey(): Int {
-    val number = latencyRegex.find(this)?.value?.toIntOrNull()
-    return when {
-        number != null -> number
-        isBlank() -> Int.MAX_VALUE
-        else -> Int.MAX_VALUE - 1
+    val trimmed = trim()
+    if (trimmed.isBlank() || trimmed.startsWith("-") || trimmed.contains("Failed", ignoreCase = true) || trimmed.contains("Timeout", ignoreCase = true) || trimmed.contains("Error", ignoreCase = true)) {
+        return Int.MAX_VALUE
     }
+    val number = latencyRegex.find(trimmed)?.value?.toIntOrNull()
+    return number ?: Int.MAX_VALUE
 }
 
 private val latencyRegex = Regex("""\d+""")

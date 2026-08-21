@@ -39,13 +39,13 @@ private fun ProxyServerState.displaySortTitle(): String {
 }
 
 private fun String.proxyServerListLatencySortKey(): Int {
+    val trimmed = trim()
     if (this == ProxyServerLatencyTesting) return Int.MAX_VALUE - 2
-    val number = latencyNumberRegex.find(this)?.value?.toIntOrNull()
-    return when {
-        number != null -> number
-        isBlank() -> Int.MAX_VALUE
-        else -> Int.MAX_VALUE - 1
+    if (trimmed.isBlank() || trimmed.startsWith("-") || trimmed.contains("Failed", ignoreCase = true) || trimmed.contains("Timeout", ignoreCase = true) || trimmed.contains("Error", ignoreCase = true)) {
+        return Int.MAX_VALUE - 1
     }
+    val number = latencyNumberRegex.find(trimmed)?.value?.toIntOrNull()
+    return number ?: (Int.MAX_VALUE - 1)
 }
 
 private val latencyNumberRegex = Regex("""\d+""")
