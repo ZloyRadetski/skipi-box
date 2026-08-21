@@ -214,7 +214,8 @@ fun AppContent(
         LocalIsWideScreen provides isWideScreen,
         LocalProxyPageScrollToTopRequest provides mainPagerState.proxyPageScrollToTopRequest,
     ) {
-        val entryProvider = remember(backStack, languageMode) {
+        val backgroundStyle = LocalAppChromeState.current.backgroundStyle
+        val entryProvider = remember(backStack, languageMode, backgroundStyle) {
             entryProvider<NavKey> {
                 appEntry<Route.Onboarding> {
                     key(languageMode) {
@@ -461,8 +462,7 @@ private fun Home(
     val navigationItems = MainNavigation.navigationItems()
     Scaffold(
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
     ) {
         if (isWideScreen) {
             WideScreenContent(
@@ -529,8 +529,7 @@ private fun CompactScreenLayout(
 ) {
     Scaffold(
         modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         bottomBar = {
             ExpressiveFloatingNavigationBar(
                 navigationItems = navigationItems,
@@ -889,8 +888,7 @@ fun AppPager(
     HorizontalPager(
         state = pagerState,
         modifier = modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.background),
+            .fillMaxSize(),
         userScrollEnabled = false,
         verticalAlignment = Alignment.Top,
         pageContent = { page ->

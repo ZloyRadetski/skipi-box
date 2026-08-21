@@ -198,7 +198,9 @@ fun App(
                 LocalUpdateAppState provides updateAppState,
                 LocalAppServices provides services,
             ) {
-                AppContent(padding = padding)
+                ui.background.AppBackground {
+                    AppContent(padding = padding)
+                }
             }
         }
     }
