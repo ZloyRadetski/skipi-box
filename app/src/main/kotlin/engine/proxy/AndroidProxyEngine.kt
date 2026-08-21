@@ -75,28 +75,11 @@ class AndroidProxyEngine(
         if (ProxyTrafficStatsRuntimeStore.read(appContext)?.paused != true) {
             ProxyTrafficStatsService.reconcile(appContext, null)
         }
-        var vpnState = request.appState
+        val vpnState = request.appState
             .resolveActiveNetworkConfig(appContext)
             .withActiveTrafficConfigApplied()
             .copy(runMode = RunModeVpnService)
             .withResolvedDynamicLocalProxyPort()
-
-        val strategyGroup = request.selectedServer.server as? StrategyGroup
-        if (strategyGroup != null) {
-            val warmupResults = runCatching {
-                latencyTester.fastProbeStrategyGroupMembers(vpnState, strategyGroup, maxWaitMillis = 600L)
-            }.getOrDefault(emptyMap())
-            if (warmupResults.isNotEmpty()) {
-                vpnState = vpnState.copy(
-                    proxyServers = vpnState.proxyServers.map { server ->
-                        val ping = warmupResults[server.id]
-                        if (ping != null && (server.latency.isBlank() || server.latency.contains("Failed", ignoreCase = true))) {
-                            server.copy(latency = "${ping}ms")
-                        } else server
-                    },
-                )
-            }
-        }
 
         val (resolvedRequest, trafficStatsRuntime) = request.copy(appState = vpnState).withTrafficStatsConfig()
         runCatching { vpnXrayEngine.start(resolvedRequest).copy(appState = vpnState, runMode = RunModeVpnService) }

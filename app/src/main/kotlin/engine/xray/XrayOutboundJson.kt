@@ -103,9 +103,9 @@ internal fun buildXrayBurstObservatory(
             "pingConfig",
             buildJsonObject {
                 put("destination", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
-                put("interval", probeInterval?.takeIf(String::isNotBlank) ?: "1m")
-                put("sampling", 2)
-                put("timeout", "3s")
+                put("interval", probeInterval?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeInterval)
+                put("sampling", 1)
+                put("timeout", "2s")
             },
         )
     }
@@ -291,4 +291,4 @@ private fun Int.toMuxUdp443Mode(): String {
 }
 
 private const val XrayObservatoryProbeUrl = NetworkDefaults.CONNECTIVITY_CHECK_URL
-private const val XrayObservatoryProbeInterval = "15s"
+private const val XrayObservatoryProbeInterval = "10s"
