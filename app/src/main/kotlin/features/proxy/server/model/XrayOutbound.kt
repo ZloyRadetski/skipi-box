@@ -92,7 +92,7 @@ internal fun V2RayParameters.toXrayStreamSettings(): JsonObject {
             "grpc" -> putGrpcSettings(this@toXrayStreamSettings)
             "httpupgrade" -> putHttpUpgradeSettings(this@toXrayStreamSettings)
             "xhttp" -> putXhttpSettings(this@toXrayStreamSettings)
-            "mkcp" -> putKcpSettings(this@toXrayStreamSettings)
+            "kcp", "mkcp" -> putKcpSettings(this@toXrayStreamSettings)
         }
 
         val finalMask = fm.toXrayJsonObjectOrNull("FinalMask")
@@ -105,7 +105,7 @@ internal fun V2RayParameters.toXrayStreamSettings(): JsonObject {
 private fun String.toXrayNetwork(): String {
     return when (toCanonicalV2RayTransportType()) {
         V2RayTransportRaw -> "raw"
-        V2RayTransportMkcp -> "mkcp"
+        V2RayTransportMkcp -> "kcp"
         V2RayTransportWebSocket -> "websocket"
         V2RayTransportGrpc -> "grpc"
         V2RayTransportHttpUpgrade -> "httpupgrade"

@@ -80,7 +80,7 @@ class ProxyServerParserTest {
         assertEquals("40", server.parms.tti)
 
         val streamSettings = server.parms.toXrayStreamSettings()
-        assertEquals("mkcp", streamSettings["network"]?.toString()?.replace("\"", ""))
+        assertEquals("kcp", streamSettings["network"]?.toString()?.replace("\"", ""))
         val kcpSettings = streamSettings["kcpSettings"] as kotlinx.serialization.json.JsonObject
         assertEquals("1350", kcpSettings["mtu"]?.toString())
         assertEquals("40", kcpSettings["tti"]?.toString())
