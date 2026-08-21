@@ -104,18 +104,27 @@ private fun AboutAppLogo(
 internal fun AboutRuntimeCard(
     modifier: Modifier = Modifier,
 ) {
+    val uriHandler = LocalUriHandler.current
+    val xrayVersion = remember {
+        runCatching { app.skipi.core.skipicore.Skipicore.coreVersion() }.getOrNull()?.ifBlank { null }
+            ?: ProjectInfo.XRAY_CORE_VERSION
+    }
+
     SmallTitle(text = stringResource(R.string.about_runtime))
     SettingsSectionCard(
         modifier = modifier,
         bottomPadding = 12.dp,
     ) {
-        BasicComponent(
+        ArrowPreference(
             title = "SKIPI Core",
             summary = ProjectInfo.SKIPI_CORE_VERSION,
+            onClick = {
+                uriHandler.openUri("https://github.com/ZloyRadetski/skipi-core")
+            },
         )
         BasicComponent(
             title = "Xray-core",
-            summary = ProjectInfo.XRAY_CORE_VERSION,
+            summary = xrayVersion,
         )
         BasicComponent(
             title = "hev-socks5-tunnel",
