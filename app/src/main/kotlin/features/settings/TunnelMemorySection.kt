@@ -9,10 +9,39 @@ import android.os.Process
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import app.R
+import engine.vpn.SkipiCoreRuntime
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
-/** The VPN core runs in SKIPI's process, so Android's PSS is the available tunnel-memory metric. */
+@Serializable
+data class CoreMemoryStats(
+    val allocBytes: Long = 0L,
+    val allocMb: String = "",
+    val sysBytes: Long = 0L,
+    val sysMb: String = "",
+    val heapInuse: Long = 0L,
+    val heapIdle: Long = 0L,
+    val heapReleased: Long = 0L,
+    val numGoroutines: Int = 0,
+    val numGc: Long = 0L,
+)
+
+private val memoryJson = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+}
+
+internal fun currentCoreMemoryStats(): CoreMemoryStats? {
+    val raw = SkipiCoreRuntime.readMemoryStats()
+    if (raw.isBlank()) return null
+    return runCatching {
+        memoryJson.decodeFromString<CoreMemoryStats>(raw)
+    }.getOrNull()
+}
+
+/** The VPN core runs in SKIPI's process; reads real Go/Xray memory from core or falls back to native PSS. */
 @Composable
 internal fun SettingsTunnelMemorySection(
     showOnHome: Boolean,
@@ -30,6 +59,10 @@ internal fun SettingsTunnelMemorySection(
 }
 
 internal fun Context.currentTunnelMemoryPssKb(): Long {
+    val coreStats = currentCoreMemoryStats()
+    if (coreStats != null && coreStats.allocBytes > 0L) {
+        return coreStats.allocBytes / 1_024L
+    }
     val manager = getSystemService(ActivityManager::class.java) ?: return 0L
     return manager.getProcessMemoryInfo(intArrayOf(Process.myPid()))
         .firstOrNull()
