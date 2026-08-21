@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -118,20 +119,14 @@ fun AppBackground(
 
     when (appState.backgroundStyle) {
         BackgroundStylePhoto -> {
-            val photoBitmap by produceState<ImageBitmap?>(
-                initialValue = null,
-                key1 = photoSeed,
-                key2 = appState.backgroundStyle,
-            ) {
-                value = withContext(Dispatchers.IO) {
-                    val file = customBackgroundPhotoFile(context)
-                    if (file.exists()) {
-                        runCatching {
-                            BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                        }.getOrNull()
-                    } else {
-                        null
-                    }
+            val photoBitmap: ImageBitmap? = remember(photoSeed, appState.backgroundStyle) {
+                val file = customBackgroundPhotoFile(context)
+                if (file.exists()) {
+                    runCatching {
+                        BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+                    }.getOrNull()
+                } else {
+                    null
                 }
             }
 
@@ -140,10 +135,9 @@ fun AppBackground(
                     .fillMaxSize()
                     .background(solidFallback),
             ) {
-                val currentBitmap = photoBitmap
-                if (currentBitmap != null) {
+                if (photoBitmap != null) {
                     Image(
-                        bitmap = currentBitmap,
+                        bitmap = photoBitmap,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
@@ -157,21 +151,19 @@ fun AppBackground(
                         )
                     }
                 } else {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val placeholderColor1 = if (isDark) Color(0xFF312E81) else Color(0xFFE0E7FF)
-                        val placeholderColor2 = if (isDark) Color(0xFF1E1B4B) else Color(0xFFF3F4F6)
-                        drawRect(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    placeholderColor1.copy(alpha = if (isDark) 0.35f else 0.45f),
-                                    placeholderColor2.copy(alpha = if (isDark) 0.15f else 0.20f),
-                                    solidFallback,
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        if (isDark) Color(0xFF312E81) else Color(0xFFC7D2FE),
+                                        if (isDark) Color(0xFF1E1B4B) else Color(0xFFE0E7FF),
+                                        solidFallback,
+                                    ),
                                 ),
-                                center = Offset(size.width * 0.5f, size.height * 0.3f),
-                                radius = size.maxDimension * 0.8f,
                             ),
-                        )
-                    }
+                    )
                 }
                 content()
             }
@@ -181,10 +173,10 @@ fun AppBackground(
             val isRunning = appState.proxyRunning
             val infiniteTransition = rememberInfiniteTransition(label = "ambientGlow")
             val pulse by infiniteTransition.animateFloat(
-                initialValue = 0.88f,
-                targetValue = 1.12f,
+                initialValue = 0.90f,
+                targetValue = 1.10f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 2600, easing = FastOutSlowInEasing),
+                    animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
                     repeatMode = RepeatMode.Reverse,
                 ),
                 label = "pulseAlpha",
@@ -192,61 +184,34 @@ fun AppBackground(
 
             val activeColor1 by animateColorAsState(
                 targetValue = if (isRunning) Color(0xFF10B981) else (if (isDark) Color(0xFF6366F1) else Color(0xFF4F46E5)),
-                animationSpec = tween(durationMillis = 600),
+                animationSpec = tween(durationMillis = 500),
                 label = "activeColor1",
             )
             val activeColor2 by animateColorAsState(
-                targetValue = if (isRunning) Color(0xFF06B6D4) else (if (isDark) Color(0xFF3B82F6) else Color(0xFF60A5FA)),
-                animationSpec = tween(durationMillis = 600),
+                targetValue = if (isRunning) Color(0xFF06B6D4) else (if (isDark) Color(0xFF8B5CF6) else Color(0xFF7C3AED)),
+                animationSpec = tween(durationMillis = 500),
                 label = "activeColor2",
             )
+
+            val primaryAlpha = (if (isRunning) (if (isDark) 0.58f else 0.40f) else (if (isDark) 0.45f else 0.30f)) * pulse
+            val secondaryAlpha = (if (isRunning) (if (isDark) 0.32f else 0.20f) else (if (isDark) 0.22f else 0.14f)) * pulse
 
             Box(
                 modifier = modifier
                     .fillMaxSize()
-                    .background(solidFallback),
+                    .background(solidFallback)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                activeColor1.copy(alpha = primaryAlpha),
+                                activeColor2.copy(alpha = secondaryAlpha),
+                                Color.Transparent,
+                            ),
+                            startY = 0f,
+                            endY = 1400f,
+                        ),
+                    ),
             ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    if (isRunning) {
-                        val primaryAlpha = (if (isDark) 0.62f else 0.42f) * pulse
-                        val secondaryAlpha = (if (isDark) 0.38f else 0.24f) * pulse
-                        drawRect(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    activeColor1.copy(alpha = primaryAlpha),
-                                    activeColor2.copy(alpha = secondaryAlpha),
-                                    solidFallback,
-                                ),
-                                center = Offset(size.width * 0.5f, size.height * 0.22f),
-                                radius = size.maxDimension * 0.65f * pulse,
-                            ),
-                        )
-                        drawRect(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    activeColor2.copy(alpha = (if (isDark) 0.25f else 0.15f) * pulse),
-                                    solidFallback,
-                                ),
-                                center = Offset(size.width * 0.75f, size.height * 0.75f),
-                                radius = size.maxDimension * 0.5f,
-                            ),
-                        )
-                    } else {
-                        val idleAlpha = (if (isDark) 0.48f else 0.32f) * pulse
-                        val idleSecondaryAlpha = (if (isDark) 0.25f else 0.16f) * pulse
-                        drawRect(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    activeColor1.copy(alpha = idleAlpha),
-                                    activeColor2.copy(alpha = idleSecondaryAlpha),
-                                    solidFallback,
-                                ),
-                                center = Offset(size.width * 0.5f, size.height * 0.22f),
-                                radius = size.maxDimension * 0.65f * pulse,
-                            ),
-                        )
-                    }
-                }
                 content()
             }
         }
