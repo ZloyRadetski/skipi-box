@@ -4,9 +4,10 @@
 package features.config
 
 import app.AppState
+import app.SubscriptionGroupState
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdate
 import features.proxy.server.usecase.ResolvedEmbeddedTrafficConfig
-import features.proxy.server.usecase.SubscriptionGroupFetchIdentity
+import features.proxy.server.usecase.subscriptionFetchIdentity
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -63,7 +64,14 @@ class TrafficConfigImportUpdateTest {
         assertTrue(updatedConfig.rawConfig.contains("ipv6 = false"))
 
         // 3. Third import via subscription update flow
-        val group1 = app.SubscriptionGroupState(id = 1, name = "Provider", url = "https://sub.com")
+        val group1 = SubscriptionGroupState(
+            id = 1,
+            name = "Provider",
+            url = "https://sub.com",
+            userAgent = "",
+            updateInterval = "24",
+            enabled = true,
+        )
         state = state.copy(subscriptionGroups = listOf(group1))
 
         val update = ProxyServerListSubscriptionUpdate(
@@ -103,7 +111,14 @@ class TrafficConfigImportUpdateTest {
             FINAL,DIRECT
         """.trimIndent()
 
-        val group42 = app.SubscriptionGroupState(id = 42, name = "Sub 42", url = "https://sub42.com")
+        val group42 = SubscriptionGroupState(
+            id = 42,
+            name = "Sub 42",
+            url = "https://sub42.com",
+            userAgent = "",
+            updateInterval = "24",
+            enabled = true,
+        )
         var state = AppState(subscriptionGroups = listOf(group42))
 
         // First update from subscription group 42
