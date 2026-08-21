@@ -88,25 +88,20 @@ suspend fun saveCustomBackgroundPhoto(context: Context, uri: Uri): Boolean =
             } ?: return@runCatching false
 
             val targetFile = customBackgroundPhotoFile(context)
-            val tempFile = File(context.filesDir, "$BackgroundPhotoFileName.tmp")
-            FileOutputStream(tempFile).use { output ->
+            FileOutputStream(targetFile).use { output ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)
             }
-            if (tempFile.renameTo(targetFile) || (targetFile.delete() && tempFile.renameTo(targetFile))) {
+            withContext(Dispatchers.Main.immediate) {
                 backgroundPhotoUpdateSeed = System.currentTimeMillis()
-                true
-            } else {
-                false
             }
+            true
         }.getOrDefault(false)
     }
 
 fun clearCustomBackgroundPhoto(context: Context): Boolean {
     val file = customBackgroundPhotoFile(context)
     val deleted = if (file.exists()) file.delete() else true
-    if (deleted) {
-        backgroundPhotoUpdateSeed = System.currentTimeMillis()
-    }
+    backgroundPhotoUpdateSeed = System.currentTimeMillis()
     return deleted
 }
 
@@ -125,7 +120,11 @@ fun AppBackground(
 
     when (appState.backgroundStyle) {
         BackgroundStylePhoto -> {
-            val photoBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = photoSeed) {
+            val photoBitmap by produceState<ImageBitmap?>(
+                initialValue = null,
+                key1 = photoSeed,
+                key2 = appState.backgroundStyle,
+            ) {
                 value = withContext(Dispatchers.IO) {
                     val file = customBackgroundPhotoFile(context)
                     if (file.exists()) {
@@ -141,7 +140,7 @@ fun AppBackground(
             Box(
                 modifier = modifier
                     .fillMaxSize()
-                    .background(solidFallback)
+                    .background(solidFallback),
             ) {
                 val currentBitmap = photoBitmap
                 if (currentBitmap != null) {
@@ -159,6 +158,22 @@ fun AppBackground(
                                 .background(Color.Black.copy(alpha = dimPercent / 100f)),
                         )
                     }
+                } else {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val placeholderColor1 = if (isDark) Color(0xFF312E81) else Color(0xFFE0E7FF)
+                        val placeholderColor2 = if (isDark) Color(0xFF1E1B4B) else Color(0xFFF3F4F6)
+                        drawRect(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    placeholderColor1.copy(alpha = if (isDark) 0.35f else 0.45f),
+                                    placeholderColor2.copy(alpha = if (isDark) 0.15f else 0.20f),
+                                    solidFallback,
+                                ),
+                                center = Offset(size.width * 0.5f, size.height * 0.3f),
+                                radius = size.maxDimension * 0.8f,
+                            ),
+                        )
+                    }
                 }
                 content()
             }
@@ -166,52 +181,70 @@ fun AppBackground(
 
         BackgroundStyleConnection -> {
             val isRunning = appState.proxyRunning
-            val accentColor by animateColorAsState(
-                targetValue = if (isRunning) AppTheme.colors.accent else AppTheme.colors.surfaceVariant,
-                label = "connectionAccent",
-            )
-            val baseBackground = solidFallback
-
             val infiniteTransition = rememberInfiniteTransition(label = "ambientGlow")
             val pulse by infiniteTransition.animateFloat(
-                initialValue = 0.85f,
-                targetValue = 1.15f,
+                initialValue = 0.88f,
+                targetValue = 1.12f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 2800, easing = FastOutSlowInEasing),
+                    animation = tween(durationMillis = 2600, easing = FastOutSlowInEasing),
                     repeatMode = RepeatMode.Reverse,
                 ),
                 label = "pulseAlpha",
             )
 
+            val activeColor1 by animateColorAsState(
+                targetValue = if (isRunning) Color(0xFF10B981) else (if (isDark) Color(0xFF6366F1) else Color(0xFF4F46E5)),
+                animationSpec = tween(durationMillis = 600),
+                label = "activeColor1",
+            )
+            val activeColor2 by animateColorAsState(
+                targetValue = if (isRunning) Color(0xFF06B6D4) else (if (isDark) Color(0xFF3B82F6) else Color(0xFF60A5FA)),
+                animationSpec = tween(durationMillis = 600),
+                label = "activeColor2",
+            )
+
             Box(
                 modifier = modifier
                     .fillMaxSize()
-                    .background(baseBackground)
+                    .background(solidFallback),
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     if (isRunning) {
-                        val glowAlpha = if (isDark) 0.25f else 0.18f
+                        val primaryAlpha = (if (isDark) 0.38f else 0.28f) * pulse
+                        val secondaryAlpha = (if (isDark) 0.22f else 0.15f) * pulse
                         drawRect(
                             brush = Brush.radialGradient(
                                 colors = listOf(
-                                    accentColor.copy(alpha = glowAlpha * pulse),
-                                    accentColor.copy(alpha = (glowAlpha * 0.4f) * pulse),
-                                    baseBackground,
+                                    activeColor1.copy(alpha = primaryAlpha),
+                                    activeColor2.copy(alpha = secondaryAlpha),
+                                    solidFallback,
                                 ),
-                                center = Offset(size.width * 0.5f, size.height * 0.18f),
-                                radius = size.maxDimension * 0.7f * pulse,
-                            )
+                                center = Offset(size.width * 0.5f, size.height * 0.15f),
+                                radius = size.maxDimension * 0.75f * pulse,
+                            ),
+                        )
+                        drawRect(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    activeColor2.copy(alpha = (if (isDark) 0.12f else 0.08f) * pulse),
+                                    solidFallback,
+                                ),
+                                center = Offset(size.width * 0.8f, size.height * 0.85f),
+                                radius = size.maxDimension * 0.5f,
+                            ),
                         )
                     } else {
+                        val idleAlpha = if (isDark) 0.24f else 0.18f
                         drawRect(
-                            brush = Brush.verticalGradient(
+                            brush = Brush.radialGradient(
                                 colors = listOf(
-                                    accentColor.copy(alpha = if (isDark) 0.08f else 0.05f),
-                                    baseBackground,
+                                    activeColor1.copy(alpha = idleAlpha * pulse),
+                                    activeColor2.copy(alpha = (idleAlpha * 0.4f) * pulse),
+                                    solidFallback,
                                 ),
-                                startY = 0f,
-                                endY = size.height * 0.5f,
-                            )
+                                center = Offset(size.width * 0.5f, size.height * 0.2f),
+                                radius = size.maxDimension * 0.7f,
+                            ),
                         )
                     }
                 }
@@ -223,7 +256,7 @@ fun AppBackground(
             Box(
                 modifier = modifier
                     .fillMaxSize()
-                    .background(solidFallback)
+                    .background(solidFallback),
             ) {
                 content()
             }

@@ -339,7 +339,19 @@ fun SettingsAppearancePage(
                             items = backgroundStyleOptions,
                             selectedIndex = appState.backgroundStyle.coerceIn(0, backgroundStyleOptions.lastIndex),
                             onSelectedIndexChange = { index ->
-                                updateAppState { it.copy(backgroundStyle = normalizeBackgroundStyle(index)) }
+                                val newStyle = normalizeBackgroundStyle(index)
+                                updateAppState { it.copy(backgroundStyle = newStyle) }
+                                if (newStyle == BackgroundStylePhoto && !customBackgroundPhotoExists(context)) {
+                                    scope.launch {
+                                        val uri = services.photoFilePicker()
+                                        if (uri != null) {
+                                            val saved = saveCustomBackgroundPhoto(context, uri)
+                                            if (saved) {
+                                                updateAppState { it.copy(backgroundStyle = BackgroundStylePhoto) }
+                                            }
+                                        }
+                                    }
+                                }
                             },
                         )
                         AnimatedVisibility(
