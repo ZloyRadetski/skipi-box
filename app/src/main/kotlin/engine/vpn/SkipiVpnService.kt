@@ -411,21 +411,25 @@ class SkipiVpnService : VpnService() {
         serviceScope.launch {
             networkSwitchMutex.withLock {
                 val config = currentConfig ?: return@withLock
-                val tunFd = tunFileDescriptor?.fd ?: return@withLock
                 if (!running) return@withLock
 
                 runCatching {
-                    AndroidAppLogger.info(LogTag, "Restarting core loop on network handover to flush stale sockets")
-                    SkipiCoreRuntime.stop()
+                    AndroidAppLogger.info(LogTag, "Restarting core on network handover to flush stale sockets")
+                    runCatching { hevTunRuntime?.stop() }
+                    runCatching { SkipiCoreRuntime.stop() }
+                    runCatching { tunFileDescriptor?.close() }
+
+                    tunFileDescriptor = establishTun(config)
+                    val newTunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
+
                     SkipiCoreRuntime.start(
                         context = this@SkipiVpnService,
                         config = config,
-                        tunFd = config.xrayTunFd(tunFd),
+                        tunFd = config.xrayTunFd(newTunFd),
                     )
                     config.hevSocks5TunnelConfig?.let { hevConfig ->
-                        runCatching { hevTunRuntime?.stop() }
                         val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
-                        runtime.start(hevConfig, tunFd)
+                        runtime.start(hevConfig, newTunFd)
                     }
                     AndroidAppLogger.info(LogTag, "Successfully reloaded proxy core on new network")
                 }.onFailure { error ->

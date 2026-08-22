@@ -14,11 +14,13 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import app.LocalAppStateStore
 import app.LocalUpdateAppState
+import app.modes.ColorModeDark
 import desktop.DesktopProcessProxyEngine
 import desktop.DesktopSettingsStore
 import desktop.DesktopSubscriptionManager
 import engine.proxy.ProxyEngineStatus
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.AppTheme
 import ui.DesktopMainView
 
 fun main() = application {
@@ -42,7 +44,11 @@ fun main() = application {
             LocalAppStateStore provides settingsStore,
             LocalUpdateAppState provides { updater -> settingsStore.update(updater) },
         ) {
-            MiuixTheme {
+            AppTheme(
+                colorMode = ColorModeDark,
+                enableMaterialYou = false,
+                systemDark = true,
+            ) {
                 DesktopMainView(
                     appState = appState,
                     onUpdateAppState = { updater -> settingsStore.update(updater) },
