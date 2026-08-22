@@ -37,6 +37,11 @@
     <string name="quick_settings_tile_processing">Обработка…</string>
     <string name="quick_settings_tile_vpn_permission_required">Предоставьте разрешение на VPN, затем нажмите снова для запуска</string>
     <string name="quick_settings_tile_toggle_failed">Не удалось переключить прокси</string>
+
+    <!-- Виджет на рабочем столе -->
+    <string name="widget_description">Переключение VPN-соединения и скорость трафика в реальном времени</string>
+    <string name="widget_toggle_description">Включить или выключить прокси</string>
+    <string name="widget_speed_format">↑ %1$s · ↓ %2$s</string>
 <string name="common_cancel">Отмена</string>
     <string name="common_save">Сохранить</string>
     <string name="common_add">Добавить</string>

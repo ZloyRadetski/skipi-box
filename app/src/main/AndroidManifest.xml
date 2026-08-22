@@ -259,6 +259,17 @@
             android:exported="true"
             tools:ignore="ExportedReceiver" />
 
+        <receiver
+            android:name="features.widgets.SkipiWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_skipi_info" />
+        </receiver>
+
         <service
             android:name="engine.stats.ProxyTrafficStatsService"
             android:exported="false"

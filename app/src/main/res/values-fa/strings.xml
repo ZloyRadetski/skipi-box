@@ -36,6 +36,11 @@
     <string name="quick_settings_tile_processing">در حال پردازش…</string>
     <string name="quick_settings_tile_vpn_permission_required">اجازه VPN اعطا کنید، سپس برای شروع دوباره ضربه بزنید</string>
     <string name="quick_settings_tile_toggle_failed">تغییر پروکسی انجام نشد</string>
+
+    <!-- Home screen widget -->
+    <string name="widget_description">تغییر وضعیت اتصال VPN و مشاهده سرعت ترافیک زنده</string>
+    <string name="widget_toggle_description">تغییر وضعیت پروکسی</string>
+    <string name="widget_speed_format">↑ %1$s · ↓ %2$s</string>
     <string name="common_cancel">لغو</string>
     <string name="common_save">ذخیره</string>
     <string name="common_add">افزودن</string>

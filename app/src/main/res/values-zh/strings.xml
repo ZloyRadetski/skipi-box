@@ -36,6 +36,11 @@
     <string name="quick_settings_tile_processing">加工…</string>
     <string name="quick_settings_tile_vpn_permission_required">授予 VPN 权限，然后再次点击即可开始</string>
     <string name="quick_settings_tile_toggle_failed">无法切换代理</string>
+
+    <!-- Home screen widget -->
+    <string name="widget_description">切换 VPN 连接并查看实时流量速度</string>
+    <string name="widget_toggle_description">切换代理</string>
+    <string name="widget_speed_format">↑ %1$s · ↓ %2$s</string>
     <string name="common_cancel">取消</string>
     <string name="common_save">保存</string>
     <string name="common_add">添加</string>

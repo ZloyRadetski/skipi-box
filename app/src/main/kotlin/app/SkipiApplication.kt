@@ -45,6 +45,9 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
     internal val networkAutomationMonitor: features.networkautomation.engine.NetworkAutomationMonitor by lazy {
         features.networkautomation.engine.NetworkAutomationMonitor(applicationContext, stateStore, appScope)
     }
+    internal val proxyWidgetRuntime: features.widgets.ProxyWidgetRuntime by lazy {
+        features.widgets.ProxyWidgetRuntime(applicationContext, appScope)
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -54,6 +57,7 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
         AndroidCoreLogRepository.initialize(applicationContext, retentionDays)
         AndroidAccessLogRepository.initialize(applicationContext, retentionDays)
         networkAutomationMonitor.start()
+        proxyWidgetRuntime.start()
         appScope.launch {
             stateStore.state
                 .map { state ->
