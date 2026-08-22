@@ -51,6 +51,7 @@ internal class AppUpdateWorker(
             }
         } else {
             AndroidAppLogger.debug(LogTag, "No newer update found.")
+            stateStore.update { it.copy(availableAppUpdate = null) }
         }
 
         return Result.success()

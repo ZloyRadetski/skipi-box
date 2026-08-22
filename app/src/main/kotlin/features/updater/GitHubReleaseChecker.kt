@@ -127,27 +127,29 @@ internal class GitHubReleaseChecker(
         return regex.find(name)?.groupValues?.getOrNull(1)?.toIntOrNull()
     }
 
-    internal fun isVersionNewer(
-        currentVersionName: String,
-        currentVersionCode: Int,
-        remoteVersionName: String,
-        remoteVersionCode: Int?,
-    ): Boolean {
-        if (remoteVersionCode != null && remoteVersionCode > currentVersionCode) {
-            return true
+    companion object {
+        fun isVersionNewer(
+            currentVersionName: String,
+            currentVersionCode: Int,
+            remoteVersionName: String,
+            remoteVersionCode: Int?,
+        ): Boolean {
+            if (remoteVersionCode != null && remoteVersionCode > currentVersionCode) {
+                return true
+            }
+
+            val currentParts = currentVersionName.trim().removePrefix("v").split('.').mapNotNull { it.toIntOrNull() }
+            val remoteParts = remoteVersionName.trim().removePrefix("v").split('.').mapNotNull { it.toIntOrNull() }
+
+            val maxLen = maxOf(currentParts.size, remoteParts.size)
+            for (i in 0 until maxLen) {
+                val c = currentParts.getOrElse(i) { 0 }
+                val r = remoteParts.getOrElse(i) { 0 }
+                if (r > c) return true
+                if (r < c) return false
+            }
+
+            return (remoteVersionCode ?: 0) > currentVersionCode
         }
-
-        val currentParts = currentVersionName.trim().removePrefix("v").split('.').mapNotNull { it.toIntOrNull() }
-        val remoteParts = remoteVersionName.trim().removePrefix("v").split('.').mapNotNull { it.toIntOrNull() }
-
-        val maxLen = maxOf(currentParts.size, remoteParts.size)
-        for (i in 0 until maxLen) {
-            val c = currentParts.getOrElse(i) { 0 }
-            val r = remoteParts.getOrElse(i) { 0 }
-            if (r > c) return true
-            if (r < c) return false
-        }
-
-        return (remoteVersionCode ?: 0) > currentVersionCode
     }
 }

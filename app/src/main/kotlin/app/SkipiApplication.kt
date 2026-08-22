@@ -8,6 +8,8 @@ import system.AndroidAppIconFetcher
 import features.logs.AndroidAccessLogRepository
 import features.logs.AndroidCoreLogRepository
 import features.logs.AndroidLogcatRepository
+import features.logs.AndroidAppLogger
+import features.logs.AppLogger
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -51,6 +53,7 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        AppLogger.install(AndroidAppLogger)
         AppSettingsPreferences(applicationContext).getOrCreateSubscriptionHwid()
         val retentionDays = stateStore.state.value.logRetentionDays
         AndroidLogcatRepository.initialize(applicationContext, retentionDays)
@@ -95,6 +98,16 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                     trafficConfigScheduler.reconcile(stateStore.state.value.trafficConfigs)
                 }
         }
+        val cachedUpdate = stateStore.state.value.availableAppUpdate
+        if (cachedUpdate != null && !features.updater.GitHubReleaseChecker.isVersionNewer(
+                currentVersionName = ProjectInfo.VERSION_NAME,
+                currentVersionCode = ProjectInfo.VERSION_CODE,
+                remoteVersionName = cachedUpdate.versionName,
+                remoteVersionCode = cachedUpdate.versionCode,
+            )
+        ) {
+            stateStore.update { it.copy(availableAppUpdate = null) }
+        }
         appScope.launch {
             stateStore.state
                 .map { Pair(it.autoCheckAppUpdates, it.autoInstallAppUpdatesAtNight) }
@@ -104,9 +117,7 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                     if (autoCheck) {
                         launch(Dispatchers.IO) {
                             val update = features.updater.GitHubReleaseChecker(applicationContext).checkLatestRelease()
-                            if (update != null) {
-                                stateStore.update { it.copy(availableAppUpdate = update) }
-                            }
+                            stateStore.update { it.copy(availableAppUpdate = update) }
                         }
                     }
                 }

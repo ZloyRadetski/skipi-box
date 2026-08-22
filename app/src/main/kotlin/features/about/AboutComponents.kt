@@ -242,11 +242,6 @@ internal fun AboutUpdatesCard(
             },
             onClick = {
                 if (isChecking) return@ArrowPreference
-                val existing = appState.availableAppUpdate
-                if (existing != null) {
-                    updateInfoToShow = existing
-                    return@ArrowPreference
-                }
                 isChecking = true
                 scope.launch {
                     val update = GitHubReleaseChecker(context).checkLatestRelease()
@@ -255,6 +250,7 @@ internal fun AboutUpdatesCard(
                         updateAppState { it.copy(availableAppUpdate = update, dismissedUpdateVersion = "") }
                         updateInfoToShow = update
                     } else {
+                        updateAppState { it.copy(availableAppUpdate = null) }
                         tipNotifier.show(latestText)
                     }
                 }
