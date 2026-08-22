@@ -1,0 +1,77 @@
+﻿=> /** Platform accent color (Material You on Android, fixed brand blue elsewhere). */
+=> expect fun rememberSystemAccentColor(): Color
+=> /** Platform chrome effects: splash sync + system bar appearance on Android, no-op elsewhere. */
+=> expect fun PlatformThemeEffects(
+=>     colorMode: Int,
+=>     val systemAccent = rememberSystemAccentColor()
+=>                     colorSpec = DynamicColorSpec,
+=>                     paletteStyle = DynamicPaletteStyle,
+=>                     colorSpec = DynamicColorSpec,
+=>                     paletteStyle = DynamicPaletteStyle,
+=>                     colorSpec = DynamicColorSpec,
+=>                     paletteStyle = DynamicPaletteStyle,
+=>             PlatformThemeEffects(
+=>                 colorMode = colorMode,
+=> )
+=> private val DynamicColorSpec = ThemeColorSpec.Spec2025
+=> private val DynamicPaletteStyle = ThemePaletteStyle.TonalSpot
+<= import android.app.Activity
+<= import android.content.res.Resources
+<= import android.os.Build
+<= import androidx.compose.runtime.LaunchedEffect
+<= import androidx.compose.runtime.SideEffect
+<= import android.content.Context
+<= import androidx.compose.ui.platform.LocalContext
+<= import androidx.compose.ui.platform.LocalView
+<= import androidx.core.view.WindowCompat
+<= import app.R
+<= import app.modes.ColorModeThemeSystem
+<= fun resolveSystemAccentColor(context: Context): Color {
+<=     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+<=         try {
+<=             val colorInt = context.getColor(android.R.color.system_accent1_500)
+<=             if (colorInt != 0) {
+<=                 return Color(colorInt)
+<=         } catch (_: Throwable) {}
+<=     return Color(0xFF0070F3) // ╨з╨╕╤Б╤В╤Л╨╣ ╤Б╨╛╨▓╤А╨╡╨╝╨╡╨╜╨╜╤Л╨╣ ╤Б╨╕╤Б╤В╨╡╨╝╨╜╤Л╨╣ ╤Б╨╕╨╜╨╕╨╣
+<=     val context = LocalContext.current
+<=     SynchronizeSplashTheme(colorMode)
+<=     val systemAccent = remember(context) { resolveSystemAccentColor(context) }
+<=                     colorSpec = AndroidDynamicColorSpec,
+<=                     paletteStyle = AndroidDynamicPaletteStyle,
+<=                     colorSpec = AndroidDynamicColorSpec,
+<=                     paletteStyle = AndroidDynamicPaletteStyle,
+<=                     colorSpec = AndroidDynamicColorSpec,
+<=                     paletteStyle = AndroidDynamicPaletteStyle,
+<=             }
+<=             SystemBarAppearance(
+<= private fun SynchronizeSplashTheme(colorMode: Int) {
+<=     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+<=     val view = LocalView.current
+<=     if (view.isInEditMode) return
+<=     LaunchedEffect(view, colorMode) {
+<=         val activity = view.context as? Activity ?: return@LaunchedEffect
+<=         val themeId = when (normalizeColorMode(colorMode)) {
+<=             ColorModeLight -> R.style.AppTheme_Starting_Light
+<=             ColorModeDark -> R.style.AppTheme_Starting_Dark
+<=             else -> Resources.ID_NULL
+<=         }
+<=         activity.splashScreen.setSplashScreenTheme(themeId)
+<=     }
+<= }
+<= private fun SystemBarAppearance(
+<= ) {
+<=     val view = LocalView.current
+<=     if (view.isInEditMode) return
+<=     SideEffect {
+<=         val window = (view.context as? Activity)?.window ?: return@SideEffect
+<=         WindowCompat.getInsetsController(window, view).run {
+<=             isAppearanceLightStatusBars = !statusBarDark
+<=             isAppearanceLightNavigationBars = !navigationBarDark
+<=         }
+<=     }
+<= }
+<=     }
+<= }
+<= private val AndroidDynamicColorSpec = ThemeColorSpec.Spec2025
+<= private val AndroidDynamicPaletteStyle = ThemePaletteStyle.TonalSpot

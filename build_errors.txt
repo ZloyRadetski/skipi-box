@@ -1,0 +1,281 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+> Task :desktop:kmpPartiallyResolvedDependenciesChecker
+> Task :desktop:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:protobufDummy UP-TO-DATE
+> Task :updateResourceFileAssets UP-TO-DATE
+> Task :app:extractDebugProto UP-TO-DATE
+> Task :desktop:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :desktop:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:extractProto UP-TO-DATE
+> Task :desktop:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :desktop:generateResourceAccessorsForCommonMain SKIPPED
+> Task :desktop:convertXmlValueResourcesForJvmMain NO-SOURCE
+> Task :desktop:copyNonXmlValueResourcesForJvmMain NO-SOURCE
+> Task :desktop:prepareComposeResourcesTaskForJvmMain NO-SOURCE
+> Task :desktop:generateResourceAccessorsForJvmMain SKIPPED
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :desktop:generateActualResourceCollectorsForJvmMain SKIPPED
+> Task :desktop:generateComposeResClass SKIPPED
+> Task :desktop:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:generateProjectInfo UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:generateDebugGlobalSynthetics UP-TO-DATE
+
+> Task :hevtun:syncHevSocks5TunnelVersion
+9a06bc6e7989da54e3d32ff701ef7a7ce4995d3a
+
+> Task :hevtun:buildHevTunArm64V8aCli UP-TO-DATE
+> Task :hevtun:buildHevTunArm64V8aJni UP-TO-DATE
+> Task :hevtun:buildHevTunArmeabiV7aCli UP-TO-DATE
+> Task :hevtun:buildHevTunArmeabiV7aJni UP-TO-DATE
+> Task :hevtun:buildHevTunX8664Cli UP-TO-DATE
+> Task :hevtun:buildHevTunX8664Jni UP-TO-DATE
+> Task :hevtun:buildHevTunX86Cli UP-TO-DATE
+> Task :hevtun:buildHevTunX86Jni UP-TO-DATE
+> Task :hevtun:buildHevTun UP-TO-DATE
+> Task :hevtun:preBuild UP-TO-DATE
+> Task :hevtun:preDebugBuild UP-TO-DATE
+> Task :hevtun:generateDebugResources UP-TO-DATE
+> Task :hevtun:packageDebugResources UP-TO-DATE
+> Task :hevtun:processDebugNavigationResources UP-TO-DATE
+> Task :hevtun:parseDebugLocalResources UP-TO-DATE
+> Task :hevtun:generateDebugRFile UP-TO-DATE
+> Task :hevtun:compileDebugKotlin NO-SOURCE
+> Task :hevtun:javaPreCompileDebug UP-TO-DATE
+> Task :hevtun:compileDebugJavaWithJavac NO-SOURCE
+> Task :hevtun:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :hevtun:processDebugJavaRes NO-SOURCE
+> Task :hevtun:createFullJarDebug UP-TO-DATE
+> Task :hevtun:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :hevtun:generateDebugAssets UP-TO-DATE
+> Task :hevtun:mergeDebugAssets UP-TO-DATE
+> Task :hevtun:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :hevtun:writeDebugAarMetadata UP-TO-DATE
+> Task :hevtun:extractDeepLinksDebug UP-TO-DATE
+> Task :hevtun:processDebugManifest UP-TO-DATE
+> Task :hevtun:mapDebugSourceSetPaths UP-TO-DATE
+> Task :hevtun:compileDebugLibraryResources UP-TO-DATE
+> Task :hevtun:mergeDebugJniLibFolders UP-TO-DATE
+> Task :hevtun:mergeDebugNativeLibs UP-TO-DATE
+> Task :hevtun:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :hevtun:preReleaseBuild UP-TO-DATE
+> Task :hevtun:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :hevtun:mergeReleaseNativeLibs UP-TO-DATE
+> Task :hevtun:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :hevtun:generateReleaseResources UP-TO-DATE
+> Task :hevtun:packageReleaseResources UP-TO-DATE
+> Task :hevtun:processReleaseNavigationResources UP-TO-DATE
+> Task :hevtun:parseReleaseLocalResources UP-TO-DATE
+> Task :hevtun:generateReleaseRFile UP-TO-DATE
+> Task :hevtun:compileReleaseKotlin NO-SOURCE
+> Task :hevtun:javaPreCompileRelease UP-TO-DATE
+> Task :hevtun:compileReleaseJavaWithJavac NO-SOURCE
+> Task :hevtun:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :hevtun:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :hevtun:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :hevtun:processReleaseJavaRes NO-SOURCE
+> Task :hevtun:createFullJarRelease UP-TO-DATE
+> Task :hevtun:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :hevtun:prepareReleaseArtProfile UP-TO-DATE
+> Task :hevtun:writeReleaseAarMetadata UP-TO-DATE
+> Task :hevtun:extractDeepLinksRelease UP-TO-DATE
+> Task :hevtun:processReleaseManifest UP-TO-DATE
+> Task :hevtun:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :hevtun:compileReleaseLibraryResources UP-TO-DATE
+> Task :hevtun:generateReleaseAssets UP-TO-DATE
+> Task :hevtun:mergeReleaseAssets UP-TO-DATE
+> Task :hevtun:extractProguardFiles UP-TO-DATE
+> Task :hevtun:generateReleaseLintModel UP-TO-DATE
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :hevtun:prepareLintJarForPublish UP-TO-DATE
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :hevtun:checkReleaseAarMetadata UP-TO-DATE
+> Task :shared:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :hevtun:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :shared:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForAndroidMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :shared:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :shared:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:generateActualResourceCollectorsForAndroidMain UP-TO-DATE
+> Task :shared:generateComposeResClass UP-TO-DATE
+> Task :shared:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :hevtun:extractReleaseAnnotations UP-TO-DATE
+> Task :hevtun:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :hevtun:mergeReleaseJavaResource UP-TO-DATE
+> Task :hevtun:syncReleaseLibJars UP-TO-DATE
+> Task :hevtun:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :hevtun:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :hevtun:generateReleaseLintVitalModel UP-TO-DATE
+> Task :shared:compileAndroidMain UP-TO-DATE
+> Task :shared:androidPreBuild UP-TO-DATE
+> Task :shared:preAndroidMainBuild UP-TO-DATE
+> Task :shared:bundleAndroidMainClassesToRuntimeJar UP-TO-DATE
+> Task :shared:assembleAndroidMainResources UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :shared:processAndroidMainJavaRes UP-TO-DATE
+> Task :shared:createFullJarAndroidMain UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :shared:generateAndroidMainEmptyResourceFiles UP-TO-DATE
+> Task :shared:bundleAndroidMainClassesToCompileJar UP-TO-DATE
+> Task :shared:bundleLibRuntimeToDirAndroidMain UP-TO-DATE
+> Task :shared:writeAndroidMainAarMetadata UP-TO-DATE
+> Task :shared:processAndroidMainManifest UP-TO-DATE
+> Task :shared:mergeAndroidMainJniLibFolders UP-TO-DATE
+> Task :shared:mergeAndroidMainNativeLibs NO-SOURCE
+> Task :shared:copyAndroidMainJniLibsProjectOnly UP-TO-DATE
+> Task :app:extractIncludeDebugProto UP-TO-DATE
+> Task :shared:mergeAndroidMainGeneratedProguardFiles UP-TO-DATE
+> Task :shared:exportAndroidMainConsumerProguardFiles UP-TO-DATE
+> Task :app:generateDebugProto UP-TO-DATE
+> Task :shared:prepareAndroidMainArtProfile UP-TO-DATE
+> Task :shared:prepareLintJarForPublish UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :shared:checkAndroidMainAarMetadata UP-TO-DATE
+> Task :shared:extractAndroidMainAnnotations UP-TO-DATE
+> Task :shared:mergeAndroidMainJavaResource UP-TO-DATE
+> Task :shared:syncAndroidMainLibJars UP-TO-DATE
+> Task :shared:bundleAndroidMainLocalLintAar UP-TO-DATE
+> Task :shared:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForDesktopMain NO-SOURCE
+> Task :shared:generateActualResourceCollectorsForDesktopMain UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :shared:compileKotlinDesktop UP-TO-DATE
+> Task :shared:compileDesktopMainJava NO-SOURCE
+> Task :shared:assembleDesktopMainResources UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :shared:desktopProcessResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :shared:processDesktopMainResources SKIPPED
+> Task :shared:desktopMainClasses UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :shared:desktopJar UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :desktop:compileKotlinJvm UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:extractIncludeReleaseProto UP-TO-DATE
+> Task :app:extractReleaseProto UP-TO-DATE
+> Task :app:generateReleaseProto UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:processReleaseNavigationResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:generateReleaseRFile UP-TO-DATE
+> Task :app:kspReleaseKotlin UP-TO-DATE
+> Task :app:compileReleaseKotlin UP-TO-DATE
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:compileReleaseNavigationResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:processReleaseJavaRes UP-TO-DATE
+> Task :app:mergeReleaseJavaResource UP-TO-DATE
+> Task :app:processReleaseManifestForPackage
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets UP-TO-DATE
+> Task :app:compressReleaseAssets UP-TO-DATE
+> Task :app:extractReleaseVersionControlInfo UP-TO-DATE
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:collectReleaseDependencies UP-TO-DATE
+> Task :app:sdkReleaseDependencyData UP-TO-DATE
+> Task :app:validateSigningRelease UP-TO-DATE
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+> Task :app:extractTestProto UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+> Task :app:processReleaseResources
+> Task :app:expandReleaseArtProfileWildcards UP-TO-DATE
+> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :app:produceReleaseComposeMapping UP-TO-DATE
+> Task :app:reportReleaseComposeMappingErrors
+> Task :hevtun:lintVitalAnalyzeRelease
+> Task :app:kspDebugKotlin
+> Task :app:minifyReleaseWithR8
+> Task :app:lintVitalAnalyzeRelease
+
+> Task :app:compileDebugKotlin
+w: file:///C:/Dev/skipi-box/app/src/main/kotlin/engine/network/TunnelNetworks.kt:31:29 'val allNetworks: Array<(out) Network!>' is deprecated. Deprecated in Java.
+w: file:///C:/Dev/skipi-box/app/src/main/kotlin/engine/network/TunnelNetworks.kt:31:40 Unnecessary safe call on a non-null receiver of type 'Array<(out) Network!>'.
+w: file:///C:/Dev/skipi-box/app/src/main/kotlin/engine/vpn/SkipiVpnService.kt:370:31 Unnecessary safe call on a non-null receiver of type 'Network'.
+w: file:///C:/Dev/skipi-box/app/src/main/kotlin/features/updater/AppUpdateDownloader.kt:111:91 No cast needed.
+w: file:///C:/Dev/skipi-box/app/src/main/kotlin/features/updater/GitHubReleaseChecker.kt:38:79 No cast needed.
+
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:dexBuilderDebug
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:mergeProjectDexDebug
+> Task :app:extractIncludeDebugUnitTestProto
+> Task :app:generateDebugUnitTestProto NO-SOURCE
+> Task :app:kspDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :app:testDebugUnitTest
+> Task :app:lintVitalReportRelease
+> Task :app:lintVitalRelease
+> Task :app:mergeReleaseComposeMapping UP-TO-DATE
+> Task :app:compileReleaseArtProfile UP-TO-DATE
+> Task :app:convertShrunkResourcesToBinaryRelease
+> Task :app:optimizeReleaseResources
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect
+> Task :app:assembleRelease
+
+[Incubating] Problems report is available at: file:///C:/Dev/skipi-box/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 1m 54s
+208 actionable tasks: 36 executed, 172 up-to-date
