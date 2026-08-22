@@ -431,9 +431,10 @@ fun TrafficConfigPage(
             }
             items(
                 items = appState.proxyServers.filter {
+                    val serverImpl = it.server
                     it.groupId == AutoBalancerGroupId &&
-                        it.server is StrategyGroup &&
-                        it.server.sourceTrafficConfigId == null
+                        serverImpl is StrategyGroup &&
+                        serverImpl.sourceTrafficConfigId == null
                 },
                 key = { it.id },
             ) { proxyGroup ->
@@ -533,7 +534,7 @@ fun TrafficConfigPage(
                     onSelect = {
                         updateAppState { state -> state.withActiveTrafficConfig(config.id) }
                     },
-                    onUiEdit = { navigator.push(Route.TrafficConfigEditor(config.id)) },
+                    onUiEdit = { contextMenuConfig = config },
                     onDelete = {
                         if (appState.enableDeletionConfirmation) {
                             pendingConfigDeletion = config
