@@ -4,6 +4,7 @@
 package features.proxy.server.usecase.importer
 
 import features.logs.AppLogger
+
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.usecase.EmptyProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportContext
@@ -15,7 +16,7 @@ import java.net.URI
 
 private const val LogTag = "ProxyServerMihomoYamlImport"
 
-internal suspend fun parseProxyServersFromMihomoYamlConfig(
+suspend fun parseProxyServersFromMihomoYamlConfig(
     text: String,
     context: ProxyServerImportContext,
 ): ProxyServerImportResult {

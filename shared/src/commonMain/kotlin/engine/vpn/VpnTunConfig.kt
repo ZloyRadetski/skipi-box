@@ -18,17 +18,17 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import utils.toIntInRangeOrDefault
 
-internal val defaultIpv4TunAddress = VpnDefaults.IPV4_CIDR.toNetworkCidrAddress()
-internal val defaultIpv6TunAddress = VpnDefaults.IPV6_CIDR.toNetworkCidrAddress()
+val defaultIpv4TunAddress = VpnDefaults.IPV4_CIDR.toNetworkCidrAddress()
+val defaultIpv6TunAddress = VpnDefaults.IPV6_CIDR.toNetworkCidrAddress()
 
-internal data class TunOptions(
+data class TunOptions(
     val mtu: Int,
     val ipv4Address: NetworkCidrAddress,
     val ipv6Address: NetworkCidrAddress,
     val dnsServers: List<String>,
 )
 
-internal fun buildVpnTunInbound(
+fun buildVpnTunInbound(
     appState: AppState,
     tunOptions: TunOptions,
 ): JsonObject {
@@ -63,7 +63,7 @@ internal fun buildVpnTunInbound(
     }
 }
 
-internal fun AppState.toTunOptions(): TunOptions {
+fun AppState.toTunOptions(): TunOptions {
     return TunOptions(
         mtu = tunMtuValue(),
         ipv4Address = tunIpv4Address(),

@@ -15,7 +15,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-internal fun MihomoYamlMap.toMihomoVlessProxyServer(): VLESS {
+fun MihomoYamlMap.toMihomoVlessProxyServer(): VLESS {
     return VLESS(
         remarks = requiredString("name"),
         server = requiredString("server"),

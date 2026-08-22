@@ -78,10 +78,10 @@ sealed interface AppRefreshState {
 }
 
 class AppPullToRefreshState(
-    internal var coroutineScope: CoroutineScope,
+    var coroutineScope: CoroutineScope,
 ) {
-    internal var maxDragDistancePx: Float = 0f
-    internal var refreshThresholdOffset: Float = 0f
+    var maxDragDistancePx: Float = 0f
+    var refreshThresholdOffset: Float = 0f
 
     var dragOffset by mutableFloatStateOf(0f)
     var cachedNestedScrollConnection: NestedScrollConnection? = null
@@ -97,21 +97,21 @@ class AppPullToRefreshState(
         }
     }
 
-    internal var currentTouch by mutableFloatStateOf(0f)
-    internal var isTouching by mutableStateOf(false)
+    var currentTouch by mutableFloatStateOf(0f)
+    var isTouching by mutableStateOf(false)
     private val refreshCompleteAnimProgressState = mutableFloatStateOf(0f)
-    internal val refreshCompleteAnimProgress: Float get() = refreshCompleteAnimProgressState.floatValue
+    val refreshCompleteAnimProgress: Float get() = refreshCompleteAnimProgressState.floatValue
 
-    internal var animationJob: Job? = null
+    var animationJob: Job? = null
 
-    internal suspend fun animateTo(targetValue: Float) {
+    suspend fun animateTo(targetValue: Float) {
         animationJob?.cancel()
         val animatable = Animatable(dragOffset)
         val job = coroutineScope.launch {
             animatable.animateTo(
                 targetValue = targetValue,
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    dampingRatio = Spring.DampingRatioNoBouncy,
                     stiffness = Spring.StiffnessMediumLow,
                 ),
             ) {
@@ -120,13 +120,16 @@ class AppPullToRefreshState(
             }
         }
         animationJob = job
-        job.join()
-        if (animationJob == job) animationJob = null
+        try {
+            job.join()
+        } finally {
+            if (animationJob == job) animationJob = null
+        }
         dragOffset = targetValue
         currentTouch = targetValue
     }
 
-    internal suspend fun showRefreshing(isRefreshingNow: () -> Boolean) {
+    suspend fun showRefreshing(isRefreshingNow: () -> Boolean) {
         internalRefreshState = AppRefreshState.Refreshing
         animateTo(refreshThresholdOffset)
         if (!isRefreshingNow()) {
@@ -134,7 +137,7 @@ class AppPullToRefreshState(
         }
     }
 
-    internal suspend fun finishRefreshing(isRefreshingNow: () -> Boolean) {
+    suspend fun finishRefreshing(isRefreshingNow: () -> Boolean) {
         internalRefreshState = AppRefreshState.RefreshComplete
         refreshCompleteAnimProgressState.floatValue = 0f
         val animatable = Animatable(0f)
@@ -153,7 +156,7 @@ class AppPullToRefreshState(
         }
     }
 
-    internal suspend fun handlePointerRelease(
+    suspend fun handlePointerRelease(
         onRefresh: () -> Unit,
         isRefreshingNow: () -> Boolean,
     ) {
@@ -165,19 +168,21 @@ class AppPullToRefreshState(
             if (!isRefreshingNow()) {
                 finishRefreshing(isRefreshingNow)
             }
-        } else if (internalRefreshState == AppRefreshState.Pulling) {
-            animateTo(0f)
+        } else {
+            if (dragOffset > 0f || currentTouch > 0f) {
+                animateTo(0f)
+            }
             internalRefreshState = AppRefreshState.Idle
         }
     }
 
-    internal fun resetToIdle() {
+    fun resetToIdle() {
         if (internalRefreshState != AppRefreshState.Refreshing && internalRefreshState != AppRefreshState.RefreshComplete) {
             internalRefreshState = AppRefreshState.Idle
         }
     }
 
-    internal fun getOrCreateNestedScrollConnection(
+    fun getOrCreateNestedScrollConnection(
         overScrollState: OverScrollState,
     ): NestedScrollConnection {
         cachedNestedScrollConnection?.let { return it }
@@ -190,14 +195,17 @@ class AppPullToRefreshState(
 
                     val progress = (currentTouch / maxDragDistancePx).coerceIn(0f, 1f)
                     val factor = 1f - 0.45f * progress
-                    dragOffset = (currentTouch * 0.5f * factor).coerceAtMost(maxDragDistancePx * 0.5f)
+                    dragOffset = (currentTouch * 0.48f * factor).coerceAtMost(maxDragDistancePx * 0.5f)
 
                     val nextState = when {
                         refreshThresholdOffset > 0f && dragOffset >= refreshThresholdOffset -> AppRefreshState.ThresholdReached
                         dragOffset > 0 -> AppRefreshState.Pulling
                         else -> AppRefreshState.Idle
                     }
-                    if (internalRefreshState != nextState) {
+                    if (internalRefreshState != nextState &&
+                        internalRefreshState != AppRefreshState.Refreshing &&
+                        internalRefreshState != AppRefreshState.RefreshComplete
+                    ) {
                         internalRefreshState = nextState
                     }
                 }
@@ -315,11 +323,8 @@ fun AppPullToRefresh(
             awaitPointerEventScope {
                 while (true) {
                     val event = awaitPointerEvent()
-                    if (
-                        (pullToRefreshState.refreshState == AppRefreshState.Pulling ||
-                            pullToRefreshState.refreshState == AppRefreshState.ThresholdReached) &&
-                        event.changes.all { !it.pressed }
-                    ) {
+                    val isAllUp = event.changes.all { !it.pressed }
+                    if (isAllUp && (pullToRefreshState.dragOffset > 0f || pullToRefreshState.isTouching)) {
                         coroutineScope.launch {
                             pullToRefreshState.handlePointerRelease(currentOnRefresh, isRefreshingNow)
                         }
@@ -396,25 +401,28 @@ private fun createAppPullToRefreshConnection(
     }
 
     override suspend fun onPreFling(available: Velocity): Velocity {
-        if (pullToRefreshState.refreshState != AppRefreshState.Idle) {
-            return available
+        if (pullToRefreshState.dragOffset > 0f &&
+            pullToRefreshState.refreshState != AppRefreshState.Refreshing &&
+            pullToRefreshState.refreshState != AppRefreshState.RefreshComplete
+        ) {
+            pullToRefreshState.isTouching = false
+            if (pullToRefreshState.refreshState != AppRefreshState.ThresholdReached) {
+                pullToRefreshState.animateTo(0f)
+                pullToRefreshState.resetToIdle()
+            }
         }
         return Velocity.Zero
     }
 
     override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-        if (pullToRefreshState.refreshState != AppRefreshState.Idle) {
-            if (
-                pullToRefreshState.refreshState != AppRefreshState.Refreshing &&
-                pullToRefreshState.refreshState != AppRefreshState.RefreshComplete &&
-                pullToRefreshState.dragOffset > 0f &&
-                pullToRefreshState.dragOffset < pullToRefreshState.refreshThresholdOffset
-            ) {
-                try {
-                    pullToRefreshState.animateTo(0f)
-                } finally {
-                    if (!pullToRefreshState.isTouching) pullToRefreshState.resetToIdle()
-                }
+        if (pullToRefreshState.dragOffset > 0f &&
+            pullToRefreshState.refreshState != AppRefreshState.Refreshing &&
+            pullToRefreshState.refreshState != AppRefreshState.RefreshComplete
+        ) {
+            pullToRefreshState.isTouching = false
+            if (pullToRefreshState.refreshState != AppRefreshState.ThresholdReached) {
+                pullToRefreshState.animateTo(0f)
+                pullToRefreshState.resetToIdle()
             }
         }
         return Velocity.Zero
@@ -442,29 +450,32 @@ private fun AppRefreshHeader(
     val headerHeight by remember(pullToRefreshState, circleSize, density) {
         derivedStateOf {
             val baseHeight = circleSize + 32.dp
-            when (pullToRefreshState.refreshState) {
-                AppRefreshState.Idle -> 0.dp
-                AppRefreshState.Pulling -> baseHeight * pullToRefreshState.pullProgress
-                AppRefreshState.ThresholdReached -> {
-                    val extraDp = with(density) {
-                        (pullToRefreshState.dragOffset - pullToRefreshState.refreshThresholdOffset).toDp()
+            when {
+                pullToRefreshState.refreshState == AppRefreshState.Refreshing -> baseHeight
+                pullToRefreshState.refreshState == AppRefreshState.RefreshComplete -> baseHeight * (1f - pullToRefreshState.refreshCompleteAnimProgress)
+                pullToRefreshState.dragOffset > 0f -> {
+                    if (pullToRefreshState.refreshThresholdOffset > 0f && pullToRefreshState.dragOffset <= pullToRefreshState.refreshThresholdOffset) {
+                        baseHeight * pullToRefreshState.pullProgress
+                    } else {
+                        val extraDp = with(density) {
+                            (pullToRefreshState.dragOffset - pullToRefreshState.refreshThresholdOffset).coerceAtLeast(0f).toDp()
+                        }
+                        baseHeight + extraDp
                     }
-                    baseHeight + extraDp
                 }
-                AppRefreshState.Refreshing -> baseHeight
-                AppRefreshState.RefreshComplete -> baseHeight * (1f - pullToRefreshState.refreshCompleteAnimProgress)
+                else -> 0.dp
             }
         }
     }
 
     val textAlpha by remember(pullToRefreshState) {
         derivedStateOf {
-            when (pullToRefreshState.refreshState) {
-                AppRefreshState.Idle -> 0f
-                AppRefreshState.Pulling -> (pullToRefreshState.pullProgress - 0.2f).coerceIn(0f, 1f)
-                AppRefreshState.ThresholdReached -> 1f
-                AppRefreshState.Refreshing -> 1f
-                AppRefreshState.RefreshComplete -> (1f - pullToRefreshState.refreshCompleteAnimProgress).coerceIn(0f, 1f)
+            when {
+                pullToRefreshState.refreshState == AppRefreshState.ThresholdReached -> 1f
+                pullToRefreshState.refreshState == AppRefreshState.Refreshing -> 1f
+                pullToRefreshState.refreshState == AppRefreshState.RefreshComplete -> (1f - pullToRefreshState.refreshCompleteAnimProgress).coerceIn(0f, 1f)
+                pullToRefreshState.dragOffset > 0f -> (pullToRefreshState.pullProgress - 0.2f).coerceIn(0f, 1f)
+                else -> 0f
             }
         }
     }
@@ -512,12 +523,12 @@ private fun AppRefreshIndicator(
 
     val scale by remember(pullToRefreshState) {
         derivedStateOf {
-            when (pullToRefreshState.refreshState) {
-                AppRefreshState.Idle -> 0f
-                AppRefreshState.Pulling -> (pullToRefreshState.pullProgress * 1.05f).coerceIn(0f, 1f)
-                AppRefreshState.ThresholdReached -> 1f + ((pullToRefreshState.dragOffset - pullToRefreshState.refreshThresholdOffset) * 0.0015f).coerceAtMost(0.12f)
-                AppRefreshState.Refreshing -> 1f
-                AppRefreshState.RefreshComplete -> (1f - pullToRefreshState.refreshCompleteAnimProgress * 0.3f).coerceIn(0f, 1f)
+            when {
+                pullToRefreshState.refreshState == AppRefreshState.Refreshing -> 1f
+                pullToRefreshState.refreshState == AppRefreshState.RefreshComplete -> (1f - pullToRefreshState.refreshCompleteAnimProgress * 0.3f).coerceIn(0f, 1f)
+                pullToRefreshState.refreshState == AppRefreshState.ThresholdReached -> 1f + ((pullToRefreshState.dragOffset - pullToRefreshState.refreshThresholdOffset) * 0.0015f).coerceAtMost(0.12f)
+                pullToRefreshState.dragOffset > 0f -> (pullToRefreshState.pullProgress * 1.05f).coerceIn(0f, 1f)
+                else -> 0f
             }
         }
     }

@@ -18,8 +18,31 @@ fun normalizeColorMode(value: Int): Int = when (value) {
     else -> ColorModeSystem
 }
 
+const val LanguageModeSystem = 0
 const val LanguageModeEnglish = 1
+const val LanguageModeChinese = 2
 const val LanguageModeRussian = 3
+const val LanguageModePersian = 4
+
+fun normalizeLanguageMode(value: Int): Int = when (value) {
+    in LanguageModeSystem..LanguageModePersian -> value
+    else -> LanguageModeSystem
+}
+
+const val AppIconDefault = 0
+const val AppIconDark = 1
+const val AppIconLight = 2
+const val AppIconMonet = 3
+const val AppIconCyber = 4
+const val AppIconSunset = 5
+const val AppIconNordic = 6
+const val AppIconEmerald = 7
+const val AppIconStealth = 8
+
+fun normalizeAppIcon(value: Int): Int = when (value) {
+    in AppIconDefault..AppIconStealth -> value
+    else -> AppIconDefault
+}
 
 const val BottomBarSizeSmall = 0
 const val BottomBarSizeMedium = 1

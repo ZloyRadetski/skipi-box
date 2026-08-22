@@ -13,7 +13,7 @@ import features.routing.model.RouteRule
 import utils.toTrimmedNonEmptyDistinctList
 
 /** The active Shadowrocket profile is applied only when a VPN start request is built. */
-internal fun AppState.withActiveTrafficConfigApplied(): AppState {
+fun AppState.withActiveTrafficConfigApplied(): AppState {
     val config = activeTrafficConfig() ?: return this
     val androidSettings = config.androidSettings
     val analysis = config.rawConfig.analyzeShadowrocketConfig()
@@ -63,18 +63,18 @@ internal fun AppState.withActiveTrafficConfigApplied(): AppState {
         tunIpv6Cidr = androidSettings.tunIpv6Cidr,
         enableIpv6 = general["ipv6"].toConfigBooleanOrDefault(enableIpv6),
         enableIpv6Prefer = general["prefer-ipv6"].toConfigBooleanOrDefault(enableIpv6Prefer),
-        enableDirectDnsForProxyServerDomains = general["dns-direct-fallback-proxy"]
-            .toConfigBooleanOrDefault(enableDirectDnsForProxyServerDomains),
-        proxyDns = dnsServers.takeIf(List<String>::isNotEmpty) ?: proxyDns,
-        directDns = dnsServers.takeIf(List<String>::isNotEmpty) ?: directDns,
-        dnsHosts = hosts.takeIf(List<String>::isNotEmpty) ?: dnsHosts,
+        enableDirectDnsForProxyServerDomains = androidSettings.enableDirectDnsForProxyServerDomains,
+        proxyDns = androidSettings.proxyDns.takeIf(List<String>::isNotEmpty) ?: dnsServers.takeIf(List<String>::isNotEmpty) ?: proxyDns,
+        directDns = androidSettings.directDns.takeIf(List<String>::isNotEmpty) ?: dnsServers.takeIf(List<String>::isNotEmpty) ?: directDns,
+        directDnsDomains = androidSettings.directDnsDomains.takeIf(List<String>::isNotEmpty) ?: directDnsDomains,
+        dnsHosts = androidSettings.dnsHosts.takeIf(List<String>::isNotEmpty) ?: hosts.takeIf(List<String>::isNotEmpty) ?: dnsHosts,
         proxyAppListMode = config.proxyAppListMode,
         proxyAppListSelectedApps = config.proxyAppListSelectedApps,
         shadowrocketPolicyGroups = analysis.proxyGroups,
     )
 }
 
-internal fun AppState.activeTrafficConfig(): TrafficConfigState? {
+fun AppState.activeTrafficConfig(): TrafficConfigState? {
     return trafficConfigs.firstOrNull { config -> config.id == activeTrafficConfigId }
         ?: trafficConfigs.firstOrNull()
 }

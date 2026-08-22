@@ -8,7 +8,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 
-internal data class GeneratedXrayConfig(
+data class GeneratedXrayConfig(
     val log: JsonObject,
     val dns: JsonObject? = null,
     val inbounds: JsonArray,
@@ -34,6 +34,6 @@ internal data class GeneratedXrayConfig(
     }
 }
 
-internal fun GeneratedXrayConfig.encodeToJsonString(): String {
+fun GeneratedXrayConfig.encodeToJsonString(): String {
     return XrayConfigPrettyJson.encodeToString(toJsonObject()).withSingleTrailingLf()
 }

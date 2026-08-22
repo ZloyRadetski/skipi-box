@@ -1,7 +1,14 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package ui.components
+package ui.components
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -63,7 +70,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.LocalAppServices
-import app.R
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card

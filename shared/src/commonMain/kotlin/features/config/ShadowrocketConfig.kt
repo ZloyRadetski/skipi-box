@@ -3,6 +3,8 @@
 
 package features.config
 
+import features.proxy.server.model.StrategyGroupDisplayMode
+
 /**
  * A deliberately lossless, small parser for Shadowrocket's INI-like format.
  *
@@ -10,7 +12,7 @@ package features.config
  * Material editor for the sections SKIPI can apply and, importantly, leaves
  * unsupported blocks such as [MITM] and [Script] untouched on save.
  */
-internal data class ShadowrocketConfigAnalysis(
+data class ShadowrocketConfigAnalysis(
     val sections: Map<String, List<String>>,
     val general: Map<String, String>,
     val rules: List<ShadowrocketRule>,
@@ -31,17 +33,18 @@ data class ShadowrocketPolicyGroup(
     val members: List<String>,
     val url: String = "",
     val intervalSeconds: Int? = null,
-    /** SKIPI extension: exposes this config-owned group on the home Auto-balancers tab. */
-    val showInAutoBalancerList: Boolean = false,
+    /** SKIPI extension: display policy for proxy groups tab on home screen. */
+    val displayMode: String = StrategyGroupDisplayMode.NEVER,
+    val showInAutoBalancerList: Boolean = displayMode != StrategyGroupDisplayMode.NEVER,
     val raw: String = "",
 ) {
     val outboundTag: String
         get() = ShadowrocketPolicyGroupTagPrefix + name
 }
 
-internal const val ShadowrocketPolicyGroupTagPrefix = "shadowrocket-group:"
+const val ShadowrocketPolicyGroupTagPrefix = "shadowrocket-group:"
 
-internal data class ShadowrocketRule(
+data class ShadowrocketRule(
     val lineNumber: Int,
     val type: String,
     val value: String,
@@ -53,24 +56,47 @@ internal data class ShadowrocketRule(
         get() = type.equals("FINAL", ignoreCase = true)
 }
 
-internal data class ShadowrocketConfigDiagnostic(
+data class ShadowrocketConfigDiagnostic(
     val lineNumber: Int,
     val message: String,
     val severity: ShadowrocketConfigDiagnosticSeverity,
 )
 
-internal enum class ShadowrocketConfigDiagnosticSeverity {
+enum class ShadowrocketConfigDiagnosticSeverity {
     Warning,
     Error,
 }
 
-internal val ShadowrocketUnsupportedAndroidSections = setOf(
+val ShadowrocketUnsupportedAndroidSections = setOf(
     "mitm",
     "script",
     "header rewrite",
 )
 
-internal fun String.analyzeShadowrocketConfig(): ShadowrocketConfigAnalysis {
+private const val MaxAnalysisCacheEntries = 16
+private val analysisCache = object : LinkedHashMap<Int, Pair<String, ShadowrocketConfigAnalysis>>(MaxAnalysisCacheEntries, 0.75f, true) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Pair<String, ShadowrocketConfigAnalysis>>?): Boolean {
+        return size > MaxAnalysisCacheEntries
+    }
+}
+private val analysisCacheLock = Any()
+
+fun String.analyzeShadowrocketConfig(): ShadowrocketConfigAnalysis {
+    val key = hashCode()
+    synchronized(analysisCacheLock) {
+        val cached = analysisCache[key]
+        if (cached != null && cached.first == this) {
+            return cached.second
+        }
+    }
+    val analysis = parseShadowrocketConfig(this)
+    synchronized(analysisCacheLock) {
+        analysisCache[key] = this to analysis
+    }
+    return analysis
+}
+
+private fun parseShadowrocketConfig(rawText: String): ShadowrocketConfigAnalysis {
     val sections = linkedMapOf<String, MutableList<String>>()
     val general = linkedMapOf<String, String>()
     val rules = mutableListOf<ShadowrocketRule>()
@@ -78,7 +104,7 @@ internal fun String.analyzeShadowrocketConfig(): ShadowrocketConfigAnalysis {
     val diagnostics = mutableListOf<ShadowrocketConfigDiagnostic>()
     var activeSection = ""
 
-    lineSequence().forEachIndexed { index, line ->
+    rawText.lineSequence().forEachIndexed { index, line ->
         val lineNumber = index + 1
         val trimmed = line.trim()
         if (trimmed.startsWith("[") && trimmed.endsWith("]") && trimmed.length > 2) {
@@ -155,7 +181,7 @@ internal fun String.analyzeShadowrocketConfig(): ShadowrocketConfigAnalysis {
 }
 
 /** Updates one [General] key while keeping every unrelated line and section intact. */
-internal fun String.withShadowrocketGeneralValue(
+fun String.withShadowrocketGeneralValue(
     key: String,
     value: String,
 ): String {
@@ -198,7 +224,7 @@ internal fun String.withShadowrocketGeneralValue(
 }
 
 /** Replaces one complete INI section while preserving every other section verbatim. */
-internal fun String.withShadowrocketSectionLines(
+fun String.withShadowrocketSectionLines(
     sectionName: String,
     replacementLines: List<String>,
 ): String {
@@ -226,7 +252,7 @@ internal fun String.withShadowrocketSectionLines(
 }
 
 /** Replaces exactly one parsed rule line and deliberately keeps surrounding comments untouched. */
-internal fun String.withShadowrocketRuleLine(
+fun String.withShadowrocketRuleLine(
     lineNumber: Int,
     replacement: String,
 ): String {
@@ -238,7 +264,7 @@ internal fun String.withShadowrocketRuleLine(
 }
 
 /** Removes exactly one parsed rule line and leaves all comments and other sections in place. */
-internal fun String.withoutShadowrocketRuleLine(lineNumber: Int): String {
+fun String.withoutShadowrocketRuleLine(lineNumber: Int): String {
     val sourceLines = lines().toMutableList()
     val lineIndex = lineNumber - 1
     require(lineIndex in sourceLines.indices) { "Rule line $lineNumber is outside of the config" }
@@ -247,7 +273,7 @@ internal fun String.withoutShadowrocketRuleLine(lineNumber: Int): String {
 }
 
 /** Adds a rule immediately before FINAL, or at the end of [Rule] when FINAL has not been set yet. */
-internal fun String.withShadowrocketRuleAdded(rawRule: String): String {
+fun String.withShadowrocketRuleAdded(rawRule: String): String {
     val sourceLines = lines().toMutableList()
     val analysis = analyzeShadowrocketConfig()
     val finalRule = analysis.rules.firstOrNull(ShadowrocketRule::isFinal)
@@ -279,16 +305,16 @@ internal fun String.withShadowrocketRuleAdded(rawRule: String): String {
 }
 
 /** Replaces or removes a [Proxy Group] line without touching comments or other sections. */
-internal fun String.withShadowrocketProxyGroupLine(lineNumber: Int, replacement: String): String {
+fun String.withShadowrocketProxyGroupLine(lineNumber: Int, replacement: String): String {
     return withShadowrocketRuleLine(lineNumber, replacement)
 }
 
-internal fun String.withoutShadowrocketProxyGroupLine(lineNumber: Int): String {
+fun String.withoutShadowrocketProxyGroupLine(lineNumber: Int): String {
     return withoutShadowrocketRuleLine(lineNumber)
 }
 
 /** Adds a profile group at the end of [Proxy Group], creating that section if required. */
-internal fun String.withShadowrocketProxyGroupAdded(rawGroup: String): String {
+fun String.withShadowrocketProxyGroupAdded(rawGroup: String): String {
     val sourceLines = lines().toMutableList()
     val headerIndex = sourceLines.indexOfFirst { line ->
         line.trim().removeSurrounding("[", "]").equals("Proxy Group", ignoreCase = true)
@@ -311,7 +337,7 @@ internal fun String.withShadowrocketProxyGroupAdded(rawGroup: String): String {
 }
 
 /** Swaps two parsed routing lines.  Comments stay at their original positions. */
-internal fun String.withShadowrocketRulesSwapped(
+fun String.withShadowrocketRulesSwapped(
     firstLineNumber: Int,
     secondLineNumber: Int,
 ): String {
@@ -328,7 +354,7 @@ internal fun String.withShadowrocketRulesSwapped(
 }
 
 /** Reorders normal rules in the [Rule] section. */
-internal fun String.withShadowrocketRulesReordered(
+fun String.withShadowrocketRulesReordered(
     fromRuleIndex: Int,
     toRuleIndex: Int,
 ): String {
@@ -349,7 +375,7 @@ internal fun String.withShadowrocketRulesReordered(
     return sourceLines.joinToString("\n").trimEnd() + "\n"
 }
 
-internal fun ShadowrocketRule.toShadowrocketLine(
+fun ShadowrocketRule.toShadowrocketLine(
     type: String = this.type,
     value: String = this.value,
     policy: String = this.policy,
@@ -363,7 +389,7 @@ internal fun ShadowrocketRule.toShadowrocketLine(
     }
 }
 
-internal fun defaultShadowrocketConfig(): String = """
+fun defaultShadowrocketConfig(): String = """
     # SKIPI configuration
     [General]
     dns-server = 94.140.14.14,94.140.15.15
@@ -431,16 +457,27 @@ private fun parseProxyGroupLine(
         .associate { value ->
             value.substringBefore('=').trim().lowercase() to value.substringAfter('=').trim()
         }
+    val displayOpt = options["skipi-display"]?.trim()?.lowercase()
+    val showOnHomeLegacy = options["skipi-show-on-home"]
+        ?.trim()
+        ?.lowercase() in setOf("true", "yes", "1")
+    val displayMode = when (displayOpt) {
+        StrategyGroupDisplayMode.NEVER -> StrategyGroupDisplayMode.NEVER
+        StrategyGroupDisplayMode.ALWAYS -> StrategyGroupDisplayMode.ALWAYS
+        StrategyGroupDisplayMode.ACTIVE_CONFIG, "only_active_config", "active" -> StrategyGroupDisplayMode.ACTIVE_CONFIG
+        else -> if (showOnHomeLegacy) StrategyGroupDisplayMode.ALWAYS else StrategyGroupDisplayMode.NEVER
+    }
     return ShadowrocketPolicyGroup(
         lineNumber = lineNumber,
         name = name,
         type = type.lowercase(),
-        members = values.drop(1).filterNot { value -> '=' in value },
+        members = values.drop(1)
+            .filterNot { value -> '=' in value }
+            .map { it.trim().removeSurrounding("\"").removeSurrounding("'").trim() }
+            .filter(String::isNotEmpty),
         url = options["url"].orEmpty(),
         intervalSeconds = options["interval"]?.toIntOrNull()?.takeIf { it > 0 },
-        showInAutoBalancerList = options["skipi-show-on-home"]
-            ?.trim()
-            ?.lowercase() in setOf("true", "yes", "1"),
+        displayMode = displayMode,
         raw = raw,
     )
 }

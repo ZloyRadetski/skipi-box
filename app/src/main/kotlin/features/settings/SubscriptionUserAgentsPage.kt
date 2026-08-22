@@ -3,7 +3,14 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.settings
+package features.settings
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -23,7 +30,6 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
-import app.R
 import app.collectAppState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold

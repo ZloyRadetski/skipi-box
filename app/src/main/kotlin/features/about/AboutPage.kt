@@ -3,7 +3,14 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.about
+package features.about
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -22,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.LocalIsWideScreen
 import app.LocalNavigator
-import app.R
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar

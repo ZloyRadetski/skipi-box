@@ -7,7 +7,7 @@ import features.proxy.server.model.V2RayParameters
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-internal fun MihomoYamlMap.toMihomoV2RayParameters(
+fun MihomoYamlMap.toMihomoV2RayParameters(
     defaultSecurity: String,
     xhttpHost: ((MihomoYamlMap) -> String?)? = null,
     xhttpExtra: ((xhttpOpts: MihomoYamlMap, parentNode: MihomoYamlMap) -> String?)? = null,

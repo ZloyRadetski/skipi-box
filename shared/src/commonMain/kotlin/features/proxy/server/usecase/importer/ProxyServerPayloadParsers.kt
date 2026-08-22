@@ -26,7 +26,7 @@ suspend fun parseProxyServersFromPayloads(
     return EmptyProxyServerImportResult
 }
 
-internal suspend fun parseProxyServersFromMihomoProviderText(
+suspend fun parseProxyServersFromMihomoProviderText(
     text: String,
     parentContext: ProxyServerImportContext,
     providerUrl: String,

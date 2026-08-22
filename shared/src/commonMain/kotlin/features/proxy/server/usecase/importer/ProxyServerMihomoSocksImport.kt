@@ -5,7 +5,7 @@ package features.proxy.server.usecase.importer
 
 import features.proxy.server.model.Socks
 
-internal fun MihomoYamlMap.toMihomoSocksProxyServer(): Socks {
+fun MihomoYamlMap.toMihomoSocksProxyServer(): Socks {
     ensureNoMihomoTlsOptions("TLS for SOCKS Proxy Servers is not supported")
     return Socks(
         remarks = requiredString("name"),

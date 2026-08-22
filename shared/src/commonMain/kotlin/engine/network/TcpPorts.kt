@@ -6,7 +6,7 @@ package engine.network
 import java.net.InetAddress
 import java.net.ServerSocket
 
-internal fun findAvailableTcpPort(
+fun findAvailableTcpPort(
     listenAddress: String,
     excludedPorts: Set<Int> = emptySet(),
     attempts: Int = DefaultAvailablePortAttempts,
@@ -25,7 +25,7 @@ internal fun findAvailableTcpPort(
     }.getOrNull()
 }
 
-internal fun isTcpPortAvailable(
+fun isTcpPortAvailable(
     listenAddress: String,
     port: Int,
 ): Boolean {

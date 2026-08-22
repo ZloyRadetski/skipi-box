@@ -5,16 +5,16 @@ package features.subscription
 
 import io.ktor.http.Url
 
-internal fun String.isValidManualSubscriptionUrl(): Boolean {
+fun String.isValidManualSubscriptionUrl(): Boolean {
     return isValidSubscriptionUrl(ManualSubscriptionUrlSchemes)
 }
 
-internal fun String.isPlainHttpSubscriptionUrl(): Boolean {
+fun String.isPlainHttpSubscriptionUrl(): Boolean {
     val url = toSubscriptionUrlOrNull() ?: return false
     return url.protocol.name.equals("http", ignoreCase = true)
 }
 
-internal fun String.isValidSubscriptionInstallUrl(): Boolean {
+fun String.isValidSubscriptionInstallUrl(): Boolean {
     return isValidSubscriptionUrl(HttpsSubscriptionUrlSchemes)
 }
 

@@ -108,14 +108,15 @@ interface ProxyServer<T : ProxyServer<T>> {
     fun update(other: ProxyServer<*>)
     fun validateBasic(): List<ProxyServerValidationIssue>
     fun validateFull(): List<ProxyServerValidationIssue>
+    fun connectionFingerprint(): String
 }
 
-internal fun String.decodeProxyUrlBase64(): ByteArray {
+fun String.decodeProxyUrlBase64(): ByteArray {
     return decodeFlexibleBase64OrNull()
         ?: throw IllegalArgumentException("Bad proxy URL base64")
 }
 
-internal fun ByteArray.encodeProxyUrlBase64(): String {
+fun ByteArray.encodeProxyUrlBase64(): String {
     return encodeUrlSafeBase64OptionalPadding()
 }
 
@@ -144,12 +145,12 @@ fun ProxyServer<*>.getCopyTextOrNull(): String? {
     }
 }
 
-internal fun URLBuilder.setProxyUrlHost(value: String) {
+fun URLBuilder.setProxyUrlHost(value: String) {
     val normalized = value.toProxyUrlHost()
     host = if (normalized.contains(':')) "[$normalized]" else normalized
 }
 
-internal fun Url.proxyUrlHost(): String {
+fun Url.proxyUrlHost(): String {
     return host.toProxyUrlHost()
 }
 
@@ -157,11 +158,11 @@ private fun String.toProxyUrlHost(): String {
     return trim().removeSurrounding("[", "]")
 }
 
-internal fun proxyServerTypeMismatch(): Nothing {
+fun proxyServerTypeMismatch(): Nothing {
     throw IllegalArgumentException("Proxy server type mismatch")
 }
 
-internal fun unsupportedProxyServerUrl(url: Url): Nothing {
+fun unsupportedProxyServerUrl(url: Url): Nothing {
     throw ParseException("Unsupported ProxyServer url protocol: ${url.protocol.name}")
 }
 
@@ -334,6 +335,27 @@ data class V2RayParameters(
             }
         }.build()
     }
+
+    fun fingerprint(): String {
+        return buildString {
+            append("type=").append(type.toCanonicalV2RayTransportType())
+            append("|sec=").append(security.ifBlank { "none" })
+            path?.takeIf(String::isNotBlank)?.let { append("|path=").append(it) }
+            host?.takeIf(String::isNotBlank)?.let { append("|host=").append(it.lowercase()) }
+            headers?.takeIf(String::isNotBlank)?.let { append("|hdr=").append(it) }
+            serviceName?.takeIf(String::isNotBlank)?.let { append("|svc=").append(it) }
+            mode?.takeIf(String::isNotBlank)?.let { append("|mode=").append(it) }
+            authority?.takeIf(String::isNotBlank)?.let { append("|auth=").append(it) }
+            sni?.takeIf(String::isNotBlank)?.let { append("|sni=").append(it.lowercase()) }
+            alpn?.takeIf(String::isNotBlank)?.let { append("|alpn=").append(it) }
+            pbk?.takeIf(String::isNotBlank)?.let { append("|pbk=").append(it) }
+            sid?.takeIf(String::isNotBlank)?.let { append("|sid=").append(it) }
+            spx?.takeIf(String::isNotBlank)?.let { append("|spx=").append(it) }
+            fp?.takeIf(String::isNotBlank)?.let { append("|fp=").append(it) }
+            headerType?.takeIf(String::isNotBlank)?.let { append("|ht=").append(it) }
+            seed?.takeIf(String::isNotBlank)?.let { append("|seed=").append(it) }
+        }
+    }
 }
 
 private fun ParametersBuilder.appendIfNotBlank(name: String, value: String?) {
@@ -354,3 +376,48 @@ private fun String?.appendWebSocketEarlyData(ed: String?, eh: String?): String? 
 }
 
 private const val WebSocketEarlyDataHeader = "Sec-WebSocket-Protocol"
+
+fun V2RayParameters.getTransportDisplay(): String {
+    val transportLabel = when (type.toCanonicalV2RayTransportType()) {
+        V2RayTransportWebSocket -> "WS"
+        V2RayTransportGrpc -> "gRPC"
+        V2RayTransportHttpUpgrade -> "HTTPUpgrade"
+        V2RayTransportXhttp -> "xHTTP"
+        V2RayTransportMkcp -> "mKCP"
+        else -> "TCP"
+    }
+    return when {
+        security.equals("reality", ignoreCase = true) -> {
+            if (transportLabel == "TCP") "Reality" else "$transportLabel • Reality"
+        }
+        security.equals("tls", ignoreCase = true) -> {
+            if (transportLabel == "TCP") "TLS" else "$transportLabel • TLS"
+        }
+        else -> transportLabel
+    }
+}
+
+fun ProxyServer<*>.getTransportDisplay(): String? {
+    return when (this) {
+        is VLESS -> parms.getTransportDisplay()
+        is VMess -> parms.getTransportDisplay()
+        is LegacyVMess -> convertToAEAD().parms.getTransportDisplay()
+        is Trojan -> parms.getTransportDisplay()
+        is Shadowsocks -> {
+            if (parms.type != "raw" && parms.type != "tcp") {
+                parms.getTransportDisplay()
+            } else if (parms.headerType == "http") {
+                "HTTP-OBFS"
+            } else {
+                "TCP"
+            }
+        }
+        is Hysteria2 -> "QUIC"
+        is Wireguard -> "UDP"
+        is HTTP -> "TCP"
+        is Socks -> "TCP"
+        is Custom -> customXrayConfigTransportDisplay(configJson)
+        is StrategyGroup, is ChainProxy -> null
+        else -> null
+    }
+}

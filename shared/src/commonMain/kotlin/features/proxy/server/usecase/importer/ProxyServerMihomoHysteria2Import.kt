@@ -5,7 +5,7 @@ package features.proxy.server.usecase.importer
 
 import features.proxy.server.model.Hysteria2
 
-internal fun MihomoYamlMap.toMihomoHysteria2ProxyServer(): Hysteria2 {
+fun MihomoYamlMap.toMihomoHysteria2ProxyServer(): Hysteria2 {
     val realmOpts = map("realm-opts")
     if (realmOpts?.boolean("enable") == true) {
         unsupported("Hysteria2 realm-opts are not supported")

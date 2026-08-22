@@ -5,17 +5,17 @@ package features.proxy.server.usecase.importer
 
 import utils.toCsvValues
 
-internal typealias MihomoYamlMap = Map<String, Any?>
+typealias MihomoYamlMap = Map<String, Any?>
 
-internal fun MihomoYamlMap.requiredString(vararg names: String): String {
+fun MihomoYamlMap.requiredString(vararg names: String): String {
     return string(*names) ?: unsupported("${names.first()} is required")
 }
 
-internal fun MihomoYamlMap.string(vararg names: String): String? {
+fun MihomoYamlMap.string(vararg names: String): String? {
     return names.firstNotNullOfOrNull { name -> this[name].scalarString() }
 }
 
-internal fun MihomoYamlMap.boolean(name: String): Boolean? {
+fun MihomoYamlMap.boolean(name: String): Boolean? {
     return when (val value = this[name]) {
         is Boolean -> value
         is Number -> value.toInt() != 0
@@ -29,28 +29,28 @@ internal fun MihomoYamlMap.boolean(name: String): Boolean? {
     }
 }
 
-internal fun MihomoYamlMap.map(name: String): MihomoYamlMap? {
+fun MihomoYamlMap.map(name: String): MihomoYamlMap? {
     return this[name].asStringMap()
 }
 
-internal fun MihomoYamlMap.list(name: String): List<Any?>? {
+fun MihomoYamlMap.list(name: String): List<Any?>? {
     return this[name].asList()
 }
 
-internal fun MihomoYamlMap.csvString(name: String): String? {
+fun MihomoYamlMap.csvString(name: String): String? {
     return this[name].scalarStringList()
         .takeIf(List<String>::isNotEmpty)
         ?.joinToString(",")
 }
 
-internal fun MihomoYamlMap.headerString(name: String): String? {
+fun MihomoYamlMap.headerString(name: String): String? {
     val value = entries.firstOrNull { (key, _) -> key.equals(name, ignoreCase = true) }?.value
     return value.scalarStringList()
         .takeIf(List<String>::isNotEmpty)
         ?.joinToString(",")
 }
 
-internal fun Any?.headerValueString(fieldName: String): String? {
+fun Any?.headerValueString(fieldName: String): String? {
     return when (this) {
         is Iterable<*> -> joinToString(",") { item ->
             item.scalarStringAllowBlank() ?: unsupported("$fieldName must be scalar")
@@ -61,7 +61,7 @@ internal fun Any?.headerValueString(fieldName: String): String? {
     }
 }
 
-internal fun MihomoYamlMap.hasTlsFields(): Boolean {
+fun MihomoYamlMap.hasTlsFields(): Boolean {
     return listOf(
         "sni",
         "servername",
@@ -75,7 +75,7 @@ internal fun MihomoYamlMap.hasTlsFields(): Boolean {
         map("reality-opts")?.isNotEmpty() == true
 }
 
-internal fun MihomoYamlMap.v2raySecurity(defaultSecurity: String): String {
+fun MihomoYamlMap.v2raySecurity(defaultSecurity: String): String {
     val realityOpts = map("reality-opts")
     if (!realityOpts.isNullOrEmpty()) {
         return "reality"
@@ -87,13 +87,13 @@ internal fun MihomoYamlMap.v2raySecurity(defaultSecurity: String): String {
     }
 }
 
-internal fun MihomoYamlMap.ensureNoMihomoTlsOptions(message: String) {
+fun MihomoYamlMap.ensureNoMihomoTlsOptions(message: String) {
     if (boolean("tls") == true || hasTlsFields()) {
         unsupported(message)
     }
 }
 
-internal fun Any?.scalarString(): String? {
+fun Any?.scalarString(): String? {
     val value = when (this) {
         is String -> this
         is Number -> toString()
@@ -103,7 +103,7 @@ internal fun Any?.scalarString(): String? {
     return value.takeIf(String::isNotBlank)
 }
 
-internal fun Any?.scalarStringList(): List<String> {
+fun Any?.scalarStringList(): List<String> {
     return when (this) {
         is Iterable<*> -> mapNotNull { item -> item.scalarString() }
         else -> scalarString().toCsvValues()
@@ -119,17 +119,17 @@ private fun Any?.scalarStringAllowBlank(): String? {
     }
 }
 
-internal fun Any?.asStringMap(): MihomoYamlMap? {
+fun Any?.asStringMap(): MihomoYamlMap? {
     val map = this as? Map<*, *> ?: return null
     return map.entries.associate { (key, value) -> key.toString() to value }
 }
 
-internal fun Any?.asList(): List<Any?>? {
+fun Any?.asList(): List<Any?>? {
     return (this as? Iterable<*>)?.toList()
 }
 
-internal fun unsupported(message: String): Nothing {
+fun unsupported(message: String): Nothing {
     throw UnsupportedMihomoProxyException(message)
 }
 
-internal class UnsupportedMihomoProxyException(message: String) : IllegalArgumentException(message)
+class UnsupportedMihomoProxyException(message: String) : IllegalArgumentException(message)

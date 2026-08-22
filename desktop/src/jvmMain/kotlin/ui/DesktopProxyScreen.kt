@@ -40,6 +40,8 @@ import desktop.DesktopPingTester
 import desktop.DesktopProcessProxyEngine
 import engine.proxy.ProxyEngineStartRequest
 import engine.proxy.ProxyEngineStatus
+import features.proxy.server.display.CountryFlagUtils
+import features.proxy.server.display.ProtocolColorUtils
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -259,22 +261,33 @@ fun DesktopProxyScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    val countryFlag = CountryFlagUtils.extractLeadingCountryFlag(info.remarks)
+                                    if (countryFlag != null) {
+                                        Text(text = countryFlag, fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                    }
+                                    val protocolColor = ProtocolColorUtils.resolveProtocolColor(
+                                        protocol = info.protocol,
+                                        appState = appState,
+                                        isDark = false,
+                                    )
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                            .background(protocolColor.copy(alpha = 0.15f))
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
                                             text = info.protocol.uppercase(),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = MiuixTheme.colorScheme.primary,
+                                            color = protocolColor,
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = info.remarks.ifBlank { "Сервер #${serverState.id}" },
+                                        text = CountryFlagUtils.stripLeadingCountryFlag(info.remarks)
+                                            .ifBlank { "Сервер #${serverState.id}" },
                                         fontSize = 15.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                         color = MiuixTheme.colorScheme.onSurface,

@@ -81,4 +81,8 @@ data class Trojan(
         addAll(validateBasic())
         validateV2RayParameters(parms)
     }
+
+    override fun connectionFingerprint(): String {
+        return "trojan|${server.trim().lowercase()}:${port.trim()}|$password|${parms.fingerprint()}"
+    }
 }

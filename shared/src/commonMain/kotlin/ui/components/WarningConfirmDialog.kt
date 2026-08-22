@@ -37,9 +37,10 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.AppTheme
 
 @Composable
-internal fun WarningConfirmDialog(
+fun WarningConfirmDialog(
     show: Boolean,
     title: String,
     summary: String,
@@ -69,8 +70,8 @@ internal fun WarningConfirmDialog(
                     .fillMaxWidth(),
                 insideMargin = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
                 colors = CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.background,
-                    contentColor = MiuixTheme.colorScheme.onBackground,
+                    color = AppTheme.colors.surface,
+                    contentColor = AppTheme.colors.onSurface,
                 ),
             ) {
                 Column(

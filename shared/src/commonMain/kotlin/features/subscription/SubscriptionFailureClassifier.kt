@@ -10,13 +10,13 @@ import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
-internal class SubscriptionHttpException(
+class SubscriptionHttpException(
     val statusCode: Int,
     val serverMessage: String? = null,
     val responseBody: String? = null,
 ) : IOException(formatHttpExceptionMessage(statusCode, serverMessage))
 
-internal fun formatHttpExceptionMessage(statusCode: Int, serverMessage: String?): String {
+fun formatHttpExceptionMessage(statusCode: Int, serverMessage: String?): String {
     return if (!serverMessage.isNullOrBlank()) {
         "HTTP $statusCode: $serverMessage"
     } else {
@@ -24,7 +24,7 @@ internal fun formatHttpExceptionMessage(statusCode: Int, serverMessage: String?)
     }
 }
 
-internal fun isTransientSubscriptionFailure(error: Throwable): Boolean {
+fun isTransientSubscriptionFailure(error: Throwable): Boolean {
     return generateSequence(error) { current -> current.cause }
         .any { cause ->
             when (cause) {

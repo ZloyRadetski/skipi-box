@@ -14,19 +14,20 @@ import kotlinx.serialization.json.put
 import utils.toDistinctCsvValues
 import utils.toTrimmedNonEmptyDistinctList
 
-internal data class XrayRoutingPlan(
+data class XrayRoutingPlan(
     val domainStrategy: String,
     val rules: JsonArray,
     val balancers: List<JsonObject>,
     val primaryOutboundTag: String?,
 )
 
-internal fun AppState.buildXrayRoutingPlan(
+fun AppState.buildXrayRoutingPlan(
     routeTargets: Map<String, XrayRouteTarget>,
     balancers: List<JsonObject>,
     routeProxyDns: Boolean,
     routeDirectDns: Boolean,
     dnsHijackInboundTags: List<String>,
+    dataDir: String? = null,
 ): XrayRoutingPlan {
     val domainStrategy = routeDomainStrategy.toXrayRoutingDomainStrategy()
     val defaultTarget = defaultRouteTarget(routeTargets)
@@ -38,6 +39,7 @@ internal fun AppState.buildXrayRoutingPlan(
             routeDirectDns = routeDirectDns,
             dnsHijackInboundTags = dnsHijackInboundTags,
             defaultTarget = defaultTarget,
+            dataDir = dataDir,
         ),
         balancers = balancers,
         primaryOutboundTag = when (defaultTarget?.kind) {
@@ -48,7 +50,7 @@ internal fun AppState.buildXrayRoutingPlan(
     )
 }
 
-internal fun buildXrayRouting(plan: XrayRoutingPlan): JsonObject {
+fun buildXrayRouting(plan: XrayRoutingPlan): JsonObject {
     return buildJsonObject {
         put("domainStrategy", plan.domainStrategy)
         put("rules", plan.rules)
@@ -64,6 +66,7 @@ private fun AppState.routingRules(
     routeDirectDns: Boolean,
     dnsHijackInboundTags: List<String>,
     defaultTarget: XrayRouteTarget?,
+    dataDir: String? = null,
 ): JsonArray {
     return buildJsonArray {
         defaultTarget
@@ -80,7 +83,7 @@ private fun AppState.routingRules(
         }
         routeRules
             .filter(RouteRule::enabled)
-            .mapNotNull { rule -> rule.toXrayRule(routeTargets) }
+            .mapNotNull { rule -> rule.toXrayRule(routeTargets, dataDir) }
             .forEach(::add)
         // Xray otherwise falls back to the first outbound.  That makes a
         // Shadowrocket FINAL choice look ignored whenever the selected card is
@@ -115,7 +118,7 @@ private fun AppState.defaultRouteTarget(routeTargets: Map<String, XrayRouteTarge
     return defaultTarget ?: routeTargets[XrayTags.PROXY]
 }
 
-internal fun buildXrayDnsHijackRule(inboundTags: List<String>): JsonObject? {
+fun buildXrayDnsHijackRule(inboundTags: List<String>): JsonObject? {
     val tags = inboundTags.toTrimmedNonEmptyDistinctList()
     if (tags.isEmpty()) return null
     return buildJsonObject {
@@ -136,13 +139,18 @@ private fun buildDnsUpstreamRoute(
     }
 }
 
-private fun RouteRule.toXrayRule(routeTargets: Map<String, XrayRouteTarget>): JsonObject? {
+private fun RouteRule.toXrayRule(
+    routeTargets: Map<String, XrayRouteTarget>,
+    dataDir: String? = null,
+): JsonObject? {
     val targetOutboundTag = outboundTag.trim().ifBlank { XrayTags.PROXY }
     val target = routeTargets[targetOutboundTag] ?: return null
+    val sanitizedDomains = XrayGeoRuleSanitizer.filterValidDomainRules(domain.toTrimmedNonEmptyDistinctList(), dataDir)
+    val sanitizedIps = XrayGeoRuleSanitizer.filterValidIpRules(ip.toTrimmedNonEmptyDistinctList(), dataDir)
     val rule = buildJsonObject {
         target.applyTo(this)
-        putJsonStringArrayIfNotEmpty("domain", domain.toTrimmedNonEmptyDistinctList())
-        putJsonStringArrayIfNotEmpty("ip", ip.toTrimmedNonEmptyDistinctList())
+        putJsonStringArrayIfNotEmpty("domain", sanitizedDomains)
+        putJsonStringArrayIfNotEmpty("ip", sanitizedIps)
         putJsonStringArrayIfNotEmpty("process", process.toTrimmedNonEmptyDistinctList())
         putIfNotBlank("port", port)
         putIfNotBlank("network", network)

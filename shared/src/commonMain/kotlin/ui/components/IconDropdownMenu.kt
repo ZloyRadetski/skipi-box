@@ -20,7 +20,7 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowCascadingListPopup
 
-internal data class IconDropdownMenuEntry<T>(
+data class IconDropdownMenuEntry<T>(
     val key: Any,
     val title: String,
     val action: T? = null,
@@ -29,7 +29,7 @@ internal data class IconDropdownMenuEntry<T>(
 )
 
 @Composable
-internal fun <T> IconDropdownMenu(
+fun <T> IconDropdownMenu(
     imageVector: ImageVector,
     contentDescription: String,
     entries: List<IconDropdownMenuEntry<T>>,

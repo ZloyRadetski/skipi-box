@@ -14,68 +14,6 @@ import data.AndroidAppStateStore
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
-data class AppChromeState(
-    val colorMode: Int,
-    val languageMode: Int,
-    val enableMaterialYou: Boolean,
-    val seedIndex: Int,
-    val customMaterialYouSeed: Long? = null,
-    val enableCustomColors: Boolean = false,
-    val customAccentColor: Long? = null,
-    val customBackgroundColor: Long? = null,
-    val customSurfaceColor: Long? = null,
-    val customSurfaceVariantColor: Long? = null,
-    val customTextColor: Long? = null,
-    val customTextSecondaryColor: Long? = null,
-    val customStatusRunningColor: Long? = null,
-    val customStatusStoppedColor: Long? = null,
-    val customPingFastColor: Long? = null,
-    val customPingMediumColor: Long? = null,
-    val customPingSlowColor: Long? = null,
-    val customCategoryAppearanceColor: Long? = null,
-    val customCategoryVpnColor: Long? = null,
-    val customCategoryProxyColor: Long? = null,
-    val customCategorySubscriptionsColor: Long? = null,
-    val customCategoryIntegrationColor: Long? = null,
-    val customCategoryLogsColor: Long? = null,
-    val customCategoryBackupColor: Long? = null,
-    val customCategoryAboutColor: Long? = null,
-    val customProtocolVlessColor: Long? = null,
-    val customProtocolVmessColor: Long? = null,
-    val customProtocolHysteria2Color: Long? = null,
-    val customProtocolTrojanColor: Long? = null,
-    val customProtocolShadowsocksColor: Long? = null,
-    val customProtocolWireguardColor: Long? = null,
-    val customProtocolSocksColor: Long? = null,
-    val customProtocolHttpColor: Long? = null,
-    val customProtocolStrategyColor: Long? = null,
-    val customProtocolChainColor: Long? = null,
-    val customProtocolJsonColor: Long? = null,
-    val backgroundStyle: Int = app.modes.BackgroundStyleClassic,
-    val backgroundPhotoDimPercent: Int = 45,
-    val bottomBarSize: Int = app.modes.BottomBarSizeLarge,
-)
-
-data class ProxyServerListState(
-    val subscriptionGroups: List<SubscriptionGroupState>,
-    val enableAllProxyGroup: Boolean,
-    val enableDeletionConfirmation: Boolean,
-    val proxyServers: List<ProxyServerState>,
-    val nextProxyServerId: Int,
-    val selectedProxyServerId: Int,
-    val proxyServerListLayout: Int,
-    val proxyServerListSort: Int,
-    val subscriptionPingMode: Int,
-    val proxyRunning: Boolean,
-    val showServerSearch: Boolean,
-    val connectionDisplayMode: Int,
-    val classicShowFloatingPowerButton: Boolean,
-    val showTunnelMemoryOnHome: Boolean,
-    val availableAppUpdate: features.updater.AppUpdateInfo?,
-    val dismissedUpdateVersion: String,
-    val activeTrafficConfigId: Int? = null,
-)
-
 val LocalAppStateStore = staticCompositionLocalOf<AndroidAppStateStore> {
     error("No AndroidAppStateStore provided!")
 }

@@ -14,7 +14,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-internal object CustomXrayConfigRewriter {
+object CustomXrayConfigRewriter {
     fun rewrite(
         request: XrayConfigRequest,
         server: Custom,

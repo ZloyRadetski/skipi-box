@@ -20,4 +20,4 @@ private fun String.decodeImportBase64(): String? {
     return normalized.decodeFlexibleBase64OrNull()?.decodeToString()
 }
 
-internal const val ImportByteOrderMark = '\uFEFF'
+const val ImportByteOrderMark = '\uFEFF'

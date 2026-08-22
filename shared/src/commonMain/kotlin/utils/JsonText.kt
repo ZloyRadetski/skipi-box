@@ -5,7 +5,7 @@ package utils
 
 import kotlinx.serialization.json.Json
 
-internal fun String.formatJsonText(): String {
+fun String.formatJsonText(): String {
     val element = JsonText.parseToJsonElement(trim())
     return PrettyJsonText.encodeToString(element)
 }

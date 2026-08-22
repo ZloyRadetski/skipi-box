@@ -1,7 +1,14 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.resources
+package features.resources
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,7 +46,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.CustomResourceFileState
 import app.CustomResourceFileStatus
-import app.R
 import app.ResourceFileStatus
 import app.ResourceFileUpdateSource
 import top.yukonga.miuix.kmp.basic.Card

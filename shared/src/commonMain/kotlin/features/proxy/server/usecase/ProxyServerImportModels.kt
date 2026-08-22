@@ -32,9 +32,9 @@ data class ProxyServerImportContext(
     val fetchedProviderUrls: Set<String> = emptySet(),
 )
 
-internal typealias ProxyServerPayloadParser = suspend (String, ProxyServerImportContext) -> ProxyServerImportResult
+typealias ProxyServerPayloadParser = suspend (String, ProxyServerImportContext) -> ProxyServerImportResult
 
-internal val EmptyProxyServerImportResult = ProxyServerImportResult(
+val EmptyProxyServerImportResult = ProxyServerImportResult(
     urlCount = 0,
     servers = emptyList(),
 )

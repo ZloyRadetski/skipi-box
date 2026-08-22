@@ -9,9 +9,9 @@ import engine.network.isTcpPortAvailable
 import engine.network.toPortOrNull
 import engine.vpn.VpnDefaults
 
-internal const val XrayStatsApiListenAddress = "127.0.0.1"
+const val XrayStatsApiListenAddress = "127.0.0.1"
 
-internal fun AppState.xrayStatsApiExcludedPorts(): Set<Int> {
+fun AppState.xrayStatsApiExcludedPorts(): Set<Int> {
     return buildSet {
         add(localProxyPort.toPortOrNull() ?: VpnDefaults.LOCAL_PROXY_PORT)
         if (enableVpnAppendHttpProxy) {
@@ -21,7 +21,7 @@ internal fun AppState.xrayStatsApiExcludedPorts(): Set<Int> {
     }
 }
 
-internal fun findAvailableXrayStatsApiPort(
+fun findAvailableXrayStatsApiPort(
     excludedPorts: Set<Int>,
 ): Int {
     return findAvailableTcpPort(
@@ -31,7 +31,7 @@ internal fun findAvailableXrayStatsApiPort(
     ) ?: error("No available Xray stats API port")
 }
 
-internal fun resolveXrayStatsApiPort(
+fun resolveXrayStatsApiPort(
     preferredPort: Int?,
     excludedPorts: Set<Int>,
 ): Int {

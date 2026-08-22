@@ -3,12 +3,12 @@
 
 package ui.clipboard
 
-internal enum class ClipboardImportMode {
+enum class ClipboardImportMode {
     Replace,
     Merge,
 }
 
-internal enum class ClipboardImportFailure {
+enum class ClipboardImportFailure {
     EmptyClipboard,
     UnsupportedFormat,
     NoValidRoutingRules,
@@ -18,6 +18,6 @@ internal enum class ClipboardImportFailure {
     UnsupportedAppMode,
 }
 
-internal class ClipboardImportException(
+class ClipboardImportException(
     val failure: ClipboardImportFailure,
 ) : IllegalArgumentException(failure.name)

@@ -3,8 +3,6 @@
 
 package features.config
 
-import io.ktor.http.encodeURLQueryComponent
-import io.ktor.http.decodeURLQueryComponent
 import app.modes.ProxyAppListModeGlobal
 import app.AppState
 import app.CustomResourceFileState
@@ -23,6 +21,7 @@ import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
 import features.resources.ResourceFileSourceLoyalsoldierGithub
 import features.resources.ResourceFileV2FlyGeoIpOnlyCnPrivateUrl
 import features.subscription.DefaultSubscriptionUserAgent
+import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
@@ -49,12 +48,17 @@ data class TrafficConfigAndroidSettings(
     val fragmentInterval: String = DefaultFragmentInterval,
     val enableVpnLocalDns: Boolean = true,
     val enableFakeDns: Boolean = false,
+    val enableDirectDnsForProxyServerDomains: Boolean = false,
     val enableVpnAppendHttpProxy: Boolean = false,
     val enableVpnHevTun: Boolean = false,
     val tunMtu: String = VpnDefaults.MTU.toString(),
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
     val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
+    val proxyDns: List<String> = VpnDefaults.PROXY_DNS_SERVERS,
+    val directDns: List<String> = VpnDefaults.DIRECT_DNS_SERVERS,
+    val directDnsDomains: List<String> = emptyList(),
+    val dnsHosts: List<String> = emptyList(),
 )
 
 @Serializable
@@ -97,6 +101,8 @@ data class TrafficConfigState(
     val sourceUrl: String = "",
     val updateLocked: Boolean = false,
     val lastUpdatedAtMillis: Long = 0L,
+    val autoUpdate: Boolean = false,
+    val updateInterval: String = "",
     val proxyAppListMode: Int = ProxyAppListModeGlobal,
     val proxyAppListSelectedApps: List<String> = emptyList(),
     val androidSettings: TrafficConfigAndroidSettings = TrafficConfigAndroidSettings(),
@@ -112,7 +118,7 @@ val DefaultTrafficConfigs = listOf(
     ).withSkipiSettingsInRawConfig(),
 )
 
-internal fun defaultSkipiTrafficConfigRaw(name: String = ""): String {
+fun defaultSkipiTrafficConfigRaw(name: String = ""): String {
     return TrafficConfigState(
         id = 0,
         name = name,
@@ -126,6 +132,8 @@ private const val SkipiSection = "SKIPI"
 private const val SkipiProfileName = "profile-name"
 private const val SkipiProfileUpdateUrl = "profile-update-url"
 private const val SkipiProfileUpdateLocked = "profile-update-locked"
+private const val SkipiProfileAutoUpdate = "profile-auto-update"
+private const val SkipiProfileUpdateInterval = "profile-update-interval"
 private const val SkipiPerAppMode = "per-app-mode"
 private const val SkipiPerAppPackage = "per-app-package"
 private const val SkipiSniffing = "sniffing"
@@ -140,6 +148,11 @@ private const val SkipiFragmentLength = "fragment-length"
 private const val SkipiFragmentInterval = "fragment-interval"
 private const val SkipiVpnLocalDns = "vpn-local-dns"
 private const val SkipiFakeDns = "fake-dns"
+private const val SkipiDirectDnsForProxyServerDomains = "direct-dns-fallback-proxy"
+private const val SkipiProxyDns = "proxy-dns"
+private const val SkipiDirectDns = "direct-dns"
+private const val SkipiDirectDnsDomains = "direct-dns-domains"
+private const val SkipiDnsHosts = "dns-hosts"
 private const val SkipiVpnAppendHttpProxy = "vpn-append-http-proxy"
 private const val SkipiVpnHevTun = "vpn-hev-tun"
 private const val SkipiTunMtu = "tun-mtu"
@@ -155,9 +168,11 @@ private const val SkipiResourceGeoIpOnlyCnPrivateUrl = "resource-geoip-cn-privat
 private const val SkipiResourceDirectCidrIpv4Url = "resource-direct-cidr-ipv4-url"
 private const val SkipiResourceDirectCidrIpv6Url = "resource-direct-cidr-ipv6-url"
 private const val SkipiResourceUserAgent = "resource-user-agent"
+private const val SkipiResourceAutoUpdate = "resource-auto-update"
+private const val SkipiResourceUpdateInterval = "resource-update-interval"
 private const val SkipiResourceCustomFile = "resource-custom-file"
 
-internal data class SkipiPerAppSettings(
+data class SkipiPerAppSettings(
     val mode: Int,
     val selectedApps: List<String>,
 )
@@ -167,7 +182,7 @@ internal data class SkipiPerAppSettings(
  * New profiles use normal `key = value` entries in the [SKIPI] section rather
  * than comments, so exported files remain editable raw configuration files.
  */
-internal fun String.withSkipiPerAppSettings(
+fun String.withSkipiPerAppSettings(
     mode: Int,
     selectedApps: List<String>,
 ): String {
@@ -189,7 +204,7 @@ internal fun String.withSkipiPerAppSettings(
     )
 }
 
-internal fun String.parseSkipiPerAppSettings(): SkipiPerAppSettings {
+fun String.parseSkipiPerAppSettings(): SkipiPerAppSettings {
     val values = skipiValues()
     values[SkipiPerAppMode]?.lastOrNull()?.let { modeValue ->
         val mode = when (modeValue.trim().lowercase()) {
@@ -230,7 +245,7 @@ internal fun String.parseSkipiPerAppSettings(): SkipiPerAppSettings {
 }
 
 /** Rewrites every SKIPI-specific setting as normal INI values in `[SKIPI]`. */
-internal fun TrafficConfigState.withSkipiSettingsInRawConfig(): TrafficConfigState {
+fun TrafficConfigState.withSkipiSettingsInRawConfig(): TrafficConfigState {
     return copy(
         rawConfig = rawConfig
             .withoutLegacySkipiPerAppComments()
@@ -239,7 +254,7 @@ internal fun TrafficConfigState.withSkipiSettingsInRawConfig(): TrafficConfigSta
 }
 
 /** Reads the complete SKIPI section from raw text while preserving old-profile fallbacks. */
-internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficConfigState {
+fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficConfigState {
     val values = rawConfig.skipiValues()
     if (values.isEmpty()) {
         val legacyPerApp = rawConfig.parseSkipiPerAppSettings()
@@ -261,55 +276,77 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
         .distinctBy(CustomResourceFileState::id)
     val android = androidSettings
     val resources = resourceSettings
-    return copy(
-        name = value(SkipiProfileName, name).trim().ifBlank { name },
-        sourceUrl = value(SkipiProfileUpdateUrl, sourceUrl).trim(),
-        updateLocked = bool(SkipiProfileUpdateLocked, updateLocked),
-        proxyAppListMode = mode,
-        proxyAppListSelectedApps = values[SkipiPerAppPackage].orEmpty()
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-            .distinct(),
-        androidSettings = android.copy(
-            enableSniffing = bool(SkipiSniffing, android.enableSniffing),
-            enableSniffingRouteOnly = bool(SkipiSniffingRouteOnly, android.enableSniffingRouteOnly),
-            enableMux = bool(SkipiMux, android.enableMux),
-            muxConcurrency = value(SkipiMuxConcurrency, android.muxConcurrency),
-            muxXudpConcurrency = value(SkipiMuxXudpConcurrency, android.muxXudpConcurrency),
-            muxXudpProxyUdp443 = int(SkipiMuxUdp443, android.muxXudpProxyUdp443),
-            enableFragment = bool(SkipiFragment, android.enableFragment),
-            fragmentPackets = value(SkipiFragmentPackets, android.fragmentPackets),
-            fragmentLength = value(SkipiFragmentLength, android.fragmentLength),
-            fragmentInterval = value(SkipiFragmentInterval, android.fragmentInterval),
-            enableVpnLocalDns = bool(SkipiVpnLocalDns, android.enableVpnLocalDns),
-            enableFakeDns = bool(SkipiFakeDns, android.enableFakeDns),
-            enableVpnAppendHttpProxy = bool(SkipiVpnAppendHttpProxy, android.enableVpnAppendHttpProxy),
-            enableVpnHevTun = bool(SkipiVpnHevTun, android.enableVpnHevTun),
-            tunMtu = value(SkipiTunMtu, android.tunMtu),
-            tunVpnDns = value(SkipiTunDns, android.tunVpnDns),
-            tunIpv4Cidr = value(SkipiTunIpv4, android.tunIpv4Cidr),
-            tunIpv6Cidr = value(SkipiTunIpv6, android.tunIpv6Cidr),
-        ),
-        networkActivation = TrafficConfigNetworkActivation(
-            enabled = bool(SkipiNetworkActivation, networkActivation.enabled),
-            transport = when (value(SkipiNetworkTransport, networkActivation.transport.toString()).lowercase()) {
-                "cellular", "mobile", TrafficConfigNetworkTransportCellular.toString() -> TrafficConfigNetworkTransportCellular
-                else -> TrafficConfigNetworkTransportWifi
-            },
-        ),
-        resourceSettings = resources.copy(
-            source = int(SkipiResourceSource, resources.source),
-            customGeoIpUrl = value(SkipiResourceGeoIpUrl, resources.customGeoIpUrl),
-            customGeoSiteUrl = value(SkipiResourceGeoSiteUrl, resources.customGeoSiteUrl),
-            customGeoIpOnlyCnPrivateUrl = value(SkipiResourceGeoIpOnlyCnPrivateUrl, resources.customGeoIpOnlyCnPrivateUrl),
-            customDirectCidrIpv4Url = value(SkipiResourceDirectCidrIpv4Url, resources.customDirectCidrIpv4Url),
-            customDirectCidrIpv6Url = value(SkipiResourceDirectCidrIpv6Url, resources.customDirectCidrIpv6Url),
-            customFiles = parsedCustomFiles,
-            nextCustomFileId = (parsedCustomFiles.maxOfOrNull(CustomResourceFileState::id) ?: 0) + 1,
-            userAgent = value(SkipiResourceUserAgent, resources.userAgent),
-        ),
-    )
-}
+        val parsedProxyDns = values[SkipiProxyDns]?.flatMap { it.split(',') }
+            ?.map(String::trim)?.filter(String::isNotEmpty)?.distinct()
+            ?: android.proxyDns
+        val parsedDirectDns = values[SkipiDirectDns]?.flatMap { it.split(',') }
+            ?.map(String::trim)?.filter(String::isNotEmpty)?.distinct()
+            ?: android.directDns
+        val parsedDirectDnsDomains = values[SkipiDirectDnsDomains]?.flatMap { it.split(',') }
+            ?.map(String::trim)?.filter(String::isNotEmpty)?.distinct()
+            ?: android.directDnsDomains
+        val parsedDnsHosts = values[SkipiDnsHosts]?.map(String::trim)
+            ?.filter(String::isNotEmpty)?.distinct()
+            ?: android.dnsHosts
+
+        return copy(
+            name = value(SkipiProfileName, name).trim().ifBlank { name },
+            sourceUrl = value(SkipiProfileUpdateUrl, sourceUrl).trim(),
+            updateLocked = bool(SkipiProfileUpdateLocked, updateLocked),
+            autoUpdate = bool(SkipiProfileAutoUpdate, autoUpdate),
+            updateInterval = value(SkipiProfileUpdateInterval, updateInterval).trim(),
+            proxyAppListMode = mode,
+            proxyAppListSelectedApps = values[SkipiPerAppPackage].orEmpty()
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .distinct(),
+            androidSettings = android.copy(
+                enableSniffing = bool(SkipiSniffing, android.enableSniffing),
+                enableSniffingRouteOnly = bool(SkipiSniffingRouteOnly, android.enableSniffingRouteOnly),
+                enableMux = bool(SkipiMux, android.enableMux),
+                muxConcurrency = value(SkipiMuxConcurrency, android.muxConcurrency),
+                muxXudpConcurrency = value(SkipiMuxXudpConcurrency, android.muxXudpConcurrency),
+                muxXudpProxyUdp443 = int(SkipiMuxUdp443, android.muxXudpProxyUdp443),
+                enableFragment = bool(SkipiFragment, android.enableFragment),
+                fragmentPackets = value(SkipiFragmentPackets, android.fragmentPackets),
+                fragmentLength = value(SkipiFragmentLength, android.fragmentLength),
+                fragmentInterval = value(SkipiFragmentInterval, android.fragmentInterval),
+                enableVpnLocalDns = bool(SkipiVpnLocalDns, android.enableVpnLocalDns),
+                enableFakeDns = bool(SkipiFakeDns, android.enableFakeDns),
+                enableDirectDnsForProxyServerDomains = bool(SkipiDirectDnsForProxyServerDomains, android.enableDirectDnsForProxyServerDomains),
+                enableVpnAppendHttpProxy = bool(SkipiVpnAppendHttpProxy, android.enableVpnAppendHttpProxy),
+                enableVpnHevTun = bool(SkipiVpnHevTun, android.enableVpnHevTun),
+                tunMtu = value(SkipiTunMtu, android.tunMtu),
+                tunVpnDns = value(SkipiTunDns, android.tunVpnDns),
+                tunIpv4Cidr = value(SkipiTunIpv4, android.tunIpv4Cidr),
+                tunIpv6Cidr = value(SkipiTunIpv6, android.tunIpv6Cidr),
+                proxyDns = parsedProxyDns,
+                directDns = parsedDirectDns,
+                directDnsDomains = parsedDirectDnsDomains,
+                dnsHosts = parsedDnsHosts,
+            ),
+            networkActivation = TrafficConfigNetworkActivation(
+                enabled = bool(SkipiNetworkActivation, networkActivation.enabled),
+                transport = when (value(SkipiNetworkTransport, networkActivation.transport.toString()).lowercase()) {
+                    "cellular", "mobile", TrafficConfigNetworkTransportCellular.toString() -> TrafficConfigNetworkTransportCellular
+                    else -> TrafficConfigNetworkTransportWifi
+                },
+            ),
+            resourceSettings = resources.copy(
+                source = int(SkipiResourceSource, resources.source),
+                customGeoIpUrl = value(SkipiResourceGeoIpUrl, resources.customGeoIpUrl),
+                customGeoSiteUrl = value(SkipiResourceGeoSiteUrl, resources.customGeoSiteUrl),
+                customGeoIpOnlyCnPrivateUrl = value(SkipiResourceGeoIpOnlyCnPrivateUrl, resources.customGeoIpOnlyCnPrivateUrl),
+                customDirectCidrIpv4Url = value(SkipiResourceDirectCidrIpv4Url, resources.customDirectCidrIpv4Url),
+                customDirectCidrIpv6Url = value(SkipiResourceDirectCidrIpv6Url, resources.customDirectCidrIpv6Url),
+                customFiles = parsedCustomFiles,
+                nextCustomFileId = (parsedCustomFiles.maxOfOrNull(CustomResourceFileState::id) ?: 0) + 1,
+                userAgent = value(SkipiResourceUserAgent, resources.userAgent),
+                autoUpdate = bool(SkipiResourceAutoUpdate, resources.autoUpdate),
+                updateInterval = value(SkipiResourceUpdateInterval, resources.updateInterval).trim(),
+            ),
+        )
+    }
 
 private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
     val android = androidSettings
@@ -323,6 +360,10 @@ private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
         add("$SkipiProfileName = ${name.trim()}")
         add("$SkipiProfileUpdateUrl = ${sourceUrl.trim()}")
         add("$SkipiProfileUpdateLocked = $updateLocked")
+        add("$SkipiProfileAutoUpdate = $autoUpdate")
+        if (updateInterval.isNotBlank()) {
+            add("$SkipiProfileUpdateInterval = ${updateInterval.trim()}")
+        }
         add("$SkipiPerAppMode = $mode")
         proxyAppListSelectedApps.asSequence().map(String::trim).filter(String::isNotBlank).distinct().forEach { appId ->
             add("$SkipiPerAppPackage = $appId")
@@ -339,12 +380,25 @@ private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
         add("$SkipiFragmentInterval = ${android.fragmentInterval}")
         add("$SkipiVpnLocalDns = ${android.enableVpnLocalDns}")
         add("$SkipiFakeDns = ${android.enableFakeDns}")
+        add("$SkipiDirectDnsForProxyServerDomains = ${android.enableDirectDnsForProxyServerDomains}")
         add("$SkipiVpnAppendHttpProxy = ${android.enableVpnAppendHttpProxy}")
         add("$SkipiVpnHevTun = ${android.enableVpnHevTun}")
         add("$SkipiTunMtu = ${android.tunMtu}")
         add("$SkipiTunDns = ${android.tunVpnDns}")
         add("$SkipiTunIpv4 = ${android.tunIpv4Cidr}")
         add("$SkipiTunIpv6 = ${android.tunIpv6Cidr}")
+        if (android.proxyDns.isNotEmpty()) {
+            add("$SkipiProxyDns = ${android.proxyDns.joinToString(",")}")
+        }
+        if (android.directDns.isNotEmpty()) {
+            add("$SkipiDirectDns = ${android.directDns.joinToString(",")}")
+        }
+        if (android.directDnsDomains.isNotEmpty()) {
+            add("$SkipiDirectDnsDomains = ${android.directDnsDomains.joinToString(",")}")
+        }
+        android.dnsHosts.forEach { host ->
+            add("$SkipiDnsHosts = $host")
+        }
         add("$SkipiNetworkActivation = ${networkActivation.enabled}")
         add("$SkipiNetworkTransport = ${if (networkActivation.transport == TrafficConfigNetworkTransportCellular) "cellular" else "wifi"}")
         add("$SkipiResourceSource = ${resources.source}")
@@ -354,6 +408,10 @@ private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
         add("$SkipiResourceDirectCidrIpv4Url = ${resources.customDirectCidrIpv4Url}")
         add("$SkipiResourceDirectCidrIpv6Url = ${resources.customDirectCidrIpv6Url}")
         add("$SkipiResourceUserAgent = ${resources.userAgent}")
+        add("$SkipiResourceAutoUpdate = ${resources.autoUpdate}")
+        if (resources.updateInterval.isNotBlank()) {
+            add("$SkipiResourceUpdateInterval = ${resources.updateInterval.trim()}")
+        }
         resources.customFiles.forEach { file -> add(file.toSkipiResourceCustomFileLine()) }
     }
 }
@@ -396,26 +454,82 @@ private fun String.toConfigBoolean(fallback: Boolean): Boolean {
 }
 
 private fun CustomResourceFileState.toSkipiResourceCustomFileLine(): String {
-    return "$SkipiResourceCustomFile = $id,${name.encodeURLQueryComponent()},${url.encodeURLQueryComponent()}"
+    return "$SkipiResourceCustomFile = $id,${uriEncode(name)},${uriEncode(url)}"
 }
 
 private fun parseSkipiResourceCustomFile(value: String): CustomResourceFileState? {
     val parts = value.split(',', limit = 3)
     val id = parts.getOrNull(0)?.trim()?.toIntOrNull() ?: return null
-    val name = parts.getOrNull(1)?.decodeURLQueryComponent()?.trim().orEmpty()
-    val url = parts.getOrNull(2)?.decodeURLQueryComponent()?.trim().orEmpty()
+    val name = parts.getOrNull(1)?.let(::uriDecode)?.trim().orEmpty()
+    val url = parts.getOrNull(2)?.let(::uriDecode)?.trim().orEmpty()
     return CustomResourceFileState(id = id, name = name, url = url)
         .takeIf { it.id > 0 && it.name.isNotEmpty() && it.url.isNotEmpty() }
 }
 
-internal fun AppState.withUpdatedTrafficConfig(
+/**
+ * Drop-in replacements for android.net.Uri encode/decode with identical
+ * semantics, so `[SKIPI]` profile sections stay byte-compatible between
+ * platforms: UTF-8 percent-encoding that leaves "A-Za-z0-9_-!.~'()*" intact.
+ */
+private const val UriAllowedCharacters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-!.~'()*"
+
+private fun uriEncode(value: String): String {
+    val builder = StringBuilder()
+    for (byte in value.toByteArray(Charsets.UTF_8)) {
+        val unsigned = byte.toInt() and 0xFF
+        val c = unsigned.toChar()
+        if (UriAllowedCharacters.indexOf(c) >= 0) {
+            builder.append(c)
+        } else {
+            builder.append('%')
+            builder.append(((unsigned shr 4) and 0x0F).toString(16).uppercase())
+            builder.append((unsigned and 0x0F).toString(16).uppercase())
+        }
+    }
+    return builder.toString()
+}
+
+private fun uriDecode(value: String): String {
+    if ('%' !in value) return value
+    val builder = StringBuilder()
+    val pendingBytes = ArrayList<Byte>()
+    fun flushBytes() {
+        if (pendingBytes.isNotEmpty()) {
+            builder.append(pendingBytes.toByteArray().toString(Charsets.UTF_8))
+            pendingBytes.clear()
+        }
+    }
+    var index = 0
+    while (index < value.length) {
+        val c = value[index]
+        if (c == '%' && index + 2 < value.length) {
+            val high = Character.digit(value[index + 1], 16)
+            val low = Character.digit(value[index + 2], 16)
+            if (high >= 0 && low >= 0) {
+                pendingBytes.add((((high shl 4) + low)).toByte())
+                index += 3
+                continue
+            }
+        }
+        flushBytes()
+        builder.append(c)
+        index++
+    }
+    flushBytes()
+    return builder.toString()
+}
+
+fun AppState.withUpdatedTrafficConfig(
     configId: Int,
     transform: (TrafficConfigState) -> TrafficConfigState,
 ): AppState {
-    return copy(
-        trafficConfigs = trafficConfigs.map { config ->
-            if (config.id == configId) {
-                val updated = transform(config)
+    var hasChanges = false
+    val updatedConfigs = trafficConfigs.map { config ->
+        if (config.id == configId) {
+            val updated = transform(config)
+            if (updated != config) {
+                hasChanges = true
                 val parsed = if (updated.rawConfig != config.rawConfig) {
                     updated.withSkipiSettingsReadFromRawConfig()
                 } else {
@@ -425,8 +539,12 @@ internal fun AppState.withUpdatedTrafficConfig(
             } else {
                 config
             }
-        },
-    ).withConfigProxyGroupsReflected()
+        } else {
+            config
+        }
+    }
+    if (!hasChanges) return this
+    return copy(trafficConfigs = updatedConfigs).withConfigProxyGroupsReflected()
 }
 
 /**
@@ -434,16 +552,35 @@ internal fun AppState.withUpdatedTrafficConfig(
  * display. They keep a source reference, so their member set is resolved from
  * the config on every connection instead of becoming stale after a refresh.
  */
-internal fun AppState.withConfigProxyGroupsReflected(): AppState {
+fun AppState.withConfigProxyGroupsReflected(): AppState {
     val desired = trafficConfigs.flatMap { config ->
+        val isConfigActive = config.id == activeTrafficConfigId
         config.rawConfig.analyzeShadowrocketConfig().proxyGroups
-            .filter(ShadowrocketPolicyGroup::showInAutoBalancerList)
+            .filter { group ->
+                when (group.displayMode) {
+                    features.proxy.server.model.StrategyGroupDisplayMode.ALWAYS -> true
+                    features.proxy.server.model.StrategyGroupDisplayMode.NEVER -> false
+                    features.proxy.server.model.StrategyGroupDisplayMode.ACTIVE_CONFIG -> isConfigActive
+                    else -> isConfigActive
+                }
+            }
             .map { group -> ConfigAutoBalancerSource(config.id, group) }
     }
     val existingGenerated = proxyServers.filter { server ->
         (server.server as? StrategyGroup)?.sourceTrafficConfigId != null
     }
     val regularServers = proxyServers.filterNot(existingGenerated::contains)
+
+    val serverIdsByRemark = HashMap<String, MutableList<Int>>(regularServers.size * 2)
+    regularServers.forEach { candidate ->
+        val remarks = candidate.server.getInfo().remarks.trim().lowercase()
+        val cleanRemarks = CountryFlagUtils.stripLeadingCountryFlag(remarks).trim().lowercase()
+        serverIdsByRemark.getOrPut(remarks) { mutableListOf() }.add(candidate.id)
+        if (cleanRemarks != remarks) {
+            serverIdsByRemark.getOrPut(cleanRemarks) { mutableListOf() }.add(candidate.id)
+        }
+    }
+
     var nextId = nextProxyServerId
     val generatedServers = desired.map { source ->
         val existing = existingGenerated.firstOrNull { server ->
@@ -453,6 +590,20 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
         }
         val id = existing?.id ?: nextId++
         val existingStrategy = existing?.server as? StrategyGroup
+        val resolvedMemberIds = source.group.members.flatMap { rawMember ->
+            val cleanMember = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim().lowercase()
+            val cleanWithoutFlag = CountryFlagUtils.stripLeadingCountryFlag(cleanMember).trim().lowercase()
+            serverIdsByRemark[cleanMember] ?: serverIdsByRemark[cleanWithoutFlag].orEmpty()
+        }.distinct()
+        val effectiveMemberIds = if (existingStrategy?.proxyServerIds?.isNotEmpty() == true) {
+            existingStrategy.proxyServerIds
+        } else {
+            resolvedMemberIds
+        }
+        val effectiveSelectedMemberId = existingStrategy?.selectedMemberId
+            ?.takeIf { mid -> mid in effectiveMemberIds || effectiveMemberIds.isEmpty() }
+            ?: effectiveMemberIds.firstOrNull()
+
         ProxyServerState(
             id = id,
             groupId = AutoBalancerGroupId,
@@ -460,8 +611,8 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
             server = StrategyGroup(
                 remarks = source.group.name,
                 strategy = source.group.toStrategyGroupType(),
-                proxyServerIds = existingStrategy?.proxyServerIds.orEmpty(),
-                selectedMemberId = existingStrategy?.selectedMemberId,
+                proxyServerIds = effectiveMemberIds,
+                selectedMemberId = effectiveSelectedMemberId,
                 displayMode = source.group.displayMode,
                 showInAutoBalancerList = source.group.displayMode != features.proxy.server.model.StrategyGroupDisplayMode.NEVER,
                 sourceTrafficConfigId = source.configId,
@@ -482,13 +633,24 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
     )
 }
 
+/**
+ * Sets the active traffic config and synchronizes materialized proxy groups.
+ */
+fun AppState.withActiveTrafficConfig(configId: Int): AppState {
+    if (activeTrafficConfigId == configId) return this
+    return copy(activeTrafficConfigId = configId).withConfigProxyGroupsReflected()
+}
+
 private data class ConfigAutoBalancerSource(
     val configId: Int,
     val group: ShadowrocketPolicyGroup,
 )
 
 private fun ShadowrocketPolicyGroup.toStrategyGroupType(): String {
-    return when (type) {
+    return when (type.lowercase()) {
+        "select" -> StrategyGroupConstants.TYPE_SELECT
+        "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
+        "round-robin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
         "least-load" -> StrategyGroupConstants.TYPE_LEAST_LOAD
         "fallback" -> StrategyGroupConstants.TYPE_FALLBACK
         "url-test", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING

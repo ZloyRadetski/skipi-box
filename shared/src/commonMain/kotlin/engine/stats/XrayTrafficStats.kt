@@ -6,18 +6,18 @@ package engine.stats
 import engine.xray.XrayTags
 import java.util.Locale
 
-internal enum class XrayTrafficDirection {
+enum class XrayTrafficDirection {
     Uplink,
     Downlink,
 }
 
-internal data class XrayTrafficStat(
+data class XrayTrafficStat(
     val tag: String,
     val direction: XrayTrafficDirection,
     val bytes: Long,
 )
 
-internal data class XrayTrafficBytes(
+data class XrayTrafficBytes(
     val uplink: Long = 0L,
     val downlink: Long = 0L,
 ) {
@@ -29,15 +29,15 @@ internal data class XrayTrafficBytes(
     }
 }
 
-internal data class XrayTrafficSessionSample(
+data class XrayTrafficSessionSample(
     val speedBytesPerSecond: XrayTrafficBytes,
     val totalBytes: XrayTrafficBytes,
 )
 
-internal const val MinimumMeaningfulTrafficDeltaBytes = 2_048L
+const val MinimumMeaningfulTrafficDeltaBytes = 2_048L
 
 /** Returns the outbound that carried the most new traffic since the prior sample. */
-internal fun Map<String, XrayTrafficBytes>.maxTrafficDeltaComparedTo(
+fun Map<String, XrayTrafficBytes>.maxTrafficDeltaComparedTo(
     previous: Map<String, XrayTrafficBytes>,
     currentActiveTag: String? = null,
     minDeltaBytes: Long = MinimumMeaningfulTrafficDeltaBytes,
@@ -73,7 +73,7 @@ private data class XrayTrafficSpeedSample(
     val elapsedMillis: Long,
 )
 
-internal class XrayTrafficSessionAccumulator {
+class XrayTrafficSessionAccumulator {
     private var totalBytes = XrayTrafficBytes()
     private val speedSamples = ArrayDeque<XrayTrafficSpeedSample>()
     private var speedWindowElapsedMillis = 0L
@@ -112,14 +112,14 @@ internal class XrayTrafficSessionAccumulator {
     }
 }
 
-internal fun parseXrayInboundTrafficStat(
+fun parseXrayInboundTrafficStat(
     name: String,
     bytes: Long,
 ): XrayTrafficStat? {
     return parseXrayTrafficStat(name, bytes, XrayInboundStatPrefix)
 }
 
-internal fun parseXrayOutboundTrafficStat(
+fun parseXrayOutboundTrafficStat(
     name: String,
     bytes: Long,
 ): XrayTrafficStat? {
@@ -146,7 +146,7 @@ private fun parseXrayTrafficStat(
     )
 }
 
-internal fun aggregateOutboundTraffic(stats: List<XrayTrafficStat>): Map<String, XrayTrafficBytes> {
+fun aggregateOutboundTraffic(stats: List<XrayTrafficStat>): Map<String, XrayTrafficBytes> {
     return stats.groupBy(XrayTrafficStat::tag).mapValues { (_, tagStats) ->
         tagStats.fold(XrayTrafficBytes()) { total, stat ->
             when (stat.direction) {
@@ -157,7 +157,7 @@ internal fun aggregateOutboundTraffic(stats: List<XrayTrafficStat>): Map<String,
     }
 }
 
-internal fun aggregateInboundTraffic(
+fun aggregateInboundTraffic(
     stats: List<XrayTrafficStat>,
     excludedInboundTags: Set<String>,
 ): XrayTrafficBytes {
@@ -175,7 +175,7 @@ internal fun aggregateInboundTraffic(
     return XrayTrafficBytes(uplink = uplink, downlink = downlink)
 }
 
-internal fun Long.toTrafficSizeString(): String {
+fun Long.toTrafficSizeString(): String {
     var size = toDouble()
     var unitIndex = 0
     while (size >= TrafficUnitThreshold && unitIndex < TrafficUnits.lastIndex) {
@@ -185,7 +185,7 @@ internal fun Long.toTrafficSizeString(): String {
     return String.format(Locale.getDefault(), "%.1f %s", size, TrafficUnits[unitIndex])
 }
 
-internal fun Long.toTrafficSpeedString(): String {
+fun Long.toTrafficSpeedString(): String {
     return "${toTrafficSizeString()}/s"
 }
 
@@ -201,7 +201,7 @@ private const val TrafficUnitThreshold = 1000L
 private const val TrafficUnitDivisor = 1024.0
 
 private val TrafficUnits = listOf("B", "KB", "MB", "GB", "TB", "PB")
-internal fun xrayTrafficExcludedInboundTags(apiTag: String): Set<String> = setOf(
+fun xrayTrafficExcludedInboundTags(apiTag: String): Set<String> = setOf(
     apiTag,
     XrayTags.DEFAULT_ROUTE_LOOPBACK_INBOUND,
 )

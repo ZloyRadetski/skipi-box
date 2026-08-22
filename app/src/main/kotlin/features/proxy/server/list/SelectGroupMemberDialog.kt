@@ -1,7 +1,14 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.list
+package features.proxy.server.list
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.LocalAppStateStore
 import app.ProxyServerState
-import app.R
 import app.collectAppState
 import engine.xray.strategyGroupMembers
 import features.proxy.server.display.CountryFlagUtils

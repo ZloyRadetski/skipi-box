@@ -62,7 +62,7 @@ data class Shadowsocks(
         return this
     }
 
-    internal fun parseLegacy(value: String, remarks: String): Shadowsocks {
+    fun parseLegacy(value: String, remarks: String): Shadowsocks {
         this.remarks = remarks
         val infoAndServer = value.trimEnd('/').split('@', limit = 2)
         if (infoAndServer.size == 2) {
@@ -150,6 +150,10 @@ data class Shadowsocks(
         )
         validateShadowsocks2022Password(method, password)
         validateV2RayParameters(parms)
+    }
+
+    override fun connectionFingerprint(): String {
+        return "ss|${server.trim().lowercase()}:${port.trim()}|$method|$password|${parms.fingerprint()}"
     }
 }
 

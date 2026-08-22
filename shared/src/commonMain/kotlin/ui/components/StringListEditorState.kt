@@ -3,7 +3,7 @@
 
 package ui.components
 
-internal fun hasPendingStringListEdit(
+fun hasPendingStringListEdit(
     input: String,
     editingIndex: Int,
     normalize: (String) -> String = String::trim,

@@ -23,18 +23,18 @@ import sh.calvin.reorderable.ReorderableLazyListState
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-internal class SkipiReorderableLazyListState(
+class SkipiReorderableLazyListState(
     val reorderableState: ReorderableLazyListState,
     val hapticFeedback: HapticFeedback,
 )
 
-internal class SkipiReorderableLazyGridState(
+class SkipiReorderableLazyGridState(
     val reorderableState: ReorderableLazyGridState,
     val hapticFeedback: HapticFeedback,
 )
 
 @Composable
-internal fun rememberReorderableListStateByKey(
+fun rememberReorderableListStateByKey(
     lazyListState: LazyListState,
     scrollThresholdPadding: PaddingValues = PaddingValues(0.dp),
     onMove: (fromKey: Any, toKey: Any) -> Unit,
@@ -57,7 +57,7 @@ internal fun rememberReorderableListStateByKey(
 }
 
 @Composable
-internal fun rememberSkipiReorderableLazyListState(
+fun rememberSkipiReorderableLazyListState(
     lazyListState: LazyListState,
     itemCount: Int,
     itemIndexOffset: Int = 0,
@@ -87,7 +87,7 @@ internal fun rememberSkipiReorderableLazyListState(
 }
 
 @Composable
-internal fun rememberSkipiReorderableLazyGridState(
+fun rememberSkipiReorderableLazyGridState(
     lazyGridState: LazyGridState,
     itemCount: Int,
     itemIndexOffset: Int = 0,
@@ -116,7 +116,7 @@ internal fun rememberSkipiReorderableLazyGridState(
 }
 
 @Composable
-internal fun rememberReorderableLazyListContentPaddingWithoutTop(
+fun rememberReorderableLazyListContentPaddingWithoutTop(
     listPadding: PaddingValues,
 ): PaddingValues {
     val layoutDirection = LocalLayoutDirection.current
@@ -133,7 +133,7 @@ internal fun rememberReorderableLazyListContentPaddingWithoutTop(
 }
 
 @Composable
-internal fun rememberReorderableScrollThresholdPadding(
+fun rememberReorderableScrollThresholdPadding(
     top: Dp = 0.dp,
     bottom: Dp = 0.dp,
 ): PaddingValues {
@@ -142,7 +142,7 @@ internal fun rememberReorderableScrollThresholdPadding(
     }
 }
 
-internal fun Modifier.longPressReorderDragHandle(
+fun Modifier.longPressReorderDragHandle(
     scope: ReorderableCollectionItemScope,
     enabled: Boolean,
     state: SkipiReorderableLazyListState,
@@ -164,7 +164,7 @@ internal fun Modifier.longPressReorderDragHandle(
     }
 }
 
-internal fun Modifier.longPressReorderDragHandle(
+fun Modifier.longPressReorderDragHandle(
     scope: ReorderableCollectionItemScope,
     enabled: Boolean,
     state: SkipiReorderableLazyGridState,
@@ -186,7 +186,7 @@ internal fun Modifier.longPressReorderDragHandle(
     }
 }
 
-internal fun <T> List<T>.moveItem(
+fun <T> List<T>.moveItem(
     fromIndex: Int,
     toIndex: Int,
 ): List<T> {

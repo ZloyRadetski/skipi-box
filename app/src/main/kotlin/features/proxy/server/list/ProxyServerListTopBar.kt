@@ -1,7 +1,9 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.list
+package features.proxy.server.list
+
+import ui.feedback.TipNotifier
 
 import android.os.SystemClock
 import app.effects.resolveActiveNetworkConfig
@@ -162,7 +164,7 @@ internal fun ProxyServerListTopBar(
     subscriptionFetcher: AndroidSubscriptionFetcher,
     proxyServiceUseCase: ProxyServiceUseCase,
     clipboard: Clipboard,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     scope: CoroutineScope,
     backgroundScope: CoroutineScope,
     messages: ProxyServerListMessages,
@@ -259,8 +261,9 @@ internal fun ProxyServerListTopBar(
                 tipNotifier.show(messages.selectServerFirst)
             }
         } else {
-            val targetServers = if (server.server is StrategyGroup) {
-                val strategyGroup = server.server
+            val serverImpl = server.server
+            val targetServers = if (serverImpl is StrategyGroup) {
+                val strategyGroup = serverImpl
                 val members = appState.strategyGroupMembers(strategyGroup)
                     .filter { member -> member.server !is StrategyGroup }
                 if (members.isNotEmpty()) listOf(server) + members else listOf(server)
@@ -1169,7 +1172,7 @@ private fun handleProxyServerListAddAction(
     proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
     subscriptionFetcher: AndroidSubscriptionFetcher,
     clipboard: Clipboard,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     scope: CoroutineScope,
     backgroundScope: CoroutineScope,
     messages: ProxyServerListMessages,
@@ -1270,7 +1273,7 @@ private fun importProxyServersInBackground(
     stateStore: AndroidAppStateStore,
     subscriptionFetcher: AndroidSubscriptionFetcher,
     updateAppState: ((AppState) -> AppState) -> Unit,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     backgroundScope: CoroutineScope,
     messages: ProxyServerListMessages,
 ) {
@@ -1307,7 +1310,7 @@ private suspend fun installSubscriptionFromText(
     text: String,
     stateStore: AndroidAppStateStore,
     subscriptionFetcher: AndroidSubscriptionFetcher,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     messages: ProxyServerListMessages,
 ): Boolean {
     val config = text.toSubscriptionInstallConfigOrNull() ?: return false
@@ -1339,7 +1342,7 @@ private suspend fun importProxyServers(
     sendDeviceHeaders: Boolean,
     fetchTimeoutSeconds: Int,
     updateAppState: ((AppState) -> AppState) -> Unit,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     messages: ProxyServerListMessages,
 ) {
     // Clipboard, QR and file imports are all explicit user additions. A
@@ -1380,7 +1383,7 @@ private fun handleProxyServerListToolAction(
     subscriptionFetcher: AndroidSubscriptionFetcher,
     proxyServiceUseCase: ProxyServiceUseCase,
     clipboard: Clipboard,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     scope: CoroutineScope,
     backgroundScope: CoroutineScope,
     messages: ProxyServerListMessages,
@@ -1493,7 +1496,7 @@ private fun restartSelectedProxyService(
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     proxyServiceUseCase: ProxyServiceUseCase,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     messages: ProxyServerListMessages,
     serviceOperationInProgress: Boolean,
     runProxyServiceOperation: (suspend () -> Unit) -> Unit,
@@ -1533,7 +1536,7 @@ private fun updateSubscriptionGroups(
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     subscriptionFetcher: AndroidSubscriptionFetcher,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     backgroundScope: CoroutineScope,
     messages: ProxyServerListMessages,
 ) {
@@ -1572,7 +1575,7 @@ private fun deleteInvalidServers(
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     proxyServiceUseCase: ProxyServiceUseCase,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
     serviceOperationInProgress: Boolean,
@@ -1600,7 +1603,7 @@ private fun deleteAllServers(
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     proxyServiceUseCase: ProxyServiceUseCase,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
     serviceOperationInProgress: Boolean,
@@ -1626,7 +1629,7 @@ private fun deleteServersByIds(
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     proxyServiceUseCase: ProxyServiceUseCase,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     scope: CoroutineScope,
     deletedTemplate: String,
     emptyMessage: String,
@@ -1689,7 +1692,7 @@ private fun deleteServersByIds(
 private fun deleteDuplicateServers(
     servers: List<ProxyServerState>,
     updateAppState: ((AppState) -> AppState) -> Unit,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
 ) {

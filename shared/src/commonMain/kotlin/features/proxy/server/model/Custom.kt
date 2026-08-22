@@ -20,7 +20,7 @@ data class Custom(
     var configJson: String = "",
 ) : ProxyServer<Custom> {
     override fun getInfo(): ProxyServerInfo {
-        return ProxyServerInfo(remarks, customXrayConfigSummary(configJson), "Custom")
+        return ProxyServerInfo(remarks, customXrayConfigSummary(configJson), customXrayConfigProtocolDisplayName(configJson))
     }
 
     override fun toXrayOutbound(tag: String): OutboundObject {
@@ -42,9 +42,28 @@ data class Custom(
         validateRemarks(remarks)
         validateCustomXrayConfigJson(configJson)
     }
+
+    override fun connectionFingerprint(): String {
+        return customConnectionFingerprint(configJson)
+    }
 }
 
-internal fun parseCustomXrayConfigJsonObject(value: String): JsonObject {
+fun customConnectionFingerprint(configJson: String): String {
+    val primary = customXrayConfigPrimaryProxyOutbound(configJson)
+    if (primary != null) {
+        val protocol = primary.stringValue("protocol").orEmpty().lowercase()
+        val settings = primary["settings"]?.toString().orEmpty()
+        val streamSettings = primary["streamSettings"]?.toString().orEmpty()
+        val endpoint = customXrayConfigProxyOutboundEndpoint(configJson)
+        val hostPort = if (endpoint != null) "${endpoint.host.lowercase()}:${endpoint.port}" else ""
+        return "custom|$protocol|$hostPort|$settings|$streamSettings"
+    }
+    val endpoint = customXrayConfigProxyOutboundEndpoint(configJson)
+    val hostPort = if (endpoint != null) "${endpoint.host.lowercase()}:${endpoint.port}" else ""
+    return "custom|$hostPort|${configJson.trim().hashCode()}"
+}
+
+fun parseCustomXrayConfigJsonObject(value: String): JsonObject {
     val text = value.trim()
     if (text.isBlank()) {
         throw IllegalArgumentException("custom JSON is required")
@@ -73,21 +92,21 @@ private fun MutableList<ProxyServerValidationIssue>.validateCustomXrayConfigJson
     }
 }
 
-internal fun formatCustomXrayConfigJson(value: String): String {
+fun formatCustomXrayConfigJson(value: String): String {
     val element = CustomXrayConfigJson.parseToJsonElement(value.trim())
     return CustomXrayConfigPrettyJson.encodeToString(element)
 }
 
-internal fun formatCustomXrayConfigJson(element: JsonElement): String {
+fun formatCustomXrayConfigJson(element: JsonElement): String {
     return CustomXrayConfigPrettyJson.encodeToString(element)
 }
 
-internal data class CustomProxyOutboundEndpoint(
+data class CustomProxyOutboundEndpoint(
     val host: String,
     val port: Int,
 )
 
-internal fun customXrayConfigProxyOutboundEndpoint(value: String): CustomProxyOutboundEndpoint? {
+fun customXrayConfigProxyOutboundEndpoint(value: String): CustomProxyOutboundEndpoint? {
     val outbounds = value.customXrayConfigOutboundsOrNull()
     return outbounds?.customProxyOutboundEndpoint()
 }
@@ -96,18 +115,18 @@ internal fun customXrayConfigProxyOutboundEndpoint(value: String): CustomProxyOu
  * Returns the primary proxy outbound from a raw Xray configuration when it
  * can be embedded in a generated SKIPI plan (for routing or a balancer).
  */
-internal fun customXrayConfigPrimaryProxyOutbound(value: String): JsonObject? {
+fun customXrayConfigPrimaryProxyOutbound(value: String): JsonObject? {
     val outbounds = value.customXrayConfigOutboundsOrNull() ?: return null
     val objects = outbounds.mapNotNull { element -> element as? JsonObject }
     return objects.firstOrNull { outbound -> outbound.stringValue("tag") == CustomProxyOutboundTag }
         ?: objects.firstOrNull { outbound -> outbound.stringValue("tag") !in CustomFixedOutboundTags }
 }
 
-internal fun Custom.canBeUsedInGeneratedProxyPlan(): Boolean {
+fun Custom.canBeUsedInGeneratedProxyPlan(): Boolean {
     return customXrayConfigPrimaryProxyOutbound(configJson) != null
 }
 
-internal fun customXrayConfigProxyServerHosts(value: String): List<String> {
+fun customXrayConfigProxyServerHosts(value: String): List<String> {
     val outbounds = value.customXrayConfigOutboundsOrNull()
     return outbounds?.customProxyServerHosts().orEmpty()
 }
@@ -116,6 +135,72 @@ private fun String.customXrayConfigOutboundsOrNull(): JsonArray? {
     return runCatching {
         parseCustomXrayConfigJsonObject(this)["outbounds"] as? JsonArray
     }.getOrNull()
+}
+
+fun customXrayConfigProtocolDisplayName(value: String): String {
+    val primary = customXrayConfigPrimaryProxyOutbound(value)
+    val rawProtocol = primary?.stringValue("protocol")?.trim()?.lowercase()
+    val typeName = when (rawProtocol) {
+        "vless" -> "VLESS"
+        "vmess" -> "VMess"
+        "trojan" -> "Trojan"
+        "hysteria2", "hy2" -> "Hysteria2"
+        "shadowsocks", "ss" -> "Shadowsocks"
+        "wireguard" -> "WireGuard"
+        "socks" -> "SOCKS"
+        "http" -> "HTTP"
+        null, "" -> null
+        else -> rawProtocol.uppercase()
+    }
+    return if (typeName != null) {
+        "JSON ($typeName)"
+    } else {
+        "JSON"
+    }
+}
+
+fun customXrayConfigTransportDisplay(value: String): String? {
+    val primary = customXrayConfigPrimaryProxyOutbound(value) ?: return null
+    val protocol = primary.stringValue("protocol")?.trim()?.lowercase()
+    val streamSettings = primary.objectValue("streamSettings")
+    val network = streamSettings?.stringValue("network")?.trim()?.lowercase()
+    val security = streamSettings?.stringValue("security")?.trim()?.lowercase()
+
+    val transportLabel = when (network) {
+        "ws", "websocket" -> "WS"
+        "grpc" -> "gRPC"
+        "httpupgrade" -> "HTTPUpgrade"
+        "xhttp", "splithttp" -> "xHTTP"
+        "kcp", "mkcp" -> "mKCP"
+        "quic" -> "QUIC"
+        "domainsocket" -> "DomainSocket"
+        "http", "h2" -> "HTTP/2"
+        "tcp", "raw" -> {
+            val tcpHeaderType = streamSettings.objectValue("tcpSettings")
+                ?.objectValue("header")
+                ?.stringValue("type")
+                ?.trim()
+                ?.lowercase()
+            if (tcpHeaderType == "http") "HTTP-OBFS" else "TCP"
+        }
+        null, "" -> when (protocol) {
+            "wireguard" -> "UDP"
+            "hysteria2", "hy2", "tuic" -> "QUIC"
+            "shadowsocks", "ss", "socks", "http", "vless", "vmess", "trojan" -> "TCP"
+            else -> null
+        }
+        else -> network.uppercase()
+    } ?: return null
+
+    return when {
+        security.equals("reality", ignoreCase = true) -> {
+            if (transportLabel == "TCP") "Reality" else "$transportLabel • Reality"
+        }
+        security.equals("tls", ignoreCase = true) -> {
+            if (transportLabel == "TCP") "TLS" else "$transportLabel • TLS"
+        }
+        else -> transportLabel
+    }
 }
 
 private fun customXrayConfigSummary(value: String): String {

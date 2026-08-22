@@ -6,7 +6,7 @@ package features.proxy.server.usecase.importer
 import features.proxy.server.model.Wireguard
 import utils.toCsvValues
 
-internal fun MihomoYamlMap.toMihomoWireguardProxyServer(): Wireguard {
+fun MihomoYamlMap.toMihomoWireguardProxyServer(): Wireguard {
     val peers = list("peers").orEmpty().mapNotNull { item -> item.asStringMap() }
     if (peers.size > 1) {
         unsupported("multiple WireGuard peers are not supported")

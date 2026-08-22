@@ -1,7 +1,9 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.list
+package features.proxy.server.list
+
+import ui.feedback.TipNotifier
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,7 +21,7 @@ internal fun ProxyServerEditResultHandler(
     resultKey: String,
     messages: ProxyServerListMessages,
     updateAppState: ((AppState) -> AppState) -> Unit,
-    tipNotifier: AndroidToastTipNotifier,
+    tipNotifier: TipNotifier,
     onSelectedGroupIdChange: (Int) -> Unit,
 ) {
     LaunchedEffect(navigator, tipNotifier, messages.savedTemplate, messages.joinedTemplate) {
@@ -41,7 +43,7 @@ internal fun ProxyServerEditResultHandler(
                 onSelectedGroupIdChange(result.returnGroupId ?: existingGroupId ?: DefaultSubscriptionGroupId)
                 tipNotifier.show(messages.savedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
             } else if (result.groupId != null) {
-                onSelectedGroupIdChange(result.returnGroupId ?: result.groupId)
+                onSelectedGroupIdChange(result.returnGroupId ?: requireNotNull(result.groupId))
                 tipNotifier.show(messages.joinedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
             }
         }

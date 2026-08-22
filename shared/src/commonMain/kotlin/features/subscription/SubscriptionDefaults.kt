@@ -3,10 +3,10 @@
 
 package features.subscription
 
-import app.ProjectInfo
+import app.SharedProjectInfo
 
 const val DefaultSubscriptionGroupId = 1
-val DefaultSubscriptionUserAgent = "SKIPI/${ProjectInfo.VERSION_NAME}/Android"
+val DefaultSubscriptionUserAgent = "SKIPI/${SharedProjectInfo.VERSION_NAME}/Android"
 const val ClashMetaSubscriptionUserAgent = "clash.meta"
 const val FlClashXSubscriptionUserAgent = "FlClash X/v0.4.2 Platform/android"
 
@@ -40,32 +40,32 @@ val DefaultSubscriptionUserAgents = listOf(
     "Surfboard/2.23.0",
     "NekoBoxForAndroid/1.3.9",
 )
-internal enum class SubscriptionUserAgentSelection {
+enum class SubscriptionUserAgentSelection {
     V2rayNg,
     ClashMeta,
     FlClashX,
     Custom,
 }
 
-internal val SubscriptionUserAgentSelections = listOf(
+val SubscriptionUserAgentSelections = listOf(
     SubscriptionUserAgentSelection.V2rayNg,
     SubscriptionUserAgentSelection.ClashMeta,
     SubscriptionUserAgentSelection.FlClashX,
     SubscriptionUserAgentSelection.Custom,
 )
 
-internal fun SubscriptionUserAgentSelection.userAgentOrNull(): String? = when (this) {
+fun SubscriptionUserAgentSelection.userAgentOrNull(): String? = when (this) {
     SubscriptionUserAgentSelection.V2rayNg -> DefaultSubscriptionUserAgent
     SubscriptionUserAgentSelection.ClashMeta -> ClashMetaSubscriptionUserAgent
     SubscriptionUserAgentSelection.FlClashX -> FlClashXSubscriptionUserAgent
     SubscriptionUserAgentSelection.Custom -> null
 }
 
-internal fun SubscriptionUserAgentSelection.resolveUserAgent(customUserAgent: String): String {
+fun SubscriptionUserAgentSelection.resolveUserAgent(customUserAgent: String): String {
     return userAgentOrNull() ?: normalizeSkipiUserAgent(customUserAgent)
 }
 
-internal fun subscriptionUserAgentSelectionFor(userAgent: String): SubscriptionUserAgentSelection {
+fun subscriptionUserAgentSelectionFor(userAgent: String): SubscriptionUserAgentSelection {
     if (isSkipiUserAgent(userAgent)) return SubscriptionUserAgentSelection.V2rayNg
     val trimmedUserAgent = userAgent.trim()
     return SubscriptionUserAgentSelections.firstOrNull { selection ->

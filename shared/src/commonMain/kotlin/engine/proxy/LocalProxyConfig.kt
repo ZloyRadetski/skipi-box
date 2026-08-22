@@ -19,7 +19,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-internal const val LocalProxyLoopbackAddress = NetworkDefaults.IPV4_LOOPBACK_ADDRESS
+const val LocalProxyLoopbackAddress = NetworkDefaults.IPV4_LOOPBACK_ADDRESS
 private const val LocalProxyAllInterfacesAddress = NetworkDefaults.IPV4_ANY_ADDRESS
 
 data class LocalProxyOptions(
@@ -29,7 +29,7 @@ data class LocalProxyOptions(
     val password: String,
 )
 
-internal object LocalProxyRuntime {
+object LocalProxyRuntime {
     private val currentOptions = AtomicReference<LocalProxyOptions?>()
 
     fun update(options: LocalProxyOptions) {
@@ -45,7 +45,7 @@ internal object LocalProxyRuntime {
     }
 }
 
-internal fun AppState.withResolvedDynamicLocalProxyPort(): AppState {
+fun AppState.withResolvedDynamicLocalProxyPort(): AppState {
     if (!enableDynamicLocalProxyPort) return this
 
     val configuredPort = localProxyPort.toPortOrNull()
@@ -105,7 +105,11 @@ private fun AppState.localProxyListenAddress(): String {
     }
 }
 
-private fun AppState.localProxyExcludedPorts(): Set<Int> = emptySet()
+private fun AppState.localProxyExcludedPorts(): Set<Int> {
+    return buildSet {
+        // SKIPI is VPN-only, so ROOT-mode inbound ports are never reserved.
+    }
+}
 
 private fun LocalProxyOptions.matches(listenAddress: String, port: Int): Boolean {
     return this.port == port &&
@@ -140,7 +144,7 @@ private fun LocalProxyOptions.toSocksInboundSettings(): JsonObject {
     }
 }
 
-internal fun availablePort(
+fun availablePort(
     listenAddress: String,
     excludedPorts: Set<Int> = emptySet(),
 ): Int? {

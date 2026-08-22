@@ -5,7 +5,7 @@ package features.proxy.server.usecase.importer
 
 import features.proxy.server.model.VMess
 
-internal fun MihomoYamlMap.toMihomoVMessProxyServer(): VMess {
+fun MihomoYamlMap.toMihomoVMessProxyServer(): VMess {
     val alterId = string("alterId", "alter-id", "alterid")?.toIntOrNull() ?: 0
     if (alterId != 0) {
         unsupported("VMess legacy alterId is not supported")

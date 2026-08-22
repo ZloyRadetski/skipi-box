@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
@@ -28,6 +29,9 @@ import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import ui.AppTheme
+import ui.LocalBackgroundStyle
+import app.modes.BackgroundStyleClassic
 
 fun Modifier.pageScrollModifiers(
     topAppBarScrollBehavior: ScrollBehavior,
@@ -132,6 +136,7 @@ fun AdaptiveTopAppBar(
     isWideScreen: Boolean,
     scrollBehavior: ScrollBehavior,
     modifier: Modifier = Modifier,
+    color: Color = Color.Transparent,
     subtitle: String = "",
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
@@ -142,6 +147,7 @@ fun AdaptiveTopAppBar(
             title = title,
             subtitle = subtitle,
             modifier = modifier,
+            color = color,
             scrollBehavior = scrollBehavior,
             defaultWindowInsetsPadding = false,
             navigationIcon = navigationIcon,
@@ -153,6 +159,7 @@ fun AdaptiveTopAppBar(
             title = title,
             subtitle = subtitle,
             modifier = modifier,
+            color = color,
             scrollBehavior = scrollBehavior,
             navigationIcon = navigationIcon,
             actions = actions,

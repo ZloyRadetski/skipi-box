@@ -5,7 +5,7 @@ package features.proxy.server.usecase.importer
 
 import features.proxy.server.model.Shadowsocks
 
-internal fun MihomoYamlMap.toMihomoShadowsocksProxyServer(): Shadowsocks {
+fun MihomoYamlMap.toMihomoShadowsocksProxyServer(): Shadowsocks {
     if (!string("plugin").isNullOrBlank() || map("plugin-opts")?.isNotEmpty() == true) {
         unsupported("Shadowsocks plugin options are not supported")
     }

@@ -21,7 +21,7 @@ data class XrayStatsApiConfig(
     val apiTag: String = XrayStatsApiTag,
 )
 
-internal fun ProxyServer<*>.xrayStatsApiTag(): String {
+fun ProxyServer<*>.xrayStatsApiTag(): String {
     val custom = this as? Custom ?: return XrayStatsApiTag
     return parseCustomXrayConfigJsonObject(custom.configJson)
         .objectValue("api")
@@ -29,7 +29,7 @@ internal fun ProxyServer<*>.xrayStatsApiTag(): String {
         ?: XrayStatsApiTag
 }
 
-internal fun JsonObject.withXrayStatsApiConfig(config: XrayStatsApiConfig?): JsonObject {
+fun JsonObject.withXrayStatsApiConfig(config: XrayStatsApiConfig?): JsonObject {
     if (config == null) return this
     val policy = objectValue("policy") ?: buildJsonObject {}
     val api = objectValue("api") ?: buildJsonObject {}
@@ -40,7 +40,7 @@ internal fun JsonObject.withXrayStatsApiConfig(config: XrayStatsApiConfig?): Jso
     }
 }
 
-internal fun JsonObjectBuilder.putXrayStatsApiConfig(config: XrayStatsApiConfig?) {
+fun JsonObjectBuilder.putXrayStatsApiConfig(config: XrayStatsApiConfig?) {
     if (config == null) return
     put("stats", buildJsonObject {})
     put(
@@ -101,5 +101,5 @@ private fun JsonObjectBuilder.putStatsApiServices(services: List<String>) {
     )
 }
 
-internal const val XrayStatsApiTag = "api"
+const val XrayStatsApiTag = "api"
 private const val XrayStatsServiceName = "StatsService"

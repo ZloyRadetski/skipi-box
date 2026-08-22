@@ -12,7 +12,7 @@ expect object PlatformDeviceInfo {
 fun subscriptionDeviceHeaders(installationHwid: String): Map<String, String> {
     return linkedMapOf(
         "x-client" to "SKIPI",
-        "x-app-version" to app.ProjectInfo.VERSION_NAME,
+        "x-app-version" to app.SharedProjectInfo.VERSION_NAME,
         "x-device-os" to PlatformDeviceInfo.osName,
         "x-ver-os" to PlatformDeviceInfo.osVersion,
         "x-device-model" to PlatformDeviceInfo.deviceModel,

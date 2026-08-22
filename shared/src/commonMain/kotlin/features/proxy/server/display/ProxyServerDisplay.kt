@@ -8,7 +8,7 @@ import app.ProxyServerState
 import app.SubscriptionGroupState
 import ui.text.formatTemplate
 
-internal fun SubscriptionGroupState.displayName(defaultGroupName: String): String {
+fun SubscriptionGroupState.displayName(defaultGroupName: String): String {
     return if (builtIn && id == DefaultSubscriptionGroupId) {
         defaultGroupName
     } else {
@@ -16,13 +16,13 @@ internal fun SubscriptionGroupState.displayName(defaultGroupName: String): Strin
     }
 }
 
-internal fun List<SubscriptionGroupState>.displayNameById(defaultGroupName: String): Map<Int, String> {
+fun List<SubscriptionGroupState>.displayNameById(defaultGroupName: String): Map<Int, String> {
     return associate { group ->
         group.id to group.displayName(defaultGroupName)
     }
 }
 
-internal fun ProxyServerState.displayNameWithGroup(
+fun ProxyServerState.displayNameWithGroup(
     defaultProxyServerTemplate: String,
     groupNames: Map<Int, String>,
     unknownGroupName: String,
@@ -35,4 +35,9 @@ internal fun ProxyServerState.displayNameWithGroup(
     }
     val groupName = groupNames[groupId] ?: unknownGroupName
     return "$proxyServerName ($groupName)"
+}
+
+fun ProxyServerState.displayName(): String {
+    val info = server.getInfo()
+    return info.remarks.ifBlank { info.protocol.ifBlank { "#$id" } }
 }

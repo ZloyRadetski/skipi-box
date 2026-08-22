@@ -163,6 +163,10 @@ data class Hysteria2(
         validateAllowed(security.ifBlank { "none" }, "transport security", setOf("none", "tls"))
         validateOptionalSha256(pinSHA256, "certificate fingerprint")
     }
+
+    override fun connectionFingerprint(): String {
+        return "hy2|${server.trim().lowercase()}:${port.trim()}|$auth|sni=$sni|obfs=$obfs|obfsPass=$obfsPassword|pin=$pinSHA256|sec=$security|mport=$mport"
+    }
 }
 
 private fun String?.isEnabledFlag(): Boolean {

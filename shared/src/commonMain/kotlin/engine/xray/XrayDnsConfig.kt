@@ -20,7 +20,7 @@ import kotlinx.serialization.json.put
 import utils.toCsvValues
 import utils.toTrimmedNonEmptyDistinctList
 
-internal data class XrayDnsPlan(
+data class XrayDnsPlan(
     val servers: JsonArray,
     val queryStrategy: String,
     val tag: String,
@@ -29,7 +29,7 @@ internal data class XrayDnsPlan(
     val routingOptions: XrayDnsRoutingOptions,
 )
 
-internal fun XrayConfigRequest.buildXrayDnsPlan(
+fun XrayConfigRequest.buildXrayDnsPlan(
     startupProxyServerDomains: List<String> = emptyList(),
 ): XrayDnsPlan {
     return appState.buildXrayDnsPlan(
@@ -38,6 +38,7 @@ internal fun XrayConfigRequest.buildXrayDnsPlan(
         directDnsDomains = directDnsDomains,
         dnsHosts = dnsHosts,
         startupProxyServerDomains = startupProxyServerDomains,
+        dataDir = dataDir,
     )
 }
 
@@ -47,8 +48,10 @@ private fun AppState.buildXrayDnsPlan(
     directDnsDomains: List<String>,
     dnsHosts: List<String>,
     startupProxyServerDomains: List<String>,
+    dataDir: String? = null,
 ): XrayDnsPlan {
-    val effectiveDirectDnsDomains = xrayDirectDnsDomains(directDnsDomains, startupProxyServerDomains)
+    val sanitizedDirectDnsDomains = XrayGeoRuleSanitizer.filterValidDomainRules(directDnsDomains, dataDir)
+    val effectiveDirectDnsDomains = xrayDirectDnsDomains(sanitizedDirectDnsDomains, startupProxyServerDomains)
     return XrayDnsPlan(
         servers = xrayDnsServers(
             proxyDnsServers = proxyDnsServers,
@@ -71,7 +74,7 @@ private fun AppState.buildXrayDnsPlan(
     )
 }
 
-internal fun buildXrayDnsConfig(plan: XrayDnsPlan): JsonObject {
+fun buildXrayDnsConfig(plan: XrayDnsPlan): JsonObject {
     return buildJsonObject {
         put("servers", plan.servers)
         put("queryStrategy", plan.queryStrategy)
@@ -87,12 +90,12 @@ private fun buildXrayFakeDnsConfig(): JsonElement {
     }
 }
 
-internal data class XrayDnsRoutingOptions(
+data class XrayDnsRoutingOptions(
     val routeProxyDns: Boolean,
     val routeDirectDns: Boolean,
 )
 
-internal fun AppState.xrayProxyDnsServers(
+fun AppState.xrayProxyDnsServers(
     proxyDnsServers: List<String>,
     directDnsServers: List<String>,
     directDnsDomains: List<String>? = null,
@@ -114,22 +117,22 @@ internal fun AppState.xrayProxyDnsServers(
     }
 }
 
-internal fun AppState.xrayDirectDnsServers(directDnsServers: List<String>): List<String> {
+fun AppState.xrayDirectDnsServers(directDnsServers: List<String>): List<String> {
     return directDnsServers.toTrimmedNonEmptyDistinctList()
 }
 
-internal fun AppState.xrayDirectDnsDomains(
+fun AppState.xrayDirectDnsDomains(
     directDnsDomains: List<String>,
     startupProxyServerDomains: List<String> = emptyList(),
 ): List<String> {
     return (directDnsDomains.toTrimmedNonEmptyDistinctList() + startupProxyServerDomains).distinct()
 }
 
-internal fun Iterable<XrayProxyOutboundServer>.startupProxyServerDnsDomains(): List<String> {
+fun Iterable<XrayProxyOutboundServer>.startupProxyServerDnsDomains(): List<String> {
     return mapNotNull { outbound -> outbound.server?.serverHost() }.startupProxyServerHostDnsDomains()
 }
 
-internal fun Iterable<String>.startupProxyServerHostDnsDomains(): List<String> {
+fun Iterable<String>.startupProxyServerHostDnsDomains(): List<String> {
     return mapNotNull { host -> host.toXrayDnsDomainRule() }.distinct()
 }
 

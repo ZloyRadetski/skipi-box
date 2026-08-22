@@ -31,14 +31,14 @@ private const val WireguardMtuMax = 9000
 private const val RealityPublicKeyBytes = 32
 private const val RealityMldsa65VerifyBytes = 1952
 
-internal fun MutableList<ProxyServerValidationIssue>.addIssue(
+fun MutableList<ProxyServerValidationIssue>.addIssue(
     error: ProxyServerValidationError,
     vararg values: Any?,
 ) {
     add(proxyValidationIssue(error, *values))
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateRequired(
+fun MutableList<ProxyServerValidationIssue>.validateRequired(
     value: String?,
     fieldName: String,
 ): Boolean {
@@ -47,11 +47,11 @@ internal fun MutableList<ProxyServerValidationIssue>.validateRequired(
     return false
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateRemarks(remarks: String) {
+fun MutableList<ProxyServerValidationIssue>.validateRemarks(remarks: String) {
     validateRequired(remarks, "remarks")
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateServer(server: String) {
+fun MutableList<ProxyServerValidationIssue>.validateServer(server: String) {
     val value = server.trim()
     if (!validateRequired(value, "server address")) return
     if (
@@ -73,7 +73,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateServer(server: Stri
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validatePort(
+fun MutableList<ProxyServerValidationIssue>.validatePort(
     port: String,
     fieldName: String = "server port",
 ) {
@@ -93,7 +93,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validatePort(
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateAllowed(
+fun MutableList<ProxyServerValidationIssue>.validateAllowed(
     value: String,
     fieldName: String,
     allowed: Set<String>,
@@ -111,7 +111,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateAllowed(
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateCommonServerFields(
+fun MutableList<ProxyServerValidationIssue>.validateCommonServerFields(
     remarks: String,
     server: String,
     port: String,
@@ -121,7 +121,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateCommonServerFields(
     validatePort(port)
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateOptionalUserPassword(
+fun MutableList<ProxyServerValidationIssue>.validateOptionalUserPassword(
     user: String?,
     password: String?,
 ) {
@@ -133,7 +133,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateOptionalUserPasswor
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(params: V2RayParameters) {
+fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(params: V2RayParameters) {
     val type = params.type.ifBlank { "raw" }
     val security = params.security.ifBlank { "none" }
     validateOptionalJsonObject(params.fm, "FinalMask")
@@ -192,7 +192,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateV2RayParameters(par
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateWireguardKey(
+fun MutableList<ProxyServerValidationIssue>.validateWireguardKey(
     value: String,
     fieldName: String,
     required: Boolean = true,
@@ -208,7 +208,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateWireguardKey(
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateWireguardReserved(reserved: String) {
+fun MutableList<ProxyServerValidationIssue>.validateWireguardReserved(reserved: String) {
     if (reserved.isBlank()) return
     val parts = reserved.split(",")
     if (parts.size != 3) {
@@ -226,7 +226,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateWireguardReserved(r
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateWireguardAddresses(addresses: String) {
+fun MutableList<ProxyServerValidationIssue>.validateWireguardAddresses(addresses: String) {
     if (addresses.isBlank()) return
     addresses.split(",").forEach { address ->
         val value = address.trim()
@@ -252,7 +252,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateWireguardAddresses(
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateMtu(mtu: String) {
+fun MutableList<ProxyServerValidationIssue>.validateMtu(mtu: String) {
     if (mtu.isBlank()) return
     if (mtu.toIntOrNull() == null) {
         addIssue(ProxyServerValidationError.MtuNumberRequired)
@@ -263,7 +263,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateMtu(mtu: String) {
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateHysteriaMultiPorts(mport: String) {
+fun MutableList<ProxyServerValidationIssue>.validateHysteriaMultiPorts(mport: String) {
     if (mport.isBlank()) return
     mport.split(",").forEach { part ->
         val range = part.trim().split("-")
@@ -289,14 +289,14 @@ internal fun MutableList<ProxyServerValidationIssue>.validateHysteriaMultiPorts(
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateOptionalBandwidth(value: String, fieldName: String) {
+fun MutableList<ProxyServerValidationIssue>.validateOptionalBandwidth(value: String, fieldName: String) {
     if (value.isBlank()) return
     if (!HysteriaBandwidthRegex.matches(value.trim())) {
         addIssue(ProxyServerValidationError.InvalidBandwidthFormat, fieldName)
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateOptionalSha256(value: String?, fieldName: String) {
+fun MutableList<ProxyServerValidationIssue>.validateOptionalSha256(value: String?, fieldName: String) {
     val hash = value.orEmpty()
     if (hash.isBlank()) return
     hash.split(",").forEach { item ->
@@ -307,7 +307,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateOptionalSha256(valu
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateOptionalJsonObject(value: String?, fieldName: String) {
+fun MutableList<ProxyServerValidationIssue>.validateOptionalJsonObject(value: String?, fieldName: String) {
     val text = value?.trim().orEmpty()
     if (text.isBlank()) return
     val jsonObject = runCatching {
@@ -318,7 +318,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateOptionalJsonObject(
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateRealityPublicKey(value: String) {
+fun MutableList<ProxyServerValidationIssue>.validateRealityPublicKey(value: String) {
     val key = value.trim()
     if (!validateRequired(key, "Reality PublicKey")) return
     val decoded = if (UrlSafeBase64Regex.matches(key)) {
@@ -331,7 +331,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateRealityPublicKey(va
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateOptionalXrayUserId(value: String) {
+fun MutableList<ProxyServerValidationIssue>.validateOptionalXrayUserId(value: String) {
     val normalized = value.trim()
     if (normalized.isBlank()) return
     if (UuidRegex.matches(normalized)) return
@@ -340,7 +340,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateOptionalXrayUserId(
     }
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateVlessEncryption(value: String) {
+fun MutableList<ProxyServerValidationIssue>.validateVlessEncryption(value: String) {
     val encryption = value.ifBlank { "none" }
     if (encryption == "none") return
 
@@ -365,7 +365,7 @@ internal fun MutableList<ProxyServerValidationIssue>.validateVlessEncryption(val
     validateVlessEncryptionVerifier(blocks.last())
 }
 
-internal fun MutableList<ProxyServerValidationIssue>.validateOptionalPositivePortInterval(value: String) {
+fun MutableList<ProxyServerValidationIssue>.validateOptionalPositivePortInterval(value: String) {
     if (value.isBlank()) return
     val seconds = value.toIntOrNull()
     if (seconds == null) {

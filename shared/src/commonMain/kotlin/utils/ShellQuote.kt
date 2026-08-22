@@ -3,11 +3,11 @@
 
 package utils
 
-internal fun String.shellQuote(): String {
+fun String.shellQuote(): String {
     return "'${replace("'", "'\"'\"'")}'"
 }
 
-internal fun String.shellQuoteForCase(): String {
+fun String.shellQuoteForCase(): String {
     return replace("\\", "\\\\")
         .replace("'", "'\"'\"'")
         .replace("*", "\\*")

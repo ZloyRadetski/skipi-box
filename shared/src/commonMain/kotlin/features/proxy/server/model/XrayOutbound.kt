@@ -36,18 +36,18 @@ data class OutboundObject(
     }
 }
 
-internal fun String.toXrayPort(): Int {
+fun String.toXrayPort(): Int {
     return toPortOrNull()
         ?: throw IllegalArgumentException("Port must be ${NetworkLimits.PORT_MIN}-${NetworkLimits.PORT_MAX}")
 }
 
-internal fun JsonObjectBuilder.putIfNotBlank(name: String, value: String?) {
+fun JsonObjectBuilder.putIfNotBlank(name: String, value: String?) {
     if (!value.isNullOrBlank()) {
         put(name, value)
     }
 }
 
-internal fun JsonObjectBuilder.putJsonArrayIfNotBlank(name: String, value: String?) {
+fun JsonObjectBuilder.putJsonArrayIfNotBlank(name: String, value: String?) {
     val values = value.toCsvValues()
     if (values.isNotEmpty()) {
         putJsonArray(name) {
@@ -56,7 +56,7 @@ internal fun JsonObjectBuilder.putJsonArrayIfNotBlank(name: String, value: Strin
     }
 }
 
-internal fun V2RayParameters.toXrayStreamSettings(): JsonObject {
+fun V2RayParameters.toXrayStreamSettings(): JsonObject {
     val network = type.toXrayNetwork()
     return buildJsonObject {
         put("network", network)
@@ -198,7 +198,7 @@ private fun JsonObjectBuilder.putKcpSettings(params: V2RayParameters) {
     }
 }
 
-internal fun String?.toXrayJsonObjectOrNull(fieldName: String): JsonObject? {
+fun String?.toXrayJsonObjectOrNull(fieldName: String): JsonObject? {
     val value = this?.trim().orEmpty()
     if (value.isBlank()) return null
     val element: JsonElement = runCatching {

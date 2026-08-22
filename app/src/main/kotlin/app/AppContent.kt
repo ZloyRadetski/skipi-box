@@ -1,7 +1,14 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package app
+package app
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOut

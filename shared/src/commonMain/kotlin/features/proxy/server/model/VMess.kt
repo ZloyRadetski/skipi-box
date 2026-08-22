@@ -105,6 +105,10 @@ data class LegacyVMess(
         }
     }
 
+    override fun connectionFingerprint(): String {
+        return convertToAEAD().connectionFingerprint()
+    }
+
     fun convertToAEAD(): VMess {
         val alterId = this.alterId.trim().toIntOrNull() ?: 0
         if (alterId != 0) {
@@ -214,5 +218,9 @@ data class VMess(
             setOf("auto", "aes-128-gcm", "chacha20-poly1305"),
         )
         validateV2RayParameters(parms)
+    }
+
+    override fun connectionFingerprint(): String {
+        return "vmess|${server.trim().lowercase()}:${port.trim()}|$id|enc=$encryption|${parms.fingerprint()}"
     }
 }

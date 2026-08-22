@@ -9,15 +9,15 @@ import java.io.File
 
 private const val XrayExternalDomainPrefix = "ext:"
 
-internal fun isXrayExternalDomainRuleCandidate(value: String): Boolean {
+fun isXrayExternalDomainRuleCandidate(value: String): Boolean {
     return value.trim().startsWith(XrayExternalDomainPrefix, ignoreCase = true)
 }
 
-internal fun isValidXrayExternalDomainRule(value: String): Boolean {
+fun isValidXrayExternalDomainRule(value: String): Boolean {
     return value.toXrayExternalDomainRuleOrNull() != null
 }
 
-internal fun AppState.validateXrayExternalRoutingResources(dataDir: String) {
+fun AppState.validateXrayExternalRoutingResources(dataDir: String) {
     val domainRules = routeRules
         .asSequence()
         .filter(RouteRule::enabled)

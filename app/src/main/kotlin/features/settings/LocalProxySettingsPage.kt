@@ -1,7 +1,14 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings
+package features.settings
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -46,7 +53,6 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
-import app.R
 import app.collectAppState
 import app.generateRandomProxyCredential
 import features.settings.sheets.fiveDigitKeyboardOptions

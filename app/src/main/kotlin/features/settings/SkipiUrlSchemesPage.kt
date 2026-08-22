@@ -3,7 +3,14 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.settings
+package features.settings
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +43,6 @@ import androidx.compose.ui.unit.sp
 import app.LocalAppServices
 import app.LocalIsWideScreen
 import app.LocalNavigator
-import app.R
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults

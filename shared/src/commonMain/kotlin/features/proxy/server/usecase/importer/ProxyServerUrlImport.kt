@@ -4,13 +4,14 @@
 package features.proxy.server.usecase.importer
 
 import features.logs.AppLogger
+
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.ProxyServerConstants
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportSource
 
-internal suspend fun parseProxyServersFromUrls(
+suspend fun parseProxyServersFromUrls(
     text: String,
     context: ProxyServerImportContext,
 ): ProxyServerImportResult {

@@ -3,7 +3,7 @@
 
 package features.proxy.server.model
 
-internal fun ProxyServer<*>.serverHost(): String {
+fun ProxyServer<*>.serverHost(): String {
     return when (this) {
         is HTTP -> server
         is Hysteria2 -> server
@@ -17,6 +17,6 @@ internal fun ProxyServer<*>.serverHost(): String {
     }
 }
 
-internal fun String.normalizedServerHost(): String {
+fun String.normalizedServerHost(): String {
     return trim().trim('[', ']')
 }

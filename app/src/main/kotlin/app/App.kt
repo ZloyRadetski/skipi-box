@@ -33,6 +33,7 @@ import features.settings.locale.RecreateActivityOnAppLanguageChange
 import system.AndroidPackageProvider
 import system.AndroidUserSpaceProvider
 import ui.AppTheme
+import ui.SplashThemeSynchronizer
 import ui.feedback.AndroidToastTipNotifier
 import ui.keyColorFor
 
@@ -178,6 +179,7 @@ fun App(
         languageMode = chromeState.languageMode,
         systemLocale = systemUiSnapshot.locale,
     ) {
+        SplashThemeSynchronizer(colorMode = chromeState.colorMode)
         AppTheme(
             colorMode = chromeState.colorMode,
             enableMaterialYou = chromeState.enableMaterialYou,

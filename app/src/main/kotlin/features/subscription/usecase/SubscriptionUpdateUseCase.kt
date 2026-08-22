@@ -3,10 +3,11 @@
 
 package features.subscription.usecase
 
+import features.logs.AppLogger
+
 import app.AppState
 import app.SubscriptionGroupState
 import features.config.decodeSkipiPayload
-import features.logs.AndroidAppLogger
 import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.ProxyServerListSubscriptionFailure
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdate
@@ -132,7 +133,7 @@ private suspend fun updateSubscriptionGroup(
             resolvedConfig = resolvedConfig,
         ).also { update ->
             if (update.servers.isEmpty()) {
-                AndroidAppLogger.warn(
+                AppLogger.warn(
                     LogTag,
                     "Subscription update imported no proxy servers ${group.logIdentity()} " +
                         "parsedProxyServerCount=${update.urlCount} responseLength=${text.length}",
@@ -143,7 +144,7 @@ private suspend fun updateSubscriptionGroup(
             }
         }
     }.onFailure { error ->
-        AndroidAppLogger.warn(
+        AppLogger.warn(
             LogTag,
             "Subscription update failed ${group.logIdentity()}",
             error,

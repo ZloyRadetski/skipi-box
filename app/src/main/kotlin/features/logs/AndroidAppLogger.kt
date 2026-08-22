@@ -5,7 +5,7 @@ package features.logs
 
 import android.util.Log
 
-internal object AndroidAppLogger {
+internal object AndroidAppLogger : features.logs.AppLogger.Sink {
     fun platformWarn(tag: String, message: String, error: Throwable? = null) {
         if (error == null) {
             Log.w(tag, message)
@@ -14,7 +14,7 @@ internal object AndroidAppLogger {
         }
     }
 
-    fun debug(tag: String, message: String, error: Throwable? = null) {
+    override fun debug(tag: String, message: String, error: Throwable?) {
         if (error == null) {
             Log.d(tag, message)
         } else {
@@ -23,7 +23,7 @@ internal object AndroidAppLogger {
         AndroidLogcatRepository.append("debug", logcatMessage(tag, message, error))
     }
 
-    fun info(tag: String, message: String, error: Throwable? = null) {
+    override fun info(tag: String, message: String, error: Throwable?) {
         if (error == null) {
             Log.i(tag, message)
         } else {
@@ -32,7 +32,7 @@ internal object AndroidAppLogger {
         AndroidLogcatRepository.append("info", logcatMessage(tag, message, error))
     }
 
-    fun warn(tag: String, message: String, error: Throwable? = null) {
+    override fun warn(tag: String, message: String, error: Throwable?) {
         if (error == null) {
             Log.w(tag, message)
         } else {
@@ -41,7 +41,7 @@ internal object AndroidAppLogger {
         AndroidLogcatRepository.append("warning", logcatMessage(tag, message, error))
     }
 
-    fun error(tag: String, message: String, error: Throwable? = null) {
+    override fun error(tag: String, message: String, error: Throwable?) {
         if (error == null) {
             Log.e(tag, message)
         } else {

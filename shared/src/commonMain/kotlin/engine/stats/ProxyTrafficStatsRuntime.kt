@@ -5,7 +5,7 @@ package engine.stats
 
 import engine.xray.XrayStatsApiTag
 
-internal data class ProxyTrafficStatsRuntime(
+data class ProxyTrafficStatsRuntime(
     val listenAddress: String,
     val port: Int,
     val serverName: String,

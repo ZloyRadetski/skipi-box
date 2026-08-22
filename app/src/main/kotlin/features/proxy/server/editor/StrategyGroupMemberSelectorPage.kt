@@ -3,7 +3,14 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.proxy.server.editor
+package features.proxy.server.editor
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,7 +51,6 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.ProxyServerState
-import app.R
 import app.SubscriptionGroupState
 import app.collectAppState
 import app.navigation.StrategyGroupMemberSelectionResult
@@ -122,11 +128,12 @@ fun StrategyGroupMemberSelectorPage(
 
     val selectableServers = remember(appState.proxyServers, excludedServerId, requireServerRemarks) {
         appState.proxyServers.filter { server ->
+            val serverImpl = server.server
             server.id != excludedServerId &&
-                server.server !is ChainProxy &&
-                (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
-                (!requireServerRemarks || server.server.getInfo().remarks.isNotBlank()) &&
-                (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
+                serverImpl !is ChainProxy &&
+                (serverImpl !is Custom || serverImpl.canBeUsedInGeneratedProxyPlan()) &&
+                (!requireServerRemarks || serverImpl.getInfo().remarks.isNotBlank()) &&
+                (serverImpl !is StrategyGroup || serverImpl.sourceTrafficConfigId == null)
         }
     }
     val groups = remember(

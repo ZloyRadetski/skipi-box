@@ -16,7 +16,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 @Composable
-internal fun NavigationIcon(
+fun NavigationIcon(
     onClick: () -> Unit,
     imageVector: ImageVector,
     modifier: Modifier = Modifier,
@@ -39,7 +39,7 @@ internal fun NavigationIcon(
 }
 
 @Composable
-internal fun BackNavigationIcon(
+fun BackNavigationIcon(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

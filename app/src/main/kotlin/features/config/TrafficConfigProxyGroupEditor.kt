@@ -1,7 +1,14 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.config
+package features.config
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +32,6 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
-import app.R
 import app.collectAppState
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
@@ -65,8 +71,9 @@ internal fun TrafficConfigProxyGroupsPage(
     val serverChoices = remember(appState.proxyServers) {
         appState.proxyServers
             .filter { state ->
-                state.server !is ChainProxy &&
-                    (state.server !is Custom || state.server.canBeUsedInGeneratedProxyPlan())
+                val serverImpl = state.server
+                serverImpl !is ChainProxy &&
+                    (serverImpl !is Custom || serverImpl.canBeUsedInGeneratedProxyPlan())
             }
             .map { state ->
                 val remarks = state.server.getInfo().remarks.trim()

@@ -20,12 +20,12 @@ data class XrayCoreLogPaths(
     val errorLogPath: String,
 )
 
-internal val XrayConfigJson = Json {
+val XrayConfigJson = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
 }
 
-internal val XrayConfigPrettyJson = Json {
+val XrayConfigPrettyJson = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
     prettyPrint = true
@@ -61,9 +61,9 @@ object XrayTags {
     )
 }
 
-internal fun String.withSingleTrailingLf(): String = trimEnd('\r', '\n') + "\n"
+fun String.withSingleTrailingLf(): String = trimEnd('\r', '\n') + "\n"
 
-internal object XrayProtocols {
+object XrayProtocols {
     const val TUN = "tun"
     const val DNS = "dns"
     const val FREEDOM = "freedom"
@@ -74,7 +74,7 @@ internal object XrayProtocols {
     const val LOOPBACK = "loopback"
 }
 
-internal fun xraySniffingDestOverrides(enableFakeDns: Boolean): List<String> {
+fun xraySniffingDestOverrides(enableFakeDns: Boolean): List<String> {
     return buildList {
         add("http")
         add("tls")
@@ -85,32 +85,32 @@ internal fun xraySniffingDestOverrides(enableFakeDns: Boolean): List<String> {
     }
 }
 
-internal fun XrayCoreLogPaths.logDirectoryPath(): String {
+fun XrayCoreLogPaths.logDirectoryPath(): String {
     return File(errorLogPath).parentFile?.absolutePath
         ?: File(accessLogPath).parentFile?.absolutePath
         ?: error("Xray log directory is unavailable")
 }
 
-internal fun Iterable<String>.toJsonStringArray(): JsonArray {
+fun Iterable<String>.toJsonStringArray(): JsonArray {
     return buildJsonArray {
         forEach { item -> add(JsonPrimitive(item)) }
     }
 }
 
-internal fun Iterable<JsonObject>.toJsonObjectArray(): JsonArray {
+fun Iterable<JsonObject>.toJsonObjectArray(): JsonArray {
     return buildJsonArray {
         forEach { item -> add(item) }
     }
 }
 
-internal fun JsonObject.updated(block: JsonObjectBuilder.() -> Unit): JsonObject {
+fun JsonObject.updated(block: JsonObjectBuilder.() -> Unit): JsonObject {
     return buildJsonObject {
         this@updated.forEach { (name, value) -> put(name, value) }
         block()
     }
 }
 
-internal fun JsonObject.updatedWithout(
+fun JsonObject.updatedWithout(
     keys: Set<String>,
     block: JsonObjectBuilder.() -> Unit = {},
 ): JsonObject {
@@ -124,7 +124,7 @@ internal fun JsonObject.updatedWithout(
     }
 }
 
-internal fun JsonObject.updatedNestedObject(
+fun JsonObject.updatedNestedObject(
     name: String,
     nestedName: String,
     block: JsonObjectBuilder.() -> Unit,
@@ -141,38 +141,38 @@ internal fun JsonObject.updatedNestedObject(
     }
 }
 
-internal fun JsonObject.stringValue(name: String): String? {
+fun JsonObject.stringValue(name: String): String? {
     return (this[name] as? JsonPrimitive)?.contentOrNull?.takeIf(String::isNotBlank)
 }
 
-internal fun JsonObject.objectValue(name: String): JsonObject? {
+fun JsonObject.objectValue(name: String): JsonObject? {
     return this[name] as? JsonObject
 }
 
-internal fun JsonObject.arrayValue(name: String): JsonArray? {
+fun JsonObject.arrayValue(name: String): JsonArray? {
     return this[name] as? JsonArray
 }
 
-internal fun JsonObjectBuilder.putIfNotBlank(name: String, value: String?) {
+fun JsonObjectBuilder.putIfNotBlank(name: String, value: String?) {
     val trimmed = value?.trim().orEmpty()
     if (trimmed.isNotEmpty()) {
         put(name, trimmed)
     }
 }
 
-internal fun JsonObjectBuilder.putJsonStringArrayIfNotEmpty(name: String, values: List<String>) {
+fun JsonObjectBuilder.putJsonStringArrayIfNotEmpty(name: String, values: List<String>) {
     if (values.isNotEmpty()) {
         put(name, values.toJsonStringArray())
     }
 }
 
-internal fun JsonObjectBuilder.putIfNotEmpty(name: String, value: JsonObject) {
+fun JsonObjectBuilder.putIfNotEmpty(name: String, value: JsonObject) {
     if (value.isNotEmpty()) {
         put(name, value)
     }
 }
 
-internal fun JsonObjectBuilder.putIfNotNull(name: String, value: JsonElement?) {
+fun JsonObjectBuilder.putIfNotNull(name: String, value: JsonElement?) {
     if (value != null) {
         put(name, value)
     }

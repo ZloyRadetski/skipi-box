@@ -87,4 +87,8 @@ data class Socks(
         addAll(validateBasic())
         validateOptionalUserPassword(user, password)
     }
+
+    override fun connectionFingerprint(): String {
+        return "socks|${server.trim().lowercase()}:${port.trim()}|$user|$password"
+    }
 }

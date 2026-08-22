@@ -6,6 +6,7 @@ package engine.xray
 import app.AppState
 import app.effectiveLocalDnsEnabled
 import engine.network.NetworkDefaults
+import engine.vpn.VpnDefaults
 import features.proxy.server.model.ProxyServerConstants
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -15,7 +16,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import utils.toIntCoercedInOrDefault
 
-internal fun buildXrayOutbounds(
+fun buildXrayOutbounds(
     appState: AppState,
     proxyOutbounds: List<XrayProxyOutboundServer>,
     primaryOutboundTag: String? = appState.defaultRouteOutboundTag,
@@ -27,7 +28,7 @@ internal fun buildXrayOutbounds(
         proxyOutbounds.forEach { outboundServer ->
             add(buildProxyOutbound(appState, outboundServer))
         }
-        add(buildFreedomOutbound(XrayTags.DIRECT, appState.xrayDirectOutboundDomainStrategy()))
+        add(buildFreedomOutbound(XrayTags.DIRECT, appState.xrayDirectOutboundDomainStrategy(), appState))
         add(buildSimpleOutbound(XrayTags.BLOCK, XrayProtocols.BLACKHOLE))
         if (appState.effectiveLocalDnsEnabled) {
             add(buildSimpleOutbound(XrayTags.DNS_OUT, XrayProtocols.DNS))
@@ -50,7 +51,7 @@ internal fun buildXrayOutbounds(
     }
 }
 
-internal fun buildXrayBalancers(plans: List<XrayBalancerPlan>): List<JsonObject> {
+fun buildXrayBalancers(plans: List<XrayBalancerPlan>): List<JsonObject> {
     return plans.map { plan ->
         buildJsonObject {
             put("tag", plan.tag)
@@ -76,7 +77,7 @@ internal fun buildXrayBalancers(plans: List<XrayBalancerPlan>): List<JsonObject>
     }
 }
 
-internal fun buildXrayObservatory(
+fun buildXrayObservatory(
     selectors: List<String>,
     probeUrl: String? = null,
     probeInterval: String? = null,
@@ -90,7 +91,7 @@ internal fun buildXrayObservatory(
     }
 }
 
-internal fun buildXrayBurstObservatory(
+fun buildXrayBurstObservatory(
     selectors: List<String>,
     probeUrl: String? = null,
     probeInterval: String? = null,
@@ -102,15 +103,15 @@ internal fun buildXrayBurstObservatory(
             "pingConfig",
             buildJsonObject {
                 put("destination", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
-                put("interval", probeInterval?.takeIf(String::isNotBlank) ?: "1m")
-                put("sampling", 2)
-                put("timeout", "3s")
+                put("interval", probeInterval?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeInterval)
+                put("sampling", 1)
+                put("timeout", "2s")
             },
         )
     }
 }
 
-internal fun AppState.xrayDirectOutboundDomainStrategy(): String {
+fun AppState.xrayDirectOutboundDomainStrategy(): String {
     return when {
         enableIpv6 && enableIpv6Prefer -> "UseIPv6v4"
         enableIpv6 -> "UseIP"
@@ -149,6 +150,14 @@ private fun buildProxyOutbound(appState: AppState, outboundServer: XrayProxyOutb
 }
 
 private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): JsonObject {
+    val keepAlive = appState.tunTcpKeepAliveInterval.toIntCoercedInOrDefault(
+        VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MIN..VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MAX,
+        default = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL.toInt(),
+    )
+    val userTimeout = appState.tunTcpUserTimeout.toIntCoercedInOrDefault(
+        VpnDefaults.TCP_USER_TIMEOUT_MIN..VpnDefaults.TCP_USER_TIMEOUT_MAX,
+        default = VpnDefaults.TCP_USER_TIMEOUT.toInt(),
+    )
     if (stringValue("protocol") == ProxyServerConstants.PROTOCOL_WIREGUARD) {
         val settings = objectValue("settings") ?: buildJsonObject {}
         return updated {
@@ -156,6 +165,7 @@ private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): Jso
                 "settings",
                 settings.updated {
                     put("domainStrategy", appState.wireguardDomainStrategy())
+                    put("keepAlive", keepAlive)
                 },
             )
         }
@@ -163,18 +173,25 @@ private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): Jso
 
     return withSockopt {
         put("domainStrategy", appState.xrayDirectOutboundDomainStrategy())
+        put("tcpKeepAliveInterval", keepAlive)
+        put("tcpKeepAliveIdle", keepAlive)
+        put("tcpUserTimeout", userTimeout)
     }
 }
 
-internal fun buildSimpleOutbound(tag: String, protocol: String): JsonObject {
+fun buildSimpleOutbound(tag: String, protocol: String): JsonObject {
     return buildJsonObject {
         put("tag", tag)
         put("protocol", protocol)
     }
 }
 
-internal fun buildFreedomOutbound(tag: String, domainStrategy: String): JsonObject {
-    return buildJsonObject {
+fun buildFreedomOutbound(
+    tag: String,
+    domainStrategy: String,
+    appState: AppState? = null,
+): JsonObject {
+    val base = buildJsonObject {
         put("tag", tag)
         put("protocol", XrayProtocols.FREEDOM)
         put(
@@ -183,6 +200,20 @@ internal fun buildFreedomOutbound(tag: String, domainStrategy: String): JsonObje
                 put("domainStrategy", domainStrategy)
             },
         )
+    }
+    if (appState == null) return base
+    val keepAlive = appState.tunTcpKeepAliveInterval.toIntCoercedInOrDefault(
+        VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MIN..VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MAX,
+        default = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL.toInt(),
+    )
+    val userTimeout = appState.tunTcpUserTimeout.toIntCoercedInOrDefault(
+        VpnDefaults.TCP_USER_TIMEOUT_MIN..VpnDefaults.TCP_USER_TIMEOUT_MAX,
+        default = VpnDefaults.TCP_USER_TIMEOUT.toInt(),
+    )
+    return base.withSockopt {
+        put("tcpKeepAliveInterval", keepAlive)
+        put("tcpKeepAliveIdle", keepAlive)
+        put("tcpUserTimeout", userTimeout)
     }
 }
 
@@ -260,4 +291,4 @@ private fun Int.toMuxUdp443Mode(): String {
 }
 
 private const val XrayObservatoryProbeUrl = NetworkDefaults.CONNECTIVITY_CHECK_URL
-private const val XrayObservatoryProbeInterval = "15s"
+private const val XrayObservatoryProbeInterval = "10s"

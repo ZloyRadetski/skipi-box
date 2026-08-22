@@ -15,8 +15,9 @@ import kotlinx.serialization.json.put
 
 import kotlinx.serialization.json.buildJsonArray
 
-internal data class VpnAppendHttpProxyOptions(
+data class VpnAppendHttpProxyOptions(
     val enabled: Boolean,
+    val listenAddress: String = LocalProxyLoopbackAddress,
     val port: Int,
     val username: String = "",
     val password: String = "",
@@ -24,6 +25,7 @@ internal data class VpnAppendHttpProxyOptions(
     companion object {
         val Disabled = VpnAppendHttpProxyOptions(
             enabled = false,
+            listenAddress = LocalProxyLoopbackAddress,
             port = 0,
             username = "",
             password = "",
@@ -31,14 +33,16 @@ internal data class VpnAppendHttpProxyOptions(
     }
 }
 
-internal fun AppState.toVpnAppendHttpProxyOptions(localProxyOptions: LocalProxyOptions): VpnAppendHttpProxyOptions {
+fun AppState.toVpnAppendHttpProxyOptions(localProxyOptions: LocalProxyOptions): VpnAppendHttpProxyOptions {
     if (!enableVpnAppendHttpProxy) {
         return VpnAppendHttpProxyOptions.Disabled
     }
+    val listenAddress = localProxyOptions.listenAddress
     return VpnAppendHttpProxyOptions(
         enabled = true,
+        listenAddress = listenAddress,
         port = availablePort(
-            listenAddress = LocalProxyLoopbackAddress,
+            listenAddress = listenAddress,
             excludedPorts = setOf(localProxyOptions.port),
         ) ?: fallbackAppendHttpProxyPort(localProxyOptions.port),
         username = localProxyOptions.username,
@@ -46,10 +50,10 @@ internal fun AppState.toVpnAppendHttpProxyOptions(localProxyOptions: LocalProxyO
     )
 }
 
-internal fun buildVpnAppendHttpInbound(options: VpnAppendHttpProxyOptions): JsonObject {
+fun buildVpnAppendHttpInbound(options: VpnAppendHttpProxyOptions): JsonObject {
     return buildJsonObject {
         put("tag", XrayTags.VPN_APPEND_HTTP_INBOUND)
-        put("listen", LocalProxyLoopbackAddress)
+        put("listen", options.listenAddress)
         put("port", options.port)
         put("protocol", XrayProtocols.HTTP)
         put(
@@ -75,7 +79,7 @@ internal fun buildVpnAppendHttpInbound(options: VpnAppendHttpProxyOptions): Json
     }
 }
 
-private fun fallbackAppendHttpProxyPort(localProxyPort: Int): Int {
+fun fallbackAppendHttpProxyPort(localProxyPort: Int): Int {
     return if (VpnDefaults.VPN_APPEND_HTTP_PROXY_FALLBACK_PORT == localProxyPort) {
         VpnDefaults.VPN_APPEND_HTTP_PROXY_FALLBACK_PORT + 1
     } else {

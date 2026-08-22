@@ -1,7 +1,14 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
+package features.proxy.server.editor
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
@@ -20,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.R
 import features.proxy.server.model.Hysteria2
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.SmallTitle

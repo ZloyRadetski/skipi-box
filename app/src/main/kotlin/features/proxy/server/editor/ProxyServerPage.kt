@@ -175,10 +175,11 @@ fun ProxyServerPage(
         val groupNames = appState.subscriptionGroups.displayNameById(defaultGroupName)
         appState.proxyServers
             .filter { server ->
+                val serverImpl = server.server
                 server.id != serverId &&
-                    !server.server.isCompositeProxyServer() &&
-                    (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
-                    (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
+                    !serverImpl.isCompositeProxyServer() &&
+                    (serverImpl !is Custom || serverImpl.canBeUsedInGeneratedProxyPlan()) &&
+                    (serverImpl !is StrategyGroup || serverImpl.sourceTrafficConfigId == null)
             }
             .map { server ->
                 ProxyServerEditorMemberOption(

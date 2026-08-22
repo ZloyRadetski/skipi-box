@@ -1,0 +1,73 @@
+// Copyright 2026, Radetski
+// SPDX-License-Identifier: GPL-3.0
+
+package features.logs
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import app.shared.res.Res
+import app.shared.res.common_empty
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.AppTheme
+
+@Composable
+fun LogEmptyCard(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(vertical = 28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(Res.string.common_empty),
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+@Composable
+fun LogEntryCard(
+    entry: CoreLogEntry,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showMetadata: Boolean = false,
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 8.dp),
+        colors = CardDefaults.defaultColors(
+            color = AppTheme.colors.surface,
+            contentColor = AppTheme.colors.onSurface,
+        ),
+        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        onClick = onClick,
+    ) {
+        Text(
+            text = entry.displayText(showMetadata),
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+private fun CoreLogEntry.displayText(showMetadata: Boolean): String {
+    if (!showMetadata) return message
+    return "$time  ${level.uppercase()}  $message"
+}

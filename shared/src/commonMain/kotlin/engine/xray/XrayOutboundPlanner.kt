@@ -21,8 +21,9 @@ import features.proxy.server.model.serverHost
 import features.config.ShadowrocketPolicyGroup
 import features.config.ShadowrocketPolicyGroupTagPrefix
 import features.config.analyzeShadowrocketConfig
+import features.proxy.server.display.CountryFlagUtils
 
-internal fun AppState.buildXrayOutboundPlan(selectedServer: ProxyServerState): XrayOutboundPlan {
+fun AppState.buildXrayOutboundPlan(selectedServer: ProxyServerState): XrayOutboundPlan {
     return XrayOutboundPlanner(this).build(selectedServer)
 }
 
@@ -92,18 +93,24 @@ private class XrayOutboundPlanner(
         if (members.isEmpty()) {
             return
         }
-        when (group.type) {
-            "select" -> addNormalOutbound(tag = tag, server = members.first())
-            "url-test", "fallback", "load-balance" -> {
+        when (group.type.lowercase()) {
+            "select" -> {
+                val matchingStrategy = appState.proxyServers.mapNotNull { it.server as? StrategyGroup }
+                    .firstOrNull { it.sourcePolicyGroupName.equals(group.name, ignoreCase = true) }
+                val targetMember = members.firstOrNull { it.id == matchingStrategy?.selectedMemberId } ?: members.first()
+                addNormalOutbound(tag = tag, server = targetMember)
+            }
+            "url-test", "fallback", "leastping", "load-balance", "random", "round-robin", "roundrobin", "least-load", "leastload" -> {
                 val selector = "$tag-policy-"
                 val memberTags = members.map { member -> "$selector${member.id}" }
                 members.zip(memberTags).forEach { (member, memberTag) ->
                     addNormalOutbound(tag = memberTag, server = member)
                 }
-                val strategy = if (group.type == "load-balance") {
-                    StrategyGroupConstants.TYPE_RANDOM
-                } else {
-                    StrategyGroupConstants.TYPE_LEAST_PING
+                val strategy = when (group.type.lowercase()) {
+                    "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
+                    "round-robin", "roundrobin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
+                    "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
+                    else -> StrategyGroupConstants.TYPE_LEAST_PING
                 }
                 val customProbeUrl = group.url.trim().takeIf(String::isNotEmpty)
                     ?: appState.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
@@ -114,11 +121,23 @@ private class XrayOutboundPlanner(
                 if (customProbeInterval != null && observatoryProbeInterval == null) {
                     observatoryProbeInterval = customProbeInterval
                 }
+                val bestFallbackTag = members.zip(memberTags)
+                    .filter { (member, _) ->
+                        val lat = member.latency.trim()
+                        lat.isNotBlank() && !lat.contains("Failed", ignoreCase = true) && !lat.contains("Timeout", ignoreCase = true)
+                    }
+                    .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+                    ?.second
+                    ?: members.zip(memberTags)
+                        .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+                        ?.second
+                    ?: memberTags.first()
+
                 balancers += XrayBalancerPlan(
                     tag = tag,
                     selector = selector,
                     strategy = strategy,
-                    fallbackTag = memberTags.first(),
+                    fallbackTag = bestFallbackTag,
                 )
                 observatorySelectors += selector
                 routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
@@ -206,9 +225,20 @@ private class XrayOutboundPlanner(
         val bestFallbackTag = if (strategyGroup.strategy == StrategyGroupConstants.TYPE_FALLBACK) {
             memberTags.first()
         } else {
-            members.zip(memberTags)
+            val selectedTag = strategyGroup.selectedMemberId?.let { selectedId ->
+                members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
+            }
+            selectedTag ?: members.zip(memberTags)
+                .filter { (member, _) ->
+                    val lat = member.latency.trim()
+                    lat.isNotBlank() && !lat.contains("Failed", ignoreCase = true) && !lat.contains("Timeout", ignoreCase = true)
+                }
                 .minByOrNull { (member, _) -> member.latency.latencySortKey() }
-                ?.second ?: memberTags.first()
+                ?.second
+                ?: members.zip(memberTags)
+                    .minByOrNull { (member, _) -> member.latency.latencySortKey() }
+                    ?.second
+                ?: memberTags.first()
         }
 
         val customProbeUrl = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)
@@ -266,7 +296,7 @@ private fun AppState.routeTargetServers(): List<ProxyServerState> {
     return proxyServers.filter { server -> server.proxyServerOutboundTag() in routeOutboundTags }
 }
 
-private fun AppState.strategyGroupMembers(
+fun AppState.strategyGroupMembers(
     strategyGroup: StrategyGroup,
     visitingStrategyGroupIds: Set<Int> = emptySet(),
 ): List<ProxyServerState> {
@@ -334,7 +364,8 @@ private fun AppState.shadowrocketPolicyGroupMembers(
 ): List<ProxyServerState> {
     if (group.name in visitingGroupNames) return emptyList()
     return group.members
-        .flatMap { member ->
+        .flatMap { rawMember ->
+            val member = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim()
             when {
                 member == ".*" -> proxyServers.filter { server ->
                     !server.server.isCompositeProxyServer() &&
@@ -343,7 +374,13 @@ private fun AppState.shadowrocketPolicyGroupMembers(
 
                 else -> {
                     val matchingServers = proxyServers.filter { server ->
-                        server.server.getInfo().remarks.equals(member, ignoreCase = true) &&
+                        val remarks = server.server.getInfo().remarks.trim()
+                        val cleanRemarks = CountryFlagUtils.stripLeadingCountryFlag(remarks).trim()
+                        val cleanMember = CountryFlagUtils.stripLeadingCountryFlag(member).trim()
+                        (remarks.equals(member, ignoreCase = true) ||
+                            cleanRemarks.equals(member, ignoreCase = true) ||
+                            cleanRemarks.equals(cleanMember, ignoreCase = true) ||
+                            remarks.equals(cleanMember, ignoreCase = true)) &&
                             (server.server !is ChainProxy) &&
                             (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan())
                     }
@@ -380,3 +417,14 @@ private fun AppState.chainProxyMembers(chainProxy: ChainProxy): List<ProxyServer
 private fun chainProxyOutboundTag(tag: String, index: Int): String {
     return if (index == 0) tag else "$tag-chain-$index"
 }
+
+private fun String.latencySortKey(): Int {
+    val trimmed = trim()
+    if (trimmed.isBlank() || trimmed.startsWith("-") || trimmed.contains("Failed", ignoreCase = true) || trimmed.contains("Timeout", ignoreCase = true) || trimmed.contains("Error", ignoreCase = true)) {
+        return Int.MAX_VALUE
+    }
+    val number = latencyRegex.find(trimmed)?.value?.toIntOrNull()
+    return number ?: Int.MAX_VALUE
+}
+
+private val latencyRegex = Regex("""\d+""")

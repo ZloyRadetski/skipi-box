@@ -3,7 +3,7 @@
 
 package features.proxy.server.list
 
-internal enum class ProxyServerListAddAction {
+enum class ProxyServerListAddAction {
     ScanQrCode,
     Clipboard,
     File,
@@ -20,7 +20,7 @@ internal enum class ProxyServerListAddAction {
     Wireguard,
 }
 
-internal enum class ProxyServerListToolAction {
+enum class ProxyServerListToolAction {
     RestartService,
     TestLatency,
     TestRealConnection,
@@ -33,18 +33,18 @@ internal enum class ProxyServerListToolAction {
     DeleteAllServers,
 }
 
-internal enum class ProxyServerListCopyAction {
+enum class ProxyServerListCopyAction {
     QrCode,
     Url,
     FullJson,
 }
 
-internal data class ProxyServerListMenuEntry(
+data class ProxyServerListMenuEntry(
     val title: String,
     val action: ProxyServerListAddAction,
 )
 
-internal data class ProxyServerListGroupTabUi(
+data class ProxyServerListGroupTabUi(
     val id: Int,
     val name: String,
     val serverCount: Int,

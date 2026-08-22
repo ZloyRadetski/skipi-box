@@ -12,7 +12,7 @@ import features.proxy.server.model.StrategyGroup
  * Resolves the target frozen into a running tunnel. For a balancer, the
  * latest outbound carrying traffic identifies the member currently in use.
  */
-internal fun AppState.activeTunnelTargetDisplayName(
+fun AppState.activeTunnelTargetDisplayName(
     runtime: ProxyTrafficStatsRuntime?,
     activeOutboundTag: String?,
     directName: String,
@@ -68,7 +68,7 @@ private fun ProxyServerState.displayName(): String {
     return info.remarks.ifBlank { info.protocol.ifBlank { "#$id" } }
 }
 
-internal fun String.proxyServerIdFromOutboundTag(): Int? {
+fun String.proxyServerIdFromOutboundTag(): Int? {
     return toIntOrNull()
         ?: substringAfterLast("-policy-", missingDelimiterValue = "").toIntOrNull()
 }

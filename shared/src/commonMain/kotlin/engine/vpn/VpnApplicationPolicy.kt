@@ -9,12 +9,12 @@ import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyAppListModeWhitelist
 import utils.toTrimmedNonEmptyDistinctList
 
-internal data class VpnApplicationPolicy(
+data class VpnApplicationPolicy(
     val mode: Int = ProxyAppListModeGlobal,
     val packageNames: List<String> = emptyList(),
 )
 
-internal fun AppState.toVpnApplicationPolicy(currentUserId: Int): VpnApplicationPolicy {
+fun AppState.toVpnApplicationPolicy(currentUserId: Int): VpnApplicationPolicy {
     val mode = when (proxyAppListMode) {
         ProxyAppListModeBlacklist,
         ProxyAppListModeWhitelist,

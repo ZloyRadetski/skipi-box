@@ -10,7 +10,7 @@ import features.config.TrafficConfigAndroidSettings
  * Shadowrocket .conf files and configuration routing rules are deliberately
  * retained; they are user content, not a tunnel implementation preference.
  */
-internal fun AppState.withVpnSettingsReset(): AppState {
+fun AppState.withVpnSettingsReset(): AppState {
     val defaults = AppState()
     return copy(
         runMode = defaults.runMode,
@@ -19,8 +19,11 @@ internal fun AppState.withVpnSettingsReset(): AppState {
         localProxyPort = defaults.localProxyPort,
         enableDynamicLocalProxyPort = defaults.enableDynamicLocalProxyPort,
         localProxyListenAllInterfaces = defaults.localProxyListenAllInterfaces,
-        localProxyUsername = defaults.localProxyUsername,
-        localProxyPassword = defaults.localProxyPassword,
+        // Keep existing credentials so that external clients configured with
+        // the current username/password are not silently broken by a settings
+        // reset.  Credentials are regenerated only via an explicit UI action.
+        localProxyUsername = localProxyUsername,
+        localProxyPassword = localProxyPassword,
         enableVpnAppendHttpProxy = defaults.enableVpnAppendHttpProxy,
         enableVpnHevTun = defaults.enableVpnHevTun,
         tunMtu = defaults.tunMtu,
@@ -55,3 +58,4 @@ internal fun AppState.withVpnSettingsReset(): AppState {
         proxyRunning = false,
     )
 }
+

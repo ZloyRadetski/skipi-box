@@ -104,4 +104,8 @@ data class VLESS(
         validateAllowed(flow, "flow", setOf("xtls-rprx-vision", "xtls-rprx-vision-udp443"), allowBlank = true)
         validateV2RayParameters(parms)
     }
+
+    override fun connectionFingerprint(): String {
+        return "vless|${server.trim().lowercase()}:${port.trim()}|$id|flow=$flow|enc=$encryption|${parms.fingerprint()}"
+    }
 }

@@ -3,7 +3,14 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.settings
+package features.settings
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -27,7 +34,6 @@ import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.ProjectInfo
-import app.R
 import app.collectAppState
 import app.modes.RunModeVpnService
 import app.navigation.Route

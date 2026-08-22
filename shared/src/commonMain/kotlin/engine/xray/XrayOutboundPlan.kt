@@ -6,12 +6,12 @@ package engine.xray
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.put
 
-internal enum class XrayRouteTargetKind {
+enum class XrayRouteTargetKind {
     Outbound,
     Balancer,
 }
 
-internal data class XrayRouteTarget(
+data class XrayRouteTarget(
     val tag: String,
     val kind: XrayRouteTargetKind,
 ) {
@@ -23,7 +23,7 @@ internal data class XrayRouteTarget(
     }
 }
 
-internal data class XrayBalancerPlan(
+data class XrayBalancerPlan(
     val tag: String,
     val selector: String,
     val strategy: String,
@@ -36,7 +36,7 @@ internal data class XrayBalancerPlan(
     val observerTag: String? = null,
 )
 
-internal data class XrayOutboundPlan(
+data class XrayOutboundPlan(
     val proxyOutbounds: List<XrayProxyOutboundServer>,
     val balancers: List<XrayBalancerPlan>,
     val observatorySelectors: List<String>,

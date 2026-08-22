@@ -3,13 +3,14 @@
 
 package features.resources
 
-import app.ProjectInfo
+import app.SharedProjectInfo
 
 const val ResourceFileSourceLoyalsoldierGithub = 0
 const val ResourceFileSourceV2FlyGithub = 1
 const val ResourceFileSourceChocolate4UGithub = 2
 const val ResourceFileSourceRunetFreedomGithub = 3
-const val ResourceFileSourceCustom = 4
+const val ResourceFileSourceRoscomvpnGithub = 4
+const val ResourceFileSourceCustom = 5
 
 const val ResourceFileGeoIpName = "geoip.dat"
 const val ResourceFileGeoSiteName = "geosite.dat"
@@ -34,9 +35,13 @@ const val ResourceFileRunetFreedomGeoIpUrl =
     "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat"
 const val ResourceFileRunetFreedomGeoSiteUrl =
     "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat"
+const val ResourceFileRoscomvpnGeoIpUrl =
+    "https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geoip/release/geoip.dat"
+const val ResourceFileRoscomvpnGeoSiteUrl =
+    "https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geosite/release/geosite.dat"
 const val ResourceFileDirectCidrIpv4Url =
     "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt"
 const val ResourceFileDirectCidrIpv6Url =
     "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt"
 
-const val XrayCoreVersion = ProjectInfo.XRAY_CORE_VERSION
+const val XrayCoreVersion = SharedProjectInfo.XRAY_CORE_VERSION

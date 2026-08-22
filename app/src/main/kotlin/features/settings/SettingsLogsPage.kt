@@ -3,7 +3,14 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.settings
+package features.settings
+
+import app.R
+
+
+
+
+
 
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
@@ -27,12 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource as composeStringResource
 import app.LocalAppChromeState
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
-import app.R
 import app.collectAppState
 import app.navigation.Route
 import features.about.SkipiBugReportUri
@@ -119,10 +126,10 @@ fun SettingsLogsPage(
                         OverlayDropdownPreference(
                             title = stringResource(R.string.settings_log_retention),
                             summary = stringResource(R.string.settings_log_retention_summary),
-                            items = SettingsLogRetentionOptionValues.map { stringResource(it.second) },
+                            items = SettingsLogRetentionOptionValues.map { composeStringResource(it.second) },
                             selectedIndex = retentionIndex,
                             onSelectedIndexChange = { index ->
-                                val days = SettingsLogRetentionOptionValues.getOrNull(index)?.first ?: 7
+                                val days = if (retentionIndex >= 0) SettingsLogRetentionOptionValues[retentionIndex].first else 7
                                 updateAppState { it.copy(logRetentionDays = days) }
                                 features.logs.AndroidCoreLogRepository.pruneOlderThanDays(days)
                                 features.logs.AndroidAccessLogRepository.pruneOlderThanDays(days)

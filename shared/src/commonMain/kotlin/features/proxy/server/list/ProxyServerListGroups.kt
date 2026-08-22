@@ -10,16 +10,29 @@ import features.proxy.server.display.displayName
 import features.proxy.server.display.displayNameById
 import features.subscription.DefaultSubscriptionGroupId
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.StrategyGroupDisplayMode
 
-internal const val AutoBalancerGroupId = -2
+const val AutoBalancerGroupId = -2
 
-internal const val AllProxyGroupId = 0
+const val AllProxyGroupId = 0
 
-internal fun ProxyServerState.isVisibleOnProxyServerList(): Boolean {
-    return groupId != AutoBalancerGroupId || (server as? StrategyGroup)?.showInAutoBalancerList == true
+fun ProxyServerState.isVisibleOnProxyServerList(activeTrafficConfigId: Int? = null): Boolean {
+    if (groupId != AutoBalancerGroupId) return true
+    val strategy = server as? StrategyGroup ?: return false
+    if (strategy.sourceTrafficConfigId == null) {
+        return true
+    }
+    return when (strategy.displayMode) {
+        StrategyGroupDisplayMode.ALWAYS -> true
+        StrategyGroupDisplayMode.NEVER -> false
+        StrategyGroupDisplayMode.ACTIVE_CONFIG -> {
+            strategy.sourceTrafficConfigId == activeTrafficConfigId
+        }
+        else -> strategy.sourceTrafficConfigId == activeTrafficConfigId
+    }
 }
 
-internal data class ProxyServerListGroups(
+data class ProxyServerListGroups(
     val visibleGroups: List<SubscriptionGroupState>,
     val showGroupTabs: Boolean,
     val selectedGroup: SubscriptionGroupState,
@@ -34,7 +47,7 @@ internal data class ProxyServerListGroups(
     val currentFilteredServers: List<ProxyServerState>,
 )
 
-internal fun proxyServerListGroups(
+fun proxyServerListGroups(
     state: ProxyServerListState,
     selectedGroupId: Int,
     searchValue: String,
@@ -43,7 +56,7 @@ internal fun proxyServerListGroups(
     autoBalancerGroupName: String,
 ): ProxyServerListGroups {
     val servers = state.proxyServers
-    val displayedServers = servers.filter(ProxyServerState::isVisibleOnProxyServerList)
+    val displayedServers = servers.filter { it.isVisibleOnProxyServerList(state.activeTrafficConfigId) }
     val manualGroup = state.subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId }
     val autoBalancerGroup = AutoBalancerGroup.takeIf {
         displayedServers.any { server -> server.groupId == AutoBalancerGroupId && server.server is StrategyGroup }
@@ -80,7 +93,9 @@ internal fun proxyServerListGroups(
     val selectedTabIndex = groupTabs.indexOfFirst { group -> group.id == selectedTabId }
         .coerceAtLeast(0)
     val currentGroupServers = if (isAllGroupsSelected) {
-        visibleServers
+        visibleServers.filter { server ->
+            (server.server as? StrategyGroup)?.sourceTrafficConfigId == null
+        }
     } else {
         visibleServers.filter { server -> server.groupId == selectedTabId }
     }

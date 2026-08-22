@@ -23,10 +23,12 @@ kotlin {
             dependencies {
                 implementation(compose.ui)
                 implementation(compose.foundation)
+                api(compose.components.resources)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.miuix.ui)
                 implementation(libs.miuix.icons)
                 implementation(libs.miuix.preference)
+                implementation(libs.androidx.navigation3.runtime)
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.http)
                 implementation(libs.reorderable)
@@ -51,3 +53,10 @@ kotlin {
         }
     }
 }
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "app.shared.res"
+    generateResClass = always
+}
+

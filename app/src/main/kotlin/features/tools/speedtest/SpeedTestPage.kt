@@ -1,7 +1,14 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.tools.speedtest
+package features.tools.speedtest
+
+import app.R
+
+
+
+
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +42,6 @@ import androidx.compose.ui.unit.sp
 import app.LocalAppChromeState
 import app.LocalIsWideScreen
 import app.LocalNavigator
-import app.R
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card

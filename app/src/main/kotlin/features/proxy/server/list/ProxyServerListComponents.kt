@@ -543,10 +543,11 @@ private fun ProxyServerListExpandedItemCard(
                     text = displayText.protocol,
                     selected = selected,
                 )
-                if (!displayText.transport.isNullOrBlank()) {
+                val transportValue = displayText.transport
+                if (!transportValue.isNullOrBlank()) {
                     Spacer(Modifier.width(6.dp))
                     TransportChip(
-                        text = displayText.transport,
+                        text = transportValue,
                         selected = selected,
                     )
                 }
@@ -722,10 +723,11 @@ private fun ProxyServerListCompactItemCard(
                             compact = true,
                             selected = selected,
                         )
-                        if (!displayText.transport.isNullOrBlank()) {
+                        val transportValue = displayText.transport
+                        if (!transportValue.isNullOrBlank()) {
                             Spacer(Modifier.width(5.dp))
                             TransportChip(
-                                text = displayText.transport,
+                                text = transportValue,
                                 modifier = Modifier.weight(1f, fill = false),
                                 compact = true,
                                 selected = selected,

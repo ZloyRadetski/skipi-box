@@ -34,4 +34,8 @@ data class ChainProxy(
             addIssue(ProxyServerValidationError.ChainProxyMemberCountInvalid)
         }
     }
+
+    override fun connectionFingerprint(): String {
+        return "chain|$remarks|$proxyServerIds"
+    }
 }

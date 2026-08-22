@@ -143,6 +143,10 @@ data class Wireguard(
         validateOptionalJsonObject(finalMask, "FinalMask")
     }
 
+    override fun connectionFingerprint(): String {
+        return "wireguard|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address"
+    }
+
     private fun toWireguardEndpoint(): String {
         val host = if (server.contains(':') && !server.startsWith('[')) {
             "[$server]"

@@ -100,10 +100,7 @@ fun isIpv6Address(address: String): Boolean {
 
     val left = parseIpv6Hextets(compressedParts[0]) ?: return false
     val right = parseIpv6Hextets(compressedParts[1]) ?: return false
-    // "::" must expand to at least one group of zeros, so the number of
-    // explicitly written hextets must be at most 6 (yielding 7 total with
-    // the single implicit zero group, or fewer).
-    return left.size + right.size <= 6
+    return left.size + right.size < 8
 }
 
 private fun parsePrefixLength(prefix: String): Int? {

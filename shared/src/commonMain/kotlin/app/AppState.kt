@@ -3,19 +3,24 @@
 
 package app
 
+import app.modes.AppIconDefault
+import app.modes.BackgroundStyleClassic
 import app.modes.BottomBarSizeLarge
 import app.modes.ColorModeSystem
-import app.modes.LanguageModeEnglish
+import app.modes.LanguageModeSystem
+import app.modes.ConnectionDisplayModeCompact
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyServerListLayoutSingle
 import app.modes.ProxyServerListSortDefault
 import app.modes.RunModeVpnService
+import app.modes.SubscriptionPingModeHttp
 import app.modes.SubscriptionPingModeTcp
 import engine.vpn.VpnDefaults
 import engine.network.NetworkDefaults
 import engine.xray.DefaultDirectDnsDomains
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
+import features.networkautomation.model.NetworkAutomationRule
 import engine.xray.DefaultFragmentPackets
 import engine.xray.DefaultMuxConcurrency
 import engine.xray.DefaultMuxUdp443Mode
@@ -34,15 +39,54 @@ import features.config.TrafficConfigState
 import features.config.ShadowrocketPolicyGroup
 
 data class AppState(
+    val appIcon: Int = AppIconDefault,
     val colorMode: Int = ColorModeSystem,
-    val languageMode: Int = LanguageModeEnglish,
+    val languageMode: Int = LanguageModeSystem,
+    val enableMaterialYou: Boolean = true,
     val seedIndex: Int = 0,
+    val customMaterialYouSeed: Long? = null,
+    val enableCustomColors: Boolean = false,
+    val customAccentColor: Long? = null,
+    val customBackgroundColor: Long? = null,
+    val customSurfaceColor: Long? = null,
+    val customSurfaceVariantColor: Long? = null,
+    val customTextColor: Long? = null,
+    val customTextSecondaryColor: Long? = null,
+    val customStatusRunningColor: Long? = null,
+    val customStatusStoppedColor: Long? = null,
+    val customPingFastColor: Long? = null,
+    val customPingMediumColor: Long? = null,
+    val customPingSlowColor: Long? = null,
+    val customCategoryAppearanceColor: Long? = null,
+    val customCategoryVpnColor: Long? = null,
+    val customCategoryProxyColor: Long? = null,
+    val customCategorySubscriptionsColor: Long? = null,
+    val customCategoryIntegrationColor: Long? = null,
+    val customCategoryLogsColor: Long? = null,
+    val customCategoryBackupColor: Long? = null,
+    val customCategoryAboutColor: Long? = null,
+    val customProtocolVlessColor: Long? = null,
+    val customProtocolVmessColor: Long? = null,
+    val customProtocolHysteria2Color: Long? = null,
+    val customProtocolTrojanColor: Long? = null,
+    val customProtocolShadowsocksColor: Long? = null,
+    val customProtocolWireguardColor: Long? = null,
+    val customProtocolSocksColor: Long? = null,
+    val customProtocolHttpColor: Long? = null,
+    val customProtocolStrategyColor: Long? = null,
+    val customProtocolChainColor: Long? = null,
+    val customProtocolJsonColor: Long? = null,
 
     val subscriptionGroups: List<SubscriptionGroupState> = DefaultSubscriptionGroups,
     val nextSubscriptionGroupId: Int = 4,
     val enableAllProxyGroup: Boolean = false,
     val enableDeletionConfirmation: Boolean = true,
+    val connectionDisplayMode: Int = ConnectionDisplayModeCompact,
+    val classicShowFloatingPowerButton: Boolean = false,
+    val backgroundStyle: Int = BackgroundStyleClassic,
+    val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = BottomBarSizeLarge,
+    val hasCompletedOnboarding: Boolean = false,
 
     val runMode: Int = RunModeVpnService,
     val enableResolveProxyServerDomain: Boolean = false,
@@ -60,20 +104,30 @@ data class AppState(
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
     val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
+    val enableWakeLock: Boolean = false,
+    val enableSeamlessNetworkSwitching: Boolean = true,
+    val enableNetworkAutomation: Boolean = false,
+    val enableOnDemandVpn: Boolean = false,
+    val networkAutomationRules: List<NetworkAutomationRule> = emptyList(),
+    val tunTcpKeepAliveInterval: String = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL,
+    val tunTcpUserTimeout: String = VpnDefaults.TCP_USER_TIMEOUT,
 
     val proxyServers: List<ProxyServerState> = emptyList(),
     val nextProxyServerId: Int = 10,
     val selectedProxyServerId: Int = 1,
     val proxyServerListLayout: Int = ProxyServerListLayoutSingle,
     val proxyServerListSort: Int = ProxyServerListSortDefault,
-    val subscriptionPingMode: Int = SubscriptionPingModeTcp,
+    val subscriptionPingMode: Int = SubscriptionPingModeHttp,
     val subscriptionPingUrl: String = NetworkDefaults.CONNECTIVITY_CHECK_URL,
     val subscriptionPingTimeoutMillis: String = "5000",
+    val subscriptionPingConcurrency: Int = 8,
     /** User-Agent presets offered when a subscription is fetched. */
     val subscriptionUserAgents: List<String> = DefaultSubscriptionUserAgents,
     /** Sends the app-scoped subscription identifier and basic Android metadata. */
     val enableSubscriptionDeviceHeaders: Boolean = true,
-    val subscriptionFetchTimeoutSeconds: Int = 30,
+    val subscriptionFetchTimeoutSeconds: Int = 10,
+    val enableSubscriptionExpiryNotifications: Boolean = true,
+    val subscriptionExpiryReminders: List<SubscriptionExpiryReminder> = DefaultSubscriptionExpiryReminders,
     val proxyRunning: Boolean = false,
 
     val trafficConfigs: List<TrafficConfigState> = DefaultTrafficConfigs,
@@ -89,6 +143,7 @@ data class AppState(
 
     val coreLogLevel: Int = 3,
     val enableAccessLog: Boolean = false,
+    val logRetentionDays: Int = 7,
     val resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
     val customResourceFileGeoIpUrl: String = ResourceFileLoyalsoldierGeoIpUrl,
     val customResourceFileGeoSiteUrl: String = ResourceFileLoyalsoldierGeoSiteUrl,
@@ -111,10 +166,11 @@ data class AppState(
     val fragmentLength: String = DefaultFragmentLength,
     val fragmentInterval: String = DefaultFragmentInterval,
 
-    val enableTrafficStatsNotification: Boolean = false,
+    val enableTrafficStatsNotification: Boolean = true,
+    val showServerSearch: Boolean = false,
     /** Show the current VPN-core memory footprint above the server search field. */
     val showTunnelMemoryOnHome: Boolean = false,
-    val enableBroadcastControl: Boolean = false,
+    val enableBroadcastControl: Boolean = true,
     val enableIpv6: Boolean = false,
     val enableIpv6Prefer: Boolean = false,
     val enableFakeDns: Boolean = false,
@@ -128,6 +184,14 @@ data class AppState(
 
     val proxyAppListMode: Int = ProxyAppListModeGlobal,
     val proxyAppListSelectedApps: List<String> = emptyList(),
+
+    val autoCheckAppUpdates: Boolean = true,
+    val autoInstallAppUpdatesAtNight: Boolean = true,
+    val availableAppUpdate: features.updater.AppUpdateInfo? = null,
+    val dismissedUpdateVersion: String = "",
+
+    val autoConnectOnBoot: Boolean = false,
+    val autoConnectOnAppOpen: Boolean = false,
 )
 
 val AppState.effectiveLocalDnsEnabled: Boolean

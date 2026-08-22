@@ -15,11 +15,14 @@ import features.resources.ResourceFileGeoIpOnlyCnPrivateName
 import features.resources.ResourceFileGeoSiteName
 import features.resources.ResourceFileLoyalsoldierGeoIpUrl
 import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
+import features.resources.ResourceFileRoscomvpnGeoIpUrl
+import features.resources.ResourceFileRoscomvpnGeoSiteUrl
 import features.resources.ResourceFileRunetFreedomGeoIpUrl
 import features.resources.ResourceFileRunetFreedomGeoSiteUrl
 import features.resources.ResourceFileSourceChocolate4UGithub
 import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileSourceLoyalsoldierGithub
+import features.resources.ResourceFileSourceRoscomvpnGithub
 import features.resources.ResourceFileSourceRunetFreedomGithub
 import features.resources.ResourceFileSourceV2FlyGithub
 import features.resources.ResourceFileV2FlyGeoIpUrl
@@ -29,6 +32,49 @@ import features.resources.ResourceFileXrayCoreName
 import features.resources.XrayCoreVersion
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.Serializable
+
+@Serializable
+enum class ExpiryReminderUnit {
+    Minutes,
+    Hours,
+    Days,
+    Weeks,
+    AtExpiration,
+}
+
+@Serializable
+data class SubscriptionExpiryReminder(
+    val value: Int = 1,
+    val unit: ExpiryReminderUnit = ExpiryReminderUnit.Days,
+) {
+    val totalSeconds: Long
+        get() = when (unit) {
+            ExpiryReminderUnit.AtExpiration -> 0L
+            ExpiryReminderUnit.Minutes -> value.coerceAtLeast(1) * 60L
+            ExpiryReminderUnit.Hours -> value.coerceAtLeast(1) * 3600L
+            ExpiryReminderUnit.Days -> value.coerceAtLeast(1) * 86400L
+            ExpiryReminderUnit.Weeks -> value.coerceAtLeast(1) * 7 * 86400L
+        }
+
+    fun toSerializedString(): String {
+        return "$value:${unit.name}"
+    }
+
+    companion object {
+        fun fromSerializedStringOrNull(str: String): SubscriptionExpiryReminder? {
+            val parts = str.split(":")
+            if (parts.size != 2) return null
+            val v = parts[0].toIntOrNull() ?: return null
+            val u = runCatching { ExpiryReminderUnit.valueOf(parts[1]) }.getOrNull() ?: return null
+            return SubscriptionExpiryReminder(v, u)
+        }
+    }
+}
+
+val DefaultSubscriptionExpiryReminders: List<SubscriptionExpiryReminder> = listOf(
+    SubscriptionExpiryReminder(3, ExpiryReminderUnit.Days),
+    SubscriptionExpiryReminder(1, ExpiryReminderUnit.Days),
+)
 
 @Stable
 data class SubscriptionGroupState(
@@ -40,15 +86,22 @@ data class SubscriptionGroupState(
     val hwid: String = "",
     val ageSecretKey: String = "",
     val updateViaProxy: Boolean = false,
+    val autoOverrideRules: Boolean = true,
     val enabled: Boolean,
     val builtIn: Boolean = false,
     val lastUpdatedAtMillis: Long = 0L,
     val profileTitle: String = "",
     val announce: String = "",
+    val supportUrl: String = "",
+    val supportEmail: String = "",
+    val profileWebPageUrl: String = "",
+    val announceUrl: String = "",
     val trafficUploadBytes: Long = -1L,
     val trafficDownloadBytes: Long = -1L,
     val trafficTotalBytes: Long = -1L,
     val trafficExpireAtSeconds: Long = -1L,
+    val notifyOnExpiry: Boolean = true,
+    val customExpiryReminders: List<SubscriptionExpiryReminder>? = null,
 )
 
 data class ProxyServerState(
@@ -57,6 +110,11 @@ data class ProxyServerState(
     val groupId: Int,
     val latency: String = "",
 )
+
+const val ProxyServerLatencyTesting = "__TESTING__"
+
+val ProxyServerState.isTestingLatency: Boolean
+    get() = latency == ProxyServerLatencyTesting
 
 fun ProxyServerState.proxyServerOutboundTag(): String {
     return id.toString()
@@ -154,6 +212,14 @@ val ResourceFileUpdateSources = listOf(
         id = ResourceFileSourceRunetFreedomGithub,
         geoIpUrl = ResourceFileRunetFreedomGeoIpUrl,
         geoSiteUrl = ResourceFileRunetFreedomGeoSiteUrl,
+        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
+        directCidrIpv4Url = ResourceFileDirectCidrIpv4Url,
+        directCidrIpv6Url = ResourceFileDirectCidrIpv6Url,
+    ),
+    ResourceFileUpdateSource(
+        id = ResourceFileSourceRoscomvpnGithub,
+        geoIpUrl = ResourceFileRoscomvpnGeoIpUrl,
+        geoSiteUrl = ResourceFileRoscomvpnGeoSiteUrl,
         geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
         directCidrIpv4Url = ResourceFileDirectCidrIpv4Url,
         directCidrIpv6Url = ResourceFileDirectCidrIpv6Url,

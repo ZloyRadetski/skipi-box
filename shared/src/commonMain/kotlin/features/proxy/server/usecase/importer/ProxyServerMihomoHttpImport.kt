@@ -5,7 +5,7 @@ package features.proxy.server.usecase.importer
 
 import features.proxy.server.model.HTTP
 
-internal fun MihomoYamlMap.toMihomoHttpProxyServer(): HTTP {
+fun MihomoYamlMap.toMihomoHttpProxyServer(): HTTP {
     ensureNoMihomoTlsOptions("TLS for HTTP Proxy Servers is not supported")
     if (map("headers")?.isNotEmpty() == true) {
         unsupported("HTTP proxy custom headers are not supported")

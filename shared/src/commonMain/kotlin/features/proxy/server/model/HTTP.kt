@@ -87,4 +87,8 @@ data class HTTP(
         addAll(validateBasic())
         validateOptionalUserPassword(user, password)
     }
+
+    override fun connectionFingerprint(): String {
+        return "http|${server.trim().lowercase()}:${port.trim()}|$user|$password"
+    }
 }

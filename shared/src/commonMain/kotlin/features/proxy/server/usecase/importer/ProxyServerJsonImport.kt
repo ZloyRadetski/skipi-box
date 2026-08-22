@@ -4,6 +4,7 @@
 package features.proxy.server.usecase.importer
 
 import features.logs.AppLogger
+
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.formatCustomXrayConfigJson
@@ -17,7 +18,7 @@ import kotlinx.serialization.json.contentOrNull
 
 private const val LogTag = "ProxyServerJsonImport"
 
-internal suspend fun parseProxyServersFromJsonConfig(
+suspend fun parseProxyServersFromJsonConfig(
     text: String,
     context: ProxyServerImportContext,
 ): ProxyServerImportResult {
@@ -72,7 +73,31 @@ private fun JsonObject.customRemarks(index: Int): String {
         ?: string("remark")
         ?: string("name")
         ?: string("tag")
-        ?: "Custom ${index + 1}"
+        ?: "${jsonTypePrefix()} ${index + 1}"
+}
+
+private fun JsonObject.jsonTypePrefix(): String {
+    val outbounds = this["outbounds"] as? JsonArray
+    val objects = outbounds?.mapNotNull { element -> element as? JsonObject }.orEmpty()
+    val primary = objects.firstOrNull { outbound -> (outbound["tag"] as? JsonPrimitive)?.contentOrNull == "proxy" }
+        ?: objects.firstOrNull { outbound ->
+            val tag = (outbound["tag"] as? JsonPrimitive)?.contentOrNull
+            tag != "direct" && tag != "block" && tag != "dns-out"
+        }
+    val rawProtocol = (primary?.get("protocol") as? JsonPrimitive)?.contentOrNull?.trim()?.lowercase()
+    val typeName = when (rawProtocol) {
+        "vless" -> "VLESS"
+        "vmess" -> "VMess"
+        "trojan" -> "Trojan"
+        "hysteria2", "hy2" -> "Hysteria2"
+        "shadowsocks", "ss" -> "Shadowsocks"
+        "wireguard" -> "WireGuard"
+        "socks" -> "SOCKS"
+        "http" -> "HTTP"
+        null, "" -> null
+        else -> rawProtocol.uppercase()
+    }
+    return if (typeName != null) "JSON ($typeName)" else "JSON"
 }
 
 private fun JsonObject.string(name: String): String? {

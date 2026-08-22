@@ -3,14 +3,15 @@
 
 package engine.vpn
 
-import app.AppState
 import features.logs.AppLogger
+
+import app.AppState
 import engine.network.isIpv4Address
 import engine.network.isIpv6Address
 import features.proxy.server.model.normalizedServerHost
 import java.net.InetAddress
 
-internal fun AppState.xrayDnsHosts(proxyServerHosts: List<String>): List<String> {
+fun AppState.xrayDnsHosts(proxyServerHosts: List<String>): List<String> {
     if (!enableResolveProxyServerDomain) return dnsHosts
     return (dnsHosts + proxyServerHosts.mapNotNull { host -> host.toResolvedDnsHostEntry() }).distinct()
 }
