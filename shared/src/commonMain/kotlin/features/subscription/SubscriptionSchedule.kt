@@ -5,7 +5,7 @@ package features.subscription
 
 import java.math.BigDecimal
 
-internal sealed interface SubscriptionSchedule {
+sealed interface SubscriptionSchedule {
     data object Disabled : SubscriptionSchedule
 
     data class Enabled(
@@ -16,10 +16,11 @@ internal sealed interface SubscriptionSchedule {
     data object Invalid : SubscriptionSchedule
 }
 
-internal fun parseSubscriptionSchedule(value: String): SubscriptionSchedule {
+fun parseSubscriptionSchedule(value: String): SubscriptionSchedule {
     val normalized = value.trim()
     if (normalized.isEmpty()) return SubscriptionSchedule.Disabled
     val hours = normalized.toBigDecimalOrNull() ?: return SubscriptionSchedule.Invalid
+    if (hours.compareTo(BigDecimal.ZERO) == 0 || hours < BigDecimal.ZERO) return SubscriptionSchedule.Disabled
     if (hours < MinimumSubscriptionHours) return SubscriptionSchedule.Invalid
     val milliseconds = hours.multiply(MillisecondsPerHour)
     if (milliseconds > MaximumLongDecimal) return SubscriptionSchedule.Invalid
@@ -31,7 +32,7 @@ internal fun parseSubscriptionSchedule(value: String): SubscriptionSchedule {
     )
 }
 
-internal fun sanitizeSubscriptionIntervalInput(value: String): String = buildString {
+fun sanitizeSubscriptionIntervalInput(value: String): String = buildString {
     var decimalSeparatorSeen = false
     value.forEach { character ->
         when {
@@ -44,7 +45,7 @@ internal fun sanitizeSubscriptionIntervalInput(value: String): String = buildStr
     }
 }
 
-internal fun isValidSubscriptionIntervalInput(value: String): Boolean {
+fun isValidSubscriptionIntervalInput(value: String): Boolean {
     return parseSubscriptionSchedule(value) !is SubscriptionSchedule.Invalid
 }
 

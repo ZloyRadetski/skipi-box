@@ -606,7 +606,7 @@ fun ProxyServerListPage(
         nextGroupId = proxyListState.subscriptionGroups.maxOfOrNull { it.id }?.plus(1) ?: 1,
         onDismissRequest = { editingSubscriptionGroupId = null },
         onDismissFinished = {},
-        onSave = { group, _ ->
+        onSave = { group, isNew ->
             updateAppState { state ->
                 val updatedServers = state.proxyServers.map { serverState ->
                     val server = serverState.server
@@ -627,7 +627,7 @@ fun ProxyServerListPage(
                     proxyServers = updatedServers,
                 )
             }
-            if (group.url.isNotBlank() && group.enabled) {
+            if (isNew && group.url.isNotBlank() && group.enabled) {
                 scope.launch { updateSubscription(group.id) }
             }
         },
@@ -643,8 +643,9 @@ fun ProxyServerListPage(
             val targetGroup = selectingGroupMemberForServer ?: return@SelectGroupMemberDialog
             updateAppState { state ->
                 val updatedServers = state.proxyServers.map { serverState ->
-                    if (serverState.id == targetGroup.id && serverState.server is StrategyGroup) {
-                        val updatedStrategy = serverState.server.copy(selectedMemberId = memberId)
+                    val serverImpl = serverState.server
+                    if (serverState.id == targetGroup.id && serverImpl is StrategyGroup) {
+                        val updatedStrategy = serverImpl.copy(selectedMemberId = memberId)
                         serverState.copy(server = updatedStrategy)
                     } else {
                         serverState

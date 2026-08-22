@@ -125,7 +125,7 @@ fun SubscriptionGroupListPage(
                 )
             }
         }
-        if (targetGroup.url.isNotBlank() && targetGroup.enabled) {
+        if (isNew && targetGroup.url.isNotBlank() && targetGroup.enabled) {
             val groupId = targetGroup.id
             updatingGroupIds = updatingGroupIds + groupId
             updateSubscriptionGroup(
