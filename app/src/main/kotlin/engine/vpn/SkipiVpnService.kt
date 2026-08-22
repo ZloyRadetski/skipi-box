@@ -12,6 +12,7 @@ import android.net.ProxyInfo
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.VpnService
 import android.os.Build
 import android.os.Handler
@@ -63,6 +64,9 @@ class SkipiVpnService : VpnService() {
     private val networkProxyServiceUseCase by lazy { ProxyServiceUseCase(networkProxyEngine) }
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var currentConfig: VpnServiceStartConfig? = null
+    private var lastObservedPhysicalNetwork: Network? = null
+    private var hadActivePhysicalNetwork: Boolean = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -151,6 +155,9 @@ class SkipiVpnService : VpnService() {
 
     private fun startVpn(config: VpnServiceStartConfig) {
         stopVpn()
+        currentConfig = config
+        lastObservedPhysicalNetwork = null
+        hadActivePhysicalNetwork = false
         if (config.enableWakeLock) {
             acquireWakeLock()
         }
@@ -178,10 +185,6 @@ class SkipiVpnService : VpnService() {
             .setMtu(config.mtu)
             .addAddress(config.ipv4Address, config.ipv4PrefixLength)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            builder.setMetered(false)
-        }
-
         if (config.enableIpv6 && config.ipv6Address != null) {
             builder
                 .addAddress(config.ipv6Address, config.ipv6PrefixLength)
@@ -200,12 +203,7 @@ class SkipiVpnService : VpnService() {
 
         val pfd = builder.establish() ?: error(getString(R.string.error_vpn_tunnel_establish_failed))
         if (config.enableSeamlessNetworkSwitching) {
-            val connectivityManager = getSystemService(ConnectivityManager::class.java)
-            val active = connectivityManager?.activeNetwork
-            val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
-            if (active != null && activeCaps != null && !activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-                setUnderlyingNetworks(arrayOf(active))
-            }
+            runCatching { setUnderlyingNetworks(null) }
         }
         return pfd
     }
@@ -295,6 +293,9 @@ class SkipiVpnService : VpnService() {
     private fun stopVpn() {
         unregisterNetworkConfigCallback()
         releaseWakeLock()
+        currentConfig = null
+        lastObservedPhysicalNetwork = null
+        hadActivePhysicalNetwork = false
         runCatching {
             hevTunRuntime?.stop()
         }.onFailure { error ->
@@ -346,45 +347,91 @@ class SkipiVpnService : VpnService() {
         val connectivityManager = getSystemService(ConnectivityManager::class.java) ?: return
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                val caps = connectivityManager.getNetworkCapabilities(network)
-                if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) return
-                if (stateStore.state.value.enableSeamlessNetworkSwitching) {
-                    runCatching { setUnderlyingNetworks(arrayOf(network)) }
-                }
+                handlePhysicalNetworkChange(network, connectivityManager)
             }
 
             override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-                if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return
-                if (stateStore.state.value.enableSeamlessNetworkSwitching) {
-                    runCatching { setUnderlyingNetworks(arrayOf(network)) }
-                }
+                handlePhysicalNetworkChange(network, connectivityManager)
             }
 
             override fun onLost(network: Network) {
+                if (lastObservedPhysicalNetwork == network) {
+                    lastObservedPhysicalNetwork = null
+                }
                 if (stateStore.state.value.enableSeamlessNetworkSwitching) {
                     val active = connectivityManager.activeNetwork
                     val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
-                    val isPhysical = active != null && activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == false
+                    val isPhysical = active != null && activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == false &&
+                        activeCaps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                     runCatching {
                         setUnderlyingNetworks(if (isPhysical) arrayOf(active) else null)
+                    }
+                    if (isPhysical) {
+                        active?.let { handlePhysicalNetworkChange(it, connectivityManager) }
                     }
                 }
             }
         }
         networkCallback = callback
         runCatching {
-            connectivityManager.registerDefaultNetworkCallback(callback)
-            val active = connectivityManager.activeNetwork
-            val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
-            val isPhysical = active != null && activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == false
+            val request = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                .build()
+            connectivityManager.registerNetworkCallback(request, callback)
             if (stateStore.state.value.enableSeamlessNetworkSwitching) {
-                runCatching {
-                    setUnderlyingNetworks(if (isPhysical) arrayOf(active) else null)
-                }
+                runCatching { setUnderlyingNetworks(null) }
             }
         }.onFailure { error ->
             networkCallback = null
             AndroidAppLogger.warn(LogTag, "Failed to observe network changes for seamless routing", error)
+        }
+    }
+
+    private fun handlePhysicalNetworkChange(network: Network, connectivityManager: ConnectivityManager) {
+        if (!stateStore.state.value.enableSeamlessNetworkSwitching) return
+        val caps = connectivityManager.getNetworkCapabilities(network) ?: return
+        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return
+        if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return
+
+        val previousNetwork = lastObservedPhysicalNetwork
+        val isNetworkSwitch = hadActivePhysicalNetwork && (previousNetwork == null || previousNetwork != network)
+        lastObservedPhysicalNetwork = network
+        hadActivePhysicalNetwork = true
+
+        runCatching { setUnderlyingNetworks(arrayOf(network)) }
+
+        if (isNetworkSwitch && running) {
+            AndroidAppLogger.info(LogTag, "Physical network switched to $network, refreshing proxy core connections")
+            reloadCoreOnNetworkChange()
+        }
+    }
+
+    private fun reloadCoreOnNetworkChange() {
+        serviceScope.launch {
+            networkSwitchMutex.withLock {
+                val config = currentConfig ?: return@withLock
+                val tunFd = tunFileDescriptor?.fd ?: return@withLock
+                if (!running) return@withLock
+
+                runCatching {
+                    AndroidAppLogger.info(LogTag, "Restarting core loop on network handover to flush stale sockets")
+                    SkipiCoreRuntime.stop()
+                    SkipiCoreRuntime.start(
+                        context = this@SkipiVpnService,
+                        config = config,
+                        tunFd = config.xrayTunFd(tunFd),
+                    )
+                    config.hevSocks5TunnelConfig?.let { hevConfig ->
+                        runCatching { hevTunRuntime?.stop() }
+                        val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
+                        runtime.start(hevConfig, tunFd)
+                    }
+                    AndroidAppLogger.info(LogTag, "Successfully reloaded proxy core on new network")
+                }.onFailure { error ->
+                    AndroidAppLogger.error(LogTag, "Failed to reload proxy core on network handover", error)
+                }
+            }
         }
     }
 
