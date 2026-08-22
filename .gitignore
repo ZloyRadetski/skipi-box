@@ -21,5 +21,6 @@ captures
 .vscode
 .VSCodeCounter
 *.log
+build_*.txt
 skipi-core/
 AndroidLibXrayLite-main/
