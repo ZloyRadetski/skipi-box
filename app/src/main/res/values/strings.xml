@@ -1135,6 +1135,7 @@
     <string name="onboarding_clipboard_detected_title">Found in Clipboard</string>
     <string name="onboarding_clipboard_import_btn">Import Now</string>
     <string name="onboarding_clipboard_empty">No valid configuration link found in clipboard</string>
+    <string name="onboarding_subscription_added">Subscription added successfully</string>
     <string name="onboarding_servers_added_count">Added servers: %1$d</string>
     <string name="onboarding_import_later_hint">You can also skip this and add servers anytime later</string>
     <string name="onboarding_complete_title">You\'re All Set!</string>

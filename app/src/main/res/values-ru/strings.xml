@@ -1125,6 +1125,7 @@
     <string name="onboarding_clipboard_detected_title">Обнаружено в буфере</string>
     <string name="onboarding_clipboard_import_btn">Импортировать сейчас</string>
     <string name="onboarding_clipboard_empty">В буфере обмена нет подходящей конфигурации или ссылки</string>
+    <string name="onboarding_subscription_added">Подписка успешно добавлена</string>
     <string name="onboarding_servers_added_count">Добавлено серверов: %1$d</string>
     <string name="onboarding_import_later_hint">Вы также можете пропустить этот шаг и добавить серверы позже</string>
     <string name="onboarding_complete_title">Всё готово к работе!</string>

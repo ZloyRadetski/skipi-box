@@ -492,6 +492,8 @@ lid">CIDR نامعتبر است</string>
     <string name="subscription_provider_traffic">ترافیک:{value}</string>
     <string name="subscription_provider_updated">به روز شده:{value}</string>
     <string name="subscription_provider_days_remaining">%1$dروز باقی مانده است</string>
+    <string name="subscription_provider_support">پشتیبانی</string>
+    <string name="subscription_provider_website">وب‌سایت</string>
     <string name="proxy_server_list_service_started">سرویس پروکسی شروع شد</string>
     <string name="proxy_server_list_service_stopped">سرویس پروکسی متوقف شد</string>
     <string name="proxy_server_list_select_first">ابتدا یک سرور پراکسی انتخاب کنید</string>
@@ -1033,6 +1035,7 @@ lid">CIDR نامعتبر است</string>
     <string name="onboarding_clipboard_detected_title">در کلیپ‌بورد پیدا شد</string>
     <string name="onboarding_clipboard_import_btn">وارد کردن اکنون</string>
     <string name="onboarding_clipboard_empty">هیچ لینک پیکربندی معتبری در کلیپ‌بورد یافت نشد</string>
+    <string name="onboarding_subscription_added">اشتراک با موفقیت اضافه شد</string>
     <string name="onboarding_servers_added_count">سرورهای افزوده شده: %1$d</string>
     <string name="onboarding_import_later_hint">می‌توانید این مرحله را رد کنید و بعداً سرور اضافه کنید</string>
     <string name="onboarding_complete_title">همه چیز آماده است!</string>

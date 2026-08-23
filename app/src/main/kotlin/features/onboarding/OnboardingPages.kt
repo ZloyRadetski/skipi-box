@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import java.util.Locale
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -1114,12 +1115,15 @@ internal fun OnboardingImportPage(
     val cardBorder = onboardingCardBorder()
     val permGreen = Color(0xFF10B981)
     val permBlue = Color(0xFF0070F3)
+    val clipboardEmptyTip = stringResource(R.string.onboarding_clipboard_empty)
+    val serversAddedFormat = stringResource(R.string.onboarding_servers_added_count)
+    val subscriptionAddedTip = stringResource(R.string.onboarding_subscription_added)
 
     suspend fun importRawText(text: String, isExplicitPaste: Boolean = false) {
         val trimmed = text.trim()
         if (trimmed.isBlank()) {
             if (isExplicitPaste) {
-                tipNotifier.show(context.getString(R.string.onboarding_clipboard_empty))
+                tipNotifier.show(clipboardEmptyTip)
             }
             return
         }
@@ -1133,7 +1137,7 @@ internal fun OnboardingImportPage(
                     subscriptionFetcher = services.subscriptionFetcher,
                 ).install(config)
             }.onSuccess {
-                tipNotifier.show("Подписка успешно добавлена!")
+                tipNotifier.show(subscriptionAddedTip)
             }.onFailure { error ->
                 tipNotifier.showError(error)
             }
@@ -1161,9 +1165,9 @@ internal fun OnboardingImportPage(
                     nextProxyServerId = currentId,
                 )
             }
-            tipNotifier.show(context.getString(R.string.onboarding_servers_added_count, importResult.servers.size))
+            tipNotifier.show(String.format(Locale.getDefault(), serversAddedFormat, importResult.servers.size))
         } else if (isExplicitPaste) {
-            tipNotifier.show(context.getString(R.string.onboarding_clipboard_empty))
+            tipNotifier.show(clipboardEmptyTip)
         }
     }
 

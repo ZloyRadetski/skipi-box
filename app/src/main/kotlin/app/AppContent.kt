@@ -192,8 +192,9 @@ fun AppContent(
 ) {
     val languageMode = LocalAppChromeState.current.languageMode
     val stateStore = LocalAppStateStore.current
-    val hasCompletedOnboarding = stateStore.state.value.hasCompletedOnboarding
-    val initialRoute = if (hasCompletedOnboarding) Route.Main else Route.Onboarding
+    val initialRoute = remember {
+        if (stateStore.currentState.hasCompletedOnboarding) Route.Main else Route.Onboarding
+    }
     val pagerState = rememberPagerState(pageCount = { MainNavigation.NAVIGATION_ITEMS_COUNT })
     val mainPagerState = rememberMainPagerState(pagerState)
     LaunchedEffect(mainPagerState.pagerState.currentPage) {

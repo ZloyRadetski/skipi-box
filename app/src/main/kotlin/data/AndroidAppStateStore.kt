@@ -44,6 +44,9 @@ class AndroidAppStateStore private constructor(
     val context: Context get() = appContext
     val state: StateFlow<AppState> = mutableState.asStateFlow()
 
+    /** Non-reactive one-shot snapshot for decisions that must not trigger recomposition. */
+    val currentState: AppState get() = mutableState.value
+
     fun update(transform: (AppState) -> AppState) {
         update(persist = true, transform = transform)
     }

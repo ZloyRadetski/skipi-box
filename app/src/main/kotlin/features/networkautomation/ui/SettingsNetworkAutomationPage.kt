@@ -84,6 +84,7 @@ fun SettingsNetworkAutomationPage(
 
     var showRuleDialog by remember { mutableStateOf(false) }
     var editingRule by remember { mutableStateOf<NetworkAutomationRule?>(null) }
+    val noWifiDetectedText = stringResource(R.string.network_automation_no_wifi_detected)
 
     val onRequestCurrentWifi: ((String) -> Unit) -> Unit = { onSsidReceived ->
         val current = NetworkAutomationEvaluator.getCurrentWifiSsid(context)
@@ -92,7 +93,7 @@ fun SettingsNetworkAutomationPage(
         } else {
             Toast.makeText(
                 context,
-                context.getString(R.string.network_automation_no_wifi_detected),
+                noWifiDetectedText,
                 Toast.LENGTH_SHORT,
             ).show()
         }

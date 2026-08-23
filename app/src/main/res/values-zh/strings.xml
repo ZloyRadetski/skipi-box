@@ -485,6 +485,8 @@
     <string name="subscription_provider_traffic">流量：{value}</string>
     <string name="subscription_provider_updated">更新：{value}</string>
     <string name="subscription_provider_days_remaining">剩余%1$d天</string>
+    <string name="subscription_provider_support">支持</string>
+    <string name="subscription_provider_website">网站</string>
     <string name="proxy_server_list_service_started">代理服务已启动</string>
     <string name="proxy_server_list_service_stopped">代理服务已停止</string>
     <string name="proxy_server_list_select_first">首先选择代理服务器</string>
@@ -1055,6 +1057,7 @@
     <string name="onboarding_clipboard_detected_title">在剪贴板中发现</string>
     <string name="onboarding_clipboard_import_btn">立即导入</string>
     <string name="onboarding_clipboard_empty">剪贴板中未找到有效的配置链接</string>
+    <string name="onboarding_subscription_added">已成功添加订阅</string>
     <string name="onboarding_servers_added_count">已添加服务器：%1$d</string>
     <string name="onboarding_import_later_hint">您也可以跳过此步骤，稍后随时添加服务器</string>
     <string name="onboarding_complete_title">一切就绪！</string>

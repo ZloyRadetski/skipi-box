@@ -4,6 +4,7 @@
 package features.proxy.server.list
 
 import android.os.SystemClock
+import java.util.Locale
 import app.effects.resolveActiveNetworkConfig
 import features.config.withActiveTrafficConfig
 import features.networkautomation.engine.NetworkAutomationDecision
@@ -581,7 +582,7 @@ private fun ProxyHeroConnectionCardClassic(
             val hours = elapsedSeconds / 3600
             val minutes = (elapsedSeconds % 3600) / 60
             val seconds = elapsedSeconds % 60
-            value = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+            value = String.format(Locale.ROOT, "%02d:%02d:%02d", hours, minutes, seconds)
             delay(1000)
         }
     }

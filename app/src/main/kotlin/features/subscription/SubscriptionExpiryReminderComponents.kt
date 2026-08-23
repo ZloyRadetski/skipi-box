@@ -204,7 +204,6 @@ internal fun SubscriptionExpiryReminderDialog(
     onDismiss: () -> Unit,
     onConfirm: (SubscriptionExpiryReminder) -> Unit,
 ) {
-    val context = LocalContext.current
     var valueText by remember { mutableStateOf(initialReminder.value.toString()) }
     val units = remember {
         listOf(
@@ -220,17 +219,15 @@ internal fun SubscriptionExpiryReminderDialog(
     }
     val selectedUnit = units[selectedUnitIndex]
 
-    val unitItems = remember(units) {
-        units.map { unit ->
-            val label = when (unit) {
-                ExpiryReminderUnit.AtExpiration -> context.getString(R.string.subscription_expiry_reminder_unit_at_expiration)
-                ExpiryReminderUnit.Minutes -> context.getString(R.string.subscription_expiry_reminder_unit_minutes)
-                ExpiryReminderUnit.Hours -> context.getString(R.string.subscription_expiry_reminder_unit_hours)
-                ExpiryReminderUnit.Days -> context.getString(R.string.subscription_expiry_reminder_unit_days)
-                ExpiryReminderUnit.Weeks -> context.getString(R.string.subscription_expiry_reminder_unit_weeks)
-            }
-            DropdownItem(text = label, summary = label)
+    val unitItems = units.map { unit ->
+        val label = when (unit) {
+            ExpiryReminderUnit.AtExpiration -> stringResource(R.string.subscription_expiry_reminder_unit_at_expiration)
+            ExpiryReminderUnit.Minutes -> stringResource(R.string.subscription_expiry_reminder_unit_minutes)
+            ExpiryReminderUnit.Hours -> stringResource(R.string.subscription_expiry_reminder_unit_hours)
+            ExpiryReminderUnit.Days -> stringResource(R.string.subscription_expiry_reminder_unit_days)
+            ExpiryReminderUnit.Weeks -> stringResource(R.string.subscription_expiry_reminder_unit_weeks)
         }
+        DropdownItem(text = label, summary = label)
     }
 
     WindowDialog(

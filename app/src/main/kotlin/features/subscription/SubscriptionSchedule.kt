@@ -20,6 +20,7 @@ internal fun parseSubscriptionSchedule(value: String): SubscriptionSchedule {
     val normalized = value.trim()
     if (normalized.isEmpty()) return SubscriptionSchedule.Disabled
     val hours = normalized.toBigDecimalOrNull() ?: return SubscriptionSchedule.Invalid
+    if (hours.signum() <= 0) return SubscriptionSchedule.Disabled
     if (hours < MinimumSubscriptionHours) return SubscriptionSchedule.Invalid
     val milliseconds = hours.multiply(MillisecondsPerHour)
     if (milliseconds > MaximumLongDecimal) return SubscriptionSchedule.Invalid
