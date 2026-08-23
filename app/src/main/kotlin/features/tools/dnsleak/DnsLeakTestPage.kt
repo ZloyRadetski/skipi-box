@@ -20,13 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,8 +39,6 @@ import app.LocalNavigator
 import app.R
 import engine.network.TunnelNetworks
 import engine.proxy.LocalProxyRuntime
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -68,61 +61,26 @@ fun DnsLeakTestPage(
     val languageMode = LocalAppChromeState.current.languageMode
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     val connectivity = remember { context.getSystemService(ConnectivityManager::class.java) }
 
-    var running by remember { mutableStateOf(false) }
-    var outcome by remember { mutableStateOf<DnsLeakTestOutcome?>(null) }
-    var failed by remember { mutableStateOf(false) }
-    var failedReason by remember { mutableStateOf<String?>(null) }
-    var failureKind by remember { mutableStateOf<DnsLeakFailureKind?>(null) }
-    var job by remember { mutableStateOf<Job?>(null) }
-
-    DisposableEffect(Unit) {
-        onDispose { job?.cancel() }
-    }
-
     fun startTest() {
-        running = true
-        failed = false
-        failedReason = null
-        failureKind = null
-        outcome = null
-        job = scope.launch {
-            runCatching {
-                // The app is excluded from its own VPN tunnel, so the probe
-                // sockets traverse the tunnel via the local SOCKS proxy runtime.
-                val vpnNetwork = TunnelNetworks.locateVpnNetwork(context)
-                val proxyOptions = LocalProxyRuntime.current()
-                DnsLeakTestEngine(
-                    systemDnsServers = locateSystemDnsServers(connectivity, vpnNetwork),
-                    onProgress = {},
-                    vpnNetwork = vpnNetwork,
-                    proxyOptions = proxyOptions,
-                ).run()
-            }
-                .onSuccess { result ->
-                    outcome = result
-                    running = false
-                }
-                .onFailure { error ->
-                    if (error !is kotlinx.coroutines.CancellationException) {
-                        failed = true
-                        failedReason = error.message
-                        failureKind = (error as? DnsLeakTestFailure)?.kind
-                        running = false
-                    }
-                }
+        DnsLeakTestSession.start {
+            // The app is excluded from its own VPN tunnel, so the probe
+            // sockets traverse the tunnel via the local SOCKS proxy runtime.
+            val vpnNetwork = TunnelNetworks.locateVpnNetwork(context)
+            val proxyOptions = LocalProxyRuntime.current()
+            DnsLeakTestEngine(
+                systemDnsServers = locateSystemDnsServers(connectivity, vpnNetwork),
+                onProgress = {},
+                vpnNetwork = vpnNetwork,
+                proxyOptions = proxyOptions,
+            ).run()
         }
     }
 
-    fun stopTest() {
-        job?.cancel()
-        job = null
-        running = false
-    }
+    fun stopTest() = DnsLeakTestSession.stop()
 
     Scaffold(
         containerColor = AppTheme.colors.background,
@@ -171,8 +129,14 @@ fun DnsLeakTestPage(
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                         Spacer(Modifier.height(12.dp))
-                        verdictBanner(outcome, failed, running, failedReason, failureKind)
-                        outcome?.exit?.let { exit ->
+                        verdictBanner(
+                            outcome = DnsLeakTestSession.outcome,
+                            failed = DnsLeakTestSession.failed,
+                            running = DnsLeakTestSession.running,
+                            failedReason = DnsLeakTestSession.failedReason,
+                            failureKind = DnsLeakTestSession.failureKind,
+                        )
+                        DnsLeakTestSession.outcome?.exit?.let { exit ->
                             Spacer(Modifier.height(6.dp))
                             Text(
                                 text = stringResource(
@@ -187,14 +151,14 @@ fun DnsLeakTestPage(
                         Spacer(Modifier.height(12.dp))
                         TextButton(
                             text = stringResource(
-                                if (running) R.string.tools_dns_stop else R.string.tools_dns_start,
+                                if (DnsLeakTestSession.running) R.string.tools_dns_stop else R.string.tools_dns_start,
                             ),
-                            onClick = { if (running) stopTest() else startTest() },
+                            onClick = { if (DnsLeakTestSession.running) stopTest() else startTest() },
                         )
                     }
                 }
             }
-            outcome?.resolvers?.forEachIndexed { index, resolver ->
+            DnsLeakTestSession.outcome?.resolvers?.forEachIndexed { index, resolver ->
                 item(key = "resolver_$index") {
                     SmallTitle(text = stringResource(R.string.tools_dns_resolver_entry, index + 1))
                     ResolverCard(resolver)

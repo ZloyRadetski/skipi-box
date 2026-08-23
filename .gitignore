@@ -24,3 +24,4 @@ captures
 build_*.txt
 skipi-core/
 AndroidLibXrayLite-main/
+gradle_out.txt

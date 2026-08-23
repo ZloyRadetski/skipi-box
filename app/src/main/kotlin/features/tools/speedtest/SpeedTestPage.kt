@@ -18,13 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,8 +30,6 @@ import app.LocalAppChromeState
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.R
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -58,28 +50,12 @@ fun SpeedTestPage(
     val languageMode = LocalAppChromeState.current.languageMode
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
-    val scope = rememberCoroutineScope()
 
-    var state by remember { mutableStateOf(SpeedTestState()) }
-    var runningJob by remember { mutableStateOf<Job?>(null) }
+    // State lives in the app-scoped session so rotation keeps the test alive.
+    val state = SpeedTestSession.state
 
-    DisposableEffect(Unit) {
-        onDispose { runningJob?.cancel() }
-    }
-
-    fun startTest() {
-        runningJob?.cancel()
-        state = SpeedTestState(phase = SpeedTestPhase.Ping)
-        runningJob = scope.launch {
-            SpeedTestEngine(onState = { fresh -> state = fresh }).run()
-        }
-    }
-
-    fun stopTest() {
-        runningJob?.cancel()
-        runningJob = null
-        state = SpeedTestState()
-    }
+    fun startTest() = SpeedTestSession.start()
+    fun stopTest() = SpeedTestSession.stop()
 
     Scaffold(
         containerColor = AppTheme.colors.background,

@@ -3,6 +3,7 @@
 
 package app.navigation
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.navigation3.runtime.NavKey
@@ -35,7 +36,9 @@ val NavigationBackStackSaver: Saver<MutableList<NavKey>, List<String>> =
         }
 
         override fun restore(value: List<String>): MutableList<NavKey> {
-            val restoredKeys = mutableListOf<NavKey>()
+            // MUST be a SnapshotStateList: a plain list is invisible to Compose,
+            // so push/pop after restoration would never update the UI.
+            val restoredKeys = mutableStateListOf<NavKey>()
             for (encoded in value) {
                 runCatching { navigationKeyJson.decodeFromString<Route>(encoded) }.getOrNull()
                     ?.let(restoredKeys::add)
