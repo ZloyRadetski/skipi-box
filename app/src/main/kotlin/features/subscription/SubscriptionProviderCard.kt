@@ -49,6 +49,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ExpandLess
 import top.yukonga.miuix.kmp.icon.extended.ExpandMore
+import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -169,6 +170,13 @@ internal fun SubscriptionProviderHeader(
                         size = 18.dp,
                     )
                 }
+            }
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = MiuixIcons.More,
+                    contentDescription = stringResource(R.string.subscription_edit),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
             }
         }
         if (traffic != null || expiry != null) {
