@@ -701,7 +701,7 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                         "dns-server",
                         directDns.firstOrNull()?.trim() ?: "system",
                     ),
-                )
+                ).withSkipiSettingsInRawConfig()
             }
         }
     }
