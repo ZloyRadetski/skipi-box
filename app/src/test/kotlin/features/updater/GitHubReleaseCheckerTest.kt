@@ -3,11 +3,38 @@
 
 package features.updater
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GitHubReleaseCheckerTest {
+
+    @Test
+    fun extractVersionCodeFromBody_parses_release_notes() {
+        assertEquals(
+            180,
+            GitHubReleaseChecker.extractVersionCodeFromBody("## SKIPI v0.3.5\n\n- Version name: 0.3.5\n- Version code: 180"),
+        )
+        assertEquals(181, GitHubReleaseChecker.extractVersionCodeFromBody("version code = 181"))
+        assertNull(GitHubReleaseChecker.extractVersionCodeFromBody("SKIPI-universal.apk"))
+        assertNull(GitHubReleaseChecker.extractVersionCodeFromBody(""))
+    }
+
+    @Test
+    fun isVersionNewer_detects_older_test_build_against_current_release() {
+        // Real scenario: local build reports 0.3.2/180, published release is
+        // v0.3.5 with the same commit count baked into its notes.
+        assertTrue(
+            GitHubReleaseChecker.isVersionNewer(
+                currentVersionName = "0.3.2",
+                currentVersionCode = 180,
+                remoteVersionName = "0.3.5",
+                remoteVersionCode = 180,
+            ),
+        )
+    }
 
     @Test
     fun isVersionNewer_handles_semantic_versions() {

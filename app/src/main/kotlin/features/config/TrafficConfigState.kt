@@ -60,6 +60,8 @@ data class TrafficConfigAndroidSettings(
     val directDns: List<String> = VpnDefaults.DIRECT_DNS_SERVERS,
     val directDnsDomains: List<String> = emptyList(),
     val dnsHosts: List<String> = emptyList(),
+    /** Xray routing domain strategy: 0 = AsIs, 1 = IPIfNonMatch, 2 = IPOnDemand. */
+    val routeDomainStrategy: Int = 0,
 )
 
 @Serializable
@@ -154,6 +156,7 @@ private const val SkipiProxyDns = "proxy-dns"
 private const val SkipiDirectDns = "direct-dns"
 private const val SkipiDirectDnsDomains = "direct-dns-domains"
 private const val SkipiDnsHosts = "dns-hosts"
+private const val SkipiRouteDomainStrategy = "route-domain-strategy"
 private const val SkipiVpnAppendHttpProxy = "vpn-append-http-proxy"
 private const val SkipiVpnHevTun = "vpn-hev-tun"
 private const val SkipiTunMtu = "tun-mtu"
@@ -289,6 +292,17 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
         val parsedDnsHosts = values[SkipiDnsHosts]?.map(String::trim)
             ?.filter(String::isNotEmpty)?.distinct()
             ?: android.dnsHosts
+        val parsedRouteDomainStrategy = value(SkipiRouteDomainStrategy, "").trim().lowercase()
+            .takeIf(String::isNotEmpty)
+            ?.let { strategy ->
+                when (strategy) {
+                    "asis", "as-is", "0" -> 0
+                    "ipondemand", "ip-on-demand", "2" -> 2
+                    "ipifnonmatch", "ip-if-non-match", "1" -> 1
+                    else -> null
+                }
+            }
+            ?: android.routeDomainStrategy
 
         return copy(
             name = value(SkipiProfileName, name).trim().ifBlank { name },
@@ -325,6 +339,7 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
                 directDns = parsedDirectDns,
                 directDnsDomains = parsedDirectDnsDomains,
                 dnsHosts = parsedDnsHosts,
+                routeDomainStrategy = parsedRouteDomainStrategy,
             ),
             networkActivation = TrafficConfigNetworkActivation(
                 enabled = bool(SkipiNetworkActivation, networkActivation.enabled),
@@ -400,6 +415,7 @@ private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
         android.dnsHosts.forEach { host ->
             add("$SkipiDnsHosts = $host")
         }
+        add("$SkipiRouteDomainStrategy = ${android.routeDomainStrategy.toRouteDomainStrategyValue()}")
         add("$SkipiNetworkActivation = ${networkActivation.enabled}")
         add("$SkipiNetworkTransport = ${if (networkActivation.transport == TrafficConfigNetworkTransportCellular) "cellular" else "wifi"}")
         add("$SkipiResourceSource = ${resources.source}")
@@ -451,6 +467,15 @@ private fun String.toConfigBoolean(fallback: Boolean): Boolean {
         "true", "yes", "1" -> true
         "false", "no", "0" -> false
         else -> fallback
+    }
+}
+
+/** Xray routing domain strategy: 0 = AsIs, 1 = IPIfNonMatch, 2 = IPOnDemand. */
+internal fun Int.toRouteDomainStrategyValue(): String {
+    return when (this) {
+        0 -> "AsIs"
+        2 -> "IPOnDemand"
+        else -> "IPIfNonMatch"
     }
 }
 

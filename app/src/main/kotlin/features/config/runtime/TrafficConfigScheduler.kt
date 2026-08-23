@@ -28,6 +28,9 @@ internal interface TrafficConfigScheduleGateway {
     fun enqueueConfig(spec: TrafficConfigWorkSpec)
     fun enqueueGeo(spec: TrafficConfigWorkSpec)
 
+    /** One-time geo refresh, e.g. right after a provider routing import. */
+    fun enqueueGeoOnce(configId: Int)
+
     fun cancelConfig(configId: Int)
     fun cancelGeo(configId: Int)
 
@@ -87,5 +90,6 @@ internal class TrafficConfigScheduler(
 
 internal fun trafficConfigWorkName(configId: Int): String = "traffic-config-update-$configId"
 internal fun trafficConfigGeoWorkName(configId: Int): String = "traffic-config-geo-update-$configId"
+internal fun trafficConfigGeoOnceWorkName(configId: Int): String = "traffic-config-geo-once-$configId"
 
 private const val MinimumConfigBackoffMillis = 15 * 60 * 1_000L

@@ -23,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -38,7 +39,10 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
         SubscriptionScheduler(AndroidSubscriptionScheduleGateway(applicationContext))
     }
     private val trafficConfigScheduler: TrafficConfigScheduler by lazy {
-        TrafficConfigScheduler(AndroidTrafficConfigScheduleGateway(applicationContext))
+        TrafficConfigScheduler(trafficConfigScheduleGateway)
+    }
+    private val trafficConfigScheduleGateway: AndroidTrafficConfigScheduleGateway by lazy {
+        AndroidTrafficConfigScheduleGateway(applicationContext)
     }
     internal val appUpdateScheduleGateway: features.updater.runtime.AppUpdateScheduleGateway by lazy {
         features.updater.runtime.AppUpdateScheduleGateway(applicationContext)
@@ -94,6 +98,27 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                 .distinctUntilChanged()
                 .collect {
                     trafficConfigScheduler.reconcile(stateStore.state.value.trafficConfigs)
+                }
+        }
+        // A provider routing profile only matches traffic once its geoip/geosite
+        // files are downloaded; the periodic worker may be hours away, so refresh
+        // the active profile's resources as soon as its geo source changes.
+        appScope.launch {
+            stateStore.state
+                .map { state ->
+                    val active = state.activeTrafficConfig()
+                    Triple(
+                        active?.id ?: 0,
+                        active?.resourceSettings?.customGeoIpUrl.orEmpty(),
+                        active?.resourceSettings?.customGeoSiteUrl.orEmpty(),
+                    )
+                }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { (configId, _, _) ->
+                    if (configId > 0) {
+                        trafficConfigScheduleGateway.enqueueGeoOnce(configId)
+                    }
                 }
         }
         val cachedUpdate = stateStore.state.value.availableAppUpdate

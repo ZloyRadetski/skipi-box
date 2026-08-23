@@ -32,10 +32,13 @@ internal class TrafficConfigAutoUpdateWorker(
         }
         return runCatching {
             val url = config.sourceUrl.trim()
+            val state = application.stateStore.state.value
             val fetched = application.subscriptionFetcher.fetch(
                 url = url,
                 userAgent = normalizeSkipiUserAgent(config.resourceSettings.userAgent),
-                options = application.stateStore.state.value.toSubscriptionFetchOptions(),
+                // Background refreshes must traverse the running tunnel/proxy
+                // instead of the direct path, which may be blocked.
+                options = state.toSubscriptionFetchOptions(useRunningProxy = state.proxyRunning),
             )
             val normalized = fetched.trimEnd() + "\n"
             val analysis = normalized.analyzeShadowrocketConfig()

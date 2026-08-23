@@ -45,6 +45,7 @@ internal fun AppState.withActiveTrafficConfigApplied(): AppState {
             ?: XrayTags.PROXY,
         enableSniffing = androidSettings.enableSniffing,
         enableSniffingRouteOnly = androidSettings.enableSniffingRouteOnly,
+        routeDomainStrategy = androidSettings.routeDomainStrategy,
         enableMux = androidSettings.enableMux,
         muxConcurrency = androidSettings.muxConcurrency,
         muxXudpConcurrency = androidSettings.muxXudpConcurrency,
@@ -126,6 +127,8 @@ private fun ShadowrocketRule.toRouteRule(
         "DOMAIN-SUFFIX" -> listOf("domain:$value")
         "DOMAIN-KEYWORD" -> listOf("keyword:$value")
         "DOMAIN-WILDCARD" -> listOf("regexp:${value.shadowrocketWildcardToRegex()}")
+        // The value already carries its Xray form ("geosite:x"/"ext:file:tag").
+        "DOMAIN-SET" -> listOf(value)
         else -> emptyList()
     }
     val ip = when (type) {

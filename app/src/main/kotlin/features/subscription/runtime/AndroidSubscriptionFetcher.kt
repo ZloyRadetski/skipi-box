@@ -4,11 +4,13 @@
 package features.subscription.runtime
 
 import android.content.Context
+import android.net.Network
 import android.os.Build
 import data.AppSettingsPreferences
 import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.SubscriptionHttpException
+import engine.network.TunnelNetworks
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +28,7 @@ import java.net.URL
 internal class AndroidSubscriptionFetcher(
     private val installationHwid: String,
     private val ageCrypto: SubscriptionAgeCrypto,
+    private val context: Context? = null,
 ) {
     constructor(context: Context) : this(
         installationHwid = AppSettingsPreferences(context.applicationContext).getOrCreateSubscriptionHwid(),
@@ -34,6 +37,7 @@ internal class AndroidSubscriptionFetcher(
         } else {
             UnsupportedSubscriptionAgeCrypto
         },
+        context = context,
     )
 
     suspend fun fetch(
@@ -48,6 +52,10 @@ internal class AndroidSubscriptionFetcher(
         options: AndroidSubscriptionFetchOptions,
     ): SubscriptionFetchResponse = withContext(Dispatchers.IO) {
         val proxy = options.toProxy()
+        // The app is excluded from its own VPN; without an explicit bind,
+        // updates would bypass an active tunnel entirely and may fail on
+        // networks where the target host is unreachable directly.
+        val vpnNetwork = if (proxy == null) TunnelNetworks.locateVpnNetwork(context) else null
         val requestCredentials = options.toRequestCredentials(
             installationHwid = installationHwid,
             ageCrypto = ageCrypto,
@@ -58,6 +66,7 @@ internal class AndroidSubscriptionFetcher(
                 userAgent = normalizeSkipiUserAgent(userAgent),
                 requestCredentials = requestCredentials,
                 proxy = proxy,
+                vpnNetwork = vpnNetwork,
                 timeoutSeconds = options.timeoutSeconds,
             )
         }.let { response ->
@@ -115,12 +124,13 @@ private fun fetchWithRedirects(
     userAgent: String,
     requestCredentials: SubscriptionRequestCredentials,
     proxy: AndroidSubscriptionProxy?,
+    vpnNetwork: Network?,
     timeoutSeconds: Int,
 ): SubscriptionFetchResponse {
     var currentUrl = url
     val timeoutMillis = timeoutSeconds.coerceIn(3, 600) * 1000
     repeat(MaxRedirects) {
-        val connection = currentUrl.toConnection(proxy, timeoutMillis)
+        val connection = currentUrl.toConnection(proxy, vpnNetwork, timeoutMillis)
         try {
             connection.setRequestProperty("User-Agent", userAgent)
             connection.setRequestProperty("Connection", "close")
@@ -206,11 +216,17 @@ private fun String.decryptAgeArmoredOrPassThrough(
     return ageCrypto.decryptArmored(this, normalizedSecretKey)
 }
 
-private fun String.toConnection(proxy: AndroidSubscriptionProxy?, timeoutMillis: Int): HttpURLConnection {
-    val connection = if (proxy == null) {
-        URI(this).toURL().openConnection()
-    } else {
-        URI(this).toURL().openConnection(proxy.toJavaProxy())
+private fun String.toConnection(
+    proxy: AndroidSubscriptionProxy?,
+    vpnNetwork: Network?,
+    timeoutMillis: Int,
+): HttpURLConnection {
+    val url = URI(this).toURL()
+    val connection = when {
+        proxy != null -> url.openConnection(proxy.toJavaProxy())
+        // Prefer traversing the active tunnel over a direct connection.
+        vpnNetwork != null -> runCatching { vpnNetwork.openConnection(url) }.getOrElse { url.openConnection() }
+        else -> url.openConnection()
     }
     return (connection as HttpURLConnection).apply {
         connectTimeout = timeoutMillis

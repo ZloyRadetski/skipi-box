@@ -186,9 +186,12 @@ private fun String.toSubscriptionEmbeddedConfigOrNull(): SubscriptionEmbeddedCon
         "://routing/" to true,
     )
 
+    // Providers prefix the marker with their own scheme (happ:, incy:, ...),
+    // so the marker may appear anywhere in the value, not only at the start.
     for ((prefix, activate) in prefixes) {
-        if (trimmed.startsWith(prefix, ignoreCase = true)) {
-            val payload = trimmed.substring(prefix.length).trim()
+        val markerIndex = trimmed.indexOf(prefix, ignoreCase = true)
+        if (markerIndex >= 0) {
+            val payload = trimmed.substring(markerIndex + prefix.length).trim()
             if (payload.isNotEmpty()) {
                 val isUrl = payload.startsWith("http://", ignoreCase = true) ||
                     payload.startsWith("https://", ignoreCase = true)

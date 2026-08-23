@@ -64,10 +64,15 @@ internal class GitHubReleaseChecker(
         val publishedAt = root["published_at"]?.jsonPrimitive?.contentOrNull.orEmpty()
         val assets = root["assets"]?.jsonArray ?: return null
 
+        // tag_name is the single source of truth for the release version.
         val remoteVersionName = tagName.removePrefix("v").trim()
         if (remoteVersionName.isBlank()) return null
 
-        val (bestAsset, remoteVersionCode) = selectBestApkAsset(assets, remoteVersionName) ?: return null
+        // APK asset names carry no version information ("SKIPI-universal.apk"),
+        // so the code is read from the release notes ("Version code: 180").
+        val remoteVersionCode = extractVersionCodeFromBody(changelog)
+
+        val bestAsset = selectBestApkAsset(assets) ?: return null
         val downloadUrl = bestAsset["browser_download_url"]?.jsonPrimitive?.contentOrNull ?: return null
         val assetName = bestAsset["name"]?.jsonPrimitive?.contentOrNull ?: "SKIPI.apk"
         val apkSize = bestAsset["size"]?.jsonPrimitive?.longOrNull ?: 0L
@@ -96,7 +101,7 @@ internal class GitHubReleaseChecker(
         )
     }
 
-    private fun selectBestApkAsset(assets: JsonArray, remoteVersion: String): Pair<JsonObject, Int?>? {
+    private fun selectBestApkAsset(assets: JsonArray): JsonObject? {
         val apkAssets = assets.mapNotNull { it as? JsonObject }.filter {
             val name = it["name"]?.jsonPrimitive?.contentOrNull.orEmpty().lowercase()
             name.endsWith(".apk")
@@ -110,24 +115,26 @@ internal class GitHubReleaseChecker(
                 name.contains(abi)
             }
             if (matched != null) {
-                return matched to extractVersionCodeFromName(matched["name"]?.jsonPrimitive?.contentOrNull.orEmpty())
+                return matched
             }
         }
 
-        val universal = apkAssets.firstOrNull {
+        return apkAssets.firstOrNull {
             val name = it["name"]?.jsonPrimitive?.contentOrNull.orEmpty().lowercase()
             name.contains("universal")
         } ?: apkAssets.firstOrNull()
-
-        return universal?.let { it to extractVersionCodeFromName(it["name"]?.jsonPrimitive?.contentOrNull.orEmpty()) }
-    }
-
-    private fun extractVersionCodeFromName(name: String): Int? {
-        val regex = Regex("""-(\d+)-""")
-        return regex.find(name)?.groupValues?.getOrNull(1)?.toIntOrNull()
     }
 
     companion object {
+        /**
+         * Reads the version code from the release notes, e.g.
+         * "- Version code: 180". Asset file names do not contain it.
+         */
+        internal fun extractVersionCodeFromBody(body: String): Int? {
+            return Regex("""version\s*code\s*[:=\-]?\s*(\d+)""", RegexOption.IGNORE_CASE)
+                .find(body)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        }
+
         fun isVersionNewer(
             currentVersionName: String,
             currentVersionCode: Int,

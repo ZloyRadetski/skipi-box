@@ -8,7 +8,9 @@ import androidx.core.content.edit
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -86,6 +88,23 @@ internal class AndroidTrafficConfigScheduleGateway(
 
     override fun cancelConfig(configId: Int) {
         workManager.cancelUniqueWork(trafficConfigWorkName(configId))
+    }
+
+    override fun enqueueGeoOnce(configId: Int) {
+        val request = OneTimeWorkRequest.Builder(ResourceAutoUpdateWorker::class.java)
+            .setInputData(workDataOf(TrafficConfigIdKey to configId))
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build(),
+            )
+            .addTag(TrafficConfigGeoWorkTag)
+            .build()
+        workManager.enqueueUniqueWork(
+            trafficConfigGeoOnceWorkName(configId),
+            ExistingWorkPolicy.REPLACE,
+            request,
+        )
     }
 
     override fun cancelGeo(configId: Int) {
