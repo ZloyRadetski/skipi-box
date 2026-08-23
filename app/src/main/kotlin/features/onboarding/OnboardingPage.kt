@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.onboarding
-
-import app.R
-
-
-
-
-
+package features.onboarding
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -50,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.LocalAppStateStore
 import app.LocalUpdateAppState
+import app.R
 import app.collectAppState
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon

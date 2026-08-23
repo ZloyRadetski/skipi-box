@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings.sheets
-
-import app.R
-
-
-
-
-
+package features.settings.sheets
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -27,6 +20,7 @@ import engine.xray.DefaultFragmentLength
 import engine.xray.DefaultFragmentPackets
 import engine.xray.FragmentPacketsValues
 import engine.xray.MaxFragmentInputLength
+import app.R
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton

@@ -3,9 +3,7 @@
 
 @file:OptIn(ExperimentalFoundationApi::class)
 
-package features.proxy.app
-
-import ui.feedback.TipNotifier
+package features.proxy.app
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.pager.PagerState
@@ -81,7 +79,7 @@ internal fun ProxyAppListPageEffects(
     userPagerState: PagerState,
     packageCatalog: AndroidPackageProvider,
     userSpaces: AndroidUserSpaceProvider,
-    tipNotifier: TipNotifier,
+    tipNotifier: AndroidToastTipNotifier,
     onSelectedAppsPruned: (previousSelection: List<String>, prunedSelection: List<String>) -> Unit,
 ) {
     ProxyAppListSearchEffect(pageState)
@@ -236,7 +234,7 @@ private fun ProxyAppListPackageEffect(
     isVpnServiceMode: Boolean,
     selfPackageName: String,
     packageCatalog: AndroidPackageProvider,
-    tipNotifier: TipNotifier,
+    tipNotifier: AndroidToastTipNotifier,
     onSelectedAppsPruned: (previousSelection: List<String>, prunedSelection: List<String>) -> Unit,
 ) {
     val loadFailedMessage = stringResource(R.string.proxy_app_list_load_failed)

@@ -3,14 +3,7 @@
 
 @file:OptIn(ExperimentalFoundationApi::class, ExperimentalScrollBarApi::class)
 
-package features.routing
-
-import app.R
-
-
-
-
-
+package features.routing
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -42,6 +35,7 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
+import app.R
 import app.collectAppState
 import app.proxyServerOutboundTag
 import features.proxy.server.display.displayNameById

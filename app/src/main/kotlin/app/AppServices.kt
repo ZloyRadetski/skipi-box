@@ -32,7 +32,7 @@ internal data class AppServices(
     val proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
     val proxyLatencyTester: AndroidProxyLatencyTester,
     val proxyServiceUseCase: ProxyServiceUseCase,
-    val tipNotifier: ui.feedback.TipNotifier,
+    val tipNotifier: AndroidToastTipNotifier,
     val logFileCreator: suspend (String) -> Uri?,
     val coreLogRepository: CoreLogRepository,
     val accessLogRepository: CoreLogRepository,

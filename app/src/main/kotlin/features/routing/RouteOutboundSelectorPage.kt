@@ -3,14 +3,7 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.routing
-
-import app.R
-
-
-
-
-
+package features.routing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -46,6 +39,7 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.ProxyServerState
+import app.R
 import app.collectAppState
 import app.navigation.RouteOutboundSelectionResult
 import app.proxyServerOutboundTag
@@ -148,9 +142,8 @@ fun RouteOutboundSelectorPage(
 
     val selectableServers = remember(appState.proxyServers, shadowrocketPolicyMode) {
         appState.proxyServers.filter { server ->
-            val serverImpl = server.server
-            (serverImpl !is Custom || serverImpl.canBeUsedInGeneratedProxyPlan()) &&
-                (!shadowrocketPolicyMode || serverImpl.getInfo().remarks.isNotBlank())
+            (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
+                (!shadowrocketPolicyMode || server.server.getInfo().remarks.isNotBlank())
         }
     }
 
@@ -192,10 +185,7 @@ fun RouteOutboundSelectorPage(
         )
 
         val autoBalancerItems = serversByGroup[AutoBalancerGroupId].orEmpty()
-            .filter { server ->
-                val serverImpl = server.server
-                serverImpl is StrategyGroup && serverImpl.sourceTrafficConfigId == null
-            }
+            .filter { server -> server.server is StrategyGroup && server.server.sourceTrafficConfigId == null }
             .map { RouteOutboundItem.Server(it, shadowrocketPolicyMode) }
 
         val subscriptionGroupItems = appState.subscriptionGroups

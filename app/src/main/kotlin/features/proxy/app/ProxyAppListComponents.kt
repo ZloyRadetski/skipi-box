@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.app
-
-import app.R
-
-
-
-
-
+package features.proxy.app
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -40,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.R
 import system.ANDROID_APP_ICON_SIZE_DP
 import coil3.compose.AsyncImage
 import androidx.compose.ui.res.stringResource

@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
-
-import app.R
-
-
-
-
-
+package features.proxy.server.editor
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
@@ -22,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import app.R
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks

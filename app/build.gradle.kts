@@ -115,7 +115,6 @@ tasks.named("preBuild") {
 }
 
 dependencies {
-    implementation(project(":shared"))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
     implementation(libs.androidx.navigation3.runtime)

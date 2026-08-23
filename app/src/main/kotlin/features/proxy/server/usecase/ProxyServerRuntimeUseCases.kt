@@ -1,9 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.usecase
-
-import ui.feedback.TipNotifier
+package features.proxy.server.usecase
 
 import app.AppState
 import app.ProxyServerLatencyTesting
@@ -104,7 +102,7 @@ internal fun runProxyServerLatencyTest(
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     proxyLatencyTester: AndroidProxyLatencyTester,
-    tipNotifier: TipNotifier,
+    tipNotifier: AndroidToastTipNotifier,
     noTestableServersMessage: String,
     latencyResultTemplate: String,
     latencyFailedMessage: String,

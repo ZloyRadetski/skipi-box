@@ -3,14 +3,7 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.settings
-
-import app.R
-
-
-
-
-
+package features.settings
 
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
@@ -39,6 +32,7 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
+import app.R
 import app.collectAppState
 import app.withVpnSettingsReset
 import data.backup.AppBackupRestorePreview

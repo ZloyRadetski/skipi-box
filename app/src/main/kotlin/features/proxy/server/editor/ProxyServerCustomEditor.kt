@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
-
-import app.R
-
-
-
-
-
+package features.proxy.server.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -39,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.LocalAppServices
+import app.R
 import features.proxy.server.model.Custom
 import features.proxy.server.model.formatCustomXrayConfigJson
 import kotlinx.coroutines.launch

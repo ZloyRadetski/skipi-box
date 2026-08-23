@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings
-
-import app.R
-
-
-
-
-
+package features.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,6 +40,7 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
+import app.R
 import app.collectAppState
 import app.modes.SubscriptionPingModeHttp
 import app.modes.SubscriptionPingModeTcp

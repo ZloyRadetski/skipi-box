@@ -3,9 +3,7 @@
 
 @file:OptIn(ExperimentalFoundationApi::class, ExperimentalScrollBarApi::class)
 
-package features.proxy.server.list
-
-import ui.feedback.TipNotifier
+package features.proxy.server.list
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -119,7 +117,7 @@ internal fun ProxyServerListPager(
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     clipboard: Clipboard,
-    tipNotifier: TipNotifier,
+    tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
     resultKey: String,
@@ -285,7 +283,7 @@ private fun SubscriptionProxyServerList(
     navigator: Navigator,
     clipboard: Clipboard,
     context: android.content.Context,
-    tipNotifier: TipNotifier,
+    tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
     resultKey: String,
@@ -458,7 +456,7 @@ private fun ProxyServerLazyGrid(
     navigator: Navigator,
     clipboard: Clipboard,
     context: android.content.Context,
-    tipNotifier: TipNotifier,
+    tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
     resultKey: String,
@@ -704,7 +702,7 @@ private fun ProxyServerListItem(
     navigator: Navigator,
     clipboard: Clipboard,
     context: android.content.Context,
-    tipNotifier: TipNotifier,
+    tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
     resultKey: String,

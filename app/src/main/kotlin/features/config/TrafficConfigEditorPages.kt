@@ -3,14 +3,7 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.config
-
-import app.R
-
-
-
-
-
+package features.config
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +52,7 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
+import app.R
 import app.collectAppState
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection

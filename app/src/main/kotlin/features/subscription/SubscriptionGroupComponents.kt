@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.subscription
-
-import app.R
-
-
-
-
-
+package features.subscription
 
 import app.SubscriptionGroupState
 import androidx.compose.animation.AnimatedVisibility
@@ -49,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.R
 import app.LocalAppStateStore
 import app.collectAppState
 import androidx.compose.ui.res.stringResource

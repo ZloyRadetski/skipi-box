@@ -205,10 +205,9 @@ class TrafficConfigProxyGroupIsolationTest {
         )
 
         val globalProxyGroups = appState.proxyServers.filter {
-            val serverImpl = it.server
             it.groupId == AutoBalancerGroupId &&
-                serverImpl is StrategyGroup &&
-                serverImpl.sourceTrafficConfigId == null
+                it.server is StrategyGroup &&
+                it.server.sourceTrafficConfigId == null
         }
 
         assertEquals(1, globalProxyGroups.size)

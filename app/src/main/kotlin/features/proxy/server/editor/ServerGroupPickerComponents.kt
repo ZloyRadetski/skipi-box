@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
-
-import app.R
-
-
-
-
-
+package features.proxy.server.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.R
 import app.SubscriptionGroupState
 import features.proxy.server.list.CountryFlagBadge
 import features.subscription.SubscriptionProviderBody

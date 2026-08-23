@@ -1,14 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
-
-import app.R
-
-
-
-
-
+package features.proxy.server.editor
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -32,6 +25,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.LocalAppStateStore
+import app.R
 import app.collectAppState
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup

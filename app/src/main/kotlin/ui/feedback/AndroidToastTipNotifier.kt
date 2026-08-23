@@ -9,16 +9,16 @@ import app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class AndroidToastTipNotifier(context: Context) : TipNotifier {
+class AndroidToastTipNotifier(context: Context) {
     private val appContext = context.applicationContext
 
-    override suspend fun show(message: String) {
+    suspend fun show(message: String) {
         withContext(Dispatchers.Main.immediate) {
             Toast.makeText(appContext, message, Toast.LENGTH_SHORT).show()
         }
     }
 
-    override suspend fun showError(error: Throwable, fallbackMessage: String?) {
+    suspend fun showError(error: Throwable, fallbackMessage: String? = null) {
         show(error.tipMessage(fallbackMessage))
     }
 }

@@ -3,14 +3,7 @@
 
 @file:OptIn(ExperimentalScrollBarApi::class)
 
-package features.resources
-
-import app.R
-
-
-
-
-
+package features.resources
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -49,6 +42,7 @@ import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
+import app.R
 import app.ResourceFileKind
 import app.ResourceFileUpdateSource
 import app.ResourceFileUpdateSources
