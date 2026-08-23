@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -142,7 +145,15 @@ fun DnsLeakTestPage(
         },
     ) { innerPadding ->
         val contentPadding = pageContentPaddingWithCutout(innerPadding, padding, isWideScreen)
-        val listPadding = pageListPadding(contentPadding)
+        val baseListPadding = pageListPadding(contentPadding)
+        // Match the app-wide horizontal content margin (same as SpeedTestPage).
+        val layoutDirection = LocalLayoutDirection.current
+        val listPadding = PaddingValues(
+            top = baseListPadding.calculateTopPadding(),
+            bottom = baseListPadding.calculateBottomPadding(),
+            start = baseListPadding.calculateStartPadding(layoutDirection) + 16.dp,
+            end = baseListPadding.calculateEndPadding(layoutDirection) + 16.dp,
+        )
         LazyColumn(
             state = rememberLazyListState(),
             modifier = Modifier
