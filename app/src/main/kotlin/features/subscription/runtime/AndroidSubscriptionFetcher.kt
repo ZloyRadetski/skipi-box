@@ -4,7 +4,6 @@
 package features.subscription.runtime
 
 import android.content.Context
-import android.net.Network
 import android.os.Build
 import data.AppSettingsPreferences
 import features.subscription.DefaultSubscriptionUserAgent
@@ -16,11 +15,9 @@ import engine.proxy.LocalProxyRuntime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import utils.encodeBase64
-import java.net.Authenticator
 import java.net.HttpURLConnection
 import java.net.IDN
 import java.net.InetSocketAddress
-import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URI
 import java.net.URL
@@ -52,10 +49,6 @@ internal class AndroidSubscriptionFetcher(
         options: AndroidSubscriptionFetchOptions,
     ): SubscriptionFetchResponse = withContext(Dispatchers.IO) {
         val proxy = options.toProxy()
-        // The app is excluded from its own VPN; without an explicit bind,
-        // updates would bypass an active tunnel entirely and may fail on
-        // networks where the target host is unreachable directly.
-        val vpnNetwork = if (proxy == null) TunnelNetworks.locateVpnNetwork(context) else null
         val requestCredentials = options.toRequestCredentials(
             installationHwid = installationHwid,
             ageCrypto = ageCrypto,
@@ -66,7 +59,6 @@ internal class AndroidSubscriptionFetcher(
                 userAgent = normalizeSkipiUserAgent(userAgent),
                 requestCredentials = requestCredentials,
                 proxy = proxy,
-                vpnNetwork = vpnNetwork,
                 timeoutSeconds = options.timeoutSeconds,
             )
         }.let { response ->
@@ -106,7 +98,6 @@ internal data class AndroidSubscriptionProxy(
 )
 
 private const val MaxRedirects = 3
-private val ProxyAuthenticatorLock = Any()
 
 internal fun AndroidSubscriptionFetchOptions.toProxy(): AndroidSubscriptionProxy? {
     if (!useRunningProxy) return null
@@ -124,13 +115,12 @@ private fun fetchWithRedirects(
     userAgent: String,
     requestCredentials: SubscriptionRequestCredentials,
     proxy: AndroidSubscriptionProxy?,
-    vpnNetwork: Network?,
     timeoutSeconds: Int,
 ): SubscriptionFetchResponse {
     var currentUrl = url
     val timeoutMillis = timeoutSeconds.coerceIn(3, 600) * 1000
     repeat(MaxRedirects) {
-        val connection = currentUrl.toConnection(proxy, vpnNetwork, timeoutMillis)
+        val connection = currentUrl.toConnection(proxy, timeoutMillis)
         try {
             connection.setRequestProperty("User-Agent", userAgent)
             connection.setRequestProperty("Connection", "close")
@@ -218,14 +208,11 @@ private fun String.decryptAgeArmoredOrPassThrough(
 
 private fun String.toConnection(
     proxy: AndroidSubscriptionProxy?,
-    vpnNetwork: Network?,
     timeoutMillis: Int,
 ): HttpURLConnection {
     val url = URI(this).toURL()
     val connection = when {
         proxy != null -> url.openConnection(proxy.toJavaProxy())
-        // Prefer traversing the active tunnel over a direct connection.
-        vpnNetwork != null -> runCatching { vpnNetwork.openConnection(url) }.getOrElse { url.openConnection() }
         else -> url.openConnection()
     }
     return (connection as HttpURLConnection).apply {
@@ -240,25 +227,14 @@ private fun AndroidSubscriptionProxy.toJavaProxy(): Proxy {
     return Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, port))
 }
 
-private inline fun <T> AndroidSubscriptionProxy?.withAuthenticator(block: () -> T): T {
+private fun <T> AndroidSubscriptionProxy?.withAuthenticator(block: () -> T): T {
     if (this == null || username.isBlank()) return block()
-    synchronized(ProxyAuthenticatorLock) {
-        Authenticator.setDefault(toAuthenticator())
-        return try {
-            block()
-        } finally {
-            Authenticator.setDefault(null)
-        }
-    }
-}
-
-private fun AndroidSubscriptionProxy.toAuthenticator(): Authenticator {
-    return object : Authenticator() {
-        override fun getPasswordAuthentication(): PasswordAuthentication? {
-            if (requestingHost != host || requestingPort != port) return null
-            return PasswordAuthentication(username, password.toCharArray())
-        }
-    }
+    return TunnelNetworks.withSocksProxyAuthenticator(
+        port = port,
+        username = username,
+        password = password,
+        block = block,
+    )
 }
 
 private fun HttpURLConnection.setEmbeddedBasicAuth(rawUrl: String) {

@@ -10,13 +10,12 @@ import features.config.withConfigProxyGroupsReflected
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.VLESS
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class XrayBurstBalancerTest {
     @Test
-    fun configPolicyGroupsUseParallelBurstObservatoryByDefault() {
+    fun configPolicyGroupsUseConcurrentStandardObservatoryByDefault() {
         val state = AppState(
             activeTrafficConfigId = 1,
             proxyServers = listOf(
@@ -38,8 +37,6 @@ class XrayBurstBalancerTest {
 
         val plan = state.buildXrayOutboundPlan(balancer)
 
-        assertEquals("burstObservatory", plan.balancers.single().observerTag)
-        assertEquals(0, plan.observatorySelectors.size)
-        assertTrue(plan.burstObservatorySelectors.isNotEmpty())
+        assertTrue(plan.observatorySelectors.isNotEmpty())
     }
 }

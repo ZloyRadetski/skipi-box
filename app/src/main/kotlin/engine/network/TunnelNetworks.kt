@@ -11,6 +11,8 @@ import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
+import java.net.Authenticator
+import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URL
 
@@ -24,6 +26,44 @@ import java.net.URL
  * like any other app's traffic.
  */
 object TunnelNetworks {
+
+    /**
+     * Runs a local SOCKS operation with credentials while the connection is
+     * established. A SOCKS proxy authenticates lazily at connect time, so
+     * merely configuring the [Proxy] object is not enough.
+     */
+    fun <T> withLocalProxyAuthenticator(block: () -> T): T {
+        val options = LocalProxyRuntime.current() ?: return block()
+        return withSocksProxyAuthenticator(
+            port = options.port,
+            username = options.username,
+            password = options.password,
+            block = block,
+        )
+    }
+
+    /** Shared by resource downloads that use an explicit local SOCKS proxy. */
+    fun <T> withSocksProxyAuthenticator(
+        port: Int,
+        username: String,
+        password: String,
+        block: () -> T,
+    ): T {
+        if (username.isBlank()) return block()
+        synchronized(SocksAuthenticatorLock) {
+            Authenticator.setDefault(object : Authenticator() {
+                override fun getPasswordAuthentication(): PasswordAuthentication? {
+                    if (!isSocksProxyAuthenticationRequest(requestingPort, port)) return null
+                    return PasswordAuthentication(username, password.toCharArray())
+                }
+            })
+            return try {
+                block()
+            } finally {
+                Authenticator.setDefault(null)
+            }
+        }
+    }
 
     /** The device's active VPN network, or null when no tunnel is up. */
     fun locateVpnNetwork(context: Context?): Network? {
@@ -59,3 +99,13 @@ object TunnelNetworks {
         return url.openConnection() as HttpURLConnection
     }
 }
+
+/**
+ * Android's SOCKS implementation does not consistently expose the proxy host
+ * to [Authenticator], but the dynamically allocated local port is unique.
+ */
+internal fun isSocksProxyAuthenticationRequest(requestingPort: Int, proxyPort: Int): Boolean {
+    return requestingPort == proxyPort && proxyPort in 1..65_535
+}
+
+private val SocksAuthenticatorLock = Any()

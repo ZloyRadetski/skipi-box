@@ -7,10 +7,8 @@ import android.content.Context
 import android.net.Network
 import java.io.File
 import java.io.IOException
-import java.net.Authenticator
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
-import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URI
 import engine.network.TunnelNetworks
@@ -26,13 +24,13 @@ internal class AndroidResourceFileDownloader(
         onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
     ) {
         if (proxy != null) {
-            proxy.withAuthenticator {
-                try {
+            try {
+                proxy.withAuthenticator {
                     downloadWithRetries(url, target, proxy, userAgent, onProgress)
-                    return
-                } catch (_: IOException) {
-                    AndroidResourceFileLogger.info("Proxy download failed, falling back to direct connection")
                 }
+                return
+            } catch (_: IOException) {
+                AndroidResourceFileLogger.info("Proxy download failed, falling back to direct connection")
             }
         }
         downloadWithRetries(url, target, null, userAgent, onProgress)
@@ -140,28 +138,15 @@ private fun AndroidResourceFileDownloadProxy.toJavaProxy(): Proxy {
     return Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, port))
 }
 
-private inline fun <T> AndroidResourceFileDownloadProxy?.withAuthenticator(block: () -> T): T {
+private fun <T> AndroidResourceFileDownloadProxy?.withAuthenticator(block: () -> T): T {
     if (this == null || username.isBlank()) return block()
-    synchronized(ProxyAuthenticatorLock) {
-        Authenticator.setDefault(toAuthenticator())
-        return try {
-            block()
-        } finally {
-            Authenticator.setDefault(null)
-        }
-    }
+    return TunnelNetworks.withSocksProxyAuthenticator(
+        port = port,
+        username = username,
+        password = password,
+        block = block,
+    )
 }
-
-private fun AndroidResourceFileDownloadProxy.toAuthenticator(): Authenticator {
-    return object : Authenticator() {
-        override fun getPasswordAuthentication(): PasswordAuthentication? {
-            if (requestingHost != host || requestingPort != port) return null
-            return PasswordAuthentication(username, password.toCharArray())
-        }
-    }
-}
-
-private val ProxyAuthenticatorLock = Any()
 
 private const val MaxRedirects = 5
 private const val MaxRetries = 3

@@ -53,7 +53,9 @@ internal class AppUpdateDownloader(
             var downloadedBytes = 0L
             var lastEmittedProgress = 0f
 
-            val connection = openConnectionWithRedirects(updateInfo.downloadUrl)
+            val connection = TunnelNetworks.withLocalProxyAuthenticator {
+                openConnectionWithRedirects(updateInfo.downloadUrl)
+            }
             val contentLength = connection.contentLengthLong
             if (contentLength > 0) {
                 totalBytes = contentLength

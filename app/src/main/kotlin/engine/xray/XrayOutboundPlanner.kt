@@ -33,7 +33,6 @@ private class XrayOutboundPlanner(
     private val proxyOutbounds = mutableListOf<XrayProxyOutboundServer>()
     private val balancers = mutableListOf<XrayBalancerPlan>()
     private val observatorySelectors = mutableListOf<String>()
-    private val burstObservatorySelectors = mutableListOf<String>()
     private val routeTargets = linkedMapOf<String, XrayRouteTarget>()
     private val addedOutboundTags = mutableSetOf<String>()
     private val dnsHostServers = mutableListOf<String>()
@@ -51,7 +50,6 @@ private class XrayOutboundPlanner(
             proxyOutbounds = proxyOutbounds,
             balancers = balancers,
             observatorySelectors = observatorySelectors.distinct(),
-            burstObservatorySelectors = burstObservatorySelectors.distinct(),
             routeTargets = routeTargets,
             dnsHostServers = dnsHostServers.distinct(),
             observatoryProbeUrl = observatoryProbeUrl,
@@ -133,18 +131,18 @@ private class XrayOutboundPlanner(
                         ?.second
                     ?: memberTags.first()
 
-                val observerTag = if (group.enableBurstProbe) "burstObservatory" else null
-                if (group.enableBurstProbe) {
-                    burstObservatorySelectors += selector
-                } else {
-                    observatorySelectors += selector
-                }
+                // leastPing only consumes the regular Observatory.  Burst
+                // Observatory schedules its initial probes randomly, so it
+                // can leave the balancer without a target despite a verified
+                // startup fallback.  The regular Observatory probes all
+                // members concurrently and lets fallbackTag carry traffic
+                // until it has its first result.
+                observatorySelectors += selector
                 balancers += XrayBalancerPlan(
                     tag = tag,
                     selector = selector,
                     strategy = strategy,
                     fallbackTag = bestFallbackTag,
-                    observerTag = observerTag,
                 )
                 routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
             }
@@ -257,19 +255,17 @@ private class XrayOutboundPlanner(
             observatoryProbeInterval = customProbeInterval
         }
 
-        val observerTag = if (strategyGroup.enableBurstProbe) "burstObservatory" else null
-        if (strategyGroup.enableBurstProbe) {
-            burstObservatorySelectors += selector
-        } else {
-            observatorySelectors += selector
-        }
+        // enableBurstProbe controls SKIPI's pre-start verification. Xray's
+        // running leastPing balancer must use the standard, concurrent
+        // Observatory; a Burst Observatory has no deterministic first probe
+        // and is not a supported leastPing strategy setting.
+        observatorySelectors += selector
 
         balancers += XrayBalancerPlan(
             tag = tag,
             selector = selector,
             strategy = balancerStrategy,
             fallbackTag = bestFallbackTag,
-            observerTag = observerTag,
         )
         routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
     }

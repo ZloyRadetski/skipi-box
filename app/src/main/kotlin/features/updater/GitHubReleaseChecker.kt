@@ -32,26 +32,28 @@ internal class GitHubReleaseChecker(
 ) {
     suspend fun checkLatestRelease(): AppUpdateInfo? = withContext(Dispatchers.IO) {
         runCatching {
-            val url = URL(GitHubApiUrl)
-            // The app is excluded from its own VPN, so bind to the tunnel
-            // explicitly when it is up; otherwise check via the direct path.
-            val connection = (TunnelNetworks.openHttpConnection(context, url) as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 15000
-                readTimeout = 20000
-                setRequestProperty("Accept", "application/vnd.github.v3+json")
-                setRequestProperty("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
-            }
+            TunnelNetworks.withLocalProxyAuthenticator {
+                val url = URL(GitHubApiUrl)
+                // The app is excluded from its own VPN, so bind to the tunnel
+                // explicitly when it is up; otherwise check via the direct path.
+                val connection = (TunnelNetworks.openHttpConnection(context, url) as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 15000
+                    readTimeout = 20000
+                    setRequestProperty("Accept", "application/vnd.github.v3+json")
+                    setRequestProperty("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
+                }
 
-            val statusCode = connection.responseCode
-            if (statusCode != HttpURLConnection.HTTP_OK) {
-                AndroidAppLogger.warn(LogTag, "GitHub release check failed: HTTP $statusCode")
-                return@withContext null
-            }
+                val statusCode = connection.responseCode
+                if (statusCode != HttpURLConnection.HTTP_OK) {
+                    AndroidAppLogger.warn(LogTag, "GitHub release check failed: HTTP $statusCode")
+                    return@withLocalProxyAuthenticator null
+                }
 
-            val responseText = connection.inputStream.bufferedReader().use(BufferedReader::readText)
-            val releaseJson = json.parseToJsonElement(responseText).jsonObject
-            parseRelease(releaseJson)
+                val responseText = connection.inputStream.bufferedReader().use(BufferedReader::readText)
+                val releaseJson = json.parseToJsonElement(responseText).jsonObject
+                parseRelease(releaseJson)
+            }
         }.onFailure { error ->
             AndroidAppLogger.warn(LogTag, "Error checking GitHub release: ${error.message}", error)
         }.getOrNull()
