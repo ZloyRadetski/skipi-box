@@ -3,10 +3,46 @@
 
 package app.navigation
 
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.SaverScope
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.serialization.json.Json
+
+private val navigationKeyJson = Json { classDiscriminator = "route" }
+
+/**
+ * Saves the navigation back stack across Activity recreations (e.g. screen
+ * rotation). Every [Route] is @Serializable, so entries are stored as JSON.
+ * Entries that cannot be serialized (or decoded back) are dropped instead of
+ * crashing; the rest of the stack below them is kept.
+ */
+val NavigationBackStackSaver: Saver<MutableList<NavKey>, List<String>> =
+    object : Saver<MutableList<NavKey>, List<String>> {
+        override fun SaverScope.save(value: MutableList<NavKey>): List<String> {
+            val encodedKeys = mutableListOf<String>()
+            for (key in value) {
+                // Entries that cannot be serialized end the saved portion of the
+                // stack: anything below them becomes unreachable anyway.
+                val encoded = (key as? Route)?.let { route ->
+                    runCatching { navigationKeyJson.encodeToString(Route.serializer(), route) }.getOrNull()
+                } ?: break
+                encodedKeys.add(encoded)
+            }
+            return encodedKeys
+        }
+
+        override fun restore(value: List<String>): MutableList<NavKey> {
+            val restoredKeys = mutableListOf<NavKey>()
+            for (encoded in value) {
+                runCatching { navigationKeyJson.decodeFromString<Route>(encoded) }.getOrNull()
+                    ?.let(restoredKeys::add)
+            }
+            return restoredKeys
+        }
+    }
 
 /**
  * Simple navigation helper that owns a back stack and result channels.

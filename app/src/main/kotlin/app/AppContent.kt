@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
@@ -72,6 +73,7 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import app.modes.BottomBarSizeMedium
 import app.modes.BottomBarSizeSmall
+import app.navigation.NavigationBackStackSaver
 import app.navigation.Navigator
 import app.navigation.Route
 import androidx.compose.ui.res.stringResource
@@ -201,7 +203,9 @@ fun AppContent(
         mainPagerState.syncPage()
     }
 
-    val backStack = remember { mutableStateListOf<NavKey>().apply { add(initialRoute) } }
+    val backStack = rememberSaveable(saver = NavigationBackStackSaver) {
+        mutableStateListOf<NavKey>().apply { add(initialRoute) }
+    }
     val navigator = remember { Navigator(backStack) }
 
     MainScreenBackHandler(mainPagerState, navigator)
