@@ -8,7 +8,6 @@ import system.AndroidAppIconFetcher
 import features.logs.AndroidAccessLogRepository
 import features.logs.AndroidCoreLogRepository
 import features.logs.AndroidLogcatRepository
-import features.logs.AndroidAppLogger
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -56,6 +55,16 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        // A Quick Settings tile can be the first component that starts this
+        // process.  Keep Application.onCreate short so Android can deliver the
+        // tile click and the VPN foreground-service request without waiting
+        // for Room to deserialize every saved server and group.
+        appScope.launch(Dispatchers.IO) {
+            initializeRuntime()
+        }
+    }
+
+    private fun initializeRuntime() {
         AppSettingsPreferences(applicationContext).getOrCreateSubscriptionHwid()
         val retentionDays = stateStore.state.value.logRetentionDays
         AndroidLogcatRepository.initialize(applicationContext, retentionDays)

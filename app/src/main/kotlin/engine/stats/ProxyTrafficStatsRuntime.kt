@@ -85,6 +85,7 @@ internal object ProxyTrafficStatsRuntimeStore {
             remove(KeyApiTag)
             remove(KeyFinalOutboundTag)
             remove(KeySelectedServerId)
+            remove(KeyStartupStrategyMemberId)
             remove(KeyStartedAtElapsedRealtime)
             remove(KeyPaused)
             remove(KeyPausedAtElapsedRealtime)

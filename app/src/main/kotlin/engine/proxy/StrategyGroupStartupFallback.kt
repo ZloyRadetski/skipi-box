@@ -4,13 +4,14 @@
 package engine.proxy
 
 import app.AppState
+import engine.xray.strategyGroupMembers
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
 
 /**
- * Applies a member that has already completed a real proxy request only to the
- * in-flight VPN request. The persisted selection remains untouched; Xray still
- * keeps validating the selected member through its observatory after startup.
+ * Applies the first member reached by the short startup TCP race only to the
+ * in-flight VPN request. The persisted selection remains untouched; Xray keeps
+ * validating members through its Observatory after the tunnel starts.
  */
 internal fun AppState.withStrategyGroupStartupFallback(
     serverId: Int,
@@ -27,7 +28,7 @@ internal fun AppState.withStrategyGroupStartupFallback(
             val group = state.server as? StrategyGroup ?: return@map state
             if (
                 group.strategy == StrategyGroupConstants.TYPE_SELECT ||
-                (group.proxyServerIds.isNotEmpty() && fastestMemberId !in group.proxyServerIds)
+                !strategyGroupMembers(group).any { member -> member.id == fastestMemberId }
             ) {
                 state
             } else {

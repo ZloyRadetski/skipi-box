@@ -146,7 +146,7 @@ internal class AndroidProxyLatencyTester(
     suspend fun fastProbeStrategyGroupMembers(
         appState: AppState,
         strategyGroup: StrategyGroup,
-        maxWaitMillis: Long = 900L,
+        maxWaitMillis: Long = 600L,
         maxConcurrency: Int = appState.subscriptionPingConcurrency,
     ): Map<Int, Long> = withContext(Dispatchers.IO) {
         val members = appState.strategyGroupMembers(strategyGroup)
@@ -159,7 +159,7 @@ internal class AndroidProxyLatencyTester(
 
         withTimeoutOrNull(maxWaitMillis) {
             coroutineScope {
-                members.map { member ->
+                val pending = members.associateWith { member ->
                     async {
                         semaphore.withPermit {
                             val endpoint = member.server.endpoint() ?: return@withPermit null
@@ -167,71 +167,32 @@ internal class AndroidProxyLatencyTester(
                             val address = resolveHost(endpoint.host, 300L, dnsCache, failedDnsCache) ?: return@withPermit null
                             val connectTime = nioSocketConnectTime(address, endpoint.port, 300)
                             if (connectTime >= 0) {
-                                val total = SystemClock.elapsedRealtime() - started
-                                member.id to total
-                            } else null
-                        }
-                    }
-                }.awaitAll().filterNotNull().toMap()
-            }
-        }.orEmpty()
-    }
-
-    /**
-     * Confirms the quickest TCP candidates through the actual proxy protocol.
-     * A completed TCP handshake alone is not enough to route user traffic: a
-     * server can still reject its UUID, TLS/Reality handshake, or destination.
-     */
-    suspend fun verifyStrategyGroupStartupCandidates(
-        appState: AppState,
-        strategyGroup: StrategyGroup,
-        tcpCandidates: Map<Int, Long>,
-        maxWaitMillis: Long = StartupVerificationTimeoutMillis,
-        maxConcurrency: Int = StartupVerificationConcurrency,
-    ): Map<Int, Long> = withContext(Dispatchers.IO) {
-        val membersById = appState.strategyGroupMembers(strategyGroup)
-            .filter { member -> member.server !is StrategyGroup }
-            .associateBy(ProxyServerState::id)
-        val candidates = tcpCandidates
-            .asSequence()
-            .filter { (_, latency) -> latency >= 0 }
-            .sortedBy { (_, latency) -> latency }
-            .mapNotNull { (memberId, _) -> membersById[memberId] }
-            .take(StartupVerificationCandidateCount)
-            .toList()
-        if (candidates.isEmpty()) return@withContext emptyMap()
-
-        val semaphore = Semaphore(maxConcurrency.coerceIn(1, StartupVerificationConcurrency))
-        withTimeoutOrNull(maxWaitMillis) {
-            coroutineScope {
-                val pending = candidates.associateWith { member ->
-                    async {
-                        semaphore.withPermit {
-                            runCatching {
-                                test(
-                                    appState = appState,
-                                    server = member,
-                                    mode = ProxyServerLatencyTestMode.RealConnection,
-                                ).elapsedMillis
-                            }.getOrDefault(FailedDelayMillis)
+                                member.id to (SystemClock.elapsedRealtime() - started)
+                            } else {
+                                null
+                            }
                         }
                     }
                 }.toMutableMap()
+                val candidates = linkedMapOf<Int, Long>()
                 try {
-                    while (pending.isNotEmpty()) {
-                        val (member, latency) = select<Pair<ProxyServerState, Long>> {
-                            pending.forEach { (candidate, result) ->
-                                result.onAwait { elapsedMillis -> candidate to elapsedMillis }
+                    // The first successful connection wins.  Starting the
+                    // actual tunnel matters more than ranking every member;
+                    // Xray's Observatory continues health checks afterwards.
+                    while (pending.isNotEmpty() && candidates.size < StartupCandidateCount) {
+                        val (member, result) = select<Pair<ProxyServerState, Pair<Int, Long>?>> {
+                            pending.forEach { (candidate, deferred) ->
+                                deferred.onAwait { value -> candidate to value }
                             }
                         }
                         pending.remove(member)
-                        if (latency >= 0) {
-                            return@coroutineScope mapOf(member.id to latency)
+                        result?.let { (memberId, latency) ->
+                            candidates[memberId] = latency
                         }
                     }
-                    emptyMap()
+                    candidates
                 } finally {
-                    pending.values.forEach { result -> result.cancel() }
+                    pending.values.forEach { deferred -> deferred.cancel() }
                 }
             }
         }.orEmpty()
@@ -442,9 +403,7 @@ private fun endpoint(host: String, port: String): ProxyServerEndpoint? {
 
 private const val LogTag = "ProxyLatencyTest"
 private const val FailedDelayMillis = -1L
-private const val StartupVerificationCandidateCount = 3
-private const val StartupVerificationConcurrency = 3
-private const val StartupVerificationTimeoutMillis = 3_500L
+private const val StartupCandidateCount = 1
 private const val DefaultPingTimeoutMillis = 5_000
 private const val MinPingTimeoutMillis = 500
 private const val MaxPingTimeoutMillis = 60_000

@@ -22,6 +22,11 @@ internal data class XrayConfigRequest(
     val dnsHosts: List<String> = appState.dnsHosts,
     val dnsHijackInboundTags: List<String> = listOf(XrayTags.VPN_TUN_INBOUND),
     val statsApiConfig: XrayStatsApiConfig? = null,
+    /**
+     * The VPN startup path already needs this plan to derive direct-DNS hosts.
+     * Reusing it here avoids walking every balancer member a second time.
+     */
+    val outboundPlan: XrayOutboundPlan? = null,
 )
 
 internal data class XrayProxyOutboundServer(
@@ -41,8 +46,7 @@ internal object XrayConfigFactory {
         }
 
         val config = buildGeneratedXrayConfig(request).toJsonObject()
-        logGeneratedXrayConfig(config)
-        return XrayConfigPrettyJson.encodeToString(config).withSingleTrailingLf()
+        return encodeRuntimeXrayConfig(config)
     }
 }
 
@@ -89,7 +93,7 @@ internal object XraySpeedTestConfigFactory {
 }
 
 private fun buildGeneratedXrayConfig(request: XrayConfigRequest): GeneratedXrayConfig {
-    val outboundPlan = request.appState.buildXrayOutboundPlan(request.selectedServer)
+    val outboundPlan = request.outboundPlan ?: request.appState.buildXrayOutboundPlan(request.selectedServer)
     val startupProxyServerDomains = if (request.appState.enableDirectDnsForProxyServerDomains) {
         outboundPlan.proxyOutbounds.startupProxyServerDnsDomains()
     } else {
@@ -132,18 +136,22 @@ private fun buildCustomXrayConfig(
 ): String {
     val config = CustomXrayConfigRewriter.rewrite(request, server)
         .withXrayStatsApiConfig(request.statsApiConfig)
-    logGeneratedXrayConfig(config)
-    return XrayConfigPrettyJson.encodeToString(config).withSingleTrailingLf()
+    return encodeRuntimeXrayConfig(config)
 }
 
-private fun logGeneratedXrayConfig(config: JsonObject) {
-    val json = XrayConfigPrettyJson.encodeToString(config)
-    val chunks = json.chunked(LogChunkSize)
-    chunks.forEachIndexed { index, chunk ->
-        val progress = if (chunks.size == 1) "" else " (${index + 1}/${chunks.size})"
-        AndroidAppLogger.info(LogTag, "Generated Xray config JSON$progress:\n$chunk")
-    }
+/**
+ * Tunnel startup must not pretty-print and persist the whole generated config.
+ * Besides being expensive for large balancers, that log contains credentials.
+ * Keep a small fingerprint instead; explicit configuration export remains the
+ * proper diagnostic path.
+ */
+private fun encodeRuntimeXrayConfig(config: JsonObject): String {
+    val json = XrayConfigJson.encodeToString(config).withSingleTrailingLf()
+    AndroidAppLogger.debug(
+        LogTag,
+        "Generated Xray config: chars=${json.length}, fingerprint=${json.hashCode().toUInt().toString(16)}",
+    )
+    return json
 }
 
 private const val LogTag = "XrayConfig"
-private const val LogChunkSize = 3500

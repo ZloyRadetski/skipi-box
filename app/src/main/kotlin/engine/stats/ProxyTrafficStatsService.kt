@@ -4,7 +4,6 @@
 package engine.stats
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
@@ -24,6 +23,7 @@ import app.activeTunnelTargetDisplayName
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.SkipiVpnService
+import engine.vpn.VpnForegroundNotification
 import engine.xray.XrayStatsApiTag
 import features.logs.AndroidAppLogger
 import features.proxy.server.usecase.ProxyServiceResult
@@ -92,7 +92,10 @@ class ProxyTrafficStatsService : Service() {
     private var activeOutboundTag: String? = null
     private var activeTargetName = ""
     private var resumeInProgress = false
+    @Volatile
+    private var pauseStopJob: Job? = null
     private var isScreenInteractive = true
+    private var ownsForegroundNotification = false
 
     private val screenStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -101,10 +104,7 @@ class ProxyTrafficStatsService : Service() {
                     isScreenInteractive = true
                     val runtime = activeRuntime
                     if (runtime != null && !runtime.paused) {
-                        notificationManager.notify(
-                            NotificationId,
-                            buildNotification(runtime, latestSample),
-                        )
+                        publishNotification(runtime, latestSample)
                     }
                 }
                 Intent.ACTION_SCREEN_OFF -> {
@@ -116,7 +116,7 @@ class ProxyTrafficStatsService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
+        VpnForegroundNotification.ensureChannel(this, notificationManager)
         isScreenInteractive = powerManager?.isInteractive ?: true
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
@@ -179,26 +179,24 @@ class ProxyTrafficStatsService : Service() {
         runCatching { unregisterReceiver(screenStateReceiver) }
         pollingJob?.cancel()
         pollingJob = null
+        if (ownsForegroundNotification) {
+            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+            ownsForegroundNotification = false
+        }
         activeRuntime = null
         latestSample = EmptyTrafficSample
         resumeInProgress = false
+        pauseStopJob = null
         serviceJob.cancel()
         super.onDestroy()
     }
 
     private fun startStats(runtime: ProxyTrafficStatsRuntime) {
         pollingJob?.cancel()
-        val initialNotification = buildNotification(
-            runtime = runtime,
-            sample = EmptyTrafficSample,
-        )
-        val foregroundStarted = runCatching {
-            startForegroundCompat(initialNotification)
-        }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to start traffic stats foreground service", error)
-            stopStats()
-        }.isSuccess
-        if (!foregroundStarted) return
+        if (!publishNotification(runtime, EmptyTrafficSample)) {
+            if (runtime.paused) stopStats()
+            return
+        }
 
         if (runtime.paused) return
 
@@ -242,13 +240,7 @@ class ProxyTrafficStatsService : Service() {
                         }
                         latestSample = sessionAccumulator.record(delta, elapsedMillis)
                         if (isScreenInteractive) {
-                            notificationManager.notify(
-                                NotificationId,
-                                buildNotification(
-                                    runtime = runtime,
-                                    sample = latestSample,
-                                ),
-                            )
+                            publishNotification(runtime, latestSample)
                         }
                     }.onFailure { error ->
                         failures += 1
@@ -273,10 +265,14 @@ class ProxyTrafficStatsService : Service() {
         activeOutboundTag = null
         activeTargetName = ""
         resumeInProgress = false
-        runCatching {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+        if (ownsForegroundNotification) {
+            runCatching {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            }
+            ownsForegroundNotification = false
+        } else if (!SkipiVpnService.isRunning()) {
+            notificationManager.cancel(VpnForegroundNotification.NotificationId)
         }
-        notificationManager.cancel(NotificationId)
         stopSelf()
     }
 
@@ -284,19 +280,25 @@ class ProxyTrafficStatsService : Service() {
     private fun pauseVpn() {
         val runtime = activeRuntime ?: ProxyTrafficStatsRuntimeStore.read(this) ?: return
         if (runtime.paused) return
-        pollingJob?.cancel()
-        pollingJob = null
         val pausedRuntime = runtime.copy(
             paused = true,
             pausedAtElapsedRealtime = SystemClock.elapsedRealtime(),
         )
+        if (!publishNotification(pausedRuntime, latestSample, forceForeground = true)) return
+        pollingJob?.cancel()
+        pollingJob = null
         activeRuntime = pausedRuntime
         ProxyTrafficStatsRuntimeStore.write(applicationContext, pausedRuntime)
-        serviceScope.launch {
-            SkipiVpnService.stop(applicationContext)
+        val stopJob = serviceScope.launch {
+            SkipiVpnService.stop(applicationContext, keepForegroundNotification = true)
+        }
+        pauseStopJob = stopJob
+        stopJob.invokeOnCompletion {
+            if (pauseStopJob === stopJob) {
+                pauseStopJob = null
+            }
         }
         stateStore.update { state -> state.copy(proxyRunning = false) }
-        notificationManager.notify(NotificationId, buildNotification(pausedRuntime, latestSample))
     }
 
     /** Starts the selected VPN again through the same engine path as the main UI. */
@@ -306,13 +308,27 @@ class ProxyTrafficStatsService : Service() {
         if (!runtime.paused) return
         resumeInProgress = true
         serviceScope.launch {
+            val startedAt = SystemClock.elapsedRealtime()
             try {
+                // A tap immediately after Pause used to race the asynchronous
+                // VPN stop. Waiting for that exact job and starting directly
+                // prevents an accidental second stop and its timeout delay.
+                pauseStopJob?.join()
+                val stoppedAt = SystemClock.elapsedRealtime()
+                AndroidAppLogger.info(
+                    LogTag,
+                    "Notification resume: previous stop waited ${stoppedAt - startedAt}ms",
+                )
                 val state = stateStore.state.value
                 val selectedServer = state.proxyServers.firstOrNull { server ->
                     server.id == state.selectedProxyServerId
                 }
-                when (val result = notificationProxyServiceUseCase.toggle(state, selectedServer)) {
+                when (val result = notificationProxyServiceUseCase.start(state, selectedServer)) {
                     is ProxyServiceResult.Success -> {
+                        AndroidAppLogger.info(
+                            LogTag,
+                            "Notification resume: VPN started in ${SystemClock.elapsedRealtime() - startedAt}ms",
+                        )
                         stateStore.update { current ->
                             current.copy(
                                 proxyRunning = result.proxyRunning,
@@ -417,36 +433,43 @@ class ProxyTrafficStatsService : Service() {
     @Suppress("DEPRECATION")
     private fun notificationBuilder(): Notification.Builder {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, ChannelId)
+            Notification.Builder(this, VpnForegroundNotification.ChannelId)
         } else {
             Notification.Builder(this)
         }
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        notificationManager.createNotificationChannel(
-            NotificationChannel(
-                ChannelId,
-                getString(R.string.proxy_traffic_stats_notification_channel),
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                setSound(null, null)
-                enableVibration(false)
-                setShowBadge(false)
-            },
-        )
+    private fun publishNotification(
+        runtime: ProxyTrafficStatsRuntime,
+        sample: XrayTrafficSessionSample,
+        forceForeground: Boolean = runtime.paused,
+    ): Boolean {
+        val notification = buildNotification(runtime, sample)
+        if (forceForeground) {
+            return runCatching {
+                startForegroundCompat(notification)
+                ownsForegroundNotification = true
+            }.onFailure { error ->
+                AndroidAppLogger.warn(LogTag, "Failed to promote paused traffic notification", error)
+            }.isSuccess
+        }
+        if (ownsForegroundNotification) {
+            stopForeground(STOP_FOREGROUND_DETACH)
+            ownsForegroundNotification = false
+        }
+        notificationManager.notify(VpnForegroundNotification.NotificationId, notification)
+        return true
     }
 
     private fun startForegroundCompat(notification: Notification) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
-                NotificationId,
+                VpnForegroundNotification.NotificationId,
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
             )
         } else {
-            startForeground(NotificationId, notification)
+            startForeground(VpnForegroundNotification.NotificationId, notification)
         }
     }
 
@@ -479,18 +502,20 @@ class ProxyTrafficStatsService : Service() {
         ) {
             val appContext = context.applicationContext
             ProxyTrafficStatsRuntimeStore.write(appContext, runtime)
+            val startIntent = Intent(appContext, ProxyTrafficStatsService::class.java)
+                .setAction(ActionStart)
+                .putExtra(ExtraListenAddress, runtime.listenAddress)
+                .putExtra(ExtraPort, runtime.port)
+                .putExtra(ExtraServerName, runtime.serverName)
+                .putExtra(ExtraApiTag, runtime.apiTag)
             runCatching {
-                ContextCompat.startForegroundService(
-                    appContext,
-                    Intent(appContext, ProxyTrafficStatsService::class.java)
-                        .setAction(ActionStart)
-                        .putExtra(ExtraListenAddress, runtime.listenAddress)
-                        .putExtra(ExtraPort, runtime.port)
-                        .putExtra(ExtraServerName, runtime.serverName)
-                        .putExtra(ExtraApiTag, runtime.apiTag),
-                )
+                if (runtime.paused) {
+                    ContextCompat.startForegroundService(appContext, startIntent)
+                } else {
+                    appContext.startService(startIntent)
+                }
             }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to request traffic stats foreground service start", error)
+                AndroidAppLogger.warn(LogTag, "Failed to request traffic stats service start", error)
             }
         }
 
@@ -522,8 +547,6 @@ private const val ExtraListenAddress = "listen_address"
 private const val ExtraPort = "port"
 private const val ExtraServerName = "server_name"
 private const val ExtraApiTag = "api_tag"
-private const val ChannelId = "proxy_traffic_stats"
-private const val NotificationId = 3001
 private const val PauseRequestCode = 3002
 private const val ResumeRequestCode = 3003
 private const val DisconnectRequestCode = 3004

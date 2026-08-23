@@ -14,7 +14,7 @@ import org.junit.Test
 
 class StrategyGroupStartupFallbackTest {
     @Test
-    fun usesFastestVerifiedMemberAsTransientBalancerFallback() {
+    fun usesFastestReachableMemberAsTransientBalancerFallback() {
         val group = StrategyGroup(
             strategy = StrategyGroupConstants.TYPE_LEAST_PING,
             proxyServerIds = listOf(10, 20, 30),
@@ -39,7 +39,7 @@ class StrategyGroupStartupFallbackTest {
     }
 
     @Test
-    fun doesNotAssignFallbackWhenNoCandidatePassedRealConnectionTest() {
+    fun doesNotAssignFallbackWhenNoCandidateWasReachable() {
         val group = StrategyGroup(
             strategy = StrategyGroupConstants.TYPE_LEAST_PING,
             proxyServerIds = listOf(10),
@@ -58,5 +58,28 @@ class StrategyGroupStartupFallbackTest {
 
         val warmedGroup = warmed.proxyServers.single { server -> server.id == 100 }.server as StrategyGroup
         assertNull(warmedGroup.selectedMemberId)
+    }
+
+    @Test
+    fun fallbackGroupUsesReachableStartupMember() {
+        val group = StrategyGroup(
+            strategy = StrategyGroupConstants.TYPE_FALLBACK,
+            proxyServerIds = listOf(10, 20),
+        )
+        val state = AppState(
+            proxyServers = listOf(
+                ProxyServerState(10, VLESS(remarks = "Primary", id = "10", server = "primary.example", port = "443"), groupId = 0),
+                ProxyServerState(20, VLESS(remarks = "Reachable", id = "20", server = "reachable.example", port = "443"), groupId = 0),
+                ProxyServerState(100, group, groupId = 0),
+            ),
+        )
+
+        val warmed = state.withStrategyGroupStartupFallback(
+            serverId = 100,
+            probeLatencies = mapOf(10 to -1L, 20 to 50L),
+        )
+
+        val warmedGroup = warmed.proxyServers.single { server -> server.id == 100 }.server as StrategyGroup
+        assertEquals(20, warmedGroup.selectedMemberId)
     }
 }

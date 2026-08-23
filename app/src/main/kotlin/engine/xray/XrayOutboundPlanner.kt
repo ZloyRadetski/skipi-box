@@ -226,12 +226,16 @@ private class XrayOutboundPlanner(
             StrategyGroupConstants.TYPE_FALLBACK -> StrategyGroupConstants.TYPE_LEAST_PING
             else -> strategyGroup.strategy
         }
+        val selectedTag = strategyGroup.selectedMemberId?.let { selectedId ->
+            members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
+        }
         val bestFallbackTag = if (strategyGroup.strategy == StrategyGroupConstants.TYPE_FALLBACK) {
-            memberTags.first()
+            // A verified startup member is carried in selectedMemberId only for
+            // this generated config.  It must also be Xray's real fallbackTag:
+            // otherwise the UI reports the verified member while initial
+            // traffic still goes to the first configured server.
+            selectedTag ?: memberTags.first()
         } else {
-            val selectedTag = strategyGroup.selectedMemberId?.let { selectedId ->
-                members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
-            }
             selectedTag ?: members.zip(memberTags)
                 .filter { (member, _) ->
                     val lat = member.latency.trim()

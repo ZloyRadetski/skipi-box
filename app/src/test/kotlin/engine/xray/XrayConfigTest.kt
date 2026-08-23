@@ -481,6 +481,7 @@ class XrayConfigTest {
             remarks = "My Fallback Balancer",
             strategy = StrategyGroupConstants.TYPE_FALLBACK,
             proxyServerIds = listOf(10, 20),
+            selectedMemberId = 20,
             tolerance = "100ms",
         )
         val groupState = ProxyServerState(
@@ -498,8 +499,9 @@ class XrayConfigTest {
         assertEquals(1, plan.balancers.size)
         val balancer = plan.balancers.first()
 
-        // Fallback strategy always prioritizes the first member as fallbackTag
-        assertEquals("proxy-policy-10", balancer.fallbackTag)
+        // A freshly verified startup member must carry the first user traffic,
+        // even for a fallback strategy group.
+        assertEquals("proxy-policy-20", balancer.fallbackTag)
         assertEquals("leastPing", balancer.strategy)
     }
 

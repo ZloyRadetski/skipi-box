@@ -296,8 +296,12 @@
         <service
             android:name="engine.vpn.SkipiVpnService"
             android:exported="false"
+            android:foregroundServiceType="specialUse"
             android:permission="android.permission.BIND_VPN_SERVICE"
             tools:ignore="VpnServicePolicy">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Runs the user-enabled VPN tunnel and maintains its ongoing connection notification." />
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>

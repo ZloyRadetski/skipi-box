@@ -39,7 +39,7 @@ data class StrategyGroup(
     var filter: String = "",
     /** Explicit user-selected members. Empty retains the legacy group/filter selector. */
     var proxyServerIds: List<Int> = emptyList(),
-    /** Currently chosen member ID for `select` strategy groups. */
+    /** User-selected member for `select`, or a transient verified startup member for automatic groups. */
     var selectedMemberId: Int? = null,
     /** Display policy for home proxy groups list. */
     var displayMode: String = StrategyGroupDisplayMode.ALWAYS,

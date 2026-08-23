@@ -4,10 +4,14 @@
 package engine.vpn
 
 import android.annotation.SuppressLint
+import android.app.Notification
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.net.ProxyInfo
 import android.net.ConnectivityManager
 import android.net.Network
@@ -19,10 +23,9 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.os.PowerManager
+import androidx.core.content.ContextCompat
+import app.MainActivity
 import app.R
-import app.effects.matchingNetworkConfigId
-import features.networkautomation.engine.NetworkAutomationDecision
-import features.networkautomation.engine.NetworkAutomationEvaluator
 import data.AndroidAppStateStore
 import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
@@ -30,22 +33,24 @@ import app.modes.ProxyAppListModeWhitelist
 import engine.network.NetworkDefaults
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
-import engine.proxy.AndroidProxyEngine
+import engine.stats.ProxyTrafficStatsRuntimeStore
+import engine.stats.ProxyTrafficStatsService
+import features.quicksettings.ProxyQuickSettingsTileService
 import engine.vpn.hevtun.HevTunRuntime
 import engine.xray.clearCoreLogs
 import features.logs.AndroidAppLogger
-import features.proxy.server.usecase.ProxyServiceResult
-import features.proxy.server.usecase.ProxyServiceUseCase
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import system.getInstalledApplicationsCompat
 import utils.toTrimmedNonEmptyDistinctList
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.milliseconds
 
 @SuppressLint("VpnServicePolicy")
@@ -55,60 +60,115 @@ class SkipiVpnService : VpnService() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.IO)
     private val operationMutex = Mutex()
-    private val networkSwitchMutex = Mutex()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val stateStore by lazy { AndroidAppStateStore.get(applicationContext) }
-    private val networkProxyEngine by lazy {
-        AndroidProxyEngine(applicationContext, requestVpnPermission = { false })
+    private val notificationManager by lazy { getSystemService(NotificationManager::class.java) }
+    private val contentIntent by lazy {
+        packageManager.getLaunchIntentForPackage(packageName)?.let { intent ->
+            PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
     }
-    private val networkProxyServiceUseCase by lazy { ProxyServiceUseCase(networkProxyEngine) }
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var currentConfig: VpnServiceStartConfig? = null
     private var lastObservedPhysicalNetwork: Network? = null
     private var hadActivePhysicalNetwork: Boolean = false
+    private var ownsForegroundNotification = false
+    @Volatile
+    private var networkReloadScheduled = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
+        val action = intent?.action ?: return Service.START_NOT_STICKY
+        val operationId = intent.vpnServiceOperationId()
+        if (operationId == null) {
+            AndroidAppLogger.warn(LogTag, "Ignoring VPN service request without an operation id: action=$action")
+            if (action == SkipiVpnServiceIntents.ACTION_START) {
+                stopSelfOnMain(startId)
+            }
+            return Service.START_NOT_STICKY
+        }
+
+        when (action) {
             SkipiVpnServiceIntents.ACTION_STOP -> {
-                // Capture the deferred for this stop request so a late
-                // completion can never resolve a newer caller's deferred.
-                val deferredStop = pendingStop
+                val keepForegroundNotification = intent.keepVpnForegroundNotification()
                 serviceScope.launch {
+                    var handled = false
                     try {
                         operationMutex.withLock {
-                            stopVpn()
+                            if (!isLatestOperation(operationId)) return@withLock
+                            stopVpn(
+                                notificationDisposition = if (keepForegroundNotification) {
+                                    ForegroundNotificationDisposition.Detach
+                                } else {
+                                    ForegroundNotificationDisposition.Remove
+                                },
+                            )
+                            handled = true
                         }
                     } finally {
-                        completeStop(deferredStop)
-                        stopSelfOnMain(startId)
+                        completeStop(operationId)
+                        if (handled && isLatestOperation(operationId)) {
+                            stopSelfOnMain(startId)
+                        }
                     }
                 }
             }
 
             SkipiVpnServiceIntents.ACTION_START -> {
-                val config = intent.readVpnServiceStartConfig()
+                val config = VpnServiceStartConfigStore.take(operationId)
                 if (config == null) {
-                    completeStart(pendingStart, Result.failure(IllegalStateException(getString(R.string.error_vpn_start_config_missing))))
-                    stopSelf(startId)
+                    val error = IllegalStateException(getString(R.string.error_vpn_start_config_missing))
+                    if (isLatestOperation(operationId)) {
+                        completeStart(operationId, Result.failure(error))
+                    }
+                    stopSelfOnMain(startId)
                     return Service.START_NOT_STICKY
                 }
-                // Capture the deferred for this start request so a late
-                // completion of an earlier (timed-out) start can never
-                // resolve a newer caller's deferred.
-                val deferredStart = pendingStart
+                if (!isLatestOperation(operationId)) {
+                    stopSelfOnMain(startId)
+                    return Service.START_NOT_STICKY
+                }
+                runCatching {
+                    promoteVpnForeground(config, connecting = true)
+                }.onFailure { error ->
+                    AndroidAppLogger.error(LogTag, "Failed to enter foreground before VPN start", error)
+                    completeStart(operationId, Result.failure(error))
+                    stopSelfOnMain(startId)
+                    return Service.START_NOT_STICKY
+                }
                 serviceScope.launch {
-                    operationMutex.withLock {
+                    var failed = false
+                    operationMutex.withLock startLock@{
+                        if (!isLatestOperation(operationId)) return@startLock
                         runCatching {
                             startVpn(config)
                         }.onSuccess {
-                            completeStart(deferredStart, Result.success(Unit))
+                            if (isLatestOperation(operationId)) {
+                                completeStart(operationId, Result.success(Unit))
+                            } else {
+                                // The caller timed out or explicitly stopped
+                                // while core startup was in progress. Never
+                                // leave a late, unowned tunnel running.
+                                stopVpn(ForegroundNotificationDisposition.Remove)
+                            }
                         }.onFailure { error ->
                             AndroidAppLogger.error(LogTag, "Failed to start VPN Service", error)
-                            stopVpn()
-                            completeStart(deferredStart, Result.failure(error))
-                            stopSelfOnMain(startId)
+                            stopVpn(
+                                notificationDisposition = ForegroundNotificationDisposition.Remove,
+                            )
+                            if (isLatestOperation(operationId)) {
+                                completeStart(operationId, Result.failure(error))
+                                failed = true
+                            }
                         }
+                    }
+                    if (failed && isLatestOperation(operationId)) {
+                        stopSelfOnMain(startId)
                     }
                 }
             }
@@ -117,10 +177,11 @@ class SkipiVpnService : VpnService() {
     }
 
     override fun onDestroy() {
+        invalidateCurrentOperation()
         serviceScope.launch {
             runCatching {
                 operationMutex.withLock {
-                    stopVpn()
+                    stopVpn(ForegroundNotificationDisposition.Remove)
                 }
             }.onFailure { error ->
                 AndroidAppLogger.warn(LogTag, "Failed to stop VPN Service while destroying service", error)
@@ -131,7 +192,21 @@ class SkipiVpnService : VpnService() {
     }
 
     override fun onRevoke() {
+        invalidateCurrentOperation()
         running = false
+        serviceScope.launch {
+            runCatching {
+                operationMutex.withLock {
+                    stopVpn(ForegroundNotificationDisposition.Remove)
+                }
+            }.onFailure { error ->
+                AndroidAppLogger.warn(LogTag, "Failed to clean up revoked VPN Service", error)
+            }
+            stateStore.update { state -> state.copy(proxyRunning = false) }
+            ProxyTrafficStatsRuntimeStore.clear(applicationContext)
+            ProxyTrafficStatsService.reconcile(applicationContext, null)
+            stopSelfOnMain()
+        }
         super.onRevoke()
     }
 
@@ -145,16 +220,21 @@ class SkipiVpnService : VpnService() {
         SkipiCoreRuntime.forceFreeMemory()
     }
 
-    private fun stopSelfOnMain(startId: Int) {
+    private fun stopSelfOnMain(startId: Int? = null) {
+        val stop = {
+            if (startId == null) stopSelf() else stopSelf(startId)
+        }
         if (Looper.myLooper() == Looper.getMainLooper()) {
-            stopSelf(startId)
+            stop()
         } else {
-            mainHandler.post { stopSelf(startId) }
+            mainHandler.post(stop)
         }
     }
 
     private fun startVpn(config: VpnServiceStartConfig) {
-        stopVpn()
+        val startedAt = android.os.SystemClock.elapsedRealtime()
+        stopVpn(ForegroundNotificationDisposition.Keep)
+        val stoppedAt = android.os.SystemClock.elapsedRealtime()
         currentConfig = config
         lastObservedPhysicalNetwork = null
         hadActivePhysicalNetwork = false
@@ -163,20 +243,29 @@ class SkipiVpnService : VpnService() {
         }
         config.coreLogPaths.clearCoreLogs(LogTag)
         tunFileDescriptor = establishTun(config)
+        val tunReadyAt = android.os.SystemClock.elapsedRealtime()
         val tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
         SkipiCoreRuntime.start(
             context = this,
             config = config,
             tunFd = config.xrayTunFd(tunFd),
         )
+        val coreReadyAt = android.os.SystemClock.elapsedRealtime()
         config.hevSocks5TunnelConfig?.let { hevConfig ->
             val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
             runtime.start(hevConfig, tunFd)
             AndroidAppLogger.info(LogTag, "Started Hev TUN with VPN file descriptor")
         }
+        val hevReadyAt = android.os.SystemClock.elapsedRealtime()
         LocalProxyRuntime.update(config.localProxyOptions)
         running = true
+        promoteVpnForeground(config, connecting = false)
         registerNetworkConfigCallback()
+        ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
+        AndroidAppLogger.info(
+            LogTag,
+            "VPN start timing: stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, hev=${hevReadyAt - coreReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
+        )
     }
 
     private fun establishTun(config: VpnServiceStartConfig): ParcelFileDescriptor {
@@ -290,7 +379,9 @@ class SkipiVpnService : VpnService() {
             .distinct()
     }
 
-    private fun stopVpn() {
+    private fun stopVpn(
+        notificationDisposition: ForegroundNotificationDisposition = ForegroundNotificationDisposition.Remove,
+    ) {
         unregisterNetworkConfigCallback()
         releaseWakeLock()
         currentConfig = null
@@ -314,6 +405,61 @@ class SkipiVpnService : VpnService() {
         tunFileDescriptor = null
         LocalProxyRuntime.clear()
         running = false
+        applyForegroundNotificationDisposition(notificationDisposition)
+        if (notificationDisposition != ForegroundNotificationDisposition.Keep) {
+            ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = false)
+        }
+    }
+
+    private fun promoteVpnForeground(
+        config: VpnServiceStartConfig,
+        connecting: Boolean,
+    ) {
+        VpnForegroundNotification.ensureChannel(this, notificationManager)
+        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, VpnForegroundNotification.ChannelId)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+        }
+            .setSmallIcon(R.drawable.ic_qs_proxy)
+            .setContentTitle(config.sessionName.ifBlank { getString(R.string.app_name) })
+            .setContentText(
+                getString(
+                    if (connecting) R.string.quick_settings_tile_processing else R.string.quick_settings_tile_running,
+                ),
+            )
+            .setContentIntent(contentIntent)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setLocalOnly(true)
+            .setShowWhen(false)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .build()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                VpnForegroundNotification.NotificationId,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+            )
+        } else {
+            startForeground(VpnForegroundNotification.NotificationId, notification)
+        }
+        ownsForegroundNotification = true
+    }
+
+    private fun applyForegroundNotificationDisposition(
+        notificationDisposition: ForegroundNotificationDisposition,
+    ) {
+        if (!ownsForegroundNotification || notificationDisposition == ForegroundNotificationDisposition.Keep) return
+        stopForeground(
+            when (notificationDisposition) {
+                ForegroundNotificationDisposition.Detach -> STOP_FOREGROUND_DETACH
+                ForegroundNotificationDisposition.Remove -> STOP_FOREGROUND_REMOVE
+                ForegroundNotificationDisposition.Keep -> error("Keep is handled above")
+            },
+        )
+        ownsForegroundNotification = false
     }
 
     private fun acquireWakeLock() {
@@ -367,7 +513,7 @@ class SkipiVpnService : VpnService() {
                         setUnderlyingNetworks(if (isPhysical) arrayOf(active) else null)
                     }
                     if (isPhysical) {
-                        active?.let { handlePhysicalNetworkChange(it, connectivityManager) }
+                        handlePhysicalNetworkChange(checkNotNull(active), connectivityManager)
                     }
                 }
             }
@@ -408,33 +554,44 @@ class SkipiVpnService : VpnService() {
     }
 
     private fun reloadCoreOnNetworkChange() {
+        if (networkReloadScheduled) return
+        networkReloadScheduled = true
         serviceScope.launch {
-            networkSwitchMutex.withLock {
-                val config = currentConfig ?: return@withLock
-                if (!running) return@withLock
+            try {
+                operationMutex.withLock {
+                    val config = currentConfig ?: return@withLock
+                    if (!running) return@withLock
 
-                runCatching {
-                    AndroidAppLogger.info(LogTag, "Restarting core on network handover to flush stale sockets")
-                    runCatching { hevTunRuntime?.stop() }
-                    runCatching { SkipiCoreRuntime.stop() }
-                    runCatching { tunFileDescriptor?.close() }
+                    runCatching {
+                        AndroidAppLogger.info(LogTag, "Restarting core on network handover to flush stale sockets")
+                        runCatching { hevTunRuntime?.stop() }
+                        runCatching { SkipiCoreRuntime.stop() }
+                        runCatching { tunFileDescriptor?.close() }
 
-                    tunFileDescriptor = establishTun(config)
-                    val newTunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
+                        tunFileDescriptor = establishTun(config)
+                        val newTunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
 
-                    SkipiCoreRuntime.start(
-                        context = this@SkipiVpnService,
-                        config = config,
-                        tunFd = config.xrayTunFd(newTunFd),
-                    )
-                    config.hevSocks5TunnelConfig?.let { hevConfig ->
-                        val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
-                        runtime.start(hevConfig, newTunFd)
+                        SkipiCoreRuntime.start(
+                            context = this@SkipiVpnService,
+                            config = config,
+                            tunFd = config.xrayTunFd(newTunFd),
+                        )
+                        config.hevSocks5TunnelConfig?.let { hevConfig ->
+                            val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
+                            runtime.start(hevConfig, newTunFd)
+                        }
+                        AndroidAppLogger.info(LogTag, "Successfully reloaded proxy core on new network")
+                    }.onFailure { error ->
+                        AndroidAppLogger.error(LogTag, "Failed to reload proxy core on network handover", error)
+                        stopVpn(ForegroundNotificationDisposition.Remove)
+                        stateStore.update { state -> state.copy(proxyRunning = false) }
+                        ProxyTrafficStatsRuntimeStore.clear(applicationContext)
+                        ProxyTrafficStatsService.reconcile(applicationContext, null)
+                        stopSelfOnMain()
                     }
-                    AndroidAppLogger.info(LogTag, "Successfully reloaded proxy core on new network")
-                }.onFailure { error ->
-                    AndroidAppLogger.error(LogTag, "Failed to reload proxy core on network handover", error)
                 }
+            } finally {
+                networkReloadScheduled = false
             }
         }
     }
@@ -449,6 +606,15 @@ class SkipiVpnService : VpnService() {
         }
     }
 
+    private enum class ForegroundNotificationDisposition {
+        /** A replacement configuration is about to take ownership immediately. */
+        Keep,
+        /** The paused traffic notification has already become the foreground owner. */
+        Detach,
+        /** The tunnel is fully disconnected. */
+        Remove,
+    }
+
     companion object {
         private const val LogTag = "SkipiVpnService"
 
@@ -456,42 +622,77 @@ class SkipiVpnService : VpnService() {
         private var running = false
 
         private val startMutex = Mutex()
+        private val operationSequence = AtomicLong()
+        private val latestOperationId = AtomicLong()
 
         @Volatile
-        private var pendingStart: CompletableDeferred<Result<Unit>>? = null
+        private var pendingStart: PendingStart? = null
 
         internal suspend fun start(context: Context, config: VpnServiceStartConfig) = startMutex.withLock {
-            val result = CompletableDeferred<Result<Unit>>()
-            pendingStart = result
+            val request = PendingStart(
+                operationId = nextOperationId(),
+                result = CompletableDeferred(),
+            )
+            pendingStart = request
             try {
-                context.startService(SkipiVpnServiceIntents.startIntent(context, config))
+                ContextCompat.startForegroundService(
+                    context.applicationContext,
+                    SkipiVpnServiceIntents.startIntent(
+                        context = context.applicationContext,
+                        config = config,
+                        operationId = request.operationId,
+                    ),
+                )
                 withTimeout(15_000.milliseconds) {
-                    result.await()
+                    request.result.await()
                 }.getOrThrow()
+            } catch (error: TimeoutCancellationException) {
+                invalidateOperation(request.operationId)
+                VpnServiceStartConfigStore.remove(request.operationId)
+                throw IllegalStateException("VPN service start timed out", error)
+            } catch (error: Throwable) {
+                invalidateOperation(request.operationId)
+                VpnServiceStartConfigStore.remove(request.operationId)
+                throw error
             } finally {
-                if (pendingStart === result) {
+                if (pendingStart === request) {
                     pendingStart = null
                 }
             }
         }
 
         @Volatile
-        private var pendingStop: CompletableDeferred<Unit>? = null
+        private var pendingStop: PendingStop? = null
 
-        internal suspend fun stop(context: Context) = startMutex.withLock {
-            if (!running) return@withLock
-            val result = CompletableDeferred<Unit>()
-            pendingStop = result
+        internal suspend fun stop(
+            context: Context,
+            keepForegroundNotification: Boolean = false,
+        ) = startMutex.withLock {
+            val request = PendingStop(
+                operationId = nextOperationId(),
+                result = CompletableDeferred(),
+            )
+            pendingStop = request
             running = false
             try {
-                context.startService(SkipiVpnServiceIntents.stopIntent(context))
+                context.applicationContext.startService(
+                    SkipiVpnServiceIntents.stopIntent(
+                        context = context.applicationContext,
+                        operationId = request.operationId,
+                        keepForegroundNotification = keepForegroundNotification,
+                    ),
+                )
                 withTimeout(5_000.milliseconds) {
-                    result.await()
+                    request.result.await()
                 }
-            } catch (_: Throwable) {
-                // Ignore stop timeout
+            } catch (error: TimeoutCancellationException) {
+                // Keep this operation current. A delayed STOP must still
+                // tear down the old core unless a newer START supersedes it.
+                AndroidAppLogger.warn(LogTag, "VPN service stop timed out", error)
+            } catch (error: Throwable) {
+                AndroidAppLogger.warn(LogTag, "Failed to request VPN service stop", error)
             } finally {
-                if (pendingStop === result) {
+                if (pendingStop === request) {
                     pendingStop = null
                 }
             }
@@ -501,19 +702,47 @@ class SkipiVpnService : VpnService() {
             return running && SkipiCoreRuntime.isRunning()
         }
 
-        private fun completeStart(target: CompletableDeferred<Result<Unit>>?, result: Result<Unit>) {
-            if (target != null && pendingStart === target) {
-                target.complete(result)
+        private fun nextOperationId(): Long {
+            return operationSequence.incrementAndGet().also(latestOperationId::set)
+        }
+
+        private fun invalidateOperation(operationId: Long) {
+            val invalidationId = operationSequence.incrementAndGet()
+            latestOperationId.compareAndSet(operationId, invalidationId)
+        }
+
+        private fun invalidateCurrentOperation() {
+            latestOperationId.set(operationSequence.incrementAndGet())
+        }
+
+        private fun isLatestOperation(operationId: Long): Boolean {
+            return latestOperationId.get() == operationId
+        }
+
+        private fun completeStart(operationId: Long, result: Result<Unit>) {
+            val request = pendingStart
+            if (request != null && request.operationId == operationId) {
+                request.result.complete(result)
                 pendingStart = null
             }
         }
 
-        private fun completeStop(target: CompletableDeferred<Unit>?) {
-            if (target != null && pendingStop === target) {
-                target.complete(Unit)
+        private fun completeStop(operationId: Long) {
+            val request = pendingStop
+            if (request != null && request.operationId == operationId) {
+                request.result.complete(Unit)
                 pendingStop = null
             }
         }
 
+        private data class PendingStart(
+            val operationId: Long,
+            val result: CompletableDeferred<Result<Unit>>,
+        )
+
+        private data class PendingStop(
+            val operationId: Long,
+            val result: CompletableDeferred<Unit>,
+        )
     }
 }

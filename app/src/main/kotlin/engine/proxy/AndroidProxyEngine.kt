@@ -5,6 +5,7 @@ package engine.proxy
 
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
 import app.AppState
 import app.effects.resolveActiveNetworkConfig
 import app.withActiveTrafficConfigApplied
@@ -17,6 +18,7 @@ import engine.stats.XrayStatsApiListenAddress
 import engine.stats.resolveXrayStatsApiPort
 import engine.stats.xrayStatsApiExcludedPorts
 import engine.vpn.VpnXrayEngine
+import features.logs.AndroidAppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -71,6 +73,7 @@ class AndroidProxyEngine(
         request: ProxyEngineStartRequest,
         restart: Boolean,
     ): ProxyEngineStatus = withContext(Dispatchers.Default) {
+        val startRequestedAt = SystemClock.elapsedRealtime()
         // A paused notification deliberately outlives its VPN tunnel so the
         // user can resume it. A regular start replaces a live notification.
         if (ProxyTrafficStatsRuntimeStore.read(appContext)?.paused != true) {
@@ -84,42 +87,54 @@ class AndroidProxyEngine(
         val initialSelectedServer = initialVpnState.proxyServers
             .firstOrNull { server -> server.id == request.selectedServer.id }
             ?: request.selectedServer
-        val (vpnState, verifiedStartupMemberId) = (initialSelectedServer.server as? StrategyGroup)
+        // Starting temporary Xray cores here to validate several candidates
+        // can serialize with the real core inside the native runtime.  On a
+        // phone those cancelled probes may keep running and turn a nominal
+        // 3.5-second timeout into a 15-20 second tunnel start.  A short,
+        // parallel TCP race is sufficient for the initial fallbackTag; the
+        // single real Xray core and its Observatory take over immediately.
+        val (vpnState, startupMemberId) = (initialSelectedServer.server as? StrategyGroup)
             ?.takeIf { group ->
                 group.enableBurstProbe &&
-                    group.strategy !in setOf(
-                        StrategyGroupConstants.TYPE_SELECT,
-                        StrategyGroupConstants.TYPE_FALLBACK,
-                    )
+                    group.strategy != StrategyGroupConstants.TYPE_SELECT
             }
             ?.let { group ->
-                val tcpCandidates = latencyTester.fastProbeStrategyGroupMembers(
+                val reachableCandidates = latencyTester.fastProbeStrategyGroupMembers(
                     appState = initialVpnState,
                     strategyGroup = group,
                     maxConcurrency = initialVpnState.subscriptionPingConcurrency,
                 )
-                val verifiedCandidates = latencyTester.verifyStrategyGroupStartupCandidates(
-                    appState = initialVpnState,
-                    strategyGroup = group,
-                    tcpCandidates = tcpCandidates,
-                )
-                val verifiedMemberId = verifiedCandidates
+                val memberId = reachableCandidates
                     .filterValues { latency -> latency >= 0 }
                     .minByOrNull { (_, latency) -> latency }
                     ?.key
-                initialVpnState.withStrategyGroupStartupFallback(initialSelectedServer.id, verifiedCandidates) to verifiedMemberId
+                initialVpnState.withStrategyGroupStartupFallback(
+                    serverId = initialSelectedServer.id,
+                    probeLatencies = reachableCandidates,
+                ) to memberId
             }
             ?: (initialVpnState to null)
         val selectedServer = vpnState.proxyServers
             .firstOrNull { server -> server.id == initialSelectedServer.id }
             ?: initialSelectedServer
+        AndroidAppLogger.info(
+            LogTag,
+            "VPN start prepared in ${SystemClock.elapsedRealtime() - startRequestedAt}ms; " +
+                "selectedServerId=${selectedServer.id}, startupMemberId=$startupMemberId, source=tcp",
+        )
 
         val (resolvedRequest, trafficStatsRuntime) = request.copy(
             appState = vpnState,
             selectedServer = selectedServer,
-        ).withTrafficStatsConfig(startupStrategyMemberId = verifiedStartupMemberId)
+        ).withTrafficStatsConfig(
+            startupStrategyMemberId = startupMemberId,
+        )
         runCatching { vpnXrayEngine.start(resolvedRequest).copy(appState = vpnState, runMode = RunModeVpnService) }
             .onSuccess { status ->
+                AndroidAppLogger.info(
+                    LogTag,
+                    "VPN start completed in ${SystemClock.elapsedRealtime() - startRequestedAt}ms; running=${status.running}",
+                )
                 if (status.running && trafficStatsRuntime != null) {
                     ProxyTrafficStatsRuntimeStore.write(appContext, trafficStatsRuntime)
                 }
@@ -177,6 +192,7 @@ class AndroidProxyEngine(
     }
 
     companion object {
+        private const val LogTag = "AndroidProxyEngine"
         private val globalOperationMutex = Mutex()
     }
 }

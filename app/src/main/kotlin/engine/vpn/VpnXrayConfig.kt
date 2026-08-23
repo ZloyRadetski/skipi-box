@@ -96,6 +96,7 @@ internal object VpnXrayConfigFactory {
                     dnsHosts = dnsHosts,
                     dnsHijackInboundTags = vpnDnsHijackInboundTags(appState.enableVpnHevTun),
                     statsApiConfig = request.xrayStatsApiConfig(),
+                    outboundPlan = outboundPlan,
                 ),
             ),
             applicationPolicy = appState.toVpnApplicationPolicy(Process.myUid().toAndroidUserId()),
