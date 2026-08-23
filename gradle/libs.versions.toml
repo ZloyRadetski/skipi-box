@@ -6,7 +6,6 @@ androidx-navigationevent = "1.1.0"
 androidx-room = "2.8.4"
 androidx-work = "2.11.2"
 compose = "1.11.1"
-compose-multiplatform = "1.9.3"
 coil = "3.5.0"
 kotlin = "2.4.10"
 kotlinx-serialization-json = "1.11.0"
@@ -57,10 +56,7 @@ zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", ve
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
-kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }

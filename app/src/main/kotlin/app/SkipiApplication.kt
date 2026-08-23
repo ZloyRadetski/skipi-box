@@ -9,7 +9,6 @@ import features.logs.AndroidAccessLogRepository
 import features.logs.AndroidCoreLogRepository
 import features.logs.AndroidLogcatRepository
 import features.logs.AndroidAppLogger
-import features.logs.AppLogger
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -53,7 +52,6 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
-        AppLogger.install(AndroidAppLogger)
         AppSettingsPreferences(applicationContext).getOrCreateSubscriptionHwid()
         val retentionDays = stateStore.state.value.logRetentionDays
         AndroidLogcatRepository.initialize(applicationContext, retentionDays)
