@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.Process
 import app.AppState
 import app.effectiveLocalDnsEnabled
+import engine.hevtun.DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis
 import engine.hevtun.HevSocks5TunnelConfig
 import engine.hevtun.HevSocks5TunnelConfigFileName
 import engine.hevtun.HevSocks5TunnelLogFileName
@@ -112,6 +113,7 @@ internal object VpnXrayConfigFactory {
                 tunOptions = tunOptions,
                 enableIpv6 = appState.enableIpv6,
                 useHevTun = appState.enableVpnHevTun,
+                tcpReadWriteTimeoutMillis = appState.hevTcpReadWriteTimeoutMillis,
             ),
         )
     }
@@ -149,6 +151,7 @@ internal fun buildVpnHevSocks5TunnelConfig(
     tunOptions: TunOptions,
     enableIpv6: Boolean,
     useHevTun: Boolean = true,
+    tcpReadWriteTimeoutMillis: Int = DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis,
 ): HevSocks5TunnelConfig? {
     if (!useHevTun) return null
     return HevSocks5TunnelConfig(
@@ -164,5 +167,7 @@ internal fun buildVpnHevSocks5TunnelConfig(
         tunnelName = "skipi0",
         enableMultiQueue = true,
         enableTcpFastOpen = true,
+        tcpReadWriteTimeoutMillis = tcpReadWriteTimeoutMillis.takeIf { it > 0 }
+            ?: DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis,
     )
 }

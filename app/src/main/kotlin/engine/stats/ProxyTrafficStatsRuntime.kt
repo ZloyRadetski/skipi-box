@@ -16,6 +16,8 @@ internal data class ProxyTrafficStatsRuntime(
     /** Effective FINAL target frozen when the current tunnel was started. */
     val finalOutboundTag: String = "proxy",
     val selectedServerId: Int = -1,
+    /** Member picked during balancer startup, before Xray reports traffic for it. */
+    val startupStrategyMemberId: Int? = null,
     /** Keeps the notification's connection timer stable while the app process lives. */
     val startedAtElapsedRealtime: Long = SystemClock.elapsedRealtime(),
     /** A paused runtime keeps the notification visible but has no active VPN tunnel. */
@@ -41,6 +43,8 @@ internal object ProxyTrafficStatsRuntimeStore {
                 ?.takeIf(String::isNotBlank)
                 ?: "proxy",
             selectedServerId = preferences.getInt(KeySelectedServerId, -1),
+            startupStrategyMemberId = preferences.getInt(KeyStartupStrategyMemberId, -1)
+                .takeIf { value -> value >= 0 },
             startedAtElapsedRealtime = preferences.getLong(KeyStartedAtElapsedRealtime, 0L)
                 .takeIf { value -> value > 0L }
                 ?: SystemClock.elapsedRealtime(),
@@ -64,6 +68,9 @@ internal object ProxyTrafficStatsRuntimeStore {
             putString(KeyApiTag, runtime.apiTag)
             putString(KeyFinalOutboundTag, runtime.finalOutboundTag)
             putInt(KeySelectedServerId, runtime.selectedServerId)
+            runtime.startupStrategyMemberId?.let { memberId ->
+                putInt(KeyStartupStrategyMemberId, memberId)
+            } ?: remove(KeyStartupStrategyMemberId)
             putLong(KeyStartedAtElapsedRealtime, runtime.startedAtElapsedRealtime)
             putBoolean(KeyPaused, runtime.paused)
             putLong(KeyPausedAtElapsedRealtime, runtime.pausedAtElapsedRealtime)
@@ -97,6 +104,7 @@ private const val KeyServerName = "server_name"
 private const val KeyApiTag = "api_tag"
 private const val KeyFinalOutboundTag = "final_outbound_tag"
 private const val KeySelectedServerId = "selected_server_id"
+private const val KeyStartupStrategyMemberId = "startup_strategy_member_id"
 private const val KeyStartedAtElapsedRealtime = "started_at_elapsed_realtime"
 private const val KeyPaused = "paused"
 private const val KeyPausedAtElapsedRealtime = "paused_at_elapsed_realtime"

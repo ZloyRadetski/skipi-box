@@ -46,6 +46,11 @@ internal fun TrafficConfigAndroidSettingsEditor(
     var fragmentPackets by remember(initialSettings, show) { mutableStateOf(initialSettings.fragmentPackets) }
     var fragmentLength by remember(initialSettings, show) { mutableStateOf(initialSettings.fragmentLength) }
     var fragmentInterval by remember(initialSettings, show) { mutableStateOf(initialSettings.fragmentInterval) }
+    var fakeDnsIpPool by remember(initialSettings, show) { mutableStateOf(initialSettings.fakeDnsIpPool) }
+    var fakeDnsPoolSize by remember(initialSettings, show) { mutableStateOf(initialSettings.fakeDnsPoolSize.toString()) }
+    var hevTcpReadWriteTimeout by remember(initialSettings, show) {
+        mutableStateOf(initialSettings.hevTcpReadWriteTimeoutMillis.toString())
+    }
 
     WindowBottomSheet(
         show = true,
@@ -67,6 +72,11 @@ internal fun TrafficConfigAndroidSettingsEditor(
                             fragmentPackets = fragmentPackets.trim(),
                             fragmentLength = fragmentLength.trim(),
                             fragmentInterval = fragmentInterval.trim(),
+                            fakeDnsIpPool = fakeDnsIpPool.trim(),
+                            fakeDnsPoolSize = fakeDnsPoolSize.trim().toIntOrNull()
+                                ?: initialSettings.fakeDnsPoolSize,
+                            hevTcpReadWriteTimeoutMillis = hevTcpReadWriteTimeout.trim().toIntOrNull()
+                                ?: initialSettings.hevTcpReadWriteTimeoutMillis,
                         ),
                     )
                 },
@@ -144,6 +154,18 @@ internal fun TrafficConfigAndroidSettingsEditor(
                         enabled = settings.enableVpnLocalDns,
                         onCheckedChange = { settings = settings.copy(enableFakeDns = it) },
                     )
+                    if (settings.enableFakeDns) {
+                        ConfigTextField(
+                            value = fakeDnsIpPool,
+                            onValueChange = { fakeDnsIpPool = it },
+                            label = stringResource(R.string.configs_fake_dns_ip_pool),
+                        )
+                        ConfigTextField(
+                            value = fakeDnsPoolSize,
+                            onValueChange = { fakeDnsPoolSize = it },
+                            label = stringResource(R.string.configs_fake_dns_pool_size),
+                        )
+                    }
                     SwitchPreference(
                         title = stringResource(R.string.configs_append_http_proxy),
                         checked = settings.enableVpnAppendHttpProxy,
@@ -154,6 +176,13 @@ internal fun TrafficConfigAndroidSettingsEditor(
                         checked = settings.enableVpnHevTun,
                         onCheckedChange = { settings = settings.copy(enableVpnHevTun = it) },
                     )
+                    if (settings.enableVpnHevTun) {
+                        ConfigTextField(
+                            value = hevTcpReadWriteTimeout,
+                            onValueChange = { hevTcpReadWriteTimeout = it },
+                            label = stringResource(R.string.configs_hevtun_tcp_read_write_timeout),
+                        )
+                    }
                     ConfigTextField(value = mtu, onValueChange = { mtu = it }, label = stringResource(R.string.configs_tun_mtu))
                     ConfigTextField(value = vpnDns, onValueChange = { vpnDns = it }, label = stringResource(R.string.configs_tun_dns))
                     ConfigTextField(value = ipv4Cidr, onValueChange = { ipv4Cidr = it }, label = stringResource(R.string.configs_tun_ipv4))

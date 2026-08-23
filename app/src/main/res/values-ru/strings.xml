@@ -860,6 +860,9 @@
     <string name="configs_fragment_summary">Разбивает начальные TCP-пакеты для обхода DPI, если это требуется провайдером.</string>
     <string name="configs_local_dns_summary">Разрешает DNS внутри VPN-туннеля вместо использования только DNS текущей сети.</string>
     <string name="configs_fake_dns_summary">Использует синтетические ответы DNS, которые затем восстанавливает ядро. Требует Local VPN DNS.</string>
+    <string name="configs_fake_dns_ip_pool">Пул IP-адресов Fake DNS</string>
+    <string name="configs_fake_dns_pool_size">Размер пула Fake DNS</string>
+    <string name="configs_hevtun_tcp_read_write_timeout">TCP Read/Write Timeout (мс)</string>
     <string name="configs_append_http_proxy_summary">Открывает HTTP-прокси вместе с VPN-туннелем для совместимых приложений и устройств.</string>
     <string name="configs_hevtun_summary">Использует hev-socks5-tunnel для создания Android TUN-интерфейса.</string>
     <string name="configs_network_transport_summary">Выберите тип сети, который будет автоматически включать этот конфиг.</string>

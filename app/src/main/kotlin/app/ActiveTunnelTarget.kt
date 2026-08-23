@@ -30,6 +30,11 @@ internal fun AppState.activeTunnelTargetDisplayName(
     val observedServer = activeOutboundTag
         ?.proxyServerIdFromOutboundTag()
         ?.let { id -> proxyServers.firstOrNull { server -> server.id == id } }
+    // The fast startup probe has already chosen a member, but Xray does not
+    // publish outbound traffic counters until its first sampling cycle.
+    val startupMember = runtime?.startupStrategyMemberId
+        ?.let { id -> proxyServers.firstOrNull { server -> server.id == id } }
+    val displayedMember = observedServer ?: startupMember
 
     return when (finalTag) {
         XrayTags.DIRECT -> directName
@@ -44,11 +49,11 @@ internal fun AppState.activeTunnelTargetDisplayName(
                 .firstOrNull { group -> group.outboundTag == finalTag }
                 ?.name
             when {
-                policyGroupName != null -> policyGroupName.withObservedMember(observedServer)
-                targetServer?.server is StrategyGroup -> targetServer.displayName().withObservedMember(observedServer)
+                policyGroupName != null -> policyGroupName.withObservedMember(displayedMember)
+                targetServer?.server is StrategyGroup -> targetServer.displayName().withObservedMember(displayedMember)
                 targetServer != null -> targetServer.displayName()
                 finalTag.startsWith(ShadowrocketPolicyGroupTagPrefix) -> {
-                    finalTag.removePrefix(ShadowrocketPolicyGroupTagPrefix).withObservedMember(observedServer)
+                    finalTag.removePrefix(ShadowrocketPolicyGroupTagPrefix).withObservedMember(displayedMember)
                 }
 
                 selectedServer != null -> selectedServer.displayName()

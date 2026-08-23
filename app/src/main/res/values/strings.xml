@@ -933,6 +933,9 @@
     <string name="configs_fragment_summary">Split early TCP packets to help with DPI bypass when your provider requires it.</string>
     <string name="configs_local_dns_summary">Resolve DNS inside the VPN tunnel instead of relying only on the network DNS.</string>
     <string name="configs_fake_dns_summary">Use synthetic DNS answers for traffic that is later restored by the core. Requires Local VPN DNS.</string>
+    <string name="configs_fake_dns_ip_pool">Fake DNS IP Pool</string>
+    <string name="configs_fake_dns_pool_size">Fake DNS Pool Size</string>
+    <string name="configs_hevtun_tcp_read_write_timeout">TCP Read/Write Timeout (ms)</string>
     <string name="configs_append_http_proxy_summary">Expose an HTTP proxy alongside the VPN tunnel for compatible apps and devices.</string>
     <string name="configs_hevtun_summary">Use hev-socks5-tunnel to create the Android TUN interface.</string>
     <string name="configs_network_transport_summary">Choose which network type activates this configuration automatically.</string>

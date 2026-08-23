@@ -24,6 +24,7 @@ import kotlinx.coroutines.withContext
 
 import engine.proxy.latency.AndroidProxyLatencyTester
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.StrategyGroupConstants
 
 /** VPN-only runtime for SKIPI. ROOT runtimes intentionally are not linked here. */
 class AndroidProxyEngine(
@@ -75,13 +76,48 @@ class AndroidProxyEngine(
         if (ProxyTrafficStatsRuntimeStore.read(appContext)?.paused != true) {
             ProxyTrafficStatsService.reconcile(appContext, null)
         }
-        val vpnState = request.appState
+        val initialVpnState = request.appState
             .resolveActiveNetworkConfig(appContext)
             .withActiveTrafficConfigApplied()
             .copy(runMode = RunModeVpnService)
             .withResolvedDynamicLocalProxyPort()
+        val initialSelectedServer = initialVpnState.proxyServers
+            .firstOrNull { server -> server.id == request.selectedServer.id }
+            ?: request.selectedServer
+        val (vpnState, verifiedStartupMemberId) = (initialSelectedServer.server as? StrategyGroup)
+            ?.takeIf { group ->
+                group.enableBurstProbe &&
+                    group.strategy !in setOf(
+                        StrategyGroupConstants.TYPE_SELECT,
+                        StrategyGroupConstants.TYPE_FALLBACK,
+                    )
+            }
+            ?.let { group ->
+                val tcpCandidates = latencyTester.fastProbeStrategyGroupMembers(
+                    appState = initialVpnState,
+                    strategyGroup = group,
+                    maxConcurrency = initialVpnState.subscriptionPingConcurrency,
+                )
+                val verifiedCandidates = latencyTester.verifyStrategyGroupStartupCandidates(
+                    appState = initialVpnState,
+                    strategyGroup = group,
+                    tcpCandidates = tcpCandidates,
+                )
+                val verifiedMemberId = verifiedCandidates
+                    .filterValues { latency -> latency >= 0 }
+                    .minByOrNull { (_, latency) -> latency }
+                    ?.key
+                initialVpnState.withStrategyGroupStartupFallback(initialSelectedServer.id, verifiedCandidates) to verifiedMemberId
+            }
+            ?: (initialVpnState to null)
+        val selectedServer = vpnState.proxyServers
+            .firstOrNull { server -> server.id == initialSelectedServer.id }
+            ?: initialSelectedServer
 
-        val (resolvedRequest, trafficStatsRuntime) = request.copy(appState = vpnState).withTrafficStatsConfig()
+        val (resolvedRequest, trafficStatsRuntime) = request.copy(
+            appState = vpnState,
+            selectedServer = selectedServer,
+        ).withTrafficStatsConfig(startupStrategyMemberId = verifiedStartupMemberId)
         runCatching { vpnXrayEngine.start(resolvedRequest).copy(appState = vpnState, runMode = RunModeVpnService) }
             .onSuccess { status ->
                 if (status.running && trafficStatsRuntime != null) {
@@ -99,7 +135,9 @@ class AndroidProxyEngine(
             .getOrThrow()
     }
 
-    private fun ProxyEngineStartRequest.withTrafficStatsConfig(): Pair<ProxyEngineStartRequest, ProxyTrafficStatsRuntime?> {
+    private fun ProxyEngineStartRequest.withTrafficStatsConfig(
+        startupStrategyMemberId: Int?,
+    ): Pair<ProxyEngineStartRequest, ProxyTrafficStatsRuntime?> {
         val port = resolveXrayStatsApiPort(
             preferredPort = ProxyTrafficStatsRuntimeStore.readPort(appContext),
             excludedPorts = appState.xrayStatsApiExcludedPorts(),
@@ -116,6 +154,7 @@ class AndroidProxyEngine(
             apiTag = statsApiConfig.apiTag,
             finalOutboundTag = appState.defaultRouteOutboundTag,
             selectedServerId = selectedServer.id,
+            startupStrategyMemberId = startupStrategyMemberId,
         )
     }
 

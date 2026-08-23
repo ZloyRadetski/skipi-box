@@ -133,13 +133,19 @@ private class XrayOutboundPlanner(
                         ?.second
                     ?: memberTags.first()
 
+                val observerTag = if (group.enableBurstProbe) "burstObservatory" else null
+                if (group.enableBurstProbe) {
+                    burstObservatorySelectors += selector
+                } else {
+                    observatorySelectors += selector
+                }
                 balancers += XrayBalancerPlan(
                     tag = tag,
                     selector = selector,
                     strategy = strategy,
                     fallbackTag = bestFallbackTag,
+                    observerTag = observerTag,
                 )
-                observatorySelectors += selector
                 routeTargets[tag] = XrayRouteTarget(tag, XrayRouteTargetKind.Balancer)
             }
 

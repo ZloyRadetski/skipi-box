@@ -48,6 +48,9 @@ import app.collectAppState
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
 import app.navigation.StrategyGroupMemberSelectionResult
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import data.decodePersistedProxyServer
 import data.encodePersistedProxyServer
 import features.proxy.server.display.displayName
@@ -160,6 +163,29 @@ fun ProxyServerPage(
             navigator.pop()
         }
     }
+
+    fun requestSave() {
+        val basicIssues = psEdit.validateBasic()
+        if (basicIssues.isNotEmpty()) {
+            scope.launch {
+                tipNotifier.show(validationMessageOf(basicIssues.first()))
+            }
+            return
+        }
+        val fullIssues = psEdit.validateFull()
+        if (fullIssues.isNotEmpty()) {
+            pendingSaveIssues = fullIssues
+        } else {
+            saveProxyServer()
+        }
+    }
+
+    // The editor is also used for config-owned proxy groups.  Returning from it
+    // must deliver the edited group just like the confirmation button does.
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        onBackCompleted = ::requestSave,
+    )
     val groupOptions = remember(appState.subscriptionGroups, allGroupsLabel, defaultGroupName) {
         listOf(ProxyServerEditorGroupOption(null, allGroupsLabel)) +
             appState.subscriptionGroups
@@ -225,7 +251,7 @@ fun ProxyServerPage(
                 scrollBehavior = topAppBarScrollBehavior,
                 navigationIcon = {
                     BackNavigationIcon(
-                        onClick = { navigator.pop() },
+                        onClick = ::requestSave,
                     )
                 },
                 actions = {
@@ -264,19 +290,7 @@ fun ProxyServerPage(
                     )
                     NavigationIcon(
                         onClick = {
-                            val basicIssues = psEdit.validateBasic()
-                            if (basicIssues.isNotEmpty()) {
-                                scope.launch {
-                                    tipNotifier.show(validationMessageOf(basicIssues.first()))
-                                }
-                            } else {
-                                val fullIssues = psEdit.validateFull()
-                                if (fullIssues.isNotEmpty()) {
-                                    pendingSaveIssues = fullIssues
-                                } else {
-                                    saveProxyServer()
-                                }
-                            }
+                            requestSave()
                         },
                         imageVector = MiuixIcons.Ok,
                     )

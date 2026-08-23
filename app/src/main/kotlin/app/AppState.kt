@@ -15,11 +15,14 @@ import app.modes.ProxyServerListSortDefault
 import app.modes.RunModeVpnService
 import app.modes.SubscriptionPingModeHttp
 import app.modes.SubscriptionPingModeTcp
+import engine.hevtun.DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis
 import engine.vpn.VpnDefaults
 import engine.network.NetworkDefaults
 import engine.xray.DefaultDirectDnsDomains
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
+import engine.xray.XrayFakeDnsIpv4OnlyPoolSize
+import engine.xray.XrayFakeDnsIpv4Pool
 import features.networkautomation.model.NetworkAutomationRule
 import engine.xray.DefaultFragmentPackets
 import engine.xray.DefaultMuxConcurrency
@@ -174,6 +177,9 @@ data class AppState(
     val enableIpv6: Boolean = false,
     val enableIpv6Prefer: Boolean = false,
     val enableFakeDns: Boolean = false,
+    val fakeDnsIpPool: String = XrayFakeDnsIpv4Pool,
+    val fakeDnsPoolSize: Int = XrayFakeDnsIpv4OnlyPoolSize,
+    val hevTcpReadWriteTimeoutMillis: Int = DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis,
     val proxyDns: List<String> = VpnDefaults.PROXY_DNS_SERVERS,
     val directDns: List<String> = VpnDefaults.DIRECT_DNS_SERVERS,
     val directDnsDomains: List<String> = DefaultDirectDnsDomains,

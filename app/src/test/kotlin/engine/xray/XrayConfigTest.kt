@@ -25,7 +25,6 @@ import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class XrayConfigTest {
@@ -90,8 +89,9 @@ class XrayConfigTest {
         assertEquals(2, plan.proxyOutbounds.size)
         assertTrue(plan.balancers.isNotEmpty())
         assertEquals("leastPing", plan.balancers.first().strategy)
-        assertEquals(1, plan.observatorySelectors.size)
-        assertEquals(0, plan.burstObservatorySelectors.size)
+        assertEquals(0, plan.observatorySelectors.size)
+        assertEquals(1, plan.burstObservatorySelectors.size)
+        assertEquals("burstObservatory", plan.balancers.first().observerTag)
         assertEquals("30s", plan.observatoryProbeInterval)
     }
 
@@ -134,8 +134,7 @@ class XrayConfigTest {
         val jsonBalancers = buildXrayBalancers(plan.balancers)
         assertEquals(1, jsonBalancers.size)
         val strategySettings = jsonBalancers.first()["strategy"]?.let { it as? kotlinx.serialization.json.JsonObject }?.get("settings") as? kotlinx.serialization.json.JsonObject
-        // For default leastPing, observerTag must be null to use standard observatory
-        assertNull(strategySettings?.get("observerTag"))
+        assertEquals("burstObservatory", (strategySettings?.get("observerTag") as? kotlinx.serialization.json.JsonPrimitive)?.content)
     }
 
     @Test
@@ -433,14 +432,15 @@ class XrayConfigTest {
         assertEquals("45s", plan.observatoryProbeInterval)
         assertEquals("https://www.google.com/generate_204", plan.observatoryProbeUrl)
 
-        val observatory = buildXrayObservatory(
-            selectors = plan.observatorySelectors,
+        val observatory = buildXrayBurstObservatory(
+            selectors = plan.burstObservatorySelectors,
             probeUrl = plan.observatoryProbeUrl,
             probeInterval = plan.observatoryProbeInterval,
         )
         assertNotNull(observatory)
-        assertEquals("45s", observatory["probeInterval"]?.toString()?.trim('"'))
-        assertEquals("https://www.google.com/generate_204", observatory["probeURL"]?.toString()?.trim('"'))
+        val pingConfig = observatory["pingConfig"] as? kotlinx.serialization.json.JsonObject
+        assertEquals("45s", pingConfig?.get("interval")?.toString()?.trim('"'))
+        assertEquals("https://www.google.com/generate_204", pingConfig?.get("destination")?.toString()?.trim('"'))
     }
 
     @Test
@@ -522,7 +522,7 @@ class XrayConfigTest {
             ProxyGroupServerChoice(id = 2, rawName = "Server B"),
         )
         val line = group.toShadowrocketLine(choices)
-        assertEquals("FallbackGroup = fallback, Server A, Server B, url=http://cp.cloudflare.com/generate_204, interval=10, skipi-display=never", line)
+        assertEquals("FallbackGroup = fallback, Server A, Server B, url=http://cp.cloudflare.com/generate_204, interval=10, skipi-display=never, skipi-burst-probe=true", line)
     }
 
     @Test
@@ -540,6 +540,6 @@ class XrayConfigTest {
             ProxyGroupServerChoice(id = 2, rawName = "Server B"),
         )
         val line = group.toShadowrocketLine(choices)
-        assertEquals("AutoLeastPing = url-test, Server A, Server B, url=http://www.google.com/generate_204, interval=15, skipi-display=always", line)
+        assertEquals("AutoLeastPing = url-test, Server A, Server B, url=http://www.google.com/generate_204, interval=15, skipi-display=always, skipi-burst-probe=true", line)
     }
 }

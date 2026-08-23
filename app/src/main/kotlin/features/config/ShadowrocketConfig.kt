@@ -36,6 +36,10 @@ data class ShadowrocketPolicyGroup(
     /** SKIPI extension: display policy for proxy groups tab on home screen. */
     val displayMode: String = StrategyGroupDisplayMode.NEVER,
     val showInAutoBalancerList: Boolean = displayMode != StrategyGroupDisplayMode.NEVER,
+    /** SKIPI extension: use the faster burst observatory for health checks. */
+    val enableBurstProbe: Boolean = true,
+    /** SKIPI extension: maximum latency difference allowed before switching. */
+    val tolerance: String = "50ms",
     val raw: String = "",
 ) {
     val outboundTag: String
@@ -467,6 +471,15 @@ private fun parseProxyGroupLine(
         StrategyGroupDisplayMode.ACTIVE_CONFIG, "only_active_config", "active" -> StrategyGroupDisplayMode.ACTIVE_CONFIG
         else -> if (showOnHomeLegacy) StrategyGroupDisplayMode.ALWAYS else StrategyGroupDisplayMode.NEVER
     }
+    val burstProbeEnabled = options["skipi-burst-probe"]
+        ?.trim()
+        ?.lowercase()
+        ?.let { value -> value in setOf("true", "yes", "1") }
+        ?: true
+    val tolerance = options["skipi-tolerance"]
+        ?.trim()
+        ?.takeIf { value -> value.matches(Regex("\\d+ms")) }
+        ?: "50ms"
     return ShadowrocketPolicyGroup(
         lineNumber = lineNumber,
         name = name,
@@ -478,6 +491,8 @@ private fun parseProxyGroupLine(
         url = options["url"].orEmpty(),
         intervalSeconds = options["interval"]?.toIntOrNull()?.takeIf { it > 0 },
         displayMode = displayMode,
+        enableBurstProbe = burstProbeEnabled,
+        tolerance = tolerance,
         raw = raw,
     )
 }

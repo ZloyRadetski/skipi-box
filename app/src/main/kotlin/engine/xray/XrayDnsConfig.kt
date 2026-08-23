@@ -83,10 +83,10 @@ internal fun buildXrayDnsConfig(plan: XrayDnsPlan): JsonObject {
     }
 }
 
-private fun buildXrayFakeDnsConfig(): JsonElement {
+private fun AppState.buildXrayFakeDnsConfig(): JsonElement {
     return buildJsonObject {
-        put("ipPool", XrayFakeDnsIpv4Pool)
-        put("poolSize", XrayFakeDnsIpv4OnlyPoolSize)
+        put("ipPool", fakeDnsIpPool.trim().takeIf(String::isNotEmpty) ?: XrayFakeDnsIpv4Pool)
+        put("poolSize", fakeDnsPoolSize.takeIf { it > 0 } ?: XrayFakeDnsIpv4OnlyPoolSize)
     }
 }
 

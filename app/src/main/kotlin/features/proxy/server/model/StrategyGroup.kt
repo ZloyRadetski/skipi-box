@@ -50,7 +50,8 @@ data class StrategyGroup(
     var sourcePolicyGroupName: String = "",
     var probeInterval: String = "15s",
     var probeUrl: String = "",
-    var enableBurstProbe: Boolean = false,
+    /** Prefer parallel health probes on startup; users can disable this for low-power networks. */
+    var enableBurstProbe: Boolean = true,
     var tolerance: String = "50ms",
 ) : ProxyServer<StrategyGroup> {
     override fun getInfo(): ProxyServerInfo {

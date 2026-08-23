@@ -119,18 +119,9 @@ internal fun TrafficConfigProxyGroupsPage(
     }
 
     fun openEditGroup(group: ShadowrocketPolicyGroup) {
-        val memberIds = group.members.mapNotNull { memberName ->
-            serverChoices.firstOrNull { choice -> choice.rawName.equals(memberName, ignoreCase = true) }?.id
-        }
-        val editStrategy = StrategyGroup(
-            remarks = group.name,
-            strategy = group.toStrategyGroupType(),
-            proxyServerIds = memberIds,
-            displayMode = group.displayMode,
-            sourceTrafficConfigId = config.id,
-            sourcePolicyGroupName = group.name,
-            probeInterval = group.intervalSeconds?.let { "${it}s" } ?: "15s",
-            probeUrl = group.url,
+        val editStrategy = group.toEditableStrategyGroup(
+            trafficConfigId = config.id,
+            serverChoices = serverChoices,
         )
         navigator.navigateForResult(
             route = Route.ProxyServerEditor(
@@ -252,6 +243,10 @@ internal fun StrategyGroup.toShadowrocketLine(serverChoices: List<ProxyGroupServ
             StrategyGroupDisplayMode.ACTIVE_CONFIG -> append(", skipi-display=active_config")
             StrategyGroupDisplayMode.NEVER -> append(", skipi-display=never")
         }
+        append(", skipi-burst-probe=").append(enableBurstProbe)
+        tolerance.takeIf { it != "50ms" }?.let { value ->
+            append(", skipi-tolerance=").append(value)
+        }
     }
 }
 
@@ -265,4 +260,29 @@ private fun ShadowrocketPolicyGroup.toStrategyGroupType(): String {
         "url-test", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
         else -> StrategyGroupConstants.TYPE_SELECT
     }
+}
+
+/**
+ * Converts a config line to the mutable editor model without dropping SKIPI
+ * extensions.  The result is written back to the same config line on save.
+ */
+internal fun ShadowrocketPolicyGroup.toEditableStrategyGroup(
+    trafficConfigId: Int,
+    serverChoices: List<ProxyGroupServerChoice>,
+): StrategyGroup {
+    val memberIds = members.mapNotNull { memberName ->
+        serverChoices.firstOrNull { choice -> choice.rawName.equals(memberName, ignoreCase = true) }?.id
+    }
+    return StrategyGroup(
+        remarks = name,
+        strategy = toStrategyGroupType(),
+        proxyServerIds = memberIds,
+        displayMode = displayMode,
+        sourceTrafficConfigId = trafficConfigId,
+        sourcePolicyGroupName = name,
+        probeInterval = intervalSeconds?.let { "${it}s" } ?: "15s",
+        probeUrl = url,
+        enableBurstProbe = enableBurstProbe,
+        tolerance = tolerance,
+    )
 }
