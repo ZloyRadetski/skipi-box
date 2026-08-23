@@ -175,4 +175,64 @@ class TrafficConfigImportUpdateTest {
         assertEquals("Must reuse the existing config rather than create a duplicate", 1, state.trafficConfigs.size)
         assertEquals(imported.id, state.trafficConfigs.first().id)
     }
+
+    @Test
+    fun repeated_onadd_import_updates_config_without_reactivating_it() {
+        val configText1 = """
+            [General]
+            ipv6 = true
+            [Rule]
+            FINAL,DIRECT
+        """.trimIndent()
+
+        val configText2 = """
+            [General]
+            ipv6 = false
+            [Rule]
+            DOMAIN-SUFFIX,google.com,PROXY
+            FINAL,DIRECT
+        """.trimIndent()
+
+        var state = AppState(
+            trafficConfigs = emptyList(),
+            activeTrafficConfigId = 0,
+            nextTrafficConfigId = 1,
+        )
+
+        // 1. First appearance via onadd: config must be activated.
+        state = state.withImportedTrafficConfig(
+            content = configText1,
+            activate = true,
+            sourceUrl = "https://example.com/rules.conf",
+            fallbackName = "Provider Config",
+        )
+        val imported = state.trafficConfigs.single()
+        assertEquals("First onadd must activate the new config", imported.id, state.activeTrafficConfigId)
+
+        // 2. User manually switches to a different config.
+        state = state.copy(activeTrafficConfigId = 0)
+
+        // 3. Provider re-sends the same onadd config during subscription refresh:
+        // content is refreshed, but the config must NOT be re-activated.
+        state = state.withImportedTrafficConfig(
+            content = configText2,
+            activate = true,
+            sourceUrl = "https://example.com/rules.conf",
+            fallbackName = "Provider Config",
+        )
+
+        assertEquals("Repeated onadd must not duplicate the config", 1, state.trafficConfigs.size)
+        assertTrue(state.trafficConfigs.single().rawConfig.contains("ipv6 = false"))
+        assertEquals("Repeated onadd must not re-enable the config", 0, state.activeTrafficConfigId)
+
+        // 4. A brand-new config arriving via onadd is still activated on first add.
+        state = state.withImportedTrafficConfig(
+            content = configText1,
+            activate = true,
+            sourceUrl = "https://example.com/other.conf",
+            fallbackName = "Other Provider Config",
+        )
+        val secondConfig = state.trafficConfigs.first { it.id != imported.id }
+        assertEquals("New config from onadd must be activated", secondConfig.id, state.activeTrafficConfigId)
+    }
 }

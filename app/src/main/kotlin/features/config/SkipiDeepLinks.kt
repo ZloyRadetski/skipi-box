@@ -127,9 +127,11 @@ internal fun AppState.withImportedTrafficConfig(
                 name = configName ?: existing.name,
             ).withSkipiSettingsInRawConfig()
         }
-        return withUpdatedTrafficConfig(existing.id) { updated }.let { state ->
-            if (activate) state.copy(activeTrafficConfigId = existing.id) else state
-        }
+        // An already-known config is only refreshed: activation ("onadd")
+        // happens exclusively when the config appears for the first time.
+        // Receiving it again (e.g., a subscription refresh) must update the
+        // content without re-enabling it.
+        return withUpdatedTrafficConfig(existing.id) { updated }
     }
     val configId = nextTrafficConfigId
     val name = configName ?: if (fallbackName.isNotBlank() && fallbackName != "Config") fallbackName else "$fallbackName $configId"
