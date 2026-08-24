@@ -32,6 +32,7 @@ import app.LocalUpdateAppState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.R
+import app.modes.ConnectionDisplayModeClassic
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.SubscriptionPingModeHttp
 import app.collectProxyServerListState
@@ -498,8 +499,9 @@ fun ProxyServerListPage(
         isWideScreen = isWideScreen,
     )
     val floatingToolbarBottomPadding = contentPadding.calculateBottomPadding()
-    val showFloatingToolbar = proxyListState.connectionDisplayMode == ConnectionDisplayModeCompact ||
+    val showFloatingPowerButton = proxyListState.connectionDisplayMode == ConnectionDisplayModeCompact ||
         proxyListState.classicShowFloatingPowerButton
+    val showFloatingToolbar = showFloatingPowerButton || (proxyRunning && proxyListState.connectionDisplayMode == ConnectionDisplayModeClassic)
     val listPadding = pageListPadding(
         contentPadding = contentPadding,
         bottomExtra = if (showFloatingToolbar) {
@@ -601,12 +603,12 @@ fun ProxyServerListPage(
                 activeTrafficConfigId = proxyListState.activeTrafficConfigId,
             )
             if (showFloatingToolbar) {
-                val showPingInFloatingToolbar = proxyListState.connectionDisplayMode == ConnectionDisplayModeCompact
                 ProxyServerListFloatingToolbar(
                     running = proxyRunning,
                     serviceOperationInProgress = serviceOperationInProgress,
                     bottomPadding = floatingToolbarBottomPadding,
-                    showPingAction = showPingInFloatingToolbar,
+                    showToggleAction = showFloatingPowerButton,
+                    showPingAction = true,
                     onToggleRunning = {
                         haptics.vpnToggle()
                         runProxyServiceOperation {

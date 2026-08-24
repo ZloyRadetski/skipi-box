@@ -179,7 +179,6 @@ internal fun ProxyServerListTopBar(
     val context = LocalContext.current
     val haptics = LocalAppHaptics.current
     var pendingDeletionAction by remember { mutableStateOf<ProxyServerListToolAction?>(null) }
-    var isPingingSelectedServer by remember { mutableStateOf(false) }
 
     fun executeToolAction(action: ProxyServerListToolAction) {
         handleProxyServerListToolAction(
@@ -250,67 +249,18 @@ internal fun ProxyServerListTopBar(
         }
     }
 
-    fun testSelectedServerPing() {
-        if (isPingingSelectedServer) {
-            scope.launch {
-                tipNotifier.show(messages.pingInProgress)
-            }
-            return
-        }
-        val server = selectedServer ?: appState.proxyServers.firstOrNull { it.id == appState.selectedProxyServerId }
-        if (server == null) {
-            scope.launch {
-                tipNotifier.show(messages.selectServerFirst)
-            }
-        } else {
-            val targetServers = if (server.server is StrategyGroup) {
-                val strategyGroup = server.server
-                val members = appState.strategyGroupMembers(strategyGroup)
-                    .filter { member -> member.server !is StrategyGroup }
-                if (members.isNotEmpty()) listOf(server) + members else listOf(server)
-            } else {
-                listOf(server)
-            }
-            isPingingSelectedServer = true
-            val mode = if (appState.subscriptionPingMode == SubscriptionPingModeHttp) {
-                ProxyServerLatencyTestMode.RealConnection
-            } else {
-                ProxyServerLatencyTestMode.TcpConnect
-            }
-            val doneTemplate = if (mode == ProxyServerLatencyTestMode.RealConnection) {
-                messages.realConnectionDoneTemplate
-            } else {
-                messages.latencyDoneTemplate
-            }
-            onTestProxyServerLatency(
-                targetServers,
-                mode,
-                doneTemplate,
-                targetServers.size == 1,
-            ) {
-                isPingingSelectedServer = false
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
             .padding(top = 4.dp),
     ) {
-        val isHeroPinging = isPingingSelectedServer || selectedServer?.isTestingLatency == true ||
-            (selectedServer?.server as? StrategyGroup)?.let { sg ->
-                appState.proxyServers.any { it.isTestingLatency && CountryFlagUtils.strategyGroupContainsMember(sg, it.id, appState.proxyServers) }
-            } == true
         ProxyHeroConnectionCard(
             appState = appState,
             proxyRunning = proxyListState.proxyRunning,
             showTunnelMemoryOnHome = proxyListState.showTunnelMemoryOnHome,
             connectionDisplayMode = proxyListState.connectionDisplayMode,
             onToggleProxy = ::toggleProxy,
-            onTestPing = ::testSelectedServerPing,
-            isPinging = isHeroPinging,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
@@ -488,9 +438,7 @@ private fun ProxyHeroConnectionCard(
     showTunnelMemoryOnHome: Boolean,
     connectionDisplayMode: Int,
     onToggleProxy: () -> Unit,
-    onTestPing: () -> Unit,
     modifier: Modifier = Modifier,
-    isPinging: Boolean = false,
 ) {
     val context = LocalContext.current.applicationContext
     val sample by produceActiveTunnelRuntimeSample(context, proxyRunning)
@@ -541,8 +489,6 @@ private fun ProxyHeroConnectionCard(
             activeServerState = activeServerState,
             sample = sample,
             onToggleProxy = onToggleProxy,
-            onTestPing = onTestPing,
-            isPinging = isPinging,
             modifier = modifier,
         )
     } else {
@@ -570,9 +516,7 @@ private fun ProxyHeroConnectionCardClassic(
     activeServerState: ProxyServerState?,
     sample: ActiveTunnelRuntimeSample?,
     onToggleProxy: () -> Unit,
-    onTestPing: () -> Unit,
     modifier: Modifier = Modifier,
-    isPinging: Boolean = false,
 ) {
     val sessionDuration by produceState(initialValue = "00:00:00", proxyRunning) {
         if (!proxyRunning) {
@@ -836,66 +780,48 @@ private fun ProxyHeroConnectionCardClassic(
                         null
                     } ?: "-- ms"
 
-                    val checkButton: @Composable () -> Unit = {
-                        Row(
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
                             modifier = Modifier
-                                .height(30.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(accentTone.copy(alpha = 0.22f))
-                                .border(
-                                    width = 1.dp,
-                                    color = accentTone.copy(alpha = 0.45f),
-                                    shape = RoundedCornerShape(10.dp),
-                                )
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = onTestPing,
-                                )
-                                .padding(horizontal = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            if (isPinging) {
-                                AnimatedHourglassIcon(
-                                    color = accentTone,
-                                    isPinging = true,
-                                    size = 14.dp,
-                                )
-                            } else {
-                                StaticHourglass(
-                                    color = accentTone,
-                                    size = 14.dp,
-                                )
-                            }
-                            Spacer(Modifier.width(5.dp))
-                            Text(
-                                text = stringResource(R.string.proxy_server_list_ping_check),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = AppTheme.colors.onSurface,
-                                maxLines = 1,
-                            )
-                        }
-                    }
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(accentTone),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = sessionDuration,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AppTheme.colors.onSurfaceVariant,
+                        )
 
-                    val infoRowContent: @Composable () -> Unit = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(accentTone),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = sessionDuration,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = AppTheme.colors.onSurfaceVariant,
-                            )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "|",
+                            fontSize = 12.sp,
+                            color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
+                        )
+                        Spacer(Modifier.width(8.dp))
 
+                        SignalBarsIcon(
+                            color = accentTone,
+                            modifier = Modifier.size(12.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+
+                        Text(
+                            text = latencyText,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AppTheme.colors.onSurfaceVariant,
+                        )
+
+                        if (isMemoryVisible) {
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 text = "|",
@@ -903,70 +829,12 @@ private fun ProxyHeroConnectionCardClassic(
                                 color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
                             )
                             Spacer(Modifier.width(8.dp))
-
-                            SignalBarsIcon(
-                                color = accentTone,
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Spacer(Modifier.width(4.dp))
-
                             Text(
-                                text = latencyText,
+                                text = "RAM ${formatTunnelMemory(memoryKb)}",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = AppTheme.colors.onSurfaceVariant,
                             )
-
-                            if (isMemoryVisible) {
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = "|",
-                                    fontSize = 12.sp,
-                                    color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = "RAM ${formatTunnelMemory(memoryKb)}",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = AppTheme.colors.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-
-                    Layout(
-                        content = {
-                            infoRowContent()
-                            checkButton()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(AppTheme.colors.surfaceVariant)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                    ) { measurables, constraints ->
-                        val infoPlaceable = measurables[0].measure(constraints.copy(minWidth = 0, minHeight = 0))
-                        val checkPlaceable = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
-
-                        val spacing = 8.dp.roundToPx()
-                        val minGap = 8.dp.roundToPx()
-                        val fitsOnSingleLine = !isMemoryVisible && (infoPlaceable.width + minGap + checkPlaceable.width <= constraints.maxWidth)
-
-                        if (fitsOnSingleLine) {
-                            val totalHeight = maxOf(infoPlaceable.height, checkPlaceable.height)
-                            layout(constraints.maxWidth, totalHeight) {
-                                val infoY = (totalHeight - infoPlaceable.height) / 2
-                                val checkY = (totalHeight - checkPlaceable.height) / 2
-                                infoPlaceable.placeRelative(0, infoY)
-                                checkPlaceable.placeRelative(constraints.maxWidth - checkPlaceable.width, checkY)
-                            }
-                        } else {
-                            val totalHeight = infoPlaceable.height + spacing + checkPlaceable.height
-                            layout(constraints.maxWidth, totalHeight) {
-                                infoPlaceable.placeRelative(0, 0)
-                                checkPlaceable.placeRelative(0, infoPlaceable.height + spacing)
-                            }
                         }
                     }
                 }

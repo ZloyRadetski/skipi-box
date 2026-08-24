@@ -458,29 +458,6 @@ fun ResourceManagementPage(
                         }
                     }
                 }
-                item(key = "resource_files_notifications") {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 6.dp),
-                        colors = CardDefaults.defaultColors(
-                            color = AppTheme.colors.surface,
-                            contentColor = AppTheme.colors.onSurface,
-                        ),
-                    ) {
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_resource_files_notifications),
-                            summary = stringResource(R.string.settings_resource_files_notifications_summary),
-                            checked = appState.enableResourceFileNotifications,
-                            onCheckedChange = { enabled ->
-                                updateAppState { state ->
-                                    state.copy(enableResourceFileNotifications = enabled)
-                                }
-                            },
-                        )
-                    }
-                }
                 listOf(
                     ResourceFileKind.GeoIp,
                     ResourceFileKind.GeoSite,

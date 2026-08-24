@@ -200,9 +200,11 @@ fun AppTheme(
         }
         val baseOnSurfaceVariant = if (resolvedDark) Color(0xFF9EA3AE) else Color(0xFF6B7280)
 
-        val finalBackground = if (!isAmoled && enableCustomColors && customBackgroundColor != null) customBackgroundColor else baseBackground
-        val finalSurface = if (!isAmoled && enableCustomColors && customSurfaceColor != null) customSurfaceColor else baseSurface
-        val finalSurfaceVariant = if (!isAmoled && enableCustomColors && customSurfaceVariantColor != null) customSurfaceVariantColor else baseSurfaceVariant
+        // AMOLED provides true black defaults. An explicit user palette still wins,
+        // otherwise the custom background controls would appear to have no effect.
+        val finalBackground = if (enableCustomColors && customBackgroundColor != null) customBackgroundColor else baseBackground
+        val finalSurface = if (enableCustomColors && customSurfaceColor != null) customSurfaceColor else baseSurface
+        val finalSurfaceVariant = if (enableCustomColors && customSurfaceVariantColor != null) customSurfaceVariantColor else baseSurfaceVariant
         val finalAccent = if (enableCustomColors && customAccentColor != null) customAccentColor else resolvedAccent
         val finalOnBackground = if (enableCustomColors && customTextColor != null) customTextColor else baseOnBackground
         val finalOnSurface = if (enableCustomColors && customTextColor != null) customTextColor else baseOnSurface
@@ -245,7 +247,7 @@ fun AppTheme(
         LocalColorMode provides colorMode,
         LocalResolvedDarkTheme provides resolvedDark,
         LocalAppColors provides appColors,
-        LocalBackgroundStyle provides if (isAmoled) BackgroundStyleClassic else backgroundStyle,
+        LocalBackgroundStyle provides backgroundStyle,
     ) {
         MiuixTheme(colors = miuixColors) {
             SystemBarAppearance(

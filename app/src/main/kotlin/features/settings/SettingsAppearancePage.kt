@@ -337,6 +337,14 @@ fun SettingsAppearancePage(
                                 updateAppState { it.copy(enableTrafficStatsNotification = enabled) }
                             },
                         )
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_resource_files_notifications),
+                            summary = stringResource(R.string.settings_resource_files_notifications_summary),
+                            checked = appState.enableResourceFileNotifications,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(enableResourceFileNotifications = enabled) }
+                            },
+                        )
                     }
                 }
 

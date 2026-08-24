@@ -876,6 +876,7 @@ internal fun ProxyServerListFloatingToolbar(
     running: Boolean,
     serviceOperationInProgress: Boolean,
     bottomPadding: Dp,
+    showToggleAction: Boolean = true,
     showPingAction: Boolean = true,
     onToggleRunning: () -> Unit,
     onRealConnectionTest: () -> Unit,
@@ -904,6 +905,9 @@ internal fun ProxyServerListFloatingToolbar(
         label = "fab_toggle_scale",
     )
 
+    val shouldShow = showToggleAction || (showPingAction && running)
+    if (!shouldShow) return
+
     Box(
         modifier = modifier.padding(
             end = 20.dp,
@@ -920,13 +924,26 @@ internal fun ProxyServerListFloatingToolbar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (showPingAction) {
-                    AnimatedVisibility(
-                        visible = running,
-                        enter = slideInHorizontally(initialOffsetX = { width -> width }) +
-                            expandHorizontally(expandFrom = Alignment.End),
-                        exit = slideOutHorizontally(targetOffsetX = { width -> width }) +
-                            shrinkHorizontally(shrinkTowards = Alignment.End),
-                    ) {
+                    if (showToggleAction) {
+                        AnimatedVisibility(
+                            visible = running,
+                            enter = slideInHorizontally(initialOffsetX = { width -> width }) +
+                                expandHorizontally(expandFrom = Alignment.End),
+                            exit = slideOutHorizontally(targetOffsetX = { width -> width }) +
+                                shrinkHorizontally(shrinkTowards = Alignment.End),
+                        ) {
+                            IconButton(
+                                modifier = Modifier.size(ProxyServerListFloatingToolbarButtonSize),
+                                onClick = onRealConnectionTest,
+                            ) {
+                                StaticHourglass(
+                                    modifier = Modifier.size(ProxyServerListFloatingToolbarButtonSize),
+                                    color = fabIconTint,
+                                    size = 26.dp,
+                                )
+                            }
+                        }
+                    } else if (running) {
                         IconButton(
                             modifier = Modifier.size(ProxyServerListFloatingToolbarButtonSize),
                             onClick = onRealConnectionTest,
@@ -939,39 +956,41 @@ internal fun ProxyServerListFloatingToolbar(
                         }
                     }
                 }
-                IconButton(
-                    modifier = Modifier
-                        .size(ProxyServerListFloatingToolbarButtonSize)
-                        .graphicsLayer {
-                            scaleX = toggleScale
-                            scaleY = toggleScale
-                        },
-                    onClick = {
-                        if (!serviceOperationInProgress) {
-                            onToggleRunning()
-                        }
-                    },
-                ) {
-                    AnimatedContent(
-                        targetState = running,
-                        transitionSpec = {
-                            (fadeIn(animationSpec = tween(220, delayMillis = 40)) + scaleIn(initialScale = 0.65f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)))
-                                .togetherWith(fadeOut(animationSpec = tween(140)) + scaleOut(targetScale = 0.65f))
-                        },
-                        label = "fab_play_pause_anim",
-                    ) { isRunning ->
-                        Icon(
-                            modifier = Modifier.size(26.dp),
-                            imageVector = if (isRunning) MiuixIcons.Pause else MiuixIcons.Play,
-                            contentDescription = if (isRunning) {
-                                stringResource(R.string.proxy_server_list_stop_proxy)
-                            } else {
-                                stringResource(R.string.proxy_server_list_start_proxy)
+                if (showToggleAction) {
+                    IconButton(
+                        modifier = Modifier
+                            .size(ProxyServerListFloatingToolbarButtonSize)
+                            .graphicsLayer {
+                                scaleX = toggleScale
+                                scaleY = toggleScale
                             },
-                            tint = fabIconTint.copy(
-                                alpha = if (serviceOperationInProgress) 0.55f else 1f,
-                            ),
-                        )
+                        onClick = {
+                            if (!serviceOperationInProgress) {
+                                onToggleRunning()
+                            }
+                        },
+                    ) {
+                        AnimatedContent(
+                            targetState = running,
+                            transitionSpec = {
+                                (fadeIn(animationSpec = tween(220, delayMillis = 40)) + scaleIn(initialScale = 0.65f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)))
+                                    .togetherWith(fadeOut(animationSpec = tween(140)) + scaleOut(targetScale = 0.65f))
+                            },
+                            label = "fab_play_pause_anim",
+                        ) { isRunning ->
+                            Icon(
+                                modifier = Modifier.size(26.dp),
+                                imageVector = if (isRunning) MiuixIcons.Pause else MiuixIcons.Play,
+                                contentDescription = if (isRunning) {
+                                    stringResource(R.string.proxy_server_list_stop_proxy)
+                                } else {
+                                    stringResource(R.string.proxy_server_list_start_proxy)
+                                },
+                                tint = fabIconTint.copy(
+                                    alpha = if (serviceOperationInProgress) 0.55f else 1f,
+                                ),
+                            )
+                        }
                     }
                 }
             }

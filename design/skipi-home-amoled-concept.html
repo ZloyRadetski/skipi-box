@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SKIPI · AMOLED home concept</title>
+  <style>
+    :root { --bg:#000; --surface:#0b0b0d; --surface-2:#121217; --line:#27272e; --text:#f4f4f7; --muted:#92929d; --green:#35d07f; --violet:#a98cff; }
+    * { box-sizing:border-box; } body { margin:0; min-height:100vh; display:grid; place-items:center; background:#151519; color:var(--text); font:15px/1.35 Inter,Roboto,Arial,sans-serif; }
+    .phone { width:min(100%,420px); min-height:860px; padding:18px 16px 112px; overflow:hidden; position:relative; background:var(--bg); }
+    .status { display:flex; justify-content:space-between; align-items:center; padding:2px 8px 20px; font-size:13px; font-weight:700; }
+    .head { display:flex; align-items:center; justify-content:space-between; margin:0 2px 22px; }
+    .brand { font-size:20px; font-weight:800; letter-spacing:.16em; } .header-actions { display:flex; gap:8px; } .icon-button { width:40px; height:40px; border:1px solid var(--line); border-radius:50%; background:var(--surface); color:var(--text); font-size:20px; }
+    .connect { border:1px solid var(--line); border-radius:24px; padding:20px; background:linear-gradient(145deg,#0e0e12,#060607); }
+    .connect-top { display:flex; justify-content:space-between; align-items:center; } .eyebrow { color:var(--muted); font-size:12px; } .live { display:flex; align-items:center; gap:6px; color:var(--green); font-size:12px; font-weight:700; } .dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 14px var(--green); }
+    .server { margin:10px 0 20px; font-size:24px; font-weight:700; letter-spacing:-.025em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .facts { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; } .fact { padding:10px; border-radius:14px; background:var(--surface); } .fact b { display:block; font-size:14px; } .fact span { color:var(--muted); font-size:11px; }
+    .power { display:flex; justify-content:center; align-items:center; width:100%; height:58px; border:0; border-radius:17px; background:var(--green); color:#001d0d; font:800 16px inherit; letter-spacing:.01em; } .power::before { content:'⏻'; margin-right:9px; font-size:22px; }
+    .section-head { display:flex; justify-content:space-between; align-items:center; margin:28px 2px 10px; } .section-head h2 { margin:0; font-size:14px; } .section-head button { border:0; background:none; color:var(--violet); font:600 13px inherit; }
+    .selector { width:100%; display:flex; align-items:center; justify-content:space-between; border:1px solid var(--line); border-radius:16px; padding:15px 16px; color:var(--text); background:var(--surface); text-align:left; } .selector small { display:block; color:var(--muted); margin-top:2px; } .chevron { color:var(--muted); font-size:18px; }
+    .nodes { margin-top:10px; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--surface); } .node { display:flex; align-items:center; min-height:58px; padding:10px 14px; border-bottom:1px solid var(--line); } .node:last-child { border:0; } .flag { width:30px; height:30px; display:grid; place-items:center; border-radius:10px; background:var(--surface-2); margin-right:12px; } .node b { font-size:14px; } .node small { display:block; color:var(--muted); margin-top:2px; } .latency { margin-left:auto; color:var(--green); font-weight:700; font-size:13px; }
+    .bottom { position:absolute; left:16px; right:16px; bottom:22px; display:flex; justify-content:space-around; padding:7px; border:1px solid var(--line); border-radius:20px; background:rgba(14,14,18,.96); } .bottom button { border:0; padding:8px 14px; background:transparent; color:var(--muted); font:600 11px inherit; } .bottom button:first-child { color:var(--text); } .bottom i { display:block; font-style:normal; font-size:19px; margin-bottom:2px; }
+    @media (max-width:420px) { body { place-items:start; background:#000; } .phone { min-height:100vh; } }
+  </style>
+</head>
+<body>
+  <main class="phone" id="phone">
+    <div class="status"><span>9:41</span><span>◒ ◔ ▰</span></div>
+    <header class="head"><div class="brand">SKIPI</div><div class="header-actions"><button class="icon-button" aria-label="Добавить подписку">+</button><button class="icon-button" aria-label="Дополнительные действия">⋯</button></div></header>
+    <section class="connect">
+      <div class="connect-top"><span class="eyebrow">Защищённое подключение</span><span class="live"><i class="dot"></i>Подключено</span></div>
+      <div class="server">🇩🇪 Germany · Frankfurt 01</div>
+      <div class="facts"><div class="fact"><b>00:42:18</b><span>сеанс</span></div><div class="fact"><b>38 ms</b><span>задержка</span></div><div class="fact"><b>62 MB</b><span>память туннеля</span></div></div>
+      <button class="power">Отключить</button>
+    </section>
+    <div class="section-head"><h2>Подписка</h2><button>Обновить</button></div>
+    <button class="selector"><span><b>Основная подписка</b><small>24 сервера · обновлено 2 ч назад</small></span><span class="chevron">⌄</span></button>
+    <div class="section-head"><h2>Доступные серверы</h2><button>Все</button></div>
+    <section class="nodes" aria-label="Список серверов"><div class="node"><span class="flag">🇩🇪</span><span><b>Frankfurt 01</b><small>VLESS · Reality</small></span><span class="latency">38 ms</span></div><div class="node"><span class="flag">🇳🇱</span><span><b>Amsterdam 02</b><small>VLESS · Reality</small></span><span class="latency">46 ms</span></div><div class="node"><span class="flag">🇫🇮</span><span><b>Helsinki 01</b><small>Trojan · TLS</small></span><span class="latency">63 ms</span></div></section>
+    <nav class="bottom"><button><i>◉</i>Главная</button><button><i>⌘</i>Маршруты</button><button><i>⚙</i>Настройки</button></nav>
+  </main>
+</body>
+</html>
