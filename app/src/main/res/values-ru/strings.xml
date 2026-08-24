@@ -191,7 +191,7 @@
     <string name="settings_wake_lock">Удержание процессора (WakeLock)</string>
     <string name="settings_wake_lock_summary">Предотвращает засыпание при выключенном экране (Высокий расход батареи)</string>
     <string name="settings_seamless_network_switching">Бесшовный роуминг сетей</string>
-    <string name="settings_seamless_network_switching_summary">Мгновенное переключение туннеля при смене Wi-Fi и сотовой сети</string>
+    <string name="settings_seamless_network_switching_summary">Android сам выбирает Wi-Fi или мобильные данные без перезапуска туннеля</string>
     <string name="settings_kill_switch">Блокировка утечек (Kill Switch)</string>
     <string name="settings_kill_switch_summary">Откроет настройки Android: включите «Постоянная VPN» и «Блокировать соединения без VPN»</string>
     <string name="settings_system_vpn_settings">Системные настройки VPN</string>

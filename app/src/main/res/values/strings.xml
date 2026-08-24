@@ -189,7 +189,7 @@
     <string name="settings_wake_lock">CPU WakeLock</string>
     <string name="settings_wake_lock_summary">Prevents CPU and sockets from sleeping when the screen is off (High battery drain)</string>
     <string name="settings_seamless_network_switching">Seamless network switching</string>
-    <string name="settings_seamless_network_switching_summary">Instantly rebinds tunnel on Wi-Fi and Cellular handover</string>
+    <string name="settings_seamless_network_switching_summary">Let Android automatically select Wi-Fi or mobile data without restarting the tunnel</string>
     <string name="settings_kill_switch">Kill Switch</string>
     <string name="settings_kill_switch_summary">Opens Android settings to enable Always-on VPN and block connections without VPN</string>
     <string name="settings_system_vpn_settings">System VPN settings</string>

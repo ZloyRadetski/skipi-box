@@ -13,10 +13,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.net.ProxyInfo
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import android.net.VpnService
 import android.os.Build
 import android.os.Handler
@@ -78,14 +74,9 @@ class SkipiVpnService : VpnService() {
             )
         }
     }
-    private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var currentConfig: VpnServiceStartConfig? = null
-    private var lastObservedPhysicalNetwork: Network? = null
-    private var hadActivePhysicalNetwork: Boolean = false
     private var ownsForegroundNotification = false
-    @Volatile
-    private var networkReloadScheduled = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
@@ -291,8 +282,6 @@ class SkipiVpnService : VpnService() {
         stopVpn(ForegroundNotificationDisposition.Keep)
         val stoppedAt = android.os.SystemClock.elapsedRealtime()
         currentConfig = config
-        lastObservedPhysicalNetwork = null
-        hadActivePhysicalNetwork = false
         if (config.enableWakeLock) {
             acquireWakeLock()
         }
@@ -315,7 +304,6 @@ class SkipiVpnService : VpnService() {
         LocalProxyRuntime.update(config.localProxyOptions)
         running = true
         promoteVpnForeground(config, connecting = false)
-        registerNetworkConfigCallback()
         ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
         AndroidAppLogger.info(
             LogTag,
@@ -437,11 +425,8 @@ class SkipiVpnService : VpnService() {
     private fun stopVpn(
         notificationDisposition: ForegroundNotificationDisposition = ForegroundNotificationDisposition.Remove,
     ) {
-        unregisterNetworkConfigCallback()
         releaseWakeLock()
         currentConfig = null
-        lastObservedPhysicalNetwork = null
-        hadActivePhysicalNetwork = false
         runCatching {
             hevTunRuntime?.stop()
         }.onFailure { error ->
@@ -540,125 +525,6 @@ class SkipiVpnService : VpnService() {
             AndroidAppLogger.warn(LogTag, "Failed to release partial WakeLock", error)
         }
         wakeLock = null
-    }
-
-    /** Keeps automatic Wi-Fi/LTE profile switching and seamless underlying network binding alive. */
-    private fun registerNetworkConfigCallback() {
-        if (networkCallback != null) return
-        val connectivityManager = getSystemService(ConnectivityManager::class.java) ?: return
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                handlePhysicalNetworkChange(network, connectivityManager)
-            }
-
-            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-                handlePhysicalNetworkChange(network, connectivityManager)
-            }
-
-            override fun onLost(network: Network) {
-                if (lastObservedPhysicalNetwork == network) {
-                    lastObservedPhysicalNetwork = null
-                }
-                if (stateStore.state.value.enableSeamlessNetworkSwitching) {
-                    val active = connectivityManager.activeNetwork
-                    val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
-                    val isPhysical = active != null && activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == false &&
-                        activeCaps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    runCatching {
-                        setUnderlyingNetworks(if (isPhysical) arrayOf(active) else null)
-                    }
-                    if (isPhysical) {
-                        handlePhysicalNetworkChange(checkNotNull(active), connectivityManager)
-                    }
-                }
-            }
-        }
-        networkCallback = callback
-        runCatching {
-            val request = NetworkRequest.Builder()
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-                .build()
-            connectivityManager.registerNetworkCallback(request, callback)
-            if (stateStore.state.value.enableSeamlessNetworkSwitching) {
-                runCatching { setUnderlyingNetworks(null) }
-            }
-        }.onFailure { error ->
-            networkCallback = null
-            AndroidAppLogger.warn(LogTag, "Failed to observe network changes for seamless routing", error)
-        }
-    }
-
-    private fun handlePhysicalNetworkChange(network: Network, connectivityManager: ConnectivityManager) {
-        if (!stateStore.state.value.enableSeamlessNetworkSwitching) return
-        val caps = connectivityManager.getNetworkCapabilities(network) ?: return
-        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) return
-        if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return
-
-        val previousNetwork = lastObservedPhysicalNetwork
-        val isNetworkSwitch = hadActivePhysicalNetwork && (previousNetwork == null || previousNetwork != network)
-        lastObservedPhysicalNetwork = network
-        hadActivePhysicalNetwork = true
-
-        runCatching { setUnderlyingNetworks(arrayOf(network)) }
-
-        if (isNetworkSwitch && running) {
-            AndroidAppLogger.info(LogTag, "Physical network switched to $network, refreshing proxy core connections")
-            reloadCoreOnNetworkChange()
-        }
-    }
-
-    private fun reloadCoreOnNetworkChange() {
-        if (networkReloadScheduled) return
-        networkReloadScheduled = true
-        serviceScope.launch {
-            try {
-                operationMutex.withLock {
-                    val config = currentConfig ?: return@withLock
-                    if (!running) return@withLock
-
-                    runCatching {
-                        AndroidAppLogger.info(LogTag, "Restarting core on network handover to flush stale sockets")
-                        runCatching { hevTunRuntime?.stop() }
-                        runCatching { SkipiCoreRuntime.stop() }
-                        runCatching { tunFileDescriptor?.close() }
-
-                        tunFileDescriptor = establishTun(config)
-                        val newTunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
-
-                        SkipiCoreRuntime.start(
-                            context = this@SkipiVpnService,
-                            config = config,
-                            tunFd = config.xrayTunFd(newTunFd),
-                        )
-                        config.hevSocks5TunnelConfig?.let { hevConfig ->
-                            val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
-                            runtime.start(hevConfig, newTunFd)
-                        }
-                        AndroidAppLogger.info(LogTag, "Successfully reloaded proxy core on new network")
-                    }.onFailure { error ->
-                        AndroidAppLogger.error(LogTag, "Failed to reload proxy core on network handover", error)
-                        stopVpn(ForegroundNotificationDisposition.Remove)
-                        stateStore.update { state -> state.copy(proxyRunning = false) }
-                        ProxyTrafficStatsRuntimeStore.clear(applicationContext)
-                        ProxyTrafficStatsService.reconcile(applicationContext, null)
-                        stopSelfOnMain()
-                    }
-                }
-            } finally {
-                networkReloadScheduled = false
-            }
-        }
-    }
-
-    private fun unregisterNetworkConfigCallback() {
-        val callback = networkCallback ?: return
-        networkCallback = null
-        runCatching {
-            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
-        }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop network observer", error)
-        }
     }
 
     private enum class ForegroundNotificationDisposition {

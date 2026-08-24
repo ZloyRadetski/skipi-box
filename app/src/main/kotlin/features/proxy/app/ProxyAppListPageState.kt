@@ -25,7 +25,6 @@ import features.proxy.app.model.ProxyAppListPreparedData
 import features.proxy.app.model.ProxyAppListUserSpaceTabUi
 import features.proxy.app.model.loadProxyAppListPackages
 import features.proxy.app.model.prepareProxyAppListData
-import features.proxy.app.model.pruneProxyAppListSelectedApps
 import features.proxy.app.model.sortedForProxyAppListRefresh
 import features.proxy.app.model.toAndroidUserSpace
 import features.proxy.app.model.toUserSpaceTabs
@@ -69,7 +68,6 @@ internal class ProxyAppListPageState {
 @Composable
 internal fun ProxyAppListPageEffects(
     pageState: ProxyAppListPageState,
-    selectedApps: List<String>,
     selectedAppKeys: Set<String>,
     isVpnServiceMode: Boolean,
     vpnServiceUserId: Int?,
@@ -80,7 +78,6 @@ internal fun ProxyAppListPageEffects(
     packageCatalog: AndroidPackageProvider,
     userSpaces: AndroidUserSpaceProvider,
     tipNotifier: AndroidToastTipNotifier,
-    onSelectedAppsPruned: (previousSelection: List<String>, prunedSelection: List<String>) -> Unit,
 ) {
     ProxyAppListSearchEffect(pageState)
     ProxyAppListPreparedDataEffect(
@@ -102,13 +99,11 @@ internal fun ProxyAppListPageEffects(
     )
     ProxyAppListPackageEffect(
         pageState = pageState,
-        selectedApps = selectedApps,
         selectedAppKeys = selectedAppKeys,
         isVpnServiceMode = isVpnServiceMode,
         selfPackageName = selfPackageName,
         packageCatalog = packageCatalog,
         tipNotifier = tipNotifier,
-        onSelectedAppsPruned = onSelectedAppsPruned,
     )
 }
 
@@ -229,13 +224,11 @@ private fun ProxyAppListUserSpaceEffect(
 @Composable
 private fun ProxyAppListPackageEffect(
     pageState: ProxyAppListPageState,
-    selectedApps: List<String>,
     selectedAppKeys: Set<String>,
     isVpnServiceMode: Boolean,
     selfPackageName: String,
     packageCatalog: AndroidPackageProvider,
     tipNotifier: AndroidToastTipNotifier,
-    onSelectedAppsPruned: (previousSelection: List<String>, prunedSelection: List<String>) -> Unit,
 ) {
     val loadFailedMessage = stringResource(R.string.proxy_app_list_load_failed)
 
@@ -257,23 +250,6 @@ private fun ProxyAppListPackageEffect(
                 currentUserOnly = isVpnServiceMode,
                 excludedPackageName = selfPackageName,
             )
-            val installedPackages = if (pageState.showSystemApps || selectedApps.isEmpty()) {
-                loadedPackages
-            } else {
-                packageCatalog.loadProxyAppListPackages(
-                    showSystemApps = true,
-                    currentUserOnly = isVpnServiceMode,
-                    excludedPackageName = selfPackageName,
-                )
-            }
-            val prunedSelection = pruneProxyAppListSelectedApps(
-                selectedApps = selectedApps,
-                installedApps = installedPackages,
-                selfPackageName = selfPackageName,
-            )
-            if (prunedSelection != selectedApps) {
-                onSelectedAppsPruned(selectedApps, prunedSelection)
-            }
             pageState.appPackages = loadedPackages.sortedForProxyAppListRefresh(selectedAppKeysOnRefresh)
             pageState.loadedPackageFilterKey = packageFilterKey
         } catch (error: CancellationException) {

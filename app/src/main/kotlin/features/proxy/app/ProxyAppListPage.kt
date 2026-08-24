@@ -149,7 +149,6 @@ fun ProxyAppListPage(
 
     ProxyAppListPageEffects(
         pageState = pageState,
-        selectedApps = configuredSelectedApps,
         selectedAppKeys = selectedAppKeys,
         isVpnServiceMode = isVpnServiceMode,
         vpnServiceUserId = vpnServiceUserId,
@@ -160,21 +159,6 @@ fun ProxyAppListPage(
         packageCatalog = packageCatalog,
         userSpaces = userSpaces,
         tipNotifier = tipNotifier,
-        onSelectedAppsPruned = { previousSelection, prunedSelection ->
-            updateAppState { state ->
-                if (state.trafficConfigs.firstOrNull { config -> config.id == trafficConfigId }
-                    ?.proxyAppListSelectedApps == previousSelection
-                ) {
-                    state.withUpdatedTrafficConfig(trafficConfigId) { config ->
-                        config.copy(
-                            proxyAppListSelectedApps = prunedSelection,
-                        )
-                    }
-                } else {
-                    state
-                }
-            }
-        },
     )
 
     Scaffold(
