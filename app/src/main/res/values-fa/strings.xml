@@ -189,40 +189,19 @@
     <string name="settings_system_vpn_settings">تنظیمات سیستم VPN</string>
     <string name="settings_system_vpn_settings_summary">پیکربندی VPN همیشه‌روشن و مسدودسازی اتصالات بدون VPN در اندروید</string>
     <string name="settings_inbound">تنظیمات پروکسی ورودی</string>
-    <string name="settings_inbound_tproxy_port">پورت پروکسی شفاف:{port}</string>
-    <string name="settings_inbound_socks5_port">پورت TUN2SOCKS SOCKS5:{port}</string>
-    <string name="settings_inbound_bpf2socks_summary">پورت پل:{bridgePort}، پورت SOCKS5:{socksPort}</string>
-    <string name="settings_inbound_selected">فعال:{inbounds}</string>
+    <string name="settings_inbound_tproxy_port">پورت پروکسی شفاف: {port}</string>
+    <string name="settings_inbound_socks5_port">پورت TUN2SOCKS SOCKS5: {port}</string>
+    <string name="settings_inbound_bpf2socks_summary">پورت پل: {bridgePort}، پورت SOCKS5: {socksPort}</string>
+    <string name="settings_inbound_selected">فعال: {inbounds}</string>
     <string name="settings_bpf2socks_bridge_port">پورت پل BPF2SOCKS</string>
     <string name="settings_bpf2socks_socks5_port">پورت SOCKS5</string>
     <string name="settings_external_interfaces">اشتراک‌گذاری اینترنت تلفن همراه</string>
     <string name="settings_external_interfaces_summary">انتخاب کنید که کدام نوع اتصال اینترنت، ترافیک ورودی خارجی را می پذیرد</string>
     <string name="settings_external_interfaces_none">فعال نیست</string>
-    <string name="settings_external_interfaces_selected">فعال:{interfaces}</string>
+    <string name="settings_external_interfaces_selected">فعال: {interfaces}</string>
     <string name="settings_external_interfaces_wifi">اشتراک گذاری نقطه اتصال Wi-Fi</string>
     <string name="settings_external_interfaces_usb">اتصال USB</string>
-    <string name="settings_external_interfaces_bluetooth">اتصال به اینتر    <string name="settings_enable_custom_colors">رنگ‌های سفارشی</string>
-    <string name="settings_enable_custom_colors_summary">تنظیم دستی پالت رنگ</string>
-    <string name="settings_color_accent">رنگ تاکیدی</string>
-    <string name="settings_color_accent_summary">دکمه ها، شاخص ها و عناصر فعال</string>
-    <string name="settings_color_background">رنگ پس زمینه</string>
-    <string name="settings_color_background_summary">پس زمینه اصلی همه صفحات</string>
-    <string name="settings_color_surface">رنگ سطح</string>
-    <string name="settings_color_surface_summary">کارت ها، بلوک ها و سطح لیست</string>
-    <string name="settings_color_surface_variant">سطح ثانویه</string>
-    <string name="settings_color_surface_variant_summary">تقسیم کننده ها، نشان ها و پانل های ثانویه</string>
-    <string name="settings_color_text">رنگ متن اصلی</string>
-    <string name="settings_color_text_summary">سرفصل ها و محتوای اولیه</string>
-    <string name="settings_color_text_secondary">رنگ متن ثانویه</string>
-    <string name="settings_color_text_secondary_summary">شرح، توضیحات و نکات</string>
-    <string name="settings_colors_reset">رنگ ها را به حالت پیش فرض بازنشانی کنید</string>
-    <string name="settings_colors_reset_summary">رنگ های رابط استاندارد را بازیابی کنید</string>
-    <string name="settings_colors_reset_completed">رنگ های رابط به حالت پیش فرض بازنشانی می شوند</string>
-    <string name="color_picker_hex">کد HEX</string>
-    <string name="color_picker_quick_presets">تنظیمات از پیش تعیین شده سریع</string>
-    <string name="color_picker_apply">درخواست کنید</string>
-    <string name="settings_category_appearance">ظاهر</string>
-lid">CIDR نامعتبر است</string>
+    <string name="settings_external_interfaces_bluetooth">اشتراک‌گذاری اینترنت از طریق بلوتوث</string>
     <string name="settings_private_addresses_empty">هیچ محدوده CIDR اضافه نشده است</string>
     <string name="settings_traffic_stats_notification">نمایش آمار ترافیک</string>
     <string name="settings_traffic_stats_notification_summary">نمایش سرعت فعلی و کل ترافیک در اعلان‌ها</string>
@@ -231,6 +210,9 @@ lid">CIDR نامعتبر است</string>
     <string name="settings_ipv6_prefer_summary">هنگام اتصال، آدرس های IPv6 را ترجیح دهید</string>
     <string name="settings_core">تنظیمات اصلی</string>
     <string name="settings_resource_files_files">فایل های منبع</string>
+    <!-- اعلان‌های به‌روزرسانی فایل‌های منبع -->
+    <string name="settings_resource_files_notifications">اعلان‌های به‌روزرسانی</string>
+    <string name="settings_resource_files_notifications_summary">هنگام به‌روزرسانی فایل‌های منبع اعلان نشان داده شود</string>
     <string name="settings_resource_files_source">منبع به روز رسانی</string>
     <string name="settings_header_appearance">ظاهر</string>
     <string name="settings_header_network">شبکه و تونل</string>
@@ -239,7 +221,7 @@ lid">CIDR نامعتبر است</string>
     <string name="settings_header_diagnostics">تشخیص و داده ها</string>
     <string name="settings_header_about">درباره</string>
     <string name="settings_theme_color_custom">رنگ سفارشی…</string>
-    <string name="settings_theme_color_custom_seed">مواد سفارشی شما رنگ می کنید</string>
+    <string name="settings_theme_color_custom_seed">رنگ سفارشی Material You</string>
     <string name="settings_theme_color_custom_seed_summary">یک رنگ سفارشی برای ایجاد تم پویا انتخاب کنید</string>
     <string name="settings_custom_colors_title">رنگ های رابط کاربری سفارشی</string>
     <string name="settings_enable_custom_colors">سفارشی کردن رنگ برنامه</string>
@@ -261,7 +243,7 @@ lid">CIDR نامعتبر است</string>
     <string name="settings_colors_reset_completed">رنگ های رابط به حالت پیش فرض بازنشانی می شوند</string>
     <string name="color_picker_hex">کد HEX</string>
     <string name="color_picker_quick_presets">تنظیمات از پیش تعیین شده سریع</string>
-    <string name="color_picker_apply">درخواست کنید</string>
+    <string name="color_picker_apply">اعمال</string>
     <string name="settings_category_appearance">ظاهر و رابط</string>
     <string name="settings_category_appearance_summary">موضوع، زبان، سبک اتصال</string>
     <string name="settings_category_vpn">سرویس VPN و TUN</string>
@@ -276,7 +258,7 @@ lid">CIDR نامعتبر است</string>
     <string name="settings_category_logs_summary">سیاهههای مربوط به هسته، سیاهههای مربوط به دسترسی، Logcat</string>
     <string name="settings_category_backup_reset">پشتیبان گیری و بازنشانی</string>
     <string name="settings_category_backup_reset_summary">صادرات، بازیابی و تنظیم مجدد داده ها</string>
-    <string name="settings_resource_files_source_loyalsoldier_github">سرباز وفادار (GitHub)</string>
+    <string name="settings_resource_files_source_loyalsoldier_github">Loyalsoldier (GitHub)</string>
     <string name="settings_resource_files_source_v2fly_github">V2Fly (GitHub)</string>
     <string name="settings_resource_files_source_chocolate4u_github">Chocolate4U (GitHub)</string>
     <string name="settings_resource_files_source_runetfreedom_github">RunetFreedom (GitHub)</string>
@@ -688,6 +670,7 @@ lid">CIDR نامعتبر است</string>
     <string name="subscription_delete_group">حذف گروه اشتراک</string>
     <string name="subscription_new_group">گروه اشتراک جدید</string>
     <string name="subscription_edit">ویرایش اشتراک</string>
+    <string name="subscription_delete">حذف اشتراک</string>
     <string name="subscription_add">اشتراک اضافه کنید</string>
     <string name="subscription_default_group">سرورهای دستی</string>
     <string name="subscription_unnamed_group">گروه بی نام</string>
@@ -918,6 +901,9 @@ lid">CIDR نامعتبر است</string>
     <string name="configs_fragment_summary">بسته های اولیه TCP را برای کمک به دور زدن DPI در زمانی که ارائه دهنده شما به آن نیاز دارد تقسیم کنید.</string>
     <string name="configs_local_dns_summary">به جای تکیه بر DNS شبکه، DNS را در داخل تونل VPN حل کنید.</string>
     <string name="configs_fake_dns_summary">از پاسخ‌های DNS مصنوعی برای ترافیکی که بعداً توسط هسته بازیابی می‌شود، استفاده کنید. به DNS VPN محلی نیاز دارد.</string>
+    <string name="configs_fake_dns_ip_pool">استخر IP‌های DNS جعلی</string>
+    <string name="configs_fake_dns_pool_size">اندازه استخر DNS جعلی</string>
+    <string name="configs_hevtun_tcp_read_write_timeout">مهلت زمانی خواندن/نوشتن TCP (میلی‌ثانیه)</string>
     <string name="configs_append_http_proxy_summary">یک پراکسی HTTP را در کنار تونل VPN برای برنامه‌ها و دستگاه‌های سازگار نمایش دهید.</string>
     <string name="configs_hevtun_summary">از hev-socks5-tunnel برای ایجاد رابط Android TUN استفاده کنید.</string>
     <string name="configs_network_transport_summary">نوع شبکه ای را انتخاب کنید که این پیکربندی به طور خودکار فعال شود.</string>
@@ -1239,4 +1225,14 @@ lid">CIDR نامعتبر است</string>
     <string name="settings_background_photo_pick">انتخاب تصویر</string>
     <string name="settings_background_photo_remove">حذف تصویر</string>
     <string name="settings_background_dim">میزان تاریکی پس‌زمینه</string>
+    <!-- اعلان‌های به‌روزرسانی برنامه -->
+    <string name="app_update_notification_channel_name">به‌روزرسانی‌های برنامه</string>
+    <string name="app_update_notification_channel_description">نمایش پیشرفت دانلود برنامه</string>
+    <string name="app_update_downloading_notification_title">در حال دانلود SKIPI v%1$s</string>
+    <string name="app_update_ready_notification_title">به‌روزرسانی SKIPI آماده نصب است</string>
+    <string name="app_update_ready_notification_text">برای تکمیل به‌روزرسانی ضربه بزنید</string>
+
+    <!-- حالت‌های پینگ اشتراک -->
+    <string name="subscription_ping_mode_real_connection">اتصال واقعی</string>
+    <string name="subscription_ping_mode_direct_connect">اتصال مستقیم</string>
 </resources>

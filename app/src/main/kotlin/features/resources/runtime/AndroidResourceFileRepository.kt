@@ -101,7 +101,10 @@ internal class AndroidResourceFileRepository(
         }
         store.dataDir.mkdirs()
         AndroidResourceFileDownloadCancellation.begin()
-        val notifier = AndroidResourceFileDownloadNotifier(appContext)
+        val notifier = AndroidResourceFileDownloadNotifier(
+            context = appContext,
+            notificationsEnabled = options.showNotifications,
+        )
         val downloadProxy = options.toDownloadProxy()
         if (downloadProxy != null) {
             AndroidResourceFileLogger.info(

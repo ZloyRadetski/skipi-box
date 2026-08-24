@@ -273,6 +273,7 @@ fun SubscriptionGroupListPage(
             onDismissRequest = ::closeGroupEditor,
             onDismissFinished = ::clearGroupEditor,
             onSave = ::saveGroup,
+            onDelete = ::deleteGroup,
             onInvalidUrl = {
                 scope.launch { services.tipNotifier.show(invalidSubscriptionUrlMessage) }
             },

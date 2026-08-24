@@ -95,4 +95,6 @@ data class ResourceFileUpdateOptions(
     val fallbackProxyUsername: String = "",
     val fallbackProxyPassword: String = "",
     val userAgent: String = "",
+    /** Whether system notifications should be shown while files are updated. */
+    val showNotifications: Boolean = true,
 )

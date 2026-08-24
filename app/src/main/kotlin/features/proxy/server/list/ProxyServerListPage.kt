@@ -30,6 +30,7 @@ import app.LocalNavigator
 import app.LocalProxyPageScrollToTopRequest
 import app.LocalUpdateAppState
 import app.ProxyServerState
+import app.SubscriptionGroupState
 import app.R
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.SubscriptionPingModeHttp
@@ -365,6 +366,73 @@ fun ProxyServerListPage(
         }
     }
 
+    fun deleteSubscriptionGroup(group: SubscriptionGroupState) {
+        if (group.builtIn) return
+        if (serviceOperationInProgress) return
+        val groupName = group.name
+
+        fun removeGroup(stopResult: ProxyServiceResult.Success? = null): Boolean {
+            var deleted = false
+            updateAppState { state ->
+                val nextGroups = state.subscriptionGroups.filterNot { it.id == group.id }
+                if (nextGroups.size == state.subscriptionGroups.size) {
+                    stopResult?.let { result ->
+                        state.copy(
+                            proxyRunning = result.proxyRunning,
+                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
+                        )
+                    } ?: state
+                } else {
+                    deleted = true
+                    val nextServers = state.proxyServers.filterNot { it.groupId == group.id }
+                    val selectedProxyServerId = if (nextServers.any { it.id == state.selectedProxyServerId }) {
+                        state.selectedProxyServerId
+                    } else {
+                        nextServers.firstOrNull()?.id ?: 0
+                    }
+                    state.copy(
+                        subscriptionGroups = nextGroups,
+                        proxyServers = nextServers,
+                        selectedProxyServerId = selectedProxyServerId,
+                        proxyRunning = stopResult?.proxyRunning ?: state.proxyRunning,
+                        localProxyPort = stopResult?.appState?.localProxyPort ?: state.localProxyPort,
+                    )
+                }
+            }
+            return deleted
+        }
+
+        val stateSnapshot = stateStore.state.value
+        val groupServerIds = stateSnapshot.proxyServers.filter { it.groupId == group.id }.map { it.id }.toSet()
+        val isCurrentRunningServerInGroup = stateSnapshot.proxyRunning && groupServerIds.contains(stateSnapshot.selectedProxyServerId)
+
+        if (!isCurrentRunningServerInGroup) {
+            if (removeGroup()) {
+                services.appScope.launch {
+                    tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to groupName))
+                }
+            }
+            return
+        }
+
+        runProxyServiceOperation {
+            when (val stopResult = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
+                is ProxyServiceResult.Success -> {
+                    if (removeGroup(stopResult)) {
+                        tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to groupName))
+                    }
+                }
+                ProxyServiceResult.MissingServer -> {
+                    tipNotifier.show(messages.selectServerFirst)
+                }
+                is ProxyServiceResult.Failed -> {
+                    updateAppState { state -> state.copy(proxyRunning = false) }
+                    tipNotifier.showError(stopResult.error, messages.serviceStopped)
+                }
+            }
+        }
+    }
+
     ProxyServerEditResultHandler(
         navigator = navigator,
         resultKey = ProxyServerEditResultKey,
@@ -642,6 +710,12 @@ fun ProxyServerListPage(
             }
             if (isNew && group.url.isNotBlank() && group.enabled) {
                 scope.launch { updateSubscription(group.id) }
+            }
+        },
+        onDelete = { group ->
+            deleteSubscriptionGroup(group)
+            if (selectedGroupId == group.id) {
+                selectedGroupId = DefaultSubscriptionGroupId
             }
         },
         onInvalidUrl = {

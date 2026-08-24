@@ -230,6 +230,9 @@
     <string name="settings_ipv6_prefer_summary">Prefer IPv6 addresses when connecting</string>
     <string name="settings_core">Core settings</string>
     <string name="settings_resource_files_files">Resource files</string>
+    <!-- Resource file update notifications -->
+    <string name="settings_resource_files_notifications">Update notifications</string>
+    <string name="settings_resource_files_notifications_summary">Show notifications while resource files are being updated</string>
     <string name="settings_resource_files_source">Update source</string>
     <string name="settings_header_appearance">Appearance</string>
     <string name="settings_header_network">Network &amp; Tunnel</string>
@@ -709,6 +712,7 @@
     <string name="subscription_delete_group">Delete subscription group</string>
     <string name="subscription_new_group">New subscription group</string>
     <string name="subscription_edit">Edit subscription</string>
+    <string name="subscription_delete">Delete subscription</string>
     <string name="subscription_add">Add subscription</string>
     <string name="subscription_default_group">Manual servers</string>
     <string name="subscription_unnamed_group">Unnamed group</string>
@@ -1251,4 +1255,14 @@
     <string name="settings_background_photo_pick">Choose photo</string>
     <string name="settings_background_photo_remove">Remove photo</string>
     <string name="settings_background_dim">Background dimming</string>
+    <!-- App update notifications -->
+    <string name="app_update_notification_channel_name">App Updates</string>
+    <string name="app_update_notification_channel_description">Shows app download progress</string>
+    <string name="app_update_downloading_notification_title">Downloading SKIPI v%1$s</string>
+    <string name="app_update_ready_notification_title">SKIPI update ready to install</string>
+    <string name="app_update_ready_notification_text">Tap to complete update</string>
+
+    <!-- Subscription ping modes -->
+    <string name="subscription_ping_mode_real_connection">Real connection</string>
+    <string name="subscription_ping_mode_direct_connect">Direct connect</string>
 </resources>

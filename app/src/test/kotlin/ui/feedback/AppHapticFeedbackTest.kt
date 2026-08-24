@@ -4,6 +4,7 @@
 package ui.feedback
 
 import app.AppState
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import data.backup.toAppBackupFile
 import data.backup.toRestorePreview
 import org.junit.Test
@@ -50,5 +51,34 @@ class AppHapticFeedbackTest {
         )
         val restored = backup.toRestorePreview().restoredState
         assertFalse(restored.enableHaptics)
+    }
+
+    @Test
+    fun testComposeHapticsAreRoutedToApplicationHaptics() {
+        val haptics = RecordingHaptics()
+        val bridge = ComposeAppHapticFeedback(haptics)
+
+        bridge.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        bridge.performHapticFeedback(HapticFeedbackType.LongPress)
+        bridge.performHapticFeedback(HapticFeedbackType.Confirm)
+        bridge.performHapticFeedback(HapticFeedbackType.GestureEnd)
+
+        assertEquals(
+            listOf("serverSelected", "actionWarning", "actionSuccess", "actionSuccess"),
+            haptics.calls,
+        )
+    }
+
+    private class RecordingHaptics : AppHaptics {
+        val calls = mutableListOf<String>()
+
+        override fun vpnToggle() { calls.add("vpnToggle") }
+        override fun vpnConnected() { calls.add("vpnConnected") }
+        override fun vpnDisconnected() { calls.add("vpnDisconnected") }
+        override fun vpnError() { calls.add("vpnError") }
+        override fun serverSelected() { calls.add("serverSelected") }
+        override fun groupSwitched() { calls.add("groupSwitched") }
+        override fun actionSuccess() { calls.add("actionSuccess") }
+        override fun actionWarning() { calls.add("actionWarning") }
     }
 }

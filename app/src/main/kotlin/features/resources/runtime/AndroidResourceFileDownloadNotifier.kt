@@ -17,6 +17,7 @@ import app.R
 
 internal class AndroidResourceFileDownloadNotifier(
     context: Context,
+    private val notificationsEnabled: Boolean = true,
 ) {
     private val appContext = context.applicationContext
     private val notificationManager = appContext.getSystemService(NotificationManager::class.java)
@@ -53,7 +54,7 @@ internal class AndroidResourceFileDownloadNotifier(
     }
 
     fun showProgress(fileName: String, progress: Int?, force: Boolean = false) {
-        if (!canNotify()) return
+        if (!notificationsEnabled || !canNotify()) return
         val now = System.currentTimeMillis()
         if (!force && now - lastProgressNotifyAt < ProgressNotifyIntervalMillis) {
             return
@@ -82,7 +83,7 @@ internal class AndroidResourceFileDownloadNotifier(
     }
 
     fun showComplete() {
-        if (!canNotify()) return
+        if (!notificationsEnabled || !canNotify()) return
         notificationManager.notify(
             ResourceFileDownloadNotificationId,
             terminalBuilder(
@@ -95,7 +96,7 @@ internal class AndroidResourceFileDownloadNotifier(
     }
 
     fun showCancelled() {
-        if (!canNotify()) return
+        if (!notificationsEnabled || !canNotify()) return
         notificationManager.notify(
             ResourceFileDownloadNotificationId,
             terminalBuilder(
@@ -108,7 +109,7 @@ internal class AndroidResourceFileDownloadNotifier(
     }
 
     fun showFailed(message: String) {
-        if (!canNotify()) return
+        if (!notificationsEnabled || !canNotify()) return
         notificationManager.notify(
             ResourceFileDownloadNotificationId,
             terminalBuilder(

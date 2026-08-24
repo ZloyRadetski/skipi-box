@@ -167,7 +167,7 @@ fun SubscriptionPingSettingsPage(
                                             color = if (isHttp) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.primary,
                                         )
                                         Text(
-                                            text = "Real Connection",
+                                            text = stringResource(R.string.subscription_ping_mode_real_connection),
                                             fontSize = 11.sp,
                                             color = if (isHttp) MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                         )
@@ -196,7 +196,7 @@ fun SubscriptionPingSettingsPage(
                                             color = if (isTcp) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.primary,
                                         )
                                         Text(
-                                            text = "Direct Connect",
+                                            text = stringResource(R.string.subscription_ping_mode_direct_connect),
                                             fontSize = 11.sp,
                                             color = if (isTcp) MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                         )
@@ -289,6 +289,7 @@ fun SubscriptionPingSettingsPage(
                 item(key = "section_timeout_card") {
                     SettingsSectionCard {
                         Column(modifier = Modifier.padding(16.dp)) {
+                            val secondsUnit = stringResource(R.string.unit_seconds_short)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -308,7 +309,7 @@ fun SubscriptionPingSettingsPage(
                                         .padding(horizontal = 10.dp, vertical = 4.dp)
                                 ) {
                                     Text(
-                                        text = "${sliderValue.roundToInt()} сек",
+                                        text = "${sliderValue.roundToInt()} $secondsUnit",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MiuixTheme.colorScheme.primary,
@@ -341,12 +342,12 @@ fun SubscriptionPingSettingsPage(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Text(
-                                    text = "1 сек",
+                                    text = "1 $secondsUnit",
                                     fontSize = 11.sp,
                                     color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                                 )
                                 Text(
-                                    text = "30 сек",
+                                    text = "30 $secondsUnit",
                                     fontSize = 11.sp,
                                     color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                                 )

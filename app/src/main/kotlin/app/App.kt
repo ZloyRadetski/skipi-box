@@ -11,6 +11,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.effects.ProxyStatusSynchronizer
@@ -35,6 +36,7 @@ import system.AndroidUserSpaceProvider
 import ui.AppTheme
 import ui.feedback.AndroidToastTipNotifier
 import ui.feedback.AppHapticFeedback
+import ui.feedback.ComposeAppHapticFeedback
 import ui.feedback.LocalAppHaptics
 import ui.keyColorFor
 
@@ -121,6 +123,7 @@ fun App(
     val haptics = remember(appContext) {
         AppHapticFeedback(appContext) { stateStore.currentState.enableHaptics }
     }
+    val composeHaptics = remember(haptics) { ComposeAppHapticFeedback(haptics) }
     val services = remember(
         appScope,
         proxyEngine,
@@ -203,6 +206,7 @@ fun App(
                 LocalUpdateAppState provides updateAppState,
                 LocalAppServices provides services,
                 LocalAppHaptics provides haptics,
+                LocalHapticFeedback provides composeHaptics,
             ) {
                 ui.background.AppBackground {
                     AppContent(padding = padding)

@@ -8,7 +8,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.graphics.Color
+import ui.components.DeleteConfirmationDialog
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
@@ -77,6 +80,7 @@ internal fun SubscriptionGroupEditorDialog(
     onDismissRequest: () -> Unit,
     onDismissFinished: () -> Unit,
     onSave: (SubscriptionGroupState, isNew: Boolean) -> Unit,
+    onDelete: ((SubscriptionGroupState) -> Unit)? = null,
     onInvalidUrl: () -> Unit,
 ) {
     val isEditing = group != null
@@ -130,6 +134,7 @@ internal fun SubscriptionGroupEditorDialog(
     }
     var showCustomUserAgentDialog by remember { mutableStateOf(false) }
     var showHttpSubscriptionWarning by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     val customUserAgentDraftState = rememberTextFieldState(initialText = customUserAgent)
     val customSummary = customUserAgent.trim().ifBlank {
         stringResource(R.string.subscription_user_agent_custom_summary)
@@ -318,6 +323,45 @@ internal fun SubscriptionGroupEditorDialog(
                         }
                     }
                 }
+                if (isEditing && !builtIn && onDelete != null) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        colors = CardDefaults.defaultColors(
+                            color = Color(0xFFE53935).copy(alpha = 0.08f),
+                        ),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (appState.enableDeletionConfirmation) {
+                                        showDeleteConfirmation = true
+                                    } else {
+                                        onDelete(group)
+                                        onDismissRequest()
+                                    }
+                                }
+                                .padding(vertical = 12.dp, horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Delete,
+                                contentDescription = null,
+                                tint = Color(0xFFE53935),
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.subscription_delete),
+                                color = Color(0xFFE53935),
+                                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                            )
+                        }
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -337,6 +381,18 @@ internal fun SubscriptionGroupEditorDialog(
                 }
             }
         }
+    }
+    if (showDeleteConfirmation && group != null && onDelete != null) {
+        DeleteConfirmationDialog(
+            show = true,
+            title = stringResource(R.string.deletion_confirmation_delete_subscription_group),
+            onDismissRequest = { showDeleteConfirmation = false },
+            onConfirm = {
+                showDeleteConfirmation = false
+                onDelete(group)
+                onDismissRequest()
+            },
+        )
     }
     HttpSubscriptionWarningDialog(
         show = showHttpSubscriptionWarning,

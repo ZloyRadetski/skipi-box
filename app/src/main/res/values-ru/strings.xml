@@ -229,6 +229,9 @@
     <string name="settings_ipv6_prefer_summary">Предпочитать IPv6-адреса при установлении соединений</string>
     <string name="settings_core">Настройки ядра</string>
     <string name="settings_resource_files_files">Файлы ресурсов</string>
+    <!-- Уведомления при обновлении файлов ресурсов -->
+    <string name="settings_resource_files_notifications">Уведомления при обновлении</string>
+    <string name="settings_resource_files_notifications_summary">Показывать уведомления при обновлении файлов ресурсов</string>
     <string name="settings_resource_files_source">Источник обновлений</string>
     <string name="settings_header_appearance">Оформление</string>
     <string name="settings_header_network">Сеть и туннель</string>
@@ -517,7 +520,7 @@
     <string name="proxy_editor_properties">Свойства</string>
     <string name="proxy_editor_remarks">Имя конфигурации (Заметка)</string>
     <string name="proxy_editor_server">Адрес сервера</string>
-    <string name="proxy_editor_port">Портр сервера</string>
+    <string name="proxy_editor_port">Порт сервера</string>
     <string name="proxy_editor_username_optional">Имя пользователя (опционально)</string>
     <string name="proxy_editor_password_optional">Пароль (опционально)</string>
     <string name="proxy_editor_password">Пароль</string>
@@ -690,6 +693,7 @@
     <string name="subscription_delete_group">Удалить группу подписки</string>
     <string name="subscription_new_group">Новая группа подписки</string>
     <string name="subscription_edit">Редактировать подписку</string>
+    <string name="subscription_delete">Удалить подписку</string>
     <string name="subscription_add">Добавить подписку</string>
     <string name="subscription_default_group">Ручные серверы</string>
     <string name="proxy_server_list_auto_balancers">Группы прокси</string>
@@ -1241,4 +1245,14 @@
     <string name="settings_background_photo_pick">Выбрать фото из галереи</string>
     <string name="settings_background_photo_remove">Удалить фоновое фото</string>
     <string name="settings_background_dim">Степень затемнения</string>
+    <!-- Уведомления об обновлении приложения -->
+    <string name="app_update_notification_channel_name">Обновления приложения</string>
+    <string name="app_update_notification_channel_description">Показывает прогресс загрузки приложения</string>
+    <string name="app_update_downloading_notification_title">Загрузка SKIPI v%1$s</string>
+    <string name="app_update_ready_notification_title">Обновление SKIPI готово к установке</string>
+    <string name="app_update_ready_notification_text">Нажмите, чтобы завершить обновление</string>
+
+    <!-- Режимы пинга подписки -->
+    <string name="subscription_ping_mode_real_connection">Реальное подключение</string>
+    <string name="subscription_ping_mode_direct_connect">Прямое подключение</string>
 </resources>

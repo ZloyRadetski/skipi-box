@@ -42,6 +42,7 @@ internal fun AppState.withVpnSettingsReset(): AppState {
         fragmentLength = defaults.fragmentLength,
         fragmentInterval = defaults.fragmentInterval,
         enableTrafficStatsNotification = defaults.enableTrafficStatsNotification,
+        enableResourceFileNotifications = defaults.enableResourceFileNotifications,
         enableIpv6 = defaults.enableIpv6,
         enableIpv6Prefer = defaults.enableIpv6Prefer,
         enableFakeDns = defaults.enableFakeDns,

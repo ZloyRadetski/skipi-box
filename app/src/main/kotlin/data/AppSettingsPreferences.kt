@@ -319,6 +319,10 @@ internal class AppSettingsPreferences(
                 KeyEnableTrafficStatsNotification,
                 defaults.enableTrafficStatsNotification,
             ),
+            enableResourceFileNotifications = preferences.getBoolean(
+                KeyEnableResourceFileNotifications,
+                defaults.enableResourceFileNotifications,
+            ),
             showServerSearch = preferences.getBoolean(
                 KeyShowServerSearch,
                 defaults.showServerSearch,
@@ -496,6 +500,7 @@ internal class AppSettingsPreferences(
             .putString(KeyFragmentLength, state.fragmentLength)
             .putString(KeyFragmentInterval, state.fragmentInterval)
             .putBoolean(KeyEnableTrafficStatsNotification, state.enableTrafficStatsNotification)
+            .putBoolean(KeyEnableResourceFileNotifications, state.enableResourceFileNotifications)
             .putBoolean(KeyShowServerSearch, state.showServerSearch)
             .putInt(KeyConnectionDisplayMode, state.connectionDisplayMode)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
@@ -861,6 +866,7 @@ private const val KeyFragmentPackets = "fragment_packets"
 private const val KeyFragmentLength = "fragment_length"
 private const val KeyFragmentInterval = "fragment_interval"
 private const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_notification"
+private const val KeyEnableResourceFileNotifications = "enable_resource_file_notifications"
 private const val KeyShowServerSearch = "show_server_search"
 private const val KeyConnectionDisplayMode = "connection_display_mode"
 private const val KeyBackgroundStyle = "background_style"

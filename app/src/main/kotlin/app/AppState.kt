@@ -172,6 +172,8 @@ data class AppState(
     val fragmentInterval: String = DefaultFragmentInterval,
 
     val enableTrafficStatsNotification: Boolean = true,
+    /** Show system notifications while geo/resource files are being updated. */
+    val enableResourceFileNotifications: Boolean = true,
     val showServerSearch: Boolean = false,
     /** Show the current VPN-core memory footprint above the server search field. */
     val showTunnelMemoryOnHome: Boolean = false,

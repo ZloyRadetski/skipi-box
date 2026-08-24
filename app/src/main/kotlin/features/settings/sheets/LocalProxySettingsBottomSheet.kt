@@ -122,13 +122,13 @@ internal fun LocalProxySettingsBottomSheet(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Учётные данные",
+                            text = stringResource(R.string.settings_local_proxy_credentials_section),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MiuixTheme.colorScheme.onSurface,
                         )
                         TextButton(
-                            text = "Сгенерировать",
+                            text = stringResource(R.string.settings_local_proxy_generate),
                             onClick = {
                                 onUsernameChange(app.generateRandomProxyCredential())
                                 onPasswordChange(app.generateRandomProxyCredential())
@@ -156,7 +156,7 @@ internal fun LocalProxySettingsBottomSheet(
                                 horizontalArrangement = Arrangement.End,
                             ) {
                                 TextButton(
-                                    text = "Скрыть пароль",
+                                    text = stringResource(R.string.common_hide),
                                     onClick = { isPasswordVisible = false }
                                 )
                             }
@@ -189,7 +189,7 @@ internal fun LocalProxySettingsBottomSheet(
                                 )
                             }
                             TextButton(
-                                text = "Показать",
+                                text = stringResource(R.string.common_show),
                                 onClick = { isPasswordVisible = true }
                             )
                         }

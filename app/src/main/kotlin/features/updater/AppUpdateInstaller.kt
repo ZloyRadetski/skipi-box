@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
+import app.R
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -114,8 +115,8 @@ internal object AppUpdateInstaller {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val notification = NotificationCompat.Builder(context, "app_update_channel")
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("SKIPI update ready to install")
-            .setContentText("Tap to complete update")
+            .setContentTitle(context.getString(R.string.app_update_ready_notification_title))
+            .setContentText(context.getString(R.string.app_update_ready_notification_text))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()

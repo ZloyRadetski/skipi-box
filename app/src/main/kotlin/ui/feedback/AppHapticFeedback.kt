@@ -9,15 +9,29 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
-val LocalAppHaptics = staticCompositionLocalOf<AppHapticFeedback> {
-    error("No AppHapticFeedback provided!")
+/** The single application-level haptic feedback contract. */
+interface AppHaptics {
+    fun vpnToggle()
+    fun vpnConnected()
+    fun vpnDisconnected()
+    fun vpnError()
+    fun serverSelected()
+    fun groupSwitched()
+    fun actionSuccess()
+    fun actionWarning()
+}
+
+val LocalAppHaptics = staticCompositionLocalOf<AppHaptics> {
+    error("No AppHaptics provided!")
 }
 
 class AppHapticFeedback(
     private val context: Context,
     private val isHapticsEnabled: () -> Boolean = { true },
-) {
+) : AppHaptics {
     private val vibrator: Vibrator? by lazy {
         runCatching {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -31,49 +45,49 @@ class AppHapticFeedback(
     }
 
     /** Short crisp click when tapping the connect / power button. */
-    fun vpnToggle() {
+    override fun vpnToggle() {
         if (!isHapticsEnabled()) return
         performClick()
     }
 
     /** Distinct pleasant double pulse upon successful VPN connection. */
-    fun vpnConnected() {
+    override fun vpnConnected() {
         if (!isHapticsEnabled()) return
         performConnected()
     }
 
     /** Gentle fading pulse when the VPN disconnects. */
-    fun vpnDisconnected() {
+    override fun vpnDisconnected() {
         if (!isHapticsEnabled()) return
         performDisconnected()
     }
 
     /** Warning/error vibration pattern on connection failure. */
-    fun vpnError() {
+    override fun vpnError() {
         if (!isHapticsEnabled()) return
         performError()
     }
 
     /** Delicate tick when selecting a server. */
-    fun serverSelected() {
+    override fun serverSelected() {
         if (!isHapticsEnabled()) return
         performTick()
     }
 
     /** Subtle tick when switching group tabs. */
-    fun groupSwitched() {
+    override fun groupSwitched() {
         if (!isHapticsEnabled()) return
         performTick()
     }
 
     /** Confirmation feedback for successful operations. */
-    fun actionSuccess() {
+    override fun actionSuccess() {
         if (!isHapticsEnabled()) return
         performConnected()
     }
 
     /** Warning feedback for destructive actions or alerts. */
-    fun actionWarning() {
+    override fun actionWarning() {
         if (!isHapticsEnabled()) return
         performHeavyClick()
     }
@@ -180,6 +194,25 @@ class AppHapticFeedback(
         @Suppress("DEPRECATION")
         runCatching {
             vib.vibrate(fallbackMillis)
+        }
+    }
+}
+
+/**
+ * Routes haptics requested by pre-existing Compose and Miuix components through
+ * [AppHaptics]. This prevents them from bypassing the in-app haptic setting.
+ */
+internal class ComposeAppHapticFeedback(
+    private val appHaptics: AppHaptics,
+) : HapticFeedback {
+    override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+        when (hapticFeedbackType) {
+            HapticFeedbackType.LongPress -> appHaptics.actionWarning()
+            HapticFeedbackType.Confirm,
+            HapticFeedbackType.GestureEnd -> appHaptics.actionSuccess()
+            HapticFeedbackType.TextHandleMove,
+            HapticFeedbackType.SegmentFrequentTick -> appHaptics.serverSelected()
+            else -> appHaptics.groupSwitched()
         }
     }
 }

@@ -8,6 +8,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import app.R
 import features.logs.AndroidAppLogger
 import engine.network.TunnelNetworks
 import kotlinx.coroutines.Dispatchers
@@ -142,10 +143,10 @@ internal class AppUpdateDownloader(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NotificationChannelId,
-                "App Updates",
+                context.getString(R.string.app_update_notification_channel_name),
                 NotificationManager.IMPORTANCE_LOW,
             ).apply {
-                description = "Shows app download progress"
+                description = context.getString(R.string.app_update_notification_channel_description)
                 setShowBadge(false)
             }
             notificationManager.createNotificationChannel(channel)
@@ -155,7 +156,7 @@ internal class AppUpdateDownloader(
     private fun showProgressNotification(version: String, progress: Int) {
         val notification = NotificationCompat.Builder(context, NotificationChannelId)
             .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle("Downloading SKIPI v$version")
+            .setContentTitle(context.getString(R.string.app_update_downloading_notification_title, version))
             .setProgress(100, progress, progress == 0)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

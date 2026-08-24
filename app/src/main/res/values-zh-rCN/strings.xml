@@ -11,7 +11,7 @@
     <string name="error_resource_file_picker_missing">资源文件选择器未注册</string>
     <string name="error_log_export_launcher_missing">日志导出启动器未注册</string>
     <string name="error_backup_file_open_failed">无法打开备份文件</string>
-    <string name="qr_scan_album_button">专辑</string>
+    <string name="qr_scan_album_button">相册</string>
     <string name="qr_scan_choose_image">从相册中选择</string>
     <string name="error_skipi_core_start_failed">无法启动 SKIPI Core：%1$s</string>
     <string name="error_skipi_core_data_dir_missing">SKIPI Core 数据目录丢失</string>
@@ -224,6 +224,9 @@
     <string name="settings_ipv6_prefer_summary">连接时首选 IPv6 地址</string>
     <string name="settings_core">核心设置</string>
     <string name="settings_resource_files_files">资源文件</string>
+    <!-- 资源文件更新通知 -->
+    <string name="settings_resource_files_notifications">更新通知</string>
+    <string name="settings_resource_files_notifications_summary">更新资源文件时显示通知</string>
     <string name="settings_resource_files_source">更新源</string>
     <string name="settings_header_appearance">外貌</string>
     <string name="settings_header_network">网络与隧道</string>
@@ -232,7 +235,7 @@
     <string name="settings_header_diagnostics">诊断和数据</string>
     <string name="settings_header_about">关于</string>
     <string name="settings_theme_color_custom">定制颜色...</string>
-    <string name="settings_theme_color_custom_seed">自定义材料您的颜色</string>
+    <string name="settings_theme_color_custom_seed">自定义 Material You 颜色</string>
     <string name="settings_theme_color_custom_seed_summary">选择自定义颜色来生成动态主题</string>
     <string name="settings_custom_colors_title">自定义用户界面颜色</string>
     <string name="settings_enable_custom_colors">自定义颜色</string>
@@ -254,7 +257,7 @@
     <string name="settings_colors_reset_completed">界面颜色重置为默认值</string>
     <string name="color_picker_hex">十六进制代码</string>
     <string name="color_picker_quick_presets">快速预设</string>
-    <string name="color_picker_apply">申请</string>
+    <string name="color_picker_apply">应用</string>
     <string name="settings_category_appearance">外观与界面</string>
     <string name="settings_category_appearance_summary">主题、语言、连接方式</string>
     <string name="settings_category_vpn">VPN 和 TUN 服务</string>
@@ -269,7 +272,7 @@
     <string name="settings_category_logs_summary">核心日志、访问日志、Logcat</string>
     <string name="settings_category_backup_reset">备份与重置</string>
     <string name="settings_category_backup_reset_summary">导出、恢复和重置数据</string>
-    <string name="settings_resource_files_source_loyalsoldier_github">忠诚士兵 (GitHub)</string>
+    <string name="settings_resource_files_source_loyalsoldier_github">Loyalsoldier (GitHub)</string>
     <string name="settings_resource_files_source_v2fly_github">V2Fly (GitHub)</string>
     <string name="settings_resource_files_source_chocolate4u_github">Chocolate4U (GitHub)</string>
     <string name="settings_resource_files_source_runetfreedom_github">RunetFreedom (GitHub)</string>
@@ -683,6 +686,7 @@
     <string name="subscription_delete_group">删除订阅组</string>
     <string name="subscription_new_group">新订阅组</string>
     <string name="subscription_edit">编辑订阅</string>
+    <string name="subscription_delete">删除订阅</string>
     <string name="subscription_add">添加订阅</string>
     <string name="subscription_default_group">手动服务器</string>
     <string name="subscription_unnamed_group">未命名组</string>
@@ -913,6 +917,9 @@
     <string name="configs_fragment_summary">当您的提供商需要时，拆分早期 TCP 数据包以帮助绕过 DPI。</string>
     <string name="configs_local_dns_summary">解析 VPN 隧道内部的 DNS，而不是仅依赖网络 DNS。</string>
     <string name="configs_fake_dns_summary">对稍后由核心恢复的流量使用合成 DNS 答案。需要本地 VPN DNS。</string>
+    <string name="configs_fake_dns_ip_pool">假DNS IP 地址池</string>
+    <string name="configs_fake_dns_pool_size">假DNS 地址池大小</string>
+    <string name="configs_hevtun_tcp_read_write_timeout">TCP 读写超时（毫秒）</string>
     <string name="configs_append_http_proxy_summary">在兼容的应用程序和设备的 VPN 隧道旁边公开 HTTP 代理。</string>
     <string name="configs_hevtun_summary">使用 hev-socks5-tunnel 创建 Android TUN 接口。</string>
     <string name="configs_network_transport_summary">选择自动激活此配置的网络类型。</string>
@@ -1219,4 +1226,14 @@
     <string name="settings_background_photo_pick">选择壁纸</string>
     <string name="settings_background_photo_remove">移除壁纸</string>
     <string name="settings_background_dim">背景变暗</string>
+    <!-- 应用更新通知 -->
+    <string name="app_update_notification_channel_name">应用更新</string>
+    <string name="app_update_notification_channel_description">显示应用下载进度</string>
+    <string name="app_update_downloading_notification_title">正在下载 SKIPI v%1$s</string>
+    <string name="app_update_ready_notification_title">SKIPI 更新已就绪</string>
+    <string name="app_update_ready_notification_text">点击以完成更新</string>
+
+    <!-- 订阅延迟测试模式 -->
+    <string name="subscription_ping_mode_real_connection">真实连接</string>
+    <string name="subscription_ping_mode_direct_connect">直连</string>
 </resources>
