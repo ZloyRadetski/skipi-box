@@ -1240,4 +1240,7 @@
     <!-- 首页分节标题 -->
     <string name="home_section_subscription">订阅</string>
     <string name="home_section_servers">节点</string>
+
+    <string name="settings_pin_connection_panel">固定连接面板</string>
+    <string name="settings_pin_connection_panel_summary">滚动服务器列表时固定连接面板和订阅选择器</string>
 </resources>

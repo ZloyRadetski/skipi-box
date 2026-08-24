@@ -158,8 +158,9 @@ internal fun ProxyServerListTopBar(
     searchValue: String,
     onSearchValueChange: (String) -> Unit,
     groupState: ProxyServerListGroups,
-    pinnedConnectionPanel: (@Composable () -> Unit)?,
-    showPinnedGroupSelector: Boolean,
+    pinnedConnectionPanel: (@Composable () -> Unit)? = null,
+    showPinnedGroupSelector: Boolean = true,
+    showSearchBar: Boolean = true,
     selectedServer: ProxyServerState?,
     proxyListState: ProxyServerListState,
     stateStore: AndroidAppStateStore,
@@ -334,7 +335,7 @@ internal fun ProxyServerListTopBar(
         }
 
         AnimatedVisibility(
-            visible = proxyListState.showServerSearch,
+            visible = showSearchBar && proxyListState.showServerSearch,
             enter = fadeIn() + expandVertically(),
             exit = shrinkVertically() + fadeOut(),
         ) {

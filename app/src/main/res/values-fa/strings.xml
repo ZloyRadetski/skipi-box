@@ -1239,4 +1239,7 @@
     <!-- عناوین بخش‌های صفحه اصلی -->
     <string name="home_section_subscription">اشتراک</string>
     <string name="home_section_servers">سرورها</string>
+
+    <string name="settings_pin_connection_panel">پین کردن پنل اتصال</string>
+    <string name="settings_pin_connection_panel_summary">ثابت نگه داشتن پنل اتصال و انتخاب اشتراک هنگام اسکرول</string>
 </resources>

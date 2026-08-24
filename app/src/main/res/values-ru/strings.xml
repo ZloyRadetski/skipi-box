@@ -135,7 +135,7 @@
     <string name="settings_connection_display_mode_compact">Компактный</string>
     <string name="settings_connection_display_mode_classic">Классический</string>
     <string name="settings_pin_connection_panel">Закрепить панель подключения</string>
-    <string name="settings_pin_connection_panel_summary">Не перемещать панель подключения при переключении подписок</string>
+    <string name="settings_pin_connection_panel_summary">Фиксировать панель подключения и выбор подписки при скролле</string>
     <string name="settings_bottom_bar_size">Размер нижней панели</string>
     <string name="settings_bottom_bar_size_summary">Настройка высоты, иконок и текста нижней панели навигации</string>
     <string name="settings_bottom_bar_size_small">Маленький</string>
