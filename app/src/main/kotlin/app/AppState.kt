@@ -103,6 +103,7 @@ data class AppState(
     val localProxyPassword: String = generateRandomProxyCredential(),
     val enableVpnAppendHttpProxy: Boolean = false,
     val enableVpnHevTun: Boolean = true,
+    val enableKillSwitch: Boolean = false,
     val tunMtu: String = VpnDefaults.MTU.toString(),
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,

@@ -184,6 +184,10 @@
     <string name="settings_wake_lock_summary">جلوگیری از قطع سوکت‌ها هنگام خاموش بودن صفحه (مصرف زیاد باتری)</string>
     <string name="settings_seamless_network_switching">جابه‌جایی بدون قطعی شبکه</string>
     <string name="settings_seamless_network_switching_summary">جابه‌جایی آنی تونل بین Wi-Fi و داده همراه</string>
+    <string name="settings_kill_switch">کیل سوییچ (Kill Switch)</string>
+    <string name="settings_kill_switch_summary">مسدود کردن ترافیک هنگام قطع یا اتصال مجدد VPN برای جلوگیری از نشت اطلاعات</string>
+    <string name="settings_system_vpn_settings">تنظیمات سیستم VPN</string>
+    <string name="settings_system_vpn_settings_summary">پیکربندی VPN همیشه‌روشن و مسدودسازی اتصالات بدون VPN در اندروید</string>
     <string name="settings_inbound">تنظیمات پروکسی ورودی</string>
     <string name="settings_inbound_tproxy_port">پورت پروکسی شفاف:{port}</string>
     <string name="settings_inbound_socks5_port">پورت TUN2SOCKS SOCKS5:{port}</string>

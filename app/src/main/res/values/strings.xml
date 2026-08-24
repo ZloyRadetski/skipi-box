@@ -190,6 +190,10 @@
     <string name="settings_wake_lock_summary">Prevents CPU and sockets from sleeping when the screen is off (High battery drain)</string>
     <string name="settings_seamless_network_switching">Seamless network switching</string>
     <string name="settings_seamless_network_switching_summary">Instantly rebinds tunnel on Wi-Fi and Cellular handover</string>
+    <string name="settings_kill_switch">Kill Switch</string>
+    <string name="settings_kill_switch_summary">Block network traffic and socket leaks when VPN disconnects or reconnects</string>
+    <string name="settings_system_vpn_settings">System VPN settings</string>
+    <string name="settings_system_vpn_settings_summary">Configure Android Always-on VPN and \"Block connections without VPN\"</string>
     <string name="settings_inbound">Inbound proxy settings</string>
     <string name="settings_inbound_tproxy_port">Transparent proxy port: {port}</string>
     <string name="settings_inbound_socks5_port">TUN2SOCKS SOCKS5 port: {port}</string>

@@ -180,6 +180,25 @@ fun SettingsVpnPage(
                     }
                 }
 
+                item(key = "vpn_kill_switch_card") {
+                    SmallTitle(text = stringResource(R.string.settings_kill_switch))
+                    SettingsSectionCard {
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_kill_switch),
+                            summary = stringResource(R.string.settings_kill_switch_summary),
+                            checked = appState.enableKillSwitch,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(enableKillSwitch = enabled) }
+                            },
+                        )
+                        ArrowPreference(
+                            title = stringResource(R.string.settings_system_vpn_settings),
+                            summary = stringResource(R.string.settings_system_vpn_settings_summary),
+                            onClick = { openSystemVpnSettings(context) },
+                        )
+                    }
+                }
+
                 item(key = "vpn_stability_card") {
                     SmallTitle(text = stringResource(R.string.settings_stability_and_background))
                     SettingsSectionCard {
@@ -237,6 +256,23 @@ fun SettingsVpnPage(
                 sheetState = sheetState,
                 updateAppState = updateAppState,
             )
+        }
+    }
+}
+
+private fun openSystemVpnSettings(context: Context) {
+    val intent = Intent(Settings.ACTION_VPN_SETTINGS).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching {
+        context.startActivity(intent)
+    }.onFailure {
+        runCatching {
+            val appDetailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${context.packageName}")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(appDetailsIntent)
         }
     }
 }

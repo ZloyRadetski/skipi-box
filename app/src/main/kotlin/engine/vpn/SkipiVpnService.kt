@@ -274,6 +274,11 @@ class SkipiVpnService : VpnService() {
             .setMtu(config.mtu)
             .addAddress(config.ipv4Address, config.ipv4PrefixLength)
 
+        if (config.enableKillSwitch) {
+            builder.setBlocking(true)
+            AndroidAppLogger.info(LogTag, "Applied Kill Switch (blocking TUN mode)")
+        }
+
         if (config.enableIpv6 && config.ipv6Address != null) {
             builder
                 .addAddress(config.ipv6Address, config.ipv6PrefixLength)
@@ -509,8 +514,9 @@ class SkipiVpnService : VpnService() {
                     val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
                     val isPhysical = active != null && activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == false &&
                         activeCaps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    val killSwitch = stateStore.state.value.enableKillSwitch
                     runCatching {
-                        setUnderlyingNetworks(if (isPhysical) arrayOf(active) else null)
+                        setUnderlyingNetworks(if (isPhysical) arrayOf(active) else if (killSwitch) emptyArray() else null)
                     }
                     if (isPhysical) {
                         handlePhysicalNetworkChange(checkNotNull(active), connectivityManager)

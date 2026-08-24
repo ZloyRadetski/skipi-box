@@ -49,6 +49,7 @@ internal data class VpnServiceStartConfig(
     val enableAccessLog: Boolean = false,
     val enableWakeLock: Boolean = false,
     val enableSeamlessNetworkSwitching: Boolean = true,
+    val enableKillSwitch: Boolean = false,
     val dataDir: String = "",
     val hevSocks5TunnelConfig: HevSocks5TunnelConfig? = null,
 )
@@ -106,6 +107,7 @@ internal object VpnXrayConfigFactory {
             enableAccessLog = appState.enableAccessLog,
             enableWakeLock = appState.enableWakeLock,
             enableSeamlessNetworkSwitching = appState.enableSeamlessNetworkSwitching,
+            enableKillSwitch = appState.enableKillSwitch,
             dataDir = resourceFilePaths.dataDir,
             hevSocks5TunnelConfig = buildVpnHevSocks5TunnelConfig(
                 dataDir = resourceFilePaths.dataDir,

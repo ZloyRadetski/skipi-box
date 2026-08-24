@@ -26,6 +26,7 @@ internal fun AppState.withVpnSettingsReset(): AppState {
         localProxyPassword = localProxyPassword,
         enableVpnAppendHttpProxy = defaults.enableVpnAppendHttpProxy,
         enableVpnHevTun = defaults.enableVpnHevTun,
+        enableKillSwitch = defaults.enableKillSwitch,
         tunMtu = defaults.tunMtu,
         tunVpnDns = defaults.tunVpnDns,
         tunIpv4Cidr = defaults.tunIpv4Cidr,

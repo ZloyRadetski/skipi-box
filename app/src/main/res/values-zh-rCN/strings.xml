@@ -184,6 +184,10 @@
     <string name="settings_wake_lock_summary">息屏时防止套接字休眠（耗电量较高）</string>
     <string name="settings_seamless_network_switching">无缝网络漫游</string>
     <string name="settings_seamless_network_switching_summary">Wi-Fi与移动数据切换时即时重绑定隧道</string>
+    <string name="settings_kill_switch">Kill Switch (断网急停)</string>
+    <string name="settings_kill_switch_summary">VPN 断开或重连时阻止网络流量以防泄漏</string>
+    <string name="settings_system_vpn_settings">系统 VPN 设置</string>
+    <string name="settings_system_vpn_settings_summary">配置 Android 始终开启的 VPN 及“阻止未使用 VPN 的连接”</string>
     <string name="settings_inbound">入站代理设置</string>
     <string name="settings_inbound_tproxy_port">透明代理端口：{port}</string>
     <string name="settings_inbound_socks5_port">TUN2SOCKS SOCKS5 端口：{port}</string>
