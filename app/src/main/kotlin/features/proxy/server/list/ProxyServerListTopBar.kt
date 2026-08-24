@@ -327,18 +327,16 @@ internal fun ProxyServerListTopBar(
             enter = fadeIn() + expandVertically(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            Box(
+            ProxyServerListGroupSelector(
+                groups = groupState.groupTabs,
+                selectedGroupId = groupState.selectedTabId,
+                onGroupSelected = onSelectedGroupIdChange,
+                onGroupMove = onMoveSubscriptionGroup,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
                     .padding(top = 4.dp, bottom = 2.dp),
-            ) {
-                ProxyServerListGroupSelector(
-                    groups = groupState.groupTabs,
-                    selectedGroupId = groupState.selectedTabId,
-                    onGroupSelected = onSelectedGroupIdChange,
-                    onGroupMove = onMoveSubscriptionGroup,
-                )
-            }
+            )
         }
 
         AnimatedVisibility(

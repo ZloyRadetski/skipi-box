@@ -92,6 +92,7 @@ import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Pause
 import top.yukonga.miuix.kmp.icon.extended.Play
@@ -134,28 +135,74 @@ internal fun ProxyServerListGroupSelector(
     val selectedGroup = groups.firstOrNull { group -> group.id == selectedGroupId } ?: groups.first()
     var showGroupPicker by remember { mutableStateOf(false) }
     var reorderGroupId by remember { mutableStateOf<Int?>(null) }
+    val hapticFeedback = LocalHapticFeedback.current
+
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (showGroupPicker) 180f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "groupSelectorChevron",
+    )
+
+    val cardScale by animateFloatAsState(
+        targetValue = if (showGroupPicker) 0.985f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "groupSelectorScale",
+    )
+
+    val cardBorderColor by animateColorAsState(
+        targetValue = if (showGroupPicker) {
+            MiuixTheme.colorScheme.primary.copy(alpha = 0.5f)
+        } else {
+            MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f)
+        },
+        animationSpec = tween(durationMillis = 200),
+        label = "groupSelectorBorder",
+    )
+
+    val cardBgColor by animateColorAsState(
+        targetValue = if (showGroupPicker) {
+            AppTheme.colors.surfaceVariant.copy(alpha = 0.5f)
+        } else {
+            AppTheme.colors.surface
+        },
+        animationSpec = tween(durationMillis = 200),
+        label = "groupSelectorBg",
+    )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = cardScale
+                    scaleY = cardScale
+                }
                 .clip(RoundedCornerShape(ProxyServerListGroupSelectorRadius))
-                .background(AppTheme.colors.surface)
+                .background(cardBgColor)
                 .border(
                     width = 1.dp,
-                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                    color = cardBorderColor,
                     shape = RoundedCornerShape(ProxyServerListGroupSelectorRadius),
                 )
                 .combinedClickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = { showGroupPicker = true },
+                    onClick = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+                        showGroupPicker = !showGroupPicker
+                    },
                     onLongClick = {
                         if (selectedGroup.id > features.subscription.DefaultSubscriptionGroupId) {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             reorderGroupId = selectedGroup.id
                         }
                     },
@@ -181,33 +228,37 @@ internal fun ProxyServerListGroupSelector(
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
-            Text(
-                text = "⌄",
-                fontSize = 20.sp,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            Icon(
+                imageVector = MiuixIcons.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer { rotationZ = chevronRotation },
+                tint = if (showGroupPicker) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         }
-        if (showGroupPicker) {
-            WindowCascadingListPopup(
-                show = true,
-                entries = listOf(
-                    DropdownEntry(
-                        items = groups.map { group ->
-                            DropdownItem(
-                                text = "${group.name} · ${stringResource(R.string.proxy_editor_strategy_group_servers_count, group.serverCount)}",
-                                onClick = {
-                                    showGroupPicker = false
-                                    onGroupSelected(group.id)
-                                },
-                            )
-                        },
-                    ),
+
+        WindowCascadingListPopup(
+            show = showGroupPicker,
+            entries = listOf(
+                DropdownEntry(
+                    items = groups.map { group ->
+                        DropdownItem(
+                            text = "${group.name} · ${stringResource(R.string.proxy_editor_strategy_group_servers_count, group.serverCount)}",
+                            selected = group.id == selectedGroupId,
+                            onClick = {
+                                showGroupPicker = false
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+                                onGroupSelected(group.id)
+                            },
+                        )
+                    },
                 ),
-                popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-                alignment = PopupPositionProvider.Align.Start,
-                onDismissRequest = { showGroupPicker = false },
-            )
-        }
+            ),
+            popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
+            alignment = PopupPositionProvider.Align.Start,
+            onDismissRequest = { showGroupPicker = false },
+        )
         reorderGroupId?.let { groupId ->
             val reorderableIds = groups
                 .map { group -> group.id }

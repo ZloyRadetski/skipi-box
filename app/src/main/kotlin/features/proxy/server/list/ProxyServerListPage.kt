@@ -3,6 +3,11 @@
 
 package features.proxy.server.list
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -605,24 +610,25 @@ fun ProxyServerListPage(
                     .fillMaxWidth()
                     .padding(bottom = 2.dp),
             )
-            if (groupState.showGroupTabs) {
-                Box(
+            AnimatedVisibility(
+                visible = groupState.showGroupTabs,
+                enter = fadeIn() + expandVertically(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                ProxyServerListGroupSelector(
+                    groups = groupState.groupTabs,
+                    selectedGroupId = groupState.selectedTabId,
+                    onGroupSelected = { groupId ->
+                        if (selectedGroupId != groupId) haptics.groupSwitched()
+                        selectedGroupId = groupId
+                    },
+                    onGroupMove = { groupId, offset ->
+                        updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 4.dp, bottom = 2.dp),
-                ) {
-                    ProxyServerListGroupSelector(
-                        groups = groupState.groupTabs,
-                        selectedGroupId = groupState.selectedTabId,
-                        onGroupSelected = { groupId ->
-                            if (selectedGroupId != groupId) haptics.groupSwitched()
-                            selectedGroupId = groupId
-                        },
-                        onGroupMove = { groupId, offset ->
-                            updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
-                        },
-                    )
-                }
+                )
             }
         }
     }
