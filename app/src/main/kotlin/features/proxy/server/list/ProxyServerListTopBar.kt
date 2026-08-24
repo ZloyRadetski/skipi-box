@@ -321,25 +321,16 @@ internal fun ProxyServerListTopBar(
             enter = fadeIn() + expandVertically(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            Column(
+            ProxyServerListGroupSelector(
+                groups = groupState.groupTabs,
+                selectedGroupId = groupState.selectedTabId,
+                onGroupSelected = onSelectedGroupIdChange,
+                onGroupMove = onMoveSubscriptionGroup,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp),
-            ) {
-                SmallTitle(
-                    text = stringResource(R.string.home_section_subscription),
-                )
-                ProxyServerListGroupSelector(
-                    groups = groupState.groupTabs,
-                    selectedGroupId = groupState.selectedTabId,
-                    onGroupSelected = onSelectedGroupIdChange,
-                    onGroupMove = onMoveSubscriptionGroup,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 2.dp),
-                )
-            }
+                    .padding(horizontal = 12.dp)
+                    .padding(top = 4.dp, bottom = 2.dp),
+            )
         }
 
         AnimatedVisibility(
@@ -500,6 +491,8 @@ internal fun ProxyHeroConnectionCard(
             memoryKb = memoryKb,
             effectiveFlag = effectiveFlag,
             cleanTitle = cleanTitle,
+            activeServerState = activeServerState,
+            sample = sample,
             modifier = modifier,
         )
     }
@@ -704,21 +697,14 @@ private fun ProxyHeroConnectionCardClassic(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(accentTone.copy(alpha = 0.20f)),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_shield),
-                                        contentDescription = null,
-                                        tint = accentTone,
-                                        modifier = Modifier.size(14.dp),
+                                if (effectiveFlag != null) {
+                                    CountryFlagBadge(
+                                        flag = effectiveFlag,
+                                        size = 20.dp,
+                                        shapeRadius = 4.dp,
                                     )
+                                    Spacer(Modifier.width(6.dp))
                                 }
-                                Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = cleanTitle,
                                     fontSize = 15.sp,
@@ -852,6 +838,8 @@ private fun ProxyHeroConnectionCardCompact(
     memoryKb: Long,
     effectiveFlag: String?,
     cleanTitle: String,
+    activeServerState: ProxyServerState? = null,
+    sample: ActiveTunnelRuntimeSample? = null,
     modifier: Modifier = Modifier,
 ) {
     val heroShape = RoundedCornerShape(18.dp)
@@ -881,6 +869,30 @@ private fun ProxyHeroConnectionCardCompact(
         ),
         label = "dot_scale",
     )
+
+    val latencyText = remember(activeServerState, appState.proxyServers, sample?.outboundTag) {
+        val directLatency = activeServerState?.latency?.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
+        if (directLatency != null) return@remember directLatency
+
+        val strategyGroup = activeServerState?.server as? StrategyGroup
+            ?: (appState.proxyServers.firstOrNull { it.id == appState.selectedProxyServerId }?.server as? StrategyGroup)
+        if (strategyGroup != null) {
+            val activeMemberId = sample?.outboundTag?.proxyServerIdFromOutboundTag()
+            if (activeMemberId != null) {
+                val activeMemberLatency = appState.proxyServers.firstOrNull { it.id == activeMemberId }?.latency?.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
+                if (activeMemberLatency != null) return@remember activeMemberLatency
+            }
+            val memberLatencies = appState.proxyServers.filter { member ->
+                member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
+            }.mapNotNull { member ->
+                member.latency.takeIf { it.isNotBlank() && it != ProxyServerLatencyTesting }
+            }
+            if (memberLatencies.isNotEmpty()) {
+                return@remember memberLatencies.firstOrNull()
+            }
+        }
+        null
+    }
 
     Card(
         modifier = modifier
@@ -947,20 +959,11 @@ private fun ProxyHeroConnectionCardCompact(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(accentTone.copy(alpha = 0.20f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_shield),
-                                contentDescription = null,
-                                tint = accentTone,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+                        CountryFlagBadge(
+                            flag = effectiveFlag,
+                            size = 36.dp,
+                            shapeRadius = 8.dp,
+                        )
                         Spacer(Modifier.width(10.dp))
                         Text(
                             text = cleanTitle,
@@ -971,6 +974,29 @@ private fun ProxyHeroConnectionCardCompact(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
                         )
+                        if (!latencyText.isNullOrBlank()) {
+                            val latencyColor = proxyServerLatencyColor(latencyText)
+                            Spacer(Modifier.width(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(latencyColor.copy(alpha = 0.12f))
+                                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                            ) {
+                                SignalBarsIcon(
+                                    color = latencyColor,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = latencyText,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = latencyColor,
+                                )
+                            }
+                        }
                     }
                 }
             } else {
@@ -979,7 +1005,7 @@ private fun ProxyHeroConnectionCardCompact(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     CountryFlagBadge(
-                        flag = null,
+                        flag = effectiveFlag,
                         size = 36.dp,
                         shapeRadius = 8.dp,
                     )
@@ -1001,11 +1027,35 @@ private fun ProxyHeroConnectionCardCompact(
                             )
                         }
                         Text(
-                            text = stringResource(R.string.proxy_active_server_select_to_connect),
+                            text = cleanTitle.ifBlank { stringResource(R.string.proxy_active_server_select_to_connect) },
                             fontSize = 12.sp,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
+                    }
+                    if (!latencyText.isNullOrBlank()) {
+                        val latencyColor = proxyServerLatencyColor(latencyText)
+                        Spacer(Modifier.width(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(latencyColor.copy(alpha = 0.12f))
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                        ) {
+                            SignalBarsIcon(
+                                color = latencyColor,
+                                modifier = Modifier.size(12.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = latencyText,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = latencyColor,
+                            )
+                        }
                     }
                 }
             }

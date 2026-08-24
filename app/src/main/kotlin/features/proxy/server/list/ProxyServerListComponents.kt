@@ -1013,7 +1013,7 @@ internal fun ProxyServerListEmptyState(
 }
 
 @Composable
-private fun proxyServerLatencyColor(text: String): Color {
+internal fun proxyServerLatencyColor(text: String): Color {
     val latency = proxyServerLatencyNumberRegex.find(text)?.value?.toIntOrNull()
     val darkTheme = isInDarkTheme()
     val appState by LocalAppStateStore.current.collectAppState()
