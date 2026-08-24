@@ -684,14 +684,6 @@ fun SettingsAppearancePage(
                                 updateAppState { it.copy(connectionDisplayMode = mode) }
                             },
                         )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_pin_connection_panel),
-                            summary = stringResource(R.string.settings_pin_connection_panel_summary),
-                            checked = appState.pinConnectionPanelOnHome,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(pinConnectionPanelOnHome = enabled) }
-                            },
-                        )
                         AnimatedVisibility(visible = appState.connectionDisplayMode == ConnectionDisplayModeClassic) {
                             SwitchPreference(
                                 title = stringResource(R.string.settings_classic_show_floating_power_button),

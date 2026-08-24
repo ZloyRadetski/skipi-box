@@ -13,8 +13,8 @@ import kotlin.test.assertTrue
 class ConnectionDisplayModeTest {
 
     @Test
-    fun testConnectionPanelMovesWithSubscriptionByDefault() {
-        assertFalse(AppState().pinConnectionPanelOnHome)
+    fun testConnectionPanelPinnedByDefault() {
+        assertTrue(AppState().pinConnectionPanelOnHome)
     }
 
     private fun resolveFloatingToolbarVisibility(

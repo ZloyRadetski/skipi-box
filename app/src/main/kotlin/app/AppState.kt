@@ -86,7 +86,7 @@ data class AppState(
     val enableDeletionConfirmation: Boolean = true,
     val connectionDisplayMode: Int = ConnectionDisplayModeCompact,
     /** Keep the connection panel fixed while switching subscription pages. */
-    val pinConnectionPanelOnHome: Boolean = false,
+    val pinConnectionPanelOnHome: Boolean = true,
     val classicShowFloatingPowerButton: Boolean = false,
     val backgroundStyle: Int = BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,

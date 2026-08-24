@@ -603,36 +603,6 @@ fun ProxyServerListPage(
         null
     }
 
-    val movingPageHeader: @Composable (Modifier) -> Unit = { modifier ->
-        Column(modifier = modifier.fillMaxWidth()) {
-            connectionPanel(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 2.dp),
-            )
-            AnimatedVisibility(
-                visible = groupState.showGroupTabs,
-                enter = fadeIn() + expandVertically(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                ProxyServerListGroupSelector(
-                    groups = groupState.groupTabs,
-                    selectedGroupId = groupState.selectedTabId,
-                    onGroupSelected = { groupId ->
-                        if (selectedGroupId != groupId) haptics.groupSwitched()
-                        selectedGroupId = groupId
-                    },
-                    onGroupMove = { groupId, offset ->
-                        updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp, bottom = 2.dp),
-                )
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -642,19 +612,15 @@ fun ProxyServerListPage(
             searchValue = searchValue,
             onSearchValueChange = { searchValue = it },
             groupState = groupState,
-            pinnedConnectionPanel = if (proxyListState.pinConnectionPanelOnHome) {
-                {
-                    connectionPanel(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 2.dp),
-                    )
-                }
-            } else {
-                null
+            pinnedConnectionPanel = {
+                connectionPanel(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 2.dp),
+                )
             },
-            showPinnedGroupSelector = proxyListState.pinConnectionPanelOnHome,
+            showPinnedGroupSelector = true,
             selectedServer = selectedServer,
             proxyListState = proxyListState,
             stateStore = stateStore,
@@ -732,7 +698,7 @@ fun ProxyServerListPage(
                 pingingGroupIds = pingingGroupIds,
                 activeOutboundTag = activeOutboundTag,
                 activeTrafficConfigId = proxyListState.activeTrafficConfigId,
-                pageHeader = if (proxyListState.pinConnectionPanelOnHome) null else movingPageHeader,
+                pageHeader = null,
             )
             floatingToolbar?.invoke(this)
         }
