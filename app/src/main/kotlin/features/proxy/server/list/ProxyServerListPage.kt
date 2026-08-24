@@ -83,6 +83,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import ui.AppTheme
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
@@ -92,13 +93,17 @@ import ui.text.formatTemplate
 
 private const val ProxyServerEditResultKey = "proxy-server-edit-result"
 
+private class DelegatingScrollBehavior(
+    private val delegate: ScrollBehavior,
+    override val nestedScrollConnection: NestedScrollConnection,
+) : ScrollBehavior by delegate
+
 @Composable
 fun ProxyServerListPage(
     padding: PaddingValues,
 ) {
     val isWideScreen = LocalIsWideScreen.current
     val scrollToTopRequest = LocalProxyPageScrollToTopRequest.current
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
     val stateStore = LocalAppStateStore.current
     val appState by stateStore.collectAppState()
     val proxyListState by stateStore.collectProxyServerListState()
@@ -623,8 +628,18 @@ fun ProxyServerListPage(
         } else {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (headerMaxHeightPx <= 0f) return Offset.Zero
                     val delta = available.y
-                    if (delta < 0f && headerMaxHeightPx > 0f) {
+                    // When scrolling up (finger moves up, delta < 0): collapse header
+                    if (delta < 0f && headerOffsetPx > -headerMaxHeightPx) {
+                        val oldOffset = headerOffsetPx
+                        headerOffsetPx = (headerOffsetPx + delta).coerceIn(-headerMaxHeightPx, 0f)
+                        val consumed = headerOffsetPx - oldOffset
+                        return Offset(0f, consumed)
+                    }
+                    // When scrolling down (finger moves down, delta > 0) and header is collapsed:
+                    // expand header before pull-to-refresh or lazy list can capture it
+                    if (delta > 0f && headerOffsetPx < 0f) {
                         val oldOffset = headerOffsetPx
                         headerOffsetPx = (headerOffsetPx + delta).coerceIn(-headerMaxHeightPx, 0f)
                         val consumed = headerOffsetPx - oldOffset
@@ -634,17 +649,23 @@ fun ProxyServerListPage(
                 }
 
                 override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                    if (headerMaxHeightPx <= 0f) return Offset.Zero
                     val delta = available.y
-                    if (delta > 0f && headerMaxHeightPx > 0f) {
+                    if (delta > 0f && headerOffsetPx < 0f) {
                         val oldOffset = headerOffsetPx
                         headerOffsetPx = (headerOffsetPx + delta).coerceIn(-headerMaxHeightPx, 0f)
-                        val consumed = headerOffsetPx - oldOffset
-                        return Offset(0f, consumed)
+                        val consumedY = headerOffsetPx - oldOffset
+                        return Offset(0f, consumedY)
                     }
                     return Offset.Zero
                 }
             }
         }
+    }
+
+    val baseScrollBehavior = MiuixScrollBehavior()
+    val topAppBarScrollBehavior = remember(baseScrollBehavior, collapsibleScrollConnection) {
+        DelegatingScrollBehavior(baseScrollBehavior, collapsibleScrollConnection)
     }
 
     LaunchedEffect(pinConnectionPanel, scrollToTopRequest) {

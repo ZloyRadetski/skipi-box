@@ -177,7 +177,7 @@ internal fun ProxyServerListPager(
         },
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(0.dp),
-        topAppBarScrollBehavior = null,
+        topAppBarScrollBehavior = topAppBarScrollBehavior,
         color = AppTheme.colors.onSurface.copy(alpha = 0.8f),
         circleSize = 24.dp,
         refreshTexts = listOf(
