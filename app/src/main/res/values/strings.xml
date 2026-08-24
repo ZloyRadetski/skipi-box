@@ -1270,4 +1270,8 @@
     <!-- Subscription ping modes -->
     <string name="subscription_ping_mode_real_connection">Real connection</string>
     <string name="subscription_ping_mode_direct_connect">Direct connect</string>
+
+    <!-- Home section titles -->
+    <string name="home_section_subscription">Subscription</string>
+    <string name="home_section_servers">Servers</string>
 </resources>

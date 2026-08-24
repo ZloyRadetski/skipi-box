@@ -1235,4 +1235,8 @@
     <!-- حالت‌های پینگ اشتراک -->
     <string name="subscription_ping_mode_real_connection">اتصال واقعی</string>
     <string name="subscription_ping_mode_direct_connect">اتصال مستقیم</string>
+
+    <!-- عناوین بخش‌های صفحه اصلی -->
+    <string name="home_section_subscription">اشتراک</string>
+    <string name="home_section_servers">سرورها</string>
 </resources>

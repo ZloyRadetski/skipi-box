@@ -140,6 +140,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
@@ -327,16 +328,25 @@ internal fun ProxyServerListTopBar(
             enter = fadeIn() + expandVertically(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            ProxyServerListGroupSelector(
-                groups = groupState.groupTabs,
-                selectedGroupId = groupState.selectedTabId,
-                onGroupSelected = onSelectedGroupIdChange,
-                onGroupMove = onMoveSubscriptionGroup,
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(top = 4.dp, bottom = 2.dp),
-            )
+                    .padding(top = 4.dp),
+            ) {
+                SmallTitle(
+                    text = stringResource(R.string.home_section_subscription),
+                )
+                ProxyServerListGroupSelector(
+                    groups = groupState.groupTabs,
+                    selectedGroupId = groupState.selectedTabId,
+                    onGroupSelected = onSelectedGroupIdChange,
+                    onGroupMove = onMoveSubscriptionGroup,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 2.dp),
+                )
+            }
         }
 
         AnimatedVisibility(

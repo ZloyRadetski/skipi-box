@@ -1236,4 +1236,8 @@
     <!-- 订阅延迟测试模式 -->
     <string name="subscription_ping_mode_real_connection">真实连接</string>
     <string name="subscription_ping_mode_direct_connect">直连</string>
+
+    <!-- 首页分节标题 -->
+    <string name="home_section_subscription">订阅</string>
+    <string name="home_section_servers">节点</string>
 </resources>

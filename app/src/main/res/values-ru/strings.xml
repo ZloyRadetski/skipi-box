@@ -1257,4 +1257,8 @@
     <!-- Режимы пинга подписки -->
     <string name="subscription_ping_mode_real_connection">Реальное подключение</string>
     <string name="subscription_ping_mode_direct_connect">Прямое подключение</string>
+
+    <!-- Заголовки секций на главном экране -->
+    <string name="home_section_subscription">Подписка</string>
+    <string name="home_section_servers">Серверы</string>
 </resources>

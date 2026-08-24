@@ -79,6 +79,7 @@ import sh.calvin.reorderable.ReorderableItem
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import ui.components.AppPullToRefresh
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
@@ -341,6 +342,11 @@ private fun SubscriptionProxyServerList(
                     header(Modifier)
                 }
             }
+            item(key = "servers_section_title_${group.id}") {
+                SmallTitle(
+                    text = stringResource(R.string.home_section_servers),
+                )
+            }
             item(key = "subscription_provider_${group.id}") {
                 Box(
                     modifier = Modifier
@@ -589,6 +595,15 @@ private fun ProxyServerLazyGrid(
                 }
             }
             subscriptionGroup?.let { group ->
+                item(
+                    key = "servers_section_title_${group.id}",
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = "section_title",
+                ) {
+                    SmallTitle(
+                        text = stringResource(R.string.home_section_servers),
+                    )
+                }
                 item(
                     key = "subscription_provider_${group.id}",
                     span = { GridItemSpan(maxLineSpan) },
