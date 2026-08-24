@@ -110,7 +110,7 @@ internal class AppUpdateDownloader(
         while (redirectCount < maxRedirects) {
             // The app is excluded from its own VPN, so bind to the tunnel
             // explicitly when it is up to download the APK through it.
-            val connection = (TunnelNetworks.openHttpConnection(context, URL(currentUrl)) as HttpURLConnection).apply {
+            val connection = TunnelNetworks.openHttpConnection(context, URL(currentUrl)).apply {
                 instanceFollowRedirects = false
                 connectTimeout = 30000
                 readTimeout = 60000

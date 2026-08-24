@@ -68,7 +68,10 @@ object TunnelNetworks {
     /** The device's active VPN network, or null when no tunnel is up. */
     fun locateVpnNetwork(context: Context?): Network? {
         val connectivity = context?.getSystemService(ConnectivityManager::class.java) ?: return null
-        return connectivity.allNetworks?.firstOrNull { network ->
+        // allNetworks is deprecated in favor of network callbacks, but a VPN
+        // lookup must stay synchronous here; the array itself is never null.
+        @Suppress("DEPRECATION")
+        return connectivity.allNetworks.firstOrNull { network ->
             connectivity.getNetworkCapabilities(network)
                 ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
         }

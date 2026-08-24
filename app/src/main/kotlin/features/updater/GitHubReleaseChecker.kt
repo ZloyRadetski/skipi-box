@@ -36,7 +36,7 @@ internal class GitHubReleaseChecker(
                 val url = URL(GitHubApiUrl)
                 // The app is excluded from its own VPN, so bind to the tunnel
                 // explicitly when it is up; otherwise check via the direct path.
-                val connection = (TunnelNetworks.openHttpConnection(context, url) as HttpURLConnection).apply {
+                val connection = TunnelNetworks.openHttpConnection(context, url).apply {
                     requestMethod = "GET"
                     connectTimeout = 15000
                     readTimeout = 20000

@@ -69,7 +69,7 @@ internal class SpeedTestTransfer {
                         transferredBytes.get().toFloat() / byteBudgetBytes,
                         (now - startedAtMillis).toFloat() / maxDurationMillis,
                     ).coerceIn(0f, 1f)
-                    onSample(progress, emaMbps ?: 0.0)
+                    onSample(progress, emaMbps)
                 }
             }
             // Launch the transfer loops and WAIT for them: setting the flag
