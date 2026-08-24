@@ -256,13 +256,6 @@ internal fun ProxyServerListTopBar(
                 contentDescription = stringResource(R.string.app_name),
                 modifier = Modifier.size(36.dp),
             )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = "SKIPI",
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                color = MiuixTheme.colorScheme.onBackground,
-            )
             Spacer(Modifier.weight(1f))
             IconButton(
                 onClick = {
