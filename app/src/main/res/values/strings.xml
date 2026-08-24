@@ -1244,6 +1244,7 @@
     <string name="settings_background_style_classic">Classic</string>
     <string name="settings_background_style_photo">Custom photo</string>
     <string name="settings_background_style_connection">Connection status</string>
+    <string name="settings_background_style_aurora">Aurora mesh</string>
     <string name="settings_background_photo_pick">Choose photo</string>
     <string name="settings_background_photo_remove">Remove photo</string>
     <string name="settings_background_dim">Background dimming</string>

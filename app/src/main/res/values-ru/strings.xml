@@ -1234,6 +1234,7 @@
     <string name="settings_background_style_classic">Классический</string>
     <string name="settings_background_style_photo">Своё фото</string>
     <string name="settings_background_style_connection">Реакция на статус VPN</string>
+    <string name="settings_background_style_aurora">Полярное сияние</string>
     <string name="settings_background_photo_pick">Выбрать фото из галереи</string>
     <string name="settings_background_photo_remove">Удалить фоновое фото</string>
     <string name="settings_background_dim">Степень затемнения</string>

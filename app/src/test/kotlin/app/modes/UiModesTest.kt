@@ -24,6 +24,7 @@ class UiModesTest {
         assertEquals(BackgroundStyleClassic, normalizeBackgroundStyle(BackgroundStyleClassic))
         assertEquals(BackgroundStylePhoto, normalizeBackgroundStyle(BackgroundStylePhoto))
         assertEquals(BackgroundStyleConnection, normalizeBackgroundStyle(BackgroundStyleConnection))
+        assertEquals(BackgroundStyleAurora, normalizeBackgroundStyle(BackgroundStyleAurora))
 
         // Invalid values default to BackgroundStyleClassic
         assertEquals(BackgroundStyleClassic, normalizeBackgroundStyle(-1))

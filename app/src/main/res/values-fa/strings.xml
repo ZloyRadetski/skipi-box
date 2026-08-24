@@ -1232,6 +1232,7 @@ lid">CIDR نامعتبر است</string>
     <string name="settings_background_style_classic">کلاسیک</string>
     <string name="settings_background_style_photo">تصویر سفارشی</string>
     <string name="settings_background_style_connection">وضعیت اتصال</string>
+    <string name="settings_background_style_aurora">شب‌درخش</string>
     <string name="settings_background_photo_pick">انتخاب تصویر</string>
     <string name="settings_background_photo_remove">حذف تصویر</string>
     <string name="settings_background_dim">میزان تاریکی پس‌زمینه</string>

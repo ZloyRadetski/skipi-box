@@ -1212,6 +1212,7 @@
     <string name="settings_background_style_classic">经典</string>
     <string name="settings_background_style_photo">自定义壁纸</string>
     <string name="settings_background_style_connection">连接状态</string>
+    <string name="settings_background_style_aurora">极光渐变</string>
     <string name="settings_background_photo_pick">选择壁纸</string>
     <string name="settings_background_photo_remove">移除壁纸</string>
     <string name="settings_background_dim">背景变暗</string>

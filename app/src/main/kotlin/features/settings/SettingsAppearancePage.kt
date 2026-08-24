@@ -211,6 +211,7 @@ fun SettingsAppearancePage(
         stringResource(R.string.settings_background_style_classic),
         stringResource(R.string.settings_background_style_photo),
         stringResource(R.string.settings_background_style_connection),
+        stringResource(R.string.settings_background_style_aurora),
     )
     val backgroundDimOptions = remember { listOf(0, 25, 45, 60, 75) }
     val backgroundDimLabels = remember { listOf("0%", "25%", "45%", "60%", "75%") }
