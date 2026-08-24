@@ -369,7 +369,7 @@
     <string name="option_theme_system">سیستم فالو (مونت)</string>
     <string name="option_theme_light">نور (مونته)</string>
     <string name="option_theme_dark">تاریک (مونته)</string>
-    <string name="option_amoled">AMOLED (مشکی واقعی)</string>
+    <string name="option_amoled">AMOLED</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>

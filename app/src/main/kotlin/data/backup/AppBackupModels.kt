@@ -136,6 +136,7 @@ internal data class AppBackupSettings(
     val enableResourceFileNotifications: Boolean = BackupDefaults.enableResourceFileNotifications,
     val showServerSearch: Boolean = BackupDefaults.showServerSearch,
     val connectionDisplayMode: Int = BackupDefaults.connectionDisplayMode,
+    val pinConnectionPanelOnHome: Boolean = BackupDefaults.pinConnectionPanelOnHome,
     val backgroundStyle: Int = BackupDefaults.backgroundStyle,
     val backgroundPhotoDimPercent: Int = BackupDefaults.backgroundPhotoDimPercent,
     val enableHaptics: Boolean = BackupDefaults.enableHaptics,

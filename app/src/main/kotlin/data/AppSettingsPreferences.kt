@@ -331,6 +331,10 @@ internal class AppSettingsPreferences(
                 KeyConnectionDisplayMode,
                 defaults.connectionDisplayMode,
             ),
+            pinConnectionPanelOnHome = preferences.getBoolean(
+                KeyPinConnectionPanelOnHome,
+                defaults.pinConnectionPanelOnHome,
+            ),
             backgroundStyle = preferences.getInt(
                 KeyBackgroundStyle,
                 defaults.backgroundStyle,
@@ -503,6 +507,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableResourceFileNotifications, state.enableResourceFileNotifications)
             .putBoolean(KeyShowServerSearch, state.showServerSearch)
             .putInt(KeyConnectionDisplayMode, state.connectionDisplayMode)
+            .putBoolean(KeyPinConnectionPanelOnHome, state.pinConnectionPanelOnHome)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
             .putBoolean(KeyHasCompletedOnboarding, state.hasCompletedOnboarding)
             .putBoolean(KeyClassicShowFloatingPowerButton, state.classicShowFloatingPowerButton)
@@ -869,6 +874,7 @@ private const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_noti
 private const val KeyEnableResourceFileNotifications = "enable_resource_file_notifications"
 private const val KeyShowServerSearch = "show_server_search"
 private const val KeyConnectionDisplayMode = "connection_display_mode"
+private const val KeyPinConnectionPanelOnHome = "pin_connection_panel_on_home"
 private const val KeyBackgroundStyle = "background_style"
 private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"

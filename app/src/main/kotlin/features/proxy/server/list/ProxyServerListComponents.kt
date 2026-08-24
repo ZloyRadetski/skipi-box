@@ -24,7 +24,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,12 +38,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -56,12 +52,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -113,7 +105,6 @@ import ui.components.IconDropdownMenu
 import ui.components.IconDropdownMenuEntry
 import ui.components.draggedCardShadow
 import features.proxy.server.display.CountryFlagUtils
-import kotlin.math.floor
 import kotlin.math.roundToInt
 
 private val proxyServerLatencyNumberRegex = Regex("""\d+""")
@@ -121,8 +112,7 @@ private val ProxyServerListFloatingToolbarButtonSize = 52.dp
 private val ProxyServerListFloatingToolbarVerticalPadding = 8.dp
 private val ProxyServerListFloatingToolbarBottomSpacing = 16.dp
 private val ProxyServerListFloatingToolbarContentGap = 12.dp
-private val ProxyServerListGroupTabHeight = 36.dp
-private val ProxyServerListGroupTabSpacing = 8.dp
+private val ProxyServerListGroupSelectorRadius = 16.dp
 private val ProxyServerListCompactCardHeight = 66.dp
 private val ProxyServerListCompactCardPadding = 8.dp
 internal val ProxyServerListFloatingToolbarReservedBottomPadding =
@@ -132,138 +122,91 @@ internal val ProxyServerListFloatingToolbarReservedBottomPadding =
         ProxyServerListFloatingToolbarBottomSpacing +
         ProxyServerListFloatingToolbarContentGap
 
-private data class ProxyServerListGroupTabBounds(
-    val leftPx: Int,
-    val widthPx: Int,
-)
-
-private fun linearInterpolate(start: Int, end: Int, fraction: Float): Int {
-    return (start + (end - start) * fraction).roundToInt()
-}
-
 @Composable
-internal fun ProxyServerListGroupTabs(
+internal fun ProxyServerListGroupSelector(
     groups: List<ProxyServerListGroupTabUi>,
     selectedGroupId: Int,
-    groupPagerState: androidx.compose.foundation.pager.PagerState,
     onGroupSelected: (Int) -> Unit,
     onGroupMove: (groupId: Int, offset: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (groups.isEmpty()) return
-    val density = LocalDensity.current
-    val tabScrollState = rememberScrollState()
-    var viewportWidthPx by remember { mutableIntStateOf(0) }
-    var tabBounds by remember { mutableStateOf<Map<Int, ProxyServerListGroupTabBounds>>(emptyMap()) }
+    val selectedGroup = groups.firstOrNull { group -> group.id == selectedGroupId } ?: groups.first()
+    var showGroupPicker by remember { mutableStateOf(false) }
     var reorderGroupId by remember { mutableStateOf<Int?>(null) }
-    val selectedIndex = groups.indexOfFirst { group -> group.id == selectedGroupId }
-    val selectedBounds = tabBounds[selectedGroupId]
-
-    val pagerPosition = (groupPagerState.currentPage + groupPagerState.currentPageOffsetFraction)
-        .coerceIn(0f, groups.lastIndex.toFloat())
-    val startIndex = floor(pagerPosition).toInt().coerceIn(0, groups.lastIndex)
-    val endIndex = (startIndex + 1).coerceAtMost(groups.lastIndex)
-    val indicatorStartBounds = tabBounds[groups[startIndex].id]
-    val indicatorEndBounds = tabBounds[groups[endIndex].id] ?: indicatorStartBounds
-    val indicatorFraction = pagerPosition - startIndex
-    val indicatorLeftPx = if (indicatorStartBounds != null && indicatorEndBounds != null) {
-        linearInterpolate(
-            start = indicatorStartBounds.leftPx,
-            end = indicatorEndBounds.leftPx,
-            fraction = indicatorFraction,
-        )
-    } else {
-        selectedBounds?.leftPx
-    }
-    val indicatorWidthPx = if (indicatorStartBounds != null && indicatorEndBounds != null) {
-        linearInterpolate(
-            start = indicatorStartBounds.widthPx,
-            end = indicatorEndBounds.widthPx,
-            fraction = indicatorFraction,
-        )
-    } else {
-        selectedBounds?.widthPx
-    }
-    val indicatorOffset = with(density) { (indicatorLeftPx ?: 0).toDp() }
-    val indicatorWidth = with(density) { (indicatorWidthPx ?: 0).toDp() }
-
-    LaunchedEffect(selectedIndex, selectedBounds, viewportWidthPx) {
-        if (selectedIndex < 0 || selectedBounds == null || viewportWidthPx <= 0) return@LaunchedEffect
-        val visibleStart = tabScrollState.value
-        val visibleEnd = visibleStart + viewportWidthPx
-        val tabStart = selectedBounds.leftPx
-        val tabEnd = selectedBounds.leftPx + selectedBounds.widthPx
-        val targetScroll = when {
-            tabStart < visibleStart -> tabStart
-            tabEnd > visibleEnd -> tabEnd - viewportWidthPx
-            else -> visibleStart
-        }.coerceIn(0, tabScrollState.maxValue)
-        if (targetScroll != visibleStart) {
-            tabScrollState.animateScrollTo(targetScroll)
-        }
-    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .onSizeChanged { size -> viewportWidthPx = size.width }
-            .horizontalScroll(tabScrollState),
     ) {
-        if (indicatorWidthPx != null && indicatorWidthPx > 0) {
-            Box(
-                modifier = Modifier
-                    .offset(x = indicatorOffset)
-                    .width(indicatorWidth)
-                    .height(ProxyServerListGroupTabHeight)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(AppTheme.colors.accent),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(ProxyServerListGroupSelectorRadius))
+                .background(AppTheme.colors.surface)
+                .border(
+                    width = 1.dp,
+                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                    shape = RoundedCornerShape(ProxyServerListGroupSelectorRadius),
+                )
+                .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { showGroupPicker = true },
+                    onLongClick = {
+                        if (selectedGroup.id > features.subscription.DefaultSubscriptionGroupId) {
+                            reorderGroupId = selectedGroup.id
+                        }
+                    },
+                )
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = selectedGroup.name,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.proxy_editor_strategy_group_servers_count,
+                        selectedGroup.serverCount,
+                    ),
+                    fontSize = 12.sp,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            Text(
+                text = "⌄",
+                fontSize = 20.sp,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
         }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(ProxyServerListGroupTabSpacing),
-        ) {
-            groups.forEach { group ->
-                val selected = group.id == selectedGroupId
-                val tabText = "${group.name} (${group.serverCount})"
-                val interactionSource = remember(group.id) { MutableInteractionSource() }
-                Box(
-                    modifier = Modifier
-                        .height(ProxyServerListGroupTabHeight)
-                        .clip(RoundedCornerShape(8.dp))
-                        .combinedClickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            onClick = { onGroupSelected(group.id) },
-                            onLongClick = {
-                                if (group.id > features.subscription.DefaultSubscriptionGroupId) {
-                                    reorderGroupId = group.id
-                                }
-                            },
-                        )
-                        .onGloballyPositioned { coordinates ->
-                            val leftPx = coordinates.positionInParent().x.roundToInt()
-                            val bounds = ProxyServerListGroupTabBounds(
-                                leftPx = leftPx,
-                                widthPx = coordinates.size.width,
+        if (showGroupPicker) {
+            WindowCascadingListPopup(
+                show = true,
+                entries = listOf(
+                    DropdownEntry(
+                        items = groups.map { group ->
+                            DropdownItem(
+                                text = "${group.name} · ${stringResource(R.string.proxy_editor_strategy_group_servers_count, group.serverCount)}",
+                                onClick = {
+                                    showGroupPicker = false
+                                    onGroupSelected(group.id)
+                                },
                             )
-                            if (tabBounds[group.id] != bounds) {
-                                tabBounds = tabBounds + (group.id to bounds)
-                            }
-                        }
-                        .padding(horizontal = 14.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = tabText,
-                        fontSize = 15.sp,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+                        },
+                    ),
+                ),
+                popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
+                alignment = PopupPositionProvider.Align.Start,
+                onDismissRequest = { showGroupPicker = false },
+            )
         }
         reorderGroupId?.let { groupId ->
             val reorderableIds = groups
@@ -1154,14 +1097,6 @@ private fun proxyServerListToolMenuEntries(
     proxyServerListToolMenuEntry(
         stringResource(R.string.proxy_server_list_update_subscriptions),
         ProxyServerListToolAction.UpdateSubscriptions,
-    ),
-    proxyServerListToolMenuEntry(
-        stringResource(R.string.proxy_server_list_latency_test),
-        ProxyServerListToolAction.TestLatency,
-    ),
-    proxyServerListToolMenuEntry(
-        stringResource(R.string.proxy_server_list_real_connection_test),
-        ProxyServerListToolAction.TestRealConnection,
     ),
     IconDropdownMenuEntry(
         key = "sort",

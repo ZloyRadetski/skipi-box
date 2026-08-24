@@ -549,7 +549,9 @@ fun TrafficConfigPage(
         }
         VerticalScrollBar(
             adapter = rememberScrollBarAdapter(listState),
-            modifier = Modifier.fillMaxHeight(),
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight(),
             trackPadding = contentPadding,
         )
     }

@@ -3,6 +3,7 @@
 
 package features.proxy
 
+import app.AppState
 import app.modes.ConnectionDisplayModeClassic
 import app.modes.ConnectionDisplayModeCompact
 import org.junit.Test
@@ -10,6 +11,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ConnectionDisplayModeTest {
+
+    @Test
+    fun testConnectionPanelMovesWithSubscriptionByDefault() {
+        assertFalse(AppState().pinConnectionPanelOnHome)
+    }
 
     private fun resolveFloatingToolbarVisibility(
         connectionDisplayMode: Int,

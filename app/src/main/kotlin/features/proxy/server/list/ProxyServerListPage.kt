@@ -4,6 +4,7 @@
 package features.proxy.server.list
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -32,6 +33,7 @@ import app.LocalUpdateAppState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.R
+import app.collectAppState
 import app.modes.ConnectionDisplayModeClassic
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.SubscriptionPingModeHttp
@@ -45,6 +47,8 @@ import features.proxy.server.usecase.restartProxyServiceAfterSelection
 import features.proxy.server.usecase.runProxyServerLatencyTest
 import features.proxy.server.usecase.updatableSubscriptionGroups
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
+import app.effects.resolveActiveNetworkConfig
+import features.config.withActiveTrafficConfig
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionGroupEditorDialog
 import features.subscription.usecase.subscriptionUpdateMessage
@@ -61,6 +65,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import ui.AppTheme
@@ -80,6 +85,7 @@ fun ProxyServerListPage(
     val scrollToTopRequest = LocalProxyPageScrollToTopRequest.current
     val topAppBarScrollBehavior = MiuixScrollBehavior()
     val stateStore = LocalAppStateStore.current
+    val appState by stateStore.collectAppState()
     val proxyListState by stateStore.collectProxyServerListState()
     val updateAppState = LocalUpdateAppState.current
     val navigator = LocalNavigator.current
@@ -148,6 +154,48 @@ fun ProxyServerListPage(
                 }
             }
         }
+    }
+
+    fun toggleProxyFromConnectionPanel() {
+        haptics.vpnToggle()
+        runProxyServiceOperation {
+            var currentState = stateStore.state.value
+            val resolvedState = currentState.resolveActiveNetworkConfig(context)
+            if (resolvedState.activeTrafficConfigId != currentState.activeTrafficConfigId) {
+                currentState = resolvedState
+                updateAppState { it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId) }
+            }
+            val activeServer = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId } ?: selectedServer
+            when (val result = proxyServiceUseCase.toggle(state = currentState, selectedServer = activeServer)) {
+                is ProxyServiceResult.Success -> {
+                    updateAppState { state ->
+                        state.copy(
+                            proxyRunning = result.proxyRunning,
+                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
+                        )
+                    }
+                    tipNotifier.show(if (result.proxyRunning) messages.serviceStarted else messages.serviceStopped)
+                }
+
+                ProxyServiceResult.MissingServer -> tipNotifier.show(messages.selectServerFirst)
+
+                is ProxyServiceResult.Failed -> {
+                    updateAppState { state -> state.copy(proxyRunning = false) }
+                    tipNotifier.showError(result.error, messages.serviceStopped)
+                }
+            }
+        }
+    }
+
+    val connectionPanel: @Composable (Modifier) -> Unit = { modifier ->
+        ProxyHeroConnectionCard(
+            appState = appState,
+            proxyRunning = proxyRunning,
+            showTunnelMemoryOnHome = proxyListState.showTunnelMemoryOnHome,
+            connectionDisplayMode = proxyListState.connectionDisplayMode,
+            onToggleProxy = ::toggleProxyFromConnectionPanel,
+            modifier = modifier,
+        )
     }
 
     fun restartProxyServiceSilently(serverId: Int) {
@@ -511,6 +559,73 @@ fun ProxyServerListPage(
         },
     )
     val dragScrollThresholdBottomPadding = pageListPadding(contentPadding).calculateBottomPadding()
+    val floatingToolbar: (@Composable BoxScope.() -> Unit)? = if (showFloatingToolbar) {
+        {
+            ProxyServerListFloatingToolbar(
+                running = proxyRunning,
+                serviceOperationInProgress = serviceOperationInProgress,
+                bottomPadding = floatingToolbarBottomPadding,
+                showToggleAction = showFloatingPowerButton,
+                showPingAction = true,
+                onToggleRunning = ::toggleProxyFromConnectionPanel,
+                onRealConnectionTest = {
+                    val server = servers.firstOrNull { it.id == selectedServerId }
+                    if (server == null) {
+                        scope.launch { tipNotifier.show(messages.selectServerFirst) }
+                    } else {
+                        val mode = if (proxyListState.subscriptionPingMode == SubscriptionPingModeHttp) {
+                            ProxyServerLatencyTestMode.RealConnection
+                        } else {
+                            ProxyServerLatencyTestMode.TcpConnect
+                        }
+                        val doneTemplate = if (mode == ProxyServerLatencyTestMode.RealConnection) {
+                            messages.realConnectionDoneTemplate
+                        } else {
+                            messages.latencyDoneTemplate
+                        }
+                        testProxyServerLatency(
+                            targetServers = listOf(server),
+                            mode = mode,
+                            doneTemplate = doneTemplate,
+                            showSingleResult = true,
+                        )
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomEnd),
+            )
+        }
+    } else {
+        null
+    }
+
+    val movingPageHeader: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier = modifier.fillMaxWidth()) {
+            connectionPanel(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 2.dp),
+            )
+            if (groupState.showGroupTabs) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 2.dp),
+                ) {
+                    ProxyServerListGroupSelector(
+                        groups = groupState.groupTabs,
+                        selectedGroupId = groupState.selectedTabId,
+                        onGroupSelected = { groupId ->
+                            if (selectedGroupId != groupId) haptics.groupSwitched()
+                            selectedGroupId = groupId
+                        },
+                        onGroupMove = { groupId, offset ->
+                            updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
+                        },
+                    )
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -518,12 +633,22 @@ fun ProxyServerListPage(
             .pageWindowPadding(padding),
     ) {
         ProxyServerListTopBar(
-            isWideScreen = isWideScreen,
-            scrollBehavior = topAppBarScrollBehavior,
             searchValue = searchValue,
             onSearchValueChange = { searchValue = it },
             groupState = groupState,
-            groupPagerState = groupPagerState,
+            pinnedConnectionPanel = if (proxyListState.pinConnectionPanelOnHome) {
+                {
+                    connectionPanel(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 2.dp),
+                    )
+                }
+            } else {
+                null
+            },
+            showPinnedGroupSelector = proxyListState.pinConnectionPanelOnHome,
             selectedServer = selectedServer,
             proxyListState = proxyListState,
             stateStore = stateStore,
@@ -601,74 +726,9 @@ fun ProxyServerListPage(
                 pingingGroupIds = pingingGroupIds,
                 activeOutboundTag = activeOutboundTag,
                 activeTrafficConfigId = proxyListState.activeTrafficConfigId,
+                pageHeader = if (proxyListState.pinConnectionPanelOnHome) null else movingPageHeader,
             )
-            if (showFloatingToolbar) {
-                ProxyServerListFloatingToolbar(
-                    running = proxyRunning,
-                    serviceOperationInProgress = serviceOperationInProgress,
-                    bottomPadding = floatingToolbarBottomPadding,
-                    showToggleAction = showFloatingPowerButton,
-                    showPingAction = true,
-                    onToggleRunning = {
-                        haptics.vpnToggle()
-                        runProxyServiceOperation {
-                            when (
-                                val result = proxyServiceUseCase.toggle(
-                                    state = stateStore.state.value,
-                                    selectedServer = selectedServer,
-                                )
-                            ) {
-                                is ProxyServiceResult.Success -> {
-                                    updateAppState { state ->
-                                        state.copy(
-                                            proxyRunning = result.proxyRunning,
-                                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
-                                        )
-                                    }
-                                    tipNotifier.show(
-                                        if (result.proxyRunning) messages.serviceStarted else messages.serviceStopped,
-                                    )
-                                }
-
-                                ProxyServiceResult.MissingServer -> {
-                                    tipNotifier.show(messages.selectServerFirst)
-                                }
-
-                                is ProxyServiceResult.Failed -> {
-                                    updateAppState { state -> state.copy(proxyRunning = false) }
-                                    tipNotifier.showError(result.error, messages.serviceStopped)
-                                }
-                            }
-                        }
-                    },
-                    onRealConnectionTest = {
-                        val server = servers.firstOrNull { it.id == selectedServerId }
-                        if (server == null) {
-                            scope.launch {
-                                tipNotifier.show(messages.selectServerFirst)
-                            }
-                        } else {
-                            val mode = if (proxyListState.subscriptionPingMode == SubscriptionPingModeHttp) {
-                                ProxyServerLatencyTestMode.RealConnection
-                            } else {
-                                ProxyServerLatencyTestMode.TcpConnect
-                            }
-                            val doneTemplate = if (mode == ProxyServerLatencyTestMode.RealConnection) {
-                                messages.realConnectionDoneTemplate
-                            } else {
-                                messages.latencyDoneTemplate
-                            }
-                            testProxyServerLatency(
-                                targetServers = listOf(server),
-                                mode = mode,
-                                doneTemplate = doneTemplate,
-                                showSingleResult = true,
-                            )
-                        }
-                    },
-                    modifier = Modifier.align(Alignment.BottomEnd),
-                )
-            }
+            floatingToolbar?.invoke(this)
         }
     }
 

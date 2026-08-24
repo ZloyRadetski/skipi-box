@@ -85,6 +85,8 @@ data class AppState(
     val enableAllProxyGroup: Boolean = false,
     val enableDeletionConfirmation: Boolean = true,
     val connectionDisplayMode: Int = ConnectionDisplayModeCompact,
+    /** Keep the connection panel fixed while switching subscription pages. */
+    val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,
     val backgroundStyle: Int = BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,

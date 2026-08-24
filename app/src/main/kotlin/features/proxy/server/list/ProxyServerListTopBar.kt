@@ -29,6 +29,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -133,6 +134,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -148,12 +154,11 @@ import ui.text.formatTemplate
 
 @Composable
 internal fun ProxyServerListTopBar(
-    isWideScreen: Boolean,
-    scrollBehavior: ScrollBehavior,
     searchValue: String,
     onSearchValueChange: (String) -> Unit,
     groupState: ProxyServerListGroups,
-    groupPagerState: androidx.compose.foundation.pager.PagerState,
+    pinnedConnectionPanel: (@Composable () -> Unit)?,
+    showPinnedGroupSelector: Boolean,
     selectedServer: ProxyServerState?,
     proxyListState: ProxyServerListState,
     stateStore: AndroidAppStateStore,
@@ -175,9 +180,6 @@ internal fun ProxyServerListTopBar(
     onMoveSubscriptionGroup: (groupId: Int, offset: Int) -> Unit,
     onTestProxyServerLatency: (List<ProxyServerState>, ProxyServerLatencyTestMode, String, Boolean, (() -> Unit)?) -> Unit,
 ) {
-    val appState by stateStore.collectAppState()
-    val context = LocalContext.current
-    val haptics = LocalAppHaptics.current
     var pendingDeletionAction by remember { mutableStateOf<ProxyServerListToolAction?>(null) }
 
     fun executeToolAction(action: ProxyServerListToolAction) {
@@ -211,111 +213,131 @@ internal fun ProxyServerListTopBar(
         }
     }
 
-    fun toggleProxy() {
-        haptics.vpnToggle()
-        runProxyServiceOperation {
-            var currentState = stateStore.state.value
-            val resolvedState = currentState.resolveActiveNetworkConfig(context)
-            if (resolvedState.activeTrafficConfigId != currentState.activeTrafficConfigId) {
-                currentState = resolvedState
-                updateAppState { it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId) }
-            }
-            val activeServer = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId } ?: selectedServer
-            when (
-                val result = proxyServiceUseCase.toggle(
-                    state = currentState,
-                    selectedServer = activeServer,
-                )
-            ) {
-                is ProxyServiceResult.Success -> {
-                    updateAppState { state ->
-                        state.copy(
-                            proxyRunning = result.proxyRunning,
-                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
-                        )
-                    }
-                    tipNotifier.show(
-                        if (result.proxyRunning) messages.serviceStarted else messages.serviceStopped,
-                    )
-                }
-                ProxyServiceResult.MissingServer -> {
-                    tipNotifier.show(messages.selectServerFirst)
-                }
-                is ProxyServiceResult.Failed -> {
-                    updateAppState { state -> state.copy(proxyRunning = false) }
-                    tipNotifier.showError(result.error, messages.serviceStopped)
-                }
-            }
-        }
+    fun handleAddAction(action: ProxyServerListAddAction) {
+        handleProxyServerListAddAction(
+            action = action,
+            groupState = groupState,
+            proxyListState = proxyListState,
+            stateStore = stateStore,
+            updateAppState = updateAppState,
+            navigator = navigator,
+            qrScanner = qrScanner,
+            proxyServerImportFileUseCase = proxyServerImportFileUseCase,
+            subscriptionFetcher = subscriptionFetcher,
+            clipboard = clipboard,
+            tipNotifier = tipNotifier,
+            scope = scope,
+            backgroundScope = backgroundScope,
+            messages = messages,
+            resultKey = resultKey,
+        )
     }
+
+    val isPinging = remember(groupState.currentFilteredServers) {
+        groupState.currentFilteredServers.any { it.isTestingLatency }
+    }
+    val hapticFeedback = LocalHapticFeedback.current
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(top = 4.dp),
     ) {
-        ProxyHeroConnectionCard(
-            appState = appState,
-            proxyRunning = proxyListState.proxyRunning,
-            showTunnelMemoryOnHome = proxyListState.showTunnelMemoryOnHome,
-            connectionDisplayMode = proxyListState.connectionDisplayMode,
-            onToggleProxy = ::toggleProxy,
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(top = 2.dp, bottom = 4.dp),
-        )
+                .statusBarsPadding()
+                .height(48.dp)
+                .padding(start = 12.dp, end = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_monochrome),
+                contentDescription = stringResource(R.string.app_name),
+                modifier = Modifier.size(36.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = "SKIPI",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = MiuixTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.weight(1f))
+            IconButton(
+                onClick = {
+                    if (isPinging) {
+                        scope.launch {
+                            tipNotifier.show(messages.pingInProgress)
+                        }
+                    } else {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+                        val pingMode = if (proxyListState.subscriptionPingMode == SubscriptionPingModeHttp) {
+                            ProxyServerLatencyTestMode.RealConnection
+                        } else {
+                            ProxyServerLatencyTestMode.TcpConnect
+                        }
+                        val doneTemplate = if (pingMode == ProxyServerLatencyTestMode.RealConnection) {
+                            messages.realConnectionDoneTemplate
+                        } else {
+                            messages.latencyDoneTemplate
+                        }
+                        onTestProxyServerLatency(
+                            groupState.currentFilteredServers,
+                            pingMode,
+                            doneTemplate,
+                            false,
+                            null,
+                        )
+                    }
+                },
+            ) {
+                if (isPinging) {
+                    val pingingDescription = stringResource(R.string.proxy_server_list_ping_in_progress)
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .semantics { contentDescription = pingingDescription },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AnimatedHourglassIcon(
+                            color = MiuixTheme.colorScheme.primary,
+                            isPinging = true,
+                            size = 20.dp,
+                        )
+                    }
+                } else {
+                    StaticHourglass(
+                        modifier = Modifier.size(24.dp),
+                        color = MiuixTheme.colorScheme.onBackground,
+                        size = 20.dp,
+                    )
+                }
+            }
+            ProxyServerListAddMenu(onAction = ::handleAddAction)
+            ProxyServerListToolsMenu(
+                sort = proxyListState.proxyServerListSort,
+                onAction = ::requestToolAction,
+            )
+        }
 
-        if (groupState.showGroupTabs || !proxyListState.showServerSearch) {
-            Row(
+        pinnedConnectionPanel?.invoke()
+
+        AnimatedVisibility(
+            visible = showPinnedGroupSelector && groupState.showGroupTabs,
+            enter = fadeIn() + expandVertically(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 2.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .padding(top = 4.dp, bottom = 2.dp),
             ) {
-                if (groupState.showGroupTabs) {
-                    ProxyServerListGroupTabs(
-                        groups = groupState.groupTabs,
-                        selectedGroupId = groupState.selectedTabId,
-                        groupPagerState = groupPagerState,
-                        onGroupSelected = onSelectedGroupIdChange,
-                        onGroupMove = onMoveSubscriptionGroup,
-                        modifier = Modifier.weight(1f),
-                    )
-                } else {
-                    Spacer(Modifier.weight(1f))
-                }
-
-                if (!proxyListState.showServerSearch) {
-                    Row(
-                        modifier = Modifier.padding(end = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ProxyServerListAddMenu { action ->
-                            handleProxyServerListAddAction(
-                                action = action,
-                                groupState = groupState,
-                                proxyListState = proxyListState,
-                                stateStore = stateStore,
-                                updateAppState = updateAppState,
-                                navigator = navigator,
-                                qrScanner = qrScanner,
-                                proxyServerImportFileUseCase = proxyServerImportFileUseCase,
-                                subscriptionFetcher = subscriptionFetcher,
-                                clipboard = clipboard,
-                                tipNotifier = tipNotifier,
-                                scope = scope,
-                                backgroundScope = backgroundScope,
-                                messages = messages,
-                                resultKey = resultKey,
-                            )
-                        }
-                        ProxyServerListToolsMenu(
-                            sort = proxyListState.proxyServerListSort,
-                        ) { action -> requestToolAction(action) }
-                    }
-                }
+                ProxyServerListGroupSelector(
+                    groups = groupState.groupTabs,
+                    selectedGroupId = groupState.selectedTabId,
+                    onGroupSelected = onSelectedGroupIdChange,
+                    onGroupMove = onMoveSubscriptionGroup,
+                )
             }
         }
 
@@ -328,36 +350,14 @@ internal fun ProxyServerListTopBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    .padding(top = 2.dp, bottom = 6.dp),
+                    .padding(bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ProxyServerListSearchBar(
                     searchValue = searchValue,
                     onSearchValueChange = onSearchValueChange,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
-                ProxyServerListAddMenu { action ->
-                    handleProxyServerListAddAction(
-                        action = action,
-                        groupState = groupState,
-                        proxyListState = proxyListState,
-                        stateStore = stateStore,
-                        updateAppState = updateAppState,
-                        navigator = navigator,
-                        qrScanner = qrScanner,
-                        proxyServerImportFileUseCase = proxyServerImportFileUseCase,
-                        subscriptionFetcher = subscriptionFetcher,
-                        clipboard = clipboard,
-                        tipNotifier = tipNotifier,
-                        scope = scope,
-                        backgroundScope = backgroundScope,
-                        messages = messages,
-                        resultKey = resultKey,
-                    )
-                }
-                ProxyServerListToolsMenu(
-                    sort = proxyListState.proxyServerListSort,
-                ) { action -> requestToolAction(action) }
             }
         }
     }
@@ -432,7 +432,7 @@ private fun SignalBarsIcon(
 }
 
 @Composable
-private fun ProxyHeroConnectionCard(
+internal fun ProxyHeroConnectionCard(
     appState: AppState,
     proxyRunning: Boolean,
     showTunnelMemoryOnHome: Boolean,

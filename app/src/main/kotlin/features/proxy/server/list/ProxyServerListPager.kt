@@ -131,6 +131,7 @@ internal fun ProxyServerListPager(
     pingingGroupIds: Set<Int> = emptySet(),
     activeOutboundTag: String? = null,
     activeTrafficConfigId: Int? = null,
+    pageHeader: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     var qrCodeDialogState by remember { mutableStateOf<ProxyServerQrCodeDialogState?>(null) }
@@ -253,6 +254,7 @@ internal fun ProxyServerListPager(
                 updatingGroupIds = updatingGroupIds,
                 pingingGroupIds = pingingGroupIds,
                 activeOutboundTag = activeOutboundTag,
+                pageHeader = pageHeader,
                 onShowQrCode = { title, text ->
                     qrCodeDialogState = ProxyServerQrCodeDialogState(title, text)
                 },
@@ -298,6 +300,7 @@ private fun SubscriptionProxyServerList(
     updatingGroupIds: Set<Int> = emptySet(),
     pingingGroupIds: Set<Int> = emptySet(),
     activeOutboundTag: String? = null,
+    pageHeader: (@Composable (Modifier) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -333,6 +336,11 @@ private fun SubscriptionProxyServerList(
                 .fillMaxHeight(),
             contentPadding = listContentPadding,
         ) {
+            pageHeader?.let { header ->
+                item(key = "page_header") {
+                    header(Modifier)
+                }
+            }
             item(key = "subscription_provider_${group.id}") {
                 Box(
                     modifier = Modifier
@@ -472,6 +480,7 @@ private fun ProxyServerLazyGrid(
     updatingGroupIds: Set<Int> = emptySet(),
     pingingGroupIds: Set<Int> = emptySet(),
     activeOutboundTag: String? = null,
+    pageHeader: (@Composable (Modifier) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     subscriptionGroup?.let { group ->
@@ -508,6 +517,7 @@ private fun ProxyServerLazyGrid(
             updatingGroupIds = updatingGroupIds,
             pingingGroupIds = pingingGroupIds,
             activeOutboundTag = activeOutboundTag,
+            pageHeader = pageHeader,
             modifier = modifier,
         )
         return
@@ -569,6 +579,15 @@ private fun ProxyServerLazyGrid(
             verticalArrangement = Arrangement.spacedBy(gridItemSpacing),
             horizontalArrangement = Arrangement.spacedBy(gridItemSpacing),
         ) {
+            pageHeader?.let { header ->
+                item(
+                    key = "page_header",
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = "page_header",
+                ) {
+                    header(Modifier.padding(horizontal = 12.dp))
+                }
+            }
             subscriptionGroup?.let { group ->
                 item(
                     key = "subscription_provider_${group.id}",

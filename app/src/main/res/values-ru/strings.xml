@@ -134,6 +134,8 @@
     <string name="settings_connection_display_mode_summary">Выберите стиль плашки подключения на главном экране</string>
     <string name="settings_connection_display_mode_compact">Компактный</string>
     <string name="settings_connection_display_mode_classic">Классический</string>
+    <string name="settings_pin_connection_panel">Закрепить панель подключения</string>
+    <string name="settings_pin_connection_panel_summary">Не перемещать панель подключения при переключении подписок</string>
     <string name="settings_bottom_bar_size">Размер нижней панели</string>
     <string name="settings_bottom_bar_size_summary">Настройка высоты, иконок и текста нижней панели навигации</string>
     <string name="settings_bottom_bar_size_small">Маленький</string>
@@ -387,7 +389,7 @@
     <string name="option_theme_system">Системный (Monet)</string>
     <string name="option_theme_light">Светлая (Monet)</string>
     <string name="option_theme_dark">Тёмная (Monet)</string>
-    <string name="option_amoled">AMOLED (истинный чёрный)</string>
+    <string name="option_amoled">AMOLED</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
