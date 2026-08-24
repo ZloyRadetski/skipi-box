@@ -33,7 +33,10 @@ internal data class VpnAppendHttpProxyOptions(
     }
 }
 
-internal fun AppState.toVpnAppendHttpProxyOptions(localProxyOptions: LocalProxyOptions): VpnAppendHttpProxyOptions {
+internal fun AppState.toVpnAppendHttpProxyOptions(
+    localProxyOptions: LocalProxyOptions,
+    excludedPorts: Set<Int> = emptySet(),
+): VpnAppendHttpProxyOptions {
     if (!enableVpnAppendHttpProxy) {
         return VpnAppendHttpProxyOptions.Disabled
     }
@@ -43,7 +46,7 @@ internal fun AppState.toVpnAppendHttpProxyOptions(localProxyOptions: LocalProxyO
         listenAddress = listenAddress,
         port = availablePort(
             listenAddress = listenAddress,
-            excludedPorts = setOf(localProxyOptions.port),
+            excludedPorts = setOf(localProxyOptions.port) + excludedPorts,
         ) ?: fallbackAppendHttpProxyPort(localProxyOptions.port),
         username = localProxyOptions.username,
         password = localProxyOptions.password,

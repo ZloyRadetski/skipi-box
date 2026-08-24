@@ -6,7 +6,6 @@ package engine.proxy
 import app.AppState
 import app.effectiveFakeDnsEnabled
 import engine.network.findAvailableTcpPort
-import engine.network.isTcpPortAvailable
 import engine.network.NetworkDefaults
 import engine.network.toPortOrNull
 import engine.vpn.VpnDefaults
@@ -45,23 +44,17 @@ internal object LocalProxyRuntime {
     }
 }
 
-internal fun AppState.withResolvedDynamicLocalProxyPort(): AppState {
+internal fun AppState.withResolvedDynamicLocalProxyPort(
+    excludedPorts: Set<Int> = emptySet(),
+): AppState {
     if (!enableDynamicLocalProxyPort) return this
 
-    val configuredPort = localProxyPort.toPortOrNull()
     val listenAddress = localProxyListenAddress()
-    val excludedPorts = localProxyExcludedPorts()
-    val currentOptions = LocalProxyRuntime.current()
-    val canKeepConfiguredPort = configuredPort != null &&
-        configuredPort !in excludedPorts &&
-        (
-            isPortAvailable(listenAddress, configuredPort) ||
-                currentOptions?.matches(listenAddress, configuredPort) == true
-            )
-    val resolvedPort = when {
-        canKeepConfiguredPort -> configuredPort
-        else -> availablePort(listenAddress, excludedPorts) ?: configuredPort ?: VpnDefaults.LOCAL_PROXY_PORT
-    }
+    val reservedPorts = localProxyExcludedPorts() + excludedPorts
+    // Dynamic means a fresh endpoint for every service start. Keeping the
+    // previous value here made the option behave like a fallback only.
+    val resolvedPort = availablePort(listenAddress, reservedPorts)
+        ?: error("Unable to allocate a local proxy port")
     val resolvedPortText = resolvedPort.toString()
     return if (localProxyPort == resolvedPortText) this else copy(localProxyPort = resolvedPortText)
 }
@@ -111,15 +104,6 @@ private fun AppState.localProxyExcludedPorts(): Set<Int> {
     }
 }
 
-private fun LocalProxyOptions.matches(listenAddress: String, port: Int): Boolean {
-    return this.port == port &&
-        (
-            this.listenAddress == listenAddress ||
-                this.listenAddress == LocalProxyAllInterfacesAddress &&
-                listenAddress == LocalProxyLoopbackAddress
-            )
-}
-
 private fun LocalProxyOptions.toSocksInboundSettings(): JsonObject {
     return buildJsonObject {
         put("auth", if (username.isBlank()) "noauth" else "password")
@@ -149,11 +133,4 @@ internal fun availablePort(
     excludedPorts: Set<Int> = emptySet(),
 ): Int? {
     return findAvailableTcpPort(listenAddress, excludedPorts)
-}
-
-private fun isPortAvailable(
-    listenAddress: String,
-    port: Int,
-): Boolean {
-    return isTcpPortAvailable(listenAddress, port)
 }

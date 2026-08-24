@@ -189,6 +189,7 @@ fun SettingsVpnPage(
                             checked = appState.enableKillSwitch,
                             onCheckedChange = { enabled ->
                                 updateAppState { it.copy(enableKillSwitch = enabled) }
+                                if (enabled) openSystemVpnSettings(context)
                             },
                         )
                         ArrowPreference(

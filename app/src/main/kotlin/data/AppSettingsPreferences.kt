@@ -178,6 +178,7 @@ internal class AppSettingsPreferences(
                 KeyEnableVpnHevTun,
                 defaults.enableVpnHevTun,
             ),
+            enableKillSwitch = preferences.getBoolean(KeyEnableKillSwitch, defaults.enableKillSwitch),
             tunMtu = preferences.getString(KeyTunMtu, defaults.tunMtu) ?: defaults.tunMtu,
             tunVpnDns = preferences.getString(KeyTunVpnDns, defaults.tunVpnDns) ?: defaults.tunVpnDns,
             tunIpv4Cidr = preferences.getString(KeyTunIpv4Cidr, defaults.tunIpv4Cidr) ?: defaults.tunIpv4Cidr,
@@ -439,6 +440,7 @@ internal class AppSettingsPreferences(
             .putString(KeyLocalProxyPassword, state.localProxyPassword)
             .putBoolean(KeyEnableVpnAppendHttpProxy, state.enableVpnAppendHttpProxy)
             .putBoolean(KeyEnableVpnHevTun, state.enableVpnHevTun)
+            .putBoolean(KeyEnableKillSwitch, state.enableKillSwitch)
             .putString(KeyTunMtu, state.tunMtu)
             .putString(KeyTunVpnDns, state.tunVpnDns)
             .putString(KeyTunIpv4Cidr, state.tunIpv4Cidr)
@@ -802,6 +804,7 @@ private const val KeyLocalProxyUsername = "local_proxy_username"
 private const val KeyLocalProxyPassword = "local_proxy_password"
 private const val KeyEnableVpnAppendHttpProxy = "enable_vpn_append_http_proxy"
 private const val KeyEnableVpnHevTun = "enable_vpn_hev_tun"
+private const val KeyEnableKillSwitch = "enable_kill_switch"
 private const val KeyTunMtu = "tun_mtu"
 private const val KeyTunVpnDns = "tun_vpn_dns"
 private const val KeyTunIpv4Cidr = "tun_ipv4_cidr"

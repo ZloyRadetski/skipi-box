@@ -48,4 +48,12 @@ class VpnKillSwitchTest {
         )
         assertTrue("VpnServiceStartConfig should store enableKillSwitch=true", config.enableKillSwitch)
     }
+
+    @Test
+    fun unflaggedServiceStartsAreReservedForSystemManagedAlwaysOnVpn() {
+        assertTrue(isSystemManagedVpnStart(null))
+        assertTrue(isSystemManagedVpnStart("android.net.VpnService"))
+        assertFalse(isSystemManagedVpnStart(SkipiVpnServiceIntents.ACTION_START))
+        assertFalse(isSystemManagedVpnStart(SkipiVpnServiceIntents.ACTION_STOP))
+    }
 }

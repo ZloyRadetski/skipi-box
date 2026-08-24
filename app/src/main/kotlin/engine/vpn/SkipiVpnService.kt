@@ -26,6 +26,9 @@ import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import app.MainActivity
 import app.R
+import app.effects.resolveActiveNetworkConfig
+import app.modes.RunModeVpnService
+import app.withActiveTrafficConfigApplied
 import data.AndroidAppStateStore
 import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
@@ -33,6 +36,8 @@ import app.modes.ProxyAppListModeWhitelist
 import engine.network.NetworkDefaults
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
+import engine.proxy.ProxyEngineStartRequest
+import engine.proxy.withResolvedDynamicLocalProxyPort
 import engine.stats.ProxyTrafficStatsRuntimeStore
 import engine.stats.ProxyTrafficStatsService
 import features.quicksettings.ProxyQuickSettingsTileService
@@ -83,9 +88,13 @@ class SkipiVpnService : VpnService() {
     private var networkReloadScheduled = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val action = intent?.action ?: return Service.START_NOT_STICKY
-        val operationId = intent.vpnServiceOperationId()
+        val action = intent?.action
+        val operationId = intent?.vpnServiceOperationId()
         if (operationId == null) {
+            if (isSystemManagedVpnStart(action)) {
+                startSystemManagedVpn(startId)
+                return Service.START_STICKY
+            }
             AndroidAppLogger.warn(LogTag, "Ignoring VPN service request without an operation id: action=$action")
             if (action == SkipiVpnServiceIntents.ACTION_START) {
                 stopSelfOnMain(startId)
@@ -174,6 +183,52 @@ class SkipiVpnService : VpnService() {
             }
         }
         return Service.START_NOT_STICKY
+    }
+
+    /**
+     * Android starts an Always-on VPN without the private operation marker used
+     * by manual controls. Restore the last saved tunnel configuration instead
+     * of treating that system request as invalid.
+     */
+    private fun startSystemManagedVpn(startId: Int) {
+        serviceScope.launch {
+            var failed = false
+            operationMutex.withLock {
+                if (running) return@withLock
+                runCatching {
+                    val resolvedState = stateStore.currentState
+                        .resolveActiveNetworkConfig(applicationContext)
+                        .withActiveTrafficConfigApplied()
+                        .copy(runMode = RunModeVpnService)
+                        .withResolvedDynamicLocalProxyPort()
+                    val selectedServer = resolvedState.proxyServers
+                        .firstOrNull { server -> server.id == resolvedState.selectedProxyServerId }
+                        ?: error(getString(R.string.skipi_control_missing_server))
+                    val config = VpnXrayConfigFactory.create(
+                        context = applicationContext,
+                        request = ProxyEngineStartRequest(
+                            appState = resolvedState,
+                            selectedServer = selectedServer,
+                        ),
+                    )
+                    promoteVpnForeground(config, connecting = true)
+                    startVpn(config)
+                    stateStore.update { current ->
+                        current.copy(
+                            proxyRunning = true,
+                            localProxyPort = resolvedState.localProxyPort,
+                        )
+                    }
+                    AndroidAppLogger.info(LogTag, "Started system-managed Always-on VPN")
+                }.onFailure { error ->
+                    failed = true
+                    AndroidAppLogger.error(LogTag, "Failed to start system-managed Always-on VPN", error)
+                    stopVpn(ForegroundNotificationDisposition.Remove)
+                    stateStore.update { state -> state.copy(proxyRunning = false) }
+                }
+            }
+            if (failed) stopSelfOnMain(startId)
+        }
     }
 
     override fun onDestroy() {
@@ -273,11 +328,6 @@ class SkipiVpnService : VpnService() {
             .setSession(config.sessionName)
             .setMtu(config.mtu)
             .addAddress(config.ipv4Address, config.ipv4PrefixLength)
-
-        if (config.enableKillSwitch) {
-            builder.setBlocking(true)
-            AndroidAppLogger.info(LogTag, "Applied Kill Switch (blocking TUN mode)")
-        }
 
         if (config.enableIpv6 && config.ipv6Address != null) {
             builder
@@ -514,9 +564,8 @@ class SkipiVpnService : VpnService() {
                     val activeCaps = active?.let { connectivityManager.getNetworkCapabilities(it) }
                     val isPhysical = active != null && activeCaps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == false &&
                         activeCaps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    val killSwitch = stateStore.state.value.enableKillSwitch
                     runCatching {
-                        setUnderlyingNetworks(if (isPhysical) arrayOf(active) else if (killSwitch) emptyArray() else null)
+                        setUnderlyingNetworks(if (isPhysical) arrayOf(active) else null)
                     }
                     if (isPhysical) {
                         handlePhysicalNetworkChange(checkNotNull(active), connectivityManager)
@@ -751,4 +800,10 @@ class SkipiVpnService : VpnService() {
             val result: CompletableDeferred<Unit>,
         )
     }
+}
+
+/** A system-started Always-on service has no private SKIPI operation marker. */
+internal fun isSystemManagedVpnStart(action: String?): Boolean {
+    return action != SkipiVpnServiceIntents.ACTION_START &&
+        action != SkipiVpnServiceIntents.ACTION_STOP
 }

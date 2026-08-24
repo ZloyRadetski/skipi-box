@@ -68,7 +68,10 @@ internal object VpnXrayConfigFactory {
         }
         val tunOptions = appState.toTunOptions()
         val localProxyOptions = appState.toLocalProxyOptions()
-        val appendHttpProxyOptions = appState.toVpnAppendHttpProxyOptions(localProxyOptions)
+        val appendHttpProxyOptions = appState.toVpnAppendHttpProxyOptions(
+            localProxyOptions = localProxyOptions,
+            excludedPorts = setOfNotNull(request.xrayStatsApiPort),
+        )
         val outboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)
         val dnsHosts = appState.xrayDnsHosts(outboundPlan.dnsHostServers)
 
