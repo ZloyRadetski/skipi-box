@@ -388,6 +388,7 @@
     <string name="option_theme_system">Follow system (Monet)</string>
     <string name="option_theme_light">Light (Monet)</string>
     <string name="option_theme_dark">Dark (Monet)</string>
+    <string name="option_amoled">AMOLED (True black)</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
@@ -842,7 +843,7 @@
     <string name="subscriptions_release_to_refresh">Release to update all subscriptions</string>
     <string name="subscriptions_refreshing">Updating subscriptions…</string>
     <string name="subscriptions_refreshed">Subscriptions updated</string>
-    <string name="settings_color_mode_summary">Choose whether SKIPI follows the system or uses a light or dark theme.</string>
+    <string name="settings_color_mode_summary">Choose whether SKIPI follows the system or uses a light, dark, or AMOLED true-black theme.</string>
     <string name="settings_theme_color_summary">Choose the primary color used for buttons, selections, and indicators.</string>
     <string name="settings_language_summary">Choose the language used by the SKIPI interface.</string>
     <string name="subscription_ping_mode_summary">Ping uses a TCP connection; HTTP checks a request to the configured URL.</string>

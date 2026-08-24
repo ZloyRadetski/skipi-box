@@ -71,6 +71,7 @@ import app.SubscriptionGroupState
 import app.modes.BottomBarSizeLarge
 import app.modes.BottomBarSizeMedium
 import app.modes.BottomBarSizeSmall
+import app.modes.ColorModeAmoled
 import app.modes.ColorModeDark
 import app.modes.ColorModeLight
 import app.modes.ColorModeSystem
@@ -850,6 +851,7 @@ internal fun OnboardingAppearancePage(
         ColorModeSystem to stringResource(R.string.option_follow_system),
         ColorModeLight to stringResource(R.string.option_light),
         ColorModeDark to stringResource(R.string.option_dark),
+        ColorModeAmoled to stringResource(R.string.option_amoled),
     )
 
     val bottomBarSizes = listOf(

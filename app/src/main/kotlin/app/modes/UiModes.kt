@@ -9,12 +9,13 @@ const val ColorModeDark = 2
 const val ColorModeThemeSystem = 3
 const val ColorModeThemeLight = 4
 const val ColorModeThemeDark = 5
+const val ColorModeAmoled = 6
 
 fun normalizeColorMode(value: Int): Int = when (value) {
     ColorModeThemeSystem -> ColorModeSystem
     ColorModeThemeLight -> ColorModeLight
     ColorModeThemeDark -> ColorModeDark
-    ColorModeSystem, ColorModeLight, ColorModeDark -> value
+    ColorModeSystem, ColorModeLight, ColorModeDark, ColorModeAmoled -> value
     else -> ColorModeSystem
 }
 

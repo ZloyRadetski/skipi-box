@@ -40,11 +40,13 @@ import app.modes.BackgroundStyleAurora
 import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
+import app.modes.ColorModeAmoled
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ui.AppTheme
+import ui.LocalColorMode
 
 import android.graphics.Matrix
 import android.graphics.ImageDecoder
@@ -256,6 +258,17 @@ fun AppBackground(
 
     val isDark = AppTheme.colors.isDark
     val solidFallback = AppTheme.colors.background
+
+    if (LocalColorMode.current == ColorModeAmoled) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(solidFallback),
+        ) {
+            content()
+        }
+        return
+    }
 
     when (appState.backgroundStyle) {
         BackgroundStylePhoto -> {

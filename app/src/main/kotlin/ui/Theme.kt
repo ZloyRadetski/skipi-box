@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import app.R
 import app.modes.BackgroundStyleClassic
+import app.modes.ColorModeAmoled
 import app.modes.ColorModeDark
 import app.modes.ColorModeLight
 import app.modes.ColorModeSystem
@@ -101,9 +102,10 @@ fun AppTheme(
 ) {
     val context = LocalContext.current
     SynchronizeSplashTheme(colorMode)
+    val isAmoled = normalizeColorMode(colorMode) == ColorModeAmoled
     val resolvedDark = when (normalizeColorMode(colorMode)) {
         ColorModeLight -> false
-        ColorModeDark -> true
+        ColorModeDark, ColorModeAmoled -> true
         else -> systemDark
     }
     val systemAccent = remember(context) { resolveSystemAccentColor(context) }
@@ -118,7 +120,7 @@ fun AppTheme(
                     colorSpec = AndroidDynamicColorSpec,
                     paletteStyle = AndroidDynamicPaletteStyle,
                 )
-                ColorModeDark, ColorModeThemeDark -> ThemeController(
+                ColorModeDark, ColorModeThemeDark, ColorModeAmoled -> ThemeController(
                     ColorSchemeMode.MonetDark,
                     keyColor = effectiveKeyColor,
                     colorSpec = AndroidDynamicColorSpec,
@@ -136,7 +138,7 @@ fun AppTheme(
                 ColorModeLight, ColorModeThemeLight -> ThemeController(
                     ColorSchemeMode.Light,
                 )
-                ColorModeDark, ColorModeThemeDark -> ThemeController(
+                ColorModeDark, ColorModeThemeDark, ColorModeAmoled -> ThemeController(
                     ColorSchemeMode.Dark,
                 )
                 else -> ThemeController(
@@ -179,16 +181,28 @@ fun AppTheme(
             if (resolvedDark) Color(0xFF282A31) else Color(0xFFE8EAEE)
         }
 
-        val baseBackground = if (resolvedDark) Color(0xFF16171A) else Color(0xFFF5F6F8)
+        val baseBackground = when {
+            isAmoled -> Color.Black
+            resolvedDark -> Color(0xFF16171A)
+            else -> Color(0xFFF5F6F8)
+        }
         val baseOnBackground = if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
-        val baseSurface = if (resolvedDark) Color(0xFF202227) else Color(0xFFFFFFFF)
+        val baseSurface = when {
+            isAmoled -> Color(0xFF0A0A0A)
+            resolvedDark -> Color(0xFF202227)
+            else -> Color(0xFFFFFFFF)
+        }
         val baseOnSurface = if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
-        val baseSurfaceVariant = if (resolvedDark) Color(0xFF282A31) else Color(0xFFE8EAEE)
+        val baseSurfaceVariant = when {
+            isAmoled -> Color(0xFF141414)
+            resolvedDark -> Color(0xFF282A31)
+            else -> Color(0xFFE8EAEE)
+        }
         val baseOnSurfaceVariant = if (resolvedDark) Color(0xFF9EA3AE) else Color(0xFF6B7280)
 
-        val finalBackground = if (enableCustomColors && customBackgroundColor != null) customBackgroundColor else baseBackground
-        val finalSurface = if (enableCustomColors && customSurfaceColor != null) customSurfaceColor else baseSurface
-        val finalSurfaceVariant = if (enableCustomColors && customSurfaceVariantColor != null) customSurfaceVariantColor else baseSurfaceVariant
+        val finalBackground = if (!isAmoled && enableCustomColors && customBackgroundColor != null) customBackgroundColor else baseBackground
+        val finalSurface = if (!isAmoled && enableCustomColors && customSurfaceColor != null) customSurfaceColor else baseSurface
+        val finalSurfaceVariant = if (!isAmoled && enableCustomColors && customSurfaceVariantColor != null) customSurfaceVariantColor else baseSurfaceVariant
         val finalAccent = if (enableCustomColors && customAccentColor != null) customAccentColor else resolvedAccent
         val finalOnBackground = if (enableCustomColors && customTextColor != null) customTextColor else baseOnBackground
         val finalOnSurface = if (enableCustomColors && customTextColor != null) customTextColor else baseOnSurface
@@ -231,12 +245,12 @@ fun AppTheme(
         LocalColorMode provides colorMode,
         LocalResolvedDarkTheme provides resolvedDark,
         LocalAppColors provides appColors,
-        LocalBackgroundStyle provides backgroundStyle,
+        LocalBackgroundStyle provides if (isAmoled) BackgroundStyleClassic else backgroundStyle,
     ) {
         MiuixTheme(colors = miuixColors) {
             SystemBarAppearance(
                 statusBarDark = resolvedDark,
-                navigationBarDark = systemDark,
+                navigationBarDark = resolvedDark,
             )
             content()
         }
@@ -256,6 +270,7 @@ private fun SynchronizeSplashTheme(colorMode: Int) {
         val themeId = when (normalizeColorMode(colorMode)) {
             ColorModeLight -> R.style.AppTheme_Starting_Light
             ColorModeDark -> R.style.AppTheme_Starting_Dark
+            ColorModeAmoled -> R.style.AppTheme_Starting_Amoled
             else -> Resources.ID_NULL
         }
         activity.splashScreen.setSplashScreenTheme(themeId)

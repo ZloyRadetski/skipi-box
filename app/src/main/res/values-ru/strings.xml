@@ -384,6 +384,7 @@
     <string name="option_theme_system">Системный (Monet)</string>
     <string name="option_theme_light">Светлая (Monet)</string>
     <string name="option_theme_dark">Тёмная (Monet)</string>
+    <string name="option_amoled">AMOLED (истинный чёрный)</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
@@ -780,7 +781,7 @@
     <string name="subscription_provider_days_remaining">Осталось %1$d дн.</string>
     <string name="subscription_provider_support">Поддержка</string>
     <string name="subscription_provider_website">Сайт</string>
-    <string name="settings_color_mode_summary">Выберите: следовать системной теме или использовать светлую либо тёмную.</string>
+    <string name="settings_color_mode_summary">Выберите: следовать системной теме или использовать светлую, тёмную либо AMOLED с истинным чёрным.</string>
     <string name="settings_theme_color_summary">Выберите основной цвет кнопок, выделений и индикаторов.</string>
     <string name="settings_language_summary">Выберите язык интерфейса SKIPI.</string>
     <string name="subscription_ping_mode_summary">Пинг проверяет TCP-соединение, а HTTP — запрос к настроенному URL.</string>

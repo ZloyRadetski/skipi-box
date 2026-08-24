@@ -164,6 +164,7 @@ fun SettingsAppearancePage(
         stringResource(R.string.option_theme_system),
         stringResource(R.string.option_theme_light),
         stringResource(R.string.option_theme_dark),
+        stringResource(R.string.option_amoled),
     )
     val languageOptions = listOf(
         stringResource(R.string.option_follow_system),

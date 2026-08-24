@@ -387,6 +387,7 @@ lid">CIDR نامعتبر است</string>
     <string name="option_theme_system">سیستم فالو (مونت)</string>
     <string name="option_theme_light">نور (مونته)</string>
     <string name="option_theme_dark">تاریک (مونته)</string>
+    <string name="option_amoled">AMOLED (مشکی واقعی)</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
@@ -821,7 +822,7 @@ lid">CIDR نامعتبر است</string>
     <string name="subscriptions_release_to_refresh">برای به‌روزرسانی همه اشتراک‌ها منتشر کنید</string>
     <string name="subscriptions_refreshing">در حال به‌روزرسانی اشتراک‌ها…</string>
     <string name="subscriptions_refreshed">اشتراک ها به روز شد</string>
-    <string name="settings_color_mode_summary">انتخاب کنید که آیا SKIPI از سیستم پیروی می کند یا از یک تم روشن یا تیره استفاده می کند.</string>
+    <string name="settings_color_mode_summary">انتخاب کنید که آیا SKIPI از سیستم پیروی می کند یا از یک تم روشن، تیره یا AMOLED با مشکی واقعی استفاده می کند.</string>
     <string name="settings_theme_color_summary">رنگ اصلی مورد استفاده برای دکمه ها، انتخاب ها و نشانگرها را انتخاب کنید.</string>
     <string name="settings_language_summary">زبان مورد استفاده توسط رابط SKIPI را انتخاب کنید.</string>
     <string name="subscription_ping_mode_summary">پینگ از اتصال TCP استفاده می کند. HTTP یک درخواست به URL پیکربندی شده را بررسی می کند.</string>

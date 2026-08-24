@@ -15,4 +15,10 @@
         <item name="android:windowSplashScreenBackground">@color/splash_background_dark</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <style name="AppTheme.Starting.Amoled" parent="AppTheme.Starting">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowSplashScreenBackground">@android:color/black</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

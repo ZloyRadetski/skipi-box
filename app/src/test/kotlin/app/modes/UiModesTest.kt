@@ -30,4 +30,10 @@ class UiModesTest {
         assertEquals(BackgroundStyleClassic, normalizeBackgroundStyle(-1))
         assertEquals(BackgroundStyleClassic, normalizeBackgroundStyle(99))
     }
+
+    @Test
+    fun testNormalizeColorModeKeepsAmoledMode() {
+        assertEquals(ColorModeAmoled, normalizeColorMode(ColorModeAmoled))
+        assertEquals(ColorModeSystem, normalizeColorMode(-1))
+    }
 }

@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import app.modes.ColorModeAmoled
 import app.modes.ColorModeDark
 import app.modes.ColorModeLight
 import app.modes.LanguageModeChinese
@@ -115,7 +116,7 @@ private fun Context.localizedConfiguration(
 private fun Configuration.applyAppColorMode(colorMode: Int) {
     val nightMode = when (normalizeColorMode(colorMode)) {
         ColorModeLight -> Configuration.UI_MODE_NIGHT_NO
-        ColorModeDark -> Configuration.UI_MODE_NIGHT_YES
+        ColorModeDark, ColorModeAmoled -> Configuration.UI_MODE_NIGHT_YES
         else -> return
     }
     uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or nightMode
