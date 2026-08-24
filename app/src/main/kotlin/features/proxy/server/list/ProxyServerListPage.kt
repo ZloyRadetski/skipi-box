@@ -34,6 +34,7 @@ import app.R
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.SubscriptionPingModeHttp
 import app.collectProxyServerListState
+import ui.feedback.LocalAppHaptics
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
@@ -88,6 +89,7 @@ fun ProxyServerListPage(
     val proxyServiceUseCase = services.proxyServiceUseCase
     val proxyServerImportFileUseCase = services.proxyServerImportFileUseCase
     val tipNotifier = services.tipNotifier
+    val haptics = LocalAppHaptics.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val serviceRestartMutex = remember { Mutex() }
@@ -469,7 +471,12 @@ fun ProxyServerListPage(
             resultKey = ProxyServerEditResultKey,
             serviceOperationInProgress = serviceOperationInProgress,
             runProxyServiceOperation = ::runProxyServiceOperation,
-            onSelectedGroupIdChange = { selectedGroupId = it },
+            onSelectedGroupIdChange = {
+                if (selectedGroupId != it) {
+                    haptics.groupSwitched()
+                }
+                selectedGroupId = it
+            },
             onMoveSubscriptionGroup = { groupId, offset ->
                 updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
             },
@@ -509,7 +516,12 @@ fun ProxyServerListPage(
                 scope = scope,
                 messages = messages,
                 resultKey = ProxyServerEditResultKey,
-                onSelectedServerIdChange = { selectedServerId = it },
+                onSelectedServerIdChange = {
+                    if (selectedServerId != it) {
+                        haptics.serverSelected()
+                    }
+                    selectedServerId = it
+                },
                 onDeleteServer = ::requestProxyServerDeletion,
                 onUpdateSubscription = ::updateSubscription,
                 onUpdateAllSubscriptions = ::updateAllSubscriptions,
@@ -528,6 +540,7 @@ fun ProxyServerListPage(
                     bottomPadding = floatingToolbarBottomPadding,
                     showPingAction = showPingInFloatingToolbar,
                     onToggleRunning = {
+                        haptics.vpnToggle()
                         runProxyServiceOperation {
                             when (
                                 val result = proxyServiceUseCase.toggle(

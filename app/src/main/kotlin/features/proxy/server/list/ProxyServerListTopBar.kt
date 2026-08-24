@@ -142,6 +142,7 @@ import ui.icons.StaticHourglass
 import ui.clipboard.getPlainText
 import ui.components.DeleteConfirmationDialog
 import ui.feedback.AndroidToastTipNotifier
+import ui.feedback.LocalAppHaptics
 import ui.layout.AdaptiveTopAppBar
 import ui.text.formatTemplate
 
@@ -176,6 +177,7 @@ internal fun ProxyServerListTopBar(
 ) {
     val appState by stateStore.collectAppState()
     val context = LocalContext.current
+    val haptics = LocalAppHaptics.current
     var pendingDeletionAction by remember { mutableStateOf<ProxyServerListToolAction?>(null) }
     var isPingingSelectedServer by remember { mutableStateOf(false) }
 
@@ -211,6 +213,7 @@ internal fun ProxyServerListTopBar(
     }
 
     fun toggleProxy() {
+        haptics.vpnToggle()
         runProxyServiceOperation {
             var currentState = stateStore.state.value
             val resolvedState = currentState.resolveActiveNetworkConfig(context)

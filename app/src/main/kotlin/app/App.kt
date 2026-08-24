@@ -34,6 +34,8 @@ import system.AndroidPackageProvider
 import system.AndroidUserSpaceProvider
 import ui.AppTheme
 import ui.feedback.AndroidToastTipNotifier
+import ui.feedback.AppHapticFeedback
+import ui.feedback.LocalAppHaptics
 import ui.keyColorFor
 
 @Composable
@@ -116,6 +118,9 @@ fun App(
     }
     val stateStore = remember(application) { application.stateStore }
     val tipNotifier = remember(appContext) { AndroidToastTipNotifier(appContext) }
+    val haptics = remember(appContext) {
+        AppHapticFeedback(appContext) { stateStore.currentState.enableHaptics }
+    }
     val services = remember(
         appScope,
         proxyEngine,
@@ -197,6 +202,7 @@ fun App(
                 LocalAppChromeState provides chromeState,
                 LocalUpdateAppState provides updateAppState,
                 LocalAppServices provides services,
+                LocalAppHaptics provides haptics,
             ) {
                 ui.background.AppBackground {
                     AppContent(padding = padding)

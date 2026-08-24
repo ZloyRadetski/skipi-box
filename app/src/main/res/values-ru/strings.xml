@@ -981,6 +981,8 @@
     <string name="common_hide">Скрыть</string>
     <string name="settings_enable_material_you">Динамические цвета</string>
     <string name="settings_enable_material_you_summary">Палитра темы на основе обоев</string>
+    <string name="settings_enable_haptics">Тактильный отклик</string>
+    <string name="settings_enable_haptics_summary">Вибрация при подключении, смене серверов и действиях</string>
     <string name="settings_custom_colors_categories_title">Цвета иконок категорий</string>
     <string name="settings_custom_colors_status_title">Статусы подключения и задержка</string>
     <string name="settings_color_status_running">Статус «Подключено»</string>

@@ -54,6 +54,7 @@ data class AppChromeState(
     val backgroundStyle: Int = app.modes.BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = app.modes.BottomBarSizeLarge,
+    val enableHaptics: Boolean = true,
 )
 
 data class ProxyServerListState(
@@ -167,6 +168,7 @@ private fun AppState.toAppChromeState(): AppChromeState {
         backgroundStyle = backgroundStyle,
         backgroundPhotoDimPercent = backgroundPhotoDimPercent,
         bottomBarSize = bottomBarSize,
+        enableHaptics = enableHaptics,
     )
 }
 

@@ -957,6 +957,8 @@
     <string name="common_hide">隐藏</string>
     <string name="settings_enable_material_you">动态色彩</string>
     <string name="settings_enable_material_you_summary">基于壁纸的主题调色板</string>
+    <string name="settings_enable_haptics">触觉反馈</string>
+    <string name="settings_enable_haptics_summary">在连接、选择服务器和关键操作时振动</string>
     <string name="settings_custom_colors_categories_title">类别图标颜色</string>
     <string name="settings_custom_colors_status_title">连接状态和延迟</string>
     <string name="settings_color_status_running">状态“已连接”</string>

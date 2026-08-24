@@ -40,6 +40,7 @@ import features.quicksettings.ProxyQuickSettingsTileService
 import engine.vpn.hevtun.HevTunRuntime
 import engine.xray.clearCoreLogs
 import features.logs.AndroidAppLogger
+import ui.feedback.AppHapticFeedback
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -158,6 +159,7 @@ class SkipiVpnService : VpnService() {
                             }
                         }.onFailure { error ->
                             AndroidAppLogger.error(LogTag, "Failed to start VPN Service", error)
+                            triggerHapticFeedback { vpnError() }
                             stopVpn(
                                 notificationDisposition = ForegroundNotificationDisposition.Remove,
                             )
@@ -214,6 +216,7 @@ class SkipiVpnService : VpnService() {
                 }.onFailure { error ->
                     failed = true
                     AndroidAppLogger.error(LogTag, "Failed to start system-managed Always-on VPN", error)
+                    triggerHapticFeedback { vpnError() }
                     stopVpn(ForegroundNotificationDisposition.Remove)
                     stateStore.update { state -> state.copy(proxyRunning = false) }
                 }
@@ -305,6 +308,7 @@ class SkipiVpnService : VpnService() {
         running = true
         promoteVpnForeground(config, connecting = false)
         ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
+        triggerHapticFeedback { vpnConnected() }
         AndroidAppLogger.info(
             LogTag,
             "VPN start timing: stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, hev=${hevReadyAt - coreReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
@@ -448,6 +452,16 @@ class SkipiVpnService : VpnService() {
         applyForegroundNotificationDisposition(notificationDisposition)
         if (notificationDisposition != ForegroundNotificationDisposition.Keep) {
             ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = false)
+            triggerHapticFeedback { vpnDisconnected() }
+        }
+    }
+
+    private fun triggerHapticFeedback(action: AppHapticFeedback.() -> Unit) {
+        runCatching {
+            val haptics = AppHapticFeedback(applicationContext) {
+                stateStore.currentState.enableHaptics
+            }
+            haptics.action()
         }
     }
 

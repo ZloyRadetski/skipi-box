@@ -89,6 +89,7 @@ data class AppState(
     val backgroundStyle: Int = BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = BottomBarSizeLarge,
+    val enableHaptics: Boolean = true,
     val hasCompletedOnboarding: Boolean = false,
 
     val runMode: Int = RunModeVpnService,

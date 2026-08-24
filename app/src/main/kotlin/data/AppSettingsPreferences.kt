@@ -339,6 +339,10 @@ internal class AppSettingsPreferences(
                 KeyBottomBarSize,
                 defaults.bottomBarSize,
             ),
+            enableHaptics = preferences.getBoolean(
+                KeyEnableHaptics,
+                defaults.enableHaptics,
+            ),
             hasCompletedOnboarding = preferences.getBoolean(
                 KeyHasCompletedOnboarding,
                 defaults.hasCompletedOnboarding,
@@ -513,6 +517,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyAutoInstallAppUpdatesAtNight, state.autoInstallAppUpdatesAtNight)
             .putBoolean(KeyAutoConnectOnBoot, state.autoConnectOnBoot)
             .putBoolean(KeyAutoConnectOnAppOpen, state.autoConnectOnAppOpen)
+            .putBoolean(KeyEnableHaptics, state.enableHaptics)
             .putInt(KeyBackgroundStyle, state.backgroundStyle)
             .putInt(KeyBackgroundPhotoDimPercent, state.backgroundPhotoDimPercent)
             .putBoolean(KeyEnableSubscriptionExpiryNotifications, state.enableSubscriptionExpiryNotifications)
@@ -861,6 +866,7 @@ private const val KeyConnectionDisplayMode = "connection_display_mode"
 private const val KeyBackgroundStyle = "background_style"
 private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"
+private const val KeyEnableHaptics = "enable_haptics"
 private const val KeyClassicShowFloatingPowerButton = "classic_show_floating_power_button"
 private const val KeyShowTunnelMemoryOnHome = "show_tunnel_memory_on_home"
 private const val KeyEnableBroadcastControl = "enable_broadcast_control"

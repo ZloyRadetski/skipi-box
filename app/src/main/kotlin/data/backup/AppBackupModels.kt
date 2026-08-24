@@ -137,6 +137,7 @@ internal data class AppBackupSettings(
     val connectionDisplayMode: Int = BackupDefaults.connectionDisplayMode,
     val backgroundStyle: Int = BackupDefaults.backgroundStyle,
     val backgroundPhotoDimPercent: Int = BackupDefaults.backgroundPhotoDimPercent,
+    val enableHaptics: Boolean = BackupDefaults.enableHaptics,
     val hasCompletedOnboarding: Boolean = true,
     val classicShowFloatingPowerButton: Boolean = BackupDefaults.classicShowFloatingPowerButton,
     val showTunnelMemoryOnHome: Boolean = BackupDefaults.showTunnelMemoryOnHome,

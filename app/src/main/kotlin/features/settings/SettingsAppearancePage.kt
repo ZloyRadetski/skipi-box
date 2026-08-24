@@ -322,6 +322,14 @@ fun SettingsAppearancePage(
                             },
                         )
                         SwitchPreference(
+                            title = stringResource(R.string.settings_enable_haptics),
+                            summary = stringResource(R.string.settings_enable_haptics_summary),
+                            checked = appState.enableHaptics,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(enableHaptics = enabled) }
+                            },
+                        )
+                        SwitchPreference(
                             title = stringResource(R.string.settings_traffic_stats_notification),
                             summary = stringResource(R.string.settings_traffic_stats_notification_summary),
                             checked = appState.enableTrafficStatsNotification,

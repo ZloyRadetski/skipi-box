@@ -962,6 +962,8 @@ lid">CIDR نامعتبر است</string>
     <string name="common_hide">پنهان کردن</string>
     <string name="settings_enable_material_you">مواد شما (رنگ پویا)</string>
     <string name="settings_enable_material_you_summary">از رنگ ها و پالت پویا مونه بر اساس کاغذ دیواری یا رنگ تم استفاده کنید</string>
+    <string name="settings_enable_haptics">بازخورد لمسی</string>
+    <string name="settings_enable_haptics_summary">لرزش هنگام اتصال، انتخاب سرور و اقدامات کلیدی</string>
     <string name="settings_custom_colors_categories_title">رنگ‌های آیکون دسته</string>
     <string name="settings_custom_colors_status_title">وضعیت اتصال و تأخیر</string>
     <string name="settings_color_status_running">وضعیت «متصل»</string>

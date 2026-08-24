@@ -991,6 +991,8 @@
     <string name="common_hide">Hide</string>
     <string name="settings_enable_material_you">Dynamic colors</string>
     <string name="settings_enable_material_you_summary">Palette based on wallpaper</string>
+    <string name="settings_enable_haptics">Haptic feedback</string>
+    <string name="settings_enable_haptics_summary">Vibrate on connection, server selection and key actions</string>
     <string name="settings_custom_colors_categories_title">Category Icon Colors</string>
     <string name="settings_custom_colors_status_title">Connection Status &amp; Latency</string>
     <string name="settings_color_status_running">Status «Connected»</string>
