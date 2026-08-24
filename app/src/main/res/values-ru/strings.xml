@@ -908,7 +908,7 @@
     <string name="settings_reset_app_completed">SKIPI восстановлен до исходного состояния</string>
     <string name="settings_reset_failed">Не удалось сбросить настройки</string>
     <string name="proxy_server_list_ping_check">Проверить</string>
-    <string name="proxy_server_list_ping_in_progress">Пинг в процессе</string>
+    <string name="proxy_server_list_ping_in_progress">Тестирование</string>
     <string name="settings_classic_show_floating_power_button">Компактная кнопка включения</string>
     <string name="settings_classic_show_floating_power_button_summary">Показывать плавающую кнопку включения в классическом режиме.</string>
     <string name="common_close">Закрыть</string>

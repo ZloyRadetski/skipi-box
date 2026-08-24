@@ -970,7 +970,7 @@
     <string name="proxy_active_server_status_stopped">Tunnel stopped</string>
     <string name="proxy_active_server_select_to_connect">Select server to connect</string>
     <string name="proxy_server_list_ping_check">Check</string>
-    <string name="proxy_server_list_ping_in_progress">Ping in progress</string>
+    <string name="proxy_server_list_ping_in_progress">Testing</string>
     <string name="settings_classic_show_floating_power_button">Compact power button</string>
     <string name="settings_classic_show_floating_power_button_summary">Show floating power button on main screen in classic mode.</string>
     <string name="settings_local_proxy_network_params">Network parameters</string>

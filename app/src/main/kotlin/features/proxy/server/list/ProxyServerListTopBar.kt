@@ -977,26 +977,51 @@ private fun ProxyHeroConnectionCardCompact(
                             modifier = Modifier.weight(1f),
                         )
                         if (!latencyText.isNullOrBlank()) {
-                            val latencyColor = proxyServerLatencyColor(latencyText)
-                            Spacer(Modifier.width(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(latencyColor.copy(alpha = 0.12f))
-                                    .padding(horizontal = 6.dp, vertical = 3.dp),
-                            ) {
-                                SignalBarsIcon(
-                                    color = latencyColor,
-                                    modifier = Modifier.size(12.dp),
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = latencyText,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = latencyColor,
-                                )
+                            if (latencyText == ProxyServerLatencyTesting) {
+                                val testColor = MiuixTheme.colorScheme.primary
+                                Spacer(Modifier.width(8.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(testColor.copy(alpha = 0.12f))
+                                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                                ) {
+                                    AnimatedHourglassIcon(
+                                        color = testColor,
+                                        isPinging = true,
+                                        size = 12.dp,
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.proxy_server_list_ping_in_progress),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = testColor,
+                                    )
+                                }
+                            } else {
+                                val latencyColor = proxyServerLatencyColor(latencyText)
+                                Spacer(Modifier.width(8.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(latencyColor.copy(alpha = 0.12f))
+                                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                                ) {
+                                    SignalBarsIcon(
+                                        color = latencyColor,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = latencyText,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = latencyColor,
+                                    )
+                                }
                             }
                         }
                     }
@@ -1037,26 +1062,51 @@ private fun ProxyHeroConnectionCardCompact(
                         )
                     }
                     if (!latencyText.isNullOrBlank()) {
-                        val latencyColor = proxyServerLatencyColor(latencyText)
-                        Spacer(Modifier.width(8.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(latencyColor.copy(alpha = 0.12f))
-                                .padding(horizontal = 6.dp, vertical = 3.dp),
-                        ) {
-                            SignalBarsIcon(
-                                color = latencyColor,
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = latencyText,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = latencyColor,
-                            )
+                        if (latencyText == ProxyServerLatencyTesting) {
+                            val testColor = MiuixTheme.colorScheme.primary
+                            Spacer(Modifier.width(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(testColor.copy(alpha = 0.12f))
+                                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                            ) {
+                                AnimatedHourglassIcon(
+                                    color = testColor,
+                                    isPinging = true,
+                                    size = 12.dp,
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(R.string.proxy_server_list_ping_in_progress),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = testColor,
+                                )
+                            }
+                        } else {
+                            val latencyColor = proxyServerLatencyColor(latencyText)
+                            Spacer(Modifier.width(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(latencyColor.copy(alpha = 0.12f))
+                                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                            ) {
+                                SignalBarsIcon(
+                                    color = latencyColor,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = latencyText,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = latencyColor,
+                                )
+                            }
                         }
                     }
                 }
