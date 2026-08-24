@@ -341,7 +341,6 @@ internal fun ProxyServerListTopBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
                     .padding(bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -693,29 +692,16 @@ private fun ProxyHeroConnectionCardClassic(
                         label = "classic_server_title",
                     ) { showActiveServer ->
                         if (showActiveServer) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
+                            Text(
+                                text = cleanTitle,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = AppTheme.colors.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 19.sp,
                                 modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                if (effectiveFlag != null) {
-                                    CountryFlagBadge(
-                                        flag = effectiveFlag,
-                                        size = 20.dp,
-                                        shapeRadius = 4.dp,
-                                    )
-                                    Spacer(Modifier.width(6.dp))
-                                }
-                                Text(
-                                    text = cleanTitle,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = AppTheme.colors.onSurfaceVariant,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    lineHeight = 19.sp,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
+                            )
                         } else {
                             Text(
                                 text = if (proxyRunning) {
