@@ -56,7 +56,7 @@
     <string name="deletion_confirmation_delete_subscription_group">حذف گروه اشتراک</string>
     <string name="deletion_confirmation_delete_resource_file">حذف فایل منبع</string>
     <string name="deletion_confirmation_delete_config">پیکربندی را حذف کنید</string>
-    <string name="common_empty">اینجا هنوز چیزی نیست~~~</string>
+    <string name="common_empty">اینجا هنوز چیزی نیست</string>
     <string name="common_unknown_group">گروه ناشناس</string>
     <string name="common_copied">کپی شده است</string>
     <string name="common_more">بیشتر</string>

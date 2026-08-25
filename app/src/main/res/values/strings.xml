@@ -57,7 +57,7 @@
     <string name="deletion_confirmation_delete_subscription_group">Delete subscription group</string>
     <string name="deletion_confirmation_delete_resource_file">Delete resource file</string>
     <string name="deletion_confirmation_delete_config">Delete configuration</string>
-    <string name="common_empty">Nothing here yet~~~</string>
+    <string name="common_empty">Nothing here yet</string>
     <string name="common_unknown_group">Unknown group</string>
     <string name="common_copied">Copied</string>
     <string name="common_more">More</string>

@@ -56,7 +56,7 @@
     <string name="deletion_confirmation_delete_subscription_group">删除订阅组</string>
     <string name="deletion_confirmation_delete_resource_file">删除资源文件</string>
     <string name="deletion_confirmation_delete_config">删除配置</string>
-    <string name="common_empty">这里还什么都没有~~~</string>
+    <string name="common_empty">这里还什么都没有</string>
     <string name="common_unknown_group">未知群体</string>
     <string name="common_copied">已复制</string>
     <string name="common_more">更多的</string>

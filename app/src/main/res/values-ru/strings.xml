@@ -51,7 +51,7 @@
     <string name="common_delete">Удалить</string>
     <string name="common_copy">Копировать</string>
     <string name="common_refresh">Обновить</string>
-    <string name="common_empty">Здесь пока ничего нет~~~</string>
+    <string name="common_empty">Здесь пока ничего нет</string>
     <string name="common_unknown_group">Неизвестная группа</string>
     <string name="common_copied">Скопировано</string>
     <string name="common_more">Еще</string>
