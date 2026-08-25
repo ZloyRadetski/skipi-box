@@ -703,6 +703,16 @@ fun SettingsAppearancePage(
                                 updateAppState { it.copy(connectionDisplayMode = mode) }
                             },
                         )
+                        AnimatedVisibility(visible = appState.connectionDisplayMode == ConnectionDisplayModeClassic) {
+                            SwitchPreference(
+                                title = stringResource(R.string.settings_classic_show_floating_power_button),
+                                summary = stringResource(R.string.settings_classic_show_floating_power_button_summary),
+                                checked = appState.classicShowFloatingPowerButton,
+                                onCheckedChange = { enabled ->
+                                    updateAppState { it.copy(classicShowFloatingPowerButton = enabled) }
+                                },
+                            )
+                        }
                         SwitchPreference(
                             title = stringResource(R.string.settings_pin_connection_panel),
                             summary = stringResource(R.string.settings_pin_connection_panel_summary),
@@ -719,16 +729,6 @@ fun SettingsAppearancePage(
                                 updateAppState { it.copy(enableSubscriptionSwipe = enabled) }
                             },
                         )
-                        AnimatedVisibility(visible = appState.connectionDisplayMode == ConnectionDisplayModeClassic) {
-                            SwitchPreference(
-                                title = stringResource(R.string.settings_classic_show_floating_power_button),
-                                summary = stringResource(R.string.settings_classic_show_floating_power_button_summary),
-                                checked = appState.classicShowFloatingPowerButton,
-                                onCheckedChange = { enabled ->
-                                    updateAppState { it.copy(classicShowFloatingPowerButton = enabled) }
-                                },
-                            )
-                        }
                         SwitchPreference(
                             title = stringResource(R.string.settings_tunnel_memory_show_on_home),
                             summary = stringResource(R.string.settings_tunnel_memory_show_on_home_summary),

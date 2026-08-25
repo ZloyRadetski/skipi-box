@@ -64,7 +64,6 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
 import ui.clipboard.setPlainText
-import ui.components.AppPullToRefresh
 import ui.components.BackNavigationIcon
 import ui.components.NavigationIcon
 import ui.layout.AdaptiveTopAppBar
@@ -145,21 +144,13 @@ fun IpInfoPage(
         val lazyListState = rememberLazyListState()
 
         Box(modifier = Modifier.fillMaxSize()) {
-            AppPullToRefresh(
-                isRefreshing = state is IpInfoState.Loading,
-                onRefresh = ::startRefresh,
-                modifier = Modifier.fillMaxSize(),
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pageScrollModifiers(topAppBarScrollBehavior),
                 contentPadding = listPadding,
-                topAppBarScrollBehavior = topAppBarScrollBehavior,
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
             ) {
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pageScrollModifiers(topAppBarScrollBehavior),
-                    contentPadding = listPadding,
-                ) {
                     when (state) {
                         is IpInfoState.Loading, is IpInfoState.Idle -> {
                             item(key = "loading") {
@@ -501,7 +492,6 @@ fun IpInfoPage(
                         }
                     }
                 }
-            }
 
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(lazyListState),
