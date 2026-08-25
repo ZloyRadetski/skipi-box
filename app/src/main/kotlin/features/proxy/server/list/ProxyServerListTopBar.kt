@@ -95,6 +95,7 @@ import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import ui.KeyColors
@@ -254,11 +255,12 @@ internal fun ProxyServerListTopBar(
                 .padding(start = 12.dp, end = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_topbar_logo),
-                contentDescription = stringResource(R.string.app_name),
-                tint = MiuixTheme.colorScheme.onBackground,
-                modifier = Modifier.height(36.dp),
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MiuixTheme.textStyles.headline1.copy(
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = MiuixTheme.colorScheme.onBackground,
             )
             Spacer(Modifier.weight(1f))
             IconButton(
