@@ -14,8 +14,7 @@ import app.AppState
 import app.R
 import app.activeTunnelTargetDisplayName
 import engine.stats.ProxyTrafficStatsRuntime
-import engine.stats.ProxyTrafficStatsRuntimeStore
-import engine.stats.XrayStatsClient
+import engine.stats.XrayStatsClientSession
 import engine.stats.XrayTrafficBytes
 import engine.stats.maxTrafficDeltaComparedTo
 import kotlinx.coroutines.Dispatchers
@@ -76,40 +75,44 @@ internal fun produceActiveTunnelRuntimeSample(
     var previousRuntime: ProxyTrafficStatsRuntime? = null
     var previousTotals = emptyMap<String, XrayTrafficBytes>()
     var lastActiveOutboundTag: String? = null
-    while (true) {
-        val runtime = proxyRunning.then { ProxyTrafficStatsRuntimeStore.read(context) }
-        if (runtime == null) {
-            previousRuntime = null
-            previousTotals = emptyMap()
-            lastActiveOutboundTag = null
-            value = null
-        } else {
-            if (runtime != previousRuntime) {
-                previousRuntime = runtime
+    // One reusable stats channel for the whole sampling loop instead of a new
+    // gRPC handshake on every tick.
+    XrayStatsClientSession(context).use { session ->
+        while (true) {
+            if (!proxyRunning) {
+                previousRuntime = null
                 previousTotals = emptyMap()
                 lastActiveOutboundTag = null
+                value = null
+            } else {
+                val totals = withContext(Dispatchers.IO) {
+                    runCatching {
+                        session.withClient { client -> client.queryOutboundTraffic(reset = false) }
+                    }.getOrNull()
+                }
+                val runtime = session.lastRuntime
+                if (totals != null && runtime != null) {
+                    if (runtime != previousRuntime) {
+                        previousRuntime = runtime
+                        previousTotals = emptyMap()
+                        lastActiveOutboundTag = null
+                    }
+                    totals.maxTrafficDeltaComparedTo(previousTotals, currentActiveTag = lastActiveOutboundTag)?.let { tag ->
+                        lastActiveOutboundTag = tag
+                    }
+                    previousTotals = totals
+                    value = ActiveTunnelRuntimeSample(runtime, lastActiveOutboundTag)
+                } else {
+                    // Tunnel stopped or stats unreachable; reset the baseline.
+                    previousRuntime = null
+                    previousTotals = emptyMap()
+                    lastActiveOutboundTag = null
+                    value = null
+                }
             }
-            val totals = withContext(Dispatchers.IO) {
-                runCatching {
-                    XrayStatsClient(
-                        listenAddress = runtime.listenAddress,
-                        port = runtime.port,
-                        apiTag = runtime.apiTag,
-                    ).use { client -> client.queryOutboundTraffic(reset = false) }
-                }.getOrDefault(emptyMap())
-            }
-            totals.maxTrafficDeltaComparedTo(previousTotals, currentActiveTag = lastActiveOutboundTag)?.let { tag ->
-                lastActiveOutboundTag = tag
-            }
-            previousTotals = totals
-            value = ActiveTunnelRuntimeSample(runtime, lastActiveOutboundTag)
+            delay(ActiveTunnelSampleIntervalMillis)
         }
-        delay(ActiveTunnelSampleIntervalMillis)
     }
-}
-
-private inline fun Boolean.then(block: () -> ProxyTrafficStatsRuntime?): ProxyTrafficStatsRuntime? {
-    return if (this) block() else null
 }
 
 private const val ActiveTunnelSampleIntervalMillis = 1_000L
