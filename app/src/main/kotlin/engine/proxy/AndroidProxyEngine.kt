@@ -19,7 +19,10 @@ import engine.stats.resolveXrayStatsApiPort
 import engine.stats.xrayStatsApiExcludedPorts
 import engine.vpn.VpnXrayEngine
 import features.logs.AndroidAppLogger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -36,6 +39,7 @@ class AndroidProxyEngine(
     private val appContext = context.applicationContext
     private val vpnXrayEngine = VpnXrayEngine(appContext, requestVpnPermission)
     private val latencyTester by lazy { AndroidProxyLatencyTester(appContext) }
+    private val engineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     suspend fun start(request: ProxyEngineStartRequest): ProxyEngineStatus = globalOperationMutex.withLock {
         startUnlocked(request, restart = false)
@@ -142,10 +146,12 @@ class AndroidProxyEngine(
                 if (status.running && trafficStatsRuntime != null) {
                     ProxyTrafficStatsRuntimeStore.write(appContext, trafficStatsRuntime)
                 }
-                ProxyTrafficStatsService.reconcile(
-                    appContext,
-                    trafficStatsRuntime.takeIf { status.running && resolvedRequest.appState.enableTrafficStatsNotification },
-                )
+                engineScope.launch {
+                    ProxyTrafficStatsService.reconcile(
+                        appContext,
+                        trafficStatsRuntime.takeIf { status.running && resolvedRequest.appState.enableTrafficStatsNotification },
+                    )
+                }
             }
             if (startResult.isSuccess) {
                 return@withContext startResult.getOrThrow()

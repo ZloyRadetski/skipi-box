@@ -85,6 +85,7 @@ import features.settings.sheets.AppIconSelectionBottomSheet
 import features.settings.sheets.appIconDescriptorForMode
 import ui.AppTheme
 import ui.KeyColors
+import ui.StatusColorDefaults
 import ui.components.BackNavigationIcon
 import ui.components.ColorPickerDialog
 import ui.isInDarkTheme
@@ -544,7 +545,7 @@ fun SettingsAppearancePage(
                                     SettingsColorItem(
                                         title = stringResource(R.string.settings_color_status_running),
                                         summary = stringResource(R.string.settings_color_status_running_summary),
-                                        color = appState.customStatusRunningColor?.let { Color(it) } ?: (if (isDark) Color(0xFF6BD58A) else Color(0xFF128A3C)),
+                                        color = appState.customStatusRunningColor?.let { Color(it) } ?: StatusColorDefaults.statusRunning(isDark),
                                         onClick = { activeColorPickerTarget = ColorPickerTarget.STATUS_RUNNING },
                                     )
                                     SettingsColorItem(
@@ -556,19 +557,19 @@ fun SettingsAppearancePage(
                                     SettingsColorItem(
                                         title = stringResource(R.string.settings_color_ping_fast),
                                         summary = stringResource(R.string.settings_color_ping_fast_summary),
-                                        color = appState.customPingFastColor?.let { Color(it) } ?: (if (isDark) Color(0xFF6BD58A) else Color(0xFF128A3C)),
+                                        color = appState.customPingFastColor?.let { Color(it) } ?: StatusColorDefaults.pingFast(isDark),
                                         onClick = { activeColorPickerTarget = ColorPickerTarget.PING_FAST },
                                     )
                                     SettingsColorItem(
                                         title = stringResource(R.string.settings_color_ping_medium),
                                         summary = stringResource(R.string.settings_color_ping_medium_summary),
-                                        color = appState.customPingMediumColor?.let { Color(it) } ?: (if (isDark) Color(0xFFFFC857) else Color(0xFFD18A00)),
+                                        color = appState.customPingMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(isDark),
                                         onClick = { activeColorPickerTarget = ColorPickerTarget.PING_MEDIUM },
                                     )
                                     SettingsColorItem(
                                         title = stringResource(R.string.settings_color_ping_slow),
                                         summary = stringResource(R.string.settings_color_ping_slow_summary),
-                                        color = appState.customPingSlowColor?.let { Color(it) } ?: (if (isDark) Color(0xFFFF9B63) else Color(0xFFE06400)),
+                                        color = appState.customPingSlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(isDark),
                                         onClick = { activeColorPickerTarget = ColorPickerTarget.PING_SLOW },
                                     )
                                 }
@@ -796,11 +797,11 @@ fun SettingsAppearancePage(
                     ColorPickerTarget.SURFACE_VARIANT -> appState.customSurfaceVariantColor?.let { Color(it) } ?: AppTheme.colors.surfaceVariant
                     ColorPickerTarget.TEXT -> appState.customTextColor?.let { Color(it) } ?: AppTheme.colors.onSurface
                     ColorPickerTarget.TEXT_SECONDARY -> appState.customTextSecondaryColor?.let { Color(it) } ?: AppTheme.colors.onSurfaceVariant
-                    ColorPickerTarget.STATUS_RUNNING -> appState.customStatusRunningColor?.let { Color(it) } ?: (if (isDark) Color(0xFF6BD58A) else Color(0xFF128A3C))
+                    ColorPickerTarget.STATUS_RUNNING -> appState.customStatusRunningColor?.let { Color(it) } ?: StatusColorDefaults.statusRunning(isDark)
                     ColorPickerTarget.STATUS_STOPPED -> appState.customStatusStoppedColor?.let { Color(it) } ?: MiuixTheme.colorScheme.error
-                    ColorPickerTarget.PING_FAST -> appState.customPingFastColor?.let { Color(it) } ?: (if (isDark) Color(0xFF6BD58A) else Color(0xFF128A3C))
-                    ColorPickerTarget.PING_MEDIUM -> appState.customPingMediumColor?.let { Color(it) } ?: (if (isDark) Color(0xFFFFC857) else Color(0xFFD18A00))
-                    ColorPickerTarget.PING_SLOW -> appState.customPingSlowColor?.let { Color(it) } ?: (if (isDark) Color(0xFFFF9B63) else Color(0xFFE06400))
+                    ColorPickerTarget.PING_FAST -> appState.customPingFastColor?.let { Color(it) } ?: StatusColorDefaults.pingFast(isDark)
+                    ColorPickerTarget.PING_MEDIUM -> appState.customPingMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(isDark)
+                    ColorPickerTarget.PING_SLOW -> appState.customPingSlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(isDark)
                     ColorPickerTarget.CATEGORY_ICONS -> appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
                     ColorPickerTarget.PROTOCOL_VLESS -> ProtocolColorUtils.resolveProtocolColor("vless", appState, isDark)
                     ColorPickerTarget.PROTOCOL_VMESS -> ProtocolColorUtils.resolveProtocolColor("vmess", appState, isDark)

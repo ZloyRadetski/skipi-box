@@ -46,7 +46,7 @@ object ProtocolColorUtils {
             }
             normalized.contains("vmess") -> {
                 appState.customProtocolVmessColor?.let { Color(it) }
-                    ?: if (isDark) DefaultVmessDark else DefaultVlessLight
+                    ?: if (isDark) DefaultVmessDark else DefaultVmessLight
             }
             normalized.contains("hysteria") || normalized.contains("hy2") -> {
                 appState.customProtocolHysteria2Color?.let { Color(it) }

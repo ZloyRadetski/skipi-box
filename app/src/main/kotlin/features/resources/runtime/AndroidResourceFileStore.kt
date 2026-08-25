@@ -75,7 +75,11 @@ internal class AndroidResourceFileStore(
         resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
         restoreAfterPackageUpdate: Boolean = false,
     ) {
+        if (!restoreAfterPackageUpdate && verifiedBundledFilesSource == resourceFileSource) {
+            return
+        }
         val bundledUpdatedAtMillis = appContext.packageUpdatedAtMillis()
+        var allOk = true
         ResourceFileKind.entries.forEach { kind ->
             if (kind == ResourceFileKind.XrayCore) return@forEach
             val target = file(kind)
@@ -92,11 +96,15 @@ internal class AndroidResourceFileStore(
             if (!kind.hasBundledAsset(resourceFileSource)) return@forEach
             runCatching { restoreBundled(kind, resourceFileSource) }
                 .onFailure { error ->
+                    allOk = false
                     AndroidResourceFileLogger.warn(
                         "Failed to restore bundled resource file: ${kind.fileName}",
                         error,
                     )
                 }
+        }
+        if (allOk) {
+            verifiedBundledFilesSource = resourceFileSource
         }
     }
 
@@ -381,9 +389,16 @@ private fun currentRuntimeAbi(): String {
         ?: error("Unsupported CPU ABI: ${Build.SUPPORTED_ABIS.joinToString()}")
 }
 
+@Volatile
+private var cachedPackageUpdatedAtMillis: Long? = null
+
+@Volatile
+private var verifiedBundledFilesSource: Int? = null
+
 private fun Context.packageUpdatedAtMillis(): Long {
+    cachedPackageUpdatedAtMillis?.let { return it }
     return runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val time = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             packageManager
                 .getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
                 .lastUpdateTime
@@ -391,6 +406,8 @@ private fun Context.packageUpdatedAtMillis(): Long {
             @Suppress("DEPRECATION")
             packageManager.getPackageInfo(packageName, 0).lastUpdateTime
         }
+        if (time > 0) cachedPackageUpdatedAtMillis = time
+        time
     }.getOrDefault(0L)
 }
 

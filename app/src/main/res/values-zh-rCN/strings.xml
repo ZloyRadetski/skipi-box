@@ -59,6 +59,7 @@
     <string name="common_empty">这里还什么都没有</string>
     <string name="common_unknown_group">未知群体</string>
     <string name="common_copied">已复制</string>
+    <string name="common_copy_field">复制%1$s</string>
     <string name="common_more">更多的</string>
     <string name="common_import_from_clipboard">从剪贴板导入</string>
     <string name="common_export_to_clipboard">导出到剪贴板</string>
@@ -117,9 +118,14 @@
     <string name="settings_bottom_bar_size_medium">中</string>
     <string name="settings_bottom_bar_size_large">大</string>
     <string name="connection_status_connected">已连接</string>
+    <string name="connection_status_connecting">连接中…</string>
     <string name="connection_status_disconnected">已断开连接</string>
     <string name="connection_status_secured">安全连接处于活动状态</string>
     <string name="connection_status_tap_to_connect">点击即可连接</string>
+    <string name="connection_metric_session">会话</string>
+    <string name="connection_metric_latency">延迟</string>
+    <string name="connection_metric_tunnel_memory">隧道内存</string>
+    <string name="connection_metric_ram_format">内存 %1$s</string>
     <string name="settings_deletion_confirmation">删除确认</string>
     <string name="settings_deletion_confirmation_summary">删除服务器、路由、组或资源之前需要确认</string>
     <string name="settings_subscription_fetch_timeout">订阅超时</string>
@@ -1041,6 +1047,7 @@
     <string name="about_replay_onboarding">欢迎向导</string>
     <string name="about_replay_onboarding_summary">重新体验初始设置与功能介绍向导</string>
     <string name="about_telegram_channel">Telegram 频道</string>
+    <string name="onboarding_logo_content_description">SKIPI 标志</string>
     <string name="onboarding_welcome_title">SKIPI — 快速且自由的客户端</string>
     <string name="onboarding_welcome_subtitle">无广告、无追踪的开源客户端。支持 VLESS、VMess、Trojan、Shadowsocks、Hysteria 2 及强大的路由功能。</string>
     <string name="onboarding_language_title">应用语言</string>

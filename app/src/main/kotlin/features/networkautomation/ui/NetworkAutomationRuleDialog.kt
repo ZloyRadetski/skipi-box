@@ -208,7 +208,7 @@ internal fun NetworkAutomationRuleDialog(
                     if (isSsidDuplicate) {
                         Text(
                             text = stringResource(R.string.network_automation_ssid_exists_error),
-                            color = Color(0xFFE53935),
+                            color = MiuixTheme.colorScheme.error,
                             style = MiuixTheme.textStyles.body2,
                             modifier = Modifier.padding(top = 4.dp),
                         )
@@ -219,7 +219,7 @@ internal fun NetworkAutomationRuleDialog(
             if (isTypeDuplicate) {
                 Text(
                     text = stringResource(R.string.network_automation_type_exists_error),
-                    color = Color(0xFFE53935),
+                    color = MiuixTheme.colorScheme.error,
                     style = MiuixTheme.textStyles.body2,
                     modifier = Modifier.padding(bottom = 12.dp),
                 )

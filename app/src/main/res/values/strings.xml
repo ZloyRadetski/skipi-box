@@ -60,6 +60,7 @@
     <string name="common_empty">Nothing here yet</string>
     <string name="common_unknown_group">Unknown group</string>
     <string name="common_copied">Copied</string>
+    <string name="common_copy_field">Copy %1$s</string>
     <string name="common_more">More</string>
     <string name="common_import_from_clipboard">Import from clipboard</string>
     <string name="common_export_to_clipboard">Export to clipboard</string>
@@ -155,12 +156,14 @@
     <string name="settings_bottom_bar_size_medium">Medium</string>
     <string name="settings_bottom_bar_size_large">Large</string>
     <string name="connection_status_connected">Connected</string>
+    <string name="connection_status_connecting">Connecting…</string>
     <string name="connection_status_disconnected">Disconnected</string>
     <string name="connection_status_secured">Secure connection active</string>
     <string name="connection_status_tap_to_connect">Tap to connect</string>
     <string name="connection_metric_session">Session</string>
     <string name="connection_metric_latency">Latency</string>
     <string name="connection_metric_tunnel_memory">Tunnel memory</string>
+    <string name="connection_metric_ram_format">RAM %1$s</string>
     <string name="settings_deletion_confirmation">Deletion confirmation</string>
     <string name="settings_deletion_confirmation_summary">Require confirmation before deleting servers, routes, groups, or resources</string>
     <string name="settings_subscription_fetch_timeout">Subscription timeout</string>
@@ -1150,6 +1153,7 @@
     <string name="settings_log_retention_unlimited">Keep indefinitely</string>
 
     <!-- Onboarding Flow -->
+    <string name="onboarding_logo_content_description">SKIPI Logo</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_back">Back</string>

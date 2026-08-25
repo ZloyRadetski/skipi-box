@@ -82,4 +82,27 @@ class StrategyGroupStartupFallbackTest {
         val warmedGroup = warmed.proxyServers.single { server -> server.id == 100 }.server as StrategyGroup
         assertEquals(20, warmedGroup.selectedMemberId)
     }
+
+    @Test
+    fun strategyGroupWithMultipleReachableMembersPicksLowestLatency() {
+        val group = StrategyGroup(
+            strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+            proxyServerIds = listOf(1, 2, 3),
+        )
+        val state = AppState(
+            proxyServers = listOf(
+                ProxyServerState(1, VLESS(remarks = "Server 1", id = "1", server = "s1.example", port = "443"), latency = "250ms", groupId = 0),
+                ProxyServerState(2, VLESS(remarks = "Server 2", id = "2", server = "s2.example", port = "443"), latency = "45ms", groupId = 0),
+                ProxyServerState(3, VLESS(remarks = "Server 3", id = "3", server = "s3.example", port = "443"), latency = "120ms", groupId = 0),
+                ProxyServerState(10, group, groupId = 0),
+            ),
+        )
+
+        val warmed = state.withStrategyGroupStartupFallback(
+            serverId = 10,
+            probeLatencies = mapOf(1 to 250L, 2 to 45L, 3 to 120L),
+        )
+        val warmedGroup = warmed.proxyServers.single { server -> server.id == 10 }.server as StrategyGroup
+        assertEquals(2, warmedGroup.selectedMemberId)
+    }
 }

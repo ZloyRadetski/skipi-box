@@ -146,12 +146,25 @@ internal class AndroidProxyLatencyTester(
     suspend fun fastProbeStrategyGroupMembers(
         appState: AppState,
         strategyGroup: StrategyGroup,
-        maxWaitMillis: Long = 600L,
+        maxWaitMillis: Long = 200L,
         maxConcurrency: Int = appState.subscriptionPingConcurrency,
     ): Map<Int, Long> = withContext(Dispatchers.IO) {
         val members = appState.strategyGroupMembers(strategyGroup)
             .filter { member -> member.server !is StrategyGroup }
         if (members.isEmpty()) return@withContext emptyMap()
+
+        // Instant fast-path: if any member already has a verified positive latency, use the lowest one immediately
+        val knownLatencies = members
+            .mapNotNull { member ->
+                val parsed = member.latency.trim().removeSuffix("ms").trim().toLongOrNull()
+                if (parsed != null && parsed >= 0) member.id to parsed else null
+            }
+        if (knownLatencies.isNotEmpty()) {
+            val best = knownLatencies.minByOrNull { it.second }
+            if (best != null) {
+                return@withContext mapOf(best.first to best.second)
+            }
+        }
 
         val dnsCache = java.util.concurrent.ConcurrentHashMap<String, java.net.InetAddress>()
         val failedDnsCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
@@ -164,8 +177,8 @@ internal class AndroidProxyLatencyTester(
                         semaphore.withPermit {
                             val endpoint = member.server.endpoint() ?: return@withPermit null
                             val started = SystemClock.elapsedRealtime()
-                            val address = resolveHost(endpoint.host, 300L, dnsCache, failedDnsCache) ?: return@withPermit null
-                            val connectTime = nioSocketConnectTime(address, endpoint.port, 300)
+                            val address = resolveHost(endpoint.host, 150L, dnsCache, failedDnsCache) ?: return@withPermit null
+                            val connectTime = nioSocketConnectTime(address, endpoint.port, 150)
                             if (connectTime >= 0) {
                                 member.id to (SystemClock.elapsedRealtime() - started)
                             } else {

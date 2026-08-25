@@ -54,6 +54,7 @@
     <string name="common_empty">Здесь пока ничего нет</string>
     <string name="common_unknown_group">Неизвестная группа</string>
     <string name="common_copied">Скопировано</string>
+    <string name="common_copy_field">Копировать %1$s</string>
     <string name="common_more">Еще</string>
     <string name="common_import_from_clipboard">Импортировать из буфера обмена</string>
     <string name="common_export_to_clipboard">Экспортировать в буфер обмена</string>
@@ -172,9 +173,14 @@
     <string name="settings_bottom_bar_size_medium">Средний</string>
     <string name="settings_bottom_bar_size_large">Большой</string>
     <string name="connection_status_connected">Подключено</string>
+    <string name="connection_status_connecting">Подключение…</string>
     <string name="connection_status_disconnected">Отключено</string>
     <string name="connection_status_secured">Идет защищенное соединение</string>
     <string name="connection_status_tap_to_connect">Нажмите для подключения</string>
+    <string name="connection_metric_session">Сессия</string>
+    <string name="connection_metric_latency">Задержка</string>
+    <string name="connection_metric_tunnel_memory">Память туннеля</string>
+    <string name="connection_metric_ram_format">ОЗУ %1$s</string>
     <string name="settings_advanced">Расширенные настройки</string>
     <string name="settings_resolve_proxy_server_domain">Разрешать домены прокси-серверов</string>
     <string name="settings_resolve_proxy_server_domain_summary">Записывать IP-адреса прокси-серверов в DNS hosts локально</string>
@@ -1137,6 +1143,7 @@
     <string name="settings_log_retention_unlimited">Хранить всегда</string>
 
     <!-- Onboarding Flow -->
+    <string name="onboarding_logo_content_description">Логотип SKIPI</string>
     <string name="onboarding_skip">Пропустить</string>
     <string name="onboarding_next">Далее</string>
     <string name="onboarding_back">Назад</string>

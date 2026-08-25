@@ -46,6 +46,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -280,7 +282,7 @@ class SkipiVpnService : VpnService() {
         }
     }
 
-    private fun startVpn(config: VpnServiceStartConfig) {
+    private suspend fun startVpn(config: VpnServiceStartConfig) = coroutineScope {
         val startedAt = android.os.SystemClock.elapsedRealtime()
         stopVpn(ForegroundNotificationDisposition.Keep)
         val stoppedAt = android.os.SystemClock.elapsedRealtime()
@@ -289,30 +291,54 @@ class SkipiVpnService : VpnService() {
             acquireWakeLock()
         }
         config.coreLogPaths.clearCoreLogs(LogTag)
-        tunFileDescriptor = establishTun(config)
-        val tunReadyAt = android.os.SystemClock.elapsedRealtime()
-        val tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
-        SkipiCoreRuntime.start(
-            context = this,
-            config = config,
-            tunFd = config.xrayTunFd(tunFd),
-        )
-        val coreReadyAt = android.os.SystemClock.elapsedRealtime()
-        config.hevSocks5TunnelConfig?.let { hevConfig ->
+
+        if (config.hevSocks5TunnelConfig != null) {
+            val tunDeferred = async(Dispatchers.IO) { establishTun(config) }
+            val coreDeferred = async(Dispatchers.IO) {
+                SkipiCoreRuntime.start(
+                    context = this@SkipiVpnService,
+                    config = config,
+                    tunFd = 0,
+                )
+            }
+            val pfd = tunDeferred.await()
+            tunFileDescriptor = pfd
+            val tunReadyAt = android.os.SystemClock.elapsedRealtime()
+            coreDeferred.await()
+            val coreReadyAt = android.os.SystemClock.elapsedRealtime()
+            val tunFd = pfd.fd
             val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
-            runtime.start(hevConfig, tunFd)
-            AndroidAppLogger.info(LogTag, "Started Hev TUN with VPN file descriptor")
+            runtime.start(config.hevSocks5TunnelConfig, tunFd)
+            val hevReadyAt = android.os.SystemClock.elapsedRealtime()
+            LocalProxyRuntime.update(config.localProxyOptions)
+            running = true
+            promoteVpnForeground(config, connecting = false)
+            ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
+            triggerHapticFeedback { vpnConnected() }
+            AndroidAppLogger.info(
+                LogTag,
+                "VPN start timing (parallel): stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, hev=${hevReadyAt - coreReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
+            )
+        } else {
+            tunFileDescriptor = establishTun(config)
+            val tunReadyAt = android.os.SystemClock.elapsedRealtime()
+            val tunFd = tunFileDescriptor?.fd ?: error(getString(R.string.error_vpn_tun_fd_unavailable))
+            SkipiCoreRuntime.start(
+                context = this@SkipiVpnService,
+                config = config,
+                tunFd = tunFd,
+            )
+            val coreReadyAt = android.os.SystemClock.elapsedRealtime()
+            LocalProxyRuntime.update(config.localProxyOptions)
+            running = true
+            promoteVpnForeground(config, connecting = false)
+            ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
+            triggerHapticFeedback { vpnConnected() }
+            AndroidAppLogger.info(
+                LogTag,
+                "VPN start timing: stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
+            )
         }
-        val hevReadyAt = android.os.SystemClock.elapsedRealtime()
-        LocalProxyRuntime.update(config.localProxyOptions)
-        running = true
-        promoteVpnForeground(config, connecting = false)
-        ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
-        triggerHapticFeedback { vpnConnected() }
-        AndroidAppLogger.info(
-            LogTag,
-            "VPN start timing: stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, hev=${hevReadyAt - coreReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
-        )
     }
 
     private fun establishTun(config: VpnServiceStartConfig): ParcelFileDescriptor {

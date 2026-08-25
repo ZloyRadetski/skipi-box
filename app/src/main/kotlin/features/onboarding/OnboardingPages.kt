@@ -153,7 +153,7 @@ internal fun OnboardingHeroSection(
             ) {
                 Image(
                     painter = logoPainter,
-                    contentDescription = "SKIPI Logo",
+                    contentDescription = stringResource(R.string.onboarding_logo_content_description),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .height(105.dp)

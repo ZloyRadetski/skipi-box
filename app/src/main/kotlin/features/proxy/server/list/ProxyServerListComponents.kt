@@ -71,6 +71,7 @@ import app.modes.ProxyServerListSortDefault
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
 import features.proxy.server.display.ProtocolColorUtils
+import ui.StatusColorDefaults
 import ui.keyColorFor
 import ui.resolveSystemAccentColor
 import top.yukonga.miuix.kmp.anim.folmeSpring
@@ -1007,9 +1008,9 @@ internal fun proxyServerLatencyColor(text: String): Color {
     val latency = proxyServerLatencyNumberRegex.find(text)?.value?.toIntOrNull()
     val darkTheme = isInDarkTheme()
     val appState by LocalAppStateStore.current.collectAppState()
-    val fastColor = appState.customPingFastColor?.let { Color(it) } ?: (if (darkTheme) Color(0xFF6BD58A) else Color(0xFF128A3C))
-    val mediumColor = appState.customPingMediumColor?.let { Color(it) } ?: (if (darkTheme) Color(0xFFFFC857) else Color(0xFFD18A00))
-    val slowColor = appState.customPingSlowColor?.let { Color(it) } ?: (if (darkTheme) Color(0xFFFF9B63) else Color(0xFFE06400))
+    val fastColor = appState.customPingFastColor?.let { Color(it) } ?: StatusColorDefaults.pingFast(darkTheme)
+    val mediumColor = appState.customPingMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(darkTheme)
+    val slowColor = appState.customPingSlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(darkTheme)
     val errorColor = appState.customStatusStoppedColor?.let { Color(it) } ?: MiuixTheme.colorScheme.error
 
     return when {

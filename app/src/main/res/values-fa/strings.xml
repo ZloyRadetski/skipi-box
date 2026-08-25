@@ -59,6 +59,7 @@
     <string name="common_empty">اینجا هنوز چیزی نیست</string>
     <string name="common_unknown_group">گروه ناشناس</string>
     <string name="common_copied">کپی شده است</string>
+    <string name="common_copy_field">کپی %1$s</string>
     <string name="common_more">بیشتر</string>
     <string name="common_import_from_clipboard">وارد کردن از کلیپ بورد</string>
     <string name="common_export_to_clipboard">صادرات به کلیپ بورد</string>
@@ -117,9 +118,14 @@
     <string name="settings_bottom_bar_size_medium">متوسط</string>
     <string name="settings_bottom_bar_size_large">بزرگ</string>
     <string name="connection_status_connected">متصل شد</string>
+    <string name="connection_status_connecting">در حال اتصال…</string>
     <string name="connection_status_disconnected">قطع شده است</string>
     <string name="connection_status_secured">اتصال امن فعال است</string>
     <string name="connection_status_tap_to_connect">برای اتصال ضربه بزنید</string>
+    <string name="connection_metric_session">نشست</string>
+    <string name="connection_metric_latency">تأخیر</string>
+    <string name="connection_metric_tunnel_memory">حافظه تونل</string>
+    <string name="connection_metric_ram_format">رم %1$s</string>
     <string name="settings_deletion_confirmation">تایید حذف</string>
     <string name="settings_deletion_confirmation_summary">قبل از حذف سرورها، مسیرها، گروه‌ها یا منابع به تأیید نیاز دارید</string>
     <string name="settings_subscription_fetch_timeout">پایان زمان اشتراک</string>
@@ -998,6 +1004,7 @@
     <string name="about_replay_onboarding">راهنمای خوش‌آمدگویی</string>
     <string name="about_replay_onboarding_summary">اجرای مجدد راه‌اندازی اولیه و معرفی امکانات</string>
     <string name="about_telegram_channel">کانال تلگرام</string>
+    <string name="onboarding_logo_content_description">لوگوی SKIPI</string>
     <string name="onboarding_welcome_title">SKIPI — کلاینت سریع و آزاد</string>
     <string name="onboarding_welcome_subtitle">کلاینت منبع‌باز بدون تبلیغات و بدون ردیابی. پشتیبانی از VLESS، VMess، Trojan، Shadowsocks، Hysteria 2 و مسیریابی قدرتمند.</string>
     <string name="onboarding_language_title">زبان برنامه</string>

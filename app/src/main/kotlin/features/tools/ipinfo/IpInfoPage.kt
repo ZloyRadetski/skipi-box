@@ -543,7 +543,7 @@ private fun IpAddressRow(
         ) {
             Icon(
                 imageVector = MiuixIcons.Copy,
-                contentDescription = "Copy $label",
+                contentDescription = stringResource(R.string.common_copy_field, label),
                 modifier = Modifier.size(16.dp),
                 tint = MiuixTheme.colorScheme.primary,
             )

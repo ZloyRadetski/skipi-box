@@ -329,7 +329,8 @@ internal fun SubscriptionGroupEditorDialog(
                             .fillMaxWidth()
                             .padding(bottom = 16.dp),
                         colors = CardDefaults.defaultColors(
-                            color = Color(0xFFE53935).copy(alpha = 0.08f),
+                            color = MiuixTheme.colorScheme.error
+                                .copy(alpha = 0.08f),
                         ),
                     ) {
                         Row(
@@ -350,13 +351,13 @@ internal fun SubscriptionGroupEditorDialog(
                             Icon(
                                 imageVector = MiuixIcons.Delete,
                                 contentDescription = null,
-                                tint = Color(0xFFE53935),
+                                tint = MiuixTheme.colorScheme.error,
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 text = stringResource(R.string.subscription_delete),
-                                color = Color(0xFFE53935),
+                                color = MiuixTheme.colorScheme.error,
                                 style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
                             )
                         }

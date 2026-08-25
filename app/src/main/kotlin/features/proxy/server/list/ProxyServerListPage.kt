@@ -199,6 +199,7 @@ fun ProxyServerListPage(
             connectionDisplayMode = proxyListState.connectionDisplayMode,
             onToggleProxy = ::toggleProxyFromConnectionPanel,
             modifier = modifier,
+            serviceOperationInProgress = serviceOperationInProgress,
         )
     }
 

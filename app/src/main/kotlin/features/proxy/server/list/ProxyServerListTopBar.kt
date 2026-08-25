@@ -15,6 +15,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.EaseOutQuad
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -59,10 +60,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -99,6 +102,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import ui.KeyColors
+import ui.StatusColorDefaults
 import ui.isInDarkTheme
 import ui.keyColorFor
 import ui.resolveSystemAccentColor
@@ -438,6 +442,7 @@ internal fun ProxyHeroConnectionCard(
     connectionDisplayMode: Int,
     onToggleProxy: () -> Unit,
     modifier: Modifier = Modifier,
+    serviceOperationInProgress: Boolean = false,
 ) {
     val context = LocalContext.current.applicationContext
     val sample by produceActiveTunnelRuntimeSample(context, proxyRunning)
@@ -480,6 +485,7 @@ internal fun ProxyHeroConnectionCard(
         ProxyHeroConnectionCardClassic(
             appState = appState,
             proxyRunning = proxyRunning,
+            serviceOperationInProgress = serviceOperationInProgress,
             showTunnelMemoryOnHome = showTunnelMemoryOnHome,
             memoryKb = memoryKb,
             effectiveFlag = effectiveFlag,
@@ -495,6 +501,7 @@ internal fun ProxyHeroConnectionCard(
         ProxyHeroConnectionCardCompact(
             appState = appState,
             proxyRunning = proxyRunning,
+            serviceOperationInProgress = serviceOperationInProgress,
             showTunnelMemoryOnHome = showTunnelMemoryOnHome,
             memoryKb = memoryKb,
             effectiveFlag = effectiveFlag,
@@ -553,7 +560,9 @@ private fun ProxyHeroConnectionCardClassic(
     sample: ActiveTunnelRuntimeSample?,
     onToggleProxy: () -> Unit,
     modifier: Modifier = Modifier,
+    serviceOperationInProgress: Boolean = false,
 ) {
+    val isConnecting = serviceOperationInProgress && !proxyRunning
     val sessionDuration by produceState(initialValue = "00:00:00", proxyRunning) {
         if (!proxyRunning) {
             value = "--:--:--"
@@ -575,18 +584,18 @@ private fun ProxyHeroConnectionCardClassic(
 
     val cardBgColor = AppTheme.colors.surface
     val cardBorderColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
+        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else if (isConnecting) accentTone.copy(alpha = 0.45f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
         animationSpec = tween(350),
         label = "classic_card_border",
     )
 
     val buttonBgColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone else AppTheme.colors.surfaceVariant,
+        targetValue = if (proxyRunning) accentTone else if (isConnecting) accentTone.copy(alpha = 0.22f) else AppTheme.colors.surfaceVariant,
         animationSpec = tween(300),
         label = "classic_btn_bg",
     )
     val buttonBorderColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.45f) else AppTheme.colors.onSurface.copy(alpha = 0.18f),
+        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.45f) else if (isConnecting) accentTone else AppTheme.colors.onSurface.copy(alpha = 0.18f),
         animationSpec = tween(300),
         label = "classic_btn_border",
     )
@@ -596,6 +605,8 @@ private fun ProxyHeroConnectionCardClassic(
     val powerIconTint by animateColorAsState(
         targetValue = if (proxyRunning) {
             if (isAccentBright) Color(0xFF1B1B1F) else Color.White
+        } else if (isConnecting) {
+            accentTone
         } else {
             AppTheme.colors.onSurface.copy(alpha = 0.5f)
         },
@@ -604,7 +615,7 @@ private fun ProxyHeroConnectionCardClassic(
     )
 
     val buttonScale by animateFloatAsState(
-        targetValue = if (proxyRunning) 1.0f else 0.96f,
+        targetValue = if (proxyRunning) 1.0f else if (isConnecting) 0.98f else 0.96f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMediumLow,
@@ -642,6 +653,16 @@ private fun ProxyHeroConnectionCardClassic(
             repeatMode = RepeatMode.Reverse,
         ),
         label = "power_breath",
+    )
+
+    val connectingRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1100, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "connecting_rot",
     )
 
     Card(
@@ -700,6 +721,29 @@ private fun ProxyHeroConnectionCardClassic(
                         )
                     }
 
+                    if (isConnecting) {
+                        Box(
+                            modifier = Modifier
+                                .size(92.dp)
+                                .graphicsLayer { rotationZ = connectingRotation }
+                                .drawBehind {
+                                    drawArc(
+                                        brush = Brush.sweepGradient(
+                                            listOf(
+                                                accentTone.copy(alpha = 0.0f),
+                                                accentTone.copy(alpha = 0.35f),
+                                                accentTone,
+                                            )
+                                        ),
+                                        startAngle = 0f,
+                                        sweepAngle = 280f,
+                                        useCenter = false,
+                                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
+                                    )
+                                },
+                        )
+                    }
+
                     val effectiveScale = buttonScale * (if (proxyRunning) breathScale else 1.0f)
                     Box(
                         modifier = Modifier
@@ -736,18 +780,22 @@ private fun ProxyHeroConnectionCardClassic(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     AnimatedContent(
-                        targetState = proxyRunning,
+                        targetState = when {
+                            proxyRunning -> 2
+                            isConnecting -> 1
+                            else -> 0
+                        },
                         transitionSpec = {
                             (fadeIn(animationSpec = tween(260)) + slideInVertically(animationSpec = tween(260)) { height -> height / 3 })
                                 .togetherWith(fadeOut(animationSpec = tween(160)) + slideOutVertically(animationSpec = tween(160)) { height -> -height / 3 })
                         },
                         label = "classic_status_title",
-                    ) { isRunning ->
+                    ) { statusState ->
                         Text(
-                            text = if (isRunning) {
-                                stringResource(R.string.connection_status_connected)
-                            } else {
-                                stringResource(R.string.connection_status_disconnected)
+                            text = when (statusState) {
+                                2 -> stringResource(R.string.connection_status_connected)
+                                1 -> stringResource(R.string.connection_status_connecting)
+                                else -> stringResource(R.string.connection_status_disconnected)
                             },
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
@@ -758,7 +806,7 @@ private fun ProxyHeroConnectionCardClassic(
                     Spacer(Modifier.height(4.dp))
 
                     AnimatedContent(
-                        targetState = proxyRunning && cleanTitle.isNotBlank() && cleanTitle != directName,
+                        targetState = (proxyRunning || isConnecting) && cleanTitle.isNotBlank() && cleanTitle != directName,
                         transitionSpec = {
                             (fadeIn(animationSpec = tween(260)) + expandVertically(animationSpec = tween(260)))
                                 .togetherWith(fadeOut(animationSpec = tween(160)) + shrinkVertically(animationSpec = tween(160)))
@@ -778,10 +826,10 @@ private fun ProxyHeroConnectionCardClassic(
                             )
                         } else {
                             Text(
-                                text = if (proxyRunning) {
-                                    stringResource(R.string.connection_status_secured)
-                                } else {
-                                    stringResource(R.string.connection_status_tap_to_connect)
+                                text = when {
+                                    proxyRunning -> stringResource(R.string.connection_status_secured)
+                                    isConnecting -> stringResource(R.string.connection_status_connecting)
+                                    else -> stringResource(R.string.connection_status_tap_to_connect)
                                 },
                                 fontSize = 14.sp,
                                 color = AppTheme.colors.onSurfaceVariant,
@@ -878,7 +926,7 @@ private fun ProxyHeroConnectionCardClassic(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "RAM ${formatTunnelMemory(memoryKb)}",
+                                text = stringResource(R.string.connection_metric_ram_format, formatTunnelMemory(memoryKb)),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = AppTheme.colors.onSurfaceVariant,
@@ -903,7 +951,9 @@ private fun ProxyHeroConnectionCardCompact(
     selectedServer: ProxyServerState? = null,
     sample: ActiveTunnelRuntimeSample? = null,
     modifier: Modifier = Modifier,
+    serviceOperationInProgress: Boolean = false,
 ) {
+    val isConnecting = serviceOperationInProgress && !proxyRunning
     val heroShape = RoundedCornerShape(18.dp)
     val accentTone = AppTheme.colors.accent
 
@@ -913,13 +963,13 @@ private fun ProxyHeroConnectionCardCompact(
         label = "compact_card_bg",
     )
     val compactCardBorderColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
+        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else if (isConnecting) accentTone.copy(alpha = 0.45f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
         animationSpec = tween(350),
         label = "compact_card_border",
     )
 
     val dotScale by animateFloatAsState(
-        targetValue = if (proxyRunning) 1.0f else 0.8f,
+        targetValue = if (proxyRunning || isConnecting) 1.0f else 0.8f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMediumLow,
@@ -960,7 +1010,7 @@ private fun ProxyHeroConnectionCardCompact(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         val statusConnectedColor = appState.customStatusRunningColor?.let { Color(it) }
-                            ?: if (isInDarkTheme()) Color(0xFF6BD58A) else Color(0xFF128A3C)
+                            ?: StatusColorDefaults.statusRunning(isInDarkTheme())
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
@@ -982,7 +1032,7 @@ private fun ProxyHeroConnectionCardCompact(
                         }
                         if (showTunnelMemoryOnHome && memoryKb > 0L) {
                             Text(
-                                text = "RAM ${formatTunnelMemory(memoryKb)}",
+                                text = stringResource(R.string.connection_metric_ram_format, formatTunnelMemory(memoryKb)),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -1078,14 +1128,20 @@ private fun ProxyHeroConnectionCardCompact(
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f)),
+                                    .background(
+                                        if (isConnecting) accentTone else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
+                                    ),
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = stringResource(R.string.proxy_active_server_status_stopped),
+                                text = if (isConnecting) {
+                                    stringResource(R.string.connection_status_connecting)
+                                } else {
+                                    stringResource(R.string.proxy_active_server_status_stopped)
+                                },
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MiuixTheme.colorScheme.onSurface,
+                                color = if (isConnecting) accentTone else MiuixTheme.colorScheme.onSurface,
                             )
                         }
                         Text(
