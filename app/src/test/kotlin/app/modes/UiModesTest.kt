@@ -55,6 +55,9 @@ class UiModesTest {
 
     @Test
     fun testNormalizeFontSizeMode() {
+        assertEquals(FontSizeModeTiny, normalizeFontSizeMode(FontSizeModeTiny))
+        assertEquals(FontSizeModeExtraSmall, normalizeFontSizeMode(FontSizeModeExtraSmall))
+        assertEquals(FontSizeModeVerySmall, normalizeFontSizeMode(FontSizeModeVerySmall))
         assertEquals(FontSizeModeSmall, normalizeFontSizeMode(FontSizeModeSmall))
         assertEquals(FontSizeModeDefault, normalizeFontSizeMode(FontSizeModeDefault))
         assertEquals(FontSizeModeMedium, normalizeFontSizeMode(FontSizeModeMedium))
@@ -68,12 +71,15 @@ class UiModesTest {
 
     @Test
     fun testResolveFontSizeScale() {
-        assertEquals(0.85f, resolveFontSizeScale(FontSizeModeSmall))
-        assertEquals(1.0f, resolveFontSizeScale(FontSizeModeDefault))
-        assertEquals(1.15f, resolveFontSizeScale(FontSizeModeMedium))
-        assertEquals(1.30f, resolveFontSizeScale(FontSizeModeLarge))
-        assertEquals(1.45f, resolveFontSizeScale(FontSizeModeExtraLarge))
-        assertEquals(1.0f, resolveFontSizeScale(-1))
+        assertEquals(0.55f, resolveFontSizeScale(FontSizeModeTiny), 0.001f)
+        assertEquals(0.65f, resolveFontSizeScale(FontSizeModeExtraSmall), 0.001f)
+        assertEquals(0.75f, resolveFontSizeScale(FontSizeModeVerySmall), 0.001f)
+        assertEquals(0.85f, resolveFontSizeScale(FontSizeModeSmall), 0.001f)
+        assertEquals(1.0f, resolveFontSizeScale(FontSizeModeDefault), 0.001f)
+        assertEquals(1.15f, resolveFontSizeScale(FontSizeModeMedium), 0.001f)
+        assertEquals(1.30f, resolveFontSizeScale(FontSizeModeLarge), 0.001f)
+        assertEquals(1.45f, resolveFontSizeScale(FontSizeModeExtraLarge), 0.001f)
+        assertEquals(1.0f, resolveFontSizeScale(-1), 0.001f)
     }
 
     @Test

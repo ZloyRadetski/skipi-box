@@ -13,25 +13,25 @@ import kotlin.test.assertTrue
 class ConnectionDisplayModeTest {
 
     @Test
-    fun testConnectionPanelPinnedByDefault() {
-        assertTrue(AppState().pinConnectionPanelOnHome)
+    fun testConnectionPanelUnpinnedByDefault() {
+        assertFalse(AppState().pinConnectionPanelOnHome)
     }
 
     @Test
     fun testPinConnectionPanelToggle() {
         val defaultState = AppState()
-        assertTrue(defaultState.pinConnectionPanelOnHome)
-        val unpinnedState = defaultState.copy(pinConnectionPanelOnHome = false)
+        assertFalse(defaultState.pinConnectionPanelOnHome)
+        val pinnedState = defaultState.copy(pinConnectionPanelOnHome = true)
+        assertTrue(pinnedState.pinConnectionPanelOnHome)
+        val unpinnedState = pinnedState.copy(pinConnectionPanelOnHome = false)
         assertFalse(unpinnedState.pinConnectionPanelOnHome)
-        val repinnedState = unpinnedState.copy(pinConnectionPanelOnHome = true)
-        assertTrue(repinnedState.pinConnectionPanelOnHome)
     }
 
     private fun resolveUserScrollEnabled(
         pinConnectionPanelOnHome: Boolean,
         enableSubscriptionSwipe: Boolean,
     ): Boolean {
-        return pinConnectionPanelOnHome && enableSubscriptionSwipe
+        return enableSubscriptionSwipe
     }
 
     @Test
@@ -42,8 +42,8 @@ class ConnectionDisplayModeTest {
         // Pinned with swipe disabled -> swipe disabled
         assertFalse(resolveUserScrollEnabled(pinConnectionPanelOnHome = true, enableSubscriptionSwipe = false))
 
-        // Unpinned with swipe enabled in state -> swipe disabled to prevent duplicate widgets
-        assertFalse(resolveUserScrollEnabled(pinConnectionPanelOnHome = false, enableSubscriptionSwipe = true))
+        // Unpinned with swipe enabled -> swipe active
+        assertTrue(resolveUserScrollEnabled(pinConnectionPanelOnHome = false, enableSubscriptionSwipe = true))
 
         // Unpinned with swipe disabled -> swipe disabled
         assertFalse(resolveUserScrollEnabled(pinConnectionPanelOnHome = false, enableSubscriptionSwipe = false))

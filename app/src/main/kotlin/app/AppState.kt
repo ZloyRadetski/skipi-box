@@ -7,11 +7,11 @@ import app.modes.AppIconDefault
 import app.modes.BackgroundStyleClassic
 import app.modes.BottomBarSizeLarge
 import app.modes.ColorModeSystem
-import app.modes.FontFamilyModeDefault
-import app.modes.FontSizeModeDefault
+import app.modes.FontFamilyModeUnbounded
+import app.modes.FontSizeModeVerySmall
 import app.modes.FontWeightModeDefault
 import app.modes.LanguageModeSystem
-import app.modes.ConnectionDisplayModeCompact
+import app.modes.ConnectionDisplayModeClassic
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyServerListLayoutSingle
 import app.modes.ProxyServerListSortDefault
@@ -48,8 +48,8 @@ data class AppState(
     val appIcon: Int = AppIconDefault,
     val colorMode: Int = ColorModeSystem,
     val languageMode: Int = LanguageModeSystem,
-    val fontFamilyMode: Int = FontFamilyModeDefault,
-    val fontSizeMode: Int = FontSizeModeDefault,
+    val fontFamilyMode: Int = FontFamilyModeUnbounded,
+    val fontSizeMode: Int = FontSizeModeVerySmall,
     val fontWeightMode: Int = FontWeightModeDefault,
     val enableMaterialYou: Boolean = true,
     val seedIndex: Int = 0,
@@ -83,9 +83,9 @@ data class AppState(
     val nextSubscriptionGroupId: Int = 4,
     val enableAllProxyGroup: Boolean = false,
     val enableDeletionConfirmation: Boolean = true,
-    val connectionDisplayMode: Int = ConnectionDisplayModeCompact,
+    val connectionDisplayMode: Int = ConnectionDisplayModeClassic,
     /** Keep the connection panel fixed while switching subscription pages. */
-    val pinConnectionPanelOnHome: Boolean = true,
+    val pinConnectionPanelOnHome: Boolean = false,
     /** Allow switching subscription tabs via horizontal swipe gestures on home pager. */
     val enableSubscriptionSwipe: Boolean = true,
     val classicShowFloatingPowerButton: Boolean = false,
@@ -176,7 +176,7 @@ data class AppState(
 
     val enableTrafficStatsNotification: Boolean = true,
     /** Show system notifications while geo/resource files are being updated. */
-    val enableResourceFileNotifications: Boolean = true,
+    val enableResourceFileNotifications: Boolean = false,
     val showServerSearch: Boolean = false,
     /** Show the current VPN-core memory footprint above the server search field. */
     val showTunnelMemoryOnHome: Boolean = false,

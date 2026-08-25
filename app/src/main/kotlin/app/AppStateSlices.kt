@@ -17,8 +17,8 @@ import kotlinx.coroutines.flow.map
 data class AppChromeState(
     val colorMode: Int,
     val languageMode: Int,
-    val fontFamilyMode: Int = app.modes.FontFamilyModeDefault,
-    val fontSizeMode: Int = app.modes.FontSizeModeDefault,
+    val fontFamilyMode: Int = app.modes.FontFamilyModeUnbounded,
+    val fontSizeMode: Int = app.modes.FontSizeModeVerySmall,
     val fontWeightMode: Int = app.modes.FontWeightModeDefault,
     val enableMaterialYou: Boolean,
     val seedIndex: Int,
