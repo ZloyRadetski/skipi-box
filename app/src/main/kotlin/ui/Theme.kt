@@ -27,8 +27,16 @@ import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeLight
 import app.modes.ColorModeThemeSystem
 import app.modes.FontFamilyModeDefault
+import app.modes.FontSizeModeDefault
+import app.modes.FontWeightModeDefault
 import app.modes.normalizeColorMode
+import app.modes.resolveFontSizeScale
 import ui.text.resolveFontFamily
+import ui.text.resolveFontWeight
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.Immutable
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -90,6 +98,8 @@ fun resolveSystemAccentColor(context: Context): Color {
 fun AppTheme(
     colorMode: Int = ColorModeSystem,
     fontFamilyMode: Int = FontFamilyModeDefault,
+    fontSizeMode: Int = FontSizeModeDefault,
+    fontWeightMode: Int = FontWeightModeDefault,
     enableMaterialYou: Boolean = true,
     keyColor: Color? = null,
     enableCustomColors: Boolean = false,
@@ -247,26 +257,36 @@ fun AppTheme(
     }
 
     val resolvedFontFamily = remember(fontFamilyMode) { resolveFontFamily(fontFamilyMode) }
+    val resolvedFontWeight = remember(fontWeightMode) { resolveFontWeight(fontWeightMode) }
     val baseMiuixTextStyles = MiuixTheme.textStyles
-    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily) {
-        if (resolvedFontFamily == null) {
+    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight) {
+        if (resolvedFontFamily == null && resolvedFontWeight == null) {
             baseMiuixTextStyles
         } else {
             baseMiuixTextStyles.copy(
-                main = baseMiuixTextStyles.main.copy(fontFamily = resolvedFontFamily),
-                headline1 = baseMiuixTextStyles.headline1.copy(fontFamily = resolvedFontFamily),
-                headline2 = baseMiuixTextStyles.headline2.copy(fontFamily = resolvedFontFamily),
-                title1 = baseMiuixTextStyles.title1.copy(fontFamily = resolvedFontFamily),
-                title2 = baseMiuixTextStyles.title2.copy(fontFamily = resolvedFontFamily),
-                title3 = baseMiuixTextStyles.title3.copy(fontFamily = resolvedFontFamily),
-                title4 = baseMiuixTextStyles.title4.copy(fontFamily = resolvedFontFamily),
-                body1 = baseMiuixTextStyles.body1.copy(fontFamily = resolvedFontFamily),
-                body2 = baseMiuixTextStyles.body2.copy(fontFamily = resolvedFontFamily),
-                footnote1 = baseMiuixTextStyles.footnote1.copy(fontFamily = resolvedFontFamily),
-                footnote2 = baseMiuixTextStyles.footnote2.copy(fontFamily = resolvedFontFamily),
-                button = baseMiuixTextStyles.button.copy(fontFamily = resolvedFontFamily),
+                main = baseMiuixTextStyles.main.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                headline1 = baseMiuixTextStyles.headline1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                headline2 = baseMiuixTextStyles.headline2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                title1 = baseMiuixTextStyles.title1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                title2 = baseMiuixTextStyles.title2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                title3 = baseMiuixTextStyles.title3.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                title4 = baseMiuixTextStyles.title4.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                body1 = baseMiuixTextStyles.body1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                body2 = baseMiuixTextStyles.body2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                footnote1 = baseMiuixTextStyles.footnote1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                footnote2 = baseMiuixTextStyles.footnote2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
+                button = baseMiuixTextStyles.button.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
             )
         }
+    }
+
+    val currentDensity = LocalDensity.current
+    val fontScaleFactor = remember(fontSizeMode) { resolveFontSizeScale(fontSizeMode) }
+    val scaledDensity = remember(currentDensity, fontScaleFactor) {
+        Density(
+            density = currentDensity.density,
+            fontScale = currentDensity.fontScale * fontScaleFactor,
+        )
     }
 
     CompositionLocalProvider(
@@ -274,6 +294,7 @@ fun AppTheme(
         LocalResolvedDarkTheme provides resolvedDark,
         LocalAppColors provides appColors,
         LocalBackgroundStyle provides backgroundStyle,
+        LocalDensity provides scaledDensity,
     ) {
         MiuixTheme(
             colors = miuixColors,
@@ -286,6 +307,32 @@ fun AppTheme(
             content()
         }
     }
+}
+
+private fun TextStyle.applyFontAndWeight(
+    fontFamily: androidx.compose.ui.text.font.FontFamily?,
+    targetWeight: FontWeight?,
+): TextStyle {
+    val newFontFamily = fontFamily ?: this.fontFamily
+    val currentWeight = this.fontWeight
+    val newWeight = when {
+        targetWeight == null -> currentWeight
+        currentWeight != null && currentWeight >= FontWeight.SemiBold -> {
+            when (targetWeight) {
+                FontWeight.Light -> FontWeight.Normal
+                FontWeight.Normal -> FontWeight.SemiBold
+                FontWeight.Medium -> FontWeight.Bold
+                FontWeight.SemiBold -> FontWeight.Bold
+                FontWeight.Bold -> FontWeight.ExtraBold
+                else -> targetWeight
+            }
+        }
+        else -> targetWeight
+    }
+    return copy(
+        fontFamily = newFontFamily,
+        fontWeight = newWeight,
+    )
 }
 
 @Composable

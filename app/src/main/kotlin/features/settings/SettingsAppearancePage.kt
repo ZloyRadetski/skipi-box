@@ -232,6 +232,23 @@ fun SettingsAppearancePage(
         stringResource(R.string.settings_font_family_climate_crisis),
     )
 
+    val fontSizeOptions = listOf(
+        stringResource(R.string.settings_font_size_small),
+        stringResource(R.string.settings_font_size_default),
+        stringResource(R.string.settings_font_size_medium),
+        stringResource(R.string.settings_font_size_large),
+        stringResource(R.string.settings_font_size_extra_large),
+    )
+
+    val fontWeightOptions = listOf(
+        stringResource(R.string.settings_font_weight_default),
+        stringResource(R.string.settings_font_weight_light),
+        stringResource(R.string.settings_font_weight_normal),
+        stringResource(R.string.settings_font_weight_medium),
+        stringResource(R.string.settings_font_weight_semibold),
+        stringResource(R.string.settings_font_weight_bold),
+    )
+
     val resetCompletedMessage = stringResource(R.string.settings_colors_reset_completed)
 
     Scaffold(
@@ -284,6 +301,24 @@ fun SettingsAppearancePage(
                             selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
                             onSelectedIndexChange = { index -> updateAppState { it.copy(fontFamilyMode = index) } },
                         )
+                        OverlayDropdownPreference(
+                            title = stringResource(R.string.settings_font_size),
+                            items = fontSizeOptions,
+                            selectedIndex = appState.fontSizeMode.coerceIn(0, fontSizeOptions.lastIndex),
+                            onSelectedIndexChange = { index -> updateAppState { it.copy(fontSizeMode = index) } },
+                        )
+                        AnimatedVisibility(
+                            visible = app.modes.isFontWeightSupported(appState.fontFamilyMode),
+                            enter = fadeIn() + expandVertically(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            OverlayDropdownPreference(
+                                title = stringResource(R.string.settings_font_weight),
+                                items = fontWeightOptions,
+                                selectedIndex = appState.fontWeightMode.coerceIn(0, fontWeightOptions.lastIndex),
+                                onSelectedIndexChange = { index -> updateAppState { it.copy(fontWeightMode = index) } },
+                            )
+                        }
                         ArrowPreference(
                             title = stringResource(R.string.settings_app_icon),
                             summary = stringResource(appIconDescriptorForMode(appState.appIcon).titleRes),

@@ -1287,4 +1287,19 @@
     <string name="settings_font_family_manrope">Manrope</string>
     <string name="settings_font_family_jetbrains_mono">JetBrains Mono</string>
     <string name="settings_font_family_climate_crisis">Climate Crisis</string>
+    <string name="settings_font_size">字体大小</string>
+    <string name="settings_font_size_summary">调整应用全局文本大小</string>
+    <string name="settings_font_size_small">小（85%）</string>
+    <string name="settings_font_size_default">默认（100%）</string>
+    <string name="settings_font_size_medium">中等（115%）</string>
+    <string name="settings_font_size_large">大（130%）</string>
+    <string name="settings_font_size_extra_large">特大（145%）</string>
+    <string name="settings_font_weight">字体粗细</string>
+    <string name="settings_font_weight_summary">调整界面文本粗细</string>
+    <string name="settings_font_weight_default">默认</string>
+    <string name="settings_font_weight_light">细体</string>
+    <string name="settings_font_weight_normal">常规</string>
+    <string name="settings_font_weight_medium">中等</string>
+    <string name="settings_font_weight_semibold">半粗</string>
+    <string name="settings_font_weight_bold">粗体</string>
 </resources>

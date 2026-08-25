@@ -8,6 +8,8 @@ import app.modes.BackgroundStyleClassic
 import app.modes.BottomBarSizeLarge
 import app.modes.ColorModeSystem
 import app.modes.FontFamilyModeDefault
+import app.modes.FontSizeModeDefault
+import app.modes.FontWeightModeDefault
 import app.modes.LanguageModeSystem
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.ProxyAppListModeGlobal
@@ -47,6 +49,8 @@ data class AppState(
     val colorMode: Int = ColorModeSystem,
     val languageMode: Int = LanguageModeSystem,
     val fontFamilyMode: Int = FontFamilyModeDefault,
+    val fontSizeMode: Int = FontSizeModeDefault,
+    val fontWeightMode: Int = FontWeightModeDefault,
     val enableMaterialYou: Boolean = true,
     val seedIndex: Int = 0,
     val customMaterialYouSeed: Long? = null,

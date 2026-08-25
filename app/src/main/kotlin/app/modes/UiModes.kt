@@ -65,3 +65,39 @@ fun normalizeFontFamilyMode(value: Int): Int = when (value) {
     in FontFamilyModeDefault..FontFamilyModeClimateCrisis -> value
     else -> FontFamilyModeDefault
 }
+
+const val FontSizeModeSmall = 0
+const val FontSizeModeDefault = 1
+const val FontSizeModeMedium = 2
+const val FontSizeModeLarge = 3
+const val FontSizeModeExtraLarge = 4
+
+fun normalizeFontSizeMode(value: Int): Int = when (value) {
+    in FontSizeModeSmall..FontSizeModeExtraLarge -> value
+    else -> FontSizeModeDefault
+}
+
+fun resolveFontSizeScale(fontSizeMode: Int): Float = when (normalizeFontSizeMode(fontSizeMode)) {
+    FontSizeModeSmall -> 0.85f
+    FontSizeModeDefault -> 1.0f
+    FontSizeModeMedium -> 1.15f
+    FontSizeModeLarge -> 1.30f
+    FontSizeModeExtraLarge -> 1.45f
+    else -> 1.0f
+}
+
+const val FontWeightModeDefault = 0
+const val FontWeightModeLight = 1
+const val FontWeightModeNormal = 2
+const val FontWeightModeMedium = 3
+const val FontWeightModeSemiBold = 4
+const val FontWeightModeBold = 5
+
+fun normalizeFontWeightMode(value: Int): Int = when (value) {
+    in FontWeightModeDefault..FontWeightModeBold -> value
+    else -> FontWeightModeDefault
+}
+
+fun isFontWeightSupported(fontFamilyMode: Int): Boolean =
+    normalizeFontFamilyMode(fontFamilyMode) != FontFamilyModeClimateCrisis
+

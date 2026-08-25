@@ -25,6 +25,8 @@ import app.modes.ColorModeThemeLight
 import app.modes.ColorModeThemeSystem
 import app.modes.normalizeColorMode
 import app.modes.normalizeFontFamilyMode
+import app.modes.normalizeFontSizeMode
+import app.modes.normalizeFontWeightMode
 import app.modes.normalizeLanguageMode
 import app.modes.normalizeAppIcon
 import features.settings.servicecontrol.normalizeServiceControlSettings
@@ -106,6 +108,8 @@ internal class AppSettingsPreferences(
             },
             languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode).let(::normalizeLanguageMode),
             fontFamilyMode = preferences.getInt(KeyFontFamilyMode, defaults.fontFamilyMode).let(::normalizeFontFamilyMode),
+            fontSizeMode = preferences.getInt(KeyFontSizeMode, defaults.fontSizeMode).let(::normalizeFontSizeMode),
+            fontWeightMode = preferences.getInt(KeyFontWeightMode, defaults.fontWeightMode).let(::normalizeFontWeightMode),
             enableMaterialYou = preferences.getBoolean(KeyEnableMaterialYou, defaults.enableMaterialYou),
             seedIndex = preferences.getInt(KeySeedIndex, defaults.seedIndex),
             customMaterialYouSeed = if (preferences.contains(KeyCustomMaterialYouSeed)) preferences.getLong(KeyCustomMaterialYouSeed, 0L) else defaults.customMaterialYouSeed,
@@ -410,6 +414,8 @@ internal class AppSettingsPreferences(
             .putInt(KeyColorMode, state.colorMode)
             .putInt(KeyLanguageMode, state.languageMode)
             .putInt(KeyFontFamilyMode, state.fontFamilyMode)
+            .putInt(KeyFontSizeMode, state.fontSizeMode)
+            .putInt(KeyFontWeightMode, state.fontWeightMode)
             .putBoolean(KeyEnableMaterialYou, state.enableMaterialYou)
             .putInt(KeySeedIndex, state.seedIndex)
             .apply {
@@ -780,6 +786,8 @@ private const val KeyAppIcon = "app_icon"
 private const val KeyColorMode = "color_mode"
 private const val KeyLanguageMode = "language_mode"
 private const val KeyFontFamilyMode = "font_family_mode"
+private const val KeyFontSizeMode = "font_size_mode"
+private const val KeyFontWeightMode = "font_weight_mode"
 private const val KeyEnableMaterialYou = "enable_material_you"
 private const val KeySeedIndex = "seed_index"
 private const val KeyCustomMaterialYouSeed = "custom_material_you_seed"

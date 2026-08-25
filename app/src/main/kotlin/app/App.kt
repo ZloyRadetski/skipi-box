@@ -189,6 +189,8 @@ fun App(
         AppTheme(
             colorMode = chromeState.colorMode,
             fontFamilyMode = chromeState.fontFamilyMode,
+            fontSizeMode = chromeState.fontSizeMode,
+            fontWeightMode = chromeState.fontWeightMode,
             enableMaterialYou = chromeState.enableMaterialYou,
             keyColor = keyColor,
             enableCustomColors = chromeState.enableCustomColors,

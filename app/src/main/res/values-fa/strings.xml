@@ -1286,4 +1286,19 @@
     <string name="settings_font_family_manrope">Manrope</string>
     <string name="settings_font_family_jetbrains_mono">JetBrains Mono</string>
     <string name="settings_font_family_climate_crisis">Climate Crisis</string>
+    <string name="settings_font_size">اندازه فونت</string>
+    <string name="settings_font_size_summary">تنظیم اندازه متن در سراسر برنامه</string>
+    <string name="settings_font_size_small">کوچک (۸۵٪)</string>
+    <string name="settings_font_size_default">پیش‌فرض (۱۰۰٪)</string>
+    <string name="settings_font_size_medium">متوسط (۱۱۵٪)</string>
+    <string name="settings_font_size_large">بزرگ (۱۳۰٪)</string>
+    <string name="settings_font_size_extra_large">خیلی بزرگ (۱۴۵٪)</string>
+    <string name="settings_font_weight">ضخامت فونت</string>
+    <string name="settings_font_weight_summary">تنظیم ضخامت متن رابط کاربری</string>
+    <string name="settings_font_weight_default">پیش‌فرض</string>
+    <string name="settings_font_weight_light">نازک</string>
+    <string name="settings_font_weight_normal">معمولی</string>
+    <string name="settings_font_weight_medium">متوسط</string>
+    <string name="settings_font_weight_semibold">نیمه‌ضخیم</string>
+    <string name="settings_font_weight_bold">ضخیم</string>
 </resources>

@@ -50,5 +50,52 @@ class UiModesTest {
         assertEquals(FontFamilyModeDefault, normalizeFontFamilyMode(-1))
         assertEquals(FontFamilyModeDefault, normalizeFontFamilyMode(99))
     }
+
+    @Test
+    fun testNormalizeFontSizeMode() {
+        assertEquals(FontSizeModeSmall, normalizeFontSizeMode(FontSizeModeSmall))
+        assertEquals(FontSizeModeDefault, normalizeFontSizeMode(FontSizeModeDefault))
+        assertEquals(FontSizeModeMedium, normalizeFontSizeMode(FontSizeModeMedium))
+        assertEquals(FontSizeModeLarge, normalizeFontSizeMode(FontSizeModeLarge))
+        assertEquals(FontSizeModeExtraLarge, normalizeFontSizeMode(FontSizeModeExtraLarge))
+
+        // Invalid values default to FontSizeModeDefault
+        assertEquals(FontSizeModeDefault, normalizeFontSizeMode(-1))
+        assertEquals(FontSizeModeDefault, normalizeFontSizeMode(99))
+    }
+
+    @Test
+    fun testResolveFontSizeScale() {
+        assertEquals(0.85f, resolveFontSizeScale(FontSizeModeSmall))
+        assertEquals(1.0f, resolveFontSizeScale(FontSizeModeDefault))
+        assertEquals(1.15f, resolveFontSizeScale(FontSizeModeMedium))
+        assertEquals(1.30f, resolveFontSizeScale(FontSizeModeLarge))
+        assertEquals(1.45f, resolveFontSizeScale(FontSizeModeExtraLarge))
+        assertEquals(1.0f, resolveFontSizeScale(-1))
+    }
+
+    @Test
+    fun testNormalizeFontWeightMode() {
+        assertEquals(FontWeightModeDefault, normalizeFontWeightMode(FontWeightModeDefault))
+        assertEquals(FontWeightModeLight, normalizeFontWeightMode(FontWeightModeLight))
+        assertEquals(FontWeightModeNormal, normalizeFontWeightMode(FontWeightModeNormal))
+        assertEquals(FontWeightModeMedium, normalizeFontWeightMode(FontWeightModeMedium))
+        assertEquals(FontWeightModeSemiBold, normalizeFontWeightMode(FontWeightModeSemiBold))
+        assertEquals(FontWeightModeBold, normalizeFontWeightMode(FontWeightModeBold))
+
+        // Invalid values default to FontWeightModeDefault
+        assertEquals(FontWeightModeDefault, normalizeFontWeightMode(-1))
+        assertEquals(FontWeightModeDefault, normalizeFontWeightMode(99))
+    }
+
+    @Test
+    fun testIsFontWeightSupported() {
+        org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeDefault))
+        org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeInter))
+        org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeGolosText))
+        org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeManrope))
+        org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeJetBrainsMono))
+        org.junit.Assert.assertFalse(isFontWeightSupported(FontFamilyModeClimateCrisis))
+    }
 }
 
