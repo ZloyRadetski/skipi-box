@@ -13,6 +13,8 @@ import app.modes.FontFamilyModeGolosText
 import app.modes.FontFamilyModeInter
 import app.modes.FontFamilyModeJetBrainsMono
 import app.modes.FontFamilyModeManrope
+import app.modes.FontFamilyModeOnest
+import app.modes.FontFamilyModeUnbounded
 import app.modes.FontWeightModeBold
 import app.modes.FontWeightModeDefault
 import app.modes.FontWeightModeLight
@@ -62,12 +64,32 @@ val ClimateCrisisFontFamily = FontFamily(
     Font(R.font.climate_crisis, FontWeight.Normal),
 )
 
+val UnboundedFontFamily = FontFamily(
+    Font(R.font.unbounded, FontWeight.Light),
+    Font(R.font.unbounded, FontWeight.Normal),
+    Font(R.font.unbounded, FontWeight.Medium),
+    Font(R.font.unbounded, FontWeight.SemiBold),
+    Font(R.font.unbounded, FontWeight.Bold),
+    Font(R.font.unbounded, FontWeight.ExtraBold),
+)
+
+val OnestFontFamily = FontFamily(
+    Font(R.font.onest, FontWeight.Light),
+    Font(R.font.onest, FontWeight.Normal),
+    Font(R.font.onest, FontWeight.Medium),
+    Font(R.font.onest, FontWeight.SemiBold),
+    Font(R.font.onest, FontWeight.Bold),
+    Font(R.font.onest, FontWeight.ExtraBold),
+)
+
 fun resolveFontFamily(fontFamilyMode: Int): FontFamily? = when (normalizeFontFamilyMode(fontFamilyMode)) {
     FontFamilyModeInter -> InterFontFamily
     FontFamilyModeGolosText -> GolosTextFontFamily
     FontFamilyModeManrope -> ManropeFontFamily
     FontFamilyModeJetBrainsMono -> JetBrainsMonoFontFamily
     FontFamilyModeClimateCrisis -> ClimateCrisisFontFamily
+    FontFamilyModeUnbounded -> UnboundedFontFamily
+    FontFamilyModeOnest -> OnestFontFamily
     else -> null
 }
 

@@ -230,6 +230,8 @@ fun SettingsAppearancePage(
         stringResource(R.string.settings_font_family_manrope),
         stringResource(R.string.settings_font_family_jetbrains_mono),
         stringResource(R.string.settings_font_family_climate_crisis),
+        stringResource(R.string.settings_font_family_unbounded),
+        stringResource(R.string.settings_font_family_onest),
     )
 
     val fontSizeOptions = listOf(

@@ -1287,6 +1287,8 @@
     <string name="settings_font_family_manrope">Manrope</string>
     <string name="settings_font_family_jetbrains_mono">JetBrains Mono</string>
     <string name="settings_font_family_climate_crisis">Climate Crisis</string>
+    <string name="settings_font_family_unbounded">Unbounded</string>
+    <string name="settings_font_family_onest">Onest</string>
     <string name="settings_font_size">字体大小</string>
     <string name="settings_font_size_summary">调整应用全局文本大小</string>
     <string name="settings_font_size_small">小（85%）</string>

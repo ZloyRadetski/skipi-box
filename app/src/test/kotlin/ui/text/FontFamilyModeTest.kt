@@ -11,6 +11,8 @@ import app.modes.FontFamilyModeGolosText
 import app.modes.FontFamilyModeInter
 import app.modes.FontFamilyModeJetBrainsMono
 import app.modes.FontFamilyModeManrope
+import app.modes.FontFamilyModeOnest
+import app.modes.FontFamilyModeUnbounded
 import app.modes.FontSizeModeLarge
 import app.modes.FontWeightModeBold
 import app.modes.FontWeightModeDefault
@@ -39,6 +41,8 @@ class FontFamilyModeTest {
         assertNotNull(resolveFontFamily(FontFamilyModeManrope))
         assertNotNull(resolveFontFamily(FontFamilyModeJetBrainsMono))
         assertNotNull(resolveFontFamily(FontFamilyModeClimateCrisis))
+        assertNotNull(resolveFontFamily(FontFamilyModeUnbounded))
+        assertNotNull(resolveFontFamily(FontFamilyModeOnest))
     }
 
     @Test

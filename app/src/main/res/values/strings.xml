@@ -129,6 +129,8 @@
     <string name="settings_font_family_manrope">Manrope</string>
     <string name="settings_font_family_jetbrains_mono">JetBrains Mono</string>
     <string name="settings_font_family_climate_crisis">Climate Crisis</string>
+    <string name="settings_font_family_unbounded">Unbounded</string>
+    <string name="settings_font_family_onest">Onest</string>
     <string name="settings_font_size">Font size</string>
     <string name="settings_font_size_summary">Adjust text size across the application</string>
     <string name="settings_font_size_small">Small (85%)</string>

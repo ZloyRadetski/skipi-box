@@ -60,9 +60,11 @@ const val FontFamilyModeGolosText = 2
 const val FontFamilyModeManrope = 3
 const val FontFamilyModeJetBrainsMono = 4
 const val FontFamilyModeClimateCrisis = 5
+const val FontFamilyModeUnbounded = 6
+const val FontFamilyModeOnest = 7
 
 fun normalizeFontFamilyMode(value: Int): Int = when (value) {
-    in FontFamilyModeDefault..FontFamilyModeClimateCrisis -> value
+    in FontFamilyModeDefault..FontFamilyModeOnest -> value
     else -> FontFamilyModeDefault
 }
 

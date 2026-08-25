@@ -45,6 +45,8 @@ class UiModesTest {
         assertEquals(FontFamilyModeManrope, normalizeFontFamilyMode(FontFamilyModeManrope))
         assertEquals(FontFamilyModeJetBrainsMono, normalizeFontFamilyMode(FontFamilyModeJetBrainsMono))
         assertEquals(FontFamilyModeClimateCrisis, normalizeFontFamilyMode(FontFamilyModeClimateCrisis))
+        assertEquals(FontFamilyModeUnbounded, normalizeFontFamilyMode(FontFamilyModeUnbounded))
+        assertEquals(FontFamilyModeOnest, normalizeFontFamilyMode(FontFamilyModeOnest))
 
         // Invalid values default to FontFamilyModeDefault
         assertEquals(FontFamilyModeDefault, normalizeFontFamilyMode(-1))
@@ -95,6 +97,8 @@ class UiModesTest {
         org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeGolosText))
         org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeManrope))
         org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeJetBrainsMono))
+        org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeUnbounded))
+        org.junit.Assert.assertTrue(isFontWeightSupported(FontFamilyModeOnest))
         org.junit.Assert.assertFalse(isFontWeightSupported(FontFamilyModeClimateCrisis))
     }
 }
