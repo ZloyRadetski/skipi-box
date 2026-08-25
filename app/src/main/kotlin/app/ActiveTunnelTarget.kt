@@ -17,7 +17,7 @@ internal fun AppState.activeTunnelTargetDisplayName(
     activeOutboundTag: String?,
     directName: String,
     blockName: String,
-    unavailableName: String = "—",
+    unavailableName: String = "\u2014",
 ): String {
     val effectiveState = withActiveTrafficConfigApplied()
     val finalTag = runtime?.finalOutboundTag
@@ -65,7 +65,7 @@ internal fun AppState.activeTunnelTargetDisplayName(
 
 private fun String.withObservedMember(member: ProxyServerState?): String {
     val memberName = member?.displayName().orEmpty()
-    return if (memberName.isBlank()) this else "$this — $memberName"
+    return if (memberName.isBlank()) this else "$this \u2014 $memberName"
 }
 
 private fun ProxyServerState.displayName(): String {

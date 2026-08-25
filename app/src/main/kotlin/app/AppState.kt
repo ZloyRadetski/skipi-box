@@ -51,7 +51,7 @@ data class AppState(
     val fontFamilyMode: Int = FontFamilyModeUnbounded,
     val fontSizeMode: Int = FontSizeModeVerySmall,
     val fontWeightMode: Int = FontWeightModeDefault,
-    val enableMaterialYou: Boolean = true,
+    val enableMaterialYou: Boolean = false,
     val seedIndex: Int = 0,
     val customMaterialYouSeed: Long? = null,
     val enableCustomColors: Boolean = false,

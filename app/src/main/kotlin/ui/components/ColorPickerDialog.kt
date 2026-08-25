@@ -4,6 +4,7 @@
 package ui.components
 
 import androidx.compose.foundation.Canvas
+import ui.text.themedFontWeight
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,6 +68,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
 
 private val PresetPaletteColors = listOf(
+    Color(0xFF4B6078), // Default Steel Slate
     Color(0xFF0070F3), // Vercel / Electric Blue
     Color(0xFF3B82F6), // Sky Blue
     Color(0xFF06B6D4), // Cyan
@@ -150,13 +152,13 @@ fun ColorPickerDialog(
 
     val rainbowColors = remember {
         listOf(
-            Color(0xFFFF0000), // 0° Red
-            Color(0xFFFFFF00), // 60° Yellow
-            Color(0xFF00FF00), // 120° Green
-            Color(0xFF00FFFF), // 180° Cyan
-            Color(0xFF0000FF), // 240° Blue
-            Color(0xFFFF00FF), // 300° Magenta
-            Color(0xFFFF0000), // 360° Red
+            Color(0xFFFF0000), // 0 deg Red
+            Color(0xFFFFFF00), // 60 deg Yellow
+            Color(0xFF00FF00), // 120 deg Green
+            Color(0xFF00FFFF), // 180 deg Cyan
+            Color(0xFF0000FF), // 240 deg Blue
+            Color(0xFFFF00FF), // 300 deg Magenta
+            Color(0xFFFF0000), // 360 deg Red
         )
     }
 
@@ -192,7 +194,7 @@ fun ColorPickerDialog(
                             .fillMaxWidth()
                             .padding(bottom = 16.dp),
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         textAlign = TextAlign.Center,
                     )
 
@@ -373,7 +375,7 @@ fun ColorPickerDialog(
                             )
                             Spacer(Modifier.width(10.dp))
                             Text(
-                                text = "→",
+                                text = "\u2192",
                                 fontSize = 18.sp,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
@@ -476,7 +478,7 @@ fun ColorPickerDialog(
                             Text(
                                 text = stringResource(android.R.string.ok),
                                 color = if (value > 0.6f && saturation < 0.4f) Color.Black else Color.White,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = themedFontWeight(FontWeight.SemiBold),
                             )
                         }
                     }

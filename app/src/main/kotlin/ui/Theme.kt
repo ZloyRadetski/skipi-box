@@ -63,12 +63,14 @@ data class AppColors(
     val isDark: Boolean,
 )
 
+val DefaultAppAccentColor = Color(0xFF4B6078)
+
 val LocalAppColors = compositionLocalOf {
     AppColors(
         background = Color(0xFFF5F6F8),
         onBackground = Color(0xFF1B1C1E),
-        accent = Color(0xFFEDE7DC),
-        onAccent = Color(0xFF2C2621),
+        accent = DefaultAppAccentColor,
+        onAccent = Color(0xFFFFFFFF),
         surface = Color(0xFFFFFFFF),
         onSurface = Color(0xFF1B1C1E),
         surfaceVariant = Color(0xFFE8EAEE),
@@ -95,7 +97,7 @@ fun resolveSystemAccentColor(context: Context): Color {
             }
         } catch (_: Throwable) {}
     }
-    return Color(0xFF0070F3) // Чистый современный системный синий
+    return DefaultAppAccentColor
 }
 
 @Composable
@@ -104,7 +106,7 @@ fun AppTheme(
     fontFamilyMode: Int = FontFamilyModeDefault,
     fontSizeMode: Int = FontSizeModeDefault,
     fontWeightMode: Int = FontWeightModeDefault,
-    enableMaterialYou: Boolean = true,
+    enableMaterialYou: Boolean = false,
     keyColor: Color? = null,
     enableCustomColors: Boolean = false,
     customAccentColor: Color? = null,
@@ -126,7 +128,7 @@ fun AppTheme(
         else -> systemDark
     }
     val systemAccent = remember(context) { resolveSystemAccentColor(context) }
-    val effectiveKeyColor = keyColor ?: (if (enableMaterialYou) systemAccent else Color(0xFF0070F3))
+    val effectiveKeyColor = keyColor ?: (if (enableMaterialYou) systemAccent else DefaultAppAccentColor)
 
     val controller = remember(colorMode, enableMaterialYou, effectiveKeyColor, resolvedDark) {
         if (enableMaterialYou) {
@@ -168,7 +170,7 @@ fun AppTheme(
     val activeAccentColor = when {
         enableCustomColors && customAccentColor != null -> customAccentColor
         !enableMaterialYou && customAccentColor != null -> customAccentColor
-        !enableMaterialYou -> Color(0xFF0070F3)
+        !enableMaterialYou -> DefaultAppAccentColor
         else -> baseMiuixColors.primary
     }
 
