@@ -227,27 +227,25 @@ fun AppOverlayDropdownPreference(
     onExpandedChange: ((Boolean) -> Unit)? = null,
     onSelectedIndexChange: ((Int) -> Unit)? = null,
 ) {
-    AppMiuixWindowTheme {
-        OverlayDropdownPreference(
-            items = items,
-            selectedIndex = selectedIndex,
-            title = title,
-            modifier = modifier,
-            titleColor = titleColor,
-            summary = summary,
-            summaryColor = summaryColor,
-            dropdownColors = dropdownColors,
-            startAction = startAction,
-            bottomAction = bottomAction,
-            insideMargin = insideMargin,
-            maxHeight = maxHeight,
-            enabled = enabled,
-            showValue = showValue,
-            renderInRootScaffold = renderInRootScaffold,
-            onExpandedChange = onExpandedChange,
-            onSelectedIndexChange = onSelectedIndexChange,
-        )
-    }
+    OverlayDropdownPreference(
+        items = items,
+        selectedIndex = selectedIndex,
+        title = title,
+        modifier = modifier,
+        titleColor = titleColor,
+        summary = summary,
+        summaryColor = summaryColor,
+        dropdownColors = dropdownColors,
+        startAction = startAction,
+        bottomAction = bottomAction,
+        insideMargin = insideMargin,
+        maxHeight = maxHeight,
+        enabled = enabled,
+        showValue = showValue,
+        renderInRootScaffold = renderInRootScaffold,
+        onExpandedChange = onExpandedChange,
+        onSelectedIndexChange = onSelectedIndexChange,
+    )
 }
 
 @Composable
@@ -269,24 +267,22 @@ fun AppOverlayDropdownPreference(
     collapseOnSelection: Boolean = entries.size <= 1,
     onExpandedChange: ((Boolean) -> Unit)? = null,
 ) {
-    AppMiuixWindowTheme {
-        OverlayDropdownPreference(
-            title = title,
-            entries = entries,
-            modifier = modifier,
-            titleColor = titleColor,
-            summary = summary,
-            summaryColor = summaryColor,
-            dropdownColors = dropdownColors,
-            startAction = startAction,
-            bottomAction = bottomAction,
-            insideMargin = insideMargin,
-            maxHeight = maxHeight,
-            enabled = enabled,
-            showValue = showValue,
-            renderInRootScaffold = renderInRootScaffold,
-            collapseOnSelection = collapseOnSelection,
-            onExpandedChange = onExpandedChange,
-        )
-    }
+    OverlayDropdownPreference(
+        title = title,
+        entries = entries,
+        modifier = modifier,
+        titleColor = titleColor,
+        summary = summary,
+        summaryColor = summaryColor,
+        dropdownColors = dropdownColors,
+        startAction = startAction,
+        bottomAction = bottomAction,
+        insideMargin = insideMargin,
+        maxHeight = maxHeight,
+        enabled = enabled,
+        showValue = showValue,
+        renderInRootScaffold = renderInRootScaffold,
+        collapseOnSelection = collapseOnSelection,
+        onExpandedChange = onExpandedChange,
+    )
 }

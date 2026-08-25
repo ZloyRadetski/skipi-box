@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package ui.components
@@ -98,8 +98,7 @@ internal fun WarningConfirmDialog(
                     Text(
                         text = title,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                        fontSize = MiuixTheme.textStyles.title4.fontSize,
-                        fontWeight = themedFontWeight(FontWeight.Medium),
+                        style = MiuixTheme.textStyles.title4,
                         color = MiuixTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
