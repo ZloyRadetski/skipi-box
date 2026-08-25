@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.list
@@ -468,7 +468,7 @@ private fun ProxyServerListExpandedItemCard(
         val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
         val effectiveFlag = remember(isStrategyGroup, activeMemberFlag, selfFlag) {
             if (isStrategyGroup) {
-                activeMemberFlag ?: selfFlag ?: "вљЎ"
+                activeMemberFlag ?: selfFlag ?: "\u26A1"
             } else {
                 selfFlag
             }
@@ -669,7 +669,7 @@ private fun ProxyServerListCompactItemCard(
             val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
             val effectiveFlag = remember(isStrategyGroup, activeMemberFlag, selfFlag) {
                 if (isStrategyGroup) {
-                    activeMemberFlag ?: selfFlag ?: "вљЎ"
+                    activeMemberFlag ?: selfFlag ?: "\u26A1"
                 } else {
                     selfFlag
                 }

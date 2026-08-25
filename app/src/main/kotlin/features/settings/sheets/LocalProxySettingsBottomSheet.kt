@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings.sheets
@@ -184,7 +184,7 @@ internal fun LocalProxySettingsBottomSheet(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "вЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂў",
+                                    text = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
                                     fontSize = 15.sp,
                                     fontWeight = themedFontWeight(FontWeight.Bold),
                                     color = MiuixTheme.colorScheme.primary,

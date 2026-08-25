@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.list
@@ -476,7 +476,7 @@ internal fun ProxyHeroConnectionCard(
     val rawRemarks = activeServerState?.server?.getInfo()?.remarks ?: activeName
     val selfFlag = remember(rawRemarks) { CountryFlagUtils.extractLeadingCountryFlag(rawRemarks) }
     val effectiveFlag = remember(activeServerState?.server, selfFlag) {
-        if (activeServerState?.server is StrategyGroup) selfFlag ?: "вљЎ" else selfFlag
+        if (activeServerState?.server is StrategyGroup) selfFlag ?: "\u26A1" else selfFlag
     }
     val cleanTitle = remember(activeName, selfFlag) {
         if (selfFlag != null) CountryFlagUtils.stripLeadingCountryFlag(activeName) else activeName

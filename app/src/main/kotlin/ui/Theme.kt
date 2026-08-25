@@ -274,8 +274,8 @@ fun AppTheme(
         ThemedTypography.updateWeightShift(resolvedFontWeight?.weight?.minus(FontWeight.Normal.weight) ?: 0)
     }
     val baseMiuixTextStyles = MiuixTheme.textStyles
-    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight) {
-        if (resolvedFontFamily == null && resolvedFontWeight == null) {
+    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight, fontScaleFactor) {
+        val styled = if (resolvedFontFamily == null && resolvedFontWeight == null) {
             baseMiuixTextStyles
         } else {
             baseMiuixTextStyles.copy(
@@ -293,25 +293,22 @@ fun AppTheme(
                 button = baseMiuixTextStyles.button.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
             )
         }
-    }
-
-    val popupTextStyles = remember(miuixTextStyles, fontScaleFactor) {
         if (fontScaleFactor == 1.0f) {
-            miuixTextStyles
+            styled
         } else {
-            miuixTextStyles.copy(
-                main = miuixTextStyles.main.scaleFontSize(fontScaleFactor),
-                headline1 = miuixTextStyles.headline1.scaleFontSize(fontScaleFactor),
-                headline2 = miuixTextStyles.headline2.scaleFontSize(fontScaleFactor),
-                title1 = miuixTextStyles.title1.scaleFontSize(fontScaleFactor),
-                title2 = miuixTextStyles.title2.scaleFontSize(fontScaleFactor),
-                title3 = miuixTextStyles.title3.scaleFontSize(fontScaleFactor),
-                title4 = miuixTextStyles.title4.scaleFontSize(fontScaleFactor),
-                body1 = miuixTextStyles.body1.scaleFontSize(fontScaleFactor),
-                body2 = miuixTextStyles.body2.scaleFontSize(fontScaleFactor),
-                footnote1 = miuixTextStyles.footnote1.scaleFontSize(fontScaleFactor),
-                footnote2 = miuixTextStyles.footnote2.scaleFontSize(fontScaleFactor),
-                button = miuixTextStyles.button.scaleFontSize(fontScaleFactor),
+            styled.copy(
+                main = styled.main.scaleFontSize(fontScaleFactor),
+                headline1 = styled.headline1.scaleFontSize(fontScaleFactor),
+                headline2 = styled.headline2.scaleFontSize(fontScaleFactor),
+                title1 = styled.title1.scaleFontSize(fontScaleFactor),
+                title2 = styled.title2.scaleFontSize(fontScaleFactor),
+                title3 = styled.title3.scaleFontSize(fontScaleFactor),
+                title4 = styled.title4.scaleFontSize(fontScaleFactor),
+                body1 = styled.body1.scaleFontSize(fontScaleFactor),
+                body2 = styled.body2.scaleFontSize(fontScaleFactor),
+                footnote1 = styled.footnote1.scaleFontSize(fontScaleFactor),
+                footnote2 = styled.footnote2.scaleFontSize(fontScaleFactor),
+                button = styled.button.scaleFontSize(fontScaleFactor),
             )
         }
     }
@@ -330,7 +327,7 @@ fun AppTheme(
         LocalAppColors provides appColors,
         LocalBackgroundStyle provides backgroundStyle,
         LocalDensity provides scaledDensity,
-        LocalPopupTextStyles provides popupTextStyles,
+        LocalPopupTextStyles provides miuixTextStyles,
     ) {
         MiuixTheme(
             colors = miuixColors,

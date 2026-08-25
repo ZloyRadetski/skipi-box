@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings
@@ -351,7 +351,7 @@ fun LocalProxySettingsPage(
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = appState.localProxyUsername.ifBlank { "вЂ”" },
+                                            text = appState.localProxyUsername.ifBlank { "\u2014" },
                                             fontSize = 15.sp,
                                             fontWeight = themedFontWeight(FontWeight.SemiBold),
                                             color = MiuixTheme.colorScheme.primary,
@@ -395,7 +395,7 @@ fun LocalProxySettingsPage(
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = if (isPasswordVisible) appState.localProxyPassword.ifBlank { "вЂ”" } else "вЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂў",
+                                            text = if (isPasswordVisible) appState.localProxyPassword.ifBlank { "\u2014" } else "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
                                             fontSize = 15.sp,
                                             fontWeight = themedFontWeight(FontWeight.SemiBold),
                                             color = MiuixTheme.colorScheme.primary,

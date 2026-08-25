@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.networkautomation.ui
@@ -191,11 +191,11 @@ fun SettingsNetworkAutomationPage(
                         val actionSummary = when (rule.action) {
                             NetworkRuleAction.DISCONNECT_VPN -> stringResource(R.string.network_automation_action_disconnect)
                             NetworkRuleAction.SWITCH_SERVER -> {
-                                val serverName = targetServer?.displayName() ?: "вЂ”"
+                                val serverName = targetServer?.displayName() ?: "\u2014"
                                 "${stringResource(R.string.network_automation_action_switch_server)}: $serverName"
                             }
                             NetworkRuleAction.SWITCH_IF_CONNECTED -> {
-                                val serverName = targetServer?.displayName() ?: "вЂ”"
+                                val serverName = targetServer?.displayName() ?: "\u2014"
                                 "${stringResource(R.string.network_automation_action_switch_if_connected)}: $serverName"
                             }
                         }

@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 @file:OptIn(ExperimentalScrollBarApi::class)
@@ -897,8 +897,7 @@ private fun SettingsColorItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 16.sp,
-                fontWeight = themedFontWeight(FontWeight.Medium),
+                style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurface,
             )
             if (!summary.isNullOrBlank()) {

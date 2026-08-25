@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 @file:OptIn(ExperimentalScrollBarApi::class)
@@ -845,7 +845,7 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                         summary = if (directDnsDomains.isEmpty()) {
                             stringResource(R.string.configs_dns_direct_domains_empty)
                         } else {
-                            "${directDnsDomains.size} вЂ” " + directDnsDomains.take(3).joinToString(", ") + if (directDnsDomains.size > 3) "вЂ¦" else ""
+                            "${directDnsDomains.size} \u2014 " + directDnsDomains.take(3).joinToString(", ") + if (directDnsDomains.size > 3) "\u2026" else ""
                         },
                         onClick = { showDirectDomainsDialog = true },
                     )
@@ -854,7 +854,7 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                         summary = if (dnsHosts.isEmpty()) {
                             stringResource(R.string.configs_dns_hosts_empty)
                         } else {
-                            "${dnsHosts.size} вЂ” " + dnsHosts.take(2).joinToString(", ") + if (dnsHosts.size > 2) "вЂ¦" else ""
+                            "${dnsHosts.size} \u2014 " + dnsHosts.take(2).joinToString(", ") + if (dnsHosts.size > 2) "\u2026" else ""
                         },
                         onClick = { showDnsHostsDialog = true },
                     )

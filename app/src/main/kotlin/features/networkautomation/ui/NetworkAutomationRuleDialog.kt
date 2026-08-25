@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.networkautomation.ui
@@ -100,7 +100,7 @@ internal fun NetworkAutomationRuleDialog(
     }
 
     val serverOptions = remember(servers) {
-        if (servers.isEmpty()) listOf("вЂ”") else servers.map { it.displayName() }
+        if (servers.isEmpty()) listOf("\u2014") else servers.map { it.displayName() }
     }
     val serverIds = remember(servers) {
         if (servers.isEmpty()) listOf<Int?>(null) else servers.map<ProxyServerState, Int?> { it.id }
