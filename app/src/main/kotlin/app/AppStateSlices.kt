@@ -18,7 +18,7 @@ data class AppChromeState(
     val colorMode: Int,
     val languageMode: Int,
     val fontFamilyMode: Int = app.modes.FontFamilyModeUnbounded,
-    val fontSizeMode: Int = app.modes.FontSizeModeVerySmall,
+    val fontSizeMode: Int = app.modes.FontSizeModeSmall,
     val fontWeightMode: Int = app.modes.FontWeightModeDefault,
     val enableMaterialYou: Boolean,
     val seedIndex: Int,

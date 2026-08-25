@@ -98,7 +98,7 @@ class FontFamilyModeTest {
     fun testDefaultAppStateValues() {
         val state = AppState()
         assertEquals(app.modes.FontFamilyModeUnbounded, state.fontFamilyMode)
-        assertEquals(app.modes.FontSizeModeVerySmall, state.fontSizeMode)
+        assertEquals(app.modes.FontSizeModeSmall, state.fontSizeMode)
         assertEquals(app.modes.ConnectionDisplayModeClassic, state.connectionDisplayMode)
         org.junit.Assert.assertFalse(state.pinConnectionPanelOnHome)
         org.junit.Assert.assertFalse(state.enableResourceFileNotifications)

@@ -27,7 +27,7 @@ import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeLight
 import app.modes.ColorModeThemeSystem
 import app.modes.FontFamilyModeDefault
-import app.modes.FontSizeModeDefault
+import app.modes.FontSizeModeSmall
 import app.modes.FontWeightModeDefault
 import app.modes.normalizeColorMode
 import app.modes.resolveFontSizeScale
@@ -104,7 +104,7 @@ fun resolveSystemAccentColor(context: Context): Color {
 fun AppTheme(
     colorMode: Int = ColorModeSystem,
     fontFamilyMode: Int = FontFamilyModeDefault,
-    fontSizeMode: Int = FontSizeModeDefault,
+    fontSizeMode: Int = FontSizeModeSmall,
     fontWeightMode: Int = FontWeightModeDefault,
     enableMaterialYou: Boolean = false,
     keyColor: Color? = null,

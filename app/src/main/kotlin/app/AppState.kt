@@ -8,7 +8,7 @@ import app.modes.BackgroundStyleClassic
 import app.modes.BottomBarSizeLarge
 import app.modes.ColorModeSystem
 import app.modes.FontFamilyModeUnbounded
-import app.modes.FontSizeModeVerySmall
+import app.modes.FontSizeModeSmall
 import app.modes.FontWeightModeDefault
 import app.modes.LanguageModeSystem
 import app.modes.ConnectionDisplayModeClassic
@@ -49,7 +49,7 @@ data class AppState(
     val colorMode: Int = ColorModeSystem,
     val languageMode: Int = LanguageModeSystem,
     val fontFamilyMode: Int = FontFamilyModeUnbounded,
-    val fontSizeMode: Int = FontSizeModeVerySmall,
+    val fontSizeMode: Int = FontSizeModeSmall,
     val fontWeightMode: Int = FontWeightModeDefault,
     val enableMaterialYou: Boolean = false,
     val seedIndex: Int = 0,
