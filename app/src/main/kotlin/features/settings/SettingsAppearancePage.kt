@@ -365,6 +365,18 @@ fun SettingsAppearancePage(
                                 }
                             }
                         }
+                        AnimatedVisibility(
+                            visible = !appState.enableMaterialYou,
+                            enter = fadeIn() + expandVertically(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            SettingsColorItem(
+                                title = stringResource(R.string.settings_color_accent),
+                                summary = stringResource(R.string.settings_color_accent_summary),
+                                color = appState.customAccentColor?.let { Color(it) } ?: AppTheme.colors.accent,
+                                onClick = { activeColorPickerTarget = ColorPickerTarget.ACCENT },
+                            )
+                        }
                         OverlayDropdownPreference(
                             title = stringResource(R.string.settings_language),
                             items = languageOptions,

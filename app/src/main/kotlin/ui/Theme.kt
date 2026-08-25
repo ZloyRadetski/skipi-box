@@ -122,7 +122,8 @@ fun AppTheme(
         else -> systemDark
     }
     val systemAccent = remember(context) { resolveSystemAccentColor(context) }
-    val effectiveKeyColor = keyColor ?: (if (enableCustomColors && customAccentColor != null) customAccentColor else if (enableMaterialYou) systemAccent else Color(0xFF0070F3))
+    val effectiveKeyColor = keyColor ?: (if (enableMaterialYou) systemAccent else Color(0xFF0070F3))
+    val effectiveAccent = customAccentColor ?: effectiveKeyColor
 
     val controller = remember(colorMode, enableMaterialYou, effectiveKeyColor, resolvedDark) {
         if (enableMaterialYou) {
@@ -164,7 +165,7 @@ fun AppTheme(
         resolvedDark,
         colorMode,
         enableMaterialYou,
-        effectiveKeyColor,
+        effectiveAccent,
         enableCustomColors,
         customAccentColor,
         customBackgroundColor,
@@ -174,26 +175,6 @@ fun AppTheme(
         customTextSecondaryColor,
         backgroundStyle,
     ) {
-        val resolvedAccent = if (enableMaterialYou) {
-            if (resolvedDark) {
-                Color(
-                    red = (0.08f + effectiveKeyColor.red * 0.18f).coerceIn(0f, 1f),
-                    green = (0.08f + effectiveKeyColor.green * 0.18f).coerceIn(0f, 1f),
-                    blue = (0.08f + effectiveKeyColor.blue * 0.18f).coerceIn(0f, 1f),
-                    alpha = 1.0f,
-                )
-            } else {
-                Color(
-                    red = (0.90f * 0.85f + effectiveKeyColor.red * 0.15f).coerceIn(0f, 1f),
-                    green = (0.90f * 0.85f + effectiveKeyColor.green * 0.15f).coerceIn(0f, 1f),
-                    blue = (0.90f * 0.85f + effectiveKeyColor.blue * 0.15f).coerceIn(0f, 1f),
-                    alpha = 1.0f,
-                )
-            }
-        } else {
-            if (resolvedDark) Color(0xFF282A31) else Color(0xFFE8EAEE)
-        }
-
         val baseBackground = when {
             isAmoled -> Color.Black
             resolvedDark -> Color(0xFF16171A)
@@ -218,7 +199,7 @@ fun AppTheme(
         val finalBackground = if (enableCustomColors && customBackgroundColor != null) customBackgroundColor else baseBackground
         val finalSurface = if (enableCustomColors && customSurfaceColor != null) customSurfaceColor else baseSurface
         val finalSurfaceVariant = if (enableCustomColors && customSurfaceVariantColor != null) customSurfaceVariantColor else baseSurfaceVariant
-        val finalAccent = if (enableCustomColors && customAccentColor != null) customAccentColor else resolvedAccent
+        val finalAccent = customAccentColor ?: effectiveAccent
         val finalOnBackground = if (enableCustomColors && customTextColor != null) customTextColor else baseOnBackground
         val finalOnSurface = if (enableCustomColors && customTextColor != null) customTextColor else baseOnSurface
         val finalOnAccent = if (enableCustomColors && customTextColor != null) customTextColor else (if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E))
@@ -251,8 +232,8 @@ fun AppTheme(
             onSurfaceContainer = appColors.onSurface,
             onSurfaceVariantSummary = appColors.onSurfaceVariant,
             onBackgroundVariant = appColors.onSurfaceVariant,
-            primary = if (enableCustomColors && customAccentColor != null) appColors.accent else baseMiuixColors.primary,
-            primaryVariant = if (enableCustomColors && customAccentColor != null) appColors.accent else baseMiuixColors.primaryVariant,
+            primary = if (customAccentColor != null) appColors.accent else baseMiuixColors.primary,
+            primaryVariant = if (customAccentColor != null) appColors.accent else baseMiuixColors.primaryVariant,
         )
     }
 
