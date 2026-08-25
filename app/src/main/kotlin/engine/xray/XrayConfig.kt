@@ -78,26 +78,9 @@ internal object XraySpeedTestConfigFactory {
         )
         val outboundPlan = speedTestState.buildXrayOutboundPlan(request.selectedServer)
         val primaryTag = outboundPlan.proxyOutbounds.firstOrNull()?.tag ?: XrayTags.PROXY
+        val startupProxyServerDomains = outboundPlan.proxyOutbounds.startupProxyServerDnsDomains()
 
-        val directDnsServers = speedTestState.directDns.filter(String::isNotBlank).map(String::trim)
-        val effectiveDnsServers = if (directDnsServers.isNotEmpty()) {
-            directDnsServers
-        } else {
-            listOf("1.1.1.1", "8.8.8.8", "223.5.5.5")
-        }
-
-        val dnsPlan = XrayDnsPlan(
-            servers = buildJsonArray {
-                effectiveDnsServers.forEach { server ->
-                    add(JsonPrimitive(server))
-                }
-            },
-            queryStrategy = if (speedTestState.enableIpv6) "UseIP" else "UseIPv4",
-            tag = XrayTags.DIRECT_DNS,
-            hosts = buildJsonObject {},
-            fakeDns = null,
-            routingOptions = XrayDnsRoutingOptions(routeProxyDns = false, routeDirectDns = true),
-        )
+        val dnsPlan = request.copy(appState = speedTestState).buildXrayDnsPlan(startupProxyServerDomains)
 
         val routing = buildJsonObject {
             put("domainStrategy", speedTestState.routeDomainStrategy.toXrayRoutingDomainStrategy())
@@ -106,9 +89,29 @@ internal object XraySpeedTestConfigFactory {
                 buildJsonArray {
                     add(
                         buildJsonObject {
+                            put("inboundTag", listOf(XrayTags.DIRECT_DNS).toJsonStringArray())
                             put("outboundTag", XrayTags.DIRECT)
+                        },
+                    )
+                    add(
+                        buildJsonObject {
                             put("network", "udp,tcp")
                             put("port", "53")
+                            put("outboundTag", XrayTags.DIRECT)
+                        },
+                    )
+                    if (dnsPlan.routingOptions.routeProxyDns) {
+                        add(
+                            buildJsonObject {
+                                put("inboundTag", listOf(XrayTags.PROXY_DNS).toJsonStringArray())
+                                put("outboundTag", primaryTag)
+                            },
+                        )
+                    }
+                    add(
+                        buildJsonObject {
+                            put("network", "tcp,udp")
+                            put("outboundTag", primaryTag)
                         },
                     )
                 },

@@ -558,6 +558,8 @@ class XrayConfigTest {
             proxyServers = listOf(serverState),
             selectedProxyServerId = 42,
             enableFakeDns = true,
+            directDns = listOf("https://1.1.1.1/dns-query", "8.8.8.8"),
+            proxyDns = listOf("https://8.8.4.4/dns-query"),
         )
 
         val configJson = XraySpeedTestConfigFactory.buildXraySpeedTestConfig(
@@ -577,5 +579,8 @@ class XrayConfigTest {
         assertTrue(configJson.contains("\"inbounds\":[]") || configJson.contains("\"inbounds\": []"), "Inbounds must be empty")
         assertTrue(configJson.contains("\"tag\":\"proxy\"") || configJson.contains("\"tag\": \"proxy\""), "Must contain primary proxy outbound")
         assertFalse(configJson.contains("skipi-internal-default-route-loopback"), "Must not route through loopback inbound in speed test")
+        assertTrue(configJson.contains("domain:speedtest.example.com"), "Must include proxy server domain in direct DNS domains")
+        assertTrue(configJson.contains("\"inboundTag\":[\"${XrayTags.DIRECT_DNS}\"]") || configJson.contains("\"inboundTag\": [\"${XrayTags.DIRECT_DNS}\"]"), "Must route direct-dns inbound tag to DIRECT")
+        assertTrue(configJson.contains("\"inboundTag\":[\"${XrayTags.PROXY_DNS}\"]") || configJson.contains("\"inboundTag\": [\"${XrayTags.PROXY_DNS}\"]"), "Must route proxy-dns inbound tag to proxy")
     }
 }
