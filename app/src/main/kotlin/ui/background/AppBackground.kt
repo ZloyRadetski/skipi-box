@@ -40,6 +40,7 @@ import app.modes.BackgroundStyleAurora
 import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
+import ui.anim.rememberInfinitePulse
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
@@ -304,15 +305,14 @@ fun AppBackground(
 
         BackgroundStyleConnection -> {
             val isRunning = appState.proxyRunning
-            val infiniteTransition = rememberInfiniteTransition(label = "ambientGlow")
-            val pulse by infiniteTransition.animateFloat(
+            // Ambient breathing runs only while the tunnel is active; when idle
+            // the background rests statically to avoid constant redraws.
+            val pulse by rememberInfinitePulse(
+                enabled = isRunning,
                 initialValue = 0.90f,
                 targetValue = 1.10f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-                label = "pulseAlpha",
+                durationMillis = 2400,
+                restingValue = 1.00f,
             )
 
             val activeColor1 by animateColorAsState(

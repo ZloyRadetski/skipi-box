@@ -103,6 +103,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import ui.KeyColors
 import ui.StatusColorDefaults
+import ui.anim.rememberInfinitePulse
 import ui.isInDarkTheme
 import ui.keyColorFor
 import ui.resolveSystemAccentColor
@@ -546,6 +547,97 @@ private fun resolveConnectionLatency(
 }
 
 @Composable
+private fun PowerButtonWaves(accentTone: Color) {
+    val infiniteTransition = rememberInfiniteTransition(label = "power_pulse_waves")
+
+    val pulse1Progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = EaseOutQuad),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "pulse_1",
+    )
+
+    val pulse2Progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, delayMillis = 1200, easing = EaseOutQuad),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "pulse_2",
+    )
+
+    Box(modifier = Modifier.size(86.dp), contentAlignment = Alignment.Center) {
+        // Wave 1
+        Box(
+            modifier = Modifier
+                .size(86.dp)
+                .graphicsLayer {
+                    val scale = 1.0f + 0.35f * pulse1Progress
+                    val alpha = (1.0f - pulse1Progress) * 0.40f
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
+                }
+                .clip(CircleShape)
+                .background(accentTone),
+        )
+
+        // Wave 2
+        Box(
+            modifier = Modifier
+                .size(86.dp)
+                .graphicsLayer {
+                    val scale = 1.0f + 0.35f * pulse2Progress
+                    val alpha = (1.0f - pulse2Progress) * 0.40f
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
+                }
+                .clip(CircleShape)
+                .background(accentTone),
+        )
+    }
+}
+
+@Composable
+private fun ConnectingSpinner(accentTone: Color) {
+    val connectingRotation = rememberInfiniteTransition(label = "connecting_spinner").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1100, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "connecting_rot",
+    )
+
+    Box(
+        modifier = Modifier
+            .size(92.dp)
+            .graphicsLayer { rotationZ = connectingRotation.value }
+            .drawBehind {
+                drawArc(
+                    brush = Brush.sweepGradient(
+                        listOf(
+                            accentTone.copy(alpha = 0.0f),
+                            accentTone.copy(alpha = 0.35f),
+                            accentTone,
+                        )
+                    ),
+                    startAngle = 0f,
+                    sweepAngle = 280f,
+                    useCenter = false,
+                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
+                )
+            },
+    )
+}
+
+@Composable
 private fun ProxyHeroConnectionCardClassic(
     appState: AppState,
     proxyRunning: Boolean,
@@ -622,46 +714,11 @@ private fun ProxyHeroConnectionCardClassic(
         label = "classic_btn_scale",
     )
 
-    val infiniteTransition = rememberInfiniteTransition(label = "power_pulse")
-
-    val pulse1Progress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = EaseOutQuad),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "pulse_1",
-    )
-
-    val pulse2Progress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, delayMillis = 1200, easing = EaseOutQuad),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "pulse_2",
-    )
-
-    val breathScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
+    val breathScale by rememberInfinitePulse(
+        enabled = proxyRunning,
+        initialValue = 1f,
         targetValue = 1.035f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "power_breath",
-    )
-
-    val connectingRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "connecting_rot",
+        durationMillis = 1600,
     )
 
     Card(
@@ -683,67 +740,22 @@ private fun ProxyHeroConnectionCardClassic(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Large Circular Power Button with Multi-wave Aura
+                // Large Circular Power Button with Multi-wave Aura.
+                // Wave and spinner animations are composed only while they are
+                // visible, so idle screens drive zero animation frames.
                 Box(
                     modifier = Modifier.size(96.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (proxyRunning) {
-                        // Wave 1
-                        Box(
-                            modifier = Modifier
-                                .size(86.dp)
-                                .graphicsLayer {
-                                    val scale = 1.0f + 0.35f * pulse1Progress
-                                    val alpha = (1.0f - pulse1Progress) * 0.40f
-                                    scaleX = scale
-                                    scaleY = scale
-                                    this.alpha = alpha
-                                }
-                                .clip(CircleShape)
-                                .background(accentTone),
-                        )
-
-                        // Wave 2
-                        Box(
-                            modifier = Modifier
-                                .size(86.dp)
-                                .graphicsLayer {
-                                    val scale = 1.0f + 0.35f * pulse2Progress
-                                    val alpha = (1.0f - pulse2Progress) * 0.40f
-                                    scaleX = scale
-                                    scaleY = scale
-                                    this.alpha = alpha
-                                }
-                                .clip(CircleShape)
-                                .background(accentTone),
-                        )
+                        PowerButtonWaves(accentTone = accentTone)
                     }
 
                     if (isConnecting) {
-                        Box(
-                            modifier = Modifier
-                                .size(92.dp)
-                                .graphicsLayer { rotationZ = connectingRotation }
-                                .drawBehind {
-                                    drawArc(
-                                        brush = Brush.sweepGradient(
-                                            listOf(
-                                                accentTone.copy(alpha = 0.0f),
-                                                accentTone.copy(alpha = 0.35f),
-                                                accentTone,
-                                            )
-                                        ),
-                                        startAngle = 0f,
-                                        sweepAngle = 280f,
-                                        useCenter = false,
-                                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
-                                    )
-                                },
-                        )
+                        ConnectingSpinner(accentTone = accentTone)
                     }
 
-                    val effectiveScale = buttonScale * (if (proxyRunning) breathScale else 1.0f)
+                    val effectiveScale = buttonScale * breathScale
                     Box(
                         modifier = Modifier
                             .size(86.dp)
