@@ -17,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,20 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import app.LocalAppServices
 import app.LocalAppStateStore
-import kotlin.math.roundToInt
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalProxyPageScrollToTopRequest
@@ -92,11 +82,6 @@ import ui.components.DeleteConfirmationDialog
 import ui.text.formatTemplate
 
 private const val ProxyServerEditResultKey = "proxy-server-edit-result"
-
-private class DelegatingScrollBehavior(
-    private val delegate: ScrollBehavior,
-    override val nestedScrollConnection: NestedScrollConnection,
-) : ScrollBehavior by delegate
 
 @Composable
 fun ProxyServerListPage(
@@ -618,234 +603,107 @@ fun ProxyServerListPage(
         null
     }
 
-    val pinConnectionPanel = proxyListState.pinConnectionPanelOnHome
-    var headerMaxHeightPx by remember { mutableFloatStateOf(0f) }
-    var headerOffsetPx by remember { mutableFloatStateOf(0f) }
+    val topAppBarScrollBehavior = MiuixScrollBehavior()
 
-    val collapsibleScrollConnection = remember(pinConnectionPanel, headerMaxHeightPx) {
-        if (pinConnectionPanel) {
-            object : NestedScrollConnection {}
-        } else {
-            object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    if (headerMaxHeightPx <= 0f) return Offset.Zero
-                    val delta = available.y
-                    // When scrolling up (finger moves up, delta < 0): collapse header
-                    if (delta < 0f && headerOffsetPx > -headerMaxHeightPx) {
-                        val oldOffset = headerOffsetPx
-                        headerOffsetPx = (headerOffsetPx + delta).coerceIn(-headerMaxHeightPx, 0f)
-                        val consumed = headerOffsetPx - oldOffset
-                        return Offset(0f, consumed)
-                    }
-                    // When scrolling down (finger moves down, delta > 0) and header is collapsed:
-                    // expand header before pull-to-refresh or lazy list can capture it
-                    if (delta > 0f && headerOffsetPx < 0f) {
-                        val oldOffset = headerOffsetPx
-                        headerOffsetPx = (headerOffsetPx + delta).coerceIn(-headerMaxHeightPx, 0f)
-                        val consumed = headerOffsetPx - oldOffset
-                        return Offset(0f, consumed)
-                    }
-                    return Offset.Zero
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .pageWindowPadding(padding),
+    ) {
+        ProxyServerListTopBar(
+            searchValue = searchValue,
+            onSearchValueChange = { searchValue = it },
+            groupState = groupState,
+            pinnedConnectionPanel = {
+                connectionPanel(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 2.dp),
+                )
+            },
+            showPinnedGroupSelector = true,
+            showSearchBar = true,
+            selectedServer = selectedServer,
+            proxyListState = proxyListState,
+            stateStore = stateStore,
+            updateAppState = updateAppState,
+            navigator = navigator,
+            qrScanner = qrScanner,
+            proxyServerImportFileUseCase = proxyServerImportFileUseCase,
+            subscriptionFetcher = subscriptionFetcher,
+            proxyServiceUseCase = proxyServiceUseCase,
+            clipboard = clipboard,
+            tipNotifier = tipNotifier,
+            scope = scope,
+            backgroundScope = services.appScope,
+            messages = messages,
+            resultKey = ProxyServerEditResultKey,
+            serviceOperationInProgress = serviceOperationInProgress,
+            runProxyServiceOperation = ::runProxyServiceOperation,
+            onSelectedGroupIdChange = {
+                if (selectedGroupId != it) {
+                    haptics.groupSwitched()
                 }
+                selectedGroupId = it
+            },
+            onMoveSubscriptionGroup = { groupId, offset ->
+                updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
+            },
+            onTestProxyServerLatency = ::testProxyServerLatency,
+        )
 
-                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                    if (headerMaxHeightPx <= 0f) return Offset.Zero
-                    val delta = available.y
-                    if (delta > 0f && headerOffsetPx < 0f) {
-                        val oldOffset = headerOffsetPx
-                        headerOffsetPx = (headerOffsetPx + delta).coerceIn(-headerMaxHeightPx, 0f)
-                        val consumedY = headerOffsetPx - oldOffset
-                        return Offset(0f, consumedY)
-                    }
-                    return Offset.Zero
-                }
-            }
-        }
-    }
+        features.updater.ui.AppUpdateBanner(
+            updateInfo = proxyListState.availableAppUpdate,
+            dismissedVersion = proxyListState.dismissedUpdateVersion,
+        )
 
-    val baseScrollBehavior = MiuixScrollBehavior()
-    val topAppBarScrollBehavior = remember(baseScrollBehavior, collapsibleScrollConnection) {
-        DelegatingScrollBehavior(baseScrollBehavior, collapsibleScrollConnection)
-    }
-
-    LaunchedEffect(pinConnectionPanel, scrollToTopRequest) {
-        headerOffsetPx = 0f
-    }
-
-    Layout(
-        content = {
-            // 0: Fixed Top Bar Row
-            ProxyServerListTopBar(
-                searchValue = searchValue,
-                onSearchValueChange = { searchValue = it },
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        ) {
+            ProxyServerListPager(
+                groupPagerState = groupPagerState,
+                scrollToTopRequest = scrollToTopRequest,
                 groupState = groupState,
-                pinnedConnectionPanel = null,
-                showPinnedGroupSelector = false,
-                showSearchBar = false,
-                selectedServer = selectedServer,
-                proxyListState = proxyListState,
+                searchValue = searchValue,
+                servers = servers,
+                selectedServerId = selectedServerId,
+                columns = columns,
+                sort = proxyListState.proxyServerListSort,
+                unknownGroupName = unknownGroupName,
+                itemTextFormatter = itemTextFormatter,
+                topAppBarScrollBehavior = topAppBarScrollBehavior,
+                listPadding = listPadding,
+                dragScrollThresholdBottomPadding = dragScrollThresholdBottomPadding,
+                contentPadding = contentPadding,
                 stateStore = stateStore,
                 updateAppState = updateAppState,
                 navigator = navigator,
-                qrScanner = qrScanner,
-                proxyServerImportFileUseCase = proxyServerImportFileUseCase,
-                subscriptionFetcher = subscriptionFetcher,
-                proxyServiceUseCase = proxyServiceUseCase,
                 clipboard = clipboard,
                 tipNotifier = tipNotifier,
                 scope = scope,
-                backgroundScope = services.appScope,
                 messages = messages,
                 resultKey = ProxyServerEditResultKey,
-                serviceOperationInProgress = serviceOperationInProgress,
-                runProxyServiceOperation = ::runProxyServiceOperation,
-                onSelectedGroupIdChange = {
-                    if (selectedGroupId != it) {
-                        haptics.groupSwitched()
+                onSelectedServerIdChange = {
+                    if (selectedServerId != it) {
+                        haptics.serverSelected()
                     }
-                    selectedGroupId = it
+                    selectedServerId = it
                 },
-                onMoveSubscriptionGroup = { groupId, offset ->
-                    updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
-                },
-                onTestProxyServerLatency = ::testProxyServerLatency,
+                onDeleteServer = ::requestProxyServerDeletion,
+                onUpdateSubscription = ::updateSubscription,
+                onUpdateAllSubscriptions = ::updateAllSubscriptions,
+                onPingSubscription = ::pingSubscription,
+                onEditSubscription = { groupId -> editingSubscriptionGroupId = groupId },
+                onOpenSelectGroupMember = { selectingGroupMemberForServer = it },
+                pingingGroupIds = pingingGroupIds,
+                activeOutboundTag = activeOutboundTag,
+                activeTrafficConfigId = proxyListState.activeTrafficConfigId,
+                pageHeader = null,
             )
-
-            // 1: Collapsible Header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clipToBounds()
-                    .onSizeChanged { headerMaxHeightPx = it.height.toFloat() },
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    features.updater.ui.AppUpdateBanner(
-                        updateInfo = proxyListState.availableAppUpdate,
-                        dismissedVersion = proxyListState.dismissedUpdateVersion,
-                    )
-                    connectionPanel(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 2.dp),
-                    )
-                    AnimatedVisibility(
-                        visible = groupState.showGroupTabs,
-                        enter = fadeIn() + expandVertically(),
-                        exit = shrinkVertically() + fadeOut(),
-                    ) {
-                        ProxyServerListGroupSelector(
-                            groups = groupState.groupTabs,
-                            selectedGroupId = groupState.selectedTabId,
-                            onGroupSelected = {
-                                if (selectedGroupId != it) {
-                                    haptics.groupSwitched()
-                                }
-                                selectedGroupId = it
-                            },
-                            onGroupMove = { groupId, offset ->
-                                updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp)
-                                .padding(top = 4.dp, bottom = 2.dp),
-                        )
-                    }
-                    AnimatedVisibility(
-                        visible = proxyListState.showServerSearch,
-                        enter = fadeIn() + expandVertically(),
-                        exit = shrinkVertically() + fadeOut(),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            ProxyServerListSearchBar(
-                                searchValue = searchValue,
-                                onSearchValueChange = { searchValue = it },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 2: Pager Content (HorizontalPager + Floating Toolbar)
-            Box(
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                ProxyServerListPager(
-                    groupPagerState = groupPagerState,
-                    scrollToTopRequest = scrollToTopRequest,
-                    groupState = groupState,
-                    searchValue = searchValue,
-                    servers = servers,
-                    selectedServerId = selectedServerId,
-                    columns = columns,
-                    sort = proxyListState.proxyServerListSort,
-                    unknownGroupName = unknownGroupName,
-                    itemTextFormatter = itemTextFormatter,
-                    topAppBarScrollBehavior = topAppBarScrollBehavior,
-                    listPadding = listPadding,
-                    dragScrollThresholdBottomPadding = dragScrollThresholdBottomPadding,
-                    contentPadding = contentPadding,
-                    stateStore = stateStore,
-                    updateAppState = updateAppState,
-                    navigator = navigator,
-                    clipboard = clipboard,
-                    tipNotifier = tipNotifier,
-                    scope = scope,
-                    messages = messages,
-                    resultKey = ProxyServerEditResultKey,
-                    onSelectedServerIdChange = {
-                        if (selectedServerId != it) {
-                            haptics.serverSelected()
-                        }
-                        selectedServerId = it
-                    },
-                    onDeleteServer = ::requestProxyServerDeletion,
-                    onUpdateSubscription = ::updateSubscription,
-                    onUpdateAllSubscriptions = ::updateAllSubscriptions,
-                    onPingSubscription = ::pingSubscription,
-                    onEditSubscription = { groupId -> editingSubscriptionGroupId = groupId },
-                    onOpenSelectGroupMember = { selectingGroupMemberForServer = it },
-                    pingingGroupIds = pingingGroupIds,
-                    activeOutboundTag = activeOutboundTag,
-                    activeTrafficConfigId = proxyListState.activeTrafficConfigId,
-                    pageHeader = null,
-                )
-                floatingToolbar?.invoke(this)
-            }
-        },
-        modifier = Modifier
-            .fillMaxSize()
-            .pageWindowPadding(padding)
-            .nestedScroll(collapsibleScrollConnection),
-    ) { measurables, constraints ->
-        val topRowPlaceable = measurables[0].measure(constraints.copy(minHeight = 0))
-        val topRowH = topRowPlaceable.height
-
-        val headerPlaceable = measurables[1].measure(constraints.copy(minHeight = 0))
-        val headerH = headerPlaceable.height
-
-        val currentOffset = if (pinConnectionPanel) 0 else headerOffsetPx.roundToInt()
-        val visibleHeaderH = (headerH + currentOffset).coerceAtLeast(0)
-
-        val remainingHeight = (constraints.maxHeight - topRowH - visibleHeaderH).coerceAtLeast(0)
-        val pagerPlaceable = measurables[2].measure(
-            constraints.copy(
-                minHeight = remainingHeight,
-                maxHeight = remainingHeight,
-            )
-        )
-
-        layout(constraints.maxWidth, constraints.maxHeight) {
-            topRowPlaceable.placeRelative(0, 0)
-            headerPlaceable.placeRelative(0, topRowH + currentOffset)
-            pagerPlaceable.placeRelative(0, topRowH + visibleHeaderH)
+            floatingToolbar?.invoke(this)
         }
     }
 
