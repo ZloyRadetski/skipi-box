@@ -950,6 +950,7 @@
     <string name="proxy_active_server_select_to_connect">选择要连接的服务器</string>
     <string name="proxy_server_list_ping_check">查看</string>
     <string name="proxy_server_list_ping_in_progress">测试中</string>
+    <string name="proxy_server_list_latency_cancelled">延迟测试已取消</string>
     <string name="settings_classic_show_floating_power_button">紧凑型电源按钮</string>
     <string name="settings_classic_show_floating_power_button_summary">在经典模式下在主屏幕上显示浮动电源按钮。</string>
     <string name="settings_local_proxy_network_params">网络参数</string>

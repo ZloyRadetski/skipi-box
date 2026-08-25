@@ -8,8 +8,11 @@ import app.ProxyServerLatencyTesting
 import app.ProxyServerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
@@ -107,18 +110,19 @@ internal fun runProxyServerLatencyTest(
     latencyResultTemplate: String,
     latencyFailedMessage: String,
     onFinished: (() -> Unit)? = null,
-) {
+): Job {
     if (targetServers.isEmpty()) {
-        scope.launch {
+        return scope.launch {
             tipNotifier.show(noTestableServersMessage)
             withContext(Dispatchers.Main.immediate) {
                 onFinished?.invoke()
             }
         }
-        return
     }
 
-    scope.launch {
+    val previousLatencies = targetServers.associate { it.id to it.latency }
+
+    return scope.launch {
         try {
             val stateSnapshot = stateStore.state.value
             val targetIds = targetServers.map { server -> server.id }.toSet()
@@ -136,7 +140,7 @@ internal fun runProxyServerLatencyTest(
             val dnsCache = ConcurrentHashMap<String, java.net.InetAddress>()
             val failedDnsCache = ConcurrentHashMap<String, Boolean>()
 
-            supervisorScope {
+            coroutineScope {
                 targetServers.map { server ->
                     async {
                         val latency = semaphore.withPermit {
@@ -178,15 +182,22 @@ internal fun runProxyServerLatencyTest(
                 tipNotifier.show(doneTemplate.formatTemplate("count" to targetServers.size))
             }
         } finally {
-            stateStore.update(persist = true) { state ->
-                state.copy(
-                    proxyServers = state.proxyServers.map { server ->
-                        if (server.latency == ProxyServerLatencyTesting) server.copy(latency = "") else server
-                    },
-                )
-            }
-            withContext(Dispatchers.Main.immediate) {
-                onFinished?.invoke()
+            withContext(NonCancellable) {
+                stateStore.update(persist = true) { state ->
+                    state.copy(
+                        proxyServers = state.proxyServers.map { server ->
+                            if (server.latency == ProxyServerLatencyTesting) {
+                                val prev = previousLatencies[server.id]
+                                server.copy(latency = if (prev != null && prev != ProxyServerLatencyTesting) prev else "")
+                            } else {
+                                server
+                            }
+                        },
+                    )
+                }
+                withContext(Dispatchers.Main.immediate) {
+                    onFinished?.invoke()
+                }
             }
         }
     }

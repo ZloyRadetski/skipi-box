@@ -188,6 +188,7 @@ internal fun ProxyServerListTopBar(
     onSelectedGroupIdChange: (Int) -> Unit,
     onMoveSubscriptionGroup: (groupId: Int, offset: Int) -> Unit,
     onTestProxyServerLatency: (List<ProxyServerState>, ProxyServerLatencyTestMode, String, Boolean, (() -> Unit)?) -> Unit,
+    onCancelProxyServerLatency: () -> Unit,
 ) {
     var pendingDeletionAction by remember { mutableStateOf<ProxyServerListToolAction?>(null) }
 
@@ -269,12 +270,10 @@ internal fun ProxyServerListTopBar(
             Spacer(Modifier.weight(1f))
             IconButton(
                 onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
                     if (isPinging) {
-                        scope.launch {
-                            tipNotifier.show(messages.pingInProgress)
-                        }
+                        onCancelProxyServerLatency()
                     } else {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
                         val pingMode = if (proxyListState.subscriptionPingMode == SubscriptionPingModeHttp) {
                             ProxyServerLatencyTestMode.RealConnection
                         } else {

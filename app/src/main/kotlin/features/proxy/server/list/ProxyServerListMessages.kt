@@ -35,6 +35,7 @@ internal data class ProxyServerListMessages(
     val allServersDeletedTemplate: String,
     val noServersToDelete: String,
     val pingInProgress: String,
+    val latencyCancelled: String,
 )
 
 @Composable
@@ -68,5 +69,6 @@ internal fun proxyServerListMessages(): ProxyServerListMessages {
         allServersDeletedTemplate = stringResource(R.string.proxy_server_list_all_deleted),
         noServersToDelete = stringResource(R.string.proxy_server_list_no_servers_to_delete),
         pingInProgress = stringResource(R.string.proxy_server_list_ping_in_progress),
+        latencyCancelled = stringResource(R.string.proxy_server_list_latency_cancelled),
     )
 }

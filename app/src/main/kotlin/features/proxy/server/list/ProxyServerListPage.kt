@@ -18,6 +18,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.Job
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -228,6 +230,20 @@ fun ProxyServerListPage(
             }
     }
 
+    var activeGlobalLatencyJob by remember { mutableStateOf<Job?>(null) }
+    val activeGroupLatencyJobs = remember { mutableStateMapOf<Int, Job>() }
+
+    fun cancelAllLatencyTests() {
+        activeGlobalLatencyJob?.cancel()
+        activeGlobalLatencyJob = null
+        activeGroupLatencyJobs.values.forEach { it.cancel() }
+        activeGroupLatencyJobs.clear()
+        pingingGroupIds = emptySet()
+        services.appScope.launch {
+            tipNotifier.show(messages.latencyCancelled)
+        }
+    }
+
     fun testProxyServerLatency(
         targetServers: List<ProxyServerState>,
         mode: ProxyServerLatencyTestMode,
@@ -235,7 +251,8 @@ fun ProxyServerListPage(
         showSingleResult: Boolean = false,
         onFinished: (() -> Unit)? = null,
     ) {
-        runProxyServerLatencyTest(
+        activeGlobalLatencyJob?.cancel()
+        activeGlobalLatencyJob = runProxyServerLatencyTest(
             targetServers = targetServers,
             mode = mode,
             doneTemplate = doneTemplate,
@@ -248,7 +265,10 @@ fun ProxyServerListPage(
             noTestableServersMessage = messages.noTestableServers,
             latencyResultTemplate = messages.latencyResultTemplate,
             latencyFailedMessage = messages.latencyFailed,
-            onFinished = onFinished,
+            onFinished = {
+                activeGlobalLatencyJob = null
+                onFinished?.invoke()
+            },
         )
     }
 
@@ -324,8 +344,10 @@ fun ProxyServerListPage(
 
     fun pingSubscription(groupId: Int) {
         if (pingingGroupIds.contains(groupId)) {
-            scope.launch {
-                tipNotifier.show(messages.pingInProgress)
+            activeGroupLatencyJobs.remove(groupId)?.cancel()
+            pingingGroupIds = pingingGroupIds - groupId
+            services.appScope.launch {
+                tipNotifier.show(messages.latencyCancelled)
             }
             return
         }
@@ -335,7 +357,7 @@ fun ProxyServerListPage(
             ProxyServerLatencyTestMode.TcpConnect
         }
         pingingGroupIds = pingingGroupIds + groupId
-        testProxyServerLatency(
+        val job = runProxyServerLatencyTest(
             targetServers = servers.filter { server -> server.groupId == groupId },
             mode = mode,
             doneTemplate = if (mode == ProxyServerLatencyTestMode.RealConnection) {
@@ -343,10 +365,21 @@ fun ProxyServerListPage(
             } else {
                 messages.latencyDoneTemplate
             },
+            showSingleResult = false,
+            scope = services.appScope,
+            stateStore = stateStore,
+            updateAppState = updateAppState,
+            proxyLatencyTester = proxyLatencyTester,
+            tipNotifier = tipNotifier,
+            noTestableServersMessage = messages.noTestableServers,
+            latencyResultTemplate = messages.latencyResultTemplate,
+            latencyFailedMessage = messages.latencyFailed,
             onFinished = {
+                activeGroupLatencyJobs.remove(groupId)
                 pingingGroupIds = pingingGroupIds - groupId
             },
         )
+        activeGroupLatencyJobs[groupId] = job
     }
 
     fun deleteProxyServer(server: ProxyServerState) {
@@ -706,6 +739,7 @@ fun ProxyServerListPage(
                 updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
             },
             onTestProxyServerLatency = ::testProxyServerLatency,
+            onCancelProxyServerLatency = ::cancelAllLatencyTests,
         )
 
         features.updater.ui.AppUpdateBanner(

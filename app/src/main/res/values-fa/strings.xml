@@ -934,6 +934,7 @@
     <string name="proxy_active_server_select_to_connect">سرور را برای اتصال انتخاب کنید</string>
     <string name="proxy_server_list_ping_check">بررسی کنید</string>
     <string name="proxy_server_list_ping_in_progress">در حال آزمایش</string>
+    <string name="proxy_server_list_latency_cancelled">تست تاخیر لغو شد</string>
     <string name="settings_classic_show_floating_power_button">دکمه پاور فشرده</string>
     <string name="settings_classic_show_floating_power_button_summary">نمایش دکمه روشن/خاموش شناور روی صفحه اصلی در حالت کلاسیک.</string>
     <string name="settings_local_proxy_network_params">پارامترهای شبکه</string>
