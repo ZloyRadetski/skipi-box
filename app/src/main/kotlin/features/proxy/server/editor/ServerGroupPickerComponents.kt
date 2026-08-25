@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.editor
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -106,7 +107,7 @@ fun ServerPickerGroupHeader(
                     Text(
                         text = title,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -245,7 +246,7 @@ fun ServerPickerItemRow(
                     Text(
                         text = displayTitle,
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = themedFontWeight(FontWeight.Medium),
                         color = if (selected) AppTheme.colors.accent else MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

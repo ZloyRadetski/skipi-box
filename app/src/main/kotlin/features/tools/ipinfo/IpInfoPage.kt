@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.tools.ipinfo
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -203,7 +204,7 @@ fun IpInfoPage(
                                             Text(
                                                 text = "!",
                                                 fontSize = 24.sp,
-                                                fontWeight = FontWeight.Bold,
+                                                fontWeight = themedFontWeight(FontWeight.Bold),
                                                 color = MiuixTheme.colorScheme.error,
                                             )
                                         }
@@ -211,7 +212,7 @@ fun IpInfoPage(
                                         Text(
                                             text = stringResource(R.string.tools_ip_info_failed),
                                             fontSize = 16.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = themedFontWeight(FontWeight.SemiBold),
                                             color = MiuixTheme.colorScheme.onSurface,
                                         )
                                         if (!state.errorMessage.isNullOrBlank()) {
@@ -274,7 +275,7 @@ fun IpInfoPage(
                                                         },
                                                     ),
                                                     fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Medium,
+                                                    fontWeight = themedFontWeight(FontWeight.Medium),
                                                     color = if (data.isVpnTunnel) {
                                                         MiuixTheme.colorScheme.primary
                                                     } else {
@@ -292,7 +293,7 @@ fun IpInfoPage(
                                                 Text(
                                                     text = data.ipType,
                                                     fontSize = 11.sp,
-                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                                                     color = MiuixTheme.colorScheme.onSurface,
                                                 )
                                             }
@@ -359,7 +360,7 @@ fun IpInfoPage(
                                                             .filter(String::isNotBlank)
                                                             .joinToString(", "),
                                                         fontSize = 15.sp,
-                                                        fontWeight = FontWeight.SemiBold,
+                                                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                                                         color = MiuixTheme.colorScheme.onSurface,
                                                     )
                                                     if (data.isp.isNotBlank() || data.org.isNotBlank()) {
@@ -522,14 +523,14 @@ private fun IpAddressRow(
             Text(
                 text = label,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = themedFontWeight(FontWeight.SemiBold),
                 color = MiuixTheme.colorScheme.primary,
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 text = ip,
                 fontSize = if (ip.length > 20) 17.sp else 22.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = themedFontWeight(FontWeight.Bold),
                 color = MiuixTheme.colorScheme.onSurface,
             )
         }
@@ -573,7 +574,7 @@ private fun InfoRow(
         Text(
             text = value,
             fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = themedFontWeight(FontWeight.Medium),
             color = MiuixTheme.colorScheme.onSurface,
         )
     }

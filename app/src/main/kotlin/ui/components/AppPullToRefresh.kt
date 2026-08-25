@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package ui.components
 
 import androidx.compose.animation.core.Animatable
+import ui.text.themedFontWeight
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -279,7 +280,7 @@ fun AppPullToRefresh(
     refreshTexts: List<String> = emptyList(),
     refreshTextStyle: TextStyle = TextStyle(
         fontSize = 13.sp,
-        fontWeight = FontWeight.Medium,
+        fontWeight = themedFontWeight(FontWeight.Medium),
         color = color,
     ),
     content: @Composable () -> Unit,

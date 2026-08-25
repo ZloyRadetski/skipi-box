@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.tools.dnsleak
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -207,7 +208,7 @@ private fun verdictBanner(
             Text(
                 text = text,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = themedFontWeight(FontWeight.SemiBold),
                 color = AppTheme.colors.onSurface,
             )
         }
@@ -236,7 +237,7 @@ private fun ResolverCard(resolver: DnsLeakResolver) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = DnsLeakAnalysis.countryFlagEmoji(resolver.observedCountryCode) ?: "🌐",
+                text = DnsLeakAnalysis.countryFlagEmoji(resolver.observedCountryCode) ?: "рџЊђ",
                 fontSize = 22.sp,
             )
             Spacer(Modifier.size(12.dp))
@@ -246,7 +247,7 @@ private fun ResolverCard(resolver: DnsLeakResolver) {
                         stringResource(R.string.tools_dns_isp_unknown)
                     },
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                     color = MiuixTheme.colorScheme.onSurface,
                 )
                 Text(
@@ -265,7 +266,7 @@ private fun ResolverCard(resolver: DnsLeakResolver) {
                                 stringResource(R.string.tools_dns_observed_egress, observedIp)
                             }
                         },
-                    ).joinToString(" · "),
+                    ).joinToString(" В· "),
                     fontSize = 12.sp,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )

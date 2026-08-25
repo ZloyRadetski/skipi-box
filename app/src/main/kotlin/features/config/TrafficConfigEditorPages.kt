@@ -1,4 +1,4 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 @file:OptIn(ExperimentalScrollBarApi::class)
@@ -6,6 +6,9 @@
 package features.config
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
+import ui.components.AppWindowDialog
+import ui.components.AppWindowDropdownPreference
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -396,7 +399,7 @@ private fun ConfigEditorGroupCard(
                 Text(
                     text = title,
                     fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                     color = MiuixTheme.colorScheme.onSurface,
                 )
                 Text(
@@ -739,7 +742,7 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
                 ) {
-                    WindowDropdownPreference(
+                    AppWindowDropdownPreference(
                         title = stringResource(R.string.configs_dns_servers),
                         items = proxyPresetLabels,
                         selectedIndex = proxyPresetIndex,
@@ -788,7 +791,7 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
                 ) {
-                    WindowDropdownPreference(
+                    AppWindowDropdownPreference(
                         title = stringResource(R.string.configs_dns_servers),
                         items = directPresetLabels,
                         selectedIndex = directPresetIndex,
@@ -842,7 +845,7 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                         summary = if (directDnsDomains.isEmpty()) {
                             stringResource(R.string.configs_dns_direct_domains_empty)
                         } else {
-                            "${directDnsDomains.size} — " + directDnsDomains.take(3).joinToString(", ") + if (directDnsDomains.size > 3) "…" else ""
+                            "${directDnsDomains.size} вЂ” " + directDnsDomains.take(3).joinToString(", ") + if (directDnsDomains.size > 3) "вЂ¦" else ""
                         },
                         onClick = { showDirectDomainsDialog = true },
                     )
@@ -851,7 +854,7 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                         summary = if (dnsHosts.isEmpty()) {
                             stringResource(R.string.configs_dns_hosts_empty)
                         } else {
-                            "${dnsHosts.size} — " + dnsHosts.take(2).joinToString(", ") + if (dnsHosts.size > 2) "…" else ""
+                            "${dnsHosts.size} вЂ” " + dnsHosts.take(2).joinToString(", ") + if (dnsHosts.size > 2) "вЂ¦" else ""
                         },
                         onClick = { showDnsHostsDialog = true },
                     )
@@ -929,7 +932,7 @@ private fun DnsProtocolBadge(protocol: String) {
             text = protocol,
             color = textColor,
             fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = themedFontWeight(FontWeight.Bold),
         )
     }
 }
@@ -1035,7 +1038,7 @@ private fun AddServerActionRow(
         Text(
             text = title,
             style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
+            fontWeight = themedFontWeight(FontWeight.Medium),
             color = MiuixTheme.colorScheme.primary,
         )
     }
@@ -1056,7 +1059,7 @@ private fun AddDnsServerDialog(
         if (input.isBlank()) null else configDnsServerInputError(input, invalidMessage)
     }
 
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = title,
         onDismissRequest = onDismissRequest,
@@ -1126,7 +1129,7 @@ private fun TunDnsDialog(
     val invalidMessage = stringResource(R.string.settings_tun_dns_invalid)
     val isValid = remember(input) { engine.network.isIpv4Address(input.trim()) }
 
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = stringResource(R.string.configs_dns_tun_dns),
         onDismissRequest = onDismissRequest,
@@ -1183,7 +1186,7 @@ private fun DirectDomainsDialog(
     var list by remember(domains) { mutableStateOf(domains) }
     val invalidMessage = stringResource(R.string.configs_dns_domain_invalid)
 
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = stringResource(R.string.configs_dns_direct_domains_title),
         onDismissRequest = onDismissRequest,
@@ -1234,7 +1237,7 @@ private fun DnsHostsDialog(
     var list by remember(hosts) { mutableStateOf(hosts) }
     val invalidMessage = stringResource(R.string.configs_dns_hosts_invalid)
 
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = stringResource(R.string.configs_dns_hosts_title),
         onDismissRequest = onDismissRequest,
@@ -1499,7 +1502,7 @@ private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfi
                     colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
                 ) {
                     SwitchPreference(title = stringResource(R.string.configs_network_enabled), summary = stringResource(R.string.configs_network_enabled_summary), checked = enabled, onCheckedChange = { enabled = it })
-                    WindowDropdownPreference(
+                    AppWindowDropdownPreference(
                         title = stringResource(R.string.configs_network_transport), items = transportLabels,
                         selectedIndex = transport, enabled = enabled, onSelectedIndexChange = { transport = it },
                     )

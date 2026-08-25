@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.components.AppOverlayDropdownPreference
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -37,7 +38,7 @@ internal fun SettingsThemeSection(
 ) {
     SmallTitle(text = stringResource(R.string.settings_theme))
     SettingsSectionCard {
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.settings_color_mode),
             summary = stringResource(R.string.settings_color_mode_summary),
             items = colorModeOptions,
@@ -55,7 +56,7 @@ internal fun SettingsThemeSection(
             enter = fadeIn() + expandVertically(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            OverlayDropdownPreference(
+            AppOverlayDropdownPreference(
                 title = stringResource(R.string.settings_theme_color),
                 summary = stringResource(R.string.settings_theme_color_summary),
                 items = keyColorOptions,
@@ -63,7 +64,7 @@ internal fun SettingsThemeSection(
                 onSelectedIndexChange = onSeedIndexChange,
             )
         }
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.settings_language),
             summary = stringResource(R.string.settings_language_summary),
             items = languageOptions,
@@ -92,7 +93,7 @@ internal fun SettingsSubscriptionsSection(
 ) {
     SmallTitle(text = stringResource(R.string.settings_general))
     SettingsSectionCard {
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.settings_connection_display_mode),
             summary = stringResource(R.string.settings_connection_display_mode_summary),
             items = connectionDisplayModeOptions,
@@ -125,7 +126,7 @@ internal fun SettingsSubscriptionsSection(
             checked = enableDeletionConfirmation,
             onCheckedChange = onEnableDeletionConfirmationChange,
         )
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.settings_subscription_fetch_timeout),
             summary = stringResource(R.string.settings_subscription_fetch_timeout_summary),
             items = fetchTimeoutOptions,
@@ -194,7 +195,7 @@ internal fun SettingsSubscriptionPingSection(
 ) {
     SmallTitle(text = stringResource(R.string.subscription_ping_settings))
     SettingsSectionCard {
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.subscription_ping_mode),
             summary = stringResource(R.string.subscription_ping_mode_summary),
             items = pingModeOptions,
@@ -260,7 +261,7 @@ internal fun SettingsCoreSection(
             summary = fragmentSettingsSummary,
             onClick = onOpenFragmentSettings,
         )
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.settings_log_level),
             items = SettingsLogLevelOptions,
             selectedIndex = coreLogLevel,
@@ -314,7 +315,7 @@ internal fun SettingsAdvancedSection(
                 onCheckedChange = onEnableIpv6PreferChange,
             )
         }
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.subscription_ping_mode),
             items = subscriptionPingModeOptions,
             selectedIndex = subscriptionPingMode.coerceIn(subscriptionPingModeOptions.indices),

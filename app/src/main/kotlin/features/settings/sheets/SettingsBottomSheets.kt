@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings.sheets
 
 import androidx.compose.runtime.Composable
+import ui.components.AppWindowBottomSheet
 import androidx.compose.runtime.key
 import androidx.compose.ui.res.stringResource
 import app.R
@@ -89,7 +90,7 @@ internal fun TunSettingsBottomSheet(
         tcpUserTimeoutError,
     ).all { it == null }
 
-    WindowBottomSheet(
+    AppWindowBottomSheet(
         show = show,
         title = stringResource(R.string.tun),
         startAction = {

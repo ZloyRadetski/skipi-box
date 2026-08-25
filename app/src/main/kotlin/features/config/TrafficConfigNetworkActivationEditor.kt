@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.config
 
 import androidx.compose.foundation.layout.Column
+import ui.components.AppWindowDialog
+import ui.components.AppWindowDropdownPreference
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,7 +45,7 @@ internal fun TrafficConfigNetworkActivationEditor(
     var transportIndex by remember(initialActivation, show) {
         mutableIntStateOf(initialActivation.transport.coerceIn(transportLabels.indices))
     }
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = stringResource(R.string.configs_network_title),
         onDismissRequest = onDismissRequest,
@@ -55,7 +57,7 @@ internal fun TrafficConfigNetworkActivationEditor(
                 checked = enabled,
                 onCheckedChange = { enabled = it },
             )
-            WindowDropdownPreference(
+            AppWindowDropdownPreference(
                 title = stringResource(R.string.configs_network_transport),
                 items = transportLabels,
                 selectedIndex = transportIndex,

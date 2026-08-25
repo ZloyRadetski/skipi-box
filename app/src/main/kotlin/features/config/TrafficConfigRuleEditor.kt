@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.config
 
 import androidx.compose.animation.core.animateFloatAsState
+import ui.text.themedFontWeight
+import ui.components.AppWindowDropdownPreference
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -267,7 +269,7 @@ private fun VisualRuleCard(
                 Text(
                     text = "${rule.type}, ${rule.value}",
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = themedFontWeight(FontWeight.Medium),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -318,7 +320,7 @@ private fun FinalRuleCard(
                 Text(
                     text = "FINAL",
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = themedFontWeight(FontWeight.Medium),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                 )
@@ -440,7 +442,7 @@ fun TrafficConfigRuleEditorPage(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                         colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
                     ) {
-                        WindowDropdownPreference(
+                        AppWindowDropdownPreference(
                             title = stringResource(R.string.configs_rules_type),
                             items = typeOptions,
                             selectedIndex = typeIndex,
@@ -455,7 +457,7 @@ fun TrafficConfigRuleEditorPage(
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                                 colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
                             ) {
-                                WindowDropdownPreference(
+                                AppWindowDropdownPreference(
                                     title = stringResource(R.string.routing_network_label),
                                     items = networkOptions,
                                     selectedIndex = networkIndex.coerceAtLeast(0),

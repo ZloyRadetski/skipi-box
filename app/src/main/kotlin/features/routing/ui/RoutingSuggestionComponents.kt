@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.routing.ui
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
+import ui.components.AppWindowDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -85,7 +87,7 @@ fun GeoAssetPickerDialog(
         }
     }
 
-    WindowDialog(
+    AppWindowDialog(
         show = show,
         title = title,
         onDismissRequest = onDismissRequest,
@@ -205,7 +207,7 @@ private fun GeoSuggestionItemRow(
             Text(
                 text = item.tag,
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = themedFontWeight(FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -275,7 +277,7 @@ fun ProcessAppPickerDialog(
         }
     }
 
-    WindowDialog(
+    AppWindowDialog(
         show = show,
         title = stringResource(R.string.routing_suggestions_select_app),
         onDismissRequest = onDismissRequest,
@@ -356,7 +358,7 @@ fun ProcessAppPickerDialog(
                                 Text(
                                     text = app.appLabel ?: app.packageName,
                                     fontSize = 15.sp,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = themedFontWeight(FontWeight.Medium),
                                     color = MiuixTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -416,7 +418,7 @@ fun SuggestionChipsRow(
                 Text(
                     text = actionButtonText,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                     color = AppTheme.colors.onAccent,
                 )
             }

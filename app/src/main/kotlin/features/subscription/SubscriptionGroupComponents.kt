@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.subscription
 
 import app.SubscriptionGroupState
+import ui.text.themedFontWeight
+import ui.components.AppWindowDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -189,7 +191,7 @@ internal fun SubscriptionGroupEditorDialog(
         onDismissRequest()
     }
 
-    WindowDialog(
+    AppWindowDialog(
         show = show,
         title = if (isEditing) stringResource(R.string.subscription_edit) else stringResource(R.string.subscription_add),
         onDismissRequest = onDismissRequest,
@@ -358,7 +360,7 @@ internal fun SubscriptionGroupEditorDialog(
                             Text(
                                 text = stringResource(R.string.subscription_delete),
                                 color = MiuixTheme.colorScheme.error,
-                                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                                style = MiuixTheme.textStyles.body1.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
                             )
                         }
                     }
@@ -426,7 +428,7 @@ private fun CustomUserAgentDialog(
     onDismissRequest: () -> Unit,
     onSave: () -> Unit,
 ) {
-    WindowDialog(
+    AppWindowDialog(
         show = show,
         title = stringResource(R.string.subscription_custom_user_agent),
         onDismissRequest = onDismissRequest,
@@ -501,7 +503,7 @@ internal fun SubscriptionGroupCard(
                 Text(
                     text = group.displayName(defaultGroupName),
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

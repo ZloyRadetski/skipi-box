@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.list
 
 import androidx.compose.foundation.Image
+import ui.text.themedFontWeight
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,7 +73,7 @@ internal fun ProxyServerQrCodeDialog(
                         text = title,
                         modifier = Modifier.fillMaxWidth(),
                         style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = themedFontWeight(FontWeight.Medium),
                         color = MiuixTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )

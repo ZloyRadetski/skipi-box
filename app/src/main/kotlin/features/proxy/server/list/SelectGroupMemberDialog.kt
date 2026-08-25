@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.list
 
 import androidx.compose.foundation.clickable
+import ui.components.AppWindowDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -56,7 +57,7 @@ internal fun SelectGroupMemberDialog(
     }
     val currentSelectedId = strategyGroup.selectedMemberId ?: members.firstOrNull()?.id
 
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = groupServer.server.getInfo().remarks.ifBlank { stringResource(R.string.proxy_group_select_active_server) },
         onDismissRequest = onDismissRequest,

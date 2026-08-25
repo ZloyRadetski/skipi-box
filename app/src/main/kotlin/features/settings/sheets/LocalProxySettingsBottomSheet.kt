@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings.sheets
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
+import ui.components.AppWindowBottomSheet
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,7 +57,7 @@ internal fun LocalProxySettingsBottomSheet(
     val portError = if (isPort(port)) null else stringResource(R.string.settings_local_proxy_port_invalid)
     var isPasswordVisible by remember { mutableStateOf(false) }
 
-    WindowBottomSheet(
+    AppWindowBottomSheet(
         show = show,
         title = stringResource(R.string.settings_local_proxy),
         startAction = {
@@ -124,7 +126,7 @@ internal fun LocalProxySettingsBottomSheet(
                         Text(
                             text = stringResource(R.string.settings_local_proxy_credentials_section),
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = themedFontWeight(FontWeight.SemiBold),
                             color = MiuixTheme.colorScheme.onSurface,
                         )
                         TextButton(
@@ -182,9 +184,9 @@ internal fun LocalProxySettingsBottomSheet(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "••••••••",
+                                    text = "вЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂў",
                                     fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = themedFontWeight(FontWeight.Bold),
                                     color = MiuixTheme.colorScheme.primary,
                                 )
                             }

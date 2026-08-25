@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.subscription
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.text.themedFontWeight
+import ui.components.AppWindowDialog
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -178,7 +180,7 @@ private fun ReminderItemCard(
 
             Text(
                 text = reminder.formatLabel(context),
-                style = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.Medium),
+                style = MiuixTheme.textStyles.body2.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
                 color = AppTheme.colors.onSurface,
             )
         }
@@ -230,7 +232,7 @@ internal fun SubscriptionExpiryReminderDialog(
         DropdownItem(text = label, summary = label)
     }
 
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = title,
         onDismissRequest = onDismiss,

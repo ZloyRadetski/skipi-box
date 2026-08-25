@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import ui.components.AppWindowDialog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +27,7 @@ internal fun ImportModeDialog(
     onDismissRequest: () -> Unit,
     onModeSelected: (ClipboardImportMode) -> Unit,
 ) {
-    WindowDialog(
+    AppWindowDialog(
         show = show,
         title = title,
         onDismissRequest = onDismissRequest,

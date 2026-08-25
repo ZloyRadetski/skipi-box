@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package ui.components
 
 import androidx.compose.animation.AnimatedContent
+import ui.text.themedFontWeight
+import ui.components.AppWindowDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -210,7 +212,7 @@ internal fun StringListEditor(
                 Text(
                     text = title,
                     fontSize = StringListTitleFontSize,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = themedFontWeight(FontWeight.Medium),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.weight(1f),
                 )
@@ -427,7 +429,7 @@ private fun StringListItem(
                         text = value,
                         color = MiuixTheme.colorScheme.onSurface,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = themedFontWeight(FontWeight.Medium),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
@@ -491,7 +493,7 @@ private fun StringListBulkEditorDialog(
     onDismissRequest: () -> Unit,
     onSave: () -> Unit,
 ) {
-    WindowDialog(
+    AppWindowDialog(
         show = show,
         title = title,
         onDismissRequest = onDismissRequest,

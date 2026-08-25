@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.subscription
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -109,7 +110,7 @@ internal fun SubscriptionProviderHeader(
                 Text(
                     text = title,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -255,7 +256,7 @@ internal fun SubscriptionProviderHeader(
                         Text(
                             text = stringResource(R.string.subscription_provider_support),
                             style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = themedFontWeight(FontWeight.Medium),
                             color = MiuixTheme.colorScheme.onSurface,
                         )
                     }
@@ -271,7 +272,7 @@ internal fun SubscriptionProviderHeader(
                         Text(
                             text = stringResource(R.string.subscription_provider_website),
                             style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = themedFontWeight(FontWeight.Medium),
                             color = MiuixTheme.colorScheme.onSurface,
                         )
                     }

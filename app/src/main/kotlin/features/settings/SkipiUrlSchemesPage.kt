@@ -1,4 +1,4 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 @file:OptIn(ExperimentalScrollBarApi::class)
@@ -6,6 +6,7 @@
 package features.settings
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -304,7 +305,7 @@ private fun SchemesNoteCard(
             Text(
                 text = stringResource(R.string.url_schemes_note_title),
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = themedFontWeight(FontWeight.Bold),
                 color = MiuixTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(6.dp))
@@ -344,7 +345,7 @@ private fun SchemeChip(
                 Text(
                     text = description,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = themedFontWeight(FontWeight.Medium),
                     color = MiuixTheme.colorScheme.primary.copy(alpha = 0.8f),
                 )
                 Spacer(modifier = Modifier.height(2.dp))
@@ -353,7 +354,7 @@ private fun SchemeChip(
                 text = command,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = themedFontWeight(FontWeight.SemiBold),
                 color = MiuixTheme.colorScheme.primary,
             )
         }

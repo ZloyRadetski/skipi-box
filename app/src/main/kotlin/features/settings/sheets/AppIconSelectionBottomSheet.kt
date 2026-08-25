@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings.sheets
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.components.AppWindowBottomSheet
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
@@ -172,7 +173,7 @@ internal fun AppIconSelectionBottomSheet(
     onSelectIconMode: (Int) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    WindowBottomSheet(
+    AppWindowBottomSheet(
         show = show,
         title = stringResource(R.string.app_icon),
         startAction = {

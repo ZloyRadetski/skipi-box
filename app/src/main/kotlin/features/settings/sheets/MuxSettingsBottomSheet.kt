@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings.sheets
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.components.AppWindowBottomSheet
+import ui.components.AppWindowDropdownPreference
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -86,7 +88,7 @@ internal fun MuxSettingsBottomSheet(
         }
     }
 
-    WindowBottomSheet(
+    AppWindowBottomSheet(
         show = show,
         title = stringResource(R.string.settings_mux),
         startAction = {
@@ -141,7 +143,7 @@ internal fun MuxSettingsBottomSheet(
                                 null
                             },
                         )
-                        WindowDropdownPreference(
+                        AppWindowDropdownPreference(
                             title = stringResource(R.string.settings_mux_udp443),
                             items = muxUdp443Options(),
                             selectedIndex = sanitizeMuxUdp443Index(xudpProxyUdp443),

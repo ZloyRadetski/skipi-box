@@ -1,4 +1,4 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 @file:OptIn(ExperimentalScrollBarApi::class)
@@ -6,6 +6,8 @@
 package features.settings
 
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import ui.text.themedFontWeight
+import ui.components.AppOverlayDropdownPreference
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -136,7 +138,7 @@ fun SettingsSubscriptionsPage(
                 item(key = "subscriptions_general_card") {
                     SmallTitle(text = stringResource(R.string.settings_header_subscriptions))
                     SettingsSectionCard {
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_subscription_fetch_timeout),
                             summary = stringResource(R.string.settings_subscription_fetch_timeout_summary),
                             items = subscriptionFetchTimeoutOptions,
@@ -186,7 +188,7 @@ fun SettingsSubscriptionsPage(
                                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                                     Text(
                                         text = stringResource(R.string.subscription_expiry_notifications_enable),
-                                        style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                                        style = MiuixTheme.textStyles.body1.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
                                         color = AppTheme.colors.onSurface,
                                     )
                                     Text(
@@ -211,7 +213,7 @@ fun SettingsSubscriptionsPage(
                                 Column(modifier = Modifier.padding(top = 16.dp)) {
                                     Text(
                                         text = stringResource(R.string.subscription_expiry_reminders_title),
-                                        style = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.Medium),
+                                        style = MiuixTheme.textStyles.body2.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
                                         color = AppTheme.colors.onSurface,
                                     )
                                     Text(

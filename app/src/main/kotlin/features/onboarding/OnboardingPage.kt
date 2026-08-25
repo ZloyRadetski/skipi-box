@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.onboarding
 
 import androidx.compose.animation.animateColorAsState
+import ui.text.themedFontWeight
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -104,7 +105,7 @@ fun OnboardingPage(
                     Text(
                         text = "${currentPage + 1} / $OnboardingPageCount",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         color = AppTheme.colors.onSurface,
                     )
                 }
@@ -125,7 +126,7 @@ fun OnboardingPage(
                         Text(
                             text = stringResource(R.string.onboarding_skip),
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = themedFontWeight(FontWeight.Medium),
                             color = AppTheme.colors.onSurfaceVariant,
                         )
                     }
@@ -261,7 +262,7 @@ fun OnboardingPage(
                                 stringResource(R.string.onboarding_next)
                             },
                             color = nextButtonText,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = themedFontWeight(FontWeight.Bold),
                             fontSize = 15.sp,
                         )
                     }

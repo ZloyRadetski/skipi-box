@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.config
 
 import androidx.compose.foundation.layout.Column
+import ui.components.AppWindowBottomSheet
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,7 +53,7 @@ internal fun TrafficConfigAndroidSettingsEditor(
         mutableStateOf(initialSettings.hevTcpReadWriteTimeoutMillis.toString())
     }
 
-    WindowBottomSheet(
+    AppWindowBottomSheet(
         show = true,
         title = stringResource(R.string.configs_android_title),
         startAction = {

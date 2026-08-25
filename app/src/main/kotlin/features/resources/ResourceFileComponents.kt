@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.resources
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
+import ui.components.AppWindowDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -216,7 +218,7 @@ private fun CustomResourceFileSourceDialog(
     onDismissRequest: () -> Unit,
     onSave: () -> Unit,
 ) {
-    WindowDialog(
+    AppWindowDialog(
         show = show,
         title = stringResource(R.string.settings_resource_files_source_custom_title),
         onDismissRequest = onDismissRequest,
@@ -365,7 +367,7 @@ private fun ResourceFileCardSurface(
                     Text(
                         text = fileName,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -426,7 +428,7 @@ internal fun CustomResourceFileEditorDialog(
     onDismissRequest: () -> Unit,
     onSave: (name: String, url: String) -> Boolean,
 ) {
-    WindowDialog(
+    AppWindowDialog(
         show = show,
         title = stringResource(R.string.settings_resource_files_custom_file),
         onDismissRequest = onDismissRequest,
@@ -618,7 +620,7 @@ private fun ResourceFileStatusChip(
         Text(
             text = text,
             fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = themedFontWeight(FontWeight.Medium),
             color = if (ready) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.error,
         )
     }

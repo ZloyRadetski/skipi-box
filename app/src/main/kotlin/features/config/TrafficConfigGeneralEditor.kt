@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.config
 
 import androidx.compose.foundation.layout.Column
+import ui.components.AppWindowDialog
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +41,7 @@ internal fun TrafficConfigGeneralEditor(
     var ipv6 by remember(rawConfig, show) { mutableStateOf(general["ipv6"].toConfigEditorBoolean()) }
     var preferIpv6 by remember(rawConfig, show) { mutableStateOf(general["prefer-ipv6"].toConfigEditorBoolean()) }
 
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = stringResource(R.string.configs_general_title),
         onDismissRequest = onDismissRequest,

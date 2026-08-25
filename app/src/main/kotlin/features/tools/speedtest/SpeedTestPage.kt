@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.tools.speedtest
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -134,7 +135,7 @@ private fun SpeedGaugeCard(
                 Text(
                     text = headline,
                     fontSize = 52.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
                     color = MiuixTheme.colorScheme.primary,
                 )
                 Text(
@@ -198,7 +199,7 @@ private fun MetricRow(label: String, value: Double?) {
         Text(
             text = value?.let { "%.1f".format(it) } ?: "--",
             fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = themedFontWeight(FontWeight.SemiBold),
             color = AppTheme.colors.onSurface,
         )
     }

@@ -1,9 +1,13 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.routing
 
 import androidx.compose.animation.core.animateFloatAsState
+import ui.text.themedFontWeight
+import ui.components.AppOverlayDropdownPreference
+import ui.components.AppWindowBottomSheet
+import ui.components.AppWindowDropdownPreference
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -108,7 +112,7 @@ internal fun RoutingPolicyCard(
             contentColor = AppTheme.colors.onSurface,
         ),
     ) {
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.routing_domain_strategy),
             items = domainStrategyOptions,
             selectedIndex = selectedDomainStrategy,
@@ -172,7 +176,7 @@ internal fun RouteRuleCard(
                     Text(
                         text = rule.remarks,
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -420,7 +424,7 @@ internal fun RouteRuleEditorBottomSheet(
         }
     }
 
-    WindowBottomSheet(
+    AppWindowBottomSheet(
         show = show,
         title = if (initialRule == null) {
             stringResource(R.string.routing_add_rule)
@@ -707,7 +711,7 @@ private fun RouteRuleEditorContent(
             selectedChip = protocol.takeIf { it in RoutingSuggestionsProvider.ProtocolOptions },
             modifier = Modifier.padding(bottom = 12.dp),
         )
-        WindowDropdownPreference(
+        AppWindowDropdownPreference(
             title = stringResource(R.string.routing_network_label),
             items = networkDisplayOptions,
             selectedIndex = currentNetworkIndex,

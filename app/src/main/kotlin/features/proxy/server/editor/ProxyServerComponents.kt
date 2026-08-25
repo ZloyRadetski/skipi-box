@@ -4,6 +4,7 @@
 package features.proxy.server.editor
 
 import androidx.compose.foundation.layout.Box
+import ui.components.AppOverlayDropdownPreference
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -200,7 +201,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 .padding(bottom = 16.dp),
             colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
         ) {
-            OverlayDropdownPreference(
+            AppOverlayDropdownPreference(
                 title = stringResource(R.string.proxy_editor_strategy_group_type),
                 items = strategyLabels,
                 selectedIndex = strategyIndex.intValue,
@@ -212,7 +213,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 },
             )
             if (isConfigGroup) {
-                OverlayDropdownPreference(
+                AppOverlayDropdownPreference(
                     title = stringResource(R.string.proxy_group_display_mode_title),
                     items = displayModeLabels,
                     selectedIndex = displayModeIndex.intValue,
@@ -266,7 +267,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     onOpenMembers?.invoke()
                 },
             )
-            OverlayDropdownPreference(
+            AppOverlayDropdownPreference(
                 title = stringResource(R.string.proxy_editor_strategy_group_source_group),
                 items = effectiveGroupOptions.map { option -> option.label },
                 selectedIndex = groupIndex.intValue,
@@ -298,7 +299,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     .padding(bottom = 12.dp),
                 colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
             ) {
-                OverlayDropdownPreference(
+                AppOverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_strategy_group_probe_interval),
                     items = probeIntervalLabels,
                     selectedIndex = probeIntervalIndex.intValue,
@@ -307,7 +308,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                         strategyGroupEdit.probeInterval = probeIntervalValues[index]
                     },
                 )
-                OverlayDropdownPreference(
+                AppOverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_strategy_group_tolerance),
                     items = toleranceLabels,
                     selectedIndex = toleranceIndex.intValue,
@@ -390,7 +391,7 @@ internal fun LazyListScope.chainProxyServer(
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
             ) {
-                OverlayDropdownPreference(
+                AppOverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_chain_member)
                         .formatTemplate("index" to index + 1),
                     items = effectiveMemberOptions.map { option -> option.label },

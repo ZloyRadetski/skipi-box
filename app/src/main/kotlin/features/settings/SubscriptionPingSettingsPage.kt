@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -223,7 +224,7 @@ fun SubscriptionPingSettingsPage(
                                 Text(
                                     text = stringResource(R.string.subscription_ping_concurrency_label),
                                     fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = themedFontWeight(FontWeight.Medium),
                                     color = MiuixTheme.colorScheme.onSurface,
                                 )
 
@@ -236,7 +237,7 @@ fun SubscriptionPingSettingsPage(
                                     Text(
                                         text = "${concurrencySliderValue.roundToInt()}",
                                         fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = themedFontWeight(FontWeight.Bold),
                                         color = MiuixTheme.colorScheme.primary,
                                     )
                                 }
@@ -298,7 +299,7 @@ fun SubscriptionPingSettingsPage(
                                 Text(
                                     text = stringResource(R.string.subscription_ping_timeout_label),
                                     fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = themedFontWeight(FontWeight.Medium),
                                     color = MiuixTheme.colorScheme.onSurface,
                                 )
 
@@ -311,7 +312,7 @@ fun SubscriptionPingSettingsPage(
                                     Text(
                                         text = "${sliderValue.roundToInt()} $secondsUnit",
                                         fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = themedFontWeight(FontWeight.Bold),
                                         color = MiuixTheme.colorScheme.primary,
                                     )
                                 }
@@ -388,7 +389,7 @@ fun SubscriptionPingSettingsPage(
                             Text(
                                 text = stringResource(R.string.subscription_ping_quick_select),
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             )
 

@@ -1,4 +1,4 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 @file:OptIn(ExperimentalScrollBarApi::class)
@@ -6,6 +6,8 @@
 package features.settings
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.text.themedFontWeight
+import ui.components.AppOverlayDropdownPreference
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -288,19 +290,19 @@ fun SettingsAppearancePage(
                 item(key = "appearance_theme") {
                     SmallTitle(text = stringResource(R.string.settings_theme))
                     SettingsSectionCard {
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_color_mode),
                             items = colorModeOptions,
                             selectedIndex = appState.colorMode,
                             onSelectedIndexChange = { index -> updateAppState { it.copy(colorMode = index) } },
                         )
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_font_family),
                             items = fontFamilyOptions,
                             selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
                             onSelectedIndexChange = { index -> updateAppState { it.copy(fontFamilyMode = index) } },
                         )
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_font_size),
                             items = fontSizeOptions,
                             selectedIndex = appState.fontSizeMode.coerceIn(0, fontSizeOptions.lastIndex),
@@ -311,7 +313,7 @@ fun SettingsAppearancePage(
                             enter = fadeIn() + expandVertically(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {
-                            OverlayDropdownPreference(
+                            AppOverlayDropdownPreference(
                                 title = stringResource(R.string.settings_font_weight),
                                 items = fontWeightOptions,
                                 selectedIndex = appState.fontWeightMode.coerceIn(0, fontWeightOptions.lastIndex),
@@ -335,7 +337,7 @@ fun SettingsAppearancePage(
                             exit = shrinkVertically() + fadeOut(),
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
-                                OverlayDropdownPreference(
+                                AppOverlayDropdownPreference(
                                     title = stringResource(R.string.settings_theme_color),
                                     items = keyColorOptions,
                                     selectedIndex = appState.seedIndex.coerceIn(0, keyColorOptions.lastIndex),
@@ -374,7 +376,7 @@ fun SettingsAppearancePage(
                                 onClick = { activeColorPickerTarget = ColorPickerTarget.ACCENT },
                             )
                         }
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_language),
                             items = languageOptions,
                             selectedIndex = languageSelectionIndex,
@@ -412,7 +414,7 @@ fun SettingsAppearancePage(
                 item(key = "appearance_background") {
                     SmallTitle(text = stringResource(R.string.settings_background_title))
                     SettingsSectionCard {
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_background_style),
                             items = backgroundStyleOptions,
                             selectedIndex = appState.backgroundStyle.coerceIn(0, backgroundStyleOptions.lastIndex),
@@ -452,7 +454,7 @@ fun SettingsAppearancePage(
                                         }
                                     },
                                 )
-                                OverlayDropdownPreference(
+                                AppOverlayDropdownPreference(
                                     title = stringResource(R.string.settings_background_dim),
                                     items = backgroundDimLabels,
                                     selectedIndex = backgroundDimOptions.indexOf(appState.backgroundPhotoDimPercent).coerceIn(0, backgroundDimOptions.lastIndex),
@@ -686,7 +688,7 @@ fun SettingsAppearancePage(
                 item(key = "appearance_layout") {
                     SmallTitle(text = stringResource(R.string.settings_connection_display_mode))
                     SettingsSectionCard {
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_bottom_bar_size),
                             summary = stringResource(R.string.settings_bottom_bar_size_summary),
                             items = bottomBarSizeOptions,
@@ -695,7 +697,7 @@ fun SettingsAppearancePage(
                                 updateAppState { it.copy(bottomBarSize = size) }
                             },
                         )
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_connection_display_mode),
                             summary = stringResource(R.string.settings_connection_display_mode_summary),
                             items = connectionDisplayModeOptions,
@@ -896,7 +898,7 @@ private fun SettingsColorItem(
             Text(
                 text = title,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = themedFontWeight(FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurface,
             )
             if (!summary.isNullOrBlank()) {

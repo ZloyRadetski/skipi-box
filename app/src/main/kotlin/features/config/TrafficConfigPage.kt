@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.config
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
+import ui.components.AppWindowDialog
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -591,7 +593,7 @@ fun TrafficConfigPage(
                 importUrl = clipText
             }
         }
-        WindowDialog(
+        AppWindowDialog(
             show = true,
             title = stringResource(R.string.configs_import_url_dialog_title),
             onDismissRequest = { showUrlImportDialog = false },
@@ -756,7 +758,7 @@ private fun ConfigTagChip(
         Text(
             text = text,
             fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = themedFontWeight(FontWeight.Medium),
             color = if (isWarning) MiuixTheme.colorScheme.error
             else AppTheme.colors.onSurface.copy(alpha = if (selected) 0.95f else 0.70f),
             maxLines = 1,
@@ -808,7 +810,7 @@ private fun TrafficConfigCard(
                 Text(
                     text = config.name,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -905,7 +907,7 @@ private fun TrafficConfigGlobalProxyGroupCard(
                     Text(
                         text = name,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -988,7 +990,7 @@ private fun TrafficConfigSourcedProxyGroupCard(
                     Text(
                         text = name,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

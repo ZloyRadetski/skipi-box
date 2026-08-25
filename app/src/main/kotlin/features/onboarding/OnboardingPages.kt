@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.onboarding
 
 import android.Manifest
+import ui.text.themedFontWeight
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -216,7 +217,7 @@ internal fun OnboardingHeroSection(
         Text(
             text = title,
             fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = themedFontWeight(FontWeight.Bold),
             color = AppTheme.colors.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(0.92f),
@@ -246,10 +247,10 @@ internal fun OnboardingWelcomePage(
     modifier: Modifier = Modifier,
 ) {
     val languages = listOf(
-        Triple(LanguageModeRussian, "Русский", "🇷🇺"),
-        Triple(LanguageModeEnglish, "English", "🇬🇧"),
-        Triple(LanguageModeChinese, "简体中文", "🇨🇳"),
-        Triple(LanguageModePersian, "فارسی", "🇮🇷"),
+        Triple(LanguageModeRussian, "Р СѓСЃСЃРєРёР№", "рџ‡·рџ‡є"),
+        Triple(LanguageModeEnglish, "English", "рџ‡¬рџ‡§"),
+        Triple(LanguageModeChinese, "з®ЂдЅ“дё­ж–‡", "рџ‡Ёрџ‡і"),
+        Triple(LanguageModePersian, "ЩЃШ§Ш±ШіЫЊ", "рџ‡®рџ‡·"),
     )
 
     val cardBg = onboardingCardBackground()
@@ -303,7 +304,7 @@ internal fun OnboardingWelcomePage(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.onboarding_language_title),
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         fontSize = 16.sp,
                         color = AppTheme.colors.onSurface,
                     )
@@ -385,7 +386,7 @@ internal fun OnboardingWelcomePage(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "🌐  " + stringResource(R.string.option_follow_system),
+                            text = "рџЊђ  " + stringResource(R.string.option_follow_system),
                             color = sysTextColor,
                             fontWeight = if (isSystemSelected) FontWeight.Bold else FontWeight.Medium,
                             fontSize = 14.sp,
@@ -465,7 +466,7 @@ internal fun OnboardingTelegramPage(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "✈️",
+                    text = "вњ€пёЏ",
                     fontSize = 32.sp,
                 )
             }
@@ -476,7 +477,7 @@ internal fun OnboardingTelegramPage(
         Text(
             text = stringResource(R.string.onboarding_telegram_title),
             fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = themedFontWeight(FontWeight.Bold),
             color = AppTheme.colors.onSurface,
             textAlign = TextAlign.Center,
         )
@@ -505,17 +506,17 @@ internal fun OnboardingTelegramPage(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 TelegramFeatureItem(
-                    emoji = "🚀",
+                    emoji = "рџљЂ",
                     title = stringResource(R.string.onboarding_telegram_feature_releases_title),
                     description = stringResource(R.string.onboarding_telegram_feature_releases_desc),
                 )
                 TelegramFeatureItem(
-                    emoji = "💬",
+                    emoji = "рџ’¬",
                     title = stringResource(R.string.onboarding_telegram_feature_chat_title),
                     description = stringResource(R.string.onboarding_telegram_feature_chat_desc),
                 )
                 TelegramFeatureItem(
-                    emoji = "📢",
+                    emoji = "рџ“ў",
                     title = stringResource(R.string.onboarding_telegram_feature_news_title),
                     description = stringResource(R.string.onboarding_telegram_feature_news_desc),
                 )
@@ -537,9 +538,9 @@ internal fun OnboardingTelegramPage(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "✈️  " + stringResource(R.string.onboarding_telegram_open_button),
+                text = "вњ€пёЏ  " + stringResource(R.string.onboarding_telegram_open_button),
                 color = Color.White,
-                fontWeight = FontWeight.Bold,
+                fontWeight = themedFontWeight(FontWeight.Bold),
                 fontSize = 15.sp,
             )
         }
@@ -550,7 +551,7 @@ internal fun OnboardingTelegramPage(
         Text(
             text = "@skipi_public",
             color = tgColor,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = themedFontWeight(FontWeight.SemiBold),
             fontSize = 13.sp,
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
@@ -588,7 +589,7 @@ private fun TelegramFeatureItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontWeight = FontWeight.Bold,
+                fontWeight = themedFontWeight(FontWeight.Bold),
                 fontSize = 14.sp,
                 color = AppTheme.colors.onSurface,
             )
@@ -788,7 +789,7 @@ private fun PermissionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
                     fontSize = 15.sp,
                     color = AppTheme.colors.onSurface,
                 )
@@ -811,9 +812,9 @@ private fun PermissionCard(
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                 ) {
                     Text(
-                        text = "✓ " + stringResource(R.string.onboarding_perm_granted),
+                        text = "вњ“ " + stringResource(R.string.onboarding_perm_granted),
                         color = permGreen,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         fontSize = 12.sp,
                     )
                 }
@@ -828,7 +829,7 @@ private fun PermissionCard(
                     Text(
                         text = stringResource(R.string.onboarding_perm_grant),
                         color = Color.White,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         fontSize = 12.sp,
                     )
                 }
@@ -895,7 +896,7 @@ internal fun OnboardingAppearancePage(
             Column {
                 Text(
                     text = stringResource(R.string.onboarding_theme_mode),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
                     fontSize = 15.sp,
                     color = AppTheme.colors.onSurface,
                 )
@@ -959,7 +960,7 @@ internal fun OnboardingAppearancePage(
             Column {
                 Text(
                     text = stringResource(R.string.onboarding_accent_color),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
                     fontSize = 15.sp,
                     color = AppTheme.colors.onSurface,
                 )
@@ -989,10 +990,10 @@ internal fun OnboardingAppearancePage(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "✦",
+                            text = "вњ¦",
                             color = if (isSystemAccent) AppTheme.colors.onAccent else AppTheme.colors.onSurfaceVariant,
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = themedFontWeight(FontWeight.Bold),
                         )
                     }
 
@@ -1043,7 +1044,7 @@ internal fun OnboardingAppearancePage(
             Column {
                 Text(
                     text = stringResource(R.string.onboarding_bottom_bar_size),
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
                     fontSize = 15.sp,
                     color = AppTheme.colors.onSurface,
                 )
@@ -1241,7 +1242,7 @@ internal fun OnboardingImportPage(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.onboarding_clipboard_detected_title),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = themedFontWeight(FontWeight.Bold),
                             fontSize = 14.sp,
                             color = AppTheme.colors.onSurface,
                         )
@@ -1271,7 +1272,7 @@ internal fun OnboardingImportPage(
                         Text(
                             text = stringResource(R.string.onboarding_clipboard_import_btn),
                             color = AppTheme.colors.onAccent,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = themedFontWeight(FontWeight.Bold),
                             fontSize = 12.sp,
                         )
                     }
@@ -1320,7 +1321,7 @@ internal fun OnboardingImportPage(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.onboarding_import_clipboard_title),
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         fontSize = 15.sp,
                         color = AppTheme.colors.onSurface,
                     )
@@ -1377,7 +1378,7 @@ internal fun OnboardingImportPage(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.onboarding_scan_qr_title),
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         fontSize = 15.sp,
                         color = AppTheme.colors.onSurface,
                     )
@@ -1404,9 +1405,9 @@ internal fun OnboardingImportPage(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 Text(
-                    text = "✓ " + stringResource(R.string.onboarding_servers_added_count, count),
+                    text = "вњ“ " + stringResource(R.string.onboarding_servers_added_count, count),
                     color = permGreen,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
                     fontSize = 13.sp,
                 )
             }
@@ -1497,7 +1498,7 @@ internal fun OnboardingCompletePage(
         Text(
             text = stringResource(R.string.onboarding_complete_title),
             fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = themedFontWeight(FontWeight.Bold),
             color = AppTheme.colors.onSurface,
             textAlign = TextAlign.Center,
         )
@@ -1537,7 +1538,7 @@ internal fun OnboardingCompletePage(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.onboarding_ready_status_ready),
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         fontSize = 15.sp,
                         color = AppTheme.colors.onSurface,
                     )

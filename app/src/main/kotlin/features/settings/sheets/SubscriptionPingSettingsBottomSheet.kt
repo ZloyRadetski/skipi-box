@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings.sheets
 
 import androidx.compose.runtime.Composable
+import ui.components.AppWindowBottomSheet
 import androidx.compose.runtime.key
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
@@ -35,7 +36,7 @@ internal fun SubscriptionPingSettingsBottomSheet(
     }
     val canSave = urlError == null && timeoutError == null
 
-    WindowBottomSheet(
+    AppWindowBottomSheet(
         show = show,
         title = stringResource(R.string.subscription_ping_settings),
         startAction = {

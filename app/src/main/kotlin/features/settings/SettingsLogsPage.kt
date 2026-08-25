@@ -1,4 +1,4 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 @file:OptIn(ExperimentalScrollBarApi::class)
@@ -6,6 +6,7 @@
 package features.settings
 
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import ui.components.AppOverlayDropdownPreference
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -104,7 +105,7 @@ fun SettingsLogsPage(
                 item(key = "logs_options_card") {
                     SmallTitle(text = stringResource(R.string.settings_logs))
                     SettingsSectionCard {
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_log_level),
                             items = SettingsLogLevelOptions,
                             selectedIndex = appState.coreLogLevel,
@@ -116,7 +117,7 @@ fun SettingsLogsPage(
                             SettingsLogRetentionOptionValues.indexOfFirst { it.first == appState.logRetentionDays }
                                 .takeIf { it >= 0 } ?: 2
                         }
-                        OverlayDropdownPreference(
+                        AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_log_retention),
                             summary = stringResource(R.string.settings_log_retention_summary),
                             items = SettingsLogRetentionOptionValues.map { stringResource(it.second) },

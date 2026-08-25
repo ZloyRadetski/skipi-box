@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.text.themedFontWeight
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
@@ -299,7 +300,7 @@ fun LocalProxySettingsPage(
                                         Text(
                                             text = stringResource(R.string.settings_local_proxy_auth_title),
                                             fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
+                                            fontWeight = themedFontWeight(FontWeight.Bold),
                                             color = MiuixTheme.colorScheme.onSurface,
                                         )
                                         Text(
@@ -345,14 +346,14 @@ fun LocalProxySettingsPage(
                                         Text(
                                             text = usernameLabel,
                                             fontSize = 11.sp,
-                                            fontWeight = FontWeight.Medium,
+                                            fontWeight = themedFontWeight(FontWeight.Medium),
                                             color = MiuixTheme.colorScheme.primary.copy(alpha = 0.8f),
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = appState.localProxyUsername.ifBlank { "—" },
+                                            text = appState.localProxyUsername.ifBlank { "вЂ”" },
                                             fontSize = 15.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = themedFontWeight(FontWeight.SemiBold),
                                             color = MiuixTheme.colorScheme.primary,
                                             fontFamily = FontFamily.Monospace,
                                         )
@@ -389,14 +390,14 @@ fun LocalProxySettingsPage(
                                         Text(
                                             text = passwordLabel,
                                             fontSize = 11.sp,
-                                            fontWeight = FontWeight.Medium,
+                                            fontWeight = themedFontWeight(FontWeight.Medium),
                                             color = MiuixTheme.colorScheme.primary.copy(alpha = 0.8f),
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = if (isPasswordVisible) appState.localProxyPassword.ifBlank { "—" } else "••••••••••••",
+                                            text = if (isPasswordVisible) appState.localProxyPassword.ifBlank { "вЂ”" } else "вЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂў",
                                             fontSize = 15.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = themedFontWeight(FontWeight.SemiBold),
                                             color = MiuixTheme.colorScheme.primary,
                                             fontFamily = FontFamily.Monospace,
                                         )
@@ -459,14 +460,14 @@ private fun LanEndpointRow(
             Text(
                 text = label,
                 fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
+                fontWeight = themedFontWeight(FontWeight.Medium),
                 color = MiuixTheme.colorScheme.primary.copy(alpha = 0.8f),
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = value,
                 fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = themedFontWeight(FontWeight.SemiBold),
                 color = MiuixTheme.colorScheme.primary,
                 fontFamily = FontFamily.Monospace,
             )

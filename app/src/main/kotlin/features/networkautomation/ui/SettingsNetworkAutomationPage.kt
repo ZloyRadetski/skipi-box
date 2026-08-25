@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.networkautomation.ui
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -190,11 +191,11 @@ fun SettingsNetworkAutomationPage(
                         val actionSummary = when (rule.action) {
                             NetworkRuleAction.DISCONNECT_VPN -> stringResource(R.string.network_automation_action_disconnect)
                             NetworkRuleAction.SWITCH_SERVER -> {
-                                val serverName = targetServer?.displayName() ?: "—"
+                                val serverName = targetServer?.displayName() ?: "вЂ”"
                                 "${stringResource(R.string.network_automation_action_switch_server)}: $serverName"
                             }
                             NetworkRuleAction.SWITCH_IF_CONNECTED -> {
-                                val serverName = targetServer?.displayName() ?: "—"
+                                val serverName = targetServer?.displayName() ?: "вЂ”"
                                 "${stringResource(R.string.network_automation_action_switch_if_connected)}: $serverName"
                             }
                         }
@@ -222,7 +223,7 @@ fun SettingsNetworkAutomationPage(
                                     Text(
                                         text = typeTitle,
                                         style = MiuixTheme.textStyles.main.copy(
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = themedFontWeight(FontWeight.SemiBold),
                                             fontSize = 16.sp,
                                         ),
                                         color = AppTheme.colors.onSurface,

@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.list
 
 import androidx.compose.animation.AnimatedContent
+import ui.text.themedFontWeight
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -215,7 +216,7 @@ internal fun ProxyServerListGroupSelector(
                 Text(
                     text = selectedGroup.name,
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -245,7 +246,7 @@ internal fun ProxyServerListGroupSelector(
                 DropdownEntry(
                     items = groups.map { group ->
                         DropdownItem(
-                            text = "${group.name} · ${stringResource(R.string.proxy_editor_strategy_group_servers_count, group.serverCount)}",
+                            text = "${group.name} В· ${stringResource(R.string.proxy_editor_strategy_group_servers_count, group.serverCount)}",
                             selected = group.id == selectedGroupId,
                             onClick = {
                                 showGroupPicker = false
@@ -467,7 +468,7 @@ private fun ProxyServerListExpandedItemCard(
         val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
         val effectiveFlag = remember(isStrategyGroup, activeMemberFlag, selfFlag) {
             if (isStrategyGroup) {
-                activeMemberFlag ?: selfFlag ?: "⚡"
+                activeMemberFlag ?: selfFlag ?: "вљЎ"
             } else {
                 selfFlag
             }
@@ -494,7 +495,7 @@ private fun ProxyServerListExpandedItemCard(
                     Text(
                         text = cleanTitle,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -551,7 +552,7 @@ private fun ProxyServerListExpandedItemCard(
                     Text(
                         text = latencyText,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = themedFontWeight(FontWeight.Medium),
                         color = proxyServerLatencyColor(latencyText),
                     )
                 }
@@ -668,7 +669,7 @@ private fun ProxyServerListCompactItemCard(
             val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
             val effectiveFlag = remember(isStrategyGroup, activeMemberFlag, selfFlag) {
                 if (isStrategyGroup) {
-                    activeMemberFlag ?: selfFlag ?: "⚡"
+                    activeMemberFlag ?: selfFlag ?: "вљЎ"
                 } else {
                     selfFlag
                 }
@@ -694,7 +695,7 @@ private fun ProxyServerListCompactItemCard(
                         text = cleanTitle,
                         fontSize = 15.sp,
                         lineHeight = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -741,7 +742,7 @@ private fun ProxyServerListCompactItemCard(
                             Text(
                                 text = latencyText,
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = proxyServerLatencyColor(latencyText),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -1044,7 +1045,7 @@ private fun ProtocolChip(
         Text(
             text = text,
             fontSize = if (compact) 10.sp else 11.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = themedFontWeight(FontWeight.SemiBold),
             color = chipColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -1079,7 +1080,7 @@ private fun TransportChip(
         Text(
             text = text,
             fontSize = if (compact) 10.sp else 11.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = themedFontWeight(FontWeight.Medium),
             color = chipColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

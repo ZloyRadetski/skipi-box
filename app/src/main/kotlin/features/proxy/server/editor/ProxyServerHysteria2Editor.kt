@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.editor
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.components.AppOverlayDropdownPreference
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -165,7 +166,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_security),
             items = securityOptions,
             modifier = Modifier

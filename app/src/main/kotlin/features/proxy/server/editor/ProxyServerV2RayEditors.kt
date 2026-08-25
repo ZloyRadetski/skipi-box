@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.editor
 
 import androidx.compose.foundation.layout.padding
+import ui.components.AppOverlayDropdownPreference
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
@@ -90,7 +91,7 @@ internal fun LazyListScope.vmessProxyServer(vmessEdit: VMess) {
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_encryption),
             items = encryptionOptions,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -235,7 +236,7 @@ internal fun LazyListScope.vlessProxyServer(vlessEdit: VLESS) {
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
-        OverlayDropdownPreference(
+        AppOverlayDropdownPreference(
             title = stringResource(R.string.proxy_editor_flow),
             items = flowOptions,
             modifier = Modifier.padding(bottom = 12.dp),

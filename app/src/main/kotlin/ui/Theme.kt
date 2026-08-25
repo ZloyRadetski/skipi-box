@@ -31,6 +31,7 @@ import app.modes.FontSizeModeDefault
 import app.modes.FontWeightModeDefault
 import app.modes.normalizeColorMode
 import app.modes.resolveFontSizeScale
+import ui.text.ThemedTypography
 import ui.text.resolveFontFamily
 import ui.text.resolveFontWeight
 import androidx.compose.ui.platform.LocalDensity
@@ -264,6 +265,12 @@ fun AppTheme(
 
     val resolvedFontFamily = remember(fontFamilyMode) { resolveFontFamily(fontFamilyMode) }
     val resolvedFontWeight = remember(fontWeightMode) { resolveFontWeight(fontWeightMode) }
+    // Publish the weight shift globally so that explicitly requested weights
+    // (see ui.text.themedFontWeight) follow the user's preference everywhere,
+    // including miuix window compositions where app locals do not reach.
+    SideEffect {
+        ThemedTypography.updateWeightShift(resolvedFontWeight?.weight?.minus(FontWeight.Normal.weight) ?: 0)
+    }
     val baseMiuixTextStyles = MiuixTheme.textStyles
     val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight) {
         if (resolvedFontFamily == null && resolvedFontWeight == null) {

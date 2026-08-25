@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.server.list
 
 import android.os.SystemClock
+import ui.text.themedFontWeight
 import java.util.Locale
 import app.effects.resolveActiveNetworkConfig
 import features.config.withActiveTrafficConfig
@@ -264,7 +265,7 @@ internal fun ProxyServerListTopBar(
             Text(
                 text = stringResource(R.string.app_name),
                 style = MiuixTheme.textStyles.headline1.copy(
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
                 ),
                 color = MiuixTheme.colorScheme.onBackground,
             )
@@ -475,7 +476,7 @@ internal fun ProxyHeroConnectionCard(
     val rawRemarks = activeServerState?.server?.getInfo()?.remarks ?: activeName
     val selfFlag = remember(rawRemarks) { CountryFlagUtils.extractLeadingCountryFlag(rawRemarks) }
     val effectiveFlag = remember(activeServerState?.server, selfFlag) {
-        if (activeServerState?.server is StrategyGroup) selfFlag ?: "⚡" else selfFlag
+        if (activeServerState?.server is StrategyGroup) selfFlag ?: "вљЎ" else selfFlag
     }
     val cleanTitle = remember(activeName, selfFlag) {
         if (selfFlag != null) CountryFlagUtils.stripLeadingCountryFlag(activeName) else activeName
@@ -809,7 +810,7 @@ private fun ProxyHeroConnectionCardClassic(
                                 else -> stringResource(R.string.connection_status_disconnected)
                             },
                             fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = themedFontWeight(FontWeight.Bold),
                             color = AppTheme.colors.onSurface,
                         )
                     }
@@ -828,7 +829,7 @@ private fun ProxyHeroConnectionCardClassic(
                             Text(
                                 text = cleanTitle,
                                 fontSize = 15.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = AppTheme.colors.onSurfaceVariant,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
@@ -883,7 +884,7 @@ private fun ProxyHeroConnectionCardClassic(
                         Text(
                             text = sessionDuration,
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = themedFontWeight(FontWeight.Medium),
                             color = AppTheme.colors.onSurfaceVariant,
                         )
 
@@ -905,7 +906,7 @@ private fun ProxyHeroConnectionCardClassic(
                             Text(
                                 text = stringResource(R.string.proxy_server_list_ping_in_progress),
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = MiuixTheme.colorScheme.primary,
                             )
                         } else {
@@ -923,7 +924,7 @@ private fun ProxyHeroConnectionCardClassic(
                             Text(
                                 text = latencyDisplay,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = latencyColor,
                             )
                         }
@@ -939,7 +940,7 @@ private fun ProxyHeroConnectionCardClassic(
                             Text(
                                 text = stringResource(R.string.connection_metric_ram_format, formatTunnelMemory(memoryKb)),
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = AppTheme.colors.onSurfaceVariant,
                             )
                         }
@@ -1037,7 +1038,7 @@ private fun ProxyHeroConnectionCardCompact(
                             Text(
                                 text = stringResource(R.string.proxy_active_server_status_connected),
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = statusConnectedColor,
                             )
                         }
@@ -1045,7 +1046,7 @@ private fun ProxyHeroConnectionCardCompact(
                             Text(
                                 text = stringResource(R.string.connection_metric_ram_format, formatTunnelMemory(memoryKb)),
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                         }
@@ -1066,7 +1067,7 @@ private fun ProxyHeroConnectionCardCompact(
                         Text(
                             text = cleanTitle,
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = themedFontWeight(FontWeight.SemiBold),
                             color = MiuixTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -1092,7 +1093,7 @@ private fun ProxyHeroConnectionCardCompact(
                                     Text(
                                         text = stringResource(R.string.proxy_server_list_ping_in_progress),
                                         fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        fontWeight = themedFontWeight(FontWeight.Medium),
                                         color = testColor,
                                     )
                                 }
@@ -1114,7 +1115,7 @@ private fun ProxyHeroConnectionCardCompact(
                                     Text(
                                         text = latencyText,
                                         fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        fontWeight = themedFontWeight(FontWeight.Medium),
                                         color = latencyColor,
                                     )
                                 }
@@ -1151,7 +1152,7 @@ private fun ProxyHeroConnectionCardCompact(
                                     stringResource(R.string.proxy_active_server_status_stopped)
                                 },
                                 fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = themedFontWeight(FontWeight.SemiBold),
                                 color = if (isConnecting) accentTone else MiuixTheme.colorScheme.onSurface,
                             )
                         }
@@ -1183,7 +1184,7 @@ private fun ProxyHeroConnectionCardCompact(
                                 Text(
                                     text = stringResource(R.string.proxy_server_list_ping_in_progress),
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = themedFontWeight(FontWeight.Medium),
                                     color = testColor,
                                 )
                             }
@@ -1205,7 +1206,7 @@ private fun ProxyHeroConnectionCardCompact(
                                 Text(
                                     text = latencyText,
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = themedFontWeight(FontWeight.Medium),
                                     color = latencyColor,
                                 )
                             }

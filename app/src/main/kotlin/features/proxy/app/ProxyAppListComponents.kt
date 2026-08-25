@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.app
 
 import androidx.compose.animation.animateColorAsState
+import ui.text.themedFontWeight
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -196,7 +197,7 @@ internal fun ProxyAppListItemCard(
                     Text(
                         text = app.name,
                         fontSize = 17.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = themedFontWeight(FontWeight.Medium),
                         color = if (enabled) {
                             MiuixTheme.colorScheme.onSurface
                         } else {

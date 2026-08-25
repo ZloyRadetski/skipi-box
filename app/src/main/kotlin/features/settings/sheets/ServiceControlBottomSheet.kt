@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings.sheets
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.components.AppWindowBottomSheet
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -57,7 +58,7 @@ internal fun ServiceControlBottomSheet(
         parseServiceCron(draft.schedule.stopCron) is ServiceCronParseResult.Invalid
     val canSave = canSaveServiceControlDraft(draft, pendingEditors.isNotEmpty()) && !saving
 
-    WindowBottomSheet(
+    AppWindowBottomSheet(
         show = show,
         title = stringResource(R.string.settings_service_control),
         startAction = {

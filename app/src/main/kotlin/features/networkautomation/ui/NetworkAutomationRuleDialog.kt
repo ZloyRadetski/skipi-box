@@ -1,9 +1,11 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.networkautomation.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import ui.components.AppWindowDialog
+import ui.components.AppWindowDropdownPreference
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -98,7 +100,7 @@ internal fun NetworkAutomationRuleDialog(
     }
 
     val serverOptions = remember(servers) {
-        if (servers.isEmpty()) listOf("—") else servers.map { it.displayName() }
+        if (servers.isEmpty()) listOf("вЂ”") else servers.map { it.displayName() }
     }
     val serverIds = remember(servers) {
         if (servers.isEmpty()) listOf<Int?>(null) else servers.map<ProxyServerState, Int?> { it.id }
@@ -148,7 +150,7 @@ internal fun NetworkAutomationRuleDialog(
         else -> true
     }
 
-    WindowDialog(
+    AppWindowDialog(
         show = true,
         title = if (isEditing) stringResource(R.string.network_automation_edit_rule) else stringResource(R.string.network_automation_add_rule),
         onDismissRequest = onDismissRequest,
@@ -164,7 +166,7 @@ internal fun NetworkAutomationRuleDialog(
                     .padding(bottom = 12.dp),
                 colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
             ) {
-                WindowDropdownPreference(
+                AppWindowDropdownPreference(
                     title = stringResource(R.string.network_automation_rule_type),
                     items = typeOptions,
                     selectedIndex = selectedTypeIndex.coerceIn(typeOptions.indices),
@@ -231,7 +233,7 @@ internal fun NetworkAutomationRuleDialog(
                     .padding(bottom = 12.dp),
                 colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
             ) {
-                WindowDropdownPreference(
+                AppWindowDropdownPreference(
                     title = stringResource(R.string.network_automation_rule_action),
                     items = actionOptions,
                     selectedIndex = selectedActionIndex.coerceIn(actionOptions.indices),
@@ -239,7 +241,7 @@ internal fun NetworkAutomationRuleDialog(
                 )
 
                 if (requiresServer && servers.isNotEmpty()) {
-                    WindowDropdownPreference(
+                    AppWindowDropdownPreference(
                         title = stringResource(R.string.network_automation_server_label),
                         items = serverOptions,
                         selectedIndex = selectedServerIndex.coerceIn(0, serverOptions.lastIndex),

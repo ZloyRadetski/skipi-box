@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.updater.ui
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,7 +70,7 @@ fun AppUpdateChangelogDialog(
                 Text(
                     text = "${stringResource(R.string.app_update_available_title)} v${updateInfo.versionName}",
                     fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
                     color = MiuixTheme.colorScheme.onSurface,
                 )
 

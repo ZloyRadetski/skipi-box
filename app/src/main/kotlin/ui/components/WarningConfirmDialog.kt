@@ -1,9 +1,10 @@
-// Copyright 2026, Radetski
+﻿// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package ui.components
 
 import androidx.compose.foundation.background
+import ui.text.themedFontWeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,7 +90,7 @@ internal fun WarningConfirmDialog(
                         Text(
                             text = "!",
                             fontSize = 24.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = themedFontWeight(FontWeight.SemiBold),
                             color = warningColor,
                             textAlign = TextAlign.Center,
                         )
@@ -98,7 +99,7 @@ internal fun WarningConfirmDialog(
                         text = title,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                         fontSize = MiuixTheme.textStyles.title4.fontSize,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = themedFontWeight(FontWeight.Medium),
                         color = MiuixTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center,
                     )
@@ -113,7 +114,7 @@ internal fun WarningConfirmDialog(
                             text = summary,
                             modifier = Modifier.fillMaxWidth(),
                             style = MiuixTheme.textStyles.body2,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = themedFontWeight(FontWeight.Medium),
                             color = warningColor,
                             textAlign = TextAlign.Start,
                         )
