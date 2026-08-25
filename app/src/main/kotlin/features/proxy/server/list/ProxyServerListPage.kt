@@ -72,8 +72,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import ui.AppTheme
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
@@ -603,8 +601,6 @@ fun ProxyServerListPage(
         null
     }
 
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -674,7 +670,6 @@ fun ProxyServerListPage(
                 sort = proxyListState.proxyServerListSort,
                 unknownGroupName = unknownGroupName,
                 itemTextFormatter = itemTextFormatter,
-                topAppBarScrollBehavior = topAppBarScrollBehavior,
                 listPadding = listPadding,
                 dragScrollThresholdBottomPadding = dragScrollThresholdBottomPadding,
                 contentPadding = contentPadding,

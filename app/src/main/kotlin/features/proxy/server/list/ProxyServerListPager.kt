@@ -81,7 +81,6 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import ui.components.AppPullToRefresh
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
@@ -110,7 +109,6 @@ internal fun ProxyServerListPager(
     sort: Int,
     unknownGroupName: String,
     itemTextFormatter: ProxyServerListItemTextFormatter,
-    topAppBarScrollBehavior: ScrollBehavior,
     listPadding: PaddingValues,
     dragScrollThresholdBottomPadding: Dp,
     contentPadding: PaddingValues,
@@ -177,7 +175,7 @@ internal fun ProxyServerListPager(
         },
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(0.dp),
-        topAppBarScrollBehavior = topAppBarScrollBehavior,
+        topAppBarScrollBehavior = null,
         color = AppTheme.colors.onSurface.copy(alpha = 0.8f),
         circleSize = 24.dp,
         refreshTexts = listOf(
@@ -231,7 +229,6 @@ internal fun ProxyServerListPager(
                 itemTextFormatter = itemTextFormatter,
                 groupState = groupState,
                 scrollToTopRequest = scrollToTopRequest,
-                topAppBarScrollBehavior = topAppBarScrollBehavior,
                 listPadding = listPadding,
                 dragScrollThresholdBottomPadding = dragScrollThresholdBottomPadding,
                 contentPadding = contentPadding,
@@ -278,7 +275,6 @@ private fun SubscriptionProxyServerList(
     itemTextFormatter: ProxyServerListItemTextFormatter,
     groupState: ProxyServerListGroups,
     scrollToTopRequest: Int,
-    topAppBarScrollBehavior: ScrollBehavior,
     listPadding: PaddingValues,
     contentPadding: PaddingValues,
     stateStore: AndroidAppStateStore,
@@ -456,7 +452,6 @@ private fun ProxyServerLazyGrid(
     itemTextFormatter: ProxyServerListItemTextFormatter,
     groupState: ProxyServerListGroups,
     scrollToTopRequest: Int,
-    topAppBarScrollBehavior: ScrollBehavior,
     listPadding: PaddingValues,
     dragScrollThresholdBottomPadding: Dp,
     contentPadding: PaddingValues,
@@ -496,7 +491,6 @@ private fun ProxyServerLazyGrid(
             itemTextFormatter = itemTextFormatter,
             groupState = groupState,
             scrollToTopRequest = scrollToTopRequest,
-            topAppBarScrollBehavior = topAppBarScrollBehavior,
             listPadding = listPadding,
             contentPadding = contentPadding,
             stateStore = stateStore,
