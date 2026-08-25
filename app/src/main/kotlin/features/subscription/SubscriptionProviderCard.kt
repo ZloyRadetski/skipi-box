@@ -248,7 +248,7 @@ internal fun SubscriptionProviderHeader(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                             .clickable { runCatching { uriHandler.openUri(effectiveSupportUrl) } }
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
@@ -256,7 +256,7 @@ internal fun SubscriptionProviderHeader(
                             text = stringResource(R.string.subscription_provider_support),
                             style = MiuixTheme.textStyles.body2,
                             fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.primary,
+                            color = MiuixTheme.colorScheme.onSurface,
                         )
                     }
                 }

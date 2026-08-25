@@ -295,20 +295,13 @@ private fun TextStyle.applyFontAndWeight(
     targetWeight: FontWeight?,
 ): TextStyle {
     val newFontFamily = fontFamily ?: this.fontFamily
-    val currentWeight = this.fontWeight
-    val newWeight = when {
-        targetWeight == null -> currentWeight
-        currentWeight != null && currentWeight >= FontWeight.SemiBold -> {
-            when (targetWeight) {
-                FontWeight.Light -> FontWeight.Normal
-                FontWeight.Normal -> FontWeight.SemiBold
-                FontWeight.Medium -> FontWeight.Bold
-                FontWeight.SemiBold -> FontWeight.Bold
-                FontWeight.Bold -> FontWeight.ExtraBold
-                else -> targetWeight
-            }
-        }
-        else -> targetWeight
+    val currentWeight = this.fontWeight ?: FontWeight.Normal
+    val newWeight = if (targetWeight == null) {
+        this.fontWeight
+    } else {
+        val shift = targetWeight.weight - FontWeight.Normal.weight
+        val effectiveWeight = (currentWeight.weight + shift).coerceIn(100, 900)
+        FontWeight(effectiveWeight)
     }
     return copy(
         fontFamily = newFontFamily,

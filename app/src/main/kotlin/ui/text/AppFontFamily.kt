@@ -24,63 +24,39 @@ import app.modes.FontWeightModeSemiBold
 import app.modes.normalizeFontFamilyMode
 import app.modes.normalizeFontWeightMode
 
-val InterFontFamily = FontFamily(
-    Font(R.font.inter, FontWeight.Light),
-    Font(R.font.inter, FontWeight.Normal),
-    Font(R.font.inter, FontWeight.Medium),
-    Font(R.font.inter, FontWeight.SemiBold),
-    Font(R.font.inter, FontWeight.Bold),
-    Font(R.font.inter, FontWeight.ExtraBold),
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.font.FontVariation
+
+@OptIn(ExperimentalTextApi::class)
+private fun variableFont(resId: Int, weight: FontWeight): Font = Font(
+    resId = resId,
+    weight = weight,
+    variationSettings = FontVariation.Settings(
+        FontVariation.weight(weight.weight),
+    ),
 )
 
-val GolosTextFontFamily = FontFamily(
-    Font(R.font.golos_text, FontWeight.Light),
-    Font(R.font.golos_text, FontWeight.Normal),
-    Font(R.font.golos_text, FontWeight.Medium),
-    Font(R.font.golos_text, FontWeight.SemiBold),
-    Font(R.font.golos_text, FontWeight.Bold),
-    Font(R.font.golos_text, FontWeight.ExtraBold),
+private fun createVariableFontFamily(resId: Int): FontFamily = FontFamily(
+    variableFont(resId, FontWeight.Thin),
+    variableFont(resId, FontWeight.ExtraLight),
+    variableFont(resId, FontWeight.Light),
+    variableFont(resId, FontWeight.Normal),
+    variableFont(resId, FontWeight.Medium),
+    variableFont(resId, FontWeight.SemiBold),
+    variableFont(resId, FontWeight.Bold),
+    variableFont(resId, FontWeight.ExtraBold),
+    variableFont(resId, FontWeight.Black),
 )
 
-val ManropeFontFamily = FontFamily(
-    Font(R.font.manrope, FontWeight.Light),
-    Font(R.font.manrope, FontWeight.Normal),
-    Font(R.font.manrope, FontWeight.Medium),
-    Font(R.font.manrope, FontWeight.SemiBold),
-    Font(R.font.manrope, FontWeight.Bold),
-    Font(R.font.manrope, FontWeight.ExtraBold),
-)
-
-val JetBrainsMonoFontFamily = FontFamily(
-    Font(R.font.jetbrains_mono, FontWeight.Light),
-    Font(R.font.jetbrains_mono, FontWeight.Normal),
-    Font(R.font.jetbrains_mono, FontWeight.Medium),
-    Font(R.font.jetbrains_mono, FontWeight.SemiBold),
-    Font(R.font.jetbrains_mono, FontWeight.Bold),
-    Font(R.font.jetbrains_mono, FontWeight.ExtraBold),
-)
-
+val InterFontFamily = createVariableFontFamily(R.font.inter)
+val GolosTextFontFamily = createVariableFontFamily(R.font.golos_text)
+val ManropeFontFamily = createVariableFontFamily(R.font.manrope)
+val JetBrainsMonoFontFamily = createVariableFontFamily(R.font.jetbrains_mono)
 val ClimateCrisisFontFamily = FontFamily(
     Font(R.font.climate_crisis, FontWeight.Normal),
 )
-
-val UnboundedFontFamily = FontFamily(
-    Font(R.font.unbounded, FontWeight.Light),
-    Font(R.font.unbounded, FontWeight.Normal),
-    Font(R.font.unbounded, FontWeight.Medium),
-    Font(R.font.unbounded, FontWeight.SemiBold),
-    Font(R.font.unbounded, FontWeight.Bold),
-    Font(R.font.unbounded, FontWeight.ExtraBold),
-)
-
-val OnestFontFamily = FontFamily(
-    Font(R.font.onest, FontWeight.Light),
-    Font(R.font.onest, FontWeight.Normal),
-    Font(R.font.onest, FontWeight.Medium),
-    Font(R.font.onest, FontWeight.SemiBold),
-    Font(R.font.onest, FontWeight.Bold),
-    Font(R.font.onest, FontWeight.ExtraBold),
-)
+val UnboundedFontFamily = createVariableFontFamily(R.font.unbounded)
+val OnestFontFamily = createVariableFontFamily(R.font.onest)
 
 fun resolveFontFamily(fontFamilyMode: Int): FontFamily? = when (normalizeFontFamilyMode(fontFamilyMode)) {
     FontFamilyModeInter -> InterFontFamily
