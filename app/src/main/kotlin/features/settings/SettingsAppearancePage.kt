@@ -756,16 +756,14 @@ fun SettingsAppearancePage(
                                 updateAppState { it.copy(pinConnectionPanelOnHome = enabled) }
                             },
                         )
-                        AnimatedVisibility(visible = appState.pinConnectionPanelOnHome) {
-                            SwitchPreference(
-                                title = stringResource(R.string.settings_enable_subscription_swipe),
-                                summary = stringResource(R.string.settings_enable_subscription_swipe_summary),
-                                checked = appState.enableSubscriptionSwipe,
-                                onCheckedChange = { enabled ->
-                                    updateAppState { it.copy(enableSubscriptionSwipe = enabled) }
-                                },
-                            )
-                        }
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_enable_subscription_swipe),
+                            summary = stringResource(R.string.settings_enable_subscription_swipe_summary),
+                            checked = appState.enableSubscriptionSwipe,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(enableSubscriptionSwipe = enabled) }
+                            },
+                        )
                         AnimatedVisibility(visible = appState.connectionDisplayMode == ConnectionDisplayModeClassic) {
                             SwitchPreference(
                                 title = stringResource(R.string.settings_classic_show_floating_power_button),

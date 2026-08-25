@@ -754,7 +754,7 @@ fun ProxyServerListPage(
                 pingingGroupIds = pingingGroupIds,
                 activeOutboundTag = activeOutboundTag,
                 activeTrafficConfigId = proxyListState.activeTrafficConfigId,
-                userScrollEnabled = pinConnectionPanel && proxyListState.enableSubscriptionSwipe,
+                userScrollEnabled = proxyListState.enableSubscriptionSwipe,
                 pageHeader = if (pinConnectionPanel) null else movingPageHeader,
             )
             floatingToolbar?.invoke(this)

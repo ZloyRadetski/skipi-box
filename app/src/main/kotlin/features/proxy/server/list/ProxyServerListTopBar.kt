@@ -345,6 +345,7 @@ internal fun ProxyServerListTopBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
                     .padding(bottom = 0.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
