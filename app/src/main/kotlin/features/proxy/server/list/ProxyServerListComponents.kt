@@ -870,11 +870,7 @@ internal fun ProxyServerListFloatingToolbar(
     onRealConnectionTest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val appState by LocalAppStateStore.current.collectAppState()
-    val accentTone = remember(appState.seedIndex, appState.customMaterialYouSeed, appState.customAccentColor, context) {
-        appState.customAccentColor?.let { Color(it) } ?: (keyColorFor(appState.seedIndex, appState.customMaterialYouSeed) ?: resolveSystemAccentColor(context))
-    }
+    val accentTone = AppTheme.colors.accent
     val fabColor = accentTone
     val fabIconTint = Color.White
 

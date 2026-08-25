@@ -568,10 +568,7 @@ private fun ProxyHeroConnectionCardClassic(
     }
 
     val heroShape = RoundedCornerShape(24.dp)
-    val context = LocalContext.current
-    val accentTone = remember(appState.seedIndex, appState.customMaterialYouSeed, appState.customAccentColor, context) {
-        appState.customAccentColor?.let { Color(it) } ?: (keyColorFor(appState.seedIndex, appState.customMaterialYouSeed) ?: resolveSystemAccentColor(context))
-    }
+    val accentTone = AppTheme.colors.accent
 
     val cardBgColor = AppTheme.colors.surface
     val cardBorderColor by animateColorAsState(
@@ -905,10 +902,7 @@ private fun ProxyHeroConnectionCardCompact(
     modifier: Modifier = Modifier,
 ) {
     val heroShape = RoundedCornerShape(18.dp)
-    val context = LocalContext.current
-    val accentTone = remember(appState.seedIndex, appState.customMaterialYouSeed, appState.customAccentColor, context) {
-        appState.customAccentColor?.let { Color(it) } ?: (keyColorFor(appState.seedIndex, appState.customMaterialYouSeed) ?: resolveSystemAccentColor(context))
-    }
+    val accentTone = AppTheme.colors.accent
 
     val compactCardBgColor by animateColorAsState(
         targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surface,
