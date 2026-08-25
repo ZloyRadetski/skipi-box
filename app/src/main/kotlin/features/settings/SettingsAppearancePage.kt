@@ -108,14 +108,7 @@ private enum class ColorPickerTarget {
     PING_FAST,
     PING_MEDIUM,
     PING_SLOW,
-    CATEGORY_APPEARANCE,
-    CATEGORY_VPN,
-    CATEGORY_PROXY,
-    CATEGORY_SUBSCRIPTIONS,
-    CATEGORY_INTEGRATION,
-    CATEGORY_LOGS,
-    CATEGORY_BACKUP,
-    CATEGORY_ABOUT,
+    CATEGORY_ICONS,
     PROTOCOL_VLESS,
     PROTOCOL_VMESS,
     PROTOCOL_HYSTERIA2,
@@ -580,44 +573,10 @@ fun SettingsAppearancePage(
                                 SmallTitle(text = stringResource(R.string.settings_custom_colors_categories_title))
                                 SettingsSectionCard {
                                     SettingsColorItem(
-                                        title = stringResource(R.string.settings_color_category_appearance),
-                                        color = appState.customCategoryAppearanceColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_APPEARANCE },
-                                    )
-                                    SettingsColorItem(
-                                        title = stringResource(R.string.settings_color_category_vpn),
-                                        color = appState.customCategoryVpnColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_VPN },
-                                    )
-                                    SettingsColorItem(
-                                        title = stringResource(R.string.settings_color_category_proxy),
-                                        color = appState.customCategoryProxyColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_PROXY },
-                                    )
-                                    SettingsColorItem(
-                                        title = stringResource(R.string.settings_color_category_subscriptions),
-                                        color = appState.customCategorySubscriptionsColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_SUBSCRIPTIONS },
-                                    )
-                                    SettingsColorItem(
-                                        title = stringResource(R.string.settings_color_category_integration),
-                                        color = appState.customCategoryIntegrationColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_INTEGRATION },
-                                    )
-                                    SettingsColorItem(
-                                        title = stringResource(R.string.settings_color_category_logs),
-                                        color = appState.customCategoryLogsColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_LOGS },
-                                    )
-                                    SettingsColorItem(
-                                        title = stringResource(R.string.settings_color_category_backup),
-                                        color = appState.customCategoryBackupColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_BACKUP },
-                                    )
-                                    SettingsColorItem(
-                                        title = stringResource(R.string.settings_color_category_about),
-                                        color = appState.customCategoryAboutColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
-                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_ABOUT },
+                                        title = stringResource(R.string.settings_color_category_icons),
+                                        summary = stringResource(R.string.settings_color_category_icons_summary),
+                                        color = appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                                        onClick = { activeColorPickerTarget = ColorPickerTarget.CATEGORY_ICONS },
                                     )
                                 }
 
@@ -695,14 +654,7 @@ fun SettingsAppearancePage(
                                                     customPingFastColor = null,
                                                     customPingMediumColor = null,
                                                     customPingSlowColor = null,
-                                                    customCategoryAppearanceColor = null,
-                                                    customCategoryVpnColor = null,
-                                                    customCategoryProxyColor = null,
-                                                    customCategorySubscriptionsColor = null,
-                                                    customCategoryIntegrationColor = null,
-                                                    customCategoryLogsColor = null,
-                                                    customCategoryBackupColor = null,
-                                                    customCategoryAboutColor = null,
+                                                    customCategoryIconColor = null,
                                                     customProtocolVlessColor = null,
                                                     customProtocolVmessColor = null,
                                                     customProtocolHysteria2Color = null,
@@ -820,14 +772,7 @@ fun SettingsAppearancePage(
                     ColorPickerTarget.PING_FAST -> stringResource(R.string.settings_color_ping_fast)
                     ColorPickerTarget.PING_MEDIUM -> stringResource(R.string.settings_color_ping_medium)
                     ColorPickerTarget.PING_SLOW -> stringResource(R.string.settings_color_ping_slow)
-                    ColorPickerTarget.CATEGORY_APPEARANCE -> stringResource(R.string.settings_color_category_appearance)
-                    ColorPickerTarget.CATEGORY_VPN -> stringResource(R.string.settings_color_category_vpn)
-                    ColorPickerTarget.CATEGORY_PROXY -> stringResource(R.string.settings_color_category_proxy)
-                    ColorPickerTarget.CATEGORY_SUBSCRIPTIONS -> stringResource(R.string.settings_color_category_subscriptions)
-                    ColorPickerTarget.CATEGORY_INTEGRATION -> stringResource(R.string.settings_color_category_integration)
-                    ColorPickerTarget.CATEGORY_LOGS -> stringResource(R.string.settings_color_category_logs)
-                    ColorPickerTarget.CATEGORY_BACKUP -> stringResource(R.string.settings_color_category_backup)
-                    ColorPickerTarget.CATEGORY_ABOUT -> stringResource(R.string.settings_color_category_about)
+                    ColorPickerTarget.CATEGORY_ICONS -> stringResource(R.string.settings_color_category_icons)
                     ColorPickerTarget.PROTOCOL_VLESS -> stringResource(R.string.settings_color_protocol_vless)
                     ColorPickerTarget.PROTOCOL_VMESS -> stringResource(R.string.settings_color_protocol_vmess)
                     ColorPickerTarget.PROTOCOL_HYSTERIA2 -> stringResource(R.string.settings_color_protocol_hysteria2)
@@ -853,14 +798,7 @@ fun SettingsAppearancePage(
                     ColorPickerTarget.PING_FAST -> appState.customPingFastColor?.let { Color(it) } ?: (if (isDark) Color(0xFF6BD58A) else Color(0xFF128A3C))
                     ColorPickerTarget.PING_MEDIUM -> appState.customPingMediumColor?.let { Color(it) } ?: (if (isDark) Color(0xFFFFC857) else Color(0xFFD18A00))
                     ColorPickerTarget.PING_SLOW -> appState.customPingSlowColor?.let { Color(it) } ?: (if (isDark) Color(0xFFFF9B63) else Color(0xFFE06400))
-                    ColorPickerTarget.CATEGORY_APPEARANCE -> appState.customCategoryAppearanceColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
-                    ColorPickerTarget.CATEGORY_VPN -> appState.customCategoryVpnColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
-                    ColorPickerTarget.CATEGORY_PROXY -> appState.customCategoryProxyColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
-                    ColorPickerTarget.CATEGORY_SUBSCRIPTIONS -> appState.customCategorySubscriptionsColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
-                    ColorPickerTarget.CATEGORY_INTEGRATION -> appState.customCategoryIntegrationColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
-                    ColorPickerTarget.CATEGORY_LOGS -> appState.customCategoryLogsColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
-                    ColorPickerTarget.CATEGORY_BACKUP -> appState.customCategoryBackupColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
-                    ColorPickerTarget.CATEGORY_ABOUT -> appState.customCategoryAboutColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
+                    ColorPickerTarget.CATEGORY_ICONS -> appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
                     ColorPickerTarget.PROTOCOL_VLESS -> ProtocolColorUtils.resolveProtocolColor("vless", appState, isDark)
                     ColorPickerTarget.PROTOCOL_VMESS -> ProtocolColorUtils.resolveProtocolColor("vmess", appState, isDark)
                     ColorPickerTarget.PROTOCOL_HYSTERIA2 -> ProtocolColorUtils.resolveProtocolColor("hysteria2", appState, isDark)
@@ -897,14 +835,7 @@ fun SettingsAppearancePage(
                                 ColorPickerTarget.PING_FAST -> state.copy(customPingFastColor = colorLong)
                                 ColorPickerTarget.PING_MEDIUM -> state.copy(customPingMediumColor = colorLong)
                                 ColorPickerTarget.PING_SLOW -> state.copy(customPingSlowColor = colorLong)
-                                ColorPickerTarget.CATEGORY_APPEARANCE -> state.copy(customCategoryAppearanceColor = colorLong)
-                                ColorPickerTarget.CATEGORY_VPN -> state.copy(customCategoryVpnColor = colorLong)
-                                ColorPickerTarget.CATEGORY_PROXY -> state.copy(customCategoryProxyColor = colorLong)
-                                ColorPickerTarget.CATEGORY_SUBSCRIPTIONS -> state.copy(customCategorySubscriptionsColor = colorLong)
-                                ColorPickerTarget.CATEGORY_INTEGRATION -> state.copy(customCategoryIntegrationColor = colorLong)
-                                ColorPickerTarget.CATEGORY_LOGS -> state.copy(customCategoryLogsColor = colorLong)
-                                ColorPickerTarget.CATEGORY_BACKUP -> state.copy(customCategoryBackupColor = colorLong)
-                                ColorPickerTarget.CATEGORY_ABOUT -> state.copy(customCategoryAboutColor = colorLong)
+                                ColorPickerTarget.CATEGORY_ICONS -> state.copy(customCategoryIconColor = colorLong)
                                 ColorPickerTarget.PROTOCOL_VLESS -> state.copy(customProtocolVlessColor = colorLong)
                                 ColorPickerTarget.PROTOCOL_VMESS -> state.copy(customProtocolVmessColor = colorLong)
                                 ColorPickerTarget.PROTOCOL_HYSTERIA2 -> state.copy(customProtocolHysteria2Color = colorLong)

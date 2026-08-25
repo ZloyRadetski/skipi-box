@@ -80,14 +80,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         customPingFastColor = customPingFastColor,
         customPingMediumColor = customPingMediumColor,
         customPingSlowColor = customPingSlowColor,
-        customCategoryAppearanceColor = customCategoryAppearanceColor,
-        customCategoryVpnColor = customCategoryVpnColor,
-        customCategoryProxyColor = customCategoryProxyColor,
-        customCategorySubscriptionsColor = customCategorySubscriptionsColor,
-        customCategoryIntegrationColor = customCategoryIntegrationColor,
-        customCategoryLogsColor = customCategoryLogsColor,
-        customCategoryBackupColor = customCategoryBackupColor,
-        customCategoryAboutColor = customCategoryAboutColor,
+        customCategoryIconColor = customCategoryIconColor,
         customProtocolVlessColor = customProtocolVlessColor,
         customProtocolVmessColor = customProtocolVmessColor,
         customProtocolHysteria2Color = customProtocolHysteria2Color,
@@ -376,14 +369,15 @@ private fun AppBackupData.toAppState(): AppState {
         customPingFastColor = settings.customPingFastColor,
         customPingMediumColor = settings.customPingMediumColor,
         customPingSlowColor = settings.customPingSlowColor,
-        customCategoryAppearanceColor = settings.customCategoryAppearanceColor,
-        customCategoryVpnColor = settings.customCategoryVpnColor,
-        customCategoryProxyColor = settings.customCategoryProxyColor,
-        customCategorySubscriptionsColor = settings.customCategorySubscriptionsColor,
-        customCategoryIntegrationColor = settings.customCategoryIntegrationColor,
-        customCategoryLogsColor = settings.customCategoryLogsColor,
-        customCategoryBackupColor = settings.customCategoryBackupColor,
-        customCategoryAboutColor = settings.customCategoryAboutColor,
+        customCategoryIconColor = settings.customCategoryIconColor
+            ?: settings.customCategoryAppearanceColor
+            ?: settings.customCategoryVpnColor
+            ?: settings.customCategoryProxyColor
+            ?: settings.customCategorySubscriptionsColor
+            ?: settings.customCategoryIntegrationColor
+            ?: settings.customCategoryLogsColor
+            ?: settings.customCategoryBackupColor
+            ?: settings.customCategoryAboutColor,
         customProtocolVlessColor = settings.customProtocolVlessColor,
         customProtocolVmessColor = settings.customProtocolVmessColor,
         customProtocolHysteria2Color = settings.customProtocolHysteria2Color,

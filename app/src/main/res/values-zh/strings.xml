@@ -969,7 +969,6 @@
     <string name="settings_enable_material_you_summary">基于壁纸的主题调色板</string>
     <string name="settings_enable_haptics">触觉反馈</string>
     <string name="settings_enable_haptics_summary">在连接、选择服务器和关键操作时振动</string>
-    <string name="settings_custom_colors_categories_title">类别图标颜色</string>
     <string name="settings_custom_colors_status_title">连接状态和延迟</string>
     <string name="settings_color_status_running">状态“已连接”</string>
     <string name="settings_color_status_running_summary">活动连接指示器和文本的颜色</string>
@@ -981,14 +980,9 @@
     <string name="settings_color_ping_medium_summary">中等服务器延迟的颜色</string>
     <string name="settings_color_ping_slow">高 Ping（&gt; 200 毫秒）</string>
     <string name="settings_color_ping_slow_summary">高服务器延迟的颜色</string>
-    <string name="settings_color_category_appearance">图标“外观”</string>
-    <string name="settings_color_category_vpn">图标 «VPN 服务»</string>
-    <string name="settings_color_category_proxy">图标“入站代理”</string>
-    <string name="settings_color_category_subscriptions">图标“订阅”</string>
-    <string name="settings_color_category_integration">图标“集成”</string>
-    <string name="settings_color_category_logs">图标“日志”</string>
-    <string name="settings_color_category_backup">图标“备份和重置”</string>
-    <string name="settings_color_category_about">图标“关于”</string>
+    <string name="settings_custom_colors_categories_title">类别图标</string>
+    <string name="settings_color_category_icons">图标颜色</string>
+    <string name="settings_color_category_icons_summary">所有类别图标的背景颜色</string>
     <string name="settings_custom_colors_protocols_title">协议和订阅颜色</string>
     <string name="settings_color_protocol_vless">VLESS协议</string>
     <string name="settings_color_protocol_vmess">VMess协议</string>

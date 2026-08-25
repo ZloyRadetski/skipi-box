@@ -1019,7 +1019,6 @@
     <string name="settings_enable_material_you_summary">Палитра темы на основе обоев</string>
     <string name="settings_enable_haptics">Тактильный отклик</string>
     <string name="settings_enable_haptics_summary">Вибрация при подключении, смене серверов и действиях</string>
-    <string name="settings_custom_colors_categories_title">Цвета иконок категорий</string>
     <string name="settings_custom_colors_status_title">Статусы подключения и задержка</string>
     <string name="settings_color_status_running">Статус «Подключено»</string>
     <string name="settings_color_status_running_summary">Цвет индикатора и текста активного подключения</string>
@@ -1031,14 +1030,9 @@
     <string name="settings_color_ping_medium_summary">Цвет индикации умеренной задержки сервера</string>
     <string name="settings_color_ping_slow">Высокий пинг (&gt; 200 мс)</string>
     <string name="settings_color_ping_slow_summary">Цвет индикации повышенной задержки сервера</string>
-    <string name="settings_color_category_appearance">Иконка «Оформление»</string>
-    <string name="settings_color_category_vpn">Иконка «Служба VPN»</string>
-    <string name="settings_color_category_proxy">Иконка «Входящий прокси»</string>
-    <string name="settings_color_category_subscriptions">Иконка «Подписки»</string>
-    <string name="settings_color_category_integration">Иконка «Интеграция»</string>
-    <string name="settings_color_category_logs">Иконка «Журналы»</string>
-    <string name="settings_color_category_backup">Иконка «Резервное копирование»</string>
-    <string name="settings_color_category_about">Иконка «О программе»</string>
+    <string name="settings_custom_colors_categories_title">Иконки категорий</string>
+    <string name="settings_color_category_icons">Цвет иконок</string>
+    <string name="settings_color_category_icons_summary">Фоновый цвет иконок всех разделов</string>
     <string name="settings_custom_colors_protocols_title">Цвета протоколов и подписок</string>
     <string name="settings_color_protocol_vless">Протокол VLESS</string>
     <string name="settings_color_protocol_vmess">Протокол VMess</string>

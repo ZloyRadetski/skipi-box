@@ -953,7 +953,6 @@
     <string name="settings_enable_material_you_summary">از رنگ ها و پالت پویا مونه بر اساس کاغذ دیواری یا رنگ تم استفاده کنید</string>
     <string name="settings_enable_haptics">بازخورد لمسی</string>
     <string name="settings_enable_haptics_summary">لرزش هنگام اتصال، انتخاب سرور و اقدامات کلیدی</string>
-    <string name="settings_custom_colors_categories_title">رنگ‌های آیکون دسته</string>
     <string name="settings_custom_colors_status_title">وضعیت اتصال و تأخیر</string>
     <string name="settings_color_status_running">وضعیت «متصل»</string>
     <string name="settings_color_status_running_summary">رنگ نشانگر اتصال فعال و متن</string>
@@ -965,14 +964,9 @@
     <string name="settings_color_ping_medium_summary">رنگ برای تأخیر متوسط ​​سرور</string>
     <string name="settings_color_ping_slow">پینگ بالا (&gt; 200 میلی‌ثانیه)</string>
     <string name="settings_color_ping_slow_summary">رنگ برای تأخیر بالای سرور</string>
-    <string name="settings_color_category_appearance">نماد «ظاهر»</string>
-    <string name="settings_color_category_vpn">نماد «سرویس VPN»</string>
-    <string name="settings_color_category_proxy">نماد «پراکسی ورودی»</string>
-    <string name="settings_color_category_subscriptions">نماد «اشتراک‌ها»</string>
-    <string name="settings_color_category_integration">نماد «ادغام»</string>
-    <string name="settings_color_category_logs">نماد «Logs»</string>
-    <string name="settings_color_category_backup">نماد «پشتیبان گیری و تنظیم مجدد»</string>
-    <string name="settings_color_category_about">نماد «درباره»</string>
+    <string name="settings_custom_colors_categories_title">آیکون‌های دسته</string>
+    <string name="settings_color_category_icons">رنگ آیکون‌ها</string>
+    <string name="settings_color_category_icons_summary">رنگ پس‌زمینه برای تمام آیکون‌های دسته‌بندی</string>
     <string name="settings_custom_colors_protocols_title">رنگ های پروتکل و اشتراک</string>
     <string name="settings_color_protocol_vless">پروتکل VLESS</string>
     <string name="settings_color_protocol_vmess">پروتکل VMess</string>

@@ -1032,7 +1032,6 @@
     <string name="settings_enable_material_you_summary">Palette based on wallpaper</string>
     <string name="settings_enable_haptics">Haptic feedback</string>
     <string name="settings_enable_haptics_summary">Vibrate on connection, server selection and key actions</string>
-    <string name="settings_custom_colors_categories_title">Category Icon Colors</string>
     <string name="settings_custom_colors_status_title">Connection Status &amp; Latency</string>
     <string name="settings_color_status_running">Status «Connected»</string>
     <string name="settings_color_status_running_summary">Color of active connection indicator and text</string>
@@ -1044,14 +1043,9 @@
     <string name="settings_color_ping_medium_summary">Color for moderate server latency</string>
     <string name="settings_color_ping_slow">High Ping (&gt; 200 ms)</string>
     <string name="settings_color_ping_slow_summary">Color for high server latency</string>
-    <string name="settings_color_category_appearance">Icon «Appearance»</string>
-    <string name="settings_color_category_vpn">Icon «VPN Service»</string>
-    <string name="settings_color_category_proxy">Icon «Inbound Proxy»</string>
-    <string name="settings_color_category_subscriptions">Icon «Subscriptions»</string>
-    <string name="settings_color_category_integration">Icon «Integration»</string>
-    <string name="settings_color_category_logs">Icon «Logs»</string>
-    <string name="settings_color_category_backup">Icon «Backup &amp; Reset»</string>
-    <string name="settings_color_category_about">Icon «About»</string>
+    <string name="settings_custom_colors_categories_title">Category Icons</string>
+    <string name="settings_color_category_icons">Icon Color</string>
+    <string name="settings_color_category_icons_summary">Background color for all category icons</string>
     <string name="settings_custom_colors_protocols_title">Protocol &amp; Subscription Colors</string>
     <string name="settings_color_protocol_vless">VLESS Protocol</string>
     <string name="settings_color_protocol_vmess">VMess Protocol</string>

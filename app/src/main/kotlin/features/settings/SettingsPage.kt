@@ -104,6 +104,8 @@ private fun SettingsContent(
         modifier = Modifier
             .fillMaxSize(),
     ) {
+        val categoryIconColor = appState.customCategoryIconColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary
+
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
@@ -116,7 +118,7 @@ private fun SettingsContent(
                 SettingsCategoryGroupCard {
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Palette,
-                        iconBackgroundColor = appState.customCategoryAppearanceColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_appearance),
                         summary = stringResource(R.string.settings_category_appearance_summary),
                         onClick = { navigator.push(Route.SettingsAppearance) },
@@ -129,7 +131,7 @@ private fun SettingsContent(
                 SettingsCategoryGroupCard {
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Shield,
-                        iconBackgroundColor = appState.customCategoryVpnColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_vpn),
                         summary = stringResource(R.string.settings_category_vpn_summary),
                         value = "MTU: ${appState.tunMtu}",
@@ -138,7 +140,7 @@ private fun SettingsContent(
                     )
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Server,
-                        iconBackgroundColor = appState.customCategoryProxyColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_local_proxy),
                         summary = stringResource(R.string.settings_category_local_proxy_summary),
                         value = ":${appState.localProxyPort}",
@@ -152,7 +154,7 @@ private fun SettingsContent(
                 SettingsCategoryGroupCard {
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Sync,
-                        iconBackgroundColor = appState.customCategorySubscriptionsColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_subscriptions),
                         summary = stringResource(R.string.settings_category_subscriptions_summary),
                         onClick = { navigator.push(Route.SettingsSubscriptions) },
@@ -165,7 +167,7 @@ private fun SettingsContent(
                 SettingsCategoryGroupCard {
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Bolt,
-                        iconBackgroundColor = appState.customCategoryIntegrationColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_integration),
                         summary = stringResource(R.string.settings_category_integration_summary),
                         onClick = { navigator.push(Route.SettingsIntegration) },
@@ -178,7 +180,7 @@ private fun SettingsContent(
                 SettingsCategoryGroupCard {
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Logs,
-                        iconBackgroundColor = appState.customCategoryLogsColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_logs),
                         summary = stringResource(R.string.settings_category_logs_summary),
                         value = SettingsLogLevelOptions.getOrNull(appState.coreLogLevel)?.uppercase(),
@@ -187,7 +189,7 @@ private fun SettingsContent(
                     )
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Backup,
-                        iconBackgroundColor = appState.customCategoryBackupColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_backup_reset),
                         summary = stringResource(R.string.settings_category_backup_reset_summary),
                         onClick = { navigator.push(Route.SettingsBackupReset) },
@@ -195,7 +197,7 @@ private fun SettingsContent(
                     )
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Bolt,
-                        iconBackgroundColor = MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_speed_test),
                         summary = stringResource(R.string.settings_category_speed_test_summary),
                         onClick = { navigator.push(Route.SpeedTest) },
@@ -203,7 +205,7 @@ private fun SettingsContent(
                     )
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Shield,
-                        iconBackgroundColor = MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_dns_leak),
                         summary = stringResource(R.string.settings_category_dns_leak_summary),
                         onClick = { navigator.push(Route.DnsLeakTest) },
@@ -211,7 +213,7 @@ private fun SettingsContent(
                     )
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Globe,
-                        iconBackgroundColor = MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_category_ip_info),
                         summary = stringResource(R.string.settings_category_ip_info_summary),
                         onClick = { navigator.push(Route.IpInfo) },
@@ -224,7 +226,7 @@ private fun SettingsContent(
                 SettingsCategoryGroupCard(bottomPadding = 0.dp) {
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Info,
-                        iconBackgroundColor = appState.customCategoryAboutColor?.let { Color(it) } ?: MiuixTheme.colorScheme.primary,
+                        iconBackgroundColor = categoryIconColor,
                         title = stringResource(R.string.settings_about_project),
                         summary = "v${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
                         onClick = { navigator.push(Route.About) },

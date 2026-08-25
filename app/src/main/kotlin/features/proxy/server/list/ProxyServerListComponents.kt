@@ -334,21 +334,15 @@ internal fun ProxyServerListSearchBar(
     onSearchValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SearchBar(
-        modifier = modifier,
-        inputField = {
-            InputField(
-                query = searchValue,
-                onQueryChange = onSearchValueChange,
-                onSearch = {},
-                expanded = false,
-                onExpandedChange = {},
-                label = stringResource(R.string.proxy_server_list_search_label),
-            )
-        },
+    InputField(
+        query = searchValue,
+        onQueryChange = onSearchValueChange,
+        onSearch = {},
         expanded = false,
         onExpandedChange = {},
-    ) {}
+        label = stringResource(R.string.proxy_server_list_search_label),
+        modifier = modifier,
+    )
 }
 
 @Composable

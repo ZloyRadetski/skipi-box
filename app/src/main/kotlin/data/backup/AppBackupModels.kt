@@ -61,6 +61,7 @@ internal data class AppBackupSettings(
     val customPingFastColor: Long? = null,
     val customPingMediumColor: Long? = null,
     val customPingSlowColor: Long? = null,
+    val customCategoryIconColor: Long? = null,
     val customCategoryAppearanceColor: Long? = null,
     val customCategoryVpnColor: Long? = null,
     val customCategoryProxyColor: Long? = null,

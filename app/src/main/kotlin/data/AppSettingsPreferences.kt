@@ -125,14 +125,13 @@ internal class AppSettingsPreferences(
             customPingFastColor = if (preferences.contains(KeyCustomPingFastColor)) preferences.getLong(KeyCustomPingFastColor, 0L) else defaults.customPingFastColor,
             customPingMediumColor = if (preferences.contains(KeyCustomPingMediumColor)) preferences.getLong(KeyCustomPingMediumColor, 0L) else defaults.customPingMediumColor,
             customPingSlowColor = if (preferences.contains(KeyCustomPingSlowColor)) preferences.getLong(KeyCustomPingSlowColor, 0L) else defaults.customPingSlowColor,
-            customCategoryAppearanceColor = if (preferences.contains(KeyCustomCategoryAppearanceColor)) preferences.getLong(KeyCustomCategoryAppearanceColor, 0L) else defaults.customCategoryAppearanceColor,
-            customCategoryVpnColor = if (preferences.contains(KeyCustomCategoryVpnColor)) preferences.getLong(KeyCustomCategoryVpnColor, 0L) else defaults.customCategoryVpnColor,
-            customCategoryProxyColor = if (preferences.contains(KeyCustomCategoryProxyColor)) preferences.getLong(KeyCustomCategoryProxyColor, 0L) else defaults.customCategoryProxyColor,
-            customCategorySubscriptionsColor = if (preferences.contains(KeyCustomCategorySubscriptionsColor)) preferences.getLong(KeyCustomCategorySubscriptionsColor, 0L) else defaults.customCategorySubscriptionsColor,
-            customCategoryIntegrationColor = if (preferences.contains(KeyCustomCategoryIntegrationColor)) preferences.getLong(KeyCustomCategoryIntegrationColor, 0L) else defaults.customCategoryIntegrationColor,
-            customCategoryLogsColor = if (preferences.contains(KeyCustomCategoryLogsColor)) preferences.getLong(KeyCustomCategoryLogsColor, 0L) else defaults.customCategoryLogsColor,
-            customCategoryBackupColor = if (preferences.contains(KeyCustomCategoryBackupColor)) preferences.getLong(KeyCustomCategoryBackupColor, 0L) else defaults.customCategoryBackupColor,
-            customCategoryAboutColor = if (preferences.contains(KeyCustomCategoryAboutColor)) preferences.getLong(KeyCustomCategoryAboutColor, 0L) else defaults.customCategoryAboutColor,
+            customCategoryIconColor = if (preferences.contains(KeyCustomCategoryIconColor)) {
+                preferences.getLong(KeyCustomCategoryIconColor, 0L)
+            } else if (preferences.contains(KeyCustomCategoryAppearanceColor)) {
+                preferences.getLong(KeyCustomCategoryAppearanceColor, 0L)
+            } else {
+                defaults.customCategoryIconColor
+            },
             customProtocolVlessColor = if (preferences.contains(KeyCustomProtocolVlessColor)) preferences.getLong(KeyCustomProtocolVlessColor, 0L) else defaults.customProtocolVlessColor,
             customProtocolVmessColor = if (preferences.contains(KeyCustomProtocolVmessColor)) preferences.getLong(KeyCustomProtocolVmessColor, 0L) else defaults.customProtocolVmessColor,
             customProtocolHysteria2Color = if (preferences.contains(KeyCustomProtocolHysteria2Color)) preferences.getLong(KeyCustomProtocolHysteria2Color, 0L) else defaults.customProtocolHysteria2Color,
@@ -432,14 +431,7 @@ internal class AppSettingsPreferences(
                 if (state.customPingFastColor != null) putLong(KeyCustomPingFastColor, state.customPingFastColor) else remove(KeyCustomPingFastColor)
                 if (state.customPingMediumColor != null) putLong(KeyCustomPingMediumColor, state.customPingMediumColor) else remove(KeyCustomPingMediumColor)
                 if (state.customPingSlowColor != null) putLong(KeyCustomPingSlowColor, state.customPingSlowColor) else remove(KeyCustomPingSlowColor)
-                if (state.customCategoryAppearanceColor != null) putLong(KeyCustomCategoryAppearanceColor, state.customCategoryAppearanceColor) else remove(KeyCustomCategoryAppearanceColor)
-                if (state.customCategoryVpnColor != null) putLong(KeyCustomCategoryVpnColor, state.customCategoryVpnColor) else remove(KeyCustomCategoryVpnColor)
-                if (state.customCategoryProxyColor != null) putLong(KeyCustomCategoryProxyColor, state.customCategoryProxyColor) else remove(KeyCustomCategoryProxyColor)
-                if (state.customCategorySubscriptionsColor != null) putLong(KeyCustomCategorySubscriptionsColor, state.customCategorySubscriptionsColor) else remove(KeyCustomCategorySubscriptionsColor)
-                if (state.customCategoryIntegrationColor != null) putLong(KeyCustomCategoryIntegrationColor, state.customCategoryIntegrationColor) else remove(KeyCustomCategoryIntegrationColor)
-                if (state.customCategoryLogsColor != null) putLong(KeyCustomCategoryLogsColor, state.customCategoryLogsColor) else remove(KeyCustomCategoryLogsColor)
-                if (state.customCategoryBackupColor != null) putLong(KeyCustomCategoryBackupColor, state.customCategoryBackupColor) else remove(KeyCustomCategoryBackupColor)
-                if (state.customCategoryAboutColor != null) putLong(KeyCustomCategoryAboutColor, state.customCategoryAboutColor) else remove(KeyCustomCategoryAboutColor)
+                if (state.customCategoryIconColor != null) putLong(KeyCustomCategoryIconColor, state.customCategoryIconColor) else remove(KeyCustomCategoryIconColor)
                 if (state.customProtocolVlessColor != null) putLong(KeyCustomProtocolVlessColor, state.customProtocolVlessColor) else remove(KeyCustomProtocolVlessColor)
                 if (state.customProtocolVmessColor != null) putLong(KeyCustomProtocolVmessColor, state.customProtocolVmessColor) else remove(KeyCustomProtocolVmessColor)
                 if (state.customProtocolHysteria2Color != null) putLong(KeyCustomProtocolHysteria2Color, state.customProtocolHysteria2Color) else remove(KeyCustomProtocolHysteria2Color)
@@ -803,14 +795,8 @@ private const val KeyCustomStatusStoppedColor = "custom_status_stopped_color"
 private const val KeyCustomPingFastColor = "custom_ping_fast_color"
 private const val KeyCustomPingMediumColor = "custom_ping_medium_color"
 private const val KeyCustomPingSlowColor = "custom_ping_slow_color"
+private const val KeyCustomCategoryIconColor = "custom_category_icon_color"
 private const val KeyCustomCategoryAppearanceColor = "custom_category_appearance_color"
-private const val KeyCustomCategoryVpnColor = "custom_category_vpn_color"
-private const val KeyCustomCategoryProxyColor = "custom_category_proxy_color"
-private const val KeyCustomCategorySubscriptionsColor = "custom_category_subscriptions_color"
-private const val KeyCustomCategoryIntegrationColor = "custom_category_integration_color"
-private const val KeyCustomCategoryLogsColor = "custom_category_logs_color"
-private const val KeyCustomCategoryBackupColor = "custom_category_backup_color"
-private const val KeyCustomCategoryAboutColor = "custom_category_about_color"
 private const val KeyCustomProtocolVlessColor = "custom_protocol_vless_color"
 private const val KeyCustomProtocolVmessColor = "custom_protocol_vmess_color"
 private const val KeyCustomProtocolHysteria2Color = "custom_protocol_hysteria2_color"
