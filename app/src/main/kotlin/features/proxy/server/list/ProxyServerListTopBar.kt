@@ -324,6 +324,7 @@ internal fun ProxyServerListTopBar(
             enter = fadeIn() + expandVertically(),
             exit = shrinkVertically() + fadeOut(),
         ) {
+            val bottomPadding = if (showSearchBar && proxyListState.showServerSearch) 6.dp else 0.dp
             ProxyServerListGroupSelector(
                 groups = groupState.groupTabs,
                 selectedGroupId = groupState.selectedTabId,
@@ -332,7 +333,7 @@ internal fun ProxyServerListTopBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    .padding(top = 4.dp, bottom = 2.dp),
+                    .padding(bottom = bottomPadding),
             )
         }
 
@@ -344,7 +345,7 @@ internal fun ProxyServerListTopBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 4.dp),
+                    .padding(bottom = 0.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ProxyServerListSearchBar(

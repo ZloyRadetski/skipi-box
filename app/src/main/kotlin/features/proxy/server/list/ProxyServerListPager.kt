@@ -321,7 +321,7 @@ private fun SubscriptionProxyServerList(
     val lastServerId = pageServers.lastOrNull()?.id
     val listContentPadding = PaddingValues(
         start = listPadding.calculateStartPadding(layoutDirection) + 12.dp,
-        top = 6.dp,
+        top = if (pageHeader != null) 0.dp else 6.dp,
         end = listPadding.calculateEndPadding(layoutDirection) + 12.dp,
         bottom = listPadding.calculateBottomPadding(),
     )
@@ -535,7 +535,7 @@ private fun ProxyServerLazyGrid(
         start = if (subscriptionGroupEnabled) 0.dp else {
             listPadding.calculateStartPadding(layoutDirection) + gridHorizontalExtra
         },
-        top = if (subscriptionGroupEnabled) 0.dp else 6.dp,
+        top = if (subscriptionGroupEnabled) 0.dp else if (pageHeader != null) 0.dp else 6.dp,
         end = if (subscriptionGroupEnabled) 0.dp else {
             listPadding.calculateEndPadding(layoutDirection) + gridHorizontalExtra
         },

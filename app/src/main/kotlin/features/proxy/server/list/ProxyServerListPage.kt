@@ -609,7 +609,7 @@ fun ProxyServerListPage(
             connectionPanel(
                 Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 2.dp),
+                    .padding(bottom = 6.dp),
             )
             AnimatedVisibility(
                 visible = groupState.showGroupTabs,
@@ -630,7 +630,7 @@ fun ProxyServerListPage(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp, bottom = 2.dp),
+                        .padding(bottom = 6.dp),
                 )
             }
             AnimatedVisibility(
@@ -641,7 +641,7 @@ fun ProxyServerListPage(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 4.dp),
+                        .padding(bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ProxyServerListSearchBar(
@@ -665,11 +665,12 @@ fun ProxyServerListPage(
             groupState = groupState,
             pinnedConnectionPanel = if (pinConnectionPanel) {
                 {
+                    val bottomPadding = if (groupState.showGroupTabs || proxyListState.showServerSearch) 6.dp else 0.dp
                     connectionPanel(
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp)
-                            .padding(bottom = 2.dp),
+                            .padding(bottom = bottomPadding),
                     )
                 }
             } else {
