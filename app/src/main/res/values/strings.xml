@@ -133,6 +133,9 @@
     <string name="settings_font_family_onest">Onest</string>
     <string name="settings_font_size">Font size</string>
     <string name="settings_font_size_summary">Adjust text size across the application</string>
+    <string name="settings_font_size_tiny">Tiny (55%)</string>
+    <string name="settings_font_size_extra_small">Extra small (65%)</string>
+    <string name="settings_font_size_very_small">Very small (75%)</string>
     <string name="settings_font_size_small">Small (85%)</string>
     <string name="settings_font_size_default">Default (100%)</string>
     <string name="settings_font_size_medium">Medium (115%)</string>

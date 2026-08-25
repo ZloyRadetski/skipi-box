@@ -68,18 +68,24 @@ fun normalizeFontFamilyMode(value: Int): Int = when (value) {
     else -> FontFamilyModeDefault
 }
 
-const val FontSizeModeSmall = 0
-const val FontSizeModeDefault = 1
-const val FontSizeModeMedium = 2
-const val FontSizeModeLarge = 3
-const val FontSizeModeExtraLarge = 4
+const val FontSizeModeTiny = 0
+const val FontSizeModeExtraSmall = 1
+const val FontSizeModeVerySmall = 2
+const val FontSizeModeSmall = 3
+const val FontSizeModeDefault = 4
+const val FontSizeModeMedium = 5
+const val FontSizeModeLarge = 6
+const val FontSizeModeExtraLarge = 7
 
 fun normalizeFontSizeMode(value: Int): Int = when (value) {
-    in FontSizeModeSmall..FontSizeModeExtraLarge -> value
+    in FontSizeModeTiny..FontSizeModeExtraLarge -> value
     else -> FontSizeModeDefault
 }
 
 fun resolveFontSizeScale(fontSizeMode: Int): Float = when (normalizeFontSizeMode(fontSizeMode)) {
+    FontSizeModeTiny -> 0.55f
+    FontSizeModeExtraSmall -> 0.65f
+    FontSizeModeVerySmall -> 0.75f
     FontSizeModeSmall -> 0.85f
     FontSizeModeDefault -> 1.0f
     FontSizeModeMedium -> 1.15f

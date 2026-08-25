@@ -27,6 +27,15 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+import app.modes.FontSizeModeDefault
+import app.modes.FontSizeModeExtraLarge
+import app.modes.FontSizeModeExtraSmall
+import app.modes.FontSizeModeMedium
+import app.modes.FontSizeModeSmall
+import app.modes.FontSizeModeTiny
+import app.modes.FontSizeModeVerySmall
+import app.modes.resolveFontSizeScale
+
 class FontFamilyModeTest {
 
     @Test
@@ -43,6 +52,18 @@ class FontFamilyModeTest {
         assertNotNull(resolveFontFamily(FontFamilyModeClimateCrisis))
         assertNotNull(resolveFontFamily(FontFamilyModeUnbounded))
         assertNotNull(resolveFontFamily(FontFamilyModeOnest))
+    }
+
+    @Test
+    fun testResolveFontSizeScale() {
+        assertEquals(0.55f, resolveFontSizeScale(FontSizeModeTiny), 0.001f)
+        assertEquals(0.65f, resolveFontSizeScale(FontSizeModeExtraSmall), 0.001f)
+        assertEquals(0.75f, resolveFontSizeScale(FontSizeModeVerySmall), 0.001f)
+        assertEquals(0.85f, resolveFontSizeScale(FontSizeModeSmall), 0.001f)
+        assertEquals(1.0f, resolveFontSizeScale(FontSizeModeDefault), 0.001f)
+        assertEquals(1.15f, resolveFontSizeScale(FontSizeModeMedium), 0.001f)
+        assertEquals(1.30f, resolveFontSizeScale(FontSizeModeLarge), 0.001f)
+        assertEquals(1.45f, resolveFontSizeScale(FontSizeModeExtraLarge), 0.001f)
     }
 
     @Test

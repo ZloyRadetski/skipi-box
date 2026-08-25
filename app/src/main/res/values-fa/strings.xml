@@ -1284,6 +1284,9 @@
     <string name="settings_font_family_onest">Onest</string>
     <string name="settings_font_size">اندازه فونت</string>
     <string name="settings_font_size_summary">تنظیم اندازه متن در سراسر برنامه</string>
+    <string name="settings_font_size_tiny">بسیار ریز (۵۵٪)</string>
+    <string name="settings_font_size_extra_small">خیلی کوچک (۶۵٪)</string>
+    <string name="settings_font_size_very_small">کوچکتر (۷۵٪)</string>
     <string name="settings_font_size_small">کوچک (۸۵٪)</string>
     <string name="settings_font_size_default">پیش‌فرض (۱۰۰٪)</string>
     <string name="settings_font_size_medium">متوسط (۱۱۵٪)</string>

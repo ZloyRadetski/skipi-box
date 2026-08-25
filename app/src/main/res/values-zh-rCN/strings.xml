@@ -1285,6 +1285,9 @@
     <string name="settings_font_family_onest">Onest</string>
     <string name="settings_font_size">字体大小</string>
     <string name="settings_font_size_summary">调整应用全局文本大小</string>
+    <string name="settings_font_size_tiny">极小（55%）</string>
+    <string name="settings_font_size_extra_small">很小（65%）</string>
+    <string name="settings_font_size_very_small">较小（75%）</string>
     <string name="settings_font_size_small">小（85%）</string>
     <string name="settings_font_size_default">默认（100%）</string>
     <string name="settings_font_size_medium">中等（115%）</string>

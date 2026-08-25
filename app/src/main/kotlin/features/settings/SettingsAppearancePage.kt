@@ -228,6 +228,9 @@ fun SettingsAppearancePage(
     )
 
     val fontSizeOptions = listOf(
+        stringResource(R.string.settings_font_size_tiny),
+        stringResource(R.string.settings_font_size_extra_small),
+        stringResource(R.string.settings_font_size_very_small),
         stringResource(R.string.settings_font_size_small),
         stringResource(R.string.settings_font_size_default),
         stringResource(R.string.settings_font_size_medium),
