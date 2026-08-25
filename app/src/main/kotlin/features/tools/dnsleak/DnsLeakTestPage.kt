@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.tools.dnsleak
@@ -237,7 +237,7 @@ private fun ResolverCard(resolver: DnsLeakResolver) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = DnsLeakAnalysis.countryFlagEmoji(resolver.observedCountryCode) ?: "рџЊђ",
+                text = DnsLeakAnalysis.countryFlagEmoji(resolver.observedCountryCode) ?: "\uD83C\uDF10",
                 fontSize = 22.sp,
             )
             Spacer(Modifier.size(12.dp))

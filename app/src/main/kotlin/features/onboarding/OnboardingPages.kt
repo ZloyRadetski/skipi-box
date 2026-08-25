@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.onboarding
@@ -247,10 +247,10 @@ internal fun OnboardingWelcomePage(
     modifier: Modifier = Modifier,
 ) {
     val languages = listOf(
-        Triple(LanguageModeRussian, "Р СѓСЃСЃРєРёР№", "рџ‡·рџ‡є"),
-        Triple(LanguageModeEnglish, "English", "рџ‡¬рџ‡§"),
-        Triple(LanguageModeChinese, "з®ЂдЅ“дё­ж–‡", "рџ‡Ёрџ‡і"),
-        Triple(LanguageModePersian, "ЩЃШ§Ш±ШіЫЊ", "рџ‡®рџ‡·"),
+        Triple(LanguageModeRussian, "Русский", "\uD83C\uDDF7\uD83C\uDDFA"),
+        Triple(LanguageModeEnglish, "English", "\uD83C\uDDEC\uD83C\uDDE7"),
+        Triple(LanguageModeChinese, "简体中文", "\uD83C\uDDE8\uD83C\uDDF3"),
+        Triple(LanguageModePersian, "فارسی", "\uD83C\uDDEE\uD83C\uDDF7"),
     )
 
     val cardBg = onboardingCardBackground()
@@ -386,7 +386,7 @@ internal fun OnboardingWelcomePage(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "рџЊђ  " + stringResource(R.string.option_follow_system),
+                            text = "\uD83C\uDF10  " + stringResource(R.string.option_follow_system),
                             color = sysTextColor,
                             fontWeight = if (isSystemSelected) FontWeight.Bold else FontWeight.Medium,
                             fontSize = 14.sp,
@@ -466,7 +466,7 @@ internal fun OnboardingTelegramPage(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "вњ€пёЏ",
+                    text = "\u2708\uFE0F",
                     fontSize = 32.sp,
                 )
             }
@@ -506,17 +506,17 @@ internal fun OnboardingTelegramPage(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 TelegramFeatureItem(
-                    emoji = "рџљЂ",
+                    emoji = "\uD83D\uDE80",
                     title = stringResource(R.string.onboarding_telegram_feature_releases_title),
                     description = stringResource(R.string.onboarding_telegram_feature_releases_desc),
                 )
                 TelegramFeatureItem(
-                    emoji = "рџ’¬",
+                    emoji = "\uD83D\uDCAC",
                     title = stringResource(R.string.onboarding_telegram_feature_chat_title),
                     description = stringResource(R.string.onboarding_telegram_feature_chat_desc),
                 )
                 TelegramFeatureItem(
-                    emoji = "рџ“ў",
+                    emoji = "\uD83D\uDCE2",
                     title = stringResource(R.string.onboarding_telegram_feature_news_title),
                     description = stringResource(R.string.onboarding_telegram_feature_news_desc),
                 )
@@ -538,7 +538,7 @@ internal fun OnboardingTelegramPage(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "вњ€пёЏ  " + stringResource(R.string.onboarding_telegram_open_button),
+                text = "\u2708\uFE0F  " + stringResource(R.string.onboarding_telegram_open_button),
                 color = Color.White,
                 fontWeight = themedFontWeight(FontWeight.Bold),
                 fontSize = 15.sp,
@@ -812,7 +812,7 @@ private fun PermissionCard(
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                 ) {
                     Text(
-                        text = "вњ“ " + stringResource(R.string.onboarding_perm_granted),
+                        text = "\u2713 " + stringResource(R.string.onboarding_perm_granted),
                         color = permGreen,
                         fontWeight = themedFontWeight(FontWeight.Bold),
                         fontSize = 12.sp,
@@ -990,7 +990,7 @@ internal fun OnboardingAppearancePage(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "вњ¦",
+                            text = "\u2726",
                             color = if (isSystemAccent) AppTheme.colors.onAccent else AppTheme.colors.onSurfaceVariant,
                             fontSize = 16.sp,
                             fontWeight = themedFontWeight(FontWeight.Bold),
@@ -1405,7 +1405,7 @@ internal fun OnboardingImportPage(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 Text(
-                    text = "вњ“ " + stringResource(R.string.onboarding_servers_added_count, count),
+                    text = "\u2713 " + stringResource(R.string.onboarding_servers_added_count, count),
                     color = permGreen,
                     fontWeight = themedFontWeight(FontWeight.Bold),
                     fontSize = 13.sp,
