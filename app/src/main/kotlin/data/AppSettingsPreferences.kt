@@ -335,6 +335,10 @@ internal class AppSettingsPreferences(
                 KeyPinConnectionPanelOnHome,
                 defaults.pinConnectionPanelOnHome,
             ),
+            enableSubscriptionSwipe = preferences.getBoolean(
+                KeyEnableSubscriptionSwipe,
+                defaults.enableSubscriptionSwipe,
+            ),
             backgroundStyle = preferences.getInt(
                 KeyBackgroundStyle,
                 defaults.backgroundStyle,
@@ -508,6 +512,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyShowServerSearch, state.showServerSearch)
             .putInt(KeyConnectionDisplayMode, state.connectionDisplayMode)
             .putBoolean(KeyPinConnectionPanelOnHome, state.pinConnectionPanelOnHome)
+            .putBoolean(KeyEnableSubscriptionSwipe, state.enableSubscriptionSwipe)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
             .putBoolean(KeyHasCompletedOnboarding, state.hasCompletedOnboarding)
             .putBoolean(KeyClassicShowFloatingPowerButton, state.classicShowFloatingPowerButton)
@@ -875,6 +880,7 @@ private const val KeyEnableResourceFileNotifications = "enable_resource_file_not
 private const val KeyShowServerSearch = "show_server_search"
 private const val KeyConnectionDisplayMode = "connection_display_mode"
 private const val KeyPinConnectionPanelOnHome = "pin_connection_panel_on_home"
+private const val KeyEnableSubscriptionSwipe = "enable_subscription_swipe"
 private const val KeyBackgroundStyle = "background_style"
 private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"

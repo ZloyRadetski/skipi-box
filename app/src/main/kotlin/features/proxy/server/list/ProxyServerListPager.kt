@@ -130,6 +130,7 @@ internal fun ProxyServerListPager(
     pingingGroupIds: Set<Int> = emptySet(),
     activeOutboundTag: String? = null,
     activeTrafficConfigId: Int? = null,
+    userScrollEnabled: Boolean = true,
     pageHeader: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -186,11 +187,12 @@ internal fun ProxyServerListPager(
         ),
     ) {
         HorizontalPager(
-        state = groupPagerState,
-        modifier = Modifier.fillMaxSize(),
-        verticalAlignment = Alignment.Top,
-        beyondViewportPageCount = 0,
-    ) {
+            state = groupPagerState,
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.Top,
+            beyondViewportPageCount = 0,
+            userScrollEnabled = userScrollEnabled,
+        ) {
         val pageGroupId = groupState.groupTabs.getOrNull(it)?.id ?: groupState.selectedTabId
         val pageIsAllGroupsSelected = pageGroupId == AllProxyGroupId
         val pageSubscriptionGroup = groupState.visibleGroups

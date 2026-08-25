@@ -119,6 +119,8 @@
     <string name="settings_connection_display_mode_classic">Classic</string>
     <string name="settings_pin_connection_panel">Pin connection panel</string>
     <string name="settings_pin_connection_panel_summary">Keep the connection panel and subscription selector fixed at the top when scrolling</string>
+    <string name="settings_enable_subscription_swipe">Swipe to switch subscription</string>
+    <string name="settings_enable_subscription_swipe_summary">Allow switching subscriptions by swiping left and right</string>
     <string name="settings_bottom_bar_size">Bottom bar size</string>
     <string name="settings_bottom_bar_size_summary">Adjust the height, icons, and text size of the bottom bar</string>
     <string name="settings_bottom_bar_size_small">Small</string>

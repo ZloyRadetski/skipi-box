@@ -1277,4 +1277,6 @@
 
     <string name="settings_pin_connection_panel">固定连接面板</string>
     <string name="settings_pin_connection_panel_summary">滚动服务器列表时固定连接面板和订阅选择器</string>
+    <string name="settings_enable_subscription_swipe">滑动切换订阅</string>
+    <string name="settings_enable_subscription_swipe_summary">允许通过向左或向右滑动来切换订阅</string>
 </resources>

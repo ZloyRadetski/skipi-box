@@ -27,6 +27,28 @@ class ConnectionDisplayModeTest {
         assertTrue(repinnedState.pinConnectionPanelOnHome)
     }
 
+    private fun resolveUserScrollEnabled(
+        pinConnectionPanelOnHome: Boolean,
+        enableSubscriptionSwipe: Boolean,
+    ): Boolean {
+        return pinConnectionPanelOnHome && enableSubscriptionSwipe
+    }
+
+    @Test
+    fun testSubscriptionSwipeResolution() {
+        // Pinned with swipe enabled -> swipe active
+        assertTrue(resolveUserScrollEnabled(pinConnectionPanelOnHome = true, enableSubscriptionSwipe = true))
+
+        // Pinned with swipe disabled -> swipe disabled
+        assertFalse(resolveUserScrollEnabled(pinConnectionPanelOnHome = true, enableSubscriptionSwipe = false))
+
+        // Unpinned with swipe enabled in state -> swipe disabled to prevent duplicate widgets
+        assertFalse(resolveUserScrollEnabled(pinConnectionPanelOnHome = false, enableSubscriptionSwipe = true))
+
+        // Unpinned with swipe disabled -> swipe disabled
+        assertFalse(resolveUserScrollEnabled(pinConnectionPanelOnHome = false, enableSubscriptionSwipe = false))
+    }
+
     private fun resolveFloatingToolbarVisibility(
         connectionDisplayMode: Int,
         classicShowFloatingPowerButton: Boolean,

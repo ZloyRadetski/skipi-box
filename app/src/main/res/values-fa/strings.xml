@@ -1276,4 +1276,6 @@
 
     <string name="settings_pin_connection_panel">پین کردن پنل اتصال</string>
     <string name="settings_pin_connection_panel_summary">ثابت نگه داشتن پنل اتصال و انتخاب اشتراک هنگام اسکرول</string>
+    <string name="settings_enable_subscription_swipe">سوایپ برای تغییر اشتراک</string>
+    <string name="settings_enable_subscription_swipe_summary">اجازه جابجایی بین اشتراک‌ها با کشیدن به چپ و راست</string>
 </resources>

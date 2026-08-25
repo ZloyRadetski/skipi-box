@@ -87,6 +87,8 @@ data class AppState(
     val connectionDisplayMode: Int = ConnectionDisplayModeCompact,
     /** Keep the connection panel fixed while switching subscription pages. */
     val pinConnectionPanelOnHome: Boolean = true,
+    /** Allow switching subscription tabs via horizontal swipe gestures on home pager. */
+    val enableSubscriptionSwipe: Boolean = true,
     val classicShowFloatingPowerButton: Boolean = false,
     val backgroundStyle: Int = BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,
