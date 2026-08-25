@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,6 +47,7 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
+import ui.layout.pageScrollModifiers
 
 /** Full-screen Material editor for standard Shadowrocket [Proxy Group] aliases. */
 @Composable
@@ -139,8 +141,11 @@ internal fun TrafficConfigProxyGroupsPage(
         isWideScreen = isWideScreen,
         onBack = navigator::pop,
         onSave = navigator::pop,
-    ) { listPadding ->
+    ) { listPadding, scrollBehavior ->
         LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {

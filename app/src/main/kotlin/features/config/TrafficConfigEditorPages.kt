@@ -586,8 +586,11 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
         isWideScreen = isWideScreen,
         onBack = { save(); navigator.pop() },
         onSave = { save(); navigator.pop() },
-    ) { listPadding ->
+    ) { listPadding, scrollBehavior ->
         LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -712,8 +715,11 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
         isWideScreen = isWideScreen,
         onBack = { save(); navigator.pop() },
         onSave = { save(); navigator.pop() },
-    ) { listPadding ->
+    ) { listPadding, scrollBehavior ->
         LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -1438,8 +1444,11 @@ private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfig
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_android_title), padding = padding, isWideScreen = isWideScreen,
         onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
-    ) { listPadding ->
+    ) { listPadding, scrollBehavior ->
         LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -1503,8 +1512,11 @@ private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfi
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_network_title), padding = padding, isWideScreen = isWideScreen,
         onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
-    ) { listPadding ->
+    ) { listPadding, scrollBehavior ->
         LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -1536,8 +1548,14 @@ private fun TrafficConfigRoutingSectionPage(padding: PaddingValues, trafficConfi
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_rules_title), padding = padding, isWideScreen = isWideScreen,
         onBack = navigator::pop, onSave = navigator::pop,
-    ) { listPadding ->
-        LazyColumn(contentPadding = listPadding, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    ) { listPadding, scrollBehavior ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .pageScrollModifiers(scrollBehavior),
+            contentPadding = listPadding,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             item("resources") {
                 ConfigEditorGroupCard(
                     title = stringResource(R.string.configs_resources),
@@ -1574,7 +1592,7 @@ internal fun TrafficConfigFullScreenScaffold(
     isWideScreen: Boolean,
     onBack: () -> Unit,
     onSave: (() -> Unit)? = null,
-    content: @Composable (PaddingValues) -> Unit,
+    content: @Composable (listPadding: PaddingValues, scrollBehavior: top.yukonga.miuix.kmp.basic.ScrollBehavior) -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     NavigationBackHandler(
@@ -1617,7 +1635,7 @@ internal fun TrafficConfigFullScreenScaffold(
                 .fillMaxSize()
                 .background(AppTheme.colors.background),
         ) {
-            content(listPadding)
+            content(listPadding, scrollBehavior)
         }
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -73,6 +74,7 @@ import ui.components.draggedCardShadow
 import ui.components.longPressReorderDragHandle
 import ui.components.rememberSkipiReorderableLazyListState
 import ui.components.rememberReorderableScrollThresholdPadding
+import ui.layout.pageScrollModifiers
 
 private data class TrafficConfigRuleItem(
     val id: Long,
@@ -150,9 +152,12 @@ internal fun TrafficConfigRulesPage(
         isWideScreen = isWideScreen,
         onBack = navigator::pop,
         onSave = navigator::pop,
-    ) { listPadding ->
+    ) { listPadding, scrollBehavior ->
         LazyColumn(
             state = lazyListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -421,8 +426,11 @@ fun TrafficConfigRuleEditorPage(
             save()
             navigator.pop()
         },
-    ) { listPadding ->
+    ) { listPadding, scrollBehavior ->
         LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
