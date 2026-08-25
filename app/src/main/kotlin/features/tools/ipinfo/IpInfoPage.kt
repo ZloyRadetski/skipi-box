@@ -64,11 +64,13 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
 import ui.clipboard.setPlainText
+import ui.components.AppPullToRefresh
 import ui.components.BackNavigationIcon
 import ui.components.NavigationIcon
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
+import ui.layout.pageScrollModifiers
 
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -82,6 +84,7 @@ fun IpInfoPage(
     val clipboard = LocalClipboard.current
     val tipNotifier = LocalAppServices.current.tipNotifier
     val scope = rememberCoroutineScope()
+    val topAppBarScrollBehavior = MiuixScrollBehavior()
 
     val state = IpInfoSession.state
 
@@ -112,7 +115,7 @@ fun IpInfoPage(
                 AdaptiveTopAppBar(
                     title = stringResource(R.string.tools_ip_info_title),
                     isWideScreen = isWideScreen,
-                    scrollBehavior = MiuixScrollBehavior(),
+                    scrollBehavior = topAppBarScrollBehavior,
                     navigationIcon = {
                         BackNavigationIcon(onClick = {
                             IpInfoSession.stop()
@@ -142,349 +145,359 @@ fun IpInfoPage(
         val lazyListState = rememberLazyListState()
 
         Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                state = lazyListState,
+            AppPullToRefresh(
+                isRefreshing = state is IpInfoState.Loading,
+                onRefresh = ::startRefresh,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = listPadding,
+                topAppBarScrollBehavior = topAppBarScrollBehavior,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
             ) {
-                when (state) {
-                    is IpInfoState.Loading, is IpInfoState.Idle -> {
-                        item(key = "loading") {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 12.dp),
-                            ) {
-                                Column(
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pageScrollModifiers(topAppBarScrollBehavior),
+                    contentPadding = listPadding,
+                ) {
+                    when (state) {
+                        is IpInfoState.Loading, is IpInfoState.Idle -> {
+                            item(key = "loading") {
+                                Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(32.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
+                                        .padding(vertical = 12.dp),
                                 ) {
-                                    InfiniteProgressIndicator(
-                                        modifier = Modifier.size(40.dp),
-                                    )
-                                    Spacer(Modifier.height(16.dp))
-                                    Text(
-                                        text = stringResource(R.string.tools_ip_info_loading),
-                                        fontSize = 15.sp,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    is IpInfoState.Failure -> {
-                        item(key = "failure") {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 12.dp),
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(24.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Box(
+                                    Column(
                                         modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape)
-                                            .background(MiuixTheme.colorScheme.error.copy(alpha = 0.14f)),
-                                        contentAlignment = Alignment.Center,
+                                            .fillMaxWidth()
+                                            .padding(32.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center,
                                     ) {
-                                        Text(
-                                            text = "!",
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MiuixTheme.colorScheme.error,
+                                        InfiniteProgressIndicator(
+                                            modifier = Modifier.size(40.dp),
                                         )
-                                    }
-                                    Spacer(Modifier.height(12.dp))
-                                    Text(
-                                        text = stringResource(R.string.tools_ip_info_failed),
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MiuixTheme.colorScheme.onSurface,
-                                    )
-                                    if (!state.errorMessage.isNullOrBlank()) {
-                                        Spacer(Modifier.height(6.dp))
+                                        Spacer(Modifier.height(16.dp))
                                         Text(
-                                            text = state.errorMessage,
-                                            fontSize = 13.sp,
+                                            text = stringResource(R.string.tools_ip_info_loading),
+                                            fontSize = 15.sp,
                                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         )
                                     }
-                                    Spacer(Modifier.height(16.dp))
-                                    TextButton(
-                                        text = stringResource(R.string.tools_ip_info_refresh),
-                                        onClick = ::startRefresh,
-                                    )
                                 }
                             }
                         }
-                    }
 
-                    is IpInfoState.Success -> {
-                        val data = state.data
-
-                        // 1. Primary IP Summary Card
-                        item(key = "ip_main") {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 12.dp, bottom = 12.dp),
-                            ) {
-                                Column(
+                        is IpInfoState.Failure -> {
+                            item(key = "failure") {
+                                Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(20.dp),
+                                        .padding(vertical = 12.dp),
                                 ) {
-                                    // Route badge (VPN vs Direct)
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(
-                                                    if (data.isVpnTunnel) {
-                                                        MiuixTheme.colorScheme.primary.copy(alpha = 0.14f)
-                                                    } else {
-                                                        MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-                                                    },
-                                                )
-                                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                                                .size(48.dp)
+                                                .clip(CircleShape)
+                                                .background(MiuixTheme.colorScheme.error.copy(alpha = 0.14f)),
+                                            contentAlignment = Alignment.Center,
                                         ) {
                                             Text(
-                                                text = stringResource(
-                                                    if (data.isVpnTunnel) {
-                                                        R.string.tools_ip_info_tunnel_vpn
+                                                text = "!",
+                                                fontSize = 24.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MiuixTheme.colorScheme.error,
+                                            )
+                                        }
+                                        Spacer(Modifier.height(12.dp))
+                                        Text(
+                                            text = stringResource(R.string.tools_ip_info_failed),
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MiuixTheme.colorScheme.onSurface,
+                                        )
+                                        if (!state.errorMessage.isNullOrBlank()) {
+                                            Spacer(Modifier.height(6.dp))
+                                            Text(
+                                                text = state.errorMessage,
+                                                fontSize = 13.sp,
+                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            )
+                                        }
+                                        Spacer(Modifier.height(16.dp))
+                                        TextButton(
+                                            text = stringResource(R.string.tools_ip_info_refresh),
+                                            onClick = ::startRefresh,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        is IpInfoState.Success -> {
+                            val data = state.data
+
+                            // 1. Primary IP Summary Card
+                            item(key = "ip_main") {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp, bottom = 12.dp),
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(20.dp),
+                                    ) {
+                                        // Route badge (VPN vs Direct) + IP Type
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(
+                                                        if (data.isVpnTunnel) {
+                                                            MiuixTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                                        } else {
+                                                            MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                                                        },
+                                                    )
+                                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                            ) {
+                                                Text(
+                                                    text = stringResource(
+                                                        if (data.isVpnTunnel) {
+                                                            R.string.tools_ip_info_tunnel_vpn
+                                                        } else {
+                                                            R.string.tools_ip_info_tunnel_direct
+                                                        },
+                                                    ),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = if (data.isVpnTunnel) {
+                                                        MiuixTheme.colorScheme.primary
                                                     } else {
-                                                        R.string.tools_ip_info_tunnel_direct
+                                                        MiuixTheme.colorScheme.onSurfaceVariantSummary
                                                     },
-                                                ),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                color = if (data.isVpnTunnel) {
-                                                    MiuixTheme.colorScheme.primary
-                                                } else {
-                                                    MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                                )
+                                            }
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                                                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                                            ) {
+                                                Text(
+                                                    text = data.ipType,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MiuixTheme.colorScheme.onSurface,
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(Modifier.height(14.dp))
+
+                                        // IPv4 Entry (if present)
+                                        if (!data.ipv4.isNullOrBlank()) {
+                                            IpAddressRow(
+                                                label = stringResource(R.string.tools_ip_info_ipv4),
+                                                ip = data.ipv4,
+                                                onCopy = {
+                                                    scope.launch {
+                                                        clipboard.setPlainText(data.ipv4)
+                                                        tipNotifier.show(copiedIpMessage)
+                                                    }
                                                 },
                                             )
                                         }
 
-                                        // IP Type badge (IPv4 / IPv6)
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(6.dp))
-                                                .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.08f))
-                                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                                        ) {
-                                            Text(
-                                                text = data.ipType,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MiuixTheme.colorScheme.onSurface,
+                                        // Divider if both are present
+                                        if (!data.ipv4.isNullOrBlank() && !data.ipv6.isNullOrBlank()) {
+                                            Spacer(Modifier.height(10.dp))
+                                            HorizontalDivider(
+                                                color = MiuixTheme.colorScheme.dividerLine,
+                                            )
+                                            Spacer(Modifier.height(10.dp))
+                                        }
+
+                                        // IPv6 Entry (if present)
+                                        if (!data.ipv6.isNullOrBlank()) {
+                                            IpAddressRow(
+                                                label = stringResource(R.string.tools_ip_info_ipv6),
+                                                ip = data.ipv6,
+                                                onCopy = {
+                                                    scope.launch {
+                                                        clipboard.setPlainText(data.ipv6)
+                                                        tipNotifier.show(copiedIpMessage)
+                                                    }
+                                                },
                                             )
                                         }
-                                    }
 
-                                    Spacer(Modifier.height(14.dp))
-
-                                    // IP Address + Copy Icon
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                scope.launch {
-                                                    clipboard.setPlainText(data.ip)
-                                                    tipNotifier.show(copiedIpMessage)
-                                                }
-                                            },
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                    ) {
-                                        Text(
-                                            text = data.ip,
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MiuixTheme.colorScheme.onSurface,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .clip(CircleShape)
-                                                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(
-                                                imageVector = MiuixIcons.Copy,
-                                                contentDescription = "Copy IP",
-                                                modifier = Modifier.size(18.dp),
-                                                tint = MiuixTheme.colorScheme.primary,
+                                        if (data.country.isNotBlank() || data.city.isNotBlank()) {
+                                            Spacer(Modifier.height(12.dp))
+                                            HorizontalDivider(
+                                                color = MiuixTheme.colorScheme.dividerLine,
                                             )
-                                        }
-                                    }
-
-                                    if (data.country.isNotBlank() || data.city.isNotBlank()) {
-                                        Spacer(Modifier.height(12.dp))
-                                        HorizontalDivider(
-                                            color = MiuixTheme.colorScheme.dividerLine,
-                                        )
-                                        Spacer(Modifier.height(12.dp))
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            if (data.flagEmoji.isNotBlank()) {
-                                                Text(
-                                                    text = data.flagEmoji,
-                                                    fontSize = 22.sp,
-                                                )
-                                                Spacer(Modifier.width(10.dp))
-                                            }
-                                            Column {
-                                                Text(
-                                                    text = listOf(data.city, data.country)
-                                                        .filter(String::isNotBlank)
-                                                        .joinToString(", "),
-                                                    fontSize = 15.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MiuixTheme.colorScheme.onSurface,
-                                                )
-                                                if (data.isp.isNotBlank() || data.org.isNotBlank()) {
+                                            Spacer(Modifier.height(12.dp))
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                if (data.flagEmoji.isNotBlank()) {
                                                     Text(
-                                                        text = data.isp.ifBlank { data.org },
-                                                        fontSize = 13.sp,
-                                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                        text = data.flagEmoji,
+                                                        fontSize = 22.sp,
+                                                    )
+                                                    Spacer(Modifier.width(10.dp))
+                                                }
+                                                Column {
+                                                    Text(
+                                                        text = listOf(data.city, data.country)
+                                                            .filter(String::isNotBlank)
+                                                            .joinToString(", "),
+                                                        fontSize = 15.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = MiuixTheme.colorScheme.onSurface,
+                                                    )
+                                                    if (data.isp.isNotBlank() || data.org.isNotBlank()) {
+                                                        Text(
+                                                            text = data.isp.ifBlank { data.org },
+                                                            fontSize = 13.sp,
+                                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 2. Location Card
+                            val locationEntries = buildList {
+                                if (data.country.isNotBlank()) add(R.string.tools_ip_info_country to (data.country + if (data.countryCode.isNotBlank()) " (${data.countryCode})" else ""))
+                                if (data.region.isNotBlank()) add(R.string.tools_ip_info_region to data.region)
+                                if (data.city.isNotBlank()) add(R.string.tools_ip_info_city to data.city)
+                                if (data.postal.isNotBlank()) add(R.string.tools_ip_info_postal to data.postal)
+                                if (data.continent.isNotBlank()) add(R.string.tools_ip_info_continent to data.continent)
+                                if (data.capital.isNotBlank()) add(R.string.tools_ip_info_capital to data.capital)
+                                if (data.latitude != null && data.longitude != null) {
+                                    add(R.string.tools_ip_info_coordinates to "${data.latitude}, ${data.longitude}")
+                                }
+                            }
+                            if (locationEntries.isNotEmpty()) {
+                                item(key = "card_location") {
+                                    SmallTitle(text = stringResource(R.string.tools_ip_info_card_location))
+                                    Card(modifier = Modifier.fillMaxWidth()) {
+                                        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                            locationEntries.forEachIndexed { index, (labelRes, value) ->
+                                                if (index > 0) {
+                                                    HorizontalDivider(
+                                                        color = MiuixTheme.colorScheme.dividerLine,
                                                     )
                                                 }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // 2. Location Card
-                        val locationEntries = buildList {
-                            if (data.country.isNotBlank()) add(R.string.tools_ip_info_country to (data.country + if (data.countryCode.isNotBlank()) " (${data.countryCode})" else ""))
-                            if (data.region.isNotBlank()) add(R.string.tools_ip_info_region to data.region)
-                            if (data.city.isNotBlank()) add(R.string.tools_ip_info_city to data.city)
-                            if (data.postal.isNotBlank()) add(R.string.tools_ip_info_postal to data.postal)
-                            if (data.continent.isNotBlank()) add(R.string.tools_ip_info_continent to data.continent)
-                            if (data.capital.isNotBlank()) add(R.string.tools_ip_info_capital to data.capital)
-                            if (data.latitude != null && data.longitude != null) {
-                                add(R.string.tools_ip_info_coordinates to "${data.latitude}, ${data.longitude}")
-                            }
-                        }
-                        if (locationEntries.isNotEmpty()) {
-                            item(key = "card_location") {
-                                SmallTitle(text = stringResource(R.string.tools_ip_info_card_location))
-                                Card(modifier = Modifier.fillMaxWidth()) {
-                                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                                        locationEntries.forEachIndexed { index, (labelRes, value) ->
-                                            if (index > 0) {
-                                                HorizontalDivider(
-                                                    color = MiuixTheme.colorScheme.dividerLine,
+                                                InfoRow(
+                                                    label = stringResource(labelRes),
+                                                    value = value,
                                                 )
                                             }
-                                            InfoRow(
-                                                label = stringResource(labelRes),
-                                                value = value,
-                                            )
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        // 3. Network & Provider Card
-                        val networkEntries = buildList {
-                            if (data.isp.isNotBlank()) add(R.string.tools_ip_info_isp to data.isp)
-                            if (data.org.isNotBlank() && data.org != data.isp) add(R.string.tools_ip_info_org to data.org)
-                            if (data.asn != null) add(R.string.tools_ip_info_asn to "AS${data.asn}")
-                            if (data.domain.isNotBlank()) add(R.string.tools_ip_info_domain to data.domain)
-                        }
-                        if (networkEntries.isNotEmpty()) {
-                            item(key = "card_network") {
-                                SmallTitle(text = stringResource(R.string.tools_ip_info_card_network))
-                                Card(modifier = Modifier.fillMaxWidth()) {
-                                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                                        networkEntries.forEachIndexed { index, (labelRes, value) ->
-                                            if (index > 0) {
-                                                HorizontalDivider(
-                                                    color = MiuixTheme.colorScheme.dividerLine,
+                            // 3. Network & Provider Card
+                            val networkEntries = buildList {
+                                if (data.isp.isNotBlank()) add(R.string.tools_ip_info_isp to data.isp)
+                                if (data.org.isNotBlank() && data.org != data.isp) add(R.string.tools_ip_info_org to data.org)
+                                if (data.asn != null) add(R.string.tools_ip_info_asn to "AS${data.asn}")
+                                if (data.domain.isNotBlank()) add(R.string.tools_ip_info_domain to data.domain)
+                            }
+                            if (networkEntries.isNotEmpty()) {
+                                item(key = "card_network") {
+                                    SmallTitle(text = stringResource(R.string.tools_ip_info_card_network))
+                                    Card(modifier = Modifier.fillMaxWidth()) {
+                                        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                            networkEntries.forEachIndexed { index, (labelRes, value) ->
+                                                if (index > 0) {
+                                                    HorizontalDivider(
+                                                        color = MiuixTheme.colorScheme.dividerLine,
+                                                    )
+                                                }
+                                                InfoRow(
+                                                    label = stringResource(labelRes),
+                                                    value = value,
                                                 )
                                             }
-                                            InfoRow(
-                                                label = stringResource(labelRes),
-                                                value = value,
-                                            )
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        // 4. Timezone Card
-                        val timeEntries = buildList {
-                            if (data.timezoneId.isNotBlank()) add(R.string.tools_ip_info_timezone to (data.timezoneId + if (data.timezoneAbbr.isNotBlank()) " (${data.timezoneAbbr})" else ""))
-                            if (data.currentTime.isNotBlank()) add(R.string.tools_ip_info_local_time to data.currentTime)
-                            if (data.timezoneUtc.isNotBlank()) add(R.string.tools_ip_info_utc_offset to "UTC ${data.timezoneUtc}")
-                        }
-                        if (timeEntries.isNotEmpty()) {
-                            item(key = "card_time") {
-                                SmallTitle(text = stringResource(R.string.tools_ip_info_card_time))
-                                Card(modifier = Modifier.fillMaxWidth()) {
-                                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                                        timeEntries.forEachIndexed { index, (labelRes, value) ->
-                                            if (index > 0) {
-                                                HorizontalDivider(
-                                                    color = MiuixTheme.colorScheme.dividerLine,
+                            // 4. Timezone Card
+                            val timeEntries = buildList {
+                                if (data.timezoneId.isNotBlank()) add(R.string.tools_ip_info_timezone to (data.timezoneId + if (data.timezoneAbbr.isNotBlank()) " (${data.timezoneAbbr})" else ""))
+                                if (data.currentTime.isNotBlank()) add(R.string.tools_ip_info_local_time to data.currentTime)
+                                if (data.timezoneUtc.isNotBlank()) add(R.string.tools_ip_info_utc_offset to "UTC ${data.timezoneUtc}")
+                            }
+                            if (timeEntries.isNotEmpty()) {
+                                item(key = "card_time") {
+                                    SmallTitle(text = stringResource(R.string.tools_ip_info_card_time))
+                                    Card(modifier = Modifier.fillMaxWidth()) {
+                                        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                            timeEntries.forEachIndexed { index, (labelRes, value) ->
+                                                if (index > 0) {
+                                                    HorizontalDivider(
+                                                        color = MiuixTheme.colorScheme.dividerLine,
+                                                    )
+                                                }
+                                                InfoRow(
+                                                    label = stringResource(labelRes),
+                                                    value = value,
                                                 )
                                             }
-                                            InfoRow(
-                                                label = stringResource(labelRes),
-                                                value = value,
-                                            )
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        // 5. Actions Card
-                        item(key = "actions") {
-                            Spacer(Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                TextButton(
-                                    text = stringResource(R.string.tools_ip_info_refresh),
-                                    modifier = Modifier.weight(1f),
-                                    onClick = ::startRefresh,
-                                )
-                                TextButton(
-                                    text = stringResource(R.string.tools_ip_info_copy_all),
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        scope.launch {
-                                            clipboard.setPlainText(data.toSummaryText())
-                                            tipNotifier.show(copiedAllMessage)
-                                        }
-                                    },
-                                )
+                            // 5. Actions Card
+                            item(key = "actions") {
+                                Spacer(Modifier.height(16.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    TextButton(
+                                        text = stringResource(R.string.tools_ip_info_refresh),
+                                        modifier = Modifier.weight(1f),
+                                        onClick = ::startRefresh,
+                                    )
+                                    TextButton(
+                                        text = stringResource(R.string.tools_ip_info_copy_all),
+                                        modifier = Modifier.weight(1f),
+                                        onClick = {
+                                            scope.launch {
+                                                clipboard.setPlainText(data.toSummaryText())
+                                                tipNotifier.show(copiedAllMessage)
+                                            }
+                                        },
+                                    )
+                                }
+                                Spacer(Modifier.height(24.dp))
                             }
-                            Spacer(Modifier.height(24.dp))
                         }
                     }
                 }
@@ -496,6 +509,53 @@ fun IpInfoPage(
                     .align(Alignment.CenterEnd)
                     .fillMaxHeight(),
                 trackPadding = listPadding,
+            )
+        }
+    }
+}
+
+@Composable
+private fun IpAddressRow(
+    label: String,
+    ip: String,
+    onCopy: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onCopy)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MiuixTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = ip,
+                fontSize = if (ip.length > 20) 17.sp else 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Copy,
+                contentDescription = "Copy $label",
+                modifier = Modifier.size(16.dp),
+                tint = MiuixTheme.colorScheme.primary,
             )
         }
     }

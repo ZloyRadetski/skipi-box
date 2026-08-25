@@ -61,8 +61,8 @@ internal data class IpWhoIsTimezone(
  * Clean aggregate presentation model consumed by the UI.
  */
 data class IpInfoData(
-    val ip: String,
-    val ipType: String,
+    val ipv4: String?,
+    val ipv6: String?,
     val country: String,
     val countryCode: String,
     val flagEmoji: String,
@@ -83,9 +83,25 @@ data class IpInfoData(
     val currentTime: String,
     val isVpnTunnel: Boolean,
 ) {
+    /** Primary display IP (prefers IPv4 if available, otherwise IPv6). */
+    val primaryIp: String
+        get() = ipv4 ?: ipv6.orEmpty()
+
+    val ipType: String
+        get() = when {
+            ipv4 != null && ipv6 != null -> "Dual Stack"
+            ipv6 != null -> "IPv6"
+            else -> "IPv4"
+        }
+
     /** Formats a full text summary for one-tap copying. */
     fun toSummaryText(): String = buildString {
-        appendLine("IP: $ip ($ipType)")
+        if (!ipv4.isNullOrBlank()) {
+            appendLine("IPv4: $ipv4")
+        }
+        if (!ipv6.isNullOrBlank()) {
+            appendLine("IPv6: $ipv6")
+        }
         if (country.isNotBlank() || countryCode.isNotBlank()) {
             val flagStr = if (flagEmoji.isNotBlank()) "$flagEmoji " else ""
             appendLine("Country: $flagStr$country ($countryCode)")
@@ -150,14 +166,22 @@ internal object IpInfoAnalysis {
 
     fun mapToIpInfoData(
         response: IpWhoIsFullResponse,
+        explicitIpv4: String? = null,
+        explicitIpv6: String? = null,
         isVpnTunnel: Boolean,
     ): IpInfoData {
         val flag = response.flag?.emoji?.ifBlank { null }
             ?: countryFlagEmoji(response.countryCode).orEmpty()
 
+        val respIsV6 = response.type.equals("IPv6", ignoreCase = true) || response.ip.contains(":")
+        val ipv4 = explicitIpv4?.takeIf { !it.contains(":") }
+            ?: if (!respIsV6 && response.ip.isNotBlank()) response.ip else null
+        val ipv6 = explicitIpv6?.takeIf { it.contains(":") }
+            ?: if (respIsV6 && response.ip.isNotBlank()) response.ip else null
+
         return IpInfoData(
-            ip = response.ip,
-            ipType = response.type.ifBlank { "IPv4" },
+            ipv4 = ipv4,
+            ipv6 = ipv6,
             country = response.country,
             countryCode = response.countryCode,
             flagEmoji = flag,

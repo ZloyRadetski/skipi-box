@@ -1224,9 +1224,11 @@
     <string name="settings_category_ip_info_summary">مشاهده IP خارجی، مکان، ISP و شبکه</string>
     <string name="tools_ip_info_title">اطلاعات IP</string>
     <string name="tools_ip_info_refresh">تازه سازی</string>
-    <string name="tools_ip_info_copy_all">کپی تمام جزئیات</string>
+    <string name="tools_ip_info_copy_all">کپی</string>
     <string name="tools_ip_info_copied_all">جزئیات در کلیپ‌بورد کپی شد</string>
     <string name="tools_ip_info_copied_ip">آدرس IP کپی شد</string>
+    <string name="tools_ip_info_ipv4">IPv4</string>
+    <string name="tools_ip_info_ipv6">IPv6</string>
     <string name="tools_ip_info_card_location">مکان</string>
     <string name="tools_ip_info_card_network">شبکه و ارائه‌دهنده</string>
     <string name="tools_ip_info_card_time">منطقه زمانی و زمان</string>

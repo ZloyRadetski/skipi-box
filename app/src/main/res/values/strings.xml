@@ -1259,9 +1259,11 @@
     <string name="settings_category_ip_info_summary">View external IP, location, ISP and network</string>
     <string name="tools_ip_info_title">IP Information</string>
     <string name="tools_ip_info_refresh">Refresh</string>
-    <string name="tools_ip_info_copy_all">Copy all details</string>
+    <string name="tools_ip_info_copy_all">Copy</string>
     <string name="tools_ip_info_copied_all">Details copied to clipboard</string>
     <string name="tools_ip_info_copied_ip">IP address copied</string>
+    <string name="tools_ip_info_ipv4">IPv4</string>
+    <string name="tools_ip_info_ipv6">IPv6</string>
     <string name="tools_ip_info_card_location">Location</string>
     <string name="tools_ip_info_card_network">Network &amp; Provider</string>
     <string name="tools_ip_info_card_time">Timezone &amp; Time</string>

@@ -1246,9 +1246,11 @@
     <string name="settings_category_ip_info_summary">Внешний IP, геолокация, провайдер и сеть</string>
     <string name="tools_ip_info_title">Информация об IP</string>
     <string name="tools_ip_info_refresh">Обновить</string>
-    <string name="tools_ip_info_copy_all">Скопировать все данные</string>
+    <string name="tools_ip_info_copy_all">Скопировать</string>
     <string name="tools_ip_info_copied_all">Данные скопированы в буфер обмена</string>
     <string name="tools_ip_info_copied_ip">IP-адрес скопирован</string>
+    <string name="tools_ip_info_ipv4">IPv4</string>
+    <string name="tools_ip_info_ipv6">IPv6</string>
     <string name="tools_ip_info_card_location">Геолокация</string>
     <string name="tools_ip_info_card_network">Сеть и провайдер</string>
     <string name="tools_ip_info_card_time">Часовой пояс и время</string>

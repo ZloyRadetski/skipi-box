@@ -1225,9 +1225,11 @@
     <string name="settings_category_ip_info_summary">查看外部 IP、位置、ISP 和网络</string>
     <string name="tools_ip_info_title">IP 信息</string>
     <string name="tools_ip_info_refresh">刷新</string>
-    <string name="tools_ip_info_copy_all">复制所有信息</string>
+    <string name="tools_ip_info_copy_all">复制</string>
     <string name="tools_ip_info_copied_all">信息已复制到剪贴板</string>
     <string name="tools_ip_info_copied_ip">IP 地址已复制</string>
+    <string name="tools_ip_info_ipv4">IPv4</string>
+    <string name="tools_ip_info_ipv6">IPv6</string>
     <string name="tools_ip_info_card_location">位置</string>
     <string name="tools_ip_info_card_network">网络与提供商</string>
     <string name="tools_ip_info_card_time">时区与时间</string>

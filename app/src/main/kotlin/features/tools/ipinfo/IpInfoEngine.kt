@@ -12,6 +12,7 @@ import features.tools.dnsleak.withProxyAuthenticator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -28,26 +29,52 @@ internal class IpInfoEngine(
     suspend fun fetch(): IpInfoData = withContext(ioDispatcher) {
         val isVpnTunnel = vpnNetwork != null || proxyOptions != null
         try {
-            // First attempt: direct ipwho.is request
-            val directJson = httpGetText(PrimaryGeoUrl)
-            val parsed = directJson?.let(IpInfoAnalysis::parseIpWhoIs)
-            if (parsed != null) {
-                return@withContext IpInfoAnalysis.mapToIpInfoData(parsed, isVpnTunnel)
+            // Concurrently query:
+            // 1. api.ipify.org (strictly IPv4)
+            // 2. api64.ipify.org (returns IPv6 if IPv6 egress is active)
+            // 3. ipwho.is (direct geo details for current connection)
+            val ipv4Deferred = async {
+                httpGetText(Ipv4OnlyUrl)?.trim()?.takeIf { it.isNotBlank() && !it.contains(":") }
+            }
+            val ipv6Deferred = async {
+                httpGetText(DualStackIpUrl)?.trim()?.takeIf { it.isNotBlank() && it.contains(":") }
+            }
+            val directGeoDeferred = async {
+                httpGetText(PrimaryGeoUrl)
             }
 
-            // Fallback: detect exit IP first via ipify, then query ipwho.is/<ip>
-            val fallbackIp = httpGetText(FallbackIpUrl)?.trim()?.takeIf(String::isNotBlank)
-            if (fallbackIp != null) {
-                val fallbackGeoJson = httpGetText("$PrimaryGeoUrl/$fallbackIp")
+            val directJson = directGeoDeferred.await()
+            val ipv4 = ipv4Deferred.await()
+            val ipv6 = ipv6Deferred.await()
+
+            val parsed = directJson?.let(IpInfoAnalysis::parseIpWhoIs)
+            if (parsed != null) {
+                return@withContext IpInfoAnalysis.mapToIpInfoData(
+                    response = parsed,
+                    explicitIpv4 = ipv4,
+                    explicitIpv6 = ipv6,
+                    isVpnTunnel = isVpnTunnel,
+                )
+            }
+
+            // Fallback: if root ipwho.is failed, try querying by explicit IPv4 or IPv6
+            val fallbackTargetIp = ipv4 ?: ipv6
+            if (fallbackTargetIp != null) {
+                val fallbackGeoJson = httpGetText("$PrimaryGeoUrl/$fallbackTargetIp")
                 val fallbackParsed = fallbackGeoJson?.let(IpInfoAnalysis::parseIpWhoIs)
                 if (fallbackParsed != null) {
-                    return@withContext IpInfoAnalysis.mapToIpInfoData(fallbackParsed, isVpnTunnel)
+                    return@withContext IpInfoAnalysis.mapToIpInfoData(
+                        response = fallbackParsed,
+                        explicitIpv4 = ipv4,
+                        explicitIpv6 = ipv6,
+                        isVpnTunnel = isVpnTunnel,
+                    )
                 }
 
                 // If geo fails but IP was retrieved, construct a minimal IP model
                 return@withContext IpInfoData(
-                    ip = fallbackIp,
-                    ipType = if (fallbackIp.contains(":")) "IPv6" else "IPv4",
+                    ipv4 = ipv4,
+                    ipv6 = ipv6,
                     country = "",
                     countryCode = "",
                     flagEmoji = "",
@@ -121,7 +148,8 @@ internal class IpInfoEngine(
     companion object {
         private const val LogTag = "IpInfoEngine"
         private const val PrimaryGeoUrl = "https://ipwho.is"
-        private const val FallbackIpUrl = "https://api.ipify.org"
+        private const val Ipv4OnlyUrl = "https://api.ipify.org"
+        private const val DualStackIpUrl = "https://api64.ipify.org"
         private const val RequestUserAgent =
             "Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
         private const val TunnelDownMessage =

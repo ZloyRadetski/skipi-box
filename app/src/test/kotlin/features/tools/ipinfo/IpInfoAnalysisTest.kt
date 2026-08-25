@@ -89,10 +89,17 @@ class IpInfoAnalysisTest {
     @Test
     fun mapToIpInfoData_producesCompleteModel() {
         val parsed = IpInfoAnalysis.parseIpWhoIs(sampleJson)!!
-        val data = IpInfoAnalysis.mapToIpInfoData(parsed, isVpnTunnel = true)
+        val data = IpInfoAnalysis.mapToIpInfoData(
+            response = parsed,
+            explicitIpv4 = "1.2.3.4",
+            explicitIpv6 = "2001:db8::1",
+            isVpnTunnel = true,
+        )
 
-        assertEquals("1.2.3.4", data.ip)
-        assertEquals("IPv4", data.ipType)
+        assertEquals("1.2.3.4", data.ipv4)
+        assertEquals("2001:db8::1", data.ipv6)
+        assertEquals("1.2.3.4", data.primaryIp)
+        assertEquals("Dual Stack", data.ipType)
         assertEquals("Finland", data.country)
         assertEquals("FI", data.countryCode)
         assertEquals("🇫🇮", data.flagEmoji)
@@ -107,7 +114,8 @@ class IpInfoAnalysisTest {
         assertEquals(true, data.isVpnTunnel)
 
         val summary = data.toSummaryText()
-        assertTrue(summary.contains("IP: 1.2.3.4 (IPv4)"))
+        assertTrue(summary.contains("IPv4: 1.2.3.4"))
+        assertTrue(summary.contains("IPv6: 2001:db8::1"))
         assertTrue(summary.contains("Country: 🇫🇮 Finland (FI)"))
         assertTrue(summary.contains("Location: Helsinki, Uusimaa, 00100"))
         assertTrue(summary.contains("ISP: Hetzner Online"))
