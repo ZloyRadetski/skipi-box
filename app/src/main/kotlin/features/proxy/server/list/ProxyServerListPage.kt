@@ -68,6 +68,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -601,6 +602,58 @@ fun ProxyServerListPage(
         null
     }
 
+    val pinConnectionPanel = proxyListState.pinConnectionPanelOnHome
+
+    val movingPageHeader: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier = modifier.fillMaxWidth()) {
+            connectionPanel(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 2.dp),
+            )
+            AnimatedVisibility(
+                visible = groupState.showGroupTabs,
+                enter = fadeIn() + expandVertically(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                ProxyServerListGroupSelector(
+                    groups = groupState.groupTabs,
+                    selectedGroupId = groupState.selectedTabId,
+                    onGroupSelected = { groupId ->
+                        if (selectedGroupId != groupId) {
+                            haptics.groupSwitched()
+                        }
+                        selectedGroupId = groupId
+                    },
+                    onGroupMove = { groupId, offset ->
+                        updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 2.dp),
+                )
+            }
+            AnimatedVisibility(
+                visible = proxyListState.showServerSearch,
+                enter = fadeIn() + expandVertically(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ProxyServerListSearchBar(
+                        searchValue = searchValue,
+                        onSearchValueChange = { searchValue = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -610,16 +663,20 @@ fun ProxyServerListPage(
             searchValue = searchValue,
             onSearchValueChange = { searchValue = it },
             groupState = groupState,
-            pinnedConnectionPanel = {
-                connectionPanel(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
-                        .padding(bottom = 2.dp),
-                )
+            pinnedConnectionPanel = if (pinConnectionPanel) {
+                {
+                    connectionPanel(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 2.dp),
+                    )
+                }
+            } else {
+                null
             },
-            showPinnedGroupSelector = true,
-            showSearchBar = true,
+            showPinnedGroupSelector = pinConnectionPanel,
+            showSearchBar = pinConnectionPanel,
             selectedServer = selectedServer,
             proxyListState = proxyListState,
             stateStore = stateStore,
@@ -696,7 +753,7 @@ fun ProxyServerListPage(
                 pingingGroupIds = pingingGroupIds,
                 activeOutboundTag = activeOutboundTag,
                 activeTrafficConfigId = proxyListState.activeTrafficConfigId,
-                pageHeader = null,
+                pageHeader = if (pinConnectionPanel) null else movingPageHeader,
             )
             floatingToolbar?.invoke(this)
         }

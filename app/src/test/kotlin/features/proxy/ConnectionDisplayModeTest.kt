@@ -17,6 +17,16 @@ class ConnectionDisplayModeTest {
         assertTrue(AppState().pinConnectionPanelOnHome)
     }
 
+    @Test
+    fun testPinConnectionPanelToggle() {
+        val defaultState = AppState()
+        assertTrue(defaultState.pinConnectionPanelOnHome)
+        val unpinnedState = defaultState.copy(pinConnectionPanelOnHome = false)
+        assertFalse(unpinnedState.pinConnectionPanelOnHome)
+        val repinnedState = unpinnedState.copy(pinConnectionPanelOnHome = true)
+        assertTrue(repinnedState.pinConnectionPanelOnHome)
+    }
+
     private fun resolveFloatingToolbarVisibility(
         connectionDisplayMode: Int,
         classicShowFloatingPowerButton: Boolean,

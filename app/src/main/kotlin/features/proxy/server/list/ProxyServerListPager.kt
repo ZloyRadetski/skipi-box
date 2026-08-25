@@ -580,7 +580,8 @@ private fun ProxyServerLazyGrid(
                     span = { GridItemSpan(maxLineSpan) },
                     contentType = "page_header",
                 ) {
-                    header(Modifier.padding(horizontal = 12.dp))
+                    val headerModifier = if (compact) Modifier else Modifier.padding(horizontal = 12.dp)
+                    header(headerModifier)
                 }
             }
             subscriptionGroup?.let { group ->
