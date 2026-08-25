@@ -40,6 +40,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.JsonObject
 import app.skipi.core.skipicore.Skipicore
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -335,7 +336,7 @@ internal class AndroidProxyLatencyTester(
                             XrayConfigRequest(
                                 appState = appState,
                                 selectedServer = server,
-                                inbounds = emptyList(),
+                                inbounds = emptyList<JsonObject>(),
                                 coreLogPaths = appContext.prepareXrayCoreLogPaths(),
                                 dataDir = xrayDataDir,
                             ),

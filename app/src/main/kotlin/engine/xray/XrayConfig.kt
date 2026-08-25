@@ -9,6 +9,10 @@ import features.logs.AndroidAppLogger
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 internal data class XrayConfigRequest(
     val appState: AppState,
@@ -54,25 +58,62 @@ internal object XraySpeedTestConfigFactory {
     fun buildXraySpeedTestConfig(request: XrayConfigRequest): String {
         val customServer = request.selectedServer.server as? Custom
         if (customServer != null) {
-            return buildCustomXrayConfig(request, customServer)
+            val speedTestState = request.appState.copy(
+                enableMux = false,
+                enableFakeDns = false,
+            )
+            return buildCustomXrayConfig(
+                request.copy(
+                    appState = speedTestState,
+                    inbounds = emptyList<JsonObject>(),
+                ),
+                customServer,
+            )
         }
 
-        val speedTestState = request.appState.copy(enableMux = false)
-        val outboundPlan = speedTestState.buildXrayOutboundPlan(request.selectedServer)
-        val startupProxyServerDomains = if (speedTestState.enableDirectDnsForProxyServerDomains) {
-            outboundPlan.proxyOutbounds.startupProxyServerDnsDomains()
-        } else {
-            emptyList()
-        }
-        val dnsPlan = request.copy(appState = speedTestState).buildXrayDnsPlan(startupProxyServerDomains)
-        val routingPlan = speedTestState.buildXrayRoutingPlan(
-            routeTargets = outboundPlan.routeTargets,
-            balancers = buildXrayBalancers(outboundPlan.balancers),
-            routeProxyDns = dnsPlan.routingOptions.routeProxyDns,
-            routeDirectDns = dnsPlan.routingOptions.routeDirectDns,
-            dnsHijackInboundTags = emptyList(),
-            dataDir = request.dataDir,
+        val speedTestState = request.appState.copy(
+            enableMux = false,
+            enableFakeDns = false,
+            enableDirectDnsForProxyServerDomains = true,
         )
+        val outboundPlan = speedTestState.buildXrayOutboundPlan(request.selectedServer)
+        val primaryTag = outboundPlan.proxyOutbounds.firstOrNull()?.tag ?: XrayTags.PROXY
+
+        val directDnsServers = speedTestState.directDns.filter(String::isNotBlank).map(String::trim)
+        val effectiveDnsServers = if (directDnsServers.isNotEmpty()) {
+            directDnsServers
+        } else {
+            listOf("1.1.1.1", "8.8.8.8", "223.5.5.5")
+        }
+
+        val dnsPlan = XrayDnsPlan(
+            servers = buildJsonArray {
+                effectiveDnsServers.forEach { server ->
+                    add(JsonPrimitive(server))
+                }
+            },
+            queryStrategy = if (speedTestState.enableIpv6) "UseIP" else "UseIPv4",
+            tag = XrayTags.DIRECT_DNS,
+            hosts = buildJsonObject {},
+            fakeDns = null,
+            routingOptions = XrayDnsRoutingOptions(routeProxyDns = false, routeDirectDns = true),
+        )
+
+        val routing = buildJsonObject {
+            put("domainStrategy", speedTestState.routeDomainStrategy.toXrayRoutingDomainStrategy())
+            put(
+                "rules",
+                buildJsonArray {
+                    add(
+                        buildJsonObject {
+                            put("outboundTag", XrayTags.DIRECT)
+                            put("network", "udp,tcp")
+                            put("port", "53")
+                        },
+                    )
+                },
+            )
+        }
 
         return GeneratedXrayConfig(
             log = request.copy(appState = speedTestState).buildXrayLogConfig(),
@@ -81,10 +122,10 @@ internal object XraySpeedTestConfigFactory {
             outbounds = buildXrayOutbounds(
                 appState = speedTestState,
                 proxyOutbounds = outboundPlan.proxyOutbounds,
-                primaryOutboundTag = routingPlan.primaryOutboundTag ?: XrayTags.PROXY,
+                primaryOutboundTag = primaryTag,
             ),
-            routing = buildXrayRouting(routingPlan),
-            fakeDns = dnsPlan.fakeDns,
+            routing = routing,
+            fakeDns = null,
             observatory = null,
             burstObservatory = null,
             statsApiConfig = null,

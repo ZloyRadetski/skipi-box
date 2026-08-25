@@ -160,7 +160,7 @@ private fun RouteRule.toXrayRule(
     return if (rule.size > 1) rule else null
 }
 
-private fun Int.toXrayRoutingDomainStrategy(): String {
+internal fun Int.toXrayRoutingDomainStrategy(): String {
     return when (this) {
         0 -> "AsIs"
         2 -> "IPOnDemand"

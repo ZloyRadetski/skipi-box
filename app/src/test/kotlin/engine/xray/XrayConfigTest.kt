@@ -540,4 +540,42 @@ class XrayConfigTest {
         val line = group.toShadowrocketLine(choices)
         assertEquals("AutoLeastPing = url-test, Server A, Server B, url=http://www.google.com/generate_204, interval=15, skipi-display=always, skipi-burst-probe=true", line)
     }
+
+    @Test
+    fun testBuildXraySpeedTestConfigIsolatesOutboundAndDisablesFakeDns() {
+        val vless = VLESS(
+            remarks = "SpeedTest Node",
+            id = "4219d973-8792-462f-8747-df766f70f137",
+            server = "speedtest.example.com",
+            port = "443",
+        )
+        val serverState = ProxyServerState(
+            id = 42,
+            server = vless,
+            groupId = 0,
+        )
+        val appState = AppState(
+            proxyServers = listOf(serverState),
+            selectedProxyServerId = 42,
+            enableFakeDns = true,
+        )
+
+        val configJson = XraySpeedTestConfigFactory.buildXraySpeedTestConfig(
+            XrayConfigRequest(
+                appState = appState,
+                selectedServer = serverState,
+                inbounds = emptyList(),
+                coreLogPaths = XrayCoreLogPaths(
+                    accessLogPath = "/tmp/access.log",
+                    errorLogPath = "/tmp/core.log",
+                ),
+            ),
+        )
+
+        assertFalse(configJson.contains("\"fakedns\""), "Speed test config must not contain fakedns in DNS servers")
+        assertFalse(configJson.contains("\"fakeDns\""), "Speed test config must not contain fakeDns section")
+        assertTrue(configJson.contains("\"inbounds\":[]") || configJson.contains("\"inbounds\": []"), "Inbounds must be empty")
+        assertTrue(configJson.contains("\"tag\":\"proxy\"") || configJson.contains("\"tag\": \"proxy\""), "Must contain primary proxy outbound")
+        assertFalse(configJson.contains("skipi-internal-default-route-loopback"), "Must not route through loopback inbound in speed test")
+    }
 }
