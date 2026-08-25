@@ -207,6 +207,14 @@ private fun SettingsContent(
                         title = stringResource(R.string.settings_category_dns_leak),
                         summary = stringResource(R.string.settings_category_dns_leak_summary),
                         onClick = { navigator.push(Route.DnsLeakTest) },
+                        showDivider = true,
+                    )
+                    SettingsCategoryEntry(
+                        icon = SettingsIcons.Globe,
+                        iconBackgroundColor = MiuixTheme.colorScheme.primary,
+                        title = stringResource(R.string.settings_category_ip_info),
+                        summary = stringResource(R.string.settings_category_ip_info_summary),
+                        onClick = { navigator.push(Route.IpInfo) },
                     )
                 }
             }

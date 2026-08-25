@@ -66,6 +66,10 @@ sealed interface Route : NavKey {
     @Serializable
     data object DnsLeakTest : Route
 
+    /** Full-screen IP address info showing public IP, location, ISP and network. */
+    @Serializable
+    data object IpInfo : Route
+
     @Serializable
     data object LogcatLogs : Route
 

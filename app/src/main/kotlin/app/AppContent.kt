@@ -313,6 +313,11 @@ fun AppContent(
                         features.tools.dnsleak.DnsLeakTestPage(padding = padding)
                     }
                 }
+                appEntry<Route.IpInfo> {
+                    key(languageMode) {
+                        features.tools.ipinfo.IpInfoPage(padding = padding)
+                    }
+                }
                 appEntry<Route.ResourceManagement> { route ->
                     key(languageMode) {
                         ResourceManagementPage(

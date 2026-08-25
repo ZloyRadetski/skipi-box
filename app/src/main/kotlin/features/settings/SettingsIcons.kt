@@ -306,6 +306,49 @@ internal object SettingsIcons {
         }.build()
     }
 
+    val Globe: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "Globe",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).apply {
+            path(fill = SolidColor(Color.White)) {
+                moveTo(12f, 2f)
+                curveTo(6.48f, 2f, 2f, 6.48f, 2f, 12f)
+                reflectiveCurveToRelative(4.48f, 10f, 10f, 10f)
+                reflectiveCurveToRelative(10f, -4.48f, 10f, -10f)
+                reflectiveCurveTo(17.52f, 2f, 12f, 2f)
+                close()
+                moveTo(11f, 19.93f)
+                curveTo(7.05f, 19.44f, 4f, 16.08f, 4f, 12f)
+                curveToRelative(0f, -0.7f, 0.1f, -1.38f, 0.28f, -2.03f)
+                lineTo(9f, 14.7f)
+                verticalLineToRelative(1.3f)
+                curveToRelative(0f, 1.1f, 0.9f, 2f, 2f, 2f)
+                verticalLineToRelative(1.93f)
+                close()
+                moveTo(17.9f, 17.39f)
+                curveToRelative(-0.26f, -0.81f, -1f, -1.39f, -1.9f, -1.39f)
+                horizontalLineToRelative(-1f)
+                verticalLineToRelative(-3f)
+                curveToRelative(0f, -0.55f, -0.45f, -1f, -1f, -1f)
+                horizontalLineTo(8f)
+                verticalLineToRelative(-2f)
+                horizontalLineToRelative(2f)
+                curveToRelative(0.55f, 0f, 1f, -0.45f, 1f, -1f)
+                verticalLineTo(7f)
+                horizontalLineToRelative(2f)
+                curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f)
+                verticalLineToRelative(-0.41f)
+                curveToRelative(2.93f, 1.19f, 5f, 4.06f, 5f, 7.41f)
+                curveToRelative(0f, 2.08f, -0.8f, 3.97f, -2.1f, 5.39f)
+                close()
+            }
+        }.build()
+    }
+
     val ChevronRight: ImageVector by lazy {
         ImageVector.Builder(
             name = "ChevronRight",
