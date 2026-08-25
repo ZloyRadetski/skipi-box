@@ -515,7 +515,7 @@
 
     <string name="proxy_editor_full_validation_warning_title">Конфигурация содержит ошибки</string>
     <string name="proxy_editor_full_validation_warning_summary">Некоторые проверки конфигурации не прошли. Вы можете принудительно сохранить ее, но корректная работа не гарантируется.</string>
-    <string name="proxy_editor_return_edit">Вернуться к редактированию</string>
+    <string name="proxy_editor_return_edit">Вернуться</string>
     <string name="proxy_editor_continue_save">Все равно сохранить</string>
     <string name="proxy_editor_discard_changes_title">Отменить изменения?</string>
     <string name="proxy_editor_discard_changes_summary">Несохраненные изменения будут потеряны.</string>
