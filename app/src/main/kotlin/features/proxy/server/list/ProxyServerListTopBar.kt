@@ -254,10 +254,11 @@ internal fun ProxyServerListTopBar(
                 .padding(start = 12.dp, end = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Image(
-                painter = painterResource(R.drawable.ic_launcher_monochrome),
+            Icon(
+                painter = painterResource(R.drawable.ic_topbar_logo),
                 contentDescription = stringResource(R.string.app_name),
-                modifier = Modifier.size(36.dp),
+                tint = MiuixTheme.colorScheme.onBackground,
+                modifier = Modifier.height(36.dp),
             )
             Spacer(Modifier.weight(1f))
             IconButton(
