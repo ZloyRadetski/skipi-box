@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,7 +42,10 @@ import ui.AppTheme
 import ui.components.BackNavigationIcon
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
+import ui.layout.pageListPadding
+import ui.layout.pageScrollModifiers
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 
 /** Full-screen connection speed test: ping, jitter, download and upload. */
 @Composable
@@ -50,6 +55,7 @@ fun SpeedTestPage(
     val languageMode = LocalAppChromeState.current.languageMode
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
+    val topAppBarScrollBehavior = MiuixScrollBehavior()
 
     // State lives in the app-scoped session so rotation keeps the test alive.
     val state = SpeedTestSession.state
@@ -64,7 +70,7 @@ fun SpeedTestPage(
                 AdaptiveTopAppBar(
                     title = stringResource(R.string.tools_speed_test_title),
                     isWideScreen = isWideScreen,
-                    scrollBehavior = MiuixScrollBehavior(),
+                    scrollBehavior = topAppBarScrollBehavior,
                     navigationIcon = {
                         BackNavigationIcon(onClick = { navigator.pop() })
                     },
@@ -72,12 +78,21 @@ fun SpeedTestPage(
             }
         },
     ) { innerPadding ->
+        val contentPadding = pageContentPaddingWithCutout(innerPadding, padding, isWideScreen)
+        val baseListPadding = pageListPadding(contentPadding)
+        val layoutDirection = LocalLayoutDirection.current
+        val listPadding = PaddingValues(
+            top = baseListPadding.calculateTopPadding(),
+            bottom = baseListPadding.calculateBottomPadding(),
+            start = baseListPadding.calculateStartPadding(layoutDirection) + 16.dp,
+            end = baseListPadding.calculateEndPadding(layoutDirection) + 16.dp,
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .pageScrollModifiers(topAppBarScrollBehavior)
                 .verticalScroll(rememberScrollState())
-                .padding(pageContentPaddingWithCutout(innerPadding, padding, isWideScreen))
-                .padding(horizontal = 16.dp),
+                .padding(listPadding),
         ) {
             Spacer(Modifier.height(12.dp))
             SpeedGaugeCard(

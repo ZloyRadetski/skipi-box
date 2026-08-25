@@ -51,6 +51,7 @@ import ui.components.BackNavigationIcon
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
+import ui.layout.pageScrollModifiers
 import androidx.compose.ui.graphics.Color
 
 /** Full-screen DNS leak test: shows which resolvers really see the queries. */
@@ -62,6 +63,7 @@ fun DnsLeakTestPage(
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
     val context = LocalContext.current
+    val topAppBarScrollBehavior = MiuixScrollBehavior()
 
     val connectivity = remember { context.getSystemService(ConnectivityManager::class.java) }
 
@@ -89,7 +91,7 @@ fun DnsLeakTestPage(
                 AdaptiveTopAppBar(
                     title = stringResource(R.string.tools_dns_leak_title),
                     isWideScreen = isWideScreen,
-                    scrollBehavior = MiuixScrollBehavior(),
+                    scrollBehavior = topAppBarScrollBehavior,
                     navigationIcon = {
                         BackNavigationIcon(
                             onClick = {
@@ -115,7 +117,8 @@ fun DnsLeakTestPage(
         LazyColumn(
             state = rememberLazyListState(),
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .pageScrollModifiers(topAppBarScrollBehavior),
             contentPadding = listPadding,
         ) {
             item(key = "description") {
