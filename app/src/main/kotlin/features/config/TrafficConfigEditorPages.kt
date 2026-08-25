@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -432,17 +433,18 @@ fun TrafficConfigRawEditorPage(
         navigator.pop()
         return
     }
-    var rawConfig by remember(config.id) {
-        mutableStateOf(config.withSkipiSettingsInRawConfig().rawConfig)
+    val rawEditorState = remember(config.id) {
+        ConfCodeEditorState(config.withSkipiSettingsInRawConfig().rawConfig)
     }
-    val rawEditorScrollState = rememberScrollState()
-    val analysis = remember(rawConfig) { rawConfig.analyzeShadowrocketConfig() }
     val copiedMessage = stringResource(R.string.common_copied)
     fun save(): Boolean {
-        if (rawConfig.isBlank() || analysis.diagnostics.any { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) return false
+        val currentText = rawEditorState.snapshotText()
+        if (currentText.isBlank()) return false
+        val analysis = currentText.analyzeShadowrocketConfig()
+        if (analysis.diagnostics.any { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) return false
         updateAppState { state ->
             state.withUpdatedTrafficConfig(config.id) { current ->
-                val normalized = rawConfig.trimEnd() + "\n"
+                val normalized = currentText.trimEnd() + "\n"
                 current.copy(rawConfig = normalized)
             }
         }
@@ -463,7 +465,7 @@ fun TrafficConfigRawEditorPage(
             .fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
-                title = stringResource(R.string.configs_raw),
+                title = config.name.ifBlank { stringResource(R.string.configs_raw_edit) },
                 isWideScreen = isWideScreen,
                 scrollBehavior = MiuixScrollBehavior(),
                 navigationIcon = {
@@ -478,7 +480,7 @@ fun TrafficConfigRawEditorPage(
                     NavigationIcon(
                         onClick = {
                             scope.launch {
-                                clipboard.setPlainText(rawConfig)
+                                clipboard.setPlainText(rawEditorState.snapshotText())
                                 services.tipNotifier.show(copiedMessage)
                             }
                         },
@@ -494,50 +496,21 @@ fun TrafficConfigRawEditorPage(
         val layoutDirection = LocalLayoutDirection.current
         val pagePadding = PaddingValues(
             start = basePadding.calculateStartPadding(layoutDirection) + 12.dp,
-            top = basePadding.calculateTopPadding() + 8.dp,
+            top = basePadding.calculateTopPadding(),
             end = basePadding.calculateEndPadding(layoutDirection) + 12.dp,
             bottom = basePadding.calculateBottomPadding() + 12.dp,
         )
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(AppTheme.colors.background),
+                .background(AppTheme.colors.background)
+                .padding(pagePadding)
+                .imePadding(),
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(pagePadding)) {
-                Text(
-                    text = stringResource(R.string.configs_raw),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
-                )
-                BasicTextField(
-                    state = rememberTextFieldState(rawConfig),
-                    inputTransformation = { rawConfig = asCharSequence().toString() },
-                    lineLimits = TextFieldLineLimits.MultiLine(),
-                    textStyle = MiuixTheme.textStyles.main.copy(
-                        textAlign = TextAlign.Start,
-                        color = AppTheme.colors.onSurface,
-                    ),
-                    cursorBrush = SolidColor(AppTheme.colors.accent),
-                    scrollState = rawEditorScrollState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .background(
-                            color = AppTheme.colors.surface,
-                            shape = RoundedCornerShape(16.dp),
-                        )
-                        .padding(12.dp),
-                )
-                if (analysis.unsupportedSections.isNotEmpty()) {
-                    Text(
-                        stringResource(R.string.configs_preserved_unsupported),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
-            }
+            ConfCodeEditor(
+                state = rawEditorState,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }
