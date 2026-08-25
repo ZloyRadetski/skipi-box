@@ -500,6 +500,9 @@
     <string name="proxy_editor_full_validation_warning_summary">برخی از چک ها پاس نشدند. می توانید به ذخیره سازی ادامه دهید، اما ممکن است پیکربندی به درستی کار نکند.</string>
     <string name="proxy_editor_return_edit">بازگشت به ویرایش</string>
     <string name="proxy_editor_continue_save">به ذخیره ادامه دهید</string>
+    <string name="proxy_editor_discard_changes_title">لغو تغییرات؟</string>
+    <string name="proxy_editor_discard_changes_summary">تغییرات ذخیره‌نشده از دست خواهند رفت.</string>
+    <string name="proxy_editor_discard">لغو</string>
     <string name="proxy_editor_strategy_group_title">گروه استراتژی</string>
     <string name="proxy_editor_chain_proxy_title">پروکسی زنجیره ای</string>
     <string name="proxy_editor_properties">خواص</string>

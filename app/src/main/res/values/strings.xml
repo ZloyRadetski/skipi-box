@@ -537,6 +537,9 @@
     <string name="proxy_editor_full_validation_warning_summary">Some checks did not pass. You can continue saving, but the config may not work correctly.</string>
     <string name="proxy_editor_return_edit">Return to edit</string>
     <string name="proxy_editor_continue_save">Continue saving</string>
+    <string name="proxy_editor_discard_changes_title">Discard changes?</string>
+    <string name="proxy_editor_discard_changes_summary">Unsaved changes will be lost.</string>
+    <string name="proxy_editor_discard">Discard</string>
     <string name="proxy_editor_strategy_group_title">Strategy group</string>
     <string name="proxy_editor_chain_proxy_title">Chain proxy</string>
     <string name="proxy_editor_properties">Properties</string>

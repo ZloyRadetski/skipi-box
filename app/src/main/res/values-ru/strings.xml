@@ -517,6 +517,9 @@
     <string name="proxy_editor_full_validation_warning_summary">Некоторые проверки конфигурации не прошли. Вы можете принудительно сохранить ее, но корректная работа не гарантируется.</string>
     <string name="proxy_editor_return_edit">Вернуться к редактированию</string>
     <string name="proxy_editor_continue_save">Все равно сохранить</string>
+    <string name="proxy_editor_discard_changes_title">Отменить изменения?</string>
+    <string name="proxy_editor_discard_changes_summary">Несохраненные изменения будут потеряны.</string>
+    <string name="proxy_editor_discard">Отменить</string>
     <string name="proxy_editor_strategy_group_title">Группа стратегий</string>
     <string name="proxy_editor_chain_proxy_title">Цепочка прокси (Chain)</string>
     <string name="proxy_editor_properties">Свойства</string>

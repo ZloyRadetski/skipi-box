@@ -514,6 +514,9 @@
     <string name="proxy_editor_full_validation_warning_summary">有些检查没有通过。您可以继续保存，但配置可能无法正常工作。</string>
     <string name="proxy_editor_return_edit">返回编辑</string>
     <string name="proxy_editor_continue_save">继续保存</string>
+    <string name="proxy_editor_discard_changes_title">放弃更改？</string>
+    <string name="proxy_editor_discard_changes_summary">未保存的更改将丢失。</string>
+    <string name="proxy_editor_discard">放弃</string>
     <string name="proxy_editor_strategy_group_title">策略组</string>
     <string name="proxy_editor_chain_proxy_title">链代理</string>
     <string name="proxy_editor_properties">特性</string>

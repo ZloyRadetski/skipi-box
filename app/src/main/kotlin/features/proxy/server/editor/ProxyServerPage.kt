@@ -119,6 +119,9 @@ fun ProxyServerPage(
     val fullValidationWarningSummary = stringResource(R.string.proxy_editor_full_validation_warning_summary)
     val continueSaveMessage = stringResource(R.string.proxy_editor_continue_save)
     val returnEditMessage = stringResource(R.string.proxy_editor_return_edit)
+    val discardChangesTitle = stringResource(R.string.proxy_editor_discard_changes_title)
+    val discardChangesSummary = stringResource(R.string.proxy_editor_discard_changes_summary)
+    val discardMessage = stringResource(R.string.proxy_editor_discard)
     val unknownGroupName = stringResource(R.string.common_unknown_group)
     val defaultGroupName = stringResource(R.string.subscription_default_group)
     val allGroupsLabel = stringResource(R.string.proxy_editor_strategy_group_all_groups)
@@ -144,6 +147,22 @@ fun ProxyServerPage(
         }
     }
     var pendingSaveIssues by remember { mutableStateOf<List<ProxyServerValidationIssue>>(emptyList()) }
+    var showDiscardConfirmationDialog by remember { mutableStateOf(false) }
+
+    fun hasChanges(): Boolean {
+        if (psEdit is StrategyGroup) {
+            val originalStrategyGroup = ps as? StrategyGroup
+            if (strategyGroupMemberIds != originalStrategyGroup?.proxyServerIds.orEmpty()) {
+                return true
+            }
+        }
+        return try {
+            psEdit.encodePersistedProxyServer() != ps.encodePersistedProxyServer()
+        } catch (_: Throwable) {
+            psEdit != ps
+        }
+    }
+
     fun saveProxyServer() {
         if (psEdit is StrategyGroup) {
             psEdit.proxyServerIds = strategyGroupMemberIds
@@ -180,11 +199,17 @@ fun ProxyServerPage(
         }
     }
 
-    // The editor is also used for config-owned proxy groups.  Returning from it
-    // must deliver the edited group just like the confirmation button does.
+    fun requestBack() {
+        if (hasChanges()) {
+            showDiscardConfirmationDialog = true
+        } else {
+            navigator.pop()
+        }
+    }
+
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
-        onBackCompleted = ::requestSave,
+        onBackCompleted = ::requestBack,
     )
     val groupOptions = remember(appState.subscriptionGroups, allGroupsLabel, defaultGroupName) {
         listOf(ProxyServerEditorGroupOption(null, allGroupsLabel)) +
@@ -251,7 +276,7 @@ fun ProxyServerPage(
                 scrollBehavior = topAppBarScrollBehavior,
                 navigationIcon = {
                     BackNavigationIcon(
-                        onClick = ::requestSave,
+                        onClick = ::requestBack,
                     )
                 },
                 actions = {
@@ -353,6 +378,19 @@ fun ProxyServerPage(
         onContinueSave = {
             pendingSaveIssues = emptyList()
             saveProxyServer()
+        },
+    )
+
+    WarningConfirmDialog(
+        show = showDiscardConfirmationDialog,
+        title = discardChangesTitle,
+        summary = discardChangesSummary,
+        dismissText = returnEditMessage,
+        confirmText = discardMessage,
+        onDismissRequest = { showDiscardConfirmationDialog = false },
+        onConfirm = {
+            showDiscardConfirmationDialog = false
+            navigator.pop()
         },
     )
 }
