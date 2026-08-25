@@ -98,7 +98,7 @@ import top.yukonga.miuix.kmp.icon.extended.Pause
 import top.yukonga.miuix.kmp.icon.extended.Play
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowCascadingListPopup
+import ui.components.AppCascadingListPopup
 import ui.AppTheme
 import ui.icons.StaticHourglass
 import ui.isInDarkTheme
@@ -238,7 +238,7 @@ internal fun ProxyServerListGroupSelector(
             )
         }
 
-        WindowCascadingListPopup(
+        AppCascadingListPopup(
             show = showGroupPicker,
             entries = listOf(
                 DropdownEntry(
@@ -289,7 +289,7 @@ internal fun ProxyServerListGroupSelector(
                 }
             }
             if (actions.isNotEmpty()) {
-                WindowCascadingListPopup(
+                AppCascadingListPopup(
                     show = true,
                     entries = listOf(DropdownEntry(items = actions)),
                     popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
@@ -797,7 +797,7 @@ private fun ProxyServerListCardActionMenu(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
 
-    WindowCascadingListPopup(
+    AppCascadingListPopup(
         show = show,
         entries = listOf(
             DropdownEntry(

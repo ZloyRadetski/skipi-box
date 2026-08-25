@@ -18,7 +18,6 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowCascadingListPopup
 
 internal data class IconDropdownMenuEntry<T>(
     val key: Any,
@@ -54,7 +53,7 @@ internal fun <T> IconDropdownMenu(
             tint = MiuixTheme.colorScheme.onBackground,
         )
     }
-    WindowCascadingListPopup(
+    AppCascadingListPopup(
         show = showPopup.value,
         entries = listOf(
             DropdownEntry(

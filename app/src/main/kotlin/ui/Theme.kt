@@ -43,9 +43,11 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.theme.TextStyles
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 val LocalBackgroundStyle = compositionLocalOf { BackgroundStyleClassic }
+val LocalPopupTextStyles = compositionLocalOf<TextStyles?> { null }
 
 @Immutable
 data class AppColors(
@@ -284,6 +286,27 @@ fun AppTheme(
         }
     }
 
+    val popupTextStyles = remember(miuixTextStyles, fontScaleFactor) {
+        if (fontScaleFactor == 1.0f) {
+            miuixTextStyles
+        } else {
+            miuixTextStyles.copy(
+                main = miuixTextStyles.main.scaleFontSize(fontScaleFactor),
+                headline1 = miuixTextStyles.headline1.scaleFontSize(fontScaleFactor),
+                headline2 = miuixTextStyles.headline2.scaleFontSize(fontScaleFactor),
+                title1 = miuixTextStyles.title1.scaleFontSize(fontScaleFactor),
+                title2 = miuixTextStyles.title2.scaleFontSize(fontScaleFactor),
+                title3 = miuixTextStyles.title3.scaleFontSize(fontScaleFactor),
+                title4 = miuixTextStyles.title4.scaleFontSize(fontScaleFactor),
+                body1 = miuixTextStyles.body1.scaleFontSize(fontScaleFactor),
+                body2 = miuixTextStyles.body2.scaleFontSize(fontScaleFactor),
+                footnote1 = miuixTextStyles.footnote1.scaleFontSize(fontScaleFactor),
+                footnote2 = miuixTextStyles.footnote2.scaleFontSize(fontScaleFactor),
+                button = miuixTextStyles.button.scaleFontSize(fontScaleFactor),
+            )
+        }
+    }
+
     val currentDensity = LocalDensity.current
     val scaledDensity = remember(currentDensity.density, fontScaleFactor) {
         Density(
@@ -298,6 +321,7 @@ fun AppTheme(
         LocalAppColors provides appColors,
         LocalBackgroundStyle provides backgroundStyle,
         LocalDensity provides scaledDensity,
+        LocalPopupTextStyles provides popupTextStyles,
     ) {
         MiuixTheme(
             colors = miuixColors,
@@ -310,6 +334,23 @@ fun AppTheme(
             content()
         }
     }
+}
+
+private fun TextStyle.scaleFontSize(scaleFactor: Float): TextStyle {
+    val newFontSize = if (scaleFactor != 1.0f && fontSize.isSpecified) {
+        fontSize * scaleFactor
+    } else {
+        fontSize
+    }
+    val newLineHeight = if (scaleFactor != 1.0f && lineHeight.isSpecified) {
+        lineHeight * scaleFactor
+    } else {
+        lineHeight
+    }
+    return copy(
+        fontSize = newFontSize,
+        lineHeight = newLineHeight,
+    )
 }
 
 private fun TextStyle.applyFontAndWeight(

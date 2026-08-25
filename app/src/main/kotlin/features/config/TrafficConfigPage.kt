@@ -92,11 +92,11 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowCascadingListPopup
 import top.yukonga.miuix.kmp.window.WindowDialog
 import ui.AppTheme
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
+import ui.components.AppCascadingListPopup
 import ui.components.WarningConfirmDialog
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
@@ -557,7 +557,7 @@ fun TrafficConfigPage(
     }
 
     if (showAddMenu) {
-        WindowCascadingListPopup(
+        AppCascadingListPopup(
             show = true,
             entries = listOf(
                 DropdownEntry(
@@ -1039,7 +1039,7 @@ private fun AutoBalancerContextMenu(
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    WindowCascadingListPopup(
+    AppCascadingListPopup(
         show = true,
         entries = listOf(
             DropdownEntry(
@@ -1068,7 +1068,7 @@ private fun TrafficConfigContextMenu(
     onEnable: () -> Unit,
     onUpdate: (() -> Unit)? = null,
 ) {
-    WindowCascadingListPopup(
+    AppCascadingListPopup(
         show = true,
         entries = listOf(
             DropdownEntry(
