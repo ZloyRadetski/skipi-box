@@ -205,9 +205,10 @@ internal class AndroidResourceFileRepository(
 
     suspend fun restoreBundled(
         kind: ResourceFileKind,
+        resourceFileSource: Int = features.resources.ResourceFileSourceLoyalsoldierGithub,
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
-        store.restoreBundled(kind)
+        store.restoreBundled(kind, resourceFileSource)
         store.currentStatus(customResourceFiles)
     }
 }

@@ -16,7 +16,9 @@ import app.ResourceFileKind
 import app.ResourceFileStatus
 import app.ResourceFilesStatus
 import app.sanitizeCustomResourceFileName
+import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileSourceLoyalsoldierGithub
+import features.resources.resourceFileSourceAssetDir
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.zip.ZipInputStream
@@ -87,8 +89,8 @@ internal class AndroidResourceFileStore(
             ) {
                 return@forEach
             }
-            if (!kind.hasBundledAsset()) return@forEach
-            runCatching { restoreBundled(kind) }
+            if (!kind.hasBundledAsset(resourceFileSource)) return@forEach
+            runCatching { restoreBundled(kind, resourceFileSource) }
                 .onFailure { error ->
                     AndroidResourceFileLogger.warn(
                         "Failed to restore bundled resource file: ${kind.fileName}",
@@ -98,13 +100,24 @@ internal class AndroidResourceFileStore(
         }
     }
 
-    fun restoreBundled(kind: ResourceFileKind) {
+    fun restoreBundled(
+        kind: ResourceFileKind,
+        resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
+    ) {
         require(kind != ResourceFileKind.XrayCore) { "Xray core must be restored through the locked publisher" }
-        restoreBundledAsset(kind, kind.bundledAssetPathOrNull() ?: error("Bundled ${kind.fileName} is unavailable"))
+        val assetPath = kind.bundledAssetPathOrNull(resourceFileSource)
+            ?: kind.bundledAssetPathOrNull(ResourceFileSourceLoyalsoldierGithub)
+            ?: error("Bundled ${kind.fileName} is unavailable")
+        restoreBundledAsset(kind, assetPath)
     }
 
     private fun restoreBundledAsset(kind: ResourceFileKind, assetPath: String) {
-        appContext.assets.open(assetPath).use { input ->
+        val inputStream = runCatching { appContext.assets.open(assetPath) }
+            .getOrElse {
+                // Fallback to root asset path if provider subfolder is unavailable
+                appContext.assets.open(kind.fileName)
+            }
+        inputStream.use { input ->
             dataDir.mkdirs()
             writeAtomically(file(kind)) { output -> input.copyTo(output) }
         }
@@ -319,7 +332,7 @@ internal fun shouldRestoreBundledResourceFile(
 ): Boolean {
     if (!targetExists || targetLength <= 0) return true
     if (!restoreAfterPackageUpdate) return false
-    if (kind != ResourceFileKind.XrayCore && resourceFileSource != ResourceFileSourceLoyalsoldierGithub) {
+    if (kind != ResourceFileKind.XrayCore && resourceFileSource == ResourceFileSourceCustom) {
         return false
     }
     return bundledUpdatedAtMillis > 0 && targetLastModifiedMillis < bundledUpdatedAtMillis
@@ -347,15 +360,16 @@ internal fun Context.xrayResourceFilePaths(): XrayResourceFilePaths {
     return AndroidResourceFileStore(this).currentPaths()
 }
 
-private fun ResourceFileKind.hasBundledAsset(): Boolean {
-    return this == ResourceFileKind.XrayCore || bundledAssetPathOrNull() != null
+private fun ResourceFileKind.hasBundledAsset(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub): Boolean {
+    return this == ResourceFileKind.XrayCore || bundledAssetPathOrNull(resourceFileSource) != null
 }
 
-private fun ResourceFileKind.bundledAssetPathOrNull(): String? {
+private fun ResourceFileKind.bundledAssetPathOrNull(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub): String? {
+    val providerDir = resourceFileSourceAssetDir(resourceFileSource)
     return when (this) {
-        ResourceFileKind.GeoIp -> fileName
-        ResourceFileKind.GeoSite -> fileName
-        ResourceFileKind.GeoIpOnlyCnPrivate -> fileName
+        ResourceFileKind.GeoIp -> if (providerDir != null) "$providerDir/$fileName" else fileName
+        ResourceFileKind.GeoSite -> if (providerDir != null) "$providerDir/$fileName" else fileName
+        ResourceFileKind.GeoIpOnlyCnPrivate -> if (providerDir != null) "$providerDir/$fileName" else fileName
         ResourceFileKind.DirectCidrIpv4 -> "$XrayBundledResourceFilesDir/$fileName"
         ResourceFileKind.DirectCidrIpv6 -> "$XrayBundledResourceFilesDir/$fileName"
         ResourceFileKind.XrayCore -> error("Xray-core is restored from native libraries")

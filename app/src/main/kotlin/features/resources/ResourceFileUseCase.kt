@@ -76,9 +76,10 @@ class ResourceFileUseCase(
 
     suspend fun restoreBundled(
         kind: ResourceFileKind,
+        resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus {
-        return repository.restoreBundled(kind, customResourceFiles)
+        return repository.restoreBundled(kind, resourceFileSource, customResourceFiles)
     }
 
     suspend fun deleteCustom(

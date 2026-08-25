@@ -482,7 +482,13 @@ fun ResourceManagementPage(
                             },
                             onRestore = {
                                 runResourceFileAction(
-                                    action = { resourceFileUseCase.restoreBundled(kind, resourceSettings.customFiles) },
+                                    action = {
+                                        resourceFileUseCase.restoreBundled(
+                                            kind = kind,
+                                            resourceFileSource = resourceSettings.source,
+                                            customResourceFiles = resourceSettings.customFiles,
+                                        )
+                                    },
                                     successMessage = restoredMessage.formatTemplate("name" to kind.displayName),
                                 )
                             },

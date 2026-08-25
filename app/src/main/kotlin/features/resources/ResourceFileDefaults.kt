@@ -45,3 +45,12 @@ const val ResourceFileDirectCidrIpv6Url =
     "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt"
 
 const val XrayCoreVersion = ProjectInfo.XRAY_CORE_VERSION
+
+fun resourceFileSourceAssetDir(source: Int): String? = when (source) {
+    ResourceFileSourceLoyalsoldierGithub -> "geo/loyalsoldier"
+    ResourceFileSourceV2FlyGithub -> "geo/v2fly"
+    ResourceFileSourceChocolate4UGithub -> "geo/chocolate4u"
+    ResourceFileSourceRunetFreedomGithub -> "geo/runetfreedom"
+    ResourceFileSourceRoscomvpnGithub -> "geo/roscomvpn"
+    else -> null
+}
