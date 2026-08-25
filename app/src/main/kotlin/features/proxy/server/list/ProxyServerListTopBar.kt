@@ -467,8 +467,10 @@ internal fun ProxyHeroConnectionCard(
     val selectedServer = remember(appState.proxyServers, appState.selectedProxyServerId) {
         appState.proxyServers.firstOrNull { it.id == appState.selectedProxyServerId }
     }
-    val activeServerId = remember(sample?.outboundTag, appState.selectedProxyServerId) {
-        sample?.outboundTag?.proxyServerIdFromOutboundTag() ?: appState.selectedProxyServerId
+    val activeServerId = remember(sample?.outboundTag, sample?.runtime?.startupStrategyMemberId, appState.selectedProxyServerId) {
+        sample?.outboundTag?.proxyServerIdFromOutboundTag()
+            ?: sample?.runtime?.startupStrategyMemberId
+            ?: appState.selectedProxyServerId
     }
     val activeServerState = remember(appState.proxyServers, activeServerId, selectedServer) {
         appState.proxyServers.firstOrNull { it.id == activeServerId } ?: selectedServer
@@ -521,30 +523,42 @@ private fun resolveConnectionLatency(
     appState: AppState,
     sample: ActiveTunnelRuntimeSample?,
 ): String? {
-    val directLatency = activeServerState?.latency?.takeIf { it.isNotBlank() }
-        ?: selectedServer?.latency?.takeIf { it.isNotBlank() }
-    if (directLatency != null) return directLatency
+    val activeMemberId = sample?.runtime?.startupStrategyMemberId
+        ?: sample?.outboundTag?.proxyServerIdFromOutboundTag()
+    if (activeMemberId != null) {
+        val activeMemberLatency = appState.proxyServers.firstOrNull { it.id == activeMemberId }?.latency?.takeIf { it.isNotBlank() }
+        if (activeMemberLatency != null) return activeMemberLatency
+    }
 
-    val strategyGroup = activeServerState?.server as? StrategyGroup
-        ?: selectedServer?.server as? StrategyGroup
+    if (activeServerState != null && activeServerState.server !is StrategyGroup) {
+        val directLatency = activeServerState.latency.takeIf { it.isNotBlank() }
+        if (directLatency != null) return directLatency
+    }
+
+    if (selectedServer != null && selectedServer.server !is StrategyGroup) {
+        val directLatency = selectedServer.latency.takeIf { it.isNotBlank() }
+        if (directLatency != null) return directLatency
+    }
+
+    val strategyGroup = (activeServerState?.server as? StrategyGroup)
+        ?: (selectedServer?.server as? StrategyGroup)
         ?: (appState.proxyServers.firstOrNull { it.id == appState.selectedProxyServerId }?.server as? StrategyGroup)
     if (strategyGroup != null) {
-        val activeMemberId = sample?.runtime?.startupStrategyMemberId
-            ?: sample?.outboundTag?.proxyServerIdFromOutboundTag()
-        if (activeMemberId != null) {
-            val activeMemberLatency = appState.proxyServers.firstOrNull { it.id == activeMemberId }?.latency?.takeIf { it.isNotBlank() }
-            if (activeMemberLatency != null) return activeMemberLatency
-        }
-        val memberLatencies = appState.proxyServers.filter { member ->
+        val members = appState.proxyServers.filter { member ->
             member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
-        }.mapNotNull { member ->
+        }
+        val memberLatencies = members.mapNotNull { member ->
             member.latency.takeIf { it.isNotBlank() }
         }
-        if (memberLatencies.isNotEmpty()) {
-            return memberLatencies.firstOrNull()
+        val validMemberLatency = memberLatencies.firstOrNull { !it.contains("-1") && !it.contains("Тайм") && !it.contains("Time") }
+            ?: memberLatencies.firstOrNull()
+        if (validMemberLatency != null) {
+            return validMemberLatency
         }
     }
-    return null
+
+    return activeServerState?.latency?.takeIf { it.isNotBlank() }
+        ?: selectedServer?.latency?.takeIf { it.isNotBlank() }
 }
 
 @Composable
