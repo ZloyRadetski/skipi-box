@@ -24,6 +24,7 @@ import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeLight
 import app.modes.ColorModeThemeSystem
 import app.modes.normalizeColorMode
+import app.modes.normalizeFontFamilyMode
 import app.modes.normalizeLanguageMode
 import app.modes.normalizeAppIcon
 import features.settings.servicecontrol.normalizeServiceControlSettings
@@ -104,6 +105,7 @@ internal class AppSettingsPreferences(
                 }
             },
             languageMode = preferences.getInt(KeyLanguageMode, defaults.languageMode).let(::normalizeLanguageMode),
+            fontFamilyMode = preferences.getInt(KeyFontFamilyMode, defaults.fontFamilyMode).let(::normalizeFontFamilyMode),
             enableMaterialYou = preferences.getBoolean(KeyEnableMaterialYou, defaults.enableMaterialYou),
             seedIndex = preferences.getInt(KeySeedIndex, defaults.seedIndex),
             customMaterialYouSeed = if (preferences.contains(KeyCustomMaterialYouSeed)) preferences.getLong(KeyCustomMaterialYouSeed, 0L) else defaults.customMaterialYouSeed,
@@ -407,6 +409,7 @@ internal class AppSettingsPreferences(
         return putInt(KeyAppIcon, state.appIcon)
             .putInt(KeyColorMode, state.colorMode)
             .putInt(KeyLanguageMode, state.languageMode)
+            .putInt(KeyFontFamilyMode, state.fontFamilyMode)
             .putBoolean(KeyEnableMaterialYou, state.enableMaterialYou)
             .putInt(KeySeedIndex, state.seedIndex)
             .apply {
@@ -776,6 +779,7 @@ private const val SubscriptionHwidGcmTagLengthBits = 128
 private const val KeyAppIcon = "app_icon"
 private const val KeyColorMode = "color_mode"
 private const val KeyLanguageMode = "language_mode"
+private const val KeyFontFamilyMode = "font_family_mode"
 private const val KeyEnableMaterialYou = "enable_material_you"
 private const val KeySeedIndex = "seed_index"
 private const val KeyCustomMaterialYouSeed = "custom_material_you_seed"

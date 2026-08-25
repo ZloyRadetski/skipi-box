@@ -223,6 +223,15 @@ fun SettingsAppearancePage(
         stringResource(R.string.settings_bottom_bar_size_large),
     )
 
+    val fontFamilyOptions = listOf(
+        stringResource(R.string.settings_font_family_default),
+        stringResource(R.string.settings_font_family_inter),
+        stringResource(R.string.settings_font_family_golos_text),
+        stringResource(R.string.settings_font_family_manrope),
+        stringResource(R.string.settings_font_family_jetbrains_mono),
+        stringResource(R.string.settings_font_family_climate_crisis),
+    )
+
     val resetCompletedMessage = stringResource(R.string.settings_colors_reset_completed)
 
     Scaffold(
@@ -268,6 +277,12 @@ fun SettingsAppearancePage(
                             items = colorModeOptions,
                             selectedIndex = appState.colorMode,
                             onSelectedIndexChange = { index -> updateAppState { it.copy(colorMode = index) } },
+                        )
+                        OverlayDropdownPreference(
+                            title = stringResource(R.string.settings_font_family),
+                            items = fontFamilyOptions,
+                            selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
+                            onSelectedIndexChange = { index -> updateAppState { it.copy(fontFamilyMode = index) } },
                         )
                         ArrowPreference(
                             title = stringResource(R.string.settings_app_icon),

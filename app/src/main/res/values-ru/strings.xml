@@ -138,6 +138,14 @@
     <string name="settings_pin_connection_panel_summary">Фиксировать панель подключения и выбор подписки при скролле</string>
     <string name="settings_enable_subscription_swipe">Свайп для смены подписки</string>
     <string name="settings_enable_subscription_swipe_summary">Разрешить переключение подписок свайпом влево и вправо</string>
+    <string name="settings_font_family">Шрифт интерфейса</string>
+    <string name="settings_font_family_summary">Выберите стиль шрифта для отображения в приложении</string>
+    <string name="settings_font_family_default">По умолчанию (Системный)</string>
+    <string name="settings_font_family_inter">Inter</string>
+    <string name="settings_font_family_golos_text">Golos Text</string>
+    <string name="settings_font_family_manrope">Manrope</string>
+    <string name="settings_font_family_jetbrains_mono">JetBrains Mono</string>
+    <string name="settings_font_family_climate_crisis">Climate Crisis</string>
     <string name="settings_bottom_bar_size">Размер нижней панели</string>
     <string name="settings_bottom_bar_size_summary">Настройка высоты, иконок и текста нижней панели навигации</string>
     <string name="settings_bottom_bar_size_small">Маленький</string>

@@ -43,6 +43,7 @@ internal data class AppBackupSettings(
     val appIcon: Int = BackupDefaults.appIcon,
     val colorMode: Int = BackupDefaults.colorMode,
     val languageMode: Int = BackupDefaults.languageMode,
+    val fontFamilyMode: Int = BackupDefaults.fontFamilyMode,
     val enableMaterialYou: Boolean = BackupDefaults.enableMaterialYou,
     val seedIndex: Int = BackupDefaults.seedIndex,
     val customMaterialYouSeed: Long? = null,

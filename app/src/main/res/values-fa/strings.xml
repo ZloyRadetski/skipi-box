@@ -1278,4 +1278,12 @@
     <string name="settings_pin_connection_panel_summary">ثابت نگه داشتن پنل اتصال و انتخاب اشتراک هنگام اسکرول</string>
     <string name="settings_enable_subscription_swipe">سوایپ برای تغییر اشتراک</string>
     <string name="settings_enable_subscription_swipe_summary">اجازه جابجایی بین اشتراک‌ها با کشیدن به چپ و راست</string>
+    <string name="settings_font_family">فونت رابط کاربری</string>
+    <string name="settings_font_family_summary">سبک فونت را برای برنامه انتخاب کنید</string>
+    <string name="settings_font_family_default">پیش‌فرض (سیستم)</string>
+    <string name="settings_font_family_inter">Inter</string>
+    <string name="settings_font_family_golos_text">Golos Text</string>
+    <string name="settings_font_family_manrope">Manrope</string>
+    <string name="settings_font_family_jetbrains_mono">JetBrains Mono</string>
+    <string name="settings_font_family_climate_crisis">Climate Crisis</string>
 </resources>

@@ -26,7 +26,9 @@ import app.modes.ColorModeSystem
 import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeLight
 import app.modes.ColorModeThemeSystem
+import app.modes.FontFamilyModeDefault
 import app.modes.normalizeColorMode
+import ui.text.resolveFontFamily
 import androidx.compose.runtime.Immutable
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -87,6 +89,7 @@ fun resolveSystemAccentColor(context: Context): Color {
 @Composable
 fun AppTheme(
     colorMode: Int = ColorModeSystem,
+    fontFamilyMode: Int = FontFamilyModeDefault,
     enableMaterialYou: Boolean = true,
     keyColor: Color? = null,
     enableCustomColors: Boolean = false,
@@ -243,13 +246,39 @@ fun AppTheme(
         )
     }
 
+    val resolvedFontFamily = remember(fontFamilyMode) { resolveFontFamily(fontFamilyMode) }
+    val baseMiuixTextStyles = MiuixTheme.textStyles
+    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily) {
+        if (resolvedFontFamily == null) {
+            baseMiuixTextStyles
+        } else {
+            baseMiuixTextStyles.copy(
+                main = baseMiuixTextStyles.main.copy(fontFamily = resolvedFontFamily),
+                headline1 = baseMiuixTextStyles.headline1.copy(fontFamily = resolvedFontFamily),
+                headline2 = baseMiuixTextStyles.headline2.copy(fontFamily = resolvedFontFamily),
+                title1 = baseMiuixTextStyles.title1.copy(fontFamily = resolvedFontFamily),
+                title2 = baseMiuixTextStyles.title2.copy(fontFamily = resolvedFontFamily),
+                title3 = baseMiuixTextStyles.title3.copy(fontFamily = resolvedFontFamily),
+                title4 = baseMiuixTextStyles.title4.copy(fontFamily = resolvedFontFamily),
+                body1 = baseMiuixTextStyles.body1.copy(fontFamily = resolvedFontFamily),
+                body2 = baseMiuixTextStyles.body2.copy(fontFamily = resolvedFontFamily),
+                footnote1 = baseMiuixTextStyles.footnote1.copy(fontFamily = resolvedFontFamily),
+                footnote2 = baseMiuixTextStyles.footnote2.copy(fontFamily = resolvedFontFamily),
+                button = baseMiuixTextStyles.button.copy(fontFamily = resolvedFontFamily),
+            )
+        }
+    }
+
     CompositionLocalProvider(
         LocalColorMode provides colorMode,
         LocalResolvedDarkTheme provides resolvedDark,
         LocalAppColors provides appColors,
         LocalBackgroundStyle provides backgroundStyle,
     ) {
-        MiuixTheme(colors = miuixColors) {
+        MiuixTheme(
+            colors = miuixColors,
+            textStyles = miuixTextStyles,
+        ) {
             SystemBarAppearance(
                 statusBarDark = resolvedDark,
                 navigationBarDark = resolvedDark,

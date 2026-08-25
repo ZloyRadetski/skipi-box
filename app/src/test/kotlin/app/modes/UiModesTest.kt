@@ -36,4 +36,19 @@ class UiModesTest {
         assertEquals(ColorModeAmoled, normalizeColorMode(ColorModeAmoled))
         assertEquals(ColorModeSystem, normalizeColorMode(-1))
     }
+
+    @Test
+    fun testNormalizeFontFamilyMode() {
+        assertEquals(FontFamilyModeDefault, normalizeFontFamilyMode(FontFamilyModeDefault))
+        assertEquals(FontFamilyModeInter, normalizeFontFamilyMode(FontFamilyModeInter))
+        assertEquals(FontFamilyModeGolosText, normalizeFontFamilyMode(FontFamilyModeGolosText))
+        assertEquals(FontFamilyModeManrope, normalizeFontFamilyMode(FontFamilyModeManrope))
+        assertEquals(FontFamilyModeJetBrainsMono, normalizeFontFamilyMode(FontFamilyModeJetBrainsMono))
+        assertEquals(FontFamilyModeClimateCrisis, normalizeFontFamilyMode(FontFamilyModeClimateCrisis))
+
+        // Invalid values default to FontFamilyModeDefault
+        assertEquals(FontFamilyModeDefault, normalizeFontFamilyMode(-1))
+        assertEquals(FontFamilyModeDefault, normalizeFontFamilyMode(99))
+    }
 }
+

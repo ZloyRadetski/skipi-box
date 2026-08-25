@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.map
 data class AppChromeState(
     val colorMode: Int,
     val languageMode: Int,
+    val fontFamilyMode: Int = app.modes.FontFamilyModeDefault,
     val enableMaterialYou: Boolean,
     val seedIndex: Int,
     val customMaterialYouSeed: Long? = null,
@@ -133,6 +134,7 @@ private fun AppState.toAppChromeState(): AppChromeState {
     return AppChromeState(
         colorMode = colorMode,
         languageMode = languageMode,
+        fontFamilyMode = fontFamilyMode,
         enableMaterialYou = enableMaterialYou,
         seedIndex = seedIndex,
         customMaterialYouSeed = customMaterialYouSeed,

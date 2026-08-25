@@ -1279,4 +1279,12 @@
     <string name="settings_pin_connection_panel_summary">滚动服务器列表时固定连接面板和订阅选择器</string>
     <string name="settings_enable_subscription_swipe">滑动切换订阅</string>
     <string name="settings_enable_subscription_swipe_summary">允许通过向左或向右滑动来切换订阅</string>
+    <string name="settings_font_family">界面字体</string>
+    <string name="settings_font_family_summary">选择应用于应用的字体样式</string>
+    <string name="settings_font_family_default">默认（系统）</string>
+    <string name="settings_font_family_inter">Inter</string>
+    <string name="settings_font_family_golos_text">Golos Text</string>
+    <string name="settings_font_family_manrope">Manrope</string>
+    <string name="settings_font_family_jetbrains_mono">JetBrains Mono</string>
+    <string name="settings_font_family_climate_crisis">Climate Crisis</string>
 </resources>

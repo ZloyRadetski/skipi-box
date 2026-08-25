@@ -53,3 +53,15 @@ fun normalizeBottomBarSize(value: Int): Int = when (value) {
     in BottomBarSizeSmall..BottomBarSizeLarge -> value
     else -> BottomBarSizeLarge
 }
+
+const val FontFamilyModeDefault = 0
+const val FontFamilyModeInter = 1
+const val FontFamilyModeGolosText = 2
+const val FontFamilyModeManrope = 3
+const val FontFamilyModeJetBrainsMono = 4
+const val FontFamilyModeClimateCrisis = 5
+
+fun normalizeFontFamilyMode(value: Int): Int = when (value) {
+    in FontFamilyModeDefault..FontFamilyModeClimateCrisis -> value
+    else -> FontFamilyModeDefault
+}

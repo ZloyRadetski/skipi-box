@@ -121,6 +121,14 @@
     <string name="settings_pin_connection_panel_summary">Keep the connection panel and subscription selector fixed at the top when scrolling</string>
     <string name="settings_enable_subscription_swipe">Swipe to switch subscription</string>
     <string name="settings_enable_subscription_swipe_summary">Allow switching subscriptions by swiping left and right</string>
+    <string name="settings_font_family">Interface font</string>
+    <string name="settings_font_family_summary">Select the typography style for the app</string>
+    <string name="settings_font_family_default">Default (System)</string>
+    <string name="settings_font_family_inter">Inter</string>
+    <string name="settings_font_family_golos_text">Golos Text</string>
+    <string name="settings_font_family_manrope">Manrope</string>
+    <string name="settings_font_family_jetbrains_mono">JetBrains Mono</string>
+    <string name="settings_font_family_climate_crisis">Climate Crisis</string>
     <string name="settings_bottom_bar_size">Bottom bar size</string>
     <string name="settings_bottom_bar_size_summary">Adjust the height, icons, and text size of the bottom bar</string>
     <string name="settings_bottom_bar_size_small">Small</string>
