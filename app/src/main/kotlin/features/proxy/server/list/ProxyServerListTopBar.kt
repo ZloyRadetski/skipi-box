@@ -14,6 +14,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.EaseOutQuad
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -64,6 +65,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.Clipboard
@@ -569,11 +571,7 @@ private fun ProxyHeroConnectionCardClassic(
         appState.customAccentColor?.let { Color(it) } ?: (keyColorFor(appState.seedIndex, appState.customMaterialYouSeed) ?: resolveSystemAccentColor(context))
     }
 
-    val cardBgColor by animateColorAsState(
-        targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surface,
-        animationSpec = tween(350),
-        label = "classic_card_bg",
-    )
+    val cardBgColor = AppTheme.colors.surface
     val cardBorderColor by animateColorAsState(
         targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
         animationSpec = tween(350),
@@ -581,23 +579,30 @@ private fun ProxyHeroConnectionCardClassic(
     )
 
     val buttonBgColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.18f) else AppTheme.colors.surfaceVariant,
+        targetValue = if (proxyRunning) accentTone else AppTheme.colors.surfaceVariant,
         animationSpec = tween(300),
         label = "classic_btn_bg",
     )
     val buttonBorderColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone else AppTheme.colors.onSurface.copy(alpha = 0.2f),
+        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.45f) else AppTheme.colors.onSurface.copy(alpha = 0.18f),
         animationSpec = tween(300),
         label = "classic_btn_border",
     )
+    val isAccentBright = remember(accentTone) {
+        accentTone.luminance() > 0.65f
+    }
     val powerIconTint by animateColorAsState(
-        targetValue = if (proxyRunning) AppTheme.colors.onSurface else AppTheme.colors.onSurface.copy(alpha = 0.55f),
+        targetValue = if (proxyRunning) {
+            if (isAccentBright) Color(0xFF1B1B1F) else Color.White
+        } else {
+            AppTheme.colors.onSurface.copy(alpha = 0.5f)
+        },
         animationSpec = tween(300),
         label = "classic_icon_tint",
     )
 
     val buttonScale by animateFloatAsState(
-        targetValue = if (proxyRunning) 1.03f else 1.0f,
+        targetValue = if (proxyRunning) 1.0f else 0.96f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMediumLow,
@@ -606,23 +611,35 @@ private fun ProxyHeroConnectionCardClassic(
     )
 
     val infiniteTransition = rememberInfiniteTransition(label = "power_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.25f,
+
+    val pulse1Progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = EaseOutQuad),
+            animation = tween(durationMillis = 2400, easing = EaseOutQuad),
             repeatMode = RepeatMode.Restart,
         ),
-        label = "power_aura_scale",
+        label = "pulse_1",
     )
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.45f,
-        targetValue = 0.0f,
+
+    val pulse2Progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = EaseOutQuad),
+            animation = tween(durationMillis = 2400, delayMillis = 1200, easing = EaseOutQuad),
             repeatMode = RepeatMode.Restart,
         ),
-        label = "power_aura_alpha",
+        label = "pulse_2",
+    )
+
+    val breathScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.035f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "power_breath",
     )
 
     Card(
@@ -644,36 +661,55 @@ private fun ProxyHeroConnectionCardClassic(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Large Circular Power Button with Aura
+                // Large Circular Power Button with Multi-wave Aura
                 Box(
-                    modifier = Modifier.size(92.dp),
+                    modifier = Modifier.size(96.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (proxyRunning) {
+                        // Wave 1
                         Box(
                             modifier = Modifier
                                 .size(86.dp)
                                 .graphicsLayer {
-                                    scaleX = pulseScale
-                                    scaleY = pulseScale
-                                    alpha = pulseAlpha
+                                    val scale = 1.0f + 0.35f * pulse1Progress
+                                    val alpha = (1.0f - pulse1Progress) * 0.40f
+                                    scaleX = scale
+                                    scaleY = scale
+                                    this.alpha = alpha
+                                }
+                                .clip(CircleShape)
+                                .background(accentTone),
+                        )
+
+                        // Wave 2
+                        Box(
+                            modifier = Modifier
+                                .size(86.dp)
+                                .graphicsLayer {
+                                    val scale = 1.0f + 0.35f * pulse2Progress
+                                    val alpha = (1.0f - pulse2Progress) * 0.40f
+                                    scaleX = scale
+                                    scaleY = scale
+                                    this.alpha = alpha
                                 }
                                 .clip(CircleShape)
                                 .background(accentTone),
                         )
                     }
 
+                    val effectiveScale = buttonScale * (if (proxyRunning) breathScale else 1.0f)
                     Box(
                         modifier = Modifier
                             .size(86.dp)
                             .graphicsLayer {
-                                scaleX = buttonScale
-                                scaleY = buttonScale
+                                scaleX = effectiveScale
+                                scaleY = effectiveScale
                             }
                             .clip(CircleShape)
                             .background(buttonBgColor)
                             .border(
-                                width = if (proxyRunning) 4.dp else 2.5.dp,
+                                width = if (proxyRunning) 3.dp else 2.dp,
                                 color = buttonBorderColor,
                                 shape = CircleShape,
                             )
