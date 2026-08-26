@@ -5,6 +5,7 @@ package engine.xray
 
 import app.AppState
 import app.ProxyServerState
+import app.withActiveTrafficConfigApplied
 import features.config.ShadowrocketPolicyGroup
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
@@ -582,5 +583,60 @@ class XrayConfigTest {
         assertTrue(configJson.contains("domain:speedtest.example.com"), "Must include proxy server domain in direct DNS domains")
         assertTrue(configJson.contains("\"inboundTag\":[\"${XrayTags.DIRECT_DNS}\"]") || configJson.contains("\"inboundTag\": [\"${XrayTags.DIRECT_DNS}\"]"), "Must route direct-dns inbound tag to DIRECT")
         assertTrue(configJson.contains("\"inboundTag\":[\"${XrayTags.PROXY_DNS}\"]") || configJson.contains("\"inboundTag\": [\"${XrayTags.PROXY_DNS}\"]"), "Must route proxy-dns inbound tag to proxy")
+    }
+
+    @Test
+    fun testBuildGeneratedXrayConfigWithActiveTrafficConfigRules() {
+        val vless = VLESS(
+            remarks = "Node 1",
+            id = "4219d973-8792-462f-8747-df766f70f137",
+            server = "node1.example.com",
+            port = "443",
+        )
+        val serverState = ProxyServerState(
+            id = 1,
+            server = vless,
+            groupId = 0,
+        )
+
+        val customProfile = """
+            # Custom Profile
+            [Rule]
+            DOMAIN-SUFFIX,custom-proxy.com,PROXY
+            DOMAIN-SUFFIX,custom-direct.com,DIRECT
+            IP-CIDR,192.168.1.0/24,DIRECT
+            FINAL,PROXY
+        """.trimIndent()
+
+        val config = TrafficConfigState(
+            id = 99,
+            name = "Custom",
+            rawConfig = customProfile,
+        )
+
+        val baseAppState = AppState(
+            proxyServers = listOf(serverState),
+            selectedProxyServerId = 1,
+            trafficConfigs = listOf(config),
+            activeTrafficConfigId = 99,
+        )
+
+        val effectiveAppState = baseAppState.withActiveTrafficConfigApplied()
+
+        val xrayJson = XrayConfigFactory.buildXrayConfig(
+            XrayConfigRequest(
+                appState = effectiveAppState,
+                selectedServer = serverState,
+                inbounds = emptyList(),
+                coreLogPaths = XrayCoreLogPaths(
+                    accessLogPath = "/tmp/access.log",
+                    errorLogPath = "/tmp/core.log",
+                ),
+            ),
+        )
+
+        assertTrue(xrayJson.contains("domain:custom-proxy.com"), "Generated config must contain custom proxy rule")
+        assertTrue(xrayJson.contains("domain:custom-direct.com"), "Generated config must contain custom direct rule")
+        assertTrue(xrayJson.contains("192.168.1.0/24"), "Generated config must contain custom CIDR rule")
     }
 }

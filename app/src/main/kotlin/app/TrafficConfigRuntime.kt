@@ -89,7 +89,7 @@ private fun AppState.resolveShadowrocketPolicy(
             policyGroups.first { group -> group.name.equals(normalized, ignoreCase = true) }.outboundTag
         normalized.equals("PROXY", ignoreCase = true) -> XrayTags.PROXY
         normalized.equals("DIRECT", ignoreCase = true) -> XrayTags.DIRECT
-        normalized.startsWith("REJECT", ignoreCase = true) -> XrayTags.BLOCK
+        normalized.startsWith("REJECT", ignoreCase = true) || normalized.equals("BLOCK", ignoreCase = true) -> XrayTags.BLOCK
         normalized.startsWith("CONFIG:", ignoreCase = true) -> {
             val configId = normalized.substringAfter(':').trim().toIntOrNull()
             val referenced = configId
@@ -111,7 +111,16 @@ private fun AppState.resolveShadowrocketPolicy(
         }
         else -> proxyServers.firstOrNull { state ->
             state.server.getInfo().remarks.equals(normalized, ignoreCase = true)
-        }?.proxyServerOutboundTag() ?: normalized.removePrefix(ShadowrocketPolicyGroupTagPrefix)
+        }?.proxyServerOutboundTag()
+            ?: normalized.removePrefix(ShadowrocketPolicyGroupTagPrefix)
+                .let { tag ->
+                    when {
+                        tag.equals("PROXY", ignoreCase = true) -> XrayTags.PROXY
+                        tag.equals("DIRECT", ignoreCase = true) -> XrayTags.DIRECT
+                        tag.equals("BLOCK", ignoreCase = true) || tag.startsWith("REJECT", ignoreCase = true) -> XrayTags.BLOCK
+                        else -> tag
+                    }
+                }
     }
 }
 
@@ -119,30 +128,87 @@ private fun ShadowrocketRule.toRouteRule(
     id: Int,
     resolvePolicy: (String) -> String,
 ): RouteRule? {
-    val domain = when (type) {
-        "DOMAIN" -> listOf("full:$value")
-        "DOMAIN-SUFFIX" -> listOf("domain:$value")
-        "DOMAIN-KEYWORD" -> listOf("keyword:$value")
-        "DOMAIN-WILDCARD" -> listOf("regexp:${value.shadowrocketWildcardToRegex()}")
+    val cleanValue = value.trim()
+    val ruleType = type.trim().uppercase()
+    val domain = when (ruleType) {
+        "DOMAIN" -> listOf("full:$cleanValue")
+        "DOMAIN-SUFFIX" -> listOf("domain:$cleanValue")
+        "DOMAIN-KEYWORD" -> listOf("keyword:$cleanValue")
+        "DOMAIN-WILDCARD" -> listOf("regexp:${cleanValue.shadowrocketWildcardToRegex()}")
         // The value already carries its Xray form ("geosite:x"/"ext:file:tag").
-        "DOMAIN-SET" -> listOf(value)
+        "DOMAIN-SET" -> listOf(cleanValue)
+        "GEOSITE" -> listOf(
+            if (cleanValue.startsWith("geosite:", ignoreCase = true) || cleanValue.startsWith("ext:", ignoreCase = true)) {
+                cleanValue
+            } else {
+                "geosite:$cleanValue"
+            }
+        )
+        "RULE-SET" -> {
+            if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.contains('/')) {
+                emptyList()
+            } else {
+                listOf(
+                    if (cleanValue.startsWith("geosite:", ignoreCase = true) ||
+                        cleanValue.startsWith("ext:", ignoreCase = true) ||
+                        cleanValue.startsWith("domain:") ||
+                        cleanValue.startsWith("full:") ||
+                        cleanValue.startsWith("keyword:") ||
+                        cleanValue.startsWith("regexp:")
+                    ) {
+                        cleanValue
+                    } else {
+                        "geosite:$cleanValue"
+                    }
+                )
+            }
+        }
         else -> emptyList()
     }
-    val ip = when (type) {
-        "IP-CIDR" -> listOf(value)
-        "GEOIP" -> listOf("geoip:$value")
+    val ip = when (ruleType) {
+        "IP-CIDR", "IP-CIDR6", "IP-ASN" -> listOf(cleanValue)
+        "GEOIP" -> listOf(
+            if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.startsWith("ext:", ignoreCase = true)) {
+                cleanValue
+            } else {
+                "geoip:$cleanValue"
+            }
+        )
+        "RULE-SET" -> {
+            if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.contains('/')) {
+                listOf(
+                    if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.startsWith("ext:", ignoreCase = true) || cleanValue.contains('/')) {
+                        cleanValue
+                    } else {
+                        "geoip:$cleanValue"
+                    }
+                )
+            } else {
+                emptyList()
+            }
+        }
         else -> emptyList()
     }
-    val port = value.takeIf { type == "DST-PORT" }.orEmpty()
-    val network = value.takeIf { type == "NETWORK" }.orEmpty()
-    if (domain.isEmpty() && ip.isEmpty() && port.isBlank() && network.isBlank()) return null
+    val process = when (ruleType) {
+        "PROCESS-NAME" -> listOf(cleanValue)
+        else -> emptyList()
+    }
+    val port = cleanValue.takeIf { ruleType == "DST-PORT" }.orEmpty()
+    val network = cleanValue.takeIf { ruleType == "NETWORK" }.orEmpty()
+    val protocol = cleanValue.takeIf { ruleType == "PROTOCOL" }.orEmpty()
+
+    if (domain.isEmpty() && ip.isEmpty() && process.isEmpty() && port.isBlank() && network.isBlank() && protocol.isBlank()) {
+        return null
+    }
     return RouteRule(
         id = id,
         remarks = "$type,$value",
         outboundTag = resolvePolicy(policy),
         domain = domain,
         ip = ip,
+        process = process,
         port = port,
+        protocol = protocol,
         network = network,
     )
 }

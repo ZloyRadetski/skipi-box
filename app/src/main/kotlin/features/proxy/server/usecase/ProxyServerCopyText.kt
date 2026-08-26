@@ -6,6 +6,8 @@ package features.proxy.server.usecase
 import android.content.Context
 import app.AppState
 import app.ProxyServerState
+import app.effects.resolveActiveNetworkConfig
+import app.withActiveTrafficConfigApplied
 import engine.proxy.ProxyEngineStartRequest
 import engine.vpn.VpnXrayConfigFactory
 import features.proxy.server.model.ChainProxy
@@ -95,7 +97,10 @@ private fun Context.generatedProxyServerXrayConfig(
     appState: AppState,
     selectedServer: ProxyServerState,
 ): String {
-    val copyState = appState.withCopyTargetServer(selectedServer)
+    val copyState = appState
+        .resolveActiveNetworkConfig(this)
+        .withActiveTrafficConfigApplied()
+        .withCopyTargetServer(selectedServer)
     val request = ProxyEngineStartRequest(
         appState = copyState,
         selectedServer = selectedServer,
