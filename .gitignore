@@ -25,3 +25,6 @@ build_*.txt
 skipi-core/
 AndroidLibXrayLite-main/
 gradle_out.txt
+*.log
+*.log.txt
+skipi-*.txt

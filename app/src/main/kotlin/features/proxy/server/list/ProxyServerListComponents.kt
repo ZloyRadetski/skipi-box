@@ -433,13 +433,21 @@ private fun ProxyServerListExpandedItemCard(
         label = "proxyServerDragShadowAlpha",
     )
     val shadowColor = AppTheme.colors.onSurface.copy(alpha = 0.20f)
-    val selectedShape = RoundedCornerShape(16.dp)
+    val selectedShape = RoundedCornerShape(if (isStrategyGroup) 14.dp else 16.dp)
+    val cardInsideMargin = if (isStrategyGroup) PaddingValues(horizontal = 12.dp, vertical = 9.dp) else PaddingValues(14.dp)
+    val cardBottomPadding = if (isStrategyGroup) 6.dp else 10.dp
+    val badgeSize = if (isStrategyGroup) 28.dp else 34.dp
+    val badgeRadius = if (isStrategyGroup) 7.dp else 8.dp
+    val titleFontSize = if (isStrategyGroup) 15.sp else 16.sp
+    val middleSpacerHeight = if (isStrategyGroup) 6.dp else 12.dp
+    val actionButtonSize = if (isStrategyGroup) 32.dp else 40.dp
+    val actionIconSize = if (isStrategyGroup) 19.dp else 24.dp
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(bottom = 10.dp)
+            .padding(bottom = cardBottomPadding)
             .zIndex(if (isDragging) 1f else 0f)
             .graphicsLayer {
                 scaleX = animatedScale
@@ -463,7 +471,7 @@ private fun ProxyServerListExpandedItemCard(
                 AppTheme.colors.surface
             },
         ),
-        insideMargin = PaddingValues(14.dp),
+        insideMargin = cardInsideMargin,
         onClick = onSelect,
     ) {
         val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
@@ -488,14 +496,14 @@ private fun ProxyServerListExpandedItemCard(
             ) {
                 CountryFlagBadge(
                     flag = effectiveFlag,
-                    size = 34.dp,
-                    shapeRadius = 8.dp,
+                    size = badgeSize,
+                    shapeRadius = badgeRadius,
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(if (isStrategyGroup) 10.dp else 12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = cleanTitle,
-                        fontSize = 16.sp,
+                        fontSize = titleFontSize,
                         fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -521,7 +529,7 @@ private fun ProxyServerListExpandedItemCard(
                 )
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(middleSpacerHeight))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -532,12 +540,14 @@ private fun ProxyServerListExpandedItemCard(
             ) {
                 ProtocolChip(
                     text = displayText.protocol,
+                    compact = isStrategyGroup,
                     selected = selected,
                 )
                 if (!displayText.transport.isNullOrBlank()) {
                     Spacer(Modifier.width(6.dp))
                     TransportChip(
                         text = displayText.transport,
+                        compact = isStrategyGroup,
                         selected = selected,
                     )
                 }
@@ -545,14 +555,14 @@ private fun ProxyServerListExpandedItemCard(
                     Spacer(Modifier.width(8.dp))
                     InfiniteProgressIndicator(
                         color = MiuixTheme.colorScheme.primary,
-                        size = 14.dp,
+                        size = if (isStrategyGroup) 12.dp else 14.dp,
                         strokeWidth = 2.dp,
                     )
                 } else if (latencyText.isNotEmpty()) {
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = latencyText,
-                        fontSize = 14.sp,
+                        fontSize = if (isStrategyGroup) 13.sp else 14.sp,
                         fontWeight = themedFontWeight(FontWeight.Medium),
                         color = proxyServerLatencyColor(latencyText),
                     )
@@ -566,16 +576,25 @@ private fun ProxyServerListExpandedItemCard(
                     contentDescription = stringResource(R.string.common_share),
                     entries = proxyServerListCopyMenuEntries(copyActions),
                     onAction = onCopyAction,
+                    modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
                 )
-                IconButton(onClick = onEdit) {
+                IconButton(
+                    modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
+                    onClick = onEdit,
+                ) {
                     Icon(
+                        modifier = if (isStrategyGroup) Modifier.size(actionIconSize) else Modifier,
                         imageVector = MiuixIcons.Edit,
                         contentDescription = stringResource(R.string.common_edit),
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
-                IconButton(onClick = onDelete) {
+                IconButton(
+                    modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
+                    onClick = onDelete,
+                ) {
                     Icon(
+                        modifier = if (isStrategyGroup) Modifier.size(actionIconSize) else Modifier,
                         imageVector = MiuixIcons.Delete,
                         contentDescription = stringResource(R.string.common_delete),
                         tint = MiuixTheme.colorScheme.onSurface,
@@ -618,11 +637,12 @@ private fun ProxyServerListCompactItemCard(
     )
     val shadowColor = AppTheme.colors.onSurface.copy(alpha = 0.20f)
     val selectedShape = RoundedCornerShape(13.dp)
+    val compactCardHeight = if (isStrategyGroup) 58.dp else ProxyServerListCompactCardHeight
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(ProxyServerListCompactCardHeight)
+            .height(compactCardHeight)
             .zIndex(if (isDragging) 1f else 0f)
             .graphicsLayer {
                 scaleX = animatedScale
