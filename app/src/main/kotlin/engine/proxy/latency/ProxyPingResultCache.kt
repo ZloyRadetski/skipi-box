@@ -34,10 +34,10 @@ internal object ProxyPingResultCache {
     private const val KeyEntries = "entries"
 
     /** Entries older than this are ignored as startup candidates. */
-    private const val FreshWindowMillis = 45L * 60L * 1000L
+    private const val FreshWindowMillis = 24L * 60L * 60L * 1000L
 
     /** Upper bound on tracked servers so the payload stays small. */
-    private const val MaxEntries = 1024
+    private const val MaxEntries = 2048
 
     private val json = Json { ignoreUnknownKeys = true }
     private val memoLock = Any()

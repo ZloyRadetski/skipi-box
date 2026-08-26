@@ -108,7 +108,6 @@ class AndroidProxyEngine(
                     val reachableCandidates = latencyTester.fastProbeStrategyGroupMembers(
                         appState = initialVpnState,
                         strategyGroup = group,
-                        maxConcurrency = initialVpnState.subscriptionPingConcurrency,
                     )
                     val memberId = reachableCandidates
                         .filterValues { latency -> latency >= 0 }
