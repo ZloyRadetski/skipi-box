@@ -211,5 +211,55 @@ class XrayOutboundPlannerBalancerTest {
         val plan = appState.buildXrayOutboundPlan(balancerState)
         assertEquals("7s", plan.observatoryProbeTimeout)
     }
+
+    @Test
+    fun testWithConfigProxyGroupsReflectedUpdatesMembersFromConf() {
+        val server1 = createServer(1, "🇳🇱 Нидерланды | CDNVIDEO")
+        val server2 = createServer(2, "🇫🇮 Финляндия | CDNVIDEO")
+        val server3 = createServer(3, "🇳🇱 Нидерланды | ADS-01")
+
+        // Suppose existingStrategy previously had only server 1
+        val existingBalancer = ProxyServerState(
+            id = 100,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "LTE TORVALDS",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(1), // old list
+                sourceTrafficConfigId = 1,
+                sourcePolicyGroupName = "LTE TORVALDS",
+            ),
+        )
+
+        val rawConfig = """
+            [General]
+            dns-server = 8.8.8.8
+            
+            [Proxy Group]
+            LTE TORVALDS = url-test, 🇳🇱 Нидерланды | CDNVIDEO, 🇫🇮 Финляндия | CDNVIDEO, 🇳🇱 Нидерланды | ADS-01, url=http://cp.cloudflare.com/generate_204, interval=5, skipi-display=always
+            
+            [Rule]
+            FINAL,DIRECT
+        """.trimIndent() + "\n"
+
+        val trafficConfig = TrafficConfigState(
+            id = 1,
+            name = "Test Config",
+            rawConfig = rawConfig,
+        )
+
+        val appState = AppState(
+            proxyServers = listOf(server1, server2, server3, existingBalancer),
+            trafficConfigs = listOf(trafficConfig),
+            activeTrafficConfigId = 1,
+        ).withConfigProxyGroupsReflected()
+
+        val updatedBalancer = appState.proxyServers.firstOrNull { it.id == 100 }
+        org.junit.Assert.assertNotNull("Balancer should exist", updatedBalancer)
+
+        val strategy = updatedBalancer!!.server as StrategyGroup
+        assertEquals(listOf(1, 2, 3), strategy.proxyServerIds)
+    }
 }
+
 

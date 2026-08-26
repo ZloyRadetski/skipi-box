@@ -574,10 +574,8 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
                 else -> serverIdsByRemark[cleanMember] ?: serverIdsByRemark[cleanWithoutFlag].orEmpty()
             }
         }.distinct()
-        val effectiveMemberIds = if (existingStrategy?.proxyServerIds?.isNotEmpty() == true) {
-            existingStrategy.proxyServerIds
-        } else {
-            resolvedMemberIds
+        val effectiveMemberIds = resolvedMemberIds.ifEmpty {
+            existingStrategy?.proxyServerIds.orEmpty()
         }
         val effectiveSelectedMemberId = existingStrategy?.selectedMemberId
             ?.takeIf { mid -> mid in effectiveMemberIds || effectiveMemberIds.isEmpty() }
