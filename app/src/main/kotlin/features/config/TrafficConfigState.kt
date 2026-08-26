@@ -53,6 +53,7 @@ data class TrafficConfigAndroidSettings(
     val fragmentInterval: String = DefaultFragmentInterval,
     val enableVpnLocalDns: Boolean = true,
     val enableFakeDns: Boolean = false,
+    val enableResolveProxyServerDomain: Boolean = true,
     val enableDirectDnsForProxyServerDomains: Boolean = true,
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val proxyDns: List<String> = VpnDefaults.PROXY_DNS_SERVERS,
@@ -157,6 +158,7 @@ private const val SkipiFakeDns = "fake-dns"
 private const val SkipiFakeDnsIpPool = "fake-dns-ip-pool"
 private const val SkipiFakeDnsPoolSize = "fake-dns-pool-size"
 private const val SkipiTunDns = "tun-dns"
+private const val SkipiResolveProxyServerDomain = "resolve-proxy-server-domain"
 private const val SkipiDirectDnsForProxyServerDomains = "direct-dns-fallback-proxy"
 private const val SkipiProxyDns = "proxy-dns"
 private const val SkipiDirectDns = "direct-dns"
@@ -331,6 +333,7 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
                 fragmentInterval = value(SkipiFragmentInterval, android.fragmentInterval),
                 enableVpnLocalDns = bool(SkipiVpnLocalDns, android.enableVpnLocalDns),
                 enableFakeDns = bool(SkipiFakeDns, android.enableFakeDns),
+                enableResolveProxyServerDomain = bool(SkipiResolveProxyServerDomain, android.enableResolveProxyServerDomain),
                 enableDirectDnsForProxyServerDomains = bool(SkipiDirectDnsForProxyServerDomains, android.enableDirectDnsForProxyServerDomains),
                 tunVpnDns = value(SkipiTunDns, android.tunVpnDns),
                 proxyDns = parsedProxyDns,
@@ -402,6 +405,7 @@ private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
             }
             add("$SkipiFakeDnsPoolSize = ${android.fakeDnsPoolSize}")
         }
+        add("$SkipiResolveProxyServerDomain = ${android.enableResolveProxyServerDomain}")
         add("$SkipiDirectDnsForProxyServerDomains = ${android.enableDirectDnsForProxyServerDomains}")
         add("$SkipiTunDns = ${android.tunVpnDns}")
         if (android.proxyDns.isNotEmpty()) {

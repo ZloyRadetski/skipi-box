@@ -62,6 +62,7 @@ internal fun AppState.withActiveTrafficConfigApplied(): AppState {
         enableIpv6 = general["ipv6"].toConfigBooleanOrDefault(enableIpv6),
         enableIpv6Prefer = general["prefer-ipv6"].toConfigBooleanOrDefault(enableIpv6Prefer),
         enableDirectDnsForProxyServerDomains = androidSettings.enableDirectDnsForProxyServerDomains,
+        enableResolveProxyServerDomain = androidSettings.enableResolveProxyServerDomain,
         proxyDns = androidSettings.proxyDns.takeIf(List<String>::isNotEmpty) ?: dnsServers.takeIf(List<String>::isNotEmpty) ?: proxyDns,
         directDns = androidSettings.directDns.takeIf(List<String>::isNotEmpty) ?: dnsServers.takeIf(List<String>::isNotEmpty) ?: directDns,
         directDnsDomains = androidSettings.directDnsDomains.takeIf(List<String>::isNotEmpty) ?: directDnsDomains,

@@ -12,17 +12,21 @@ import java.net.InetAddress
 
 internal fun AppState.xrayDnsHosts(proxyServerHosts: List<String>): List<String> {
     if (!enableResolveProxyServerDomain) return dnsHosts
-    return (dnsHosts + proxyServerHosts.mapNotNull { host -> host.toResolvedDnsHostEntry() }).distinct()
-}
-
-private fun String.toResolvedDnsHostEntry(): String? {
-    val host = normalizedServerHost()
-    if (host.isBlank() || isIpv4Address(host) || isIpv6Address(host) || host.equals("localhost", ignoreCase = true)) {
-        return null
+    val candidateHosts = proxyServerHosts
+        .map { it.normalizedServerHost() }
+        .filter { host ->
+            host.isNotBlank() &&
+                !isIpv4Address(host) &&
+                !isIpv6Address(host) &&
+                !host.equals("localhost", ignoreCase = true)
+        }
+        .distinct()
+    if (candidateHosts.isEmpty()) return dnsHosts
+    val resolvedEntries = candidateHosts.mapNotNull { host ->
+        val addresses = host.resolveHostAddresses()
+        if (addresses.isEmpty()) null else "$host:${addresses.joinToString(",")}"
     }
-    val addresses = host.resolveHostAddresses()
-    if (addresses.isEmpty()) return null
-    return "$host:${addresses.joinToString(",")}"
+    return (dnsHosts + resolvedEntries).distinct()
 }
 
 private fun String.resolveHostAddresses(): List<String> {
@@ -33,7 +37,7 @@ private fun String.resolveHostAddresses(): List<String> {
             .filter(String::isNotBlank)
             .distinct()
     }.onFailure { error ->
-        AndroidAppLogger.warn(LogTag, "Failed to resolve proxy server host: $host", error)
+        AndroidAppLogger.warn(LogTag, "Failed to resolve proxy server host via system DNS: $host", error)
     }.getOrDefault(emptyList())
 }
 

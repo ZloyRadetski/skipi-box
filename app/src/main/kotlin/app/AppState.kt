@@ -96,7 +96,7 @@ data class AppState(
     val hasCompletedOnboarding: Boolean = false,
 
     val runMode: Int = RunModeVpnService,
-    val enableResolveProxyServerDomain: Boolean = false,
+    val enableResolveProxyServerDomain: Boolean = true,
 
     val enableVpnLocalDns: Boolean = true,
     val localProxyPort: String = VpnDefaults.LOCAL_PROXY_PORT.toString(),

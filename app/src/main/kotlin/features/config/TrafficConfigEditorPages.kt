@@ -721,6 +721,12 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                         onCheckedChange = { settings = settings.copy(enableFakeDns = it) },
                     )
                     SwitchPreference(
+                        title = stringResource(R.string.settings_resolve_proxy_server_domain),
+                        summary = stringResource(R.string.settings_resolve_proxy_server_domain_summary),
+                        checked = settings.enableResolveProxyServerDomain,
+                        onCheckedChange = { settings = settings.copy(enableResolveProxyServerDomain = it) },
+                    )
+                    SwitchPreference(
                         title = stringResource(R.string.configs_dns_direct_fallback_proxy),
                         summary = stringResource(R.string.configs_dns_direct_fallback_proxy_summary),
                         checked = settings.enableDirectDnsForProxyServerDomains,
