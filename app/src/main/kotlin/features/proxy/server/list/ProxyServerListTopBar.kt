@@ -517,48 +517,16 @@ internal fun ProxyHeroConnectionCard(
     }
 }
 
+/**
+ * Mirrors exactly what the proxy list shows on the active server's card: the
+ * latency stored on the selected server's own state (including the testing
+ * placeholder). Reading the same source guarantees the connection widget and
+ * the server card always display the same number.
+ */
 private fun resolveConnectionLatency(
-    activeServerState: ProxyServerState?,
     selectedServer: ProxyServerState?,
-    appState: AppState,
-    sample: ActiveTunnelRuntimeSample?,
 ): String? {
-    val activeMemberId = sample?.runtime?.startupStrategyMemberId
-        ?: sample?.outboundTag?.proxyServerIdFromOutboundTag()
-    if (activeMemberId != null) {
-        val activeMemberLatency = appState.proxyServers.firstOrNull { it.id == activeMemberId }?.latency?.takeIf { it.isNotBlank() }
-        if (activeMemberLatency != null) return activeMemberLatency
-    }
-
-    if (activeServerState != null && activeServerState.server !is StrategyGroup) {
-        val directLatency = activeServerState.latency.takeIf { it.isNotBlank() }
-        if (directLatency != null) return directLatency
-    }
-
-    if (selectedServer != null && selectedServer.server !is StrategyGroup) {
-        val directLatency = selectedServer.latency.takeIf { it.isNotBlank() }
-        if (directLatency != null) return directLatency
-    }
-
-    val strategyGroup = (activeServerState?.server as? StrategyGroup)
-        ?: (selectedServer?.server as? StrategyGroup)
-        ?: (appState.proxyServers.firstOrNull { it.id == appState.selectedProxyServerId }?.server as? StrategyGroup)
-    if (strategyGroup != null) {
-        val members = appState.proxyServers.filter { member ->
-            member.server !is StrategyGroup && CountryFlagUtils.strategyGroupContainsMember(strategyGroup, member.id, appState.proxyServers)
-        }
-        val memberLatencies = members.mapNotNull { member ->
-            member.latency.takeIf { it.isNotBlank() }
-        }
-        val validMemberLatency = memberLatencies.firstOrNull { !it.contains("-1") && !it.contains("Тайм") && !it.contains("Time") }
-            ?: memberLatencies.firstOrNull()
-        if (validMemberLatency != null) {
-            return validMemberLatency
-        }
-    }
-
-    return activeServerState?.latency?.takeIf { it.isNotBlank() }
-        ?: selectedServer?.latency?.takeIf { it.isNotBlank() }
+    return selectedServer?.latency?.takeIf(String::isNotBlank)
 }
 
 @Composable
@@ -877,8 +845,8 @@ private fun ProxyHeroConnectionCardClassic(
                     Spacer(Modifier.height(14.dp))
 
                     val isMemoryVisible = showTunnelMemoryOnHome && memoryKb > 0L
-                    val latencyText = remember(activeServerState, selectedServer, appState.proxyServers, sample) {
-                        resolveConnectionLatency(activeServerState, selectedServer, appState, sample)
+                    val latencyText = remember(selectedServer) {
+                        resolveConnectionLatency(selectedServer)
                     }
 
                     Row(
@@ -1003,8 +971,8 @@ private fun ProxyHeroConnectionCardCompact(
         label = "compact_dot_scale",
     )
 
-    val latencyText = remember(activeServerState, selectedServer, appState.proxyServers, sample) {
-        resolveConnectionLatency(activeServerState, selectedServer, appState, sample)
+    val latencyText = remember(selectedServer) {
+        resolveConnectionLatency(selectedServer)
     }
 
     Card(
