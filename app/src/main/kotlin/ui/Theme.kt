@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.runtime.Immutable
+import top.yukonga.miuix.kmp.theme.Colors
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
@@ -49,6 +50,7 @@ import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 val LocalBackgroundStyle = compositionLocalOf { BackgroundStyleClassic }
 val LocalPopupTextStyles = compositionLocalOf<TextStyles?> { null }
+val LocalPopupColors = compositionLocalOf<Colors?> { null }
 
 @Immutable
 data class AppColors(
@@ -328,6 +330,7 @@ fun AppTheme(
         LocalBackgroundStyle provides backgroundStyle,
         LocalDensity provides scaledDensity,
         LocalPopupTextStyles provides miuixTextStyles,
+        LocalPopupColors provides miuixColors,
     ) {
         MiuixTheme(
             colors = miuixColors,

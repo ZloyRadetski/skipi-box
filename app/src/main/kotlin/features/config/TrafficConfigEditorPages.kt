@@ -1142,7 +1142,7 @@ private fun TunDnsDialog(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             TextField(
-                state = rememberTextFieldState(input),
+                state = rememberTextFieldState(initialText = input),
                 inputTransformation = { input = asCharSequence().toString() },
                 label = stringResource(R.string.configs_dns_tun_dns),
                 lineLimits = TextFieldLineLimits.SingleLine,
@@ -1156,7 +1156,12 @@ private fun TunDnsDialog(
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                 )
             }
-            ConfigPageHint(stringResource(R.string.configs_dns_tun_dns_summary))
+            Text(
+                text = stringResource(R.string.configs_dns_tun_dns_summary),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            )
             Spacer(Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1658,8 +1663,8 @@ private fun ConfigPageHint(text: String) {
     Text(
         text = text,
         style = MiuixTheme.textStyles.body2,
-        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+        color = MiuixTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
     )
 }
 

@@ -9,6 +9,7 @@ import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowCascadingListPopup
+import ui.LocalPopupColors
 import ui.LocalPopupTextStyles
 
 @Composable
@@ -21,9 +22,13 @@ fun AppCascadingListPopup(
     onDismissFinished: () -> Unit = {},
 ) {
     val popupTextStyles = LocalPopupTextStyles.current
-    if (popupTextStyles != null) {
+    val popupColors = LocalPopupColors.current
+    if (popupTextStyles != null || popupColors != null) {
+        val currentColors = MiuixTheme.colorScheme
+        val currentStyles = MiuixTheme.textStyles
         MiuixTheme(
-            textStyles = popupTextStyles,
+            colors = popupColors ?: currentColors,
+            textStyles = popupTextStyles ?: currentStyles,
         ) {
             WindowCascadingListPopup(
                 show = show,

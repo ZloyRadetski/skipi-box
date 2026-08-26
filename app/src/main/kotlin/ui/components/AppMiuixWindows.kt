@@ -21,6 +21,7 @@ import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.window.WindowDialog
+import ui.LocalPopupColors
 import ui.LocalPopupTextStyles
 
 /**
@@ -36,8 +37,14 @@ import ui.LocalPopupTextStyles
 @Composable
 fun AppMiuixWindowTheme(content: @Composable () -> Unit) {
     val popupTextStyles = LocalPopupTextStyles.current
-    if (popupTextStyles != null) {
-        MiuixTheme(textStyles = popupTextStyles) {
+    val popupColors = LocalPopupColors.current
+    if (popupTextStyles != null || popupColors != null) {
+        val currentColors = MiuixTheme.colorScheme
+        val currentStyles = MiuixTheme.textStyles
+        MiuixTheme(
+            colors = popupColors ?: currentColors,
+            textStyles = popupTextStyles ?: currentStyles,
+        ) {
             content()
         }
     } else {
