@@ -94,7 +94,7 @@ internal class AndroidProxyLatencyTester(
         }
 
         sessionCache?.put(server.id, result.elapsedMillis)
-        recordLatencyForRestart(server, result.elapsedMillis)
+        recordLatencyForRestart(server, result.elapsedMillis, mode)
         result
     }
 
@@ -102,13 +102,28 @@ internal class AndroidProxyLatencyTester(
      * Persists measured latencies so a balancer restart can land instantly on
      * a recently verified member instead of racing blind TCP probes. Group
      * rows are skipped; their members are cached by their own test() calls.
+     *
+     * Invalidation only happens on [ProxyServerLatencyTestMode.TcpConnect]
+     * failures because those probes run directly to the server, outside the
+     * VPN tunnel. [ProxyServerLatencyTestMode.RealConnection] failures are
+     * unreliable indicators of a dead server: they go *through* the active
+     * tunnel, so a broken tunnel poisons every entry even though the servers
+     * themselves are fine.
      */
-    private fun recordLatencyForRestart(server: ProxyServerState, elapsedMillis: Long) {
+    private fun recordLatencyForRestart(
+        server: ProxyServerState,
+        elapsedMillis: Long,
+        mode: ProxyServerLatencyTestMode,
+    ) {
         if (server.server is StrategyGroup) return
         runCatching {
             if (elapsedMillis >= 0) {
                 ProxyPingResultCache.record(appContext, server.id, elapsedMillis)
-            } else {
+            } else if (mode == ProxyServerLatencyTestMode.TcpConnect) {
+                // Only a direct TCP failure is a reliable signal that the
+                // server is unreachable. Skip invalidation for RealConnection
+                // failures to avoid wiping good cached entries when the VPN
+                // tunnel itself is broken.
                 ProxyPingResultCache.invalidate(appContext, server.id)
             }
         }
