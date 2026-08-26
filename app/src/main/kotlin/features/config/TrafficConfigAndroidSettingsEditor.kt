@@ -39,19 +39,13 @@ internal fun TrafficConfigAndroidSettingsEditor(
 ) {
     if (!show) return
     var settings by remember(initialSettings, show) { mutableStateOf(initialSettings) }
-    var mtu by remember(initialSettings, show) { mutableStateOf(initialSettings.tunMtu) }
     var vpnDns by remember(initialSettings, show) { mutableStateOf(initialSettings.tunVpnDns) }
-    var ipv4Cidr by remember(initialSettings, show) { mutableStateOf(initialSettings.tunIpv4Cidr) }
-    var ipv6Cidr by remember(initialSettings, show) { mutableStateOf(initialSettings.tunIpv6Cidr) }
     var muxConcurrency by remember(initialSettings, show) { mutableStateOf(initialSettings.muxConcurrency) }
     var fragmentPackets by remember(initialSettings, show) { mutableStateOf(initialSettings.fragmentPackets) }
     var fragmentLength by remember(initialSettings, show) { mutableStateOf(initialSettings.fragmentLength) }
     var fragmentInterval by remember(initialSettings, show) { mutableStateOf(initialSettings.fragmentInterval) }
     var fakeDnsIpPool by remember(initialSettings, show) { mutableStateOf(initialSettings.fakeDnsIpPool) }
     var fakeDnsPoolSize by remember(initialSettings, show) { mutableStateOf(initialSettings.fakeDnsPoolSize.toString()) }
-    var hevTcpReadWriteTimeout by remember(initialSettings, show) {
-        mutableStateOf(initialSettings.hevTcpReadWriteTimeoutMillis.toString())
-    }
 
     AppWindowBottomSheet(
         show = true,
@@ -65,10 +59,7 @@ internal fun TrafficConfigAndroidSettingsEditor(
                 onClick = {
                     onSave(
                         settings.copy(
-                            tunMtu = mtu.trim(),
                             tunVpnDns = vpnDns.trim(),
-                            tunIpv4Cidr = ipv4Cidr.trim(),
-                            tunIpv6Cidr = ipv6Cidr.trim(),
                             muxConcurrency = muxConcurrency.trim(),
                             fragmentPackets = fragmentPackets.trim(),
                             fragmentLength = fragmentLength.trim(),
@@ -76,8 +67,6 @@ internal fun TrafficConfigAndroidSettingsEditor(
                             fakeDnsIpPool = fakeDnsIpPool.trim(),
                             fakeDnsPoolSize = fakeDnsPoolSize.trim().toIntOrNull()
                                 ?: initialSettings.fakeDnsPoolSize,
-                            hevTcpReadWriteTimeoutMillis = hevTcpReadWriteTimeout.trim().toIntOrNull()
-                                ?: initialSettings.hevTcpReadWriteTimeoutMillis,
                         ),
                     )
                 },
@@ -167,27 +156,7 @@ internal fun TrafficConfigAndroidSettingsEditor(
                             label = stringResource(R.string.configs_fake_dns_pool_size),
                         )
                     }
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_append_http_proxy),
-                        checked = settings.enableVpnAppendHttpProxy,
-                        onCheckedChange = { settings = settings.copy(enableVpnAppendHttpProxy = it) },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_hevtun),
-                        checked = settings.enableVpnHevTun,
-                        onCheckedChange = { settings = settings.copy(enableVpnHevTun = it) },
-                    )
-                    if (settings.enableVpnHevTun) {
-                        ConfigTextField(
-                            value = hevTcpReadWriteTimeout,
-                            onValueChange = { hevTcpReadWriteTimeout = it },
-                            label = stringResource(R.string.configs_hevtun_tcp_read_write_timeout),
-                        )
-                    }
-                    ConfigTextField(value = mtu, onValueChange = { mtu = it }, label = stringResource(R.string.configs_tun_mtu))
                     ConfigTextField(value = vpnDns, onValueChange = { vpnDns = it }, label = stringResource(R.string.configs_tun_dns))
-                    ConfigTextField(value = ipv4Cidr, onValueChange = { ipv4Cidr = it }, label = stringResource(R.string.configs_tun_ipv4))
-                    ConfigTextField(value = ipv6Cidr, onValueChange = { ipv6Cidr = it }, label = stringResource(R.string.configs_tun_ipv6))
                 }
             }
         }

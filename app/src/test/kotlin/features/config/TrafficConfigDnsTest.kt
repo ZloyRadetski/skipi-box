@@ -57,7 +57,7 @@ class TrafficConfigDnsTest {
     }
 
     @Test
-    fun testFakeDnsPoolAndHevTimeoutRoundTrip() {
+    fun testFakeDnsPoolRoundTrip() {
         val confText = """
             [SKIPI]
             profile-name = Fake DNS Config
@@ -65,8 +65,6 @@ class TrafficConfigDnsTest {
             fake-dns = true
             fake-dns-ip-pool = 198.19.0.0/16
             fake-dns-pool-size = 5000
-            vpn-hev-tun = true
-            tcp-read-write-timeout = 250000
         """.trimIndent()
 
         val state = TrafficConfigState(
@@ -78,22 +76,18 @@ class TrafficConfigDnsTest {
         assertTrue(state.androidSettings.enableFakeDns)
         assertEquals("198.19.0.0/16", state.androidSettings.fakeDnsIpPool)
         assertEquals(5000, state.androidSettings.fakeDnsPoolSize)
-        assertTrue(state.androidSettings.enableVpnHevTun)
-        assertEquals(250_000, state.androidSettings.hevTcpReadWriteTimeoutMillis)
 
         val reparsed = state.withSkipiSettingsInRawConfig().withSkipiSettingsReadFromRawConfig()
         assertEquals(state.androidSettings, reparsed.androidSettings)
 
-        // Disabled toggles hide their conditional values from the raw config.
+        // Disabled toggle hides its conditional values from the raw config.
         val disabled = state.copy(
             androidSettings = state.androidSettings.copy(
                 enableFakeDns = false,
-                enableVpnHevTun = false,
             ),
         ).withSkipiSettingsInRawConfig()
         assertFalse(disabled.rawConfig.contains("fake-dns-ip-pool"))
         assertFalse(disabled.rawConfig.contains("fake-dns-pool-size"))
-        assertFalse(disabled.rawConfig.contains("tcp-read-write-timeout"))
     }
 
     @Test

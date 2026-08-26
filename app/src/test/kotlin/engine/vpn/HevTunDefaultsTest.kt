@@ -5,7 +5,6 @@ package engine.vpn
 
 import app.AppState
 import app.withVpnSettingsReset
-import features.config.TrafficConfigAndroidSettings
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,12 +14,6 @@ class HevTunDefaultsTest {
     fun appState_enableVpnHevTun_defaults_to_true() {
         val state = AppState()
         assertTrue("enableVpnHevTun should default to true", state.enableVpnHevTun)
-    }
-
-    @Test
-    fun trafficConfigAndroidSettings_enableVpnHevTun_defaults_to_true() {
-        val settings = TrafficConfigAndroidSettings()
-        assertTrue("TrafficConfigAndroidSettings.enableVpnHevTun should default to true", settings.enableVpnHevTun)
     }
 
     @Test

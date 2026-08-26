@@ -8,7 +8,6 @@ import app.modes.ProxyAppListModeGlobal
 import app.AppState
 import app.CustomResourceFileState
 import app.ProxyServerState
-import engine.hevtun.DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis
 import engine.vpn.VpnDefaults
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
@@ -53,12 +52,7 @@ data class TrafficConfigAndroidSettings(
     val enableVpnLocalDns: Boolean = true,
     val enableFakeDns: Boolean = false,
     val enableDirectDnsForProxyServerDomains: Boolean = false,
-    val enableVpnAppendHttpProxy: Boolean = false,
-    val enableVpnHevTun: Boolean = true,
-    val tunMtu: String = VpnDefaults.MTU.toString(),
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
-    val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
-    val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
     val proxyDns: List<String> = VpnDefaults.PROXY_DNS_SERVERS,
     val directDns: List<String> = VpnDefaults.DIRECT_DNS_SERVERS,
     val directDnsDomains: List<String> = emptyList(),
@@ -69,8 +63,6 @@ data class TrafficConfigAndroidSettings(
     val fakeDnsIpPool: String = XrayFakeDnsIpv4Pool,
     /** Number of synthetic addresses handed out by FakeDNS. */
     val fakeDnsPoolSize: Int = XrayFakeDnsIpv4OnlyPoolSize,
-    /** hev-socks5-tunnel misc.tcp-read-write-timeout in milliseconds. */
-    val hevTcpReadWriteTimeoutMillis: Int = DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis,
 )
 
 @Serializable
@@ -162,19 +154,13 @@ private const val SkipiVpnLocalDns = "vpn-local-dns"
 private const val SkipiFakeDns = "fake-dns"
 private const val SkipiFakeDnsIpPool = "fake-dns-ip-pool"
 private const val SkipiFakeDnsPoolSize = "fake-dns-pool-size"
-private const val SkipiHevTcpReadWriteTimeout = "tcp-read-write-timeout"
+private const val SkipiTunDns = "tun-dns"
 private const val SkipiDirectDnsForProxyServerDomains = "direct-dns-fallback-proxy"
 private const val SkipiProxyDns = "proxy-dns"
 private const val SkipiDirectDns = "direct-dns"
 private const val SkipiDirectDnsDomains = "direct-dns-domains"
 private const val SkipiDnsHosts = "dns-hosts"
 private const val SkipiRouteDomainStrategy = "route-domain-strategy"
-private const val SkipiVpnAppendHttpProxy = "vpn-append-http-proxy"
-private const val SkipiVpnHevTun = "vpn-hev-tun"
-private const val SkipiTunMtu = "tun-mtu"
-private const val SkipiTunDns = "tun-dns"
-private const val SkipiTunIpv4 = "tun-ipv4-cidr"
-private const val SkipiTunIpv6 = "tun-ipv6-cidr"
 private const val SkipiNetworkActivation = "network-activation"
 private const val SkipiNetworkTransport = "network-transport"
 private const val SkipiResourceSource = "resource-source"
@@ -318,9 +304,6 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
         val parsedFakeDnsPoolSize = int(SkipiFakeDnsPoolSize, android.fakeDnsPoolSize)
             .takeIf { it > 0 }
             ?: android.fakeDnsPoolSize
-        val parsedHevTcpReadWriteTimeout = int(SkipiHevTcpReadWriteTimeout, android.hevTcpReadWriteTimeoutMillis)
-            .takeIf { it > 0 }
-            ?: android.hevTcpReadWriteTimeoutMillis
 
         return copy(
             name = value(SkipiProfileName, name).trim().ifBlank { name },
@@ -347,12 +330,7 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
                 enableVpnLocalDns = bool(SkipiVpnLocalDns, android.enableVpnLocalDns),
                 enableFakeDns = bool(SkipiFakeDns, android.enableFakeDns),
                 enableDirectDnsForProxyServerDomains = bool(SkipiDirectDnsForProxyServerDomains, android.enableDirectDnsForProxyServerDomains),
-                enableVpnAppendHttpProxy = bool(SkipiVpnAppendHttpProxy, android.enableVpnAppendHttpProxy),
-                enableVpnHevTun = bool(SkipiVpnHevTun, android.enableVpnHevTun),
-                tunMtu = value(SkipiTunMtu, android.tunMtu),
                 tunVpnDns = value(SkipiTunDns, android.tunVpnDns),
-                tunIpv4Cidr = value(SkipiTunIpv4, android.tunIpv4Cidr),
-                tunIpv6Cidr = value(SkipiTunIpv6, android.tunIpv6Cidr),
                 proxyDns = parsedProxyDns,
                 directDns = parsedDirectDns,
                 directDnsDomains = parsedDirectDnsDomains,
@@ -360,7 +338,6 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
                 routeDomainStrategy = parsedRouteDomainStrategy,
                 fakeDnsIpPool = value(SkipiFakeDnsIpPool, android.fakeDnsIpPool).trim(),
                 fakeDnsPoolSize = parsedFakeDnsPoolSize,
-                hevTcpReadWriteTimeoutMillis = parsedHevTcpReadWriteTimeout,
             ),
             networkActivation = TrafficConfigNetworkActivation(
                 enabled = bool(SkipiNetworkActivation, networkActivation.enabled),
@@ -424,15 +401,7 @@ private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
             add("$SkipiFakeDnsPoolSize = ${android.fakeDnsPoolSize}")
         }
         add("$SkipiDirectDnsForProxyServerDomains = ${android.enableDirectDnsForProxyServerDomains}")
-        add("$SkipiVpnAppendHttpProxy = ${android.enableVpnAppendHttpProxy}")
-        add("$SkipiVpnHevTun = ${android.enableVpnHevTun}")
-        if (android.enableVpnHevTun) {
-            add("$SkipiHevTcpReadWriteTimeout = ${android.hevTcpReadWriteTimeoutMillis}")
-        }
-        add("$SkipiTunMtu = ${android.tunMtu}")
         add("$SkipiTunDns = ${android.tunVpnDns}")
-        add("$SkipiTunIpv4 = ${android.tunIpv4Cidr}")
-        add("$SkipiTunIpv6 = ${android.tunIpv6Cidr}")
         if (android.proxyDns.isNotEmpty()) {
             add("$SkipiProxyDns = ${android.proxyDns.joinToString(",")}")
         }
