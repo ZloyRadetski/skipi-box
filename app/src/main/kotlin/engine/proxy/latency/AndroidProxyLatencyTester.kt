@@ -95,7 +95,24 @@ internal class AndroidProxyLatencyTester(
         }
 
         sessionCache?.put(server.id, result.elapsedMillis)
+        recordLatencyForRestart(server, result.elapsedMillis)
         result
+    }
+
+    /**
+     * Persists measured latencies so a balancer restart can land instantly on
+     * a recently verified member instead of racing blind TCP probes. Group
+     * rows are skipped; their members are cached by their own test() calls.
+     */
+    private fun recordLatencyForRestart(server: ProxyServerState, elapsedMillis: Long) {
+        if (server.server is StrategyGroup) return
+        runCatching {
+            if (elapsedMillis >= 0) {
+                ProxyPingResultCache.record(appContext, server.id, elapsedMillis)
+            } else {
+                ProxyPingResultCache.invalidate(appContext, server.id)
+            }
+        }
     }
 
     private suspend fun testStrategyGroupLatency(
@@ -154,6 +171,34 @@ internal class AndroidProxyLatencyTester(
             .filter { member -> member.server !is StrategyGroup }
         if (members.isEmpty()) return@withContext emptyMap()
 
+        // Persistent fast-path: right after an app restart every in-memory
+        // latency is empty, but recently verified members are still in the
+        // ping cache. Confirm the best cached candidate with one short TCP
+        // connect and start the tunnel on it immediately; a dead candidate is
+        // dropped from the cache and the next one (or the probe race below)
+        // takes over. The overall budget stays bounded so a cold start never
+        // waits longer than the regular race would.
+        withTimeoutOrNull(CachedCandidateBudgetMillis) {
+            val cachedCandidates = ProxyPingResultCache.freshest(appContext, members.map { member -> member.id })
+                .entries
+                .sortedBy { entry -> entry.value }
+                .take(CachedCandidateAttempts)
+            for ((candidateId, _) in cachedCandidates) {
+                val candidate = members.firstOrNull { member -> member.id == candidateId } ?: continue
+                val verifiedMillis = verifyCachedCandidate(candidate)
+                if (verifiedMillis >= 0) {
+                    ProxyPingResultCache.record(appContext, candidateId, verifiedMillis)
+                    AndroidAppLogger.debug(
+                        LogTag,
+                        "Startup member from ping cache: serverId=$candidateId result=${verifiedMillis}ms",
+                    )
+                    return@withTimeoutOrNull mapOf(candidateId to verifiedMillis)
+                }
+                ProxyPingResultCache.invalidate(appContext, candidateId)
+            }
+            null
+        }?.let { return@withContext it }
+
         // Instant fast-path: if any member already has a verified positive latency, use the lowest one immediately
         val knownLatencies = members
             .mapNotNull { member ->
@@ -204,12 +249,37 @@ internal class AndroidProxyLatencyTester(
                             candidates[memberId] = latency
                         }
                     }
+                    // Remember what the race proved so the next start can skip it.
+                    candidates.forEach { (memberId, latency) ->
+                        ProxyPingResultCache.record(appContext, memberId, latency)
+                    }
                     candidates
                 } finally {
                     pending.values.forEach { deferred -> deferred.cancel() }
                 }
             }
         }.orEmpty()
+    }
+
+    /**
+     * One short TCP connect against a cached balancer candidate. Confirms the
+     * remembered server is still reachable before committing the tunnel start
+     * to it; returns the measured round trip or [FailedDelayMillis].
+     */
+    private suspend fun verifyCachedCandidate(member: ProxyServerState): Long {
+        val endpoint = member.server.endpoint() ?: return FailedDelayMillis
+        return withContext(Dispatchers.IO) {
+            val startedAt = SystemClock.elapsedRealtime()
+            val address = resolveHost(
+                host = endpoint.host,
+                timeoutMs = CachedCandidateDnsTimeoutMillis,
+                dnsCache = null,
+                failedDnsCache = null,
+            ) ?: return@withContext FailedDelayMillis
+            val dnsElapsed = SystemClock.elapsedRealtime() - startedAt
+            val connectElapsed = nioSocketConnectTime(address, endpoint.port, CachedCandidateConnectTimeoutMillis)
+            if (connectElapsed >= 0) dnsElapsed + connectElapsed else FailedDelayMillis
+        }
     }
 
     private suspend fun tcpConnectLatency(
@@ -418,6 +488,12 @@ private fun endpoint(host: String, port: String): ProxyServerEndpoint? {
 private const val LogTag = "ProxyLatencyTest"
 private const val FailedDelayMillis = -1L
 private const val StartupCandidateCount = 1
+/** How many cached members may be tried (and verified) before falling back to the probe race. */
+private const val CachedCandidateAttempts = 3
+/** Total budget for cached-candidate verification; keeps cold starts bounded. */
+private const val CachedCandidateBudgetMillis = 1_200L
+private const val CachedCandidateDnsTimeoutMillis = 400L
+private const val CachedCandidateConnectTimeoutMillis = 500
 private const val DefaultPingTimeoutMillis = 5_000
 private const val MinPingTimeoutMillis = 500
 private const val MaxPingTimeoutMillis = 60_000
