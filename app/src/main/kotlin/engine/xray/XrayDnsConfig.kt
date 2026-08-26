@@ -51,11 +51,16 @@ private fun AppState.buildXrayDnsPlan(
     dataDir: String? = null,
 ): XrayDnsPlan {
     val sanitizedDirectDnsDomains = XrayGeoRuleSanitizer.filterValidDomainRules(directDnsDomains, dataDir)
-    val effectiveDirectDnsDomains = xrayDirectDnsDomains(sanitizedDirectDnsDomains, startupProxyServerDomains)
+    val effectiveDirectDnsDomains = xrayDirectDnsDomains(
+        directDnsDomains = sanitizedDirectDnsDomains,
+        startupProxyServerDomains = startupProxyServerDomains,
+        proxyDnsServers = proxyDnsServers,
+    )
+    val effectiveDirectDnsServers = xrayDirectDnsServers(directDnsServers)
     return XrayDnsPlan(
         servers = xrayDnsServers(
             proxyDnsServers = proxyDnsServers,
-            directDnsServers = directDnsServers,
+            effectiveDirectDnsServers = effectiveDirectDnsServers,
             effectiveDirectDnsDomains = effectiveDirectDnsDomains,
         ),
         queryStrategy = if (enableIpv6) "UseIP" else "UseIPv4",
@@ -65,11 +70,11 @@ private fun AppState.buildXrayDnsPlan(
         routingOptions = XrayDnsRoutingOptions(
             routeProxyDns = xrayProxyDnsServers(
                 proxyDnsServers = proxyDnsServers,
-                directDnsServers = directDnsServers,
+                directDnsServers = effectiveDirectDnsServers,
                 directDnsDomains = effectiveDirectDnsDomains,
             ).isNotEmpty(),
             routeDirectDns = effectiveDirectDnsDomains.isNotEmpty() &&
-                xrayDirectDnsServers(directDnsServers).isNotEmpty(),
+                effectiveDirectDnsServers.isNotEmpty(),
         ),
     )
 }
@@ -118,14 +123,40 @@ internal fun AppState.xrayProxyDnsServers(
 }
 
 internal fun AppState.xrayDirectDnsServers(directDnsServers: List<String>): List<String> {
-    return directDnsServers.toTrimmedNonEmptyDistinctList()
+    val configured = directDnsServers.toTrimmedNonEmptyDistinctList()
+    if (configured.isNotEmpty()) {
+        return configured
+    }
+    val appDirect = directDns.toTrimmedNonEmptyDistinctList()
+    if (appDirect.isNotEmpty()) {
+        return appDirect
+    }
+    return VpnDefaults.DIRECT_DNS_SERVERS
+}
+
+internal fun extractDohHost(dohUrl: String): String? {
+    val trimmed = dohUrl.trim()
+    if (!trimmed.startsWith("https://", ignoreCase = true) && !trimmed.startsWith("http://", ignoreCase = true)) {
+        return null
+    }
+    val afterScheme = trimmed.substringAfter("://")
+    val hostPort = afterScheme.substringBefore('/')
+    val host = hostPort.substringBefore(':').trim()
+    if (host.isBlank() || isIpAddress(host)) {
+        return null
+    }
+    return host
 }
 
 internal fun AppState.xrayDirectDnsDomains(
     directDnsDomains: List<String>,
     startupProxyServerDomains: List<String> = emptyList(),
+    proxyDnsServers: List<String> = emptyList(),
 ): List<String> {
-    return (directDnsDomains.toTrimmedNonEmptyDistinctList() + startupProxyServerDomains).distinct()
+    val dohDomains = proxyDnsServers.mapNotNull { dohUrl ->
+        extractDohHost(dohUrl)?.let { host -> "domain:$host" }
+    }
+    return (directDnsDomains.toTrimmedNonEmptyDistinctList() + startupProxyServerDomains + dohDomains).distinct()
 }
 
 internal fun Iterable<XrayProxyOutboundServer>.startupProxyServerDnsDomains(): List<String> {
@@ -138,30 +169,29 @@ internal fun Iterable<String>.startupProxyServerHostDnsDomains(): List<String> {
 
 private fun AppState.xrayDnsServers(
     proxyDnsServers: List<String>,
-    directDnsServers: List<String>,
+    effectiveDirectDnsServers: List<String>,
     effectiveDirectDnsDomains: List<String>,
 ): JsonArray {
-    val effectiveDirectDnsServers = xrayDirectDnsServers(directDnsServers)
-        .takeIf { effectiveDirectDnsDomains.isNotEmpty() }
-        .orEmpty()
     val proxyDns = xrayProxyDnsServers(
         proxyDnsServers = proxyDnsServers,
-        directDnsServers = directDnsServers,
+        directDnsServers = effectiveDirectDnsServers,
         directDnsDomains = effectiveDirectDnsDomains,
     )
     return buildJsonArray {
         if (effectiveFakeDnsEnabled) {
             add(JsonPrimitive("fakedns"))
         }
-        effectiveDirectDnsServers.forEach { server ->
-            add(
-                buildJsonObject {
-                    put("address", server)
-                    put("domains", effectiveDirectDnsDomains.toJsonStringArray())
-                    put("skipFallback", true)
-                    put("tag", XrayTags.DIRECT_DNS)
-                },
-            )
+        if (effectiveDirectDnsDomains.isNotEmpty()) {
+            effectiveDirectDnsServers.forEach { server ->
+                add(
+                    buildJsonObject {
+                        put("address", server)
+                        put("domains", effectiveDirectDnsDomains.toJsonStringArray())
+                        put("skipFallback", true)
+                        put("tag", XrayTags.DIRECT_DNS)
+                    },
+                )
+            }
         }
         proxyDns.forEach { server -> add(JsonPrimitive(server)) }
         // Direct-DNS entries use skipFallback, so they only resolve their own
@@ -186,23 +216,42 @@ private fun String.toXrayDnsDomainRule(): String? {
     return "domain:$host"
 }
 
+private val BuiltInDnsHosts: Map<String, List<String>> = mapOf(
+    "dns.quad9.net" to listOf("9.9.9.9", "149.112.112.112"),
+    "cloudflare-dns.com" to listOf("1.1.1.1", "1.0.0.1"),
+    "1dot1dot1dot1.cloudflare-dns.com" to listOf("1.1.1.1", "1.0.0.1"),
+    "one.one.one.one" to listOf("1.1.1.1", "1.0.0.1"),
+    "dns.google" to listOf("8.8.8.8", "8.8.4.4"),
+    "dns.adguard-dns.com" to listOf("94.140.14.14", "94.140.15.15"),
+    "dns.alidns.com" to listOf("223.5.5.5", "223.6.6.6"),
+    "doh.pub" to listOf("1.12.12.12", "120.53.53.53"),
+    "common.dot.dns.yandex.net" to listOf("77.88.8.8", "77.88.8.1"),
+)
+
 private fun List<String>.toDnsHostsJson(): JsonObject {
+    val hostsMap = LinkedHashMap<String, List<String>>()
+    BuiltInDnsHosts.forEach { (domain, ips) ->
+        hostsMap[domain] = ips
+    }
+    forEach { entry ->
+        val separatorIndex = entry.indexOf(':')
+        if (separatorIndex <= 0 || separatorIndex == entry.lastIndex) {
+            return@forEach
+        }
+        val domain = entry.substring(0, separatorIndex).trim()
+        val addresses = entry.substring(separatorIndex + 1)
+            .toCsvValues()
+            .mapNotNull { address -> address.trim('[', ']').takeIf(String::isNotEmpty) }
+        if (domain.isNotEmpty() && addresses.isNotEmpty()) {
+            hostsMap[domain] = addresses
+        }
+    }
     return buildJsonObject {
-        forEach { entry ->
-            val separatorIndex = entry.indexOf(':')
-            if (separatorIndex <= 0 || separatorIndex == entry.lastIndex) {
-                return@forEach
-            }
-            val domain = entry.substring(0, separatorIndex).trim()
-            val addresses = entry.substring(separatorIndex + 1)
-                .toCsvValues()
-                .mapNotNull { address -> address.trim('[', ']').takeIf(String::isNotEmpty) }
-            if (domain.isNotEmpty() && addresses.isNotEmpty()) {
-                put(
-                    domain,
-                    if (addresses.size == 1) JsonPrimitive(addresses.first()) else addresses.toJsonStringArray(),
-                )
-            }
+        hostsMap.forEach { (domain, addresses) ->
+            put(
+                domain,
+                if (addresses.size == 1) JsonPrimitive(addresses.first()) else addresses.toJsonStringArray(),
+            )
         }
     }
 }

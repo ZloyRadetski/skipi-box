@@ -138,11 +138,7 @@ internal object XraySpeedTestConfigFactory {
 
 private fun buildGeneratedXrayConfig(request: XrayConfigRequest): GeneratedXrayConfig {
     val outboundPlan = request.outboundPlan ?: request.appState.buildXrayOutboundPlan(request.selectedServer)
-    val startupProxyServerDomains = if (request.appState.enableDirectDnsForProxyServerDomains) {
-        outboundPlan.proxyOutbounds.startupProxyServerDnsDomains()
-    } else {
-        emptyList()
-    }
+    val startupProxyServerDomains = outboundPlan.proxyOutbounds.startupProxyServerDnsDomains()
     val dnsPlan = request.buildXrayDnsPlan(startupProxyServerDomains)
     val routingPlan = request.appState.buildXrayRoutingPlan(
         routeTargets = outboundPlan.routeTargets,

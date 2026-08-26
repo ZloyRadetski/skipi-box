@@ -53,7 +53,7 @@ data class TrafficConfigAndroidSettings(
     val fragmentInterval: String = DefaultFragmentInterval,
     val enableVpnLocalDns: Boolean = true,
     val enableFakeDns: Boolean = false,
-    val enableDirectDnsForProxyServerDomains: Boolean = false,
+    val enableDirectDnsForProxyServerDomains: Boolean = true,
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val proxyDns: List<String> = VpnDefaults.PROXY_DNS_SERVERS,
     val directDns: List<String> = VpnDefaults.DIRECT_DNS_SERVERS,

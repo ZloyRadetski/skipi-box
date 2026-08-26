@@ -639,4 +639,44 @@ class XrayConfigTest {
         assertTrue(xrayJson.contains("domain:custom-direct.com"), "Generated config must contain custom direct rule")
         assertTrue(xrayJson.contains("192.168.1.0/24"), "Generated config must contain custom CIDR rule")
     }
+
+    @Test
+    fun testProxyServerDomainsAndDohBootstrapInDirectDns() {
+        val vless = VLESS(
+            remarks = "Node 1",
+            id = "4219d973-8792-462f-8747-df766f70f137",
+            server = "hokey.tvaldsforge.online",
+            port = "443",
+        )
+        val serverState = ProxyServerState(
+            id = 1,
+            server = vless,
+            groupId = 0,
+        )
+        val appState = AppState(
+            proxyServers = listOf(serverState),
+            selectedProxyServerId = 1,
+        )
+
+        val request = XrayConfigRequest(
+            appState = appState,
+            selectedServer = serverState,
+            proxyDnsServers = listOf("https://dns.quad9.net/dns-query"),
+            directDnsServers = listOf("8.8.8.8"),
+            inbounds = emptyList(),
+            coreLogPaths = XrayCoreLogPaths(
+                accessLogPath = "/tmp/access.log",
+                errorLogPath = "/tmp/core.log",
+            ),
+        )
+
+        val xrayJson = XrayConfigFactory.buildXrayConfig(request)
+
+        // Must route proxy domain and DoH domain to direct DNS
+        assertTrue(xrayJson.contains("domain:hokey.tvaldsforge.online"), "Config must include proxy server domain in direct DNS")
+        assertTrue(xrayJson.contains("domain:dns.quad9.net"), "Config must include DoH domain in direct DNS")
+        assertTrue(xrayJson.contains("dns-direct"), "Config must include dns-direct tag")
+        assertTrue(xrayJson.contains("9.9.9.9"), "Config hosts must contain bootstrap IP for quad9")
+    }
 }
+

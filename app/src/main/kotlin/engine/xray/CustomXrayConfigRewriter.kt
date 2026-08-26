@@ -32,11 +32,7 @@ private fun JsonObject.overwriteInboundDns(
     request: XrayConfigRequest,
     server: Custom,
 ): JsonObject {
-    val startupProxyServerDomains = if (request.appState.enableDirectDnsForProxyServerDomains) {
-        customXrayConfigProxyServerHosts(server.configJson).startupProxyServerHostDnsDomains()
-    } else {
-        emptyList()
-    }
+    val startupProxyServerDomains = customXrayConfigProxyServerHosts(server.configJson).startupProxyServerHostDnsDomains()
     val dnsPlan = request.buildXrayDnsPlan(startupProxyServerDomains)
     val outboundsRewrite = rewriteCustomDnsOutbounds(
         appState = request.appState,
