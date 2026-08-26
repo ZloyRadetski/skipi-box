@@ -57,6 +57,29 @@ internal fun rememberReorderableListStateByKey(
 }
 
 @Composable
+internal fun rememberReorderableGridStateByKey(
+    lazyGridState: LazyGridState,
+    scrollThresholdPadding: PaddingValues = PaddingValues(0.dp),
+    onMove: (fromKey: Any, toKey: Any) -> Unit,
+): SkipiReorderableLazyGridState {
+    val hapticFeedback = LocalHapticFeedback.current
+    val currentOnMove = androidx.compose.runtime.rememberUpdatedState(onMove)
+    val reorderableState = rememberReorderableLazyGridState(
+        lazyGridState = lazyGridState,
+        scrollThresholdPadding = scrollThresholdPadding,
+    ) { from, to ->
+        if (from.key == to.key) return@rememberReorderableLazyGridState
+        currentOnMove.value(from.key, to.key)
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+    }
+
+    return SkipiReorderableLazyGridState(
+        reorderableState = reorderableState,
+        hapticFeedback = hapticFeedback,
+    )
+}
+
+@Composable
 internal fun rememberSkipiReorderableLazyListState(
     lazyListState: LazyListState,
     itemCount: Int,

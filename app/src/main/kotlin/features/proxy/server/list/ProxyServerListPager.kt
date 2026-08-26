@@ -87,7 +87,7 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import ui.clipboard.setPlainText
 import ui.components.longPressReorderDragHandle
 import ui.components.moveItem
-import ui.components.rememberSkipiReorderableLazyGridState
+import ui.components.rememberReorderableGridStateByKey
 import ui.components.rememberReorderableScrollThresholdPadding
 import ui.feedback.AndroidToastTipNotifier
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -541,19 +541,19 @@ private fun ProxyServerLazyGrid(
         },
         bottom = if (subscriptionGroupEnabled) 0.dp else listPadding.calculateBottomPadding(),
     )
-    val reorderableLazyGridState = rememberSkipiReorderableLazyGridState(
+    val reorderableLazyGridState = rememberReorderableGridStateByKey(
         lazyGridState = gridState,
-        itemCount = if (subscriptionExpanded) pageServers.size else 0,
         scrollThresholdPadding = rememberReorderableScrollThresholdPadding(
             bottom = dragScrollThresholdBottomPadding,
         ),
-    ) { fromIndex, toIndex ->
-        if (!reorderEnabled) return@rememberSkipiReorderableLazyGridState
+    ) { fromKey, toKey ->
+        if (!reorderEnabled) return@rememberReorderableGridStateByKey
+        val fromId = fromKey as? Int ?: return@rememberReorderableGridStateByKey
+        val toId = toKey as? Int ?: return@rememberReorderableGridStateByKey
         updateAppState { state ->
-            val reorderedServers = state.proxyServers.reorderVisibleServer(
-                pageServers = pageServers,
-                fromIndex = fromIndex,
-                toIndex = toIndex,
+            val reorderedServers = state.proxyServers.reorderVisibleServerById(
+                fromServerId = fromId,
+                toServerId = toId,
             )
             if (reorderedServers === state.proxyServers) {
                 state
@@ -900,17 +900,17 @@ private fun List<ProxyServerState>.filterPageServers(
     }
 }
 
-private fun List<ProxyServerState>.reorderVisibleServer(
-    pageServers: List<ProxyServerState>,
-    fromIndex: Int,
-    toIndex: Int,
+internal fun List<ProxyServerState>.reorderVisibleServerById(
+    fromServerId: Int,
+    toServerId: Int,
 ): List<ProxyServerState> {
-    val serverId = pageServers.getOrNull(fromIndex)?.id ?: return this
-    val targetServerId = pageServers.getOrNull(toIndex)?.id ?: return this
+    val fromIndex = indexOfFirst { server -> server.id == fromServerId }
+    val toIndex = indexOfFirst { server -> server.id == toServerId }
+    if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return this
 
     return moveItem(
-        fromIndex = indexOfFirst { server -> server.id == serverId },
-        toIndex = indexOfFirst { server -> server.id == targetServerId },
+        fromIndex = fromIndex,
+        toIndex = toIndex,
     )
 }
 
