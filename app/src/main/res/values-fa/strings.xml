@@ -567,6 +567,8 @@
     <string name="proxy_editor_strategy_group_filter">اظهارات فیلتر regex</string>
     <string name="proxy_editor_strategy_group_health_check">بررسی سلامت</string>
     <string name="proxy_editor_strategy_group_probe_interval">فاصله کاوشگر</string>
+    <string name="proxy_editor_strategy_group_probe_timeout">مهلت زمانی کاوشگر</string>
+    <string name="proxy_editor_strategy_group_probe_timeout_summary">اگر سرور در این مدت پاسخ ندهد، قطع در نظر گرفته می‌شود</string>
     <string name="proxy_editor_strategy_group_tolerance">آستانه تغییر (Tolerance)</string>
     <string name="proxy_editor_strategy_group_tolerance_summary">نادیده گرفتن نوسانات پینگ کمتر از این مقدار</string>
     <string name="proxy_editor_strategy_group_probe_url">URL کاوشگر</string>

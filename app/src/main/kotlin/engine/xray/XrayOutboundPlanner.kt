@@ -38,6 +38,7 @@ private class XrayOutboundPlanner(
     private val dnsHostServers = mutableListOf<String>()
     private var observatoryProbeUrl: String? = null
     private var observatoryProbeInterval: String? = null
+    private var observatoryProbeTimeout: String? = null
 
     fun build(selectedServer: ProxyServerState): XrayOutboundPlan {
         addRouteTarget(XrayTags.PROXY, selectedServer)
@@ -54,6 +55,7 @@ private class XrayOutboundPlanner(
             dnsHostServers = dnsHostServers.distinct(),
             observatoryProbeUrl = observatoryProbeUrl,
             observatoryProbeInterval = observatoryProbeInterval,
+            observatoryProbeTimeout = observatoryProbeTimeout,
         )
     }
 
@@ -119,11 +121,16 @@ private class XrayOutboundPlanner(
                     ?: appState.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
                 val customProbeInterval = matchingStrategy?.probeInterval?.trim()?.takeIf(String::isNotEmpty)
                     ?: group.intervalSeconds?.let { "${it}s" }
+                val customProbeTimeout = matchingStrategy?.probeTimeout?.trim()?.takeIf(String::isNotEmpty)
+                    ?: group.timeoutSeconds?.let { "${it}s" }
                 if (customProbeUrl != null && observatoryProbeUrl == null) {
                     observatoryProbeUrl = customProbeUrl
                 }
                 if (customProbeInterval != null && observatoryProbeInterval == null) {
                     observatoryProbeInterval = customProbeInterval
+                }
+                if (customProbeTimeout != null && observatoryProbeTimeout == null) {
+                    observatoryProbeTimeout = customProbeTimeout
                 }
                 val selectedTag = matchingStrategy?.selectedMemberId?.let { selectedId ->
                     members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
@@ -261,11 +268,15 @@ private class XrayOutboundPlanner(
         val customProbeUrl = strategyGroup.probeUrl.trim().takeIf(String::isNotEmpty)
             ?: appState.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
         val customProbeInterval = strategyGroup.probeInterval.trim().takeIf(String::isNotEmpty)
+        val customProbeTimeout = strategyGroup.probeTimeout.trim().takeIf(String::isNotEmpty)
         if (customProbeUrl != null && observatoryProbeUrl == null) {
             observatoryProbeUrl = customProbeUrl
         }
         if (customProbeInterval != null && observatoryProbeInterval == null) {
             observatoryProbeInterval = customProbeInterval
+        }
+        if (customProbeTimeout != null && observatoryProbeTimeout == null) {
+            observatoryProbeTimeout = customProbeTimeout
         }
 
         // enableBurstProbe controls SKIPI's pre-start verification. Xray's

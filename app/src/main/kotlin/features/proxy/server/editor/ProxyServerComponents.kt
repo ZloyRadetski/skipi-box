@@ -3,28 +3,38 @@
 
 package features.proxy.server.editor
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import ui.components.AppOverlayDropdownPreference
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.LocalAppStateStore
 import app.R
 import app.collectAppState
@@ -32,12 +42,12 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.StrategyGroupDisplayMode
-import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -45,8 +55,13 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
+import ui.components.AppOverlayDropdownPreference
+import ui.components.AppSlider
 import ui.text.formatTemplate
+import ui.text.themedFontWeight
+import kotlin.math.roundToInt
 
 internal fun CharSequence.isDigitsOnly(): Boolean {
     if (isEmpty()) return true
@@ -150,6 +165,12 @@ internal fun LazyListScope.strategyGroupProxyServer(
             mutableIntStateOf(
                 probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 3 },
             )
+        }
+        val initialTimeoutSec = remember(strategyGroupEdit.probeTimeout) {
+            strategyGroupEdit.probeTimeout.trim().removeSuffix("s").toIntOrNull()?.coerceIn(1, 30) ?: 5
+        }
+        var probeTimeoutSliderValue by remember(initialTimeoutSec) {
+            mutableFloatStateOf(initialTimeoutSec.toFloat())
         }
         val initialProbeUrl = remember(strategyGroupEdit.probeUrl, defaultProbeUrl) {
             strategyGroupEdit.probeUrl.ifBlank { defaultProbeUrl }
@@ -261,6 +282,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     strategyGroupEdit.strategy = currentStrategy
                     strategyGroupEdit.subscriptionGroupId = effectiveGroupOptions.getOrNull(groupIndex.intValue)?.id
                     strategyGroupEdit.probeInterval = probeIntervalValues.getOrElse(probeIntervalIndex.intValue) { "15s" }
+                    strategyGroupEdit.probeTimeout = "${probeTimeoutSliderValue.roundToInt().coerceIn(1, 30)}s"
                     strategyGroupEdit.tolerance = toleranceValues.getOrElse(toleranceIndex.intValue) { "50ms" }
                     strategyGroupEdit.enableBurstProbe = burstProbeState.value
                     strategyGroupEdit.probeUrl = probeUrlState.text.toString()
@@ -308,6 +330,80 @@ internal fun LazyListScope.strategyGroupProxyServer(
                         strategyGroupEdit.probeInterval = probeIntervalValues[index]
                     },
                 )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.proxy_editor_strategy_group_probe_timeout),
+                                fontSize = 16.sp,
+                                fontWeight = themedFontWeight(FontWeight.Medium),
+                                color = MiuixTheme.colorScheme.onSurface,
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(R.string.proxy_editor_strategy_group_probe_timeout_summary),
+                                fontSize = 12.sp,
+                                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                text = "${probeTimeoutSliderValue.roundToInt()} ${stringResource(R.string.unit_seconds_short)}",
+                                fontSize = 14.sp,
+                                fontWeight = themedFontWeight(FontWeight.Bold),
+                                color = MiuixTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    AppSlider(
+                        value = probeTimeoutSliderValue,
+                        onValueChange = { newValue ->
+                            probeTimeoutSliderValue = newValue
+                            strategyGroupEdit.probeTimeout = "${newValue.roundToInt().coerceIn(1, 30)}s"
+                        },
+                        onValueChangeFinished = {
+                            val timeoutSec = probeTimeoutSliderValue.roundToInt().coerceIn(1, 30)
+                            strategyGroupEdit.probeTimeout = "${timeoutSec}s"
+                        },
+                        valueRange = 1f..30f,
+                        steps = 28,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "1 ${stringResource(R.string.unit_seconds_short)}",
+                            fontSize = 12.sp,
+                            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                        Text(
+                            text = "30 ${stringResource(R.string.unit_seconds_short)}",
+                            fontSize = 12.sp,
+                            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                }
                 AppOverlayDropdownPreference(
                     title = stringResource(R.string.proxy_editor_strategy_group_tolerance),
                     items = toleranceLabels,

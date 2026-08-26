@@ -43,4 +43,5 @@ internal data class XrayOutboundPlan(
     val dnsHostServers: List<String>,
     val observatoryProbeUrl: String? = null,
     val observatoryProbeInterval: String? = null,
+    val observatoryProbeTimeout: String? = null,
 )

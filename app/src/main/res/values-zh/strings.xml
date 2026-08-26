@@ -583,6 +583,8 @@
     <string name="proxy_editor_strategy_group_filter">备注正则表达式过滤器</string>
     <string name="proxy_editor_strategy_group_health_check">健康检查</string>
     <string name="proxy_editor_strategy_group_probe_interval">探测间隔</string>
+    <string name="proxy_editor_strategy_group_probe_timeout">探测超时</string>
+    <string name="proxy_editor_strategy_group_probe_timeout_summary">如果服务器在此时间内未响应，则视为故障</string>
     <string name="proxy_editor_strategy_group_tolerance">切换容差 (Tolerance)</string>
     <string name="proxy_editor_strategy_group_tolerance_summary">忽略小于此阈值的 ping 波动，以防止频繁切换</string>
     <string name="proxy_editor_strategy_group_probe_url">探测网址</string>

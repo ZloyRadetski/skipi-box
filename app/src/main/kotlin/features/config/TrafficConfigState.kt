@@ -597,6 +597,7 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
                 sourceTrafficConfigId = source.configId,
                 sourcePolicyGroupName = source.group.name,
                 probeInterval = source.group.intervalSeconds?.let { "${it}s" } ?: "15s",
+                probeTimeout = source.group.timeoutSeconds?.let { "${it}s" } ?: existingStrategy?.probeTimeout ?: "5s",
                 probeUrl = source.group.url,
                 enableBurstProbe = source.group.enableBurstProbe,
                 tolerance = source.group.tolerance,

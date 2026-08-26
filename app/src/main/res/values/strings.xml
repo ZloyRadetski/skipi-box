@@ -635,8 +635,10 @@
     <string name="proxy_editor_strategy_group_source_group">Subscription group</string>
     <string name="proxy_editor_strategy_group_all_groups">All groups</string>
     <string name="proxy_editor_strategy_group_filter">Remarks regex filter</string>
-    <string name="proxy_editor_strategy_group_health_check">Health Check</string>
+     <string name="proxy_editor_strategy_group_health_check">Health Check</string>
     <string name="proxy_editor_strategy_group_probe_interval">Probe interval</string>
+    <string name="proxy_editor_strategy_group_probe_timeout">Probe timeout</string>
+    <string name="proxy_editor_strategy_group_probe_timeout_summary">Server is considered dead if it does not respond within this time</string>
     <string name="proxy_editor_strategy_group_tolerance">Switching tolerance</string>
     <string name="proxy_editor_strategy_group_tolerance_summary">Ignore ping variations smaller than this threshold to prevent flapping</string>
     <string name="proxy_editor_strategy_group_probe_url">Probe URL</string>

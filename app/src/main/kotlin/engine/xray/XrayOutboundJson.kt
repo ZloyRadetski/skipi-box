@@ -73,6 +73,7 @@ internal fun buildXrayObservatory(
     selectors: List<String>,
     probeUrl: String? = null,
     probeInterval: String? = null,
+    probeTimeout: String? = null,
 ): JsonObject? {
     if (selectors.isEmpty()) return null
     return buildJsonObject {
@@ -87,6 +88,7 @@ internal fun buildXrayBurstObservatory(
     selectors: List<String>,
     probeUrl: String? = null,
     probeInterval: String? = null,
+    probeTimeout: String? = null,
 ): JsonObject? {
     if (selectors.isEmpty()) return null
     return buildJsonObject {
@@ -97,7 +99,7 @@ internal fun buildXrayBurstObservatory(
                 put("destination", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
                 put("interval", probeInterval?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeInterval)
                 put("sampling", 1)
-                put("timeout", "2s")
+                put("timeout", probeTimeout?.takeIf(String::isNotBlank) ?: "2s")
             },
         )
     }

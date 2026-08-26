@@ -53,6 +53,7 @@ data class StrategyGroup(
     /** Prefer parallel health probes on startup; users can disable this for low-power networks. */
     var enableBurstProbe: Boolean = true,
     var tolerance: String = "50ms",
+    var probeTimeout: String = "5s",
 ) : ProxyServer<StrategyGroup> {
     override fun getInfo(): ProxyServerInfo {
         val source = if (proxyServerIds.isNotEmpty()) {

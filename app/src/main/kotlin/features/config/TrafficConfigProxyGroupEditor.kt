@@ -235,6 +235,7 @@ internal fun StrategyGroup.toShadowrocketLine(serverChoices: List<ProxyGroupServ
     }
     val intervalSeconds = probeInterval.trim().removeSuffix("s").toIntOrNull()
         ?: if (probeInterval.endsWith("m")) probeInterval.removeSuffix("m").toIntOrNull()?.times(60) else null
+    val timeoutSeconds = probeTimeout.trim().removeSuffix("s").toIntOrNull()?.takeIf { it in 1..30 }
 
     return buildString {
         append(remarks.trim()).append(" = ").append(type)
@@ -242,6 +243,7 @@ internal fun StrategyGroup.toShadowrocketLine(serverChoices: List<ProxyGroupServ
         if (strategy != StrategyGroupConstants.TYPE_SELECT) {
             probeUrl.trim().takeIf(String::isNotBlank)?.let { append(", url=").append(it) }
             intervalSeconds?.takeIf { it > 0 }?.let { append(", interval=").append(it) }
+            timeoutSeconds?.takeIf { it != 5 }?.let { append(", timeout=").append(it) }
         }
         when (displayMode) {
             StrategyGroupDisplayMode.ALWAYS -> append(", skipi-display=always")
@@ -286,6 +288,7 @@ internal fun ShadowrocketPolicyGroup.toEditableStrategyGroup(
         sourceTrafficConfigId = trafficConfigId,
         sourcePolicyGroupName = name,
         probeInterval = intervalSeconds?.let { "${it}s" } ?: "15s",
+        probeTimeout = timeoutSeconds?.let { "${it}s" } ?: "5s",
         probeUrl = url,
         enableBurstProbe = enableBurstProbe,
         tolerance = tolerance,

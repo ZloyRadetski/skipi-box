@@ -620,6 +620,8 @@
     <string name="proxy_editor_strategy_group_filter">Фильтр имен по регулярному выражению (Regex)</string>
     <string name="proxy_editor_strategy_group_health_check">Проверка здоровья (Health Check)</string>
     <string name="proxy_editor_strategy_group_probe_interval">Интервал проверки</string>
+    <string name="proxy_editor_strategy_group_probe_timeout">Таймаут проверки</string>
+    <string name="proxy_editor_strategy_group_probe_timeout_summary">Сервер считается неработающим, если не отвечает за это время</string>
     <string name="proxy_editor_strategy_group_tolerance">Порог переключения (Tolerance)</string>
     <string name="proxy_editor_strategy_group_tolerance_summary">Игнорировать колебания пинга меньше этого порога для предотвращения частых переключений</string>
     <string name="proxy_editor_strategy_group_probe_url">URL проверки (Probe URL)</string>

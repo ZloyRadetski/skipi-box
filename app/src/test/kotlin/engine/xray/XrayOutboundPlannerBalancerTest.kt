@@ -8,6 +8,9 @@ import app.ProxyServerState
 import app.withActiveTrafficConfigApplied
 import features.config.ShadowrocketPolicyGroup
 import features.config.TrafficConfigState
+import features.config.analyzeShadowrocketConfig
+import features.config.toEditableStrategyGroup
+import features.config.toShadowrocketLine
 import features.config.withConfigProxyGroupsReflected
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
@@ -157,4 +160,56 @@ class XrayOutboundPlannerBalancerTest {
         val strategy = autoBalancer!!.server as StrategyGroup
         assertEquals(listOf(1, 2), strategy.proxyServerIds)
     }
+
+    @Test
+    fun testProbeTimeoutParsedAndSerializedCorrectly() {
+        val rawConfig = """
+            [General]
+            dns-server = 8.8.8.8
+            
+            [Proxy Group]
+            AutoTimeout = url-test, Server 1, url=http://cp.cloudflare.com/generate_204, interval=15, timeout=12
+            
+            [Rule]
+            FINAL,DIRECT
+        """.trimIndent() + "\n"
+
+        val analyzed = rawConfig.analyzeShadowrocketConfig()
+        val group = analyzed.proxyGroups.firstOrNull { it.name == "AutoTimeout" }
+        org.junit.Assert.assertNotNull("Proxy group should be parsed", group)
+        assertEquals(12, group!!.timeoutSeconds)
+
+        val serverChoice = features.config.ProxyGroupServerChoice(1, "Server 1")
+        val editable = group.toEditableStrategyGroup(1, listOf(serverChoice))
+        assertEquals("12s", editable.probeTimeout)
+
+        val line = editable.toShadowrocketLine(listOf(serverChoice))
+        assertTrue("Serialized line must include timeout=12", line.contains("timeout=12"))
+    }
+
+    @Test
+    fun testObservatoryProbeTimeoutInXrayOutboundPlan() {
+        val server1 = createServer(1, "Server 1")
+        val strategyGroup = StrategyGroup(
+            remarks = "Balancer",
+            strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+            proxyServerIds = listOf(1),
+            probeInterval = "10s",
+            probeTimeout = "7s",
+        )
+        val balancerState = ProxyServerState(
+            id = 100,
+            groupId = 0,
+            server = strategyGroup,
+        )
+
+        val appState = AppState(
+            proxyServers = listOf(server1, balancerState),
+            selectedProxyServerId = 100,
+        )
+
+        val plan = appState.buildXrayOutboundPlan(balancerState)
+        assertEquals("7s", plan.observatoryProbeTimeout)
+    }
 }
+
