@@ -276,25 +276,21 @@ fun AppTheme(
         ThemedTypography.updateWeightShift(resolvedFontWeight?.weight?.minus(FontWeight.Normal.weight) ?: 0)
     }
     val baseMiuixTextStyles = MiuixTheme.textStyles
-    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight, fontScaleFactor) {
-        val styled = if (resolvedFontFamily == null && resolvedFontWeight == null) {
-            baseMiuixTextStyles
-        } else {
-            baseMiuixTextStyles.copy(
-                main = baseMiuixTextStyles.main.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                headline1 = baseMiuixTextStyles.headline1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                headline2 = baseMiuixTextStyles.headline2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                title1 = baseMiuixTextStyles.title1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                title2 = baseMiuixTextStyles.title2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                title3 = baseMiuixTextStyles.title3.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                title4 = baseMiuixTextStyles.title4.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                body1 = baseMiuixTextStyles.body1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                body2 = baseMiuixTextStyles.body2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                footnote1 = baseMiuixTextStyles.footnote1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                footnote2 = baseMiuixTextStyles.footnote2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-                button = baseMiuixTextStyles.button.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight),
-            )
-        }
+    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight, fontScaleFactor, appColors.onSurface) {
+        val styled = baseMiuixTextStyles.copy(
+            main = baseMiuixTextStyles.main.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            headline1 = baseMiuixTextStyles.headline1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            headline2 = baseMiuixTextStyles.headline2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            title1 = baseMiuixTextStyles.title1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            title2 = baseMiuixTextStyles.title2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            title3 = baseMiuixTextStyles.title3.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            title4 = baseMiuixTextStyles.title4.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            body1 = baseMiuixTextStyles.body1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            body2 = baseMiuixTextStyles.body2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            footnote1 = baseMiuixTextStyles.footnote1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            footnote2 = baseMiuixTextStyles.footnote2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            button = baseMiuixTextStyles.button.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+        )
         if (fontScaleFactor == 1.0f) {
             styled
         } else {

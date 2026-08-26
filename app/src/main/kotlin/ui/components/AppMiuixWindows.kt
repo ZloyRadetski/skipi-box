@@ -84,7 +84,11 @@ fun AppWindowDialog(
             outsideMargin = outsideMargin,
             insideMargin = insideMargin,
             defaultWindowInsetsPadding = defaultWindowInsetsPadding,
-            content = content,
+            content = {
+                AppMiuixWindowTheme {
+                    content()
+                }
+            },
         )
     }
 }
@@ -129,7 +133,11 @@ fun AppWindowBottomSheet(
             dragHandleColor = dragHandleColor,
             allowDismiss = allowDismiss,
             enableNestedScroll = enableNestedScroll,
-            content = content,
+            content = {
+                AppMiuixWindowTheme {
+                    content()
+                }
+            },
         )
     }
 }
