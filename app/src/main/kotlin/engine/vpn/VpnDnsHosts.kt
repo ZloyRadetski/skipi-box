@@ -9,6 +9,15 @@ import engine.network.isIpv4Address
 import engine.network.isIpv6Address
 import features.proxy.server.model.normalizedServerHost
 import java.net.InetAddress
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+
+private val dnsResolutionExecutor = Executors.newFixedThreadPool(8) { runnable ->
+    Thread(runnable, "skipi-dns-resolve").apply { isDaemon = true }
+}
+
+private const val DnsLookupTimeoutMillis = 600L
 
 internal fun AppState.xrayDnsHosts(proxyServerHosts: List<String>): List<String> {
     if (!enableResolveProxyServerDomain) return dnsHosts
@@ -22,10 +31,22 @@ internal fun AppState.xrayDnsHosts(proxyServerHosts: List<String>): List<String>
         }
         .distinct()
     if (candidateHosts.isEmpty()) return dnsHosts
-    val resolvedEntries = candidateHosts.mapNotNull { host ->
-        val addresses = host.resolveHostAddresses()
-        if (addresses.isEmpty()) null else "$host:${addresses.joinToString(",")}"
+
+    val futures = candidateHosts.map { host ->
+        CompletableFuture.supplyAsync({
+            val addresses = host.resolveHostAddresses()
+            if (addresses.isEmpty()) null else "$host:${addresses.joinToString(",")}"
+        }, dnsResolutionExecutor)
     }
+
+    val resolvedEntries = futures.mapNotNull { future ->
+        runCatching {
+            future.get(DnsLookupTimeoutMillis, TimeUnit.MILLISECONDS)
+        }.onFailure {
+            future.cancel(true)
+        }.getOrNull()
+    }
+
     return (dnsHosts + resolvedEntries).distinct()
 }
 

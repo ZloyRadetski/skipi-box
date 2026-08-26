@@ -183,34 +183,44 @@ internal class AndroidProxyLatencyTester(
             .filter { member -> member.server !is StrategyGroup }
         if (members.isEmpty()) return@withContext emptyMap()
 
-        // Persistent fast-path: use the sorted ping cache built during previous
-        // sessions. Verify each candidate with a single TCP connect; take the
-        // first one that is still alive. Generous timeouts are needed on mobile
-        // (LTE DNS + connect typically takes 300-600 ms).
-        withTimeoutOrNull(CachedCandidateBudgetMillis) {
-            val cachedCandidates = ProxyPingResultCache.freshest(appContext, members.map { member -> member.id })
-                .entries
-                .sortedBy { entry -> entry.value }
-                .take(CachedCandidateAttempts)
-            for ((candidateId, _) in cachedCandidates) {
-                val candidate = members.firstOrNull { member -> member.id == candidateId } ?: continue
-                val verifiedMillis = verifyCachedCandidate(candidate)
-                if (verifiedMillis >= 0) {
-                    ProxyPingResultCache.record(appContext, candidateId, verifiedMillis)
-                    AndroidAppLogger.debug(
-                        LogTag,
-                        "Startup member from ping cache: serverId=$candidateId result=${verifiedMillis}ms",
-                    )
-                    return@withTimeoutOrNull mapOf(candidateId to verifiedMillis)
-                }
-                ProxyPingResultCache.invalidate(appContext, candidateId)
-            }
-            null
-        }?.let { return@withContext it }
+        // 1. Persistent fast-path: verify top cached candidates in parallel.
+        val cachedCandidates = ProxyPingResultCache.freshest(appContext, members.map { member -> member.id })
+            .entries
+            .sortedBy { entry -> entry.value }
+            .take(CachedCandidateAttempts)
 
-        // In-memory fast-path: if the user ran a ping test this session, use
-        // the member with the lowest known latency immediately without any
-        // network calls.
+        if (cachedCandidates.isNotEmpty()) {
+            val verifiedWinner = withTimeoutOrNull(CachedCandidateBudgetMillis) {
+                coroutineScope {
+                    val deferreds = cachedCandidates.map { (candidateId, _) ->
+                        val candidate = members.firstOrNull { member -> member.id == candidateId } ?: return@map null
+                        async {
+                            val verifiedMillis = verifyCachedCandidate(candidate)
+                            if (verifiedMillis >= 0) {
+                                ProxyPingResultCache.record(appContext, candidateId, verifiedMillis)
+                                candidateId to verifiedMillis
+                            } else {
+                                ProxyPingResultCache.invalidate(appContext, candidateId)
+                                null
+                            }
+                        }
+                    }.filterNotNull()
+
+                    deferreds.awaitAll().filterNotNull().minByOrNull { it.second }
+                }
+            }
+
+            if (verifiedWinner != null) {
+                AndroidAppLogger.debug(
+                    LogTag,
+                    "Startup member from ping cache: serverId=${verifiedWinner.first} result=${verifiedWinner.second}ms",
+                )
+                return@withContext mapOf(verifiedWinner.first to verifiedWinner.second)
+            }
+        }
+
+        // 2. In-memory fast-path: if the user ran a ping test this session, use
+        // the member with the lowest known latency immediately without any network calls.
         val knownLatencies = members
             .mapNotNull { member ->
                 val parsed = member.latency.trim().removeSuffix("ms").trim().toLongOrNull()
@@ -223,9 +233,35 @@ internal class AndroidProxyLatencyTester(
             }
         }
 
-        // Cold start: no cache, no known latencies. Return empty so the caller
-        // picks the first member and starts immediately; Xray Observatory will
-        // find the best server in the background within one probe interval.
+        // 3. Cold start: fast parallel race among first 4 group candidates with a strict budget (350ms).
+        val coldCandidates = members.take(4)
+        if (coldCandidates.isNotEmpty()) {
+            val coldWinner = withTimeoutOrNull(ColdCandidateBudgetMillis) {
+                coroutineScope {
+                    val deferreds = coldCandidates.map { candidate ->
+                        async {
+                            val verifiedMillis = verifyCachedCandidate(candidate)
+                            if (verifiedMillis >= 0) {
+                                ProxyPingResultCache.record(appContext, candidate.id, verifiedMillis)
+                                candidate.id to verifiedMillis
+                            } else {
+                                null
+                            }
+                        }
+                    }
+                    deferreds.awaitAll().filterNotNull().minByOrNull { it.second }
+                }
+            }
+
+            if (coldWinner != null) {
+                AndroidAppLogger.debug(
+                    LogTag,
+                    "Startup member from cold race: serverId=${coldWinner.first} result=${coldWinner.second}ms",
+                )
+                return@withContext mapOf(coldWinner.first to coldWinner.second)
+            }
+        }
+
         emptyMap()
     }
 
@@ -456,11 +492,13 @@ private fun endpoint(host: String, port: String): ProxyServerEndpoint? {
 private const val LogTag = "ProxyLatencyTest"
 private const val FailedDelayMillis = -1L
 private const val StartupCandidateCount = 1
-private const val CachedCandidateAttempts = 8
-/** Total budget for cached-candidate verification; covers LTE DNS + connect (300-600 ms each). */
-private const val CachedCandidateBudgetMillis = 3_000L
-private const val CachedCandidateDnsTimeoutMillis = 600L
-private const val CachedCandidateConnectTimeoutMillis = 800
+private const val CachedCandidateAttempts = 4
+/** Total budget for parallel cached-candidate verification. */
+private const val CachedCandidateBudgetMillis = 800L
+/** Total budget for cold-start parallel probe race. */
+private const val ColdCandidateBudgetMillis = 350L
+private const val CachedCandidateDnsTimeoutMillis = 400L
+private const val CachedCandidateConnectTimeoutMillis = 500
 private const val DefaultPingTimeoutMillis = 5_000
 private const val MinPingTimeoutMillis = 500
 private const val MaxPingTimeoutMillis = 60_000

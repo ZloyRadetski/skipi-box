@@ -38,6 +38,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -688,6 +689,17 @@ private fun ProxyHeroConnectionCardClassic(
         label = "classic_icon_tint",
     )
 
+    val buttonInteractionSource = remember { MutableInteractionSource() }
+    val isPressed by buttonInteractionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.88f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "classic_btn_press_scale",
+    )
+
     val buttonScale by animateFloatAsState(
         targetValue = if (proxyRunning) 1.0f else if (isConnecting) 0.98f else 0.96f,
         animationSpec = spring(
@@ -738,7 +750,7 @@ private fun ProxyHeroConnectionCardClassic(
                         ConnectingSpinner(accentTone = accentTone)
                     }
 
-                    val effectiveScale = buttonScale * breathScale
+                    val effectiveScale = buttonScale * breathScale * pressScale
                     Box(
                         modifier = Modifier
                             .size(86.dp)
@@ -754,7 +766,7 @@ private fun ProxyHeroConnectionCardClassic(
                                 shape = CircleShape,
                             )
                             .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
+                                interactionSource = buttonInteractionSource,
                                 indication = null,
                                 onClick = onToggleProxy,
                             ),
@@ -975,6 +987,13 @@ private fun ProxyHeroConnectionCardCompact(
         resolveConnectionLatency(selectedServer)
     }
 
+    val connectingDotScale by rememberInfinitePulse(
+        enabled = isConnecting,
+        initialValue = 0.7f,
+        targetValue = 1.35f,
+        durationMillis = 800,
+    )
+
     Card(
         modifier = modifier
             .clip(heroShape)
@@ -1121,6 +1140,12 @@ private fun ProxyHeroConnectionCardCompact(
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
+                                    .graphicsLayer {
+                                        if (isConnecting) {
+                                            scaleX = connectingDotScale
+                                            scaleY = connectingDotScale
+                                        }
+                                    }
                                     .clip(CircleShape)
                                     .background(
                                         if (isConnecting) accentTone else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),

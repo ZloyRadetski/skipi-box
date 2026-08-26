@@ -26,6 +26,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -943,6 +944,7 @@ internal fun ProxyServerListFloatingToolbar(
                     }
                 }
                 if (showToggleAction) {
+                    val isConnecting = serviceOperationInProgress && !running
                     IconButton(
                         modifier = Modifier
                             .size(ProxyServerListFloatingToolbarButtonSize)
@@ -957,25 +959,36 @@ internal fun ProxyServerListFloatingToolbar(
                         },
                     ) {
                         AnimatedContent(
-                            targetState = running,
+                            targetState = when {
+                                running -> 2
+                                isConnecting -> 1
+                                else -> 0
+                            },
                             transitionSpec = {
                                 (fadeIn(animationSpec = tween(220, delayMillis = 40)) + scaleIn(initialScale = 0.65f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)))
                                     .togetherWith(fadeOut(animationSpec = tween(140)) + scaleOut(targetScale = 0.65f))
                             },
                             label = "fab_play_pause_anim",
-                        ) { isRunning ->
-                            Icon(
-                                modifier = Modifier.size(26.dp),
-                                imageVector = if (isRunning) MiuixIcons.Pause else MiuixIcons.Play,
-                                contentDescription = if (isRunning) {
-                                    stringResource(R.string.proxy_server_list_stop_proxy)
-                                } else {
-                                    stringResource(R.string.proxy_server_list_start_proxy)
-                                },
-                                tint = fabIconTint.copy(
-                                    alpha = if (serviceOperationInProgress) 0.55f else 1f,
-                                ),
-                            )
+                        ) { buttonState ->
+                            when (buttonState) {
+                                1 -> ui.icons.AnimatedHourglassIcon(
+                                    color = fabIconTint,
+                                    isPinging = true,
+                                    size = 24.dp,
+                                )
+                                2 -> Icon(
+                                    modifier = Modifier.size(26.dp),
+                                    imageVector = MiuixIcons.Pause,
+                                    contentDescription = stringResource(R.string.proxy_server_list_stop_proxy),
+                                    tint = fabIconTint,
+                                )
+                                else -> Icon(
+                                    modifier = Modifier.size(26.dp),
+                                    imageVector = MiuixIcons.Play,
+                                    contentDescription = stringResource(R.string.proxy_server_list_start_proxy),
+                                    tint = fabIconTint,
+                                )
+                            }
                         }
                     }
                 }
