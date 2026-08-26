@@ -87,14 +87,18 @@ private class XrayOutboundPlanner(
         tag: String,
         group: ShadowrocketPolicyGroup,
     ) {
-        val members = appState.shadowrocketPolicyGroupMembers(group)
+        val matchingStrategy = appState.proxyServers.mapNotNull { it.server as? StrategyGroup }
+            .firstOrNull { it.sourcePolicyGroupName.equals(group.name, ignoreCase = true) }
+        val members = if (matchingStrategy != null) {
+            appState.strategyGroupMembers(matchingStrategy)
+        } else {
+            appState.shadowrocketPolicyGroupMembers(group)
+        }
         if (members.isEmpty()) {
             return
         }
         when (group.type.lowercase()) {
             "select" -> {
-                val matchingStrategy = appState.proxyServers.mapNotNull { it.server as? StrategyGroup }
-                    .firstOrNull { it.sourcePolicyGroupName.equals(group.name, ignoreCase = true) }
                 val targetMember = members.firstOrNull { it.id == matchingStrategy?.selectedMemberId } ?: members.first()
                 addNormalOutbound(tag = tag, server = targetMember)
             }
@@ -110,16 +114,21 @@ private class XrayOutboundPlanner(
                     "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
                     else -> StrategyGroupConstants.TYPE_LEAST_PING
                 }
-                val customProbeUrl = group.url.trim().takeIf(String::isNotEmpty)
+                val customProbeUrl = matchingStrategy?.probeUrl?.trim()?.takeIf(String::isNotEmpty)
+                    ?: group.url.trim().takeIf(String::isNotEmpty)
                     ?: appState.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
-                val customProbeInterval = group.intervalSeconds?.let { "${it}s" }
+                val customProbeInterval = matchingStrategy?.probeInterval?.trim()?.takeIf(String::isNotEmpty)
+                    ?: group.intervalSeconds?.let { "${it}s" }
                 if (customProbeUrl != null && observatoryProbeUrl == null) {
                     observatoryProbeUrl = customProbeUrl
                 }
                 if (customProbeInterval != null && observatoryProbeInterval == null) {
                     observatoryProbeInterval = customProbeInterval
                 }
-                val bestFallbackTag = members.zip(memberTags)
+                val selectedTag = matchingStrategy?.selectedMemberId?.let { selectedId ->
+                    members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
+                }
+                val bestFallbackTag = selectedTag ?: members.zip(memberTags)
                     .filter { (member, _) ->
                         val lat = member.latency.trim()
                         lat.isNotBlank() && !lat.contains("Failed", ignoreCase = true) && !lat.contains("Timeout", ignoreCase = true)
@@ -345,6 +354,9 @@ internal fun AppState.strategyGroupMembers(
     val regex = strategyGroup.filter.takeIf(String::isNotBlank)?.let { filter ->
         runCatching { Regex(filter) }.getOrNull()
     }
+    if (strategyGroup.filter.isBlank() && strategyGroup.subscriptionGroupId == null) {
+        return emptyList()
+    }
     return proxyServers
         .asSequence()
         .filter { server -> !server.server.isCompositeProxyServer() }
@@ -369,6 +381,11 @@ private fun AppState.shadowrocketPolicyGroupMembers(
     visitingGroupNames: Set<String> = emptySet(),
 ): List<ProxyServerState> {
     if (group.name in visitingGroupNames) return emptyList()
+    val matchingStrategy = proxyServers.mapNotNull { it.server as? StrategyGroup }
+        .firstOrNull { it.sourcePolicyGroupName.equals(group.name, ignoreCase = true) }
+    if (matchingStrategy != null && matchingStrategy.proxyServerIds.isNotEmpty()) {
+        return strategyGroupMembers(matchingStrategy)
+    }
     return group.members
         .flatMap { rawMember ->
             val member = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim()

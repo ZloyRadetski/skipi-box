@@ -28,6 +28,8 @@ import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
+import features.proxy.server.model.isCompositeProxyServer
+import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import kotlinx.serialization.Serializable
 
 /**
@@ -564,7 +566,13 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
         val resolvedMemberIds = source.group.members.flatMap { rawMember ->
             val cleanMember = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim().lowercase()
             val cleanWithoutFlag = CountryFlagUtils.stripLeadingCountryFlag(cleanMember).trim().lowercase()
-            serverIdsByRemark[cleanMember] ?: serverIdsByRemark[cleanWithoutFlag].orEmpty()
+            when {
+                cleanMember == ".*" -> regularServers.filter {
+                    !it.server.isCompositeProxyServer() &&
+                        (it.server !is features.proxy.server.model.Custom || it.server.canBeUsedInGeneratedProxyPlan())
+                }.map { it.id }
+                else -> serverIdsByRemark[cleanMember] ?: serverIdsByRemark[cleanWithoutFlag].orEmpty()
+            }
         }.distinct()
         val effectiveMemberIds = if (existingStrategy?.proxyServerIds?.isNotEmpty() == true) {
             existingStrategy.proxyServerIds

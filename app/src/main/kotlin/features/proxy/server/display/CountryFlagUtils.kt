@@ -117,6 +117,6 @@ internal object CountryFlagUtils {
                 remarks.contains(filter, ignoreCase = true)
             }
         }
-        return true
+        return strategyGroup.subscriptionGroupId != null
     }
 }
