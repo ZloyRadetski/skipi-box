@@ -283,6 +283,10 @@ class SkipiVpnService : VpnService() {
     }
 
     private suspend fun startVpn(config: VpnServiceStartConfig) = coroutineScope {
+        AndroidAppLogger.info(
+            LogTag,
+            "Starting VPN tunnel (session=${config.sessionName}, mtu=${config.mtu}, hevTun=${config.hevSocks5TunnelConfig != null}). Xray config:\n${config.xrayConfigJson}",
+        )
         val startedAt = android.os.SystemClock.elapsedRealtime()
         stopVpn(ForegroundNotificationDisposition.Keep)
         val stoppedAt = android.os.SystemClock.elapsedRealtime()

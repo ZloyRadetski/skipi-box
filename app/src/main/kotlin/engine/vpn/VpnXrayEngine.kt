@@ -29,6 +29,10 @@ internal class VpnXrayEngine(
         val configStartedAt = SystemClock.elapsedRealtime()
         val config = VpnXrayConfigFactory.create(context, request)
         val configReadyAt = SystemClock.elapsedRealtime()
+        AndroidAppLogger.info(
+            LogTag,
+            "Prepared VPN tunnel config for server '${request.selectedServer.server.getInfo().remarks}' (id=${request.selectedServer.id}). Xray config:\n${config.xrayConfigJson}",
+        )
         SkipiVpnService.start(
             context = context,
             config = config,
