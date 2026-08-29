@@ -3,20 +3,20 @@
 
 package features.proxy.server.model
 
-internal const val V2RayTransportRaw = "raw"
-internal const val V2RayTransportMkcp = "mkcp"
-internal const val V2RayTransportWebSocket = "websocket"
-internal const val V2RayTransportHttpUpgrade = "httpupgrade"
-internal const val V2RayTransportXhttp = "xhttp"
-internal const val V2RayTransportGrpc = "grpc"
+const val V2RayTransportRaw = "raw"
+const val V2RayTransportMkcp = "mkcp"
+const val V2RayTransportWebSocket = "websocket"
+const val V2RayTransportHttpUpgrade = "httpupgrade"
+const val V2RayTransportXhttp = "xhttp"
+const val V2RayTransportGrpc = "grpc"
 
-internal data class V2RayTransportOption(
+data class V2RayTransportOption(
     val value: String,
 ) {
     val label: String get() = value
 }
 
-internal val V2RayTransportOptions = listOf(
+val V2RayTransportOptions = listOf(
     V2RayTransportOption(V2RayTransportRaw),
     V2RayTransportOption(V2RayTransportMkcp),
     V2RayTransportOption(V2RayTransportWebSocket),
@@ -25,7 +25,7 @@ internal val V2RayTransportOptions = listOf(
     V2RayTransportOption(V2RayTransportGrpc),
 )
 
-internal fun String?.toCanonicalV2RayTransportType(defaultType: String = V2RayTransportRaw): String {
+fun String?.toCanonicalV2RayTransportType(defaultType: String = V2RayTransportRaw): String {
     val normalized = this
         ?.trim()
         ?.lowercase()
@@ -42,7 +42,7 @@ internal fun String?.toCanonicalV2RayTransportType(defaultType: String = V2RayTr
     }
 }
 
-internal fun String.toV2RayTransportUrlType(): String {
+fun String.toV2RayTransportUrlType(): String {
     val canonicalType = toCanonicalV2RayTransportType()
     return when (canonicalType) {
         V2RayTransportMkcp -> "kcp"
@@ -51,7 +51,7 @@ internal fun String.toV2RayTransportUrlType(): String {
     }
 }
 
-internal fun v2RayTransportOptionIndex(type: String?): Int {
+fun v2RayTransportOptionIndex(type: String?): Int {
     val canonicalType = type.toCanonicalV2RayTransportType()
     val index = V2RayTransportOptions.indexOfFirst { option -> option.value == canonicalType }
     return if (index >= 0) index else 0

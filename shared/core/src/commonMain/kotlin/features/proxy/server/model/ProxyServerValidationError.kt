@@ -54,7 +54,7 @@ enum class ProxyServerValidationError {
     VlessVisionFlowUnsupported,
 }
 
-internal fun proxyValidationIssue(
+fun proxyValidationIssue(
     error: ProxyServerValidationError,
     vararg values: Any?,
 ): ProxyServerValidationIssue {
