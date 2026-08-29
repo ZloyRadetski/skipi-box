@@ -24,6 +24,8 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import features.config.analyzeShadowrocketConfig
 import features.config.defaultShadowrocketConfig
+import features.proxy.server.model.ProxyServer
+import features.proxy.server.model.getTransportDisplay
 import java.nio.file.Path
 
 fun main() = application {
@@ -36,7 +38,13 @@ fun main() = application {
                 var profileText by remember { mutableStateOf(defaultShadowrocketConfig()) }
                 var profilePath by remember { mutableStateOf<Path?>(null) }
                 var fileMessage by remember { mutableStateOf("Create or open a .conf profile to begin.") }
+                var serverLink by remember { mutableStateOf("") }
                 val profile by remember(profileText) { mutableStateOf(profileText.analyzeShadowrocketConfig()) }
+                val serverPreview = remember(serverLink) {
+                    serverLink.trim().takeIf(String::isNotEmpty)?.let { link ->
+                        runCatching { ProxyServer.parse(link) }
+                    }
+                }
 
                 Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -91,6 +99,26 @@ fun main() = application {
                         Text("Rules: ${profile.rules.size}")
                         Text("Proxy groups: ${profile.proxyGroups.size}")
                         Text("Diagnostics: ${profile.diagnostics.size}")
+                    }
+
+                    OutlinedTextField(
+                        value = serverLink,
+                        onValueChange = { serverLink = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Server link preview (vless://, vmess://, ss://, …)") },
+                        singleLine = true,
+                    )
+                    when {
+                        serverPreview == null -> Text("Paste a server link to validate it with the shared core.")
+                        serverPreview.isFailure -> Text(
+                            "Unsupported or invalid server link: ${serverPreview.exceptionOrNull()?.message.orEmpty()}",
+                        )
+                        else -> {
+                            val info = serverPreview.getOrThrow().getInfo()
+                            val transport = serverPreview.getOrThrow().getTransportDisplay().orEmpty()
+                            Text("${info.protocol}: ${info.remarks} — ${info.address}")
+                            if (transport.isNotBlank()) Text("Transport: $transport")
+                        }
                     }
 
                     OutlinedTextField(
