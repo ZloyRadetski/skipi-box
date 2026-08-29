@@ -52,3 +52,4 @@ dependencyResolutionManagement {
 
 include(":app")
 include(":hevtun")
+include(":shared:core")

@@ -3,6 +3,7 @@
 
 package engine.network
 
+/** Limits used to validate portable connection and routing settings. */
 object NetworkLimits {
     const val PORT_MIN = 1
     const val PORT_MAX = 65_535
@@ -13,4 +14,3 @@ object NetworkLimits {
     const val IPV6_PREFIX_MIN = 0
     const val IPV6_PREFIX_MAX = 128
 }
-

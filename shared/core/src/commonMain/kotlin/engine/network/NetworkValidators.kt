@@ -3,8 +3,6 @@
 
 package engine.network
 
-import utils.toIntInRangeOrNull
-
 data class NetworkCidrAddress(
     val address: String,
     val prefixLength: Int,
@@ -12,9 +10,7 @@ data class NetworkCidrAddress(
 
 private val Ipv6HextetRegex = Regex("[0-9A-Fa-f]{1,4}")
 
-fun isCidrAddress(cidr: String): Boolean {
-    return parseCidrAddressOrNull(cidr) != null
-}
+fun isCidrAddress(cidr: String): Boolean = parseCidrAddressOrNull(cidr) != null
 
 fun parseCidrAddressOrNull(cidr: String): NetworkCidrAddress? {
     val parts = cidr.trim().split("/", limit = 2)
@@ -32,13 +28,8 @@ fun parseCidrAddressOrNull(cidr: String): NetworkCidrAddress? {
         address.contains(".") -> isIpv4Address(address)
         else -> false
     }
-    if (!validAddress || prefixLength !in prefixRange) {
-        return null
-    }
-    return NetworkCidrAddress(
-        address = address,
-        prefixLength = prefixLength,
-    )
+    if (!validAddress || prefixLength !in prefixRange) return null
+    return NetworkCidrAddress(address = address, prefixLength = prefixLength)
 }
 
 fun isIpAddress(address: String): Boolean {
@@ -69,14 +60,12 @@ fun isPortList(value: String): Boolean {
     }
 }
 
-fun Int.isPort(): Boolean {
-    return this in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX
-}
+fun Int.isPort(): Boolean = this in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX
 
 fun String.toPortOrNull(): Int? {
     val value = trim()
     if (value.isEmpty() || !value.all(Char::isDigit)) return null
-    return value.toIntInRangeOrNull(NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX)
+    return value.toIntOrNull()?.takeIf { it in NetworkLimits.PORT_MIN..NetworkLimits.PORT_MAX }
 }
 
 fun isIpv4Address(address: String): Boolean {
@@ -93,10 +82,7 @@ fun isIpv6Address(address: String): Boolean {
 
     val compressedParts = address.split("::")
     if (compressedParts.size > 2) return false
-
-    if (compressedParts.size == 1) {
-        return parseIpv6Hextets(address)?.size == 8
-    }
+    if (compressedParts.size == 1) return parseIpv6Hextets(address)?.size == 8
 
     val left = parseIpv6Hextets(compressedParts[0]) ?: return false
     val right = parseIpv6Hextets(compressedParts[1]) ?: return false
@@ -112,8 +98,6 @@ private fun parseIpv6Hextets(section: String): List<String>? {
     if (section.isEmpty()) return emptyList()
 
     val hextets = section.split(":")
-    if (hextets.any { it.isEmpty() || !Ipv6HextetRegex.matches(it) }) {
-        return null
-    }
+    if (hextets.any { it.isEmpty() || !Ipv6HextetRegex.matches(it) }) return null
     return hextets
 }

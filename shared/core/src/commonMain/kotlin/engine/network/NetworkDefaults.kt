@@ -3,6 +3,7 @@
 
 package engine.network
 
+/** Network defaults shared by Android, desktop and future iOS adapters. */
 object NetworkDefaults {
     const val IPV4_ANY_ADDRESS = "0.0.0.0"
     const val IPV6_ANY_ADDRESS = "::"
