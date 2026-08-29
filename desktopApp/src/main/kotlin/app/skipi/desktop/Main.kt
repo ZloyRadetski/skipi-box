@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,11 @@ import features.config.analyzeShadowrocketConfig
 import features.config.defaultShadowrocketConfig
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.getTransportDisplay
+import features.subscription.SubscriptionServerImportResult
+import features.subscription.importSubscriptionServers
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import platform.DefaultLocalSocksPort
 import platform.LocalProxyXrayConfigFactory
 import java.nio.file.Path
@@ -41,10 +47,15 @@ fun main() = application {
     ) {
         MaterialTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
+                val subscriptionScope = rememberCoroutineScope()
+                val subscriptionFetcher = remember { DesktopSubscriptionFetcher() }
                 var profileText by remember { mutableStateOf(defaultShadowrocketConfig()) }
                 var profilePath by remember { mutableStateOf<Path?>(null) }
                 var fileMessage by remember { mutableStateOf("Create or open a .conf profile to begin.") }
                 var serverLink by remember { mutableStateOf("") }
+                var subscriptionUrl by remember { mutableStateOf("") }
+                var subscriptionImportResult by remember { mutableStateOf<SubscriptionServerImportResult?>(null) }
+                var subscriptionMessage by remember { mutableStateOf("") }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
                 }
@@ -71,7 +82,7 @@ fun main() = application {
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text("SKIPI Desktop", style = MaterialTheme.typography.headlineMedium)
-                    Text("Portable profile editor. Tunnel integration is the next desktop milestone.")
+                    Text("Profiles, servers, subscriptions and local tunnel controls.")
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
@@ -120,6 +131,53 @@ fun main() = application {
                         Text("Proxy groups: ${profile.proxyGroups.size}")
                         Text("Diagnostics: ${profile.diagnostics.size}")
                     }
+
+                    OutlinedTextField(
+                        value = subscriptionUrl,
+                        onValueChange = { subscriptionUrl = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Subscription URL (HTTP/HTTPS)") },
+                        singleLine = true,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = {
+                            subscriptionScope.launch {
+                                subscriptionMessage = "Updating subscription…"
+                                subscriptionImportResult = null
+                                runCatching {
+                                    withContext(Dispatchers.IO) {
+                                        subscriptionFetcher.fetch(subscriptionUrl).body.importSubscriptionServers()
+                                    }
+                                }.onSuccess { result ->
+                                    subscriptionImportResult = result
+                                    subscriptionMessage = "Subscription contains ${result.servers.size} valid servers " +
+                                        "(${result.rejectedUrlCount} rejected)."
+                                }.onFailure { error ->
+                                    subscriptionMessage = "Could not update subscription: ${error.message.orEmpty()}"
+                                }
+                            }
+                        }) {
+                            Text("Update subscription")
+                        }
+                        val importResult = subscriptionImportResult
+                        if (importResult?.servers?.isNotEmpty() == true) {
+                            Button(onClick = {
+                                var updated = serverLibrary
+                                importResult.servers.forEach { server ->
+                                    updated = DesktopServerLibraries.add(updated, server)
+                                }
+                                DesktopServerLibraries.saveDefault(updated).onSuccess {
+                                    serverLibrary = updated
+                                    serverLibraryMessage = "Added ${importResult.servers.size} subscription servers to the library."
+                                }.onFailure { error ->
+                                    serverLibraryMessage = "Could not save subscription servers: ${error.message.orEmpty()}"
+                                }
+                            }) {
+                                Text("Add ${importResult.servers.size} servers")
+                            }
+                        }
+                    }
+                    if (subscriptionMessage.isNotBlank()) Text(subscriptionMessage)
 
                     OutlinedTextField(
                         value = serverLink,
