@@ -16,6 +16,9 @@ kotlin {
     jvm("desktop")
 
     sourceSets {
+        commonMain.dependencies {
+            implementation(libs.ktor.http)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
