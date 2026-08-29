@@ -9,7 +9,7 @@ import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileSourceRoscomvpnGithub
 import features.subscription.SubscriptionEmbeddedConfig
 import features.subscription.subscriptionMetadata
-import features.subscription.runtime.SubscriptionFetchResponse
+import features.subscription.SubscriptionFetchResponse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

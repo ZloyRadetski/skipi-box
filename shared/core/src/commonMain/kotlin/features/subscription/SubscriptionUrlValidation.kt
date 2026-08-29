@@ -5,16 +5,18 @@ package features.subscription
 
 import io.ktor.http.Url
 
-internal fun String.isValidManualSubscriptionUrl(): Boolean {
+/** Allows the HTTP URLs historically accepted when a user enters a subscription manually. */
+fun String.isValidManualSubscriptionUrl(): Boolean {
     return isValidSubscriptionUrl(ManualSubscriptionUrlSchemes)
 }
 
-internal fun String.isPlainHttpSubscriptionUrl(): Boolean {
+fun String.isPlainHttpSubscriptionUrl(): Boolean {
     val url = toSubscriptionUrlOrNull() ?: return false
     return url.protocol.name.equals("http", ignoreCase = true)
 }
 
-internal fun String.isValidSubscriptionInstallUrl(): Boolean {
+/** Installation links must use HTTPS because they are received from external sources. */
+fun String.isValidSubscriptionInstallUrl(): Boolean {
     return isValidSubscriptionUrl(HttpsSubscriptionUrlSchemes)
 }
 
@@ -27,6 +29,10 @@ private fun String.isValidSubscriptionUrl(schemes: Set<String>): Boolean {
 private fun String.toSubscriptionUrlOrNull(): Url? {
     val value = trim()
     if (value.isBlank() || value.any(Char::isWhitespace)) return null
+    val authorityWithPath = value.substringAfter("://", missingDelimiterValue = "")
+    val authorityEnd = authorityWithPath.indexOfAny(charArrayOf('/', '?', '#'))
+    val authority = if (authorityEnd < 0) authorityWithPath else authorityWithPath.substring(0, authorityEnd)
+    if (authority.isBlank()) return null
     return runCatching { Url(value) }.getOrNull()
 }
 

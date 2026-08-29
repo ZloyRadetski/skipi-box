@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.Build
 import data.AppSettingsPreferences
 import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.SubscriptionFetchResponse
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.SubscriptionHttpException
 import engine.network.TunnelNetworks
@@ -71,11 +72,6 @@ internal class AndroidSubscriptionFetcher(
         }
     }
 }
-
-internal data class SubscriptionFetchResponse(
-    val body: String,
-    val headers: Map<String, String> = emptyMap(),
-)
 
 internal data class AndroidSubscriptionFetchOptions(
     val useRunningProxy: Boolean = false,

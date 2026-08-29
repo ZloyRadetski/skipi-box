@@ -15,7 +15,7 @@ import features.proxy.server.usecase.importProxyServersFromText
 import features.proxy.server.usecase.subscriptionFetchIdentity
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.runtime.AndroidSubscriptionFetcher
-import features.subscription.runtime.SubscriptionFetchResponse
+import features.subscription.SubscriptionFetchResponse
 import features.subscription.subscriptionMetadata
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap

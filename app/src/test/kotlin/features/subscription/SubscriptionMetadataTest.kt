@@ -3,7 +3,6 @@
 
 package features.subscription
 
-import features.subscription.runtime.SubscriptionFetchResponse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

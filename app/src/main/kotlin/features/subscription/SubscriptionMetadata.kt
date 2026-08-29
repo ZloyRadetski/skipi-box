@@ -5,7 +5,6 @@ package features.subscription
 
 import android.net.Uri
 import android.util.Base64
-import features.subscription.runtime.SubscriptionFetchResponse
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
