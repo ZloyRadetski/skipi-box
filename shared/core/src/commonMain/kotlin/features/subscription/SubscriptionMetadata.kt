@@ -3,21 +3,18 @@
 
 package features.subscription
 
-import android.net.Uri
-import android.util.Base64
-import java.nio.ByteBuffer
-import java.nio.charset.CodingErrorAction
-import java.nio.charset.StandardCharsets
+import io.ktor.http.decodeURLPart
+import utils.decodeFlexibleBase64OrNull
 
 /** Embedded traffic config payload discovered from subscription headers or body. */
-internal data class SubscriptionEmbeddedConfig(
+data class SubscriptionEmbeddedConfig(
     val payload: String,
     val activate: Boolean,
     val isUrl: Boolean,
 )
 
 /** Metadata attached to a subscription response by common proxy subscription servers. */
-internal data class SubscriptionMetadata(
+data class SubscriptionMetadata(
     val profileTitle: String? = null,
     val profileDescription: String? = null,
     val announce: String? = null,
@@ -36,7 +33,7 @@ internal data class SubscriptionMetadata(
     val embeddedConfig: SubscriptionEmbeddedConfig? = null,
 )
 
-internal fun SubscriptionFetchResponse.subscriptionMetadata(): SubscriptionMetadata {
+fun SubscriptionFetchResponse.subscriptionMetadata(): SubscriptionMetadata {
     val normalizedHeaders = headers.mapKeys { (name, _) -> name.lowercase() }
     val userInfo = normalizedHeaders[SubscriptionUserInfoHeader]
         ?: normalizedHeaders[SubscriptionUserInfoHeaderWithHash]
@@ -229,20 +226,12 @@ private fun String.decodeSubscriptionHeaderValue(): String {
     if (!explicitlyEncoded && unquoted.any(Char::isWhitespace)) return raw
     val encoded = unquoted
         .removeBase64Prefix()
-        .let(Uri::decode)
+        .decodeURLPart()
         .filterNot(Char::isWhitespace)
     if (!encoded.isBase64HeaderValue()) return raw
-    val padded = encoded.padEnd((encoded.length + 3) / 4 * 4, '=')
-    return listOf(Base64.DEFAULT, Base64.URL_SAFE or Base64.NO_WRAP)
-        .firstNotNullOfOrNull { flags ->
-            runCatching {
-                StandardCharsets.UTF_8.newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(Base64.decode(padded, flags)))
-                    .toString()
-            }.getOrNull()?.takeIf(String::isReadableSubscriptionHeaderText)
-        }
+    return encoded.decodeFlexibleBase64OrNull()
+        ?.decodeToString(throwOnInvalidSequence = true)
+        ?.takeIf(String::isReadableSubscriptionHeaderText)
         ?: raw
 }
 

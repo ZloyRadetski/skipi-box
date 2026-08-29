@@ -4,7 +4,6 @@
 package app.skipi.desktop
 
 import com.sun.net.httpserver.HttpServer
-import features.subscription.importSubscriptionServers
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -23,11 +22,12 @@ class DesktopSubscriptionFetcherTest {
                 exchange.responseBody.use { it.write(body.encodeToByteArray()) }
             }
 
-            val response = DesktopSubscriptionFetcher().fetch("http://127.0.0.1:${server.address.port}/sub")
+            val update = DesktopSubscriptionFetcher().fetchAndImport("http://127.0.0.1:${server.address.port}/sub")
 
             assertEquals(DefaultDesktopSubscriptionUserAgent, receivedAgent)
-            assertEquals("Desktop Provider", response.headers["profile-title"])
-            assertEquals(1, response.body.importSubscriptionServers().servers.size)
+            assertEquals("Desktop Provider", update.response.headers["profile-title"])
+            assertEquals("Desktop Provider", update.metadata.profileTitle)
+            assertEquals(1, update.importResult.servers.size)
         }
     }
 

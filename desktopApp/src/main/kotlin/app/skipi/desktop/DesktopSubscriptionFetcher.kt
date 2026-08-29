@@ -4,7 +4,11 @@
 package app.skipi.desktop
 
 import features.subscription.SubscriptionFetchResponse
+import features.subscription.SubscriptionMetadata
+import features.subscription.SubscriptionServerImportResult
+import features.subscription.importSubscriptionServers
 import features.subscription.isValidManualSubscriptionUrl
+import features.subscription.subscriptionMetadata
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -18,6 +22,19 @@ class DesktopSubscriptionFetcher(
         .followRedirects(HttpClient.Redirect.NORMAL)
         .build(),
 ) {
+    fun fetchAndImport(
+        url: String,
+        userAgent: String = DefaultDesktopSubscriptionUserAgent,
+        timeout: Duration = DefaultRequestTimeout,
+    ): DesktopSubscriptionUpdate {
+        val response = fetch(url, userAgent, timeout)
+        return DesktopSubscriptionUpdate(
+            response = response,
+            importResult = response.body.importSubscriptionServers(),
+            metadata = response.subscriptionMetadata(),
+        )
+    }
+
     fun fetch(
         url: String,
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
@@ -47,6 +64,12 @@ class DesktopSubscriptionHttpException(
     val statusCode: Int,
     val responseBody: String,
 ) : IllegalStateException("Subscription server returned HTTP $statusCode")
+
+data class DesktopSubscriptionUpdate(
+    val response: SubscriptionFetchResponse,
+    val importResult: SubscriptionServerImportResult,
+    val metadata: SubscriptionMetadata,
+)
 
 const val DefaultDesktopSubscriptionUserAgent = "SKIPI Desktop"
 

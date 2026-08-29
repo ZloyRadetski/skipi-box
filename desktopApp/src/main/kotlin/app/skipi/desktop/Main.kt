@@ -27,8 +27,6 @@ import features.config.analyzeShadowrocketConfig
 import features.config.defaultShadowrocketConfig
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.getTransportDisplay
-import features.subscription.SubscriptionServerImportResult
-import features.subscription.importSubscriptionServers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -54,7 +52,7 @@ fun main() = application {
                 var fileMessage by remember { mutableStateOf("Create or open a .conf profile to begin.") }
                 var serverLink by remember { mutableStateOf("") }
                 var subscriptionUrl by remember { mutableStateOf("") }
-                var subscriptionImportResult by remember { mutableStateOf<SubscriptionServerImportResult?>(null) }
+                var subscriptionUpdate by remember { mutableStateOf<DesktopSubscriptionUpdate?>(null) }
                 var subscriptionMessage by remember { mutableStateOf("") }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
@@ -143,15 +141,15 @@ fun main() = application {
                         Button(onClick = {
                             subscriptionScope.launch {
                                 subscriptionMessage = "Updating subscription…"
-                                subscriptionImportResult = null
+                                subscriptionUpdate = null
                                 runCatching {
                                     withContext(Dispatchers.IO) {
-                                        subscriptionFetcher.fetch(subscriptionUrl).body.importSubscriptionServers()
+                                        subscriptionFetcher.fetchAndImport(subscriptionUrl)
                                     }
-                                }.onSuccess { result ->
-                                    subscriptionImportResult = result
-                                    subscriptionMessage = "Subscription contains ${result.servers.size} valid servers " +
-                                        "(${result.rejectedUrlCount} rejected)."
+                                }.onSuccess { update ->
+                                    subscriptionUpdate = update
+                                    subscriptionMessage = "Subscription contains ${update.importResult.servers.size} valid servers " +
+                                        "(${update.importResult.rejectedUrlCount} rejected)."
                                 }.onFailure { error ->
                                     subscriptionMessage = "Could not update subscription: ${error.message.orEmpty()}"
                                 }
@@ -159,7 +157,7 @@ fun main() = application {
                         }) {
                             Text("Update subscription")
                         }
-                        val importResult = subscriptionImportResult
+                        val importResult = subscriptionUpdate?.importResult
                         if (importResult?.servers?.isNotEmpty() == true) {
                             Button(onClick = {
                                 var updated = serverLibrary
@@ -178,6 +176,16 @@ fun main() = application {
                         }
                     }
                     if (subscriptionMessage.isNotBlank()) Text(subscriptionMessage)
+                    subscriptionUpdate?.metadata?.let { metadata ->
+                        metadata.profileTitle?.let { Text("Subscription: $it") }
+                        if (metadata.trafficTotalBytes >= 0L) {
+                            Text(
+                                "Traffic: ${metadata.trafficUploadBytes.coerceAtLeast(0L) + metadata.trafficDownloadBytes.coerceAtLeast(0L)}" +
+                                    " / ${metadata.trafficTotalBytes} bytes",
+                            )
+                        }
+                        metadata.announce?.let { Text("Announcement: $it") }
+                    }
 
                     OutlinedTextField(
                         value = serverLink,

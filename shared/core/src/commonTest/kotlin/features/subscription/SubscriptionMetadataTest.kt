@@ -3,12 +3,11 @@
 
 package features.subscription
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class SubscriptionMetadataTest {
 
@@ -83,10 +82,10 @@ class SubscriptionMetadataTest {
         )
 
         val metadata = response.subscriptionMetadata()
-        assertNotNull(metadata.embeddedConfig)
-        assertEquals("https://raw.githubusercontent.com/user/repo/main/profile.json", metadata.embeddedConfig?.payload)
-        assertTrue(metadata.embeddedConfig?.isUrl == true)
-        assertTrue(metadata.embeddedConfig?.activate == true)
+        val embedded = assertNotNull(metadata.embeddedConfig)
+        assertEquals("https://raw.githubusercontent.com/user/repo/main/profile.json", embedded.payload)
+        assertTrue(embedded.isUrl)
+        assertTrue(embedded.activate)
     }
 
     @Test
@@ -97,10 +96,10 @@ class SubscriptionMetadataTest {
             skipi://conf/onadd/https://example.com/rules.conf
         """.trimIndent()
         val metadataOnAddUrl = SubscriptionFetchResponse(body = bodyOnAddUrl).subscriptionMetadata()
-        assertNotNull(metadataOnAddUrl.embeddedConfig)
-        assertEquals("https://example.com/rules.conf", metadataOnAddUrl.embeddedConfig?.payload)
-        assertTrue(metadataOnAddUrl.embeddedConfig?.isUrl == true)
-        assertTrue(metadataOnAddUrl.embeddedConfig?.activate == true)
+        val onAddUrl = assertNotNull(metadataOnAddUrl.embeddedConfig)
+        assertEquals("https://example.com/rules.conf", onAddUrl.payload)
+        assertTrue(onAddUrl.isUrl)
+        assertTrue(onAddUrl.activate)
 
         // Test add with base64
         val bodyAddBase64 = """
@@ -108,10 +107,10 @@ class SubscriptionMetadataTest {
             skipi://conf/add/eyJOYW1lIjoiTXlDb25maWcifQ==
         """.trimIndent()
         val metadataAddBase64 = SubscriptionFetchResponse(body = bodyAddBase64).subscriptionMetadata()
-        assertNotNull(metadataAddBase64.embeddedConfig)
-        assertEquals("eyJOYW1lIjoiTXlDb25maWcifQ==", metadataAddBase64.embeddedConfig?.payload)
-        assertFalse(metadataAddBase64.embeddedConfig?.isUrl == true)
-        assertFalse(metadataAddBase64.embeddedConfig?.activate == true)
+        val addBase64 = assertNotNull(metadataAddBase64.embeddedConfig)
+        assertEquals("eyJOYW1lIjoiTXlDb25maWcifQ==", addBase64.payload)
+        assertFalse(addBase64.isUrl)
+        assertFalse(addBase64.activate)
 
         // Test standard ://autorouting/onadd/ with URL
         val bodyAutoRouting = """
@@ -119,10 +118,10 @@ class SubscriptionMetadataTest {
             ://autorouting/onadd/https://raw.githubusercontent.com/user/repo/main/routing.json
         """.trimIndent()
         val metadataAutoRouting = SubscriptionFetchResponse(body = bodyAutoRouting).subscriptionMetadata()
-        assertNotNull(metadataAutoRouting.embeddedConfig)
-        assertEquals("https://raw.githubusercontent.com/user/repo/main/routing.json", metadataAutoRouting.embeddedConfig?.payload)
-        assertTrue(metadataAutoRouting.embeddedConfig?.isUrl == true)
-        assertTrue(metadataAutoRouting.embeddedConfig?.activate == true)
+        val autoRouting = assertNotNull(metadataAutoRouting.embeddedConfig)
+        assertEquals("https://raw.githubusercontent.com/user/repo/main/routing.json", autoRouting.payload)
+        assertTrue(autoRouting.isUrl)
+        assertTrue(autoRouting.activate)
     }
 
     @Test
@@ -135,9 +134,9 @@ class SubscriptionMetadataTest {
         )
 
         val metadata = response.subscriptionMetadata()
-        assertNotNull(metadata.embeddedConfig)
-        assertEquals("https://example.com/configs/direct_routing.conf", metadata.embeddedConfig?.payload)
-        assertTrue(metadata.embeddedConfig?.isUrl == true)
-        assertTrue(metadata.embeddedConfig?.activate == true)
+        val embedded = assertNotNull(metadata.embeddedConfig)
+        assertEquals("https://example.com/configs/direct_routing.conf", embedded.payload)
+        assertTrue(embedded.isUrl)
+        assertTrue(embedded.activate)
     }
 }
