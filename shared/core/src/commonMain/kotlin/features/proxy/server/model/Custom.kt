@@ -63,7 +63,7 @@ internal fun customConnectionFingerprint(configJson: String): String {
     return "custom|$hostPort|${configJson.trim().hashCode()}"
 }
 
-internal fun parseCustomXrayConfigJsonObject(value: String): JsonObject {
+fun parseCustomXrayConfigJsonObject(value: String): JsonObject {
     val text = value.trim()
     if (text.isBlank()) {
         throw IllegalArgumentException("custom JSON is required")
@@ -92,21 +92,21 @@ private fun MutableList<ProxyServerValidationIssue>.validateCustomXrayConfigJson
     }
 }
 
-internal fun formatCustomXrayConfigJson(value: String): String {
+fun formatCustomXrayConfigJson(value: String): String {
     val element = CustomXrayConfigJson.parseToJsonElement(value.trim())
     return CustomXrayConfigPrettyJson.encodeToString(element)
 }
 
-internal fun formatCustomXrayConfigJson(element: JsonElement): String {
+fun formatCustomXrayConfigJson(element: JsonElement): String {
     return CustomXrayConfigPrettyJson.encodeToString(element)
 }
 
-internal data class CustomProxyOutboundEndpoint(
+data class CustomProxyOutboundEndpoint(
     val host: String,
     val port: Int,
 )
 
-internal fun customXrayConfigProxyOutboundEndpoint(value: String): CustomProxyOutboundEndpoint? {
+fun customXrayConfigProxyOutboundEndpoint(value: String): CustomProxyOutboundEndpoint? {
     val outbounds = value.customXrayConfigOutboundsOrNull()
     return outbounds?.customProxyOutboundEndpoint()
 }
@@ -115,18 +115,18 @@ internal fun customXrayConfigProxyOutboundEndpoint(value: String): CustomProxyOu
  * Returns the primary proxy outbound from a raw Xray configuration when it
  * can be embedded in a generated SKIPI plan (for routing or a balancer).
  */
-internal fun customXrayConfigPrimaryProxyOutbound(value: String): JsonObject? {
+fun customXrayConfigPrimaryProxyOutbound(value: String): JsonObject? {
     val outbounds = value.customXrayConfigOutboundsOrNull() ?: return null
     val objects = outbounds.mapNotNull { element -> element as? JsonObject }
     return objects.firstOrNull { outbound -> outbound.stringValue("tag") == CustomProxyOutboundTag }
         ?: objects.firstOrNull { outbound -> outbound.stringValue("tag") !in CustomFixedOutboundTags }
 }
 
-internal fun Custom.canBeUsedInGeneratedProxyPlan(): Boolean {
+fun Custom.canBeUsedInGeneratedProxyPlan(): Boolean {
     return customXrayConfigPrimaryProxyOutbound(configJson) != null
 }
 
-internal fun customXrayConfigProxyServerHosts(value: String): List<String> {
+fun customXrayConfigProxyServerHosts(value: String): List<String> {
     val outbounds = value.customXrayConfigOutboundsOrNull()
     return outbounds?.customProxyServerHosts().orEmpty()
 }
