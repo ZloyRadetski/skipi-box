@@ -51,8 +51,8 @@ import app.navigation.StrategyGroupMemberSelectionResult
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import data.decodePersistedProxyServer
-import data.encodePersistedProxyServer
+import features.proxy.server.model.decodePersistedProxyServer
+import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.display.displayName
 import features.proxy.server.display.displayNameById
 import features.proxy.server.display.displayNameWithGroup

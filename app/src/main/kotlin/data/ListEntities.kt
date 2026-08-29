@@ -11,6 +11,8 @@ import app.ProxyServerState
 import app.SubscriptionExpiryReminder
 import app.SubscriptionGroupState
 import features.logs.AndroidAppLogger
+import features.proxy.server.model.decodePersistedProxyServer
+import features.proxy.server.model.encodePersistedProxyServer
 import features.routing.model.RouteRule
 import features.subscription.normalizeSkipiUserAgent
 

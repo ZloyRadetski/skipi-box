@@ -12,15 +12,15 @@ import app.CustomResourceFileState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.modes.RunModeVpnService
-import data.PersistedProxyServer
-import data.decodeProxyServer
-import data.toPersistedProxyServer
 import features.config.TrafficConfigState
 import features.config.withConfigProxyGroupsReflected
 import features.config.withSkipiSettingsInRawConfig
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.ChainProxy
+import features.proxy.server.model.PersistedProxyServer
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.decodeProxyServer
+import features.proxy.server.model.toPersistedProxyServer
 import features.routing.model.RouteRule
 import features.subscription.DefaultSubscriptionGroupId
 

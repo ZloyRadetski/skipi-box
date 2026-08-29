@@ -1,37 +1,23 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package data
-
-import features.proxy.server.model.ChainProxy
-import features.proxy.server.model.Custom
-import features.proxy.server.model.HTTP
-import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.ProxyServerConstants
-import features.proxy.server.model.Shadowsocks
-import features.proxy.server.model.Socks
-import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.Trojan
-import features.proxy.server.model.VLESS
-import features.proxy.server.model.VMess
-import features.proxy.server.model.Wireguard
+package features.proxy.server.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
 @Serializable
-internal data class PersistedProxyServer(
+data class PersistedProxyServer(
     val protocol: String,
     val payload: JsonElement,
 )
 
-internal fun ProxyServer<*>.encodePersistedProxyServer(): String {
+fun ProxyServer<*>.encodePersistedProxyServer(): String {
     return ProxyServer.json.encodeToString(toPersistedProxyServer())
 }
 
-internal fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
+fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
     return when (this) {
         is HTTP -> persisted(ProxyServerConstants.PROTOCOL_HTTP, this)
         is Socks -> persisted(ProxyServerConstants.PROTOCOL_SOCKS, this)
@@ -48,12 +34,12 @@ internal fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
     }
 }
 
-internal fun String.decodePersistedProxyServer(): ProxyServer<*> {
+fun String.decodePersistedProxyServer(): ProxyServer<*> {
     val persistedServer = ProxyServer.json.decodeFromString<PersistedProxyServer>(this)
     return persistedServer.decodeProxyServer()
 }
 
-internal fun PersistedProxyServer.decodeProxyServer(): ProxyServer<*> {
+fun PersistedProxyServer.decodeProxyServer(): ProxyServer<*> {
     return when (protocol) {
         ProxyServerConstants.PROTOCOL_HTTP ->
             ProxyServer.json.decodeFromJsonElement<HTTP>(payload)

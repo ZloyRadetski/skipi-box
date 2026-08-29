@@ -39,6 +39,12 @@ fun main() = application {
                 var profilePath by remember { mutableStateOf<Path?>(null) }
                 var fileMessage by remember { mutableStateOf("Create or open a .conf profile to begin.") }
                 var serverLink by remember { mutableStateOf("") }
+                var serverLibrary by remember {
+                    mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
+                }
+                var serverLibraryMessage by remember {
+                    mutableStateOf("Desktop server library: ${DesktopServerLibraries.defaultPath()}")
+                }
                 val profile by remember(profileText) { mutableStateOf(profileText.analyzeShadowrocketConfig()) }
                 val serverPreview = remember(serverLink) {
                     serverLink.trim().takeIf(String::isNotEmpty)?.let { link ->
@@ -118,8 +124,39 @@ fun main() = application {
                             val transport = serverPreview.getOrThrow().getTransportDisplay().orEmpty()
                             Text("${info.protocol}: ${info.remarks} — ${info.address}")
                             if (transport.isNotBlank()) Text("Transport: $transport")
+                            Button(onClick = {
+                                val updated = DesktopServerLibraries.add(serverLibrary, serverPreview.getOrThrow())
+                                DesktopServerLibraries.saveDefault(updated).onSuccess {
+                                    serverLibrary = updated
+                                    serverLibraryMessage = "Added ${info.remarks} to the desktop library."
+                                }.onFailure { error ->
+                                    serverLibraryMessage = "Could not save the server library: ${error.message.orEmpty()}"
+                                }
+                            }) {
+                                Text("Add to library")
+                            }
                         }
                     }
+
+                    Text("Saved servers: ${serverLibrary.servers.size}")
+                    serverLibrary.servers.take(3).forEach { stored ->
+                        val storedServer = stored.decode().getOrNull()
+                        val info = storedServer?.getInfo()
+                        Button(onClick = {
+                            val updated = DesktopServerLibraries.select(serverLibrary, stored.id)
+                            DesktopServerLibraries.saveDefault(updated).onSuccess {
+                                serverLibrary = updated
+                                serverLibraryMessage = "Selected ${info?.remarks ?: "server ${stored.id}"}."
+                            }.onFailure { error ->
+                                serverLibraryMessage = "Could not save the server selection: ${error.message.orEmpty()}"
+                            }
+                        }) {
+                            val marker = if (stored.id == serverLibrary.selectedServerId) "✓ " else ""
+                            Text(marker + (info?.let { "${it.remarks} — ${it.address}" } ?: "Unreadable saved server ${stored.id}"))
+                        }
+                    }
+                    if (serverLibrary.servers.size > 3) Text("Showing the first 3 saved servers.")
+                    Text(serverLibraryMessage)
 
                     OutlinedTextField(
                         value = profileText,
