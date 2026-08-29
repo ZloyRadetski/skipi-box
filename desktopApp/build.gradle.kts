@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":shared:core"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
+    testImplementation(kotlin("test"))
 }
 
 compose.desktop {
