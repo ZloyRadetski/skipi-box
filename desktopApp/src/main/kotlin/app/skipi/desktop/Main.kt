@@ -31,8 +31,12 @@ import platform.LocalProxyXrayConfigFactory
 import java.nio.file.Path
 
 fun main() = application {
+    val xrayController = remember { DesktopXrayProcessController() }
     Window(
-        onCloseRequest = ::exitApplication,
+        onCloseRequest = {
+            xrayController.stop()
+            exitApplication()
+        },
         title = "SKIPI",
     ) {
         MaterialTheme {
@@ -47,6 +51,8 @@ fun main() = application {
                 var serverLibraryMessage by remember {
                     mutableStateOf("Desktop server library: ${DesktopServerLibraries.defaultPath()}")
                 }
+                var xrayProcessState by remember { mutableStateOf(xrayController.state()) }
+                var xrayProcessMessage by remember { mutableStateOf("") }
                 val profile by remember(profileText) { mutableStateOf(profileText.analyzeShadowrocketConfig()) }
                 val serverPreview = remember(serverLink) {
                     serverLink.trim().takeIf(String::isNotEmpty)?.let { link ->
@@ -174,6 +180,29 @@ fun main() = application {
                             "Selected server cannot start yet: ${selectedServerConfig.exceptionOrNull()?.message.orEmpty()}",
                         )
                     }
+                    if (selectedServerConfig?.isSuccess == true) {
+                        Button(onClick = {
+                            if (xrayProcessState.isRunning) {
+                                xrayController.stop().onSuccess { state ->
+                                    xrayProcessState = state
+                                    xrayProcessMessage = "Local Xray tunnel stopped."
+                                }.onFailure { error ->
+                                    xrayProcessMessage = "Could not stop Xray: ${error.message.orEmpty()}"
+                                }
+                            } else {
+                                val config = selectedServerConfig.getOrNull() ?: return@Button
+                                xrayController.start(config).onSuccess { state ->
+                                    xrayProcessState = state
+                                    xrayProcessMessage = "Local Xray tunnel started (PID ${state.pid})."
+                                }.onFailure { error ->
+                                    xrayProcessMessage = "Could not start Xray: ${error.message.orEmpty()}"
+                                }
+                            }
+                        }) {
+                            Text(if (xrayProcessState.isRunning) "Stop local tunnel" else "Start local tunnel")
+                        }
+                    }
+                    if (xrayProcessMessage.isNotBlank()) Text(xrayProcessMessage)
 
                     OutlinedTextField(
                         value = profileText,
