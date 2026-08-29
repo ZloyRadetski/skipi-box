@@ -23,14 +23,6 @@ object StrategyGroupConstants {
     )
 }
 
-object StrategyGroupDisplayMode {
-    const val NEVER = "never"
-    const val ALWAYS = "always"
-    const val ACTIVE_CONFIG = "active_config"
-
-    val MODES = listOf(ALWAYS, ACTIVE_CONFIG, NEVER)
-}
-
 @Serializable
 data class StrategyGroup(
     var remarks: String = "",
