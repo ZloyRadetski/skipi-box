@@ -26,6 +26,8 @@ import features.config.analyzeShadowrocketConfig
 import features.config.defaultShadowrocketConfig
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.getTransportDisplay
+import platform.DefaultLocalSocksPort
+import platform.LocalProxyXrayConfigFactory
 import java.nio.file.Path
 
 fun main() = application {
@@ -50,6 +52,12 @@ fun main() = application {
                     serverLink.trim().takeIf(String::isNotEmpty)?.let { link ->
                         runCatching { ProxyServer.parse(link) }
                     }
+                }
+                val selectedServerConfig = remember(serverLibrary) {
+                    serverLibrary.selectedServerId
+                        ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
+                        ?.decode()
+                        ?.mapCatching(LocalProxyXrayConfigFactory::build)
                 }
 
                 Column(
@@ -157,6 +165,15 @@ fun main() = application {
                     }
                     if (serverLibrary.servers.size > 3) Text("Showing the first 3 saved servers.")
                     Text(serverLibraryMessage)
+                    when {
+                        selectedServerConfig == null -> Text("Select a saved server to prepare a local tunnel configuration.")
+                        selectedServerConfig.isSuccess -> Text(
+                            "Selected server is ready for a local SOCKS tunnel at 127.0.0.1:$DefaultLocalSocksPort.",
+                        )
+                        else -> Text(
+                            "Selected server cannot start yet: ${selectedServerConfig.exceptionOrNull()?.message.orEmpty()}",
+                        )
+                    }
 
                     OutlinedTextField(
                         value = profileText,
