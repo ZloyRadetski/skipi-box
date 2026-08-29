@@ -36,4 +36,19 @@ class DesktopXrayRuntimeTest {
         val controller = DesktopXrayProcessController()
         assertFalse(controller.state().isRunning)
     }
+
+    @Test
+    fun validationCommandUsesXrayRunTestAndExplicitConfigPath() {
+        val runtime = DesktopXrayRuntime(
+            directory = java.nio.file.Path.of("C:/SKIPI/resources"),
+            executable = java.nio.file.Path.of("C:/SKIPI/resources/xray.exe"),
+            geoIp = java.nio.file.Path.of("C:/SKIPI/resources/geoip.dat"),
+            geoSite = java.nio.file.Path.of("C:/SKIPI/resources/geosite.dat"),
+        )
+
+        assertEquals(
+            listOf("C:\\SKIPI\\resources\\xray.exe", "run", "-test", "-c", "C:\\SKIPI\\runtime\\active-config.json"),
+            xrayCommand(runtime, java.nio.file.Path.of("C:/SKIPI/runtime/active-config.json"), testOnly = true),
+        )
+    }
 }

@@ -43,12 +43,8 @@ class DesktopXrayProcessController(
         check(!state().isRunning) { "SKIPI Xray is already running" }
         val runtime = runtimeProvider().getOrThrow()
         val configPath = writeRuntimeConfig(config)
-        val started = ProcessBuilder(
-            runtime.executable.toString(),
-            "run",
-            "-c",
-            configPath.toString(),
-        )
+        validateConfig(runtime, configPath)
+        val started = ProcessBuilder(xrayCommand(runtime, configPath))
             .directory(runtime.directory.toFile())
             .redirectErrorStream(true)
             .start()
@@ -83,6 +79,18 @@ class DesktopXrayProcessController(
         return destination
     }
 
+    private fun validateConfig(runtime: DesktopXrayRuntime, configPath: Path) {
+        val validation = ProcessBuilder(xrayCommand(runtime, configPath, testOnly = true))
+            .directory(runtime.directory.toFile())
+            .redirectErrorStream(true)
+            .start()
+        val output = validation.inputStream.bufferedReader(StandardCharsets.UTF_8).use { reader -> reader.readText() }
+        val exitCode = validation.waitFor()
+        check(exitCode == 0) {
+            "Xray rejected the generated config${output.trim().takeIf(String::isNotEmpty)?.let { ": ${it.take(1_000)}" }.orEmpty()}"
+        }
+    }
+
     private fun collectOutput(started: Process) {
         Thread(
             {
@@ -112,4 +120,16 @@ class DesktopXrayProcessController(
             return Path.of(base, "SKIPI", "runtime")
         }
     }
+}
+
+internal fun xrayCommand(
+    runtime: DesktopXrayRuntime,
+    configPath: Path,
+    testOnly: Boolean = false,
+): List<String> = buildList {
+    add(runtime.executable.toString())
+    add("run")
+    if (testOnly) add("-test")
+    add("-c")
+    add(configPath.toString())
 }
