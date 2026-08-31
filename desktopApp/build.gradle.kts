@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":shared:core"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
+    implementation(compose.materialIconsExtended)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(kotlin("test"))
 }
