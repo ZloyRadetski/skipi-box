@@ -59,6 +59,7 @@ fun main() = application {
                 val subscriptionFetcher = remember { DesktopSubscriptionFetcher() }
                 var profileText by remember { mutableStateOf(defaultShadowrocketConfig()) }
                 var profilePath by remember { mutableStateOf<Path?>(null) }
+                var configLibrary by remember { mutableStateOf(DesktopConfigLibraries.loadDefault().getOrElse { DesktopConfigLibrary() }) }
                 var fileMessage by remember { mutableStateOf("Create or open a .conf profile to begin.") }
                 var serverLink by remember { mutableStateOf("") }
                 var subscriptionUrl by remember { mutableStateOf("") }
@@ -134,6 +135,26 @@ fun main() = application {
                                 }) { Text("Save as…") }
                             }
                             Text(fileMessage)
+                            Button(onClick = {
+                                val name = profilePath?.fileName?.toString()?.substringBeforeLast('.') ?: "Config ${configLibrary.configs.size + 1}"
+                                runCatching { DesktopConfigLibraries.put(configLibrary, name, profileText) }.onSuccess { updated ->
+                                    DesktopConfigLibraries.saveDefault(updated).onSuccess { configLibrary = updated; fileMessage = "Config saved to library." }
+                                }
+                            }) { Text("Save to library") }
+                            configLibrary.configs.forEach { stored ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(onClick = {
+                                        val updated = DesktopConfigLibraries.select(configLibrary, stored.id)
+                                        DesktopConfigLibraries.saveDefault(updated).onSuccess {
+                                            configLibrary = updated; profileText = stored.content; fileMessage = "Selected ${stored.name}."
+                                        }
+                                    }) { Text((if (stored.id == configLibrary.selectedConfigId) "✓ " else "") + stored.name) }
+                                    Button(onClick = {
+                                        val updated = DesktopConfigLibraries.remove(configLibrary, stored.id)
+                                        DesktopConfigLibraries.saveDefault(updated).onSuccess { configLibrary = updated }
+                                    }) { Text("Delete") }
+                                }
+                            }
                             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                                 Text("Rules: ${profile.rules.size}")
                                 Text("Proxy groups: ${profile.proxyGroups.size}")
@@ -302,11 +323,18 @@ fun main() = application {
                     }
                     Text("Subscriptions: ${subscriptionLibrary.subscriptions.size}")
                     subscriptionLibrary.subscriptions.forEach { subscription ->
-                        Button(onClick = {
-                            subscriptionUrl = subscription.url
-                            subscriptionLibraryMessage = "Selected ${subscription.name.ifBlank { subscription.url }}."
-                        }) {
-                            Text(subscription.name.ifBlank { subscription.url })
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = {
+                                subscriptionUrl = subscription.url
+                                subscriptionLibraryMessage = "Selected ${subscription.name.ifBlank { subscription.url }}."
+                            }) { Text(subscription.name.ifBlank { subscription.url }) }
+                            Button(onClick = {
+                                val updated = DesktopSubscriptionLibraries.remove(subscriptionLibrary, subscription.id)
+                                DesktopSubscriptionLibraries.saveDefault(updated).onSuccess {
+                                    subscriptionLibrary = updated
+                                    subscriptionLibraryMessage = "Subscription deleted."
+                                }
+                            }) { Text("Delete") }
                         }
                     }
                     Text(subscriptionLibraryMessage)
@@ -347,17 +375,26 @@ fun main() = application {
                     serverLibrary.servers.forEach { stored ->
                         val storedServer = stored.decode().getOrNull()
                         val info = storedServer?.getInfo()
-                        Button(onClick = {
-                            val updated = DesktopServerLibraries.select(serverLibrary, stored.id)
-                            DesktopServerLibraries.saveDefault(updated).onSuccess {
-                                serverLibrary = updated
-                                serverLibraryMessage = "Selected ${info?.remarks ?: "server ${stored.id}"}."
-                            }.onFailure { error ->
-                                serverLibraryMessage = "Could not save the server selection: ${error.message.orEmpty()}"
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = {
+                                val updated = DesktopServerLibraries.select(serverLibrary, stored.id)
+                                DesktopServerLibraries.saveDefault(updated).onSuccess {
+                                    serverLibrary = updated
+                                    serverLibraryMessage = "Selected ${info?.remarks ?: "server ${stored.id}"}."
+                                }.onFailure { error ->
+                                    serverLibraryMessage = "Could not save the server selection: ${error.message.orEmpty()}"
+                                }
+                            }) {
+                                val marker = if (stored.id == serverLibrary.selectedServerId) "✓ " else ""
+                                Text(marker + (info?.let { "${it.remarks} — ${it.address}" } ?: "Unreadable saved server ${stored.id}"))
                             }
-                        }) {
-                            val marker = if (stored.id == serverLibrary.selectedServerId) "✓ " else ""
-                            Text(marker + (info?.let { "${it.remarks} — ${it.address}" } ?: "Unreadable saved server ${stored.id}"))
+                            Button(onClick = {
+                                val updated = DesktopServerLibraries.remove(serverLibrary, stored.id)
+                                DesktopServerLibraries.saveDefault(updated).onSuccess {
+                                    serverLibrary = updated
+                                    serverLibraryMessage = "Server deleted."
+                                }
+                            }) { Text("Delete") }
                         }
                     }
                     Text(serverLibraryMessage)
