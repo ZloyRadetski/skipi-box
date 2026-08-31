@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.getCopyTextOrNull
 import features.proxy.server.model.getTransportDisplay
+import features.subscription.isValidManualSubscriptionUrl
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 
@@ -106,7 +107,7 @@ internal fun DesktopProxyHome(
     onAddServer: (ProxyServer<*>) -> Unit,
     onUpdateSubscription: () -> Unit,
     onImportSubscriptionServers: () -> Unit,
-    onSaveSubscription: () -> Unit,
+    onSaveSubscription: () -> Boolean,
     onDeleteSubscription: (Int) -> Unit,
     contentPadding: androidx.compose.foundation.layout.PaddingValues,
 ) {
@@ -280,8 +281,9 @@ internal fun DesktopProxyHome(
             onUpdateSubscription = onUpdateSubscription,
             onImportSubscriptionServers = onImportSubscriptionServers,
             onSaveSubscription = {
-                onSaveSubscription()
-                addDialogVisible = false
+                val saved = onSaveSubscription()
+                if (saved) addDialogVisible = false
+                saved
             },
             onDismiss = { addDialogVisible = false },
         )
@@ -615,12 +617,13 @@ private fun AddProxyDialog(
     onAddServer: (ProxyServer<*>) -> Unit,
     onUpdateSubscription: () -> Unit,
     onImportSubscriptionServers: () -> Unit,
-    onSaveSubscription: () -> Unit,
+    onSaveSubscription: () -> Boolean,
     onDismiss: () -> Unit,
 ) {
     val parsedServer = remember(serverLink) {
         serverLink.trim().takeIf(String::isNotEmpty)?.let { runCatching { ProxyServer.parse(it) } }
     }
+    val subscriptionUrlValid = remember(subscriptionUrl) { subscriptionUrl.isValidManualSubscriptionUrl() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (mode == AddMode.Server) "Добавить сервер" else "Добавить подписку") },
@@ -655,15 +658,22 @@ private fun AddProxyDialog(
                         label = { Text("HTTP/HTTPS ссылка подписки") },
                         singleLine = true,
                     )
-                    Button(onClick = onUpdateSubscription, enabled = subscriptionUrl.isNotBlank()) { Text("Проверить и обновить") }
+                    if (subscriptionUrl.isNotBlank() && !subscriptionUrlValid) {
+                        Text("Укажите корректную HTTP/HTTPS ссылку.", color = HomeRed)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { onSaveSubscription() }, enabled = subscriptionUrlValid) {
+                            Text("Добавить подписку")
+                        }
+                        Button(onClick = onUpdateSubscription, enabled = subscriptionUrlValid) {
+                            Text("Проверить и добавить")
+                        }
+                    }
                     if (subscriptionMessage.isNotBlank()) Text(subscriptionMessage, color = HomeMuted)
                     subscriptionUpdate?.let { update ->
                         Text("Найдено серверов: ${update.importResult.servers.size}", color = HomeGreen)
                         if (update.importResult.servers.isNotEmpty()) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = onImportSubscriptionServers) { Text("Добавить серверы") }
-                                Button(onClick = onSaveSubscription) { Text("Сохранить") }
-                            }
+                            Button(onClick = onImportSubscriptionServers) { Text("Добавить серверы") }
                         }
                     }
                 }

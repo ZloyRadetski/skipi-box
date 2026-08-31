@@ -121,7 +121,11 @@ fun main() = application {
                             serverMessage = serverLibraryMessage,
                             subscriptionMessage = subscriptionMessage,
                             onServerLinkChange = { serverLink = it },
-                            onSubscriptionUrlChange = { subscriptionUrl = it },
+                            onSubscriptionUrlChange = { url ->
+                                subscriptionUrl = url
+                                subscriptionUpdate = null
+                                subscriptionMessage = ""
+                            },
                             onToggleTunnel = {
                                 if (xrayProcessState.isRunning) {
                                     xrayController.stop().onSuccess { state ->
@@ -172,15 +176,36 @@ fun main() = application {
                                 }
                             },
                             onUpdateSubscription = {
+                                val requestedUrl = subscriptionUrl.trim()
                                 subscriptionScope.launch {
                                     subscriptionMessage = "Обновление подписки…"
                                     subscriptionUpdate = null
                                     runCatching {
-                                        withContext(Dispatchers.IO) { subscriptionFetcher.fetchAndImport(subscriptionUrl) }
+                                        withContext(Dispatchers.IO) { subscriptionFetcher.fetchAndImport(requestedUrl) }
                                     }.onSuccess { update ->
                                         subscriptionUpdate = update
-                                        subscriptionMessage = "Получено серверов: ${update.importResult.servers.size}; " +
-                                            "отклонено: ${update.importResult.rejectedUrlCount}."
+                                        runCatching {
+                                            DesktopSubscriptionLibraries.addOrReplace(
+                                                library = subscriptionLibrary,
+                                                url = requestedUrl,
+                                                userAgent = DefaultDesktopSubscriptionUserAgent,
+                                                name = update.metadata.profileTitle.orEmpty(),
+                                            )
+                                        }.onSuccess { updated ->
+                                            DesktopSubscriptionLibraries.saveDefault(updated).onSuccess {
+                                                subscriptionLibrary = updated
+                                                subscriptionUrl = requestedUrl
+                                                subscriptionMessage = "Подписка сохранена. Получено серверов: " +
+                                                    "${update.importResult.servers.size}; отклонено: " +
+                                                    "${update.importResult.rejectedUrlCount}."
+                                            }.onFailure { error ->
+                                                subscriptionMessage = "Список получен, но подписка не сохранена: " +
+                                                    error.message.orEmpty()
+                                            }
+                                        }.onFailure { error ->
+                                            subscriptionMessage = "Список получен, но ссылка некорректна: " +
+                                                error.message.orEmpty()
+                                        }
                                     }.onFailure { error ->
                                         subscriptionMessage = "Не удалось обновить подписку: ${error.message.orEmpty()}"
                                     }
@@ -197,24 +222,27 @@ fun main() = application {
                                     serverLibraryMessage = "Не удалось сохранить серверы: ${error.message.orEmpty()}"
                                 }
                             },
-                            onSaveSubscription = {
-                                runCatching {
+                            onSaveSubscription = saveSubscription@{
+                                val updated = runCatching {
                                     DesktopSubscriptionLibraries.addOrReplace(
                                         library = subscriptionLibrary,
                                         url = subscriptionUrl,
                                         userAgent = DefaultDesktopSubscriptionUserAgent,
                                         name = subscriptionUpdate?.metadata?.profileTitle.orEmpty(),
                                     )
-                                }.onSuccess { updated ->
-                                    DesktopSubscriptionLibraries.saveDefault(updated).onSuccess {
-                                        subscriptionLibrary = updated
-                                        subscriptionMessage = "Подписка сохранена."
-                                    }.onFailure { error ->
-                                        subscriptionMessage = "Не удалось сохранить подписку: ${error.message.orEmpty()}"
-                                    }
-                                }.onFailure { error ->
+                                }.getOrElse { error ->
                                     subscriptionMessage = "Некорректная подписка: ${error.message.orEmpty()}"
+                                    return@saveSubscription false
                                 }
+                                val saveResult = DesktopSubscriptionLibraries.saveDefault(updated)
+                                saveResult.onSuccess {
+                                    subscriptionLibrary = updated
+                                    subscriptionUrl = subscriptionUrl.trim()
+                                    subscriptionMessage = "Подписка сохранена."
+                                }.onFailure { error ->
+                                    subscriptionMessage = "Не удалось сохранить подписку: ${error.message.orEmpty()}"
+                                }
+                                saveResult.isSuccess
                             },
                             onDeleteSubscription = { subscriptionId ->
                                 val updated = DesktopSubscriptionLibraries.remove(subscriptionLibrary, subscriptionId)

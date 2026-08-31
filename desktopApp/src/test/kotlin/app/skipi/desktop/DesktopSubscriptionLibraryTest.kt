@@ -19,4 +19,17 @@ class DesktopSubscriptionLibraryTest {
     @Test fun rejects_invalid_urls() {
         assertFailsWith<IllegalArgumentException> { DesktopSubscriptionLibraries.addOrReplace(DesktopSubscriptionLibrary(), "file:///bad", "SKIPI") }
     }
+
+    @Test fun normalizes_manual_url_before_replacing() {
+        val first = DesktopSubscriptionLibraries.addOrReplace(
+            DesktopSubscriptionLibrary(),
+            "  https://example.com/sub  ",
+            "SKIPI",
+        )
+        val updated = DesktopSubscriptionLibraries.addOrReplace(first, "https://example.com/sub", "Updated")
+
+        assertEquals(1, updated.subscriptions.size)
+        assertEquals("https://example.com/sub", updated.subscriptions.single().url)
+        assertEquals("Updated", updated.subscriptions.single().userAgent)
+    }
 }

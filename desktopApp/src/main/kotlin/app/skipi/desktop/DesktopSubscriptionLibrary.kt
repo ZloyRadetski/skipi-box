@@ -50,9 +50,15 @@ object DesktopSubscriptionLibraries {
     }
 
     fun addOrReplace(library: DesktopSubscriptionLibrary, url: String, userAgent: String, name: String = ""): DesktopSubscriptionLibrary {
-        require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        val existing = library.subscriptions.firstOrNull { it.url == url }
-        val stored = DesktopStoredSubscription(existing?.id ?: (library.subscriptions.maxOfOrNull { it.id } ?: 0) + 1, url.trim(), userAgent, name)
+        val normalizedUrl = url.trim()
+        require(normalizedUrl.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
+        val existing = library.subscriptions.firstOrNull { it.url == normalizedUrl }
+        val stored = DesktopStoredSubscription(
+            existing?.id ?: (library.subscriptions.maxOfOrNull { it.id } ?: 0) + 1,
+            normalizedUrl,
+            userAgent,
+            name,
+        )
         return library.copy(subscriptions = library.subscriptions.filterNot { it.id == stored.id } + stored)
     }
 
