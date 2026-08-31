@@ -26,6 +26,8 @@ class DesktopServerLibraryTest {
             assertEquals(1, restored.selectedServerId)
             assertEquals(1, restored.servers.size)
             assertEquals("Desktop", assertIs<VLESS>(restored.servers.single().decode().getOrThrow()).remarks)
+            assertEquals(0, DesktopServerLibraries.remove(restored, 1).servers.size)
+            assertEquals(null, DesktopServerLibraries.remove(restored, 1).selectedServerId)
         } finally {
             Files.deleteIfExists(path)
         }

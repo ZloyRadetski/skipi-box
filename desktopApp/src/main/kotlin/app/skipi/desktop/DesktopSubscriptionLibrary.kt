@@ -55,4 +55,7 @@ object DesktopSubscriptionLibraries {
         val stored = DesktopStoredSubscription(existing?.id ?: (library.subscriptions.maxOfOrNull { it.id } ?: 0) + 1, url.trim(), userAgent, name)
         return library.copy(subscriptions = library.subscriptions.filterNot { it.id == stored.id } + stored)
     }
+
+    fun remove(library: DesktopSubscriptionLibrary, subscriptionId: Int): DesktopSubscriptionLibrary =
+        library.copy(subscriptions = library.subscriptions.filterNot { it.id == subscriptionId })
 }

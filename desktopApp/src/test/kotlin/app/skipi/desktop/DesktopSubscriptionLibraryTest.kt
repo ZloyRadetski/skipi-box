@@ -13,6 +13,7 @@ class DesktopSubscriptionLibraryTest {
         DesktopSubscriptionLibraries.save(path, updated).getOrThrow()
         val stored = DesktopSubscriptionLibraries.load(path).getOrThrow().subscriptions.single()
         assertEquals("Agent", stored.userAgent); assertEquals("Provider", stored.name)
+        assertEquals(0, DesktopSubscriptionLibraries.remove(updated, stored.id).subscriptions.size)
     }
 
     @Test fun rejects_invalid_urls() {

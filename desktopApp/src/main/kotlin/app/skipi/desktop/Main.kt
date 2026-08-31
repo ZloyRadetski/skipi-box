@@ -6,6 +6,8 @@ package app.skipi.desktop
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -68,7 +70,7 @@ fun main() = application {
                 var subscriptionLibraryMessage by remember {
                     mutableStateOf("Saved subscriptions: ${DesktopSubscriptionLibraries.defaultPath()}")
                 }
-                var currentSection by remember { mutableStateOf(DesktopSection.Home) }
+                var currentSection by remember { mutableStateOf(DesktopSection.Proxy) }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
                 }
@@ -105,13 +107,13 @@ fun main() = application {
                         }
                     },
                 ) { contentPadding ->
-                    if (currentSection == DesktopSection.Settings) {
+                    if (currentSection == DesktopSection.Configs) {
                         Column(
                             modifier = Modifier.fillMaxSize().padding(contentPadding).padding(24.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            Text("Settings", style = MaterialTheme.typography.headlineMedium)
-                            Text("Profiles and local tunnel settings")
+                            Text("Configs", style = MaterialTheme.typography.headlineMedium)
+                            Text("Shadowrocket / SKIPI traffic configurations")
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(onClick = {
                                     DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
@@ -123,12 +125,52 @@ fun main() = application {
                                 Button(enabled = profilePath != null, onClick = {
                                     profilePath?.let { path -> DesktopProfileFiles.write(path, profileText).onSuccess { fileMessage = "Saved ${path.fileName}" } }
                                 }) { Text("Save") }
+                                Button(onClick = {
+                                    DesktopProfileFiles.chooseProfileToSave()?.let { path ->
+                                        DesktopProfileFiles.write(path, profileText).onSuccess {
+                                            profilePath = path; fileMessage = "Saved ${path.fileName}"
+                                        }.onFailure { error -> fileMessage = "Could not save profile: ${error.message.orEmpty()}" }
+                                    }
+                                }) { Text("Save as…") }
                             }
                             Text(fileMessage)
+                            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                                Text("Rules: ${profile.rules.size}")
+                                Text("Proxy groups: ${profile.proxyGroups.size}")
+                                Text("Diagnostics: ${profile.diagnostics.size}")
+                            }
                             OutlinedTextField(value = profileText, onValueChange = { profileText = it }, modifier = Modifier.fillMaxWidth().weight(1f), label = { Text("Shadowrocket / SKIPI profile") })
                         }
+                    } else if (currentSection == DesktopSection.Settings) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(contentPadding).padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Text("Settings", style = MaterialTheme.typography.headlineMedium)
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Local proxy", style = MaterialTheme.typography.titleLarge)
+                                    Text("SOCKS5 • 127.0.0.1:$DefaultLocalSocksPort")
+                                    Text(if (xrayProcessState.isRunning) "Running" else "Stopped")
+                                }
+                            }
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Storage", style = MaterialTheme.typography.titleLarge)
+                                    Text("Servers: ${DesktopServerLibraries.defaultPath()}")
+                                    Text("Subscriptions: ${DesktopSubscriptionLibraries.defaultPath()}")
+                                }
+                            }
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Core", style = MaterialTheme.typography.titleLarge)
+                                    Text("Android: SKIPI Core")
+                                    Text("Desktop: bundled Xray adapter")
+                                }
+                            }
+                        }
                     } else Column(
-                    modifier = Modifier.fillMaxSize().padding(contentPadding).padding(24.dp),
+                    modifier = Modifier.fillMaxSize().padding(contentPadding).verticalScroll(rememberScrollState()).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text("SKIPI Desktop", style = MaterialTheme.typography.headlineMedium)
@@ -178,56 +220,6 @@ fun main() = application {
                         }
                     }
                     Text("Subscriptions", style = MaterialTheme.typography.titleLarge)
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = {
-                            DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
-                                DesktopProfileFiles.read(path).onSuccess { content ->
-                                    profileText = content
-                                    profilePath = path
-                                    fileMessage = "Opened ${path.fileName}"
-                                }.onFailure { error ->
-                                    fileMessage = "Could not open profile: ${error.message.orEmpty()}"
-                                }
-                            }
-                        }) {
-                            Text("Open .conf")
-                        }
-                        Button(
-                            enabled = profilePath != null,
-                            onClick = {
-                                val path = profilePath ?: return@Button
-                                DesktopProfileFiles.write(path, profileText).onSuccess {
-                                    fileMessage = "Saved ${path.fileName}"
-                                }.onFailure { error ->
-                                    fileMessage = "Could not save profile: ${error.message.orEmpty()}"
-                                }
-                            },
-                        ) {
-                            Text("Save")
-                        }
-                        Button(onClick = {
-                            DesktopProfileFiles.chooseProfileToSave()?.let { path ->
-                                DesktopProfileFiles.write(path, profileText).onSuccess {
-                                    profilePath = path
-                                    fileMessage = "Saved ${path.fileName}"
-                                }.onFailure { error ->
-                                    fileMessage = "Could not save profile: ${error.message.orEmpty()}"
-                                }
-                            }
-                        }) {
-                            Text("Save as…")
-                        }
-                    }
-                    Text(fileMessage)
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                        Text("Rules: ${profile.rules.size}")
-                        Text("Proxy groups: ${profile.proxyGroups.size}")
-                        Text("Diagnostics: ${profile.diagnostics.size}")
-                    }
-
-                    Text("Servers", style = MaterialTheme.typography.titleLarge)
                     OutlinedTextField(
                         value = subscriptionUrl,
                         onValueChange = { subscriptionUrl = it },
@@ -309,7 +301,7 @@ fun main() = application {
                         metadata.announce?.let { Text("Announcement: $it") }
                     }
                     Text("Subscriptions: ${subscriptionLibrary.subscriptions.size}")
-                    subscriptionLibrary.subscriptions.take(3).forEach { subscription ->
+                    subscriptionLibrary.subscriptions.forEach { subscription ->
                         Button(onClick = {
                             subscriptionUrl = subscription.url
                             subscriptionLibraryMessage = "Selected ${subscription.name.ifBlank { subscription.url }}."
@@ -317,9 +309,9 @@ fun main() = application {
                             Text(subscription.name.ifBlank { subscription.url })
                         }
                     }
-                    if (subscriptionLibrary.subscriptions.size > 3) Text("Showing the first 3 subscriptions.")
                     Text(subscriptionLibraryMessage)
 
+                    Text("Servers", style = MaterialTheme.typography.titleLarge)
                     OutlinedTextField(
                         value = serverLink,
                         onValueChange = { serverLink = it },
@@ -352,7 +344,7 @@ fun main() = application {
                     }
 
                     Text("Saved servers: ${serverLibrary.servers.size}")
-                    serverLibrary.servers.take(3).forEach { stored ->
+                    serverLibrary.servers.forEach { stored ->
                         val storedServer = stored.decode().getOrNull()
                         val info = storedServer?.getInfo()
                         Button(onClick = {
@@ -368,7 +360,6 @@ fun main() = application {
                             Text(marker + (info?.let { "${it.remarks} — ${it.address}" } ?: "Unreadable saved server ${stored.id}"))
                         }
                     }
-                    if (serverLibrary.servers.size > 3) Text("Showing the first 3 saved servers.")
                     Text(serverLibraryMessage)
                     when {
                         selectedServerConfig == null -> Text("Select a saved server to prepare a local tunnel configuration.")
@@ -387,6 +378,7 @@ fun main() = application {
 }
 
 private enum class DesktopSection(val title: String, val symbol: String) {
-    Home("Home", "●"),
+    Proxy("Proxy", "●"),
+    Configs("Configs", "◇"),
     Settings("Settings", "⚙"),
 }

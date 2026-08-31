@@ -91,6 +91,13 @@ object DesktopServerLibraries {
         return library.copy(selectedServerId = serverId)
     }
 
+    fun remove(library: DesktopServerLibrary, serverId: Int): DesktopServerLibrary {
+        return library.copy(
+            selectedServerId = library.selectedServerId.takeIf { it != serverId },
+            servers = library.servers.filterNot { it.id == serverId },
+        ).normalized()
+    }
+
     private fun DesktopServerLibrary.normalized(): DesktopServerLibrary {
         val distinctServers = servers.distinctBy(DesktopStoredProxyServer::id)
         val selected = selectedServerId?.takeIf { selectedId -> distinctServers.any { it.id == selectedId } }
