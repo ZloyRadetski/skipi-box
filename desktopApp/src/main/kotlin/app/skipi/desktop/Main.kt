@@ -54,6 +54,12 @@ fun main() = application {
                 var subscriptionUrl by remember { mutableStateOf("") }
                 var subscriptionUpdate by remember { mutableStateOf<DesktopSubscriptionUpdate?>(null) }
                 var subscriptionMessage by remember { mutableStateOf("") }
+                var subscriptionLibrary by remember {
+                    mutableStateOf(DesktopSubscriptionLibraries.loadDefault().getOrElse { DesktopSubscriptionLibrary() })
+                }
+                var subscriptionLibraryMessage by remember {
+                    mutableStateOf("Saved subscriptions: ${DesktopSubscriptionLibraries.defaultPath()}")
+                }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
                 }
@@ -174,6 +180,30 @@ fun main() = application {
                                 Text("Add ${importResult.servers.size} servers")
                             }
                         }
+                        if (subscriptionUpdate != null) {
+                            Button(onClick = {
+                                val updated = runCatching {
+                                    DesktopSubscriptionLibraries.addOrReplace(
+                                        library = subscriptionLibrary,
+                                        url = subscriptionUrl,
+                                        userAgent = DefaultDesktopSubscriptionUserAgent,
+                                        name = subscriptionUpdate?.metadata?.profileTitle.orEmpty(),
+                                    )
+                                }
+                                updated.onSuccess { library ->
+                                    DesktopSubscriptionLibraries.saveDefault(library).onSuccess {
+                                        subscriptionLibrary = library
+                                        subscriptionLibraryMessage = "Subscription saved."
+                                    }.onFailure { error ->
+                                        subscriptionLibraryMessage = "Could not save subscription: ${error.message.orEmpty()}"
+                                    }
+                                }.onFailure { error ->
+                                    subscriptionLibraryMessage = "Could not save subscription: ${error.message.orEmpty()}"
+                                }
+                            }) {
+                                Text("Save subscription")
+                            }
+                        }
                     }
                     if (subscriptionMessage.isNotBlank()) Text(subscriptionMessage)
                     subscriptionUpdate?.metadata?.let { metadata ->
@@ -186,6 +216,17 @@ fun main() = application {
                         }
                         metadata.announce?.let { Text("Announcement: $it") }
                     }
+                    Text("Subscriptions: ${subscriptionLibrary.subscriptions.size}")
+                    subscriptionLibrary.subscriptions.take(3).forEach { subscription ->
+                        Button(onClick = {
+                            subscriptionUrl = subscription.url
+                            subscriptionLibraryMessage = "Selected ${subscription.name.ifBlank { subscription.url }}."
+                        }) {
+                            Text(subscription.name.ifBlank { subscription.url })
+                        }
+                    }
+                    if (subscriptionLibrary.subscriptions.size > 3) Text("Showing the first 3 subscriptions.")
+                    Text(subscriptionLibraryMessage)
 
                     OutlinedTextField(
                         value = serverLink,
