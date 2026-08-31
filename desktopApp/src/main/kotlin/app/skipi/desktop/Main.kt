@@ -14,6 +14,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,7 +88,52 @@ fun main() = application {
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text("SKIPI Desktop", style = MaterialTheme.typography.headlineMedium)
-                    Text("Profiles, servers, subscriptions and local tunnel controls.")
+                    Text("Connection")
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                if (xrayProcessState.isRunning) "Connected" else "Not connected",
+                                style = MaterialTheme.typography.headlineSmall,
+                            )
+                            Text(
+                                when {
+                                    selectedServerConfig == null -> "Choose a server to connect"
+                                    selectedServerConfig.isFailure -> selectedServerConfig.exceptionOrNull()?.message.orEmpty()
+                                    else -> "${serverLibrary.servers.size} servers available • local SOCKS 127.0.0.1:$DefaultLocalSocksPort"
+                                },
+                            )
+                            if (selectedServerConfig?.isSuccess == true) {
+                                Button(onClick = {
+                                    if (xrayProcessState.isRunning) {
+                                        xrayController.stop().onSuccess { state ->
+                                            xrayProcessState = state
+                                            xrayProcessMessage = "Local Xray tunnel stopped."
+                                        }.onFailure { error ->
+                                            xrayProcessMessage = "Could not stop Xray: ${error.message.orEmpty()}"
+                                        }
+                                    } else {
+                                        val config = selectedServerConfig.getOrNull() ?: return@Button
+                                        xrayController.start(config).onSuccess { state ->
+                                            xrayProcessState = state
+                                            xrayProcessMessage = "Local Xray tunnel started (PID ${state.pid})."
+                                        }.onFailure { error ->
+                                            xrayProcessMessage = "Could not start Xray: ${error.message.orEmpty()}"
+                                        }
+                                    }
+                                }) {
+                                    Text(if (xrayProcessState.isRunning) "Disconnect" else "Connect")
+                                }
+                            }
+                            if (xrayProcessMessage.isNotBlank()) Text(xrayProcessMessage)
+                        }
+                    }
+                    Text("Subscriptions", style = MaterialTheme.typography.titleLarge)
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = {
@@ -136,6 +183,7 @@ fun main() = application {
                         Text("Diagnostics: ${profile.diagnostics.size}")
                     }
 
+                    Text("Servers", style = MaterialTheme.typography.titleLarge)
                     OutlinedTextField(
                         value = subscriptionUrl,
                         onValueChange = { subscriptionUrl = it },
@@ -287,30 +335,7 @@ fun main() = application {
                             "Selected server cannot start yet: ${selectedServerConfig.exceptionOrNull()?.message.orEmpty()}",
                         )
                     }
-                    if (selectedServerConfig?.isSuccess == true) {
-                        Button(onClick = {
-                            if (xrayProcessState.isRunning) {
-                                xrayController.stop().onSuccess { state ->
-                                    xrayProcessState = state
-                                    xrayProcessMessage = "Local Xray tunnel stopped."
-                                }.onFailure { error ->
-                                    xrayProcessMessage = "Could not stop Xray: ${error.message.orEmpty()}"
-                                }
-                            } else {
-                                val config = selectedServerConfig.getOrNull() ?: return@Button
-                                xrayController.start(config).onSuccess { state ->
-                                    xrayProcessState = state
-                                    xrayProcessMessage = "Local Xray tunnel started (PID ${state.pid})."
-                                }.onFailure { error ->
-                                    xrayProcessMessage = "Could not start Xray: ${error.message.orEmpty()}"
-                                }
-                            }
-                        }) {
-                            Text(if (xrayProcessState.isRunning) "Stop local tunnel" else "Start local tunnel")
-                        }
-                    }
-                    if (xrayProcessMessage.isNotBlank()) Text(xrayProcessMessage)
-
+                    Text("Profile settings", style = MaterialTheme.typography.titleLarge)
                     OutlinedTextField(
                         value = profileText,
                         onValueChange = { profileText = it },
