@@ -16,6 +16,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +41,7 @@ import platform.DefaultLocalSocksPort
 import platform.LocalProxyXrayConfigFactory
 import java.nio.file.Path
 
+@OptIn(ExperimentalMaterial3Api::class)
 fun main() = application {
     val xrayController = remember { DesktopXrayProcessController() }
     Window(
@@ -62,6 +68,7 @@ fun main() = application {
                 var subscriptionLibraryMessage by remember {
                     mutableStateOf("Saved subscriptions: ${DesktopSubscriptionLibraries.defaultPath()}")
                 }
+                var currentSection by remember { mutableStateOf(DesktopSection.Home) }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
                 }
@@ -83,8 +90,45 @@ fun main() = application {
                         ?.mapCatching(LocalProxyXrayConfigFactory::build)
                 }
 
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                Scaffold(
+                    topBar = { TopAppBar(title = { Text("SKIPI") }) },
+                    bottomBar = {
+                        NavigationBar {
+                            DesktopSection.entries.forEach { section ->
+                                NavigationBarItem(
+                                    selected = currentSection == section,
+                                    onClick = { currentSection = section },
+                                    icon = { Text(section.symbol) },
+                                    label = { Text(section.title) },
+                                )
+                            }
+                        }
+                    },
+                ) { contentPadding ->
+                    if (currentSection == DesktopSection.Settings) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(contentPadding).padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Text("Settings", style = MaterialTheme.typography.headlineMedium)
+                            Text("Profiles and local tunnel settings")
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(onClick = {
+                                    DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
+                                        DesktopProfileFiles.read(path).onSuccess { content ->
+                                            profileText = content; profilePath = path; fileMessage = "Opened ${path.fileName}"
+                                        }.onFailure { error -> fileMessage = "Could not open profile: ${error.message.orEmpty()}" }
+                                    }
+                                }) { Text("Open .conf") }
+                                Button(enabled = profilePath != null, onClick = {
+                                    profilePath?.let { path -> DesktopProfileFiles.write(path, profileText).onSuccess { fileMessage = "Saved ${path.fileName}" } }
+                                }) { Text("Save") }
+                            }
+                            Text(fileMessage)
+                            OutlinedTextField(value = profileText, onValueChange = { profileText = it }, modifier = Modifier.fillMaxWidth().weight(1f), label = { Text("Shadowrocket / SKIPI profile") })
+                        }
+                    } else Column(
+                    modifier = Modifier.fillMaxSize().padding(contentPadding).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text("SKIPI Desktop", style = MaterialTheme.typography.headlineMedium)
@@ -335,15 +379,14 @@ fun main() = application {
                             "Selected server cannot start yet: ${selectedServerConfig.exceptionOrNull()?.message.orEmpty()}",
                         )
                     }
-                    Text("Profile settings", style = MaterialTheme.typography.titleLarge)
-                    OutlinedTextField(
-                        value = profileText,
-                        onValueChange = { profileText = it },
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        label = { Text("Shadowrocket / SKIPI profile") },
-                    )
+                }
                 }
             }
         }
     }
+}
+
+private enum class DesktopSection(val title: String, val symbol: String) {
+    Home("Home", "●"),
+    Settings("Settings", "⚙"),
 }
