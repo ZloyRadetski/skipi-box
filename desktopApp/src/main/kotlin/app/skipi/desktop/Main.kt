@@ -3,15 +3,22 @@
 
 package app.skipi.desktop
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,9 +36,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import androidx.compose.ui.unit.DpSize
 import features.config.analyzeShadowrocketConfig
 import features.config.defaultShadowrocketConfig
 import features.proxy.server.model.ProxyServer
@@ -47,14 +61,15 @@ import java.nio.file.Path
 fun main() = application {
     val xrayController = remember { DesktopXrayProcessController() }
     Window(
+        state = WindowState(size = DpSize(1180.dp, 860.dp)),
         onCloseRequest = {
             xrayController.stop()
             exitApplication()
         },
         title = "SKIPI",
     ) {
-        MaterialTheme {
-            Surface(modifier = Modifier.fillMaxSize()) {
+        MaterialTheme(colorScheme = SkipiDesktopColors) {
+            Surface(modifier = Modifier.fillMaxSize(), color = SkipiBackground) {
                 val subscriptionScope = rememberCoroutineScope()
                 val subscriptionFetcher = remember { DesktopSubscriptionFetcher() }
                 var profileText by remember { mutableStateOf(defaultShadowrocketConfig()) }
@@ -72,6 +87,7 @@ fun main() = application {
                     mutableStateOf("Saved subscriptions: ${DesktopSubscriptionLibraries.defaultPath()}")
                 }
                 var currentSection by remember { mutableStateOf(DesktopSection.Proxy) }
+                var showAddPanel by remember { mutableStateOf(false) }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
                 }
@@ -94,7 +110,9 @@ fun main() = application {
                 }
 
                 Scaffold(
-                    topBar = { TopAppBar(title = { Text("SKIPI") }) },
+                    topBar = {
+                        if (currentSection != DesktopSection.Proxy) TopAppBar(title = { Text("SKIPI") })
+                    },
                     bottomBar = {
                         NavigationBar {
                             DesktopSection.entries.forEach { section ->
@@ -191,30 +209,29 @@ fun main() = application {
                             }
                         }
                     } else Column(
-                    modifier = Modifier.fillMaxSize().padding(contentPadding).verticalScroll(rememberScrollState()).padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize().padding(contentPadding).verticalScroll(rememberScrollState()).padding(horizontal = 28.dp, vertical = 18.dp).widthIn(max = 980.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Text("SKIPI Desktop", style = MaterialTheme.typography.headlineMedium)
-                    Text("Connection")
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("SKIPI", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                        Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("⌛", style = MaterialTheme.typography.headlineMedium)
+                            Button(onClick = { showAddPanel = !showAddPanel }) { Text("＋", style = MaterialTheme.typography.headlineSmall) }
+                            Text("⋮", style = MaterialTheme.typography.headlineLarge)
+                        }
+                    }
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        shape = RoundedCornerShape(34.dp),
+                        colors = CardDefaults.cardColors(containerColor = SkipiCard),
                     ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                if (xrayProcessState.isRunning) "Connected" else "Not connected",
-                                style = MaterialTheme.typography.headlineSmall,
-                            )
-                            Text(
-                                when {
-                                    selectedServerConfig == null -> "Choose a server to connect"
-                                    selectedServerConfig.isFailure -> selectedServerConfig.exceptionOrNull()?.message.orEmpty()
-                                    else -> "${serverLibrary.servers.size} servers available • local SOCKS 127.0.0.1:$DefaultLocalSocksPort"
-                                },
-                            )
+                        Row(modifier = Modifier.padding(28.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+                            Box(modifier = Modifier.size(118.dp).background(SkipiPowerSurface, CircleShape), contentAlignment = Alignment.Center) {
+                                Text("⏻", style = MaterialTheme.typography.displayMedium, color = if (xrayProcessState.isRunning) SkipiGreen else SkipiMuted)
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(if (xrayProcessState.isRunning) "ПОДКЛЮЧЕНО" else "ОТКЛЮЧЕНО", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black)
+                                Text(if (xrayProcessState.isRunning) "Нажмите для отключения" else "Нажмите для подключения", style = MaterialTheme.typography.titleLarge, color = SkipiMuted)
                             if (selectedServerConfig?.isSuccess == true) {
                                 Button(onClick = {
                                     if (xrayProcessState.isRunning) {
@@ -234,18 +251,20 @@ fun main() = application {
                                         }
                                     }
                                 }) {
-                                    Text(if (xrayProcessState.isRunning) "Disconnect" else "Connect")
+                                    Text(if (xrayProcessState.isRunning) "Отключить" else "Подключить")
                                 }
                             }
                             if (xrayProcessMessage.isNotBlank()) Text(xrayProcessMessage)
+                            }
                         }
                     }
-                    Text("Subscriptions", style = MaterialTheme.typography.titleLarge)
+                    Text("Группы прокси", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    if (showAddPanel) {
                     OutlinedTextField(
                         value = subscriptionUrl,
                         onValueChange = { subscriptionUrl = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Subscription URL (HTTP/HTTPS)") },
+                        label = { Text("Ссылка подписки HTTP/HTTPS") },
                         singleLine = true,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -266,7 +285,7 @@ fun main() = application {
                                 }
                             }
                         }) {
-                            Text("Update subscription")
+                            Text("Обновить подписку")
                         }
                         val importResult = subscriptionUpdate?.importResult
                         if (importResult?.servers?.isNotEmpty() == true) {
@@ -282,7 +301,7 @@ fun main() = application {
                                     serverLibraryMessage = "Could not save subscription servers: ${error.message.orEmpty()}"
                                 }
                             }) {
-                                Text("Add ${importResult.servers.size} servers")
+                                Text("Добавить ${importResult.servers.size}")
                             }
                         }
                         if (subscriptionUpdate != null) {
@@ -306,9 +325,10 @@ fun main() = application {
                                     subscriptionLibraryMessage = "Could not save subscription: ${error.message.orEmpty()}"
                                 }
                             }) {
-                                Text("Save subscription")
+                                Text("Сохранить подписку")
                             }
                         }
+                    }
                     }
                     if (subscriptionMessage.isNotBlank()) Text(subscriptionMessage)
                     subscriptionUpdate?.metadata?.let { metadata ->
@@ -321,9 +341,10 @@ fun main() = application {
                         }
                         metadata.announce?.let { Text("Announcement: $it") }
                     }
-                    Text("Subscriptions: ${subscriptionLibrary.subscriptions.size}")
+                    Text("Подписок: ${subscriptionLibrary.subscriptions.size}", color = SkipiMuted)
                     subscriptionLibrary.subscriptions.forEach { subscription ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = SkipiCard)) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(18.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Button(onClick = {
                                 subscriptionUrl = subscription.url
                                 subscriptionLibraryMessage = "Selected ${subscription.name.ifBlank { subscription.url }}."
@@ -334,17 +355,19 @@ fun main() = application {
                                     subscriptionLibrary = updated
                                     subscriptionLibraryMessage = "Subscription deleted."
                                 }
-                            }) { Text("Delete") }
+                            }) { Text("Удалить") }
+                        }
                         }
                     }
                     Text(subscriptionLibraryMessage)
 
-                    Text("Servers", style = MaterialTheme.typography.titleLarge)
+                    Text("Серверы", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    if (showAddPanel) {
                     OutlinedTextField(
                         value = serverLink,
                         onValueChange = { serverLink = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Server link preview (vless://, vmess://, ss://, …)") },
+                        label = { Text("Ссылка сервера vless://, vmess://, ss:// …") },
                         singleLine = true,
                     )
                     when {
@@ -366,16 +389,23 @@ fun main() = application {
                                     serverLibraryMessage = "Could not save the server library: ${error.message.orEmpty()}"
                                 }
                             }) {
-                                Text("Add to library")
+                                Text("Добавить сервер")
                             }
                         }
                     }
+                    }
 
-                    Text("Saved servers: ${serverLibrary.servers.size}")
+                    Text("Серверов: ${serverLibrary.servers.size}", color = SkipiMuted)
                     serverLibrary.servers.forEach { stored ->
                         val storedServer = stored.decode().getOrNull()
                         val info = storedServer?.getInfo()
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val selected = stored.id == serverLibrary.selectedServerId
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(26.dp),
+                            colors = CardDefaults.cardColors(containerColor = if (selected) SkipiSelectedCard else SkipiCard),
+                        ) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Button(onClick = {
                                 val updated = DesktopServerLibraries.select(serverLibrary, stored.id)
                                 DesktopServerLibraries.saveDefault(updated).onSuccess {
@@ -385,8 +415,8 @@ fun main() = application {
                                     serverLibraryMessage = "Could not save the server selection: ${error.message.orEmpty()}"
                                 }
                             }) {
-                                val marker = if (stored.id == serverLibrary.selectedServerId) "✓ " else ""
-                                Text(marker + (info?.let { "${it.remarks} — ${it.address}" } ?: "Unreadable saved server ${stored.id}"))
+                                val marker = if (selected) "✓ " else "⚡ "
+                                Text(marker + (info?.let { "${it.remarks}\n${it.protocol} • ${it.address}" } ?: "Нечитаемый сервер ${stored.id}"))
                             }
                             Button(onClick = {
                                 val updated = DesktopServerLibraries.remove(serverLibrary, stored.id)
@@ -394,7 +424,8 @@ fun main() = application {
                                     serverLibrary = updated
                                     serverLibraryMessage = "Server deleted."
                                 }
-                            }) { Text("Delete") }
+                            }) { Text("Удалить") }
+                        }
                         }
                     }
                     Text(serverLibraryMessage)
@@ -415,7 +446,24 @@ fun main() = application {
 }
 
 private enum class DesktopSection(val title: String, val symbol: String) {
-    Proxy("Proxy", "●"),
-    Configs("Configs", "◇"),
-    Settings("Settings", "⚙"),
+    Proxy("Прокси", "☷"),
+    Configs("Конфиги", "◖"),
+    Settings("Настройки", "⬡"),
 }
+
+private val SkipiBackground = Color(0xFF141519)
+private val SkipiCard = Color(0xFF202126)
+private val SkipiSelectedCard = Color(0xFF727272)
+private val SkipiPowerSurface = Color(0xFF292B31)
+private val SkipiMuted = Color(0xFF9A9DA8)
+private val SkipiGreen = Color(0xFF58D27A)
+private val SkipiDesktopColors = darkColorScheme(
+    background = SkipiBackground,
+    surface = SkipiCard,
+    surfaceContainer = SkipiCard,
+    primary = Color(0xFFF1F1F3),
+    onPrimary = Color(0xFF202126),
+    onBackground = Color(0xFFF1F1F3),
+    onSurface = Color(0xFFF1F1F3),
+    secondary = SkipiMuted,
+)
