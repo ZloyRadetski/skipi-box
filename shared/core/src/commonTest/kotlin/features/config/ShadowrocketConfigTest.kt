@@ -29,6 +29,32 @@ class ShadowrocketConfigTest {
     }
 
     @Test
+    fun portableSectionValueEditKeepsAndroidSpecificMetadataAndComments() {
+        val original = """
+            [SKIPI]
+            # kept for Android
+            profile-name = Phone profile
+            enable-fake-dns = true
+            profile-update-url = https://old.example/config
+            profile-update-url = https://effective.example/config
+
+            [MITM]
+            hostname = example.com
+        """.trimIndent() + "\n"
+
+        val updated = original
+            .withShadowrocketSectionValue("SKIPI", "profile-name", "Desktop profile")
+            .withShadowrocketSectionValue("SKIPI", "profile-update-locked", "true")
+
+        assertEquals("Desktop profile", updated.shadowrocketSectionValue("skipi", "profile-name"))
+        assertEquals("https://effective.example/config", updated.shadowrocketSectionValue("SKIPI", "profile-update-url"))
+        assertEquals("true", updated.shadowrocketSectionValue("SKIPI", "profile-update-locked"))
+        assertTrue(updated.contains("# kept for Android"))
+        assertTrue(updated.contains("enable-fake-dns = true"))
+        assertTrue(updated.contains("[MITM]\nhostname = example.com"))
+    }
+
+    @Test
     fun parserReadsPortableProfileGroupExtensions() {
         val analysis = """
             [Proxy Group]
@@ -54,5 +80,14 @@ class ShadowrocketConfigTest {
 
         assertEquals(2, analysis.rules.size)
         assertTrue(analysis.diagnostics.any { it.severity == ShadowrocketConfigDiagnosticSeverity.Error })
+    }
+
+    @Test
+    fun decodesPortableInlineSkipiConfigPayload() {
+        assertEquals(
+            "[Rule]\nFINAL,PROXY",
+            "W1J1bGVdCkZJTkFMLFBST1hZ".decodeSkipiConfigPayloadOrNull(),
+        )
+        assertEquals(null, "not a config payload".decodeSkipiConfigPayloadOrNull())
     }
 }

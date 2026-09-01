@@ -256,6 +256,86 @@ fun String.withShadowrocketSectionLines(
     return sourceLines.joinToString("\n").trimEnd() + "\n"
 }
 
+/**
+ * Reads the effective value of a simple `key = value` entry from any
+ * Shadowrocket-compatible section. When the key occurs more than once, the
+ * final occurrence wins, matching the way SKIPI reads portable `[SKIPI]`
+ * metadata.
+ */
+fun String.shadowrocketSectionValue(sectionName: String, key: String): String? {
+    val normalizedSectionName = sectionName.trim().lowercase()
+    val normalizedKey = key.trim().lowercase()
+    require(normalizedSectionName.isNotEmpty()) { "Section name must not be blank" }
+    require(normalizedKey.isNotEmpty()) { "Section key must not be blank" }
+
+    return analyzeShadowrocketConfig().sections[normalizedSectionName]
+        .orEmpty()
+        .asReversed()
+        .firstNotNullOfOrNull { line ->
+            val trimmed = line.trim()
+            if (trimmed.isEmpty() || trimmed.startsWith('#') || trimmed.startsWith(';')) return@firstNotNullOfOrNull null
+            val separatorIndex = trimmed.indexOf('=')
+            if (separatorIndex <= 0 || trimmed.substring(0, separatorIndex).trim().lowercase() != normalizedKey) {
+                null
+            } else {
+                trimmed.substring(separatorIndex + 1).trim()
+            }
+        }
+}
+
+/**
+ * Updates one `key = value` entry in an arbitrary section while preserving
+ * every unrelated line, comment and section. This is intentionally separate
+ * from [withShadowrocketSectionLines] for portable `[SKIPI]` metadata: a
+ * desktop client must not discard Android-only settings when it changes the
+ * profile name or its update URL.
+ */
+fun String.withShadowrocketSectionValue(
+    sectionName: String,
+    key: String,
+    value: String,
+): String {
+    val normalizedSectionName = sectionName.trim()
+    val normalizedKey = key.trim().lowercase()
+    require(normalizedSectionName.isNotEmpty()) { "Section name must not be blank" }
+    require(normalizedKey.isNotEmpty()) { "Section key must not be blank" }
+
+    val sourceLines = lines().toMutableList()
+    val headerIndex = sourceLines.indexOfFirst { line ->
+        val trimmed = line.trim()
+        trimmed.startsWith('[') && trimmed.endsWith(']') &&
+            trimmed.substring(1, trimmed.length - 1).trim().equals(normalizedSectionName, ignoreCase = true)
+    }
+    val replacement = "$key = $value"
+
+    if (headerIndex < 0) {
+        if (sourceLines.isNotEmpty() && sourceLines.last().isNotBlank()) sourceLines += ""
+        sourceLines += "[$normalizedSectionName]"
+        sourceLines += replacement
+        return sourceLines.joinToString("\n").trimEnd() + "\n"
+    }
+
+    val sectionEndIndex = sourceLines.drop(headerIndex + 1)
+        .indexOfFirst { line ->
+            val trimmed = line.trim()
+            trimmed.startsWith('[') && trimmed.endsWith(']')
+        }
+        .let { offset -> if (offset < 0) sourceLines.size else headerIndex + 1 + offset }
+    val existingValueIndex = (headerIndex + 1 until sectionEndIndex)
+        .lastOrNull { index ->
+            val trimmed = sourceLines[index].trim()
+            if (trimmed.isEmpty() || trimmed.startsWith('#') || trimmed.startsWith(';')) false
+            else {
+                val separatorIndex = trimmed.indexOf('=')
+                separatorIndex > 0 && trimmed.substring(0, separatorIndex).trim().equals(normalizedKey, ignoreCase = true)
+            }
+        }
+
+    if (existingValueIndex == null) sourceLines.add(sectionEndIndex, replacement)
+    else sourceLines[existingValueIndex] = replacement
+    return sourceLines.joinToString("\n").trimEnd() + "\n"
+}
+
 /** Replaces exactly one parsed rule line and deliberately keeps surrounding comments untouched. */
 fun String.withShadowrocketRuleLine(
     lineNumber: Int,

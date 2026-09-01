@@ -66,9 +66,15 @@ import features.proxy.server.model.getCopyTextOrNull
 import features.proxy.server.model.getTransportDisplay
 import features.subscription.isValidManualSubscriptionUrl
 import java.awt.Toolkit
+import java.awt.Desktop
 import java.awt.datatransfer.StringSelection
+import java.net.URI
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
-private val HomeBackground = Color(0xFF141519)
+private val HomeBackground: Color
+    @Composable get() = DesktopContentBackground
 private val HomeSurface = Color(0xFF202126)
 private val HomeSurfaceRaised = Color(0xFF292B31)
 private val HomeSelected = Color(0xFF737373)
@@ -94,20 +100,26 @@ internal fun DesktopProxyHome(
     subscriptionUpdate: DesktopSubscriptionUpdate?,
     serverLink: String,
     subscriptionUrl: String,
+    updatingSubscription: Boolean,
     running: Boolean,
     canToggleTunnel: Boolean,
     tunnelMessage: String,
     serverMessage: String,
     subscriptionMessage: String,
+    compactConnection: Boolean,
+    confirmDeletion: Boolean,
+    activeProfileName: String?,
+    latencyByServerId: Map<Int, DesktopServerLatencyResult>,
+    testingServerIds: Set<Int>,
     onServerLinkChange: (String) -> Unit,
     onSubscriptionUrlChange: (String) -> Unit,
     onToggleTunnel: () -> Unit,
     onSelectServer: (Int) -> Unit,
     onDeleteServer: (Int) -> Unit,
     onAddServer: (ProxyServer<*>) -> Unit,
+    onUpdateServer: (Int, ProxyServer<*>) -> Unit,
+    onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit,
     onUpdateSubscription: () -> Unit,
-    onImportSubscriptionServers: () -> Unit,
-    onSaveSubscription: () -> Boolean,
     onDeleteSubscription: (Int) -> Unit,
     contentPadding: androidx.compose.foundation.layout.PaddingValues,
 ) {
@@ -119,21 +131,31 @@ internal fun DesktopProxyHome(
     var searchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var localMessage by remember { mutableStateOf("") }
+    var pendingServerDeletion by remember { mutableStateOf<Int?>(null) }
+    var pendingSubscriptionDeletion by remember { mutableStateOf<Int?>(null) }
+    var editingServerId by remember { mutableStateOf<Int?>(null) }
 
     val decodedServers = remember(serverLibrary) {
         serverLibrary.servers.map { stored -> stored to stored.decode().getOrNull() }
     }
     val selectedServer = decodedServers.firstOrNull { (stored, _) -> stored.id == serverLibrary.selectedServerId }?.second
     val selectedTitle = selectedServer?.getInfo()?.remarks.orEmpty().ifBlank { "Выберите сервер" }
-    val activeSubscription = subscriptionLibrary.subscriptions.firstOrNull { it.url == subscriptionUrl }
-        ?: subscriptionLibrary.subscriptions.firstOrNull()
-    val visibleServers = decodedServers.filter { (_, server) ->
+    val activeSubscription = subscriptionUrl.trim().takeIf(String::isNotBlank)?.let { selectedUrl ->
+        subscriptionLibrary.subscriptions.firstOrNull { subscription -> subscription.url == selectedUrl }
+    }
+    val groupedServers = activeSubscription?.let { subscription ->
+        decodedServers.filter { (stored, _) -> stored.subscriptionId == subscription.id }
+    } ?: decodedServers
+    val visibleServers = groupedServers.filter { (_, server) ->
         val query = searchQuery.trim()
         query.isEmpty() || server?.getInfo()?.let { info ->
             info.remarks.contains(query, ignoreCase = true) ||
                 info.address.contains(query, ignoreCase = true) ||
                 info.protocol.contains(query, ignoreCase = true)
         } == true
+    }
+    val visibleTestServers = visibleServers.mapNotNull { (stored, server) ->
+        server?.takeIf { candidate -> candidate.desktopTcpEndpointOrNull() != null }?.let { stored.id to it }
     }
 
     Box(
@@ -147,24 +169,31 @@ internal fun DesktopProxyHome(
             modifier = Modifier
                 .fillMaxSize()
                 .widthIn(max = 980.dp)
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 28.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             HomeHeader(
                 onLatencyClick = {
-                    if (activeSubscription != null) {
-                        onSubscriptionUrlChange(activeSubscription.url)
-                        onUpdateSubscription()
+                    if (visibleTestServers.isNotEmpty()) {
+                        onMeasureServers(visibleTestServers)
                     } else {
-                        localMessage = "Добавьте подписку, чтобы обновить список серверов."
+                        localMessage = "В текущей группе нет серверов для проверки."
+                    }
+                },
+                onRefreshSubscription = activeSubscription?.let { subscription ->
+                    {
+                        onSubscriptionUrlChange(subscription.url)
+                        onUpdateSubscription()
                     }
                 },
                 onAddServer = {
+                    editingServerId = null
+                    onServerLinkChange("")
                     addMode = AddMode.Server
                     addDialogVisible = true
                 },
                 onAddSubscription = {
+                    editingServerId = null
+                    onSubscriptionUrlChange("")
                     addMode = AddMode.Subscription
                     addDialogVisible = true
                 },
@@ -174,18 +203,33 @@ internal fun DesktopProxyHome(
                 onToolsMenuExpandedChange = { toolsMenuExpanded = it },
                 searchVisible = searchVisible,
                 onSearchVisibleChange = { searchVisible = it },
+                testingLatency = testingServerIds.isNotEmpty(),
+                refreshingSubscription = updatingSubscription,
             )
+            Spacer(Modifier.height(14.dp))
+
+            // Android keeps the app row fixed while the proxy list scrolls beneath it.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
 
             ConnectionHeroCard(
                 running = running,
-                enabled = canToggleTunnel || running,
+                enabled = canToggleTunnel,
                 selectedTitle = selectedTitle,
+                compact = compactConnection,
+                activeProfileName = activeProfileName,
                 onToggle = onToggleTunnel,
             )
 
             GroupSelector(
                 title = activeSubscription?.name?.ifBlank { "Подписка" } ?: "Группы прокси",
-                serverCount = serverLibrary.servers.size,
+                serverCount = groupedServers.size,
+                totalServerCount = decodedServers.size,
                 expanded = groupMenuExpanded,
                 onExpandedChange = { groupMenuExpanded = it },
                 subscriptions = subscriptionLibrary.subscriptions,
@@ -208,13 +252,17 @@ internal fun DesktopProxyHome(
             if (activeSubscription != null) {
                 SubscriptionSummaryCard(
                     subscription = activeSubscription,
-                    serverCount = serverLibrary.servers.size,
-                    update = subscriptionUpdate,
+                    serverCount = groupedServers.size,
+                    refreshing = updatingSubscription,
                     onRefresh = {
                         onSubscriptionUrlChange(activeSubscription.url)
                         onUpdateSubscription()
                     },
-                    onDelete = { onDeleteSubscription(activeSubscription.id) },
+                    onDelete = {
+                        if (confirmDeletion) pendingSubscriptionDeletion = activeSubscription.id
+                        else onDeleteSubscription(activeSubscription.id)
+                    },
+                    onMessage = { localMessage = it },
                 )
             }
 
@@ -222,6 +270,8 @@ internal fun DesktopProxyHome(
                 EmptyServerList(
                     hasSearch = searchQuery.isNotBlank(),
                     onAdd = {
+                        editingServerId = null
+                        onServerLinkChange("")
                         addMode = AddMode.Server
                         addDialogVisible = true
                     },
@@ -232,19 +282,31 @@ internal fun DesktopProxyHome(
                         ServerCard(
                             server = server,
                             selected = stored.id == serverLibrary.selectedServerId,
+                            latency = latencyByServerId[stored.id],
+                            testingLatency = stored.id in testingServerIds,
                             onSelect = { onSelectServer(stored.id) },
+                            onTest = { onMeasureServers(listOf(stored.id to server)) },
                             onCopy = {
                                 server.getCopyTextOrNull()?.let { copyText ->
-                                    Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(copyText), null)
-                                    localMessage = "Ссылка сервера скопирована."
+                                    runCatching {
+                                        Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(copyText), null)
+                                    }.onSuccess {
+                                        localMessage = "Ссылка сервера скопирована."
+                                    }.onFailure { error ->
+                                        localMessage = "Не удалось скопировать ссылку: ${error.message.orEmpty()}"
+                                    }
                                 }
                             },
                             onEdit = {
+                                editingServerId = stored.id
                                 server.getCopyTextOrNull()?.let(onServerLinkChange)
                                 addMode = AddMode.Server
                                 addDialogVisible = true
                             },
-                            onDelete = { onDeleteServer(stored.id) },
+                            onDelete = {
+                                if (confirmDeletion) pendingServerDeletion = stored.id
+                                else onDeleteServer(stored.id)
+                            },
                         )
                     }
                 }
@@ -259,8 +321,9 @@ internal fun DesktopProxyHome(
                         fontSize = 13.sp,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     )
-                }
+            }
             Spacer(Modifier.height(8.dp))
+            }
         }
     }
 
@@ -271,21 +334,51 @@ internal fun DesktopProxyHome(
             subscriptionUrl = subscriptionUrl,
             subscriptionUpdate = subscriptionUpdate,
             subscriptionMessage = subscriptionMessage,
-            onModeChange = { addMode = it },
+            editingServer = editingServerId != null,
+            updatingSubscription = updatingSubscription,
+            onModeChange = { mode ->
+                if (mode != AddMode.Server) editingServerId = null
+                addMode = mode
+            },
             onServerLinkChange = onServerLinkChange,
             onSubscriptionUrlChange = onSubscriptionUrlChange,
-            onAddServer = {
-                onAddServer(it)
+            onSaveServer = { server ->
+                editingServerId?.let { serverId -> onUpdateServer(serverId, server) } ?: onAddServer(server)
+                editingServerId = null
                 addDialogVisible = false
             },
             onUpdateSubscription = onUpdateSubscription,
-            onImportSubscriptionServers = onImportSubscriptionServers,
-            onSaveSubscription = {
-                val saved = onSaveSubscription()
-                if (saved) addDialogVisible = false
-                saved
-            },
             onDismiss = { addDialogVisible = false },
+        )
+    }
+
+    pendingServerDeletion?.let { serverId ->
+        AlertDialog(
+            onDismissRequest = { pendingServerDeletion = null },
+            title = { Text("Удалить сервер?") },
+            text = { Text("Сервер будет удалён только из локальной библиотеки SKIPI.") },
+            confirmButton = {
+                Button(onClick = {
+                    onDeleteServer(serverId)
+                    pendingServerDeletion = null
+                }) { Text("Удалить") }
+            },
+            dismissButton = { TextButton(onClick = { pendingServerDeletion = null }) { Text("Отмена") } },
+        )
+    }
+
+    pendingSubscriptionDeletion?.let { subscriptionId ->
+        AlertDialog(
+            onDismissRequest = { pendingSubscriptionDeletion = null },
+            title = { Text("Удалить подписку?") },
+            text = { Text("Ссылка подписки будет удалена из локального каталога SKIPI.") },
+            confirmButton = {
+                Button(onClick = {
+                    onDeleteSubscription(subscriptionId)
+                    pendingSubscriptionDeletion = null
+                }) { Text("Удалить") }
+            },
+            dismissButton = { TextButton(onClick = { pendingSubscriptionDeletion = null }) { Text("Отмена") } },
         )
     }
 }
@@ -293,6 +386,7 @@ internal fun DesktopProxyHome(
 @Composable
 private fun HomeHeader(
     onLatencyClick: () -> Unit,
+    onRefreshSubscription: (() -> Unit)?,
     onAddServer: () -> Unit,
     onAddSubscription: () -> Unit,
     addMenuExpanded: Boolean,
@@ -301,6 +395,8 @@ private fun HomeHeader(
     onToolsMenuExpandedChange: (Boolean) -> Unit,
     searchVisible: Boolean,
     onSearchVisibleChange: (Boolean) -> Unit,
+    testingLatency: Boolean,
+    refreshingSubscription: Boolean,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().height(54.dp),
@@ -309,8 +405,8 @@ private fun HomeHeader(
     ) {
         Text("SKIPI", color = HomeText, fontSize = 24.sp, fontWeight = FontWeight.Black)
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onLatencyClick) {
-                Icon(Icons.Outlined.HourglassEmpty, "Обновить подписку", tint = HomeText, modifier = Modifier.size(27.dp))
+            IconButton(onClick = onLatencyClick, enabled = !testingLatency) {
+                Icon(Icons.Outlined.HourglassEmpty, "Проверить доступность серверов", tint = HomeText, modifier = Modifier.size(27.dp))
             }
             Box {
                 IconButton(onClick = { onAddMenuExpandedChange(true) }) {
@@ -332,6 +428,17 @@ private fun HomeHeader(
                     Icon(Icons.Outlined.MoreVert, "Ещё", tint = HomeText, modifier = Modifier.size(30.dp))
                 }
                 DropdownMenu(expanded = toolsMenuExpanded, onDismissRequest = { onToolsMenuExpandedChange(false) }) {
+                    if (onRefreshSubscription != null) {
+                        DropdownMenuItem(
+                            text = { Text(if (refreshingSubscription) "Обновление подписки…" else "Обновить подписку") },
+                            leadingIcon = { Icon(Icons.Outlined.Refresh, contentDescription = null) },
+                            enabled = !refreshingSubscription,
+                            onClick = {
+                                onToolsMenuExpandedChange(false)
+                                onRefreshSubscription()
+                            },
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text(if (searchVisible) "Скрыть поиск" else "Поиск") },
                         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
@@ -351,6 +458,8 @@ private fun ConnectionHeroCard(
     running: Boolean,
     enabled: Boolean,
     selectedTitle: String,
+    compact: Boolean,
+    activeProfileName: String?,
     onToggle: () -> Unit,
 ) {
     Card(
@@ -360,13 +469,16 @@ private fun ConnectionHeroCard(
         border = BorderStroke(1.dp, if (running) HomeGreen.copy(alpha = 0.48f) else HomeBorder),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 26.dp, vertical = 24.dp),
+            modifier = Modifier.fillMaxWidth().padding(
+                horizontal = if (compact) 20.dp else 26.dp,
+                vertical = if (compact) 16.dp else 24.dp,
+            ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(modifier = Modifier.size(96.dp), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.size(if (compact) 78.dp else 96.dp), contentAlignment = Alignment.Center) {
                 Box(
                     modifier = Modifier
-                        .size(86.dp)
+                        .size(if (compact) 70.dp else 86.dp)
                         .clip(CircleShape)
                         .background(HomeSurfaceRaised)
                         .border(3.dp, if (running) HomeGreen else Color(0xFF555861), CircleShape)
@@ -377,16 +489,16 @@ private fun ConnectionHeroCard(
                         Icons.Outlined.PowerSettingsNew,
                         contentDescription = if (running) "Отключить" else "Подключить",
                         tint = if (running) HomeGreen else HomeMuted,
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(if (compact) 40.dp else 48.dp),
                     )
                 }
             }
-            Spacer(Modifier.width(20.dp))
+            Spacer(Modifier.width(if (compact) 14.dp else 20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = if (running) "Подключено" else "Отключено",
                     color = HomeText,
-                    fontSize = 30.sp,
+                    fontSize = if (compact) 25.sp else 30.sp,
                     fontWeight = FontWeight.Black,
                 )
                 Text(
@@ -396,10 +508,19 @@ private fun ConnectionHeroCard(
                         else -> "Сначала выберите сервер"
                     },
                     color = HomeMuted,
-                    fontSize = 18.sp,
+                    fontSize = if (compact) 16.sp else 18.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                activeProfileName?.let { profileName ->
+                    Text(
+                        text = "Профиль: $profileName",
+                        color = HomeMuted,
+                        fontSize = if (compact) 12.sp else 13.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
@@ -409,6 +530,7 @@ private fun ConnectionHeroCard(
 private fun GroupSelector(
     title: String,
     serverCount: Int,
+    totalServerCount: Int,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     subscriptions: List<DesktopStoredSubscription>,
@@ -434,7 +556,7 @@ private fun GroupSelector(
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
             DropdownMenuItem(
-                text = { Text("Все прокси · $serverCount") },
+                text = { Text("Все прокси · $totalServerCount") },
                 onClick = { onExpandedChange(false); onSelectAll() },
             )
             subscriptions.forEach { subscription ->
@@ -451,11 +573,12 @@ private fun GroupSelector(
 private fun SubscriptionSummaryCard(
     subscription: DesktopStoredSubscription,
     serverCount: Int,
-    update: DesktopSubscriptionUpdate?,
+    refreshing: Boolean,
     onRefresh: () -> Unit,
     onDelete: () -> Unit,
+    onMessage: (String) -> Unit,
 ) {
-    val metadata = update?.metadata
+    val metadata = subscription.metadata
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -480,17 +603,52 @@ private fun SubscriptionSummaryCard(
                     )
                     Text("Серверов: $serverCount", color = HomeMuted, fontSize = 14.sp)
                 }
-                IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, "Обновить", tint = HomeText) }
+                IconButton(onClick = onRefresh, enabled = !refreshing) {
+                    Icon(Icons.Outlined.Refresh, "Обновить", tint = HomeText)
+                }
                 IconButton(onClick = onDelete) { Icon(Icons.Outlined.Delete, "Удалить", tint = HomeText) }
             }
-            metadata?.let {
-                val usedBytes = it.trafficUploadBytes.coerceAtLeast(0) + it.trafficDownloadBytes.coerceAtLeast(0)
-                if (it.trafficTotalBytes >= 0) {
-                    Text("Трафик: ${formatBytes(usedBytes)} / ${formatBytes(it.trafficTotalBytes)}", color = HomeMuted, fontSize = 14.sp)
+            val usedBytes = metadata.trafficUploadBytes.coerceAtLeast(0) + metadata.trafficDownloadBytes.coerceAtLeast(0)
+            if (metadata.trafficTotalBytes >= 0) {
+                Text("Трафик: ${formatBytes(usedBytes)} / ${formatBytes(metadata.trafficTotalBytes)}", color = HomeMuted, fontSize = 14.sp)
+            }
+            metadata.trafficExpireAtSeconds.takeIf { it > 0 }?.let { expireAtSeconds ->
+                Text(
+                    formatSubscriptionExpiry(expireAtSeconds),
+                    color = HomeMuted,
+                    fontSize = 14.sp,
+                )
+            }
+            metadata.description.takeIf(String::isNotBlank)?.let { description ->
+                Text(description, color = HomeMuted, fontSize = 14.sp)
+            }
+            metadata.announce.takeIf(String::isNotBlank)?.let { announce ->
+                Text(announce, color = HomeMuted, fontSize = 14.sp)
+            }
+            val supportLink = metadata.supportUrl.ifBlank { metadata.supportEmail.takeIf(String::isNotBlank)?.let { "mailto:$it" }.orEmpty() }
+            val siteLink = metadata.profileWebPageUrl
+            if (supportLink.isNotBlank() || siteLink.isNotBlank()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (supportLink.isNotBlank()) {
+                        TextButton(onClick = {
+                            openExternalLink(supportLink).fold(
+                                onSuccess = { onMessage("Открыта поддержка подписки.") },
+                                onFailure = { error -> onMessage("Не удалось открыть поддержку: ${error.message.orEmpty()}") },
+                            )
+                        }) { Text("Поддержка") }
+                    }
+                    if (siteLink.isNotBlank()) {
+                        TextButton(onClick = {
+                            openExternalLink(siteLink).fold(
+                                onSuccess = { onMessage("Открыт сайт подписки.") },
+                                onFailure = { error -> onMessage("Не удалось открыть сайт: ${error.message.orEmpty()}") },
+                            )
+                        }) { Text("Сайт") }
+                    }
                 }
-                it.announce?.takeIf(String::isNotBlank)?.let { announce ->
-                    Text(announce, color = HomeMuted, fontSize = 14.sp)
-                }
+            }
+            metadata.lastUpdatedAtMillis.takeIf { it > 0 }?.let { updatedAt ->
+                Text("Обновлено: ${DesktopDateTimeFormatter.format(Instant.ofEpochMilli(updatedAt).atZone(ZoneId.systemDefault()))}", color = HomeMuted, fontSize = 13.sp)
             }
         }
     }
@@ -500,7 +658,10 @@ private fun SubscriptionSummaryCard(
 private fun ServerCard(
     server: ProxyServer<*>,
     selected: Boolean,
+    latency: DesktopServerLatencyResult?,
+    testingLatency: Boolean,
     onSelect: () -> Unit,
+    onTest: () -> Unit,
     onCopy: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -548,7 +709,28 @@ private fun ServerCard(
                     Spacer(Modifier.width(7.dp))
                     TransportChip(text = transport, selected = selected)
                 }
+                when (latency) {
+                    is DesktopServerLatencyResult.Success -> {
+                        Spacer(Modifier.width(10.dp))
+                        Text("${latency.milliseconds} ms", color = HomeGreen, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    DesktopServerLatencyResult.Timeout -> {
+                        Spacer(Modifier.width(10.dp))
+                        Text("Тайм-аут", color = HomeRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    is DesktopServerLatencyResult.Error -> {
+                        Spacer(Modifier.width(10.dp))
+                        Text("Ошибка", color = HomeRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    null -> Unit
+                }
                 Spacer(Modifier.weight(1f))
+                IconButton(onClick = onTest, enabled = !testingLatency && server.desktopTcpEndpointOrNull() != null) {
+                    Icon(Icons.Outlined.HourglassEmpty, "Проверить доступность", tint = HomeText)
+                }
                 IconButton(onClick = onCopy, enabled = server.getCopyTextOrNull() != null) {
                     Icon(Icons.Outlined.ContentCopy, "Копировать", tint = HomeText)
                 }
@@ -611,13 +793,13 @@ private fun AddProxyDialog(
     subscriptionUrl: String,
     subscriptionUpdate: DesktopSubscriptionUpdate?,
     subscriptionMessage: String,
+    editingServer: Boolean,
+    updatingSubscription: Boolean,
     onModeChange: (AddMode) -> Unit,
     onServerLinkChange: (String) -> Unit,
     onSubscriptionUrlChange: (String) -> Unit,
-    onAddServer: (ProxyServer<*>) -> Unit,
+    onSaveServer: (ProxyServer<*>) -> Unit,
     onUpdateSubscription: () -> Unit,
-    onImportSubscriptionServers: () -> Unit,
-    onSaveSubscription: () -> Boolean,
     onDismiss: () -> Unit,
 ) {
     val parsedServer = remember(serverLink) {
@@ -626,7 +808,15 @@ private fun AddProxyDialog(
     val subscriptionUrlValid = remember(subscriptionUrl) { subscriptionUrl.isValidManualSubscriptionUrl() }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (mode == AddMode.Server) "Добавить сервер" else "Добавить подписку") },
+        title = {
+            Text(
+                when {
+                    mode == AddMode.Subscription -> "Добавить подписку"
+                    editingServer -> "Изменить сервер"
+                    else -> "Добавить сервер"
+                },
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -657,24 +847,28 @@ private fun AddProxyDialog(
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text("HTTP/HTTPS ссылка подписки") },
                         singleLine = true,
+                        enabled = !updatingSubscription,
                     )
                     if (subscriptionUrl.isNotBlank() && !subscriptionUrlValid) {
                         Text("Укажите корректную HTTP/HTTPS ссылку.", color = HomeRed)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { onSaveSubscription() }, enabled = subscriptionUrlValid) {
-                            Text("Добавить подписку")
-                        }
-                        Button(onClick = onUpdateSubscription, enabled = subscriptionUrlValid) {
-                            Text("Проверить и добавить")
+                        Button(onClick = onUpdateSubscription, enabled = subscriptionUrlValid && !updatingSubscription) {
+                            Text(if (updatingSubscription) "Загрузка…" else "Загрузить и применить")
                         }
                     }
                     if (subscriptionMessage.isNotBlank()) Text(subscriptionMessage, color = HomeMuted)
                     subscriptionUpdate?.let { update ->
                         Text("Найдено серверов: ${update.importResult.servers.size}", color = HomeGreen)
-                        if (update.importResult.servers.isNotEmpty()) {
-                            Button(onClick = onImportSubscriptionServers) { Text("Добавить серверы") }
-                        }
+                        Text(
+                            if (update.importResult.servers.isNotEmpty()) {
+                                "Серверы этой подписки применяются автоматически без дубликатов."
+                            } else {
+                                "В подписке не найдено поддерживаемых серверов."
+                            },
+                            color = HomeMuted,
+                            fontSize = 13.sp,
+                        )
                     }
                 }
             }
@@ -682,9 +876,9 @@ private fun AddProxyDialog(
         confirmButton = {
             if (mode == AddMode.Server) {
                 Button(
-                    onClick = { parsedServer?.getOrNull()?.let(onAddServer) },
+                    onClick = { parsedServer?.getOrNull()?.let(onSaveServer) },
                     enabled = parsedServer?.isSuccess == true,
-                ) { Text("Добавить") }
+                ) { Text(if (editingServer) "Сохранить" else "Добавить") }
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Закрыть") } },
@@ -709,3 +903,45 @@ private fun formatBytes(value: Long): String {
     }
     return if (unit == 0) "${amount.toLong()} ${units[unit]}" else "%.2f %s".format(amount, units[unit])
 }
+
+private fun formatSubscriptionExpiry(expireAtSeconds: Long): String {
+    val remainingDays = ((expireAtSeconds * 1_000L - System.currentTimeMillis()) / 86_400_000L).coerceAtLeast(0)
+    return "Осталось $remainingDays дн."
+}
+
+private fun openExternalLink(value: String): Result<Unit> = runCatching {
+    check(Desktop.isDesktopSupported()) { "Открытие ссылки не поддерживается системой." }
+    Desktop.getDesktop().browse(requireSafeDesktopExternalUri(value))
+}
+
+/**
+ * Subscription metadata is remote input.  Only web pages and one plain email
+ * recipient may be sent to the operating system's external URI handlers.
+ */
+internal fun requireSafeDesktopExternalUri(value: String): URI {
+    val uri = URI(value.trim())
+    when (uri.scheme?.lowercase()) {
+        "https" -> {
+            require(uri.host?.isNotBlank() == true) { "HTTPS ссылка должна содержать хост." }
+            require(uri.userInfo.isNullOrBlank()) { "HTTPS ссылка не должна содержать учётные данные." }
+        }
+
+        "mailto" -> {
+            val recipient = uri.rawSchemeSpecificPart
+            require(!recipient.isNullOrBlank() && !recipient.contains('?') && !recipient.contains('#')) {
+                "Mailto ссылка должна содержать один адрес без параметров."
+            }
+            require(SafeDesktopMailtoRecipient.matches(recipient)) {
+                "Mailto ссылка содержит некорректный адрес."
+            }
+        }
+
+        else -> error("Поддерживаются только HTTPS и корректные mailto ссылки.")
+    }
+    return uri
+}
+
+private val DesktopDateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+private val SafeDesktopMailtoRecipient = Regex(
+    "^[A-Za-z0-9.!#${'$'}%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+${'$'}",
+)
