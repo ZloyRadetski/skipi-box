@@ -18,8 +18,8 @@ import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.VLESS
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
 import engine.stats.maxTrafficDeltaComparedTo
-import data.encodePersistedProxyServer
-import data.decodePersistedProxyServer
+import features.proxy.server.model.encodePersistedProxyServer
+import features.proxy.server.model.decodePersistedProxyServer
 import features.config.ProxyGroupServerChoice
 import features.config.toShadowrocketLine
 import org.junit.Test

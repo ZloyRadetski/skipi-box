@@ -79,6 +79,7 @@
     <string name="configs_activate">Включить</string>
     <string name="configs_rule_summary">Правил маршрутизации: %1$d</string>
     <string name="configs_preserved_unsupported">MITM, Script или Header Rewrite сохранены, но не применяются на Android</string>
+    <string name="configs_rules_unsupported_on_android">Этот тип правил сохраняется для совместимости с Shadowrocket, но не поддерживается ядром на Android.</string>
     <string name="configs_lock_update">Не обновлять</string>
     <string name="configs_lock_update_summary">Блокирует внешнюю замену, пока функция не будет отключена</string>
     <string name="configs_resources">Ресурсы маршрутизации</string>

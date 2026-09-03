@@ -3,6 +3,7 @@
 
 package app
 
+import engine.network.isIpOrCidrAddress
 import engine.xray.XrayTags
 import features.config.ShadowrocketRule
 import features.config.ShadowrocketPolicyGroupTagPrefix
@@ -146,7 +147,9 @@ private fun ShadowrocketRule.toRouteRule(
             }
         )
         "RULE-SET" -> {
-            if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.contains('/')) {
+            if (cleanValue.startsWith("http://", ignoreCase = true) || cleanValue.startsWith("https://", ignoreCase = true)) {
+                emptyList()
+            } else if (cleanValue.startsWith("geoip:", ignoreCase = true) || isIpOrCidrAddress(cleanValue)) {
                 emptyList()
             } else {
                 listOf(
@@ -167,7 +170,17 @@ private fun ShadowrocketRule.toRouteRule(
         else -> emptyList()
     }
     val ip = when (ruleType) {
-        "IP-CIDR", "IP-CIDR6", "IP-ASN" -> listOf(cleanValue)
+        "IP-CIDR", "IP-CIDR6" -> listOf(cleanValue).filter(::isIpOrCidrAddress)
+        "IP-ASN" -> {
+            val asn = cleanValue.removePrefix("AS").removePrefix("as").trim()
+            if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.startsWith("ext:", ignoreCase = true)) {
+                listOf(cleanValue)
+            } else if (asn.isNotEmpty() && asn.all(Char::isDigit)) {
+                listOf("geoip:as$asn")
+            } else {
+                emptyList()
+            }
+        }
         "GEOIP" -> listOf(
             if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.startsWith("ext:", ignoreCase = true)) {
                 cleanValue
@@ -176,9 +189,11 @@ private fun ShadowrocketRule.toRouteRule(
             }
         )
         "RULE-SET" -> {
-            if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.contains('/')) {
+            if (cleanValue.startsWith("http://", ignoreCase = true) || cleanValue.startsWith("https://", ignoreCase = true)) {
+                emptyList()
+            } else if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.startsWith("ext:", ignoreCase = true) || isIpOrCidrAddress(cleanValue)) {
                 listOf(
-                    if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.startsWith("ext:", ignoreCase = true) || cleanValue.contains('/')) {
+                    if (cleanValue.startsWith("geoip:", ignoreCase = true) || cleanValue.startsWith("ext:", ignoreCase = true) || isIpOrCidrAddress(cleanValue)) {
                         cleanValue
                     } else {
                         "geoip:$cleanValue"

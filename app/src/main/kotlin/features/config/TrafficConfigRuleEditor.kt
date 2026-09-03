@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.config
@@ -593,6 +593,14 @@ fun TrafficConfigRuleEditorPage(
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                             )
                         }
+                    }
+                    if (selectedType in setOf("USER-AGENT", "URL-REGEX")) {
+                        Text(
+                            text = stringResource(R.string.configs_rules_unsupported_on_android),
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 10.dp),
+                        )
                     }
                 }
                 Card(

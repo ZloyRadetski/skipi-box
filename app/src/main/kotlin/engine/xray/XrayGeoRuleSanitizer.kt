@@ -3,6 +3,7 @@
 
 package engine.xray
 
+import engine.network.isIpOrCidrAddress
 import features.logs.AndroidAppLogger
 import features.resources.ResourceFileGeoIpName
 import features.resources.ResourceFileGeoSiteName
@@ -44,11 +45,11 @@ internal object XrayGeoRuleSanitizer {
     }
 
     fun isIpRuleValid(rule: String, dataDir: String?): Boolean {
-        if (dataDir.isNullOrBlank()) return true
         val trimmed = rule.trim()
         if (trimmed.isBlank()) return false
 
         if (trimmed.startsWith("geoip:", ignoreCase = true)) {
+            if (dataDir.isNullOrBlank()) return true
             val payload = trimmed.substring(6).trim()
             val colonIndex = payload.indexOf(':')
             val (fileName, tag) = if (colonIndex > 0) {
@@ -65,6 +66,7 @@ internal object XrayGeoRuleSanitizer {
         }
 
         if (trimmed.startsWith("ext:", ignoreCase = true)) {
+            if (dataDir.isNullOrBlank()) return true
             val payload = trimmed.substring(4).trim()
             val colonIndex = payload.indexOf(':')
             if (colonIndex <= 0) return false
@@ -74,7 +76,11 @@ internal object XrayGeoRuleSanitizer {
             return checkTagInDatFile(dataDir, targetFile, tag, trimmed)
         }
 
-        return true
+        val isValidAddress = isIpOrCidrAddress(trimmed)
+        if (!isValidAddress) {
+            AndroidAppLogger.warn(LogTag, "Invalid IP/CIDR rule '$trimmed', skipping rule to prevent Xray crash")
+        }
+        return isValidAddress
     }
 
     private fun checkTagInDatFile(dataDir: String, fileName: String, tag: String, originalRule: String): Boolean {

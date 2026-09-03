@@ -147,17 +147,31 @@ private fun RouteRule.toXrayRule(
     val target = routeTargets[targetOutboundTag] ?: return null
     val sanitizedDomains = XrayGeoRuleSanitizer.filterValidDomainRules(domain.toTrimmedNonEmptyDistinctList(), dataDir)
     val sanitizedIps = XrayGeoRuleSanitizer.filterValidIpRules(ip.toTrimmedNonEmptyDistinctList(), dataDir)
+    val sanitizedProcess = process.toTrimmedNonEmptyDistinctList()
+    val sanitizedPort = port.trim()
+    val sanitizedNetwork = network.trim()
+    val sanitizedProtocol = protocol.toDistinctCsvValues()
+
+    val hasConditions = sanitizedDomains.isNotEmpty() ||
+        sanitizedIps.isNotEmpty() ||
+        sanitizedProcess.isNotEmpty() ||
+        sanitizedPort.isNotEmpty() ||
+        sanitizedNetwork.isNotEmpty() ||
+        sanitizedProtocol.isNotEmpty()
+
+    if (!hasConditions) return null
+
     val rule = buildJsonObject {
         target.applyTo(this)
         putJsonStringArrayIfNotEmpty("domain", sanitizedDomains)
         putJsonStringArrayIfNotEmpty("ip", sanitizedIps)
-        putJsonStringArrayIfNotEmpty("process", process.toTrimmedNonEmptyDistinctList())
-        putIfNotBlank("port", port)
-        putIfNotBlank("network", network)
-        putJsonStringArrayIfNotEmpty("protocol", protocol.toDistinctCsvValues())
+        putJsonStringArrayIfNotEmpty("process", sanitizedProcess)
+        putIfNotBlank("port", sanitizedPort)
+        putIfNotBlank("network", sanitizedNetwork)
+        putJsonStringArrayIfNotEmpty("protocol", sanitizedProtocol)
         putIfNotBlank("ruleTag", remarks)
     }
-    return if (rule.size > 1) rule else null
+    return rule
 }
 
 internal fun Int.toXrayRoutingDomainStrategy(): String {

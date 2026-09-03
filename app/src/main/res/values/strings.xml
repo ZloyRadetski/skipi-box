@@ -87,6 +87,7 @@
     <string name="configs_activate">Activate</string>
     <string name="configs_rule_summary">%1$d routing rules</string>
     <string name="configs_preserved_unsupported">MITM, Script or Header Rewrite is preserved but not applied on Android</string>
+    <string name="configs_rules_unsupported_on_android">This rule type is preserved for Shadowrocket compatibility, but is not supported by the core on Android.</string>
     <string name="configs_lock_update">Do not update</string>
     <string name="configs_lock_update_summary">Blocks remote replacement until you disable this option</string>
     <string name="nav_settings">Settings</string>

@@ -83,6 +83,7 @@
     <string name="configs_activate">激活</string>
     <string name="configs_rule_summary">%1$d路由规则</string>
     <string name="configs_preserved_unsupported">MITM、脚本或标头重写被保留但未应用于 Android</string>
+    <string name="configs_rules_unsupported_on_android">此规则类型保留用于与 Shadowrocket 兼容，但在 Android 上不受核心支持。</string>
     <string name="configs_lock_update">不更新</string>
     <string name="configs_lock_update_summary">阻止远程替换，直到您禁用此选项</string>
     <string name="nav_settings">设置</string>

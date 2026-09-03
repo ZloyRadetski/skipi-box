@@ -56,7 +56,7 @@ internal fun JsonObjectBuilder.putJsonArrayIfNotBlank(name: String, value: Strin
     }
 }
 
-internal fun V2RayParameters.toXrayStreamSettings(): JsonObject {
+fun V2RayParameters.toXrayStreamSettings(): JsonObject {
     val network = type.toXrayNetwork()
     return buildJsonObject {
         put("network", network)

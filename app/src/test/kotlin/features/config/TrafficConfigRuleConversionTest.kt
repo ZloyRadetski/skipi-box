@@ -157,4 +157,60 @@ class TrafficConfigRuleConversionTest {
             assertEquals("Failed for remark: ${rule.remarks}", XrayTags.BLOCK, rule.outboundTag)
         }
     }
+
+    @Test
+    fun testRuleSetWithRemoteUrlIsNotTreatedAsIp() {
+        val configText = """
+            [Rule]
+            RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt,PROXY
+            FINAL,DIRECT
+        """.trimIndent()
+
+        val appliedState = AppState(
+            trafficConfigs = listOf(TrafficConfigState(id = 1, name = "Test", rawConfig = configText)),
+            activeTrafficConfigId = 1,
+        ).withActiveTrafficConfigApplied()
+
+        // Remote URL RULE-SET should not be treated as an IP CIDR rule
+        assertEquals(0, appliedState.routeRules.size)
+    }
+
+    @Test
+    fun testIpAsnConversion() {
+        val configText = """
+            [Rule]
+            IP-ASN,15169,PROXY
+            IP-ASN,AS13335,DIRECT
+            FINAL,DIRECT
+        """.trimIndent()
+
+        val appliedState = AppState(
+            trafficConfigs = listOf(TrafficConfigState(id = 1, name = "Test", rawConfig = configText)),
+            activeTrafficConfigId = 1,
+        ).withActiveTrafficConfigApplied()
+
+        assertEquals(2, appliedState.routeRules.size)
+        assertEquals(listOf("geoip:as15169"), appliedState.routeRules[0].ip)
+        assertEquals(XrayTags.PROXY, appliedState.routeRules[0].outboundTag)
+        assertEquals(listOf("geoip:as13335"), appliedState.routeRules[1].ip)
+        assertEquals(XrayTags.DIRECT, appliedState.routeRules[1].outboundTag)
+    }
+
+    @Test
+    fun testUnsupportedRulesIgnoredGracefully() {
+        val configText = """
+            [Rule]
+            USER-AGENT,*Telegram*,PROXY
+            URL-REGEX,^https?:\/\/.*,PROXY
+            FINAL,DIRECT
+        """.trimIndent()
+
+        val appliedState = AppState(
+            trafficConfigs = listOf(TrafficConfigState(id = 1, name = "Test", rawConfig = configText)),
+            activeTrafficConfigId = 1,
+        ).withActiveTrafficConfigApplied()
+
+        assertEquals(0, appliedState.routeRules.size)
+    }
 }
+

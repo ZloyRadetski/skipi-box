@@ -83,6 +83,7 @@
     <string name="configs_activate">فعال کنید</string>
     <string name="configs_rule_summary">قوانین مسیریابی%1$d</string>
     <string name="configs_preserved_unsupported">MITM، اسکریپت یا هدر بازنویسی حفظ شده است اما در اندروید اعمال نمی شود</string>
+    <string name="configs_rules_unsupported_on_android">این نوع قانون برای سازگاری با Shadowrocket حفظ شده است، اما در هسته اندروید پشتیبانی نمی‌شود.</string>
     <string name="configs_lock_update">آپدیت نکنید</string>
     <string name="configs_lock_update_summary">تا زمانی که این گزینه را غیرفعال نکنید، جایگزینی از راه دور را مسدود می کند</string>
     <string name="nav_settings">تنظیمات</string>
