@@ -7,6 +7,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import ui.text.themedFontWeight
 import ui.components.AppWindowDropdownPreference
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import features.routing.ui.RoutingRulesInfoBottomSheet
+import features.settings.SettingsIcons
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -148,12 +152,23 @@ internal fun TrafficConfigRulesPage(
         }
     }
 
+    var showInfoBottomSheet by rememberSaveable { mutableStateOf(false) }
+
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_rules_title),
         padding = padding,
         isWideScreen = isWideScreen,
         onBack = navigator::pop,
         onSave = navigator::pop,
+        actions = {
+            IconButton(onClick = { showInfoBottomSheet = true }) {
+                Icon(
+                    imageVector = SettingsIcons.Info,
+                    contentDescription = stringResource(R.string.routing_info_title),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+        },
     ) { listPadding, scrollBehavior ->
         LazyColumn(
             state = lazyListState,
@@ -220,6 +235,11 @@ internal fun TrafficConfigRulesPage(
             }
         }
     }
+
+    RoutingRulesInfoBottomSheet(
+        show = showInfoBottomSheet,
+        onDismissRequest = { showInfoBottomSheet = false },
+    )
 }
 
 @Composable
@@ -420,6 +440,8 @@ fun TrafficConfigRuleEditorPage(
             }
         }
     }
+    var showInfoBottomSheet by rememberSaveable { mutableStateOf(false) }
+
     TrafficConfigFullScreenScaffold(
         title = stringResource(if (initialRule == null) R.string.configs_rules_add else R.string.configs_rules_edit),
         padding = padding,
@@ -427,6 +449,15 @@ fun TrafficConfigRuleEditorPage(
         onBack = {
             save()
             navigator.pop()
+        },
+        actions = {
+            IconButton(onClick = { showInfoBottomSheet = true }) {
+                Icon(
+                    imageVector = SettingsIcons.Info,
+                    contentDescription = stringResource(R.string.routing_info_title),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
+            }
         },
     ) { listPadding, scrollBehavior ->
         LazyColumn(
@@ -439,7 +470,7 @@ fun TrafficConfigRuleEditorPage(
             item {
                 if (!isFinal) {
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
                         colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
                     ) {
                         AppWindowDropdownPreference(
@@ -447,6 +478,23 @@ fun TrafficConfigRuleEditorPage(
                             items = typeOptions,
                             selectedIndex = typeIndex,
                             onSelectedIndexChange = { typeIndex = it },
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 4.dp, end = 4.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.routing_info_title),
+                            fontSize = 12.sp,
+                            color = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { showInfoBottomSheet = true }
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
                         )
                     }
                     when (selectedType) {
@@ -651,6 +699,11 @@ fun TrafficConfigRuleEditorPage(
         items = ruleSetSuggestions,
         onSelect = { item -> updateValue(item.fullRule) },
         onDismissRequest = { showRuleSetPicker = false },
+    )
+
+    RoutingRulesInfoBottomSheet(
+        show = showInfoBottomSheet,
+        onDismissRequest = { showInfoBottomSheet = false },
     )
 }
 

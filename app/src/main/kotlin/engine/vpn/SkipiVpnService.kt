@@ -212,6 +212,7 @@ class SkipiVpnService : VpnService() {
                         current.copy(
                             proxyRunning = true,
                             localProxyPort = resolvedState.localProxyPort,
+                            unappliedRoutingRules = config.unappliedRules,
                         )
                     }
                     AndroidAppLogger.info(LogTag, "Started system-managed Always-on VPN")
@@ -220,7 +221,7 @@ class SkipiVpnService : VpnService() {
                     AndroidAppLogger.error(LogTag, "Failed to start system-managed Always-on VPN", error)
                     triggerHapticFeedback { vpnError() }
                     stopVpn(ForegroundNotificationDisposition.Remove)
-                    stateStore.update { state -> state.copy(proxyRunning = false) }
+                    stateStore.update { state -> state.copy(proxyRunning = false, unappliedRoutingRules = emptyList()) }
                 }
             }
             if (failed) stopSelfOnMain(startId)
@@ -291,6 +292,9 @@ class SkipiVpnService : VpnService() {
         stopVpn(ForegroundNotificationDisposition.Keep)
         val stoppedAt = android.os.SystemClock.elapsedRealtime()
         currentConfig = config
+        stateStore.update(persist = false) { state ->
+            state.copy(unappliedRoutingRules = config.unappliedRules)
+        }
         if (config.enableWakeLock) {
             acquireWakeLock()
         }
@@ -479,6 +483,9 @@ class SkipiVpnService : VpnService() {
         tunFileDescriptor = null
         LocalProxyRuntime.clear()
         running = false
+        stateStore.update(persist = false) { state ->
+            state.copy(unappliedRoutingRules = emptyList())
+        }
         applyForegroundNotificationDisposition(notificationDisposition)
         if (notificationDisposition != ForegroundNotificationDisposition.Keep) {
             ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = false)

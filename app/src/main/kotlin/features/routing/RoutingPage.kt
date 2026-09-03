@@ -58,6 +58,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Tune
+import features.routing.ui.RoutingRulesInfoBottomSheet
+import features.settings.SettingsIcons
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import ui.clipboard.ClipboardImportException
 import ui.clipboard.ClipboardImportFailure
@@ -151,6 +153,7 @@ fun RoutingPage(
 
     var pendingRouteImport by remember { mutableStateOf<List<RouteRuleClipboardItem>?>(null) }
     var pendingRouteDeletion by remember { mutableStateOf<RouteRule?>(null) }
+    var showInfoBottomSheet by rememberSaveable { mutableStateOf(false) }
     val routeRules = appState.routeRules
 
     fun deleteRoute(rule: RouteRule) {
@@ -188,6 +191,11 @@ fun RoutingPage(
                         onSelectedTagChange = { tag ->
                             updateAppState { state -> state.copy(defaultRouteOutboundTag = tag) }
                         },
+                    )
+                    NavigationIcon(
+                        onClick = { showInfoBottomSheet = true },
+                        imageVector = SettingsIcons.Info,
+                        contentDescription = stringResource(R.string.routing_info_title),
                     )
                     NavigationIcon(
                         onClick = {
@@ -374,6 +382,11 @@ fun RoutingPage(
                 tipNotifier.show(routeImportedTemplate.formatTemplate("count" to importedCount))
             }
         },
+    )
+
+    RoutingRulesInfoBottomSheet(
+        show = showInfoBottomSheet,
+        onDismissRequest = { showInfoBottomSheet = false },
     )
 }
 

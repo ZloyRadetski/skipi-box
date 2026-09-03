@@ -42,15 +42,28 @@ internal data class XrayProxyOutboundServer(
     val allowFragment: Boolean = true,
 )
 
+internal data class BuiltXrayConfig(
+    val json: String,
+    val unappliedRules: List<String> = emptyList(),
+)
+
 internal object XrayConfigFactory {
-    fun buildXrayConfig(request: XrayConfigRequest): String {
+    fun buildXrayConfigResult(request: XrayConfigRequest): BuiltXrayConfig {
         val customServer = request.selectedServer.server as? Custom
         if (customServer != null) {
-            return buildCustomXrayConfig(request, customServer)
+            return BuiltXrayConfig(json = buildCustomXrayConfig(request, customServer))
         }
 
-        val config = buildGeneratedXrayConfig(request).toJsonObject()
-        return encodeRuntimeXrayConfig(config)
+        val (generated, routingPlan) = buildGeneratedXrayConfig(request)
+        val config = generated.toJsonObject()
+        return BuiltXrayConfig(
+            json = encodeRuntimeXrayConfig(config),
+            unappliedRules = routingPlan.unappliedRules,
+        )
+    }
+
+    fun buildXrayConfig(request: XrayConfigRequest): String {
+        return buildXrayConfigResult(request).json
     }
 }
 
@@ -136,7 +149,7 @@ internal object XraySpeedTestConfigFactory {
     }
 }
 
-private fun buildGeneratedXrayConfig(request: XrayConfigRequest): GeneratedXrayConfig {
+private fun buildGeneratedXrayConfig(request: XrayConfigRequest): Pair<GeneratedXrayConfig, XrayRoutingPlan> {
     val outboundPlan = request.outboundPlan ?: request.appState.buildXrayOutboundPlan(request.selectedServer)
     val startupProxyServerDomains = outboundPlan.proxyOutbounds.startupProxyServerDnsDomains()
     val dnsPlan = request.buildXrayDnsPlan(startupProxyServerDomains)
@@ -149,7 +162,7 @@ private fun buildGeneratedXrayConfig(request: XrayConfigRequest): GeneratedXrayC
         dataDir = request.dataDir,
     )
 
-    return GeneratedXrayConfig(
+    val generated = GeneratedXrayConfig(
         log = request.buildXrayLogConfig(),
         dns = buildXrayDnsConfig(dnsPlan),
         inbounds = request.inbounds.toJsonObjectArray(),
@@ -169,6 +182,7 @@ private fun buildGeneratedXrayConfig(request: XrayConfigRequest): GeneratedXrayC
         burstObservatory = null,
         statsApiConfig = request.statsApiConfig,
     )
+    return generated to routingPlan
 }
 
 private fun buildCustomXrayConfig(

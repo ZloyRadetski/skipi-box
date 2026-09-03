@@ -37,6 +37,9 @@ internal class VpnXrayEngine(
             context = context,
             config = config,
         )
+        (context.applicationContext as? app.SkipiApplication)?.stateStore?.update(persist = false) { current ->
+            current.copy(unappliedRoutingRules = config.unappliedRules)
+        }
         AndroidAppLogger.info(
             LogTag,
             "VPN startup timing: config=${configReadyAt - configStartedAt}ms, service=${SystemClock.elapsedRealtime() - configReadyAt}ms",
@@ -46,6 +49,9 @@ internal class VpnXrayEngine(
 
     override suspend fun stop(): ProxyEngineStatus {
         SkipiVpnService.stop(context)
+        (context.applicationContext as? app.SkipiApplication)?.stateStore?.update(persist = false) { current ->
+            current.copy(unappliedRoutingRules = emptyList())
+        }
         return status()
     }
 

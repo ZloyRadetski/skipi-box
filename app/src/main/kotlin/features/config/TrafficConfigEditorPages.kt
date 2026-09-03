@@ -1579,6 +1579,7 @@ internal fun TrafficConfigFullScreenScaffold(
     isWideScreen: Boolean,
     onBack: () -> Unit,
     onSave: (() -> Unit)? = null,
+    actions: (@Composable () -> Unit)? = null,
     content: @Composable (listPadding: PaddingValues, scrollBehavior: top.yukonga.miuix.kmp.basic.ScrollBehavior) -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
@@ -1597,6 +1598,7 @@ internal fun TrafficConfigFullScreenScaffold(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { BackNavigationIcon(onClick = onBack) },
                 actions = {
+                    actions?.invoke()
                     if (onSave != null) {
                         NavigationIcon(
                             onClick = onSave,

@@ -205,6 +205,7 @@ data class AppState(
 
     val autoConnectOnBoot: Boolean = false,
     val autoConnectOnAppOpen: Boolean = false,
+    val unappliedRoutingRules: List<String> = emptyList(),
 )
 
 val AppState.effectiveLocalDnsEnabled: Boolean

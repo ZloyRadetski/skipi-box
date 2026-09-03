@@ -82,12 +82,42 @@ fun main() = application {
                 var subscriptionUpdate by remember { mutableStateOf<DesktopSubscriptionUpdate?>(null) }
                 var subscriptionMessage by remember { mutableStateOf("") }
                 var subscriptionUpdateInProgress by remember { mutableStateOf(false) }
+                var scheduledSubscriptionId by remember { mutableStateOf<Int?>(null) }
+                var subscriptionSchedulerTick by remember { mutableStateOf(0) }
                 var subscriptionLibrary by remember {
                     mutableStateOf(DesktopSubscriptionLibraries.loadDefault().getOrElse { DesktopSubscriptionLibrary() })
                 }
                 var currentSection by remember { mutableStateOf(DesktopSection.Proxy) }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
+                }
+                LaunchedEffect(
+                    subscriptionLibrary,
+                    subscriptionUpdateInProgress,
+                    scheduledSubscriptionId,
+                    subscriptionSchedulerTick,
+                    closeRequested,
+                ) {
+                    if (closeRequested || subscriptionUpdateInProgress || scheduledSubscriptionId != null) {
+                        return@LaunchedEffect
+                    }
+                    val refreshPlan = DesktopSubscriptionRefreshPlanner.plan(
+                        library = subscriptionLibrary,
+                        nowMillis = System.currentTimeMillis(),
+                    )
+                    val dueSubscription = refreshPlan.dueSubscriptions.firstOrNull()
+                    if (dueSubscription != null) {
+                        scheduledSubscriptionId = dueSubscription.id
+                        return@LaunchedEffect
+                    }
+                    delay(
+                        (refreshPlan.nextDelayMillis ?: DesktopSubscriptionSchedulerIdleDelayMillis)
+                            .coerceIn(
+                                DesktopSubscriptionSchedulerMinimumDelayMillis,
+                                DesktopSubscriptionSchedulerIdleDelayMillis,
+                            ),
+                    )
+                    subscriptionSchedulerTick += 1
                 }
                 var serverLibraryMessage by remember { mutableStateOf("") }
                 val latencyTester = remember { DesktopServerLatencyTester() }
@@ -366,6 +396,7 @@ fun main() = application {
                             compactConnection = desktopSettings.compactHome,
                             confirmDeletion = desktopSettings.confirmDeletion,
                             activeProfileName = activeProfileName,
+                            activeTrafficConfigId = configLibrary.selectedConfigId,
                             latencyByServerId = latencyByServerId,
                             testingServerIds = testingServerIds,
                             onServerLinkChange = { serverLink = it },
@@ -553,6 +584,107 @@ fun main() = application {
                                     }
                                 }
                             },
+                            onPrepareSubscription = { install ->
+                                if (subscriptionUpdateInProgress) {
+                                    Result.failure(IllegalStateException("Дождитесь завершения обновления подписки."))
+                                } else {
+                                    runCatching {
+                                        val existing = subscriptionLibrary.subscriptions
+                                            .firstOrNull { subscription -> subscription.url == install.url }
+                                        val prepared = DesktopSubscriptionLibraries.addOrReplace(
+                                            library = subscriptionLibrary,
+                                            url = install.url,
+                                            userAgent = install.userAgent,
+                                            name = existing?.name.orEmpty().ifBlank { install.name },
+                                        )
+                                        DesktopSubscriptionLibraries.saveDefault(prepared).getOrThrow()
+                                        subscriptionLibrary = prepared
+                                        subscriptionUrl = install.url
+                                        subscriptionMessage = "Подписка сохранена. Загружаю серверы…"
+                                    }
+                                }
+                            },
+                            onImport = import@{ input ->
+                                val selectedServerBefore = serverLibrary.selectedServerId
+                                val plan = DesktopProxyImportPlanner.plan(
+                                    input = input,
+                                    existing = DesktopProxyImportExisting(
+                                        serverFingerprints = serverLibrary.servers.mapNotNull { stored ->
+                                            stored.decode().getOrNull()?.connectionFingerprint()
+                                        }.toSet(),
+                                        subscriptionUrls = subscriptionLibrary.subscriptions.mapTo(mutableSetOf()) { it.url },
+                                        configContents = configLibrary.configs.mapTo(mutableSetOf()) { it.content },
+                                        serverDuplicatePolicy = DesktopProxyImportDuplicatePolicy.KeepExistingAndRepeated,
+                                        subscriptionDuplicatePolicy =
+                                            DesktopProxyImportDuplicatePolicy.KeepExistingDeduplicateRepeated,
+                                    ),
+                                )
+                                val errors = plan.diagnostics.filter { diagnostic ->
+                                    diagnostic.severity == DesktopProxyImportDiagnosticSeverity.Error
+                                }
+                                if (errors.isNotEmpty()) {
+                                    return@import Result.failure(
+                                        IllegalArgumentException(errors.joinToString(" ") { it.message }),
+                                    )
+                                }
+                                val committed = DesktopProxyImportCommitter.commit(
+                                    plan = plan,
+                                    serverLibrary = serverLibrary,
+                                    subscriptionLibrary = subscriptionLibrary,
+                                    configLibrary = configLibrary,
+                                    subscriptionUserAgent = desktopSettings.subscriptionUserAgent,
+                                )
+                                val savedSections = mutableListOf<String>()
+                                try {
+                                    if (committed.serverLibrary != serverLibrary) {
+                                        DesktopServerLibraries.saveDefault(committed.serverLibrary).getOrThrow()
+                                        serverLibrary = committed.serverLibrary
+                                        savedSections += "серверы"
+                                    }
+                                    if (committed.subscriptionLibrary != subscriptionLibrary) {
+                                        DesktopSubscriptionLibraries.saveDefault(committed.subscriptionLibrary).getOrThrow()
+                                        subscriptionLibrary = committed.subscriptionLibrary
+                                        savedSections += "подписки"
+                                    }
+                                    if (committed.configLibrary != configLibrary) {
+                                        val activeBefore = configLibrary.selectedConfigId
+                                        DesktopConfigLibraries.saveDefault(committed.configLibrary).getOrThrow()
+                                        configLibrary = committed.configLibrary
+                                        savedSections += "конфиги"
+                                        if (xrayProcessState.isRunning && activeBefore != committed.configLibrary.selectedConfigId) {
+                                            requestTunnelReconnect("Импорт изменил активный профиль.")
+                                        }
+                                    }
+                                } catch (error: Throwable) {
+                                    val prefix = if (savedSections.isEmpty()) {
+                                        "Импорт не сохранён"
+                                    } else {
+                                        "Часть импорта уже сохранена (${savedSections.joinToString()})"
+                                    }
+                                    return@import Result.failure(
+                                        IllegalStateException("$prefix: ${error.message.orEmpty()}", error),
+                                    )
+                                }
+                                if (xrayProcessState.isRunning &&
+                                    committed.serverLibrary.selectedServerId != selectedServerBefore
+                                ) {
+                                    requestTunnelReconnect("Импорт изменил выбранный сервер.")
+                                }
+                                val diagnostics = plan.diagnostics
+                                    .filter { diagnostic -> diagnostic.severity != DesktopProxyImportDiagnosticSeverity.Error }
+                                    .map(DesktopProxyImportDiagnostic::message)
+                                    .take(2)
+                                    .joinToString(" ")
+                                val subscriptionHint = if (committed.counts.addedSubscriptions + committed.counts.updatedSubscriptions > 0) {
+                                    " Подписки сохранены; их можно обновить из карточки."
+                                } else {
+                                    ""
+                                }
+                                Result.success(
+                                    committed.summary + subscriptionHint +
+                                        diagnostics.takeIf(String::isNotBlank)?.let { " $it" }.orEmpty(),
+                                )
+                            },
                             onUpdateSubscription = {
                                 if (subscriptionUpdateInProgress) {
                                     subscriptionMessage = "Обновление подписки уже выполняется."
@@ -593,6 +725,26 @@ fun main() = application {
                                             return@launch
                                         }
                                         if (update.importResult.servers.isEmpty()) {
+                                            val metadataOnlyLibrary = runCatching {
+                                                DesktopSubscriptionLibraries.addOrReplace(
+                                                    library = subscriptionLibrary,
+                                                    url = requestedUrl,
+                                                    userAgent = subscriptionUserAgent,
+                                                    name = update.metadata.profileTitle.orEmpty(),
+                                                    metadata = update.metadata,
+                                                )
+                                            }.getOrElse { error ->
+                                                subscriptionMessage = "Список получен, но подписка не сохранена: ${error.message.orEmpty()}"
+                                                return@launch
+                                            }
+                                            DesktopSubscriptionLibraries.saveDefault(metadataOnlyLibrary).onSuccess {
+                                                subscriptionLibrary = metadataOnlyLibrary
+                                                subscriptionUrl = requestedUrl
+                                                subscriptionUpdate = update
+                                            }.onFailure { error ->
+                                                subscriptionMessage = "Список получен, но подписка не сохранена: ${error.message.orEmpty()}"
+                                                return@launch
+                                            }
                                             val diagnostics = update.importDiagnostics.take(2).joinToString(" ")
                                             subscriptionMessage = "Подписка не изменила список: не найдено поддерживаемых серверов. " +
                                                 "Существующая группа сохранена.${diagnostics.takeIf(String::isNotBlank)?.let { " $it" }.orEmpty()}"
@@ -713,6 +865,31 @@ fun main() = application {
                                         } finally {
                                             subscriptionUpdateInProgress = false
                                         }
+                                    }
+                                }
+                            },
+                            scheduledSubscriptionId = scheduledSubscriptionId,
+                            onScheduledSubscriptionConsumed = {
+                                scheduledSubscriptionId = null
+                                subscriptionSchedulerTick += 1
+                            },
+                            onUpdateSubscriptionProvider = { subscriptionId, edit ->
+                                if (subscriptionUpdateInProgress) {
+                                    Result.failure(IllegalStateException("Дождитесь завершения обновления подписки."))
+                                } else {
+                                    runCatching {
+                                        val previousUrl = subscriptionLibrary.subscriptions
+                                            .firstOrNull { subscription -> subscription.id == subscriptionId }
+                                            ?.url
+                                        val updated = DesktopSubscriptionLibraries.updateProvider(
+                                            subscriptionLibrary,
+                                            subscriptionId,
+                                            edit,
+                                        )
+                                        DesktopSubscriptionLibraries.saveDefault(updated).getOrThrow()
+                                        subscriptionLibrary = updated
+                                        if (subscriptionUrl == previousUrl) subscriptionUrl = edit.url.trim()
+                                        subscriptionMessage = "Параметры подписки сохранены."
                                     }
                                 }
                             },
@@ -851,3 +1028,5 @@ private val SkipiBackground: Color
 private val SkipiCard = Color(0xFF202126)
 private val SkipiMuted = Color(0xFF9A9DA8)
 private const val MaxHomeLatencyChecks = 24
+private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
+private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L

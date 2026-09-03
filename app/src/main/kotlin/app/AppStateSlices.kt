@@ -73,6 +73,7 @@ data class ProxyServerListState(
     val availableAppUpdate: features.updater.AppUpdateInfo?,
     val dismissedUpdateVersion: String,
     val activeTrafficConfigId: Int? = null,
+    val unappliedRoutingRules: List<String> = emptyList(),
 )
 
 val LocalAppStateStore = staticCompositionLocalOf<AndroidAppStateStore> {
@@ -187,5 +188,6 @@ internal fun AppState.toProxyServerListState(): ProxyServerListState {
         availableAppUpdate = availableAppUpdate,
         dismissedUpdateVersion = dismissedUpdateVersion,
         activeTrafficConfigId = activeTrafficConfigId,
+        unappliedRoutingRules = unappliedRoutingRules,
     )
 }

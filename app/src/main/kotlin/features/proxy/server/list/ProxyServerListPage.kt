@@ -747,6 +747,13 @@ fun ProxyServerListPage(
             dismissedVersion = proxyListState.dismissedUpdateVersion,
         )
 
+        features.routing.ui.UnappliedRulesWarningNotification(
+            unappliedRules = proxyListState.unappliedRoutingRules,
+            onDismiss = {
+                updateAppState { state -> state.copy(unappliedRoutingRules = emptyList()) }
+            },
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()

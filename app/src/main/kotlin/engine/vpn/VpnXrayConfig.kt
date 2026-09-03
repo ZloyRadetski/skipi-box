@@ -42,6 +42,7 @@ internal data class VpnServiceStartConfig(
     val enableLocalDns: Boolean = true,
     val dnsServers: List<String>,
     val xrayConfigJson: String,
+    val unappliedRules: List<String> = emptyList(),
     val applicationPolicy: VpnApplicationPolicy,
     val localProxyOptions: LocalProxyOptions,
     val appendHttpProxyOptions: VpnAppendHttpProxyOptions,
@@ -61,19 +62,35 @@ internal fun VpnServiceStartConfig.xrayTunFd(vpnTunFd: Int): Int {
 internal object VpnXrayConfigFactory {
     fun create(context: Context, request: ProxyEngineStartRequest): VpnServiceStartConfig {
         val appState = request.appState
-        val coreLogPaths = context.prepareXrayCoreLogPaths()
-        val resourceFilePaths = context.prepareXrayResourceFilePaths()
-        if (request.selectedServer.server !is Custom) {
-            appState.validateXrayExternalRoutingResources(resourceFilePaths.dataDir)
-        }
         val tunOptions = appState.toTunOptions()
         val localProxyOptions = appState.toLocalProxyOptions()
         val appendHttpProxyOptions = appState.toVpnAppendHttpProxyOptions(
             localProxyOptions = localProxyOptions,
             excludedPorts = setOfNotNull(request.xrayStatsApiPort),
         )
+        val coreLogPaths = context.prepareXrayCoreLogPaths()
+        val resourceFilePaths = context.prepareXrayResourceFilePaths()
+        appState.validateXrayExternalRoutingResources(resourceFilePaths.dataDir)
         val outboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)
         val dnsHosts = appState.xrayDnsHosts(outboundPlan.dnsHostServers)
+        val xrayConfigResult = XrayConfigFactory.buildXrayConfigResult(
+            XrayConfigRequest(
+                appState = appState,
+                selectedServer = request.selectedServer,
+                inbounds = buildVpnXrayInbounds(
+                    appState = appState,
+                    tunOptions = tunOptions,
+                    localProxyOptions = localProxyOptions,
+                    appendHttpProxyOptions = appendHttpProxyOptions,
+                ),
+                coreLogPaths = coreLogPaths,
+                dataDir = resourceFilePaths.dataDir,
+                dnsHosts = dnsHosts,
+                dnsHijackInboundTags = vpnDnsHijackInboundTags(appState.enableVpnHevTun),
+                statsApiConfig = request.xrayStatsApiConfig(),
+                outboundPlan = outboundPlan,
+            ),
+        )
 
         return VpnServiceStartConfig(
             sessionName = "SKIPI",
@@ -85,24 +102,8 @@ internal object VpnXrayConfigFactory {
             ipv6PrefixLength = tunOptions.ipv6Address.prefixLength,
             enableLocalDns = appState.effectiveLocalDnsEnabled,
             dnsServers = tunOptions.dnsServers,
-            xrayConfigJson = XrayConfigFactory.buildXrayConfig(
-                XrayConfigRequest(
-                    appState = appState,
-                    selectedServer = request.selectedServer,
-                    inbounds = buildVpnXrayInbounds(
-                        appState = appState,
-                        tunOptions = tunOptions,
-                        localProxyOptions = localProxyOptions,
-                        appendHttpProxyOptions = appendHttpProxyOptions,
-                    ),
-                    coreLogPaths = coreLogPaths,
-                    dataDir = resourceFilePaths.dataDir,
-                    dnsHosts = dnsHosts,
-                    dnsHijackInboundTags = vpnDnsHijackInboundTags(appState.enableVpnHevTun),
-                    statsApiConfig = request.xrayStatsApiConfig(),
-                    outboundPlan = outboundPlan,
-                ),
-            ),
+            xrayConfigJson = xrayConfigResult.json,
+            unappliedRules = xrayConfigResult.unappliedRules,
             applicationPolicy = appState.toVpnApplicationPolicy(Process.myUid().toAndroidUserId()),
             localProxyOptions = localProxyOptions,
             appendHttpProxyOptions = appendHttpProxyOptions,

@@ -97,9 +97,41 @@ class XrayRoutingConfigTest {
                 obj["ruleTag"]?.jsonPrimitive?.content == "Non-existent geosite"
             }
             assertEquals(0, leakedRules.size)
+            assertTrue(plan.unappliedRules.contains("geosite:nonexistent_custom_tag"))
         } finally {
             tempDir.deleteRecursively()
         }
+    }
+
+    @Test
+    fun testValidRulesProduceEmptyUnappliedRules() {
+        val validRule = RouteRule(
+            id = 3,
+            remarks = "Valid IP rule",
+            outboundTag = "direct",
+            ip = listOf("1.1.1.1", "10.0.0.0/8"),
+            enabled = true,
+        )
+
+        val appState = AppState(
+            routeRules = listOf(validRule),
+            defaultRouteOutboundTag = "proxy",
+        )
+
+        val targets = mapOf(
+            "proxy" to XrayRouteTarget("proxy", XrayRouteTargetKind.Outbound),
+            "direct" to XrayRouteTarget("direct", XrayRouteTargetKind.Outbound),
+        )
+
+        val plan = appState.buildXrayRoutingPlan(
+            routeTargets = targets,
+            balancers = emptyList(),
+            routeProxyDns = false,
+            routeDirectDns = false,
+            dnsHijackInboundTags = emptyList(),
+        )
+
+        assertTrue(plan.unappliedRules.isEmpty())
     }
 
     @Test

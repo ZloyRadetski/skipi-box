@@ -19,6 +19,7 @@ internal data class XrayRoutingPlan(
     val rules: JsonArray,
     val balancers: List<JsonObject>,
     val primaryOutboundTag: String?,
+    val unappliedRules: List<String> = emptyList(),
 )
 
 internal fun AppState.buildXrayRoutingPlan(
@@ -31,22 +32,24 @@ internal fun AppState.buildXrayRoutingPlan(
 ): XrayRoutingPlan {
     val domainStrategy = routeDomainStrategy.toXrayRoutingDomainStrategy()
     val defaultTarget = defaultRouteTarget(routeTargets)
+    val (rules, unappliedRules) = routingRules(
+        routeTargets = routeTargets,
+        routeProxyDns = routeProxyDns,
+        routeDirectDns = routeDirectDns,
+        dnsHijackInboundTags = dnsHijackInboundTags,
+        defaultTarget = defaultTarget,
+        dataDir = dataDir,
+    )
     return XrayRoutingPlan(
         domainStrategy = domainStrategy,
-        rules = routingRules(
-            routeTargets = routeTargets,
-            routeProxyDns = routeProxyDns,
-            routeDirectDns = routeDirectDns,
-            dnsHijackInboundTags = dnsHijackInboundTags,
-            defaultTarget = defaultTarget,
-            dataDir = dataDir,
-        ),
+        rules = rules,
         balancers = balancers,
         primaryOutboundTag = when (defaultTarget?.kind) {
             XrayRouteTargetKind.Outbound -> defaultTarget.tag
             XrayRouteTargetKind.Balancer -> XrayTags.DEFAULT_ROUTE_LOOPBACK
             null -> null
         },
+        unappliedRules = unappliedRules,
     )
 }
 
@@ -67,8 +70,9 @@ private fun AppState.routingRules(
     dnsHijackInboundTags: List<String>,
     defaultTarget: XrayRouteTarget?,
     dataDir: String? = null,
-): JsonArray {
-    return buildJsonArray {
+): Pair<JsonArray, List<String>> {
+    val unapplied = mutableListOf<String>()
+    val rulesArray = buildJsonArray {
         defaultTarget
             ?.takeIf { target -> target.kind == XrayRouteTargetKind.Balancer }
             ?.let { target -> add(buildDefaultBalancerRoute(target)) }
@@ -83,14 +87,23 @@ private fun AppState.routingRules(
         }
         routeRules
             .filter(RouteRule::enabled)
-            .mapNotNull { rule -> rule.toXrayRule(routeTargets, dataDir) }
-            .forEach(::add)
+            .forEach { rule ->
+                val invalidDomains = rule.domain.filterNot { XrayGeoRuleSanitizer.isDomainRuleValid(it, dataDir) }
+                val invalidIps = rule.ip.filterNot { XrayGeoRuleSanitizer.isIpRuleValid(it, dataDir) }
+                unapplied.addAll(invalidDomains)
+                unapplied.addAll(invalidIps)
+                val xrayRule = rule.toXrayRule(routeTargets, dataDir)
+                if (xrayRule != null) {
+                    add(xrayRule)
+                }
+            }
         // Xray otherwise falls back to the first outbound.  That makes a
         // Shadowrocket FINAL choice look ignored whenever the selected card is
         // still the first proxy outbound.  Keep FINAL as the last rule so
         // every unmatched VPN/local-proxy connection reaches its chosen target.
         defaultTarget?.let(::buildFinalRoute)?.let(::add)
     }
+    return rulesArray to unapplied.distinct()
 }
 
 private fun buildDefaultBalancerRoute(target: XrayRouteTarget): JsonObject {

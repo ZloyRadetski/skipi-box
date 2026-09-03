@@ -13,23 +13,29 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.Inet4Address
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.URI
+import java.net.ProxySelector
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 
 /** Desktop HTTP adapter for subscriptions. Parsing and validation stay in the shared core. */
 class DesktopSubscriptionFetcher(
-    private val client: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(DefaultConnectTimeout)
-        // Redirects are followed explicitly below so automatic provider/config
-        // requests can be checked before every hop.
-        .followRedirects(HttpClient.Redirect.NEVER)
-        .build(),
+    private val client: HttpClient = createDesktopSubscriptionHttpClient(),
     private val maxResponseBytes: Int = MaxDesktopSubscriptionResponseBytes,
+    /**
+     * Optional test seam for the separate client required by a proxy request.
+     * Existing injected [client] instances continue to service every direct request.
+     */
+    private val proxyClientFactory: (DesktopSubscriptionHttpProxy) -> HttpClient =
+        ::createDesktopSubscriptionProxyHttpClient,
 ) {
+    private val proxyClients = ConcurrentHashMap<DesktopSubscriptionHttpProxy, HttpClient>()
+
     init {
         require(maxResponseBytes > 0) { "Subscription response limit must be positive" }
     }
@@ -38,12 +44,21 @@ class DesktopSubscriptionFetcher(
         url: String,
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
+        proxy: DesktopSubscriptionHttpProxy? = null,
     ): DesktopSubscriptionUpdate {
-        val response = fetch(url, userAgent, timeout)
+        val requestClient = clientFor(proxy)
+        val response = fetchResponse(
+            url = url,
+            userAgent = userAgent,
+            timeout = timeout,
+            automaticResource = false,
+            requestClient = requestClient,
+        )
         val imported = importMihomoOrStandardPayload(
             rootPayload = response.body,
             userAgent = userAgent,
             timeout = timeout,
+            requestClient = requestClient,
         )
         return DesktopSubscriptionUpdate(
             response = response,
@@ -57,11 +72,13 @@ class DesktopSubscriptionFetcher(
         url: String,
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
+        proxy: DesktopSubscriptionHttpProxy? = null,
     ): SubscriptionFetchResponse = fetchResponse(
         url = url,
         userAgent = userAgent,
         timeout = timeout,
         automaticResource = false,
+        requestClient = clientFor(proxy),
     )
 
     /**
@@ -73,10 +90,16 @@ class DesktopSubscriptionFetcher(
         metadata: SubscriptionMetadata,
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
+        proxy: DesktopSubscriptionHttpProxy? = null,
     ): DesktopResolvedEmbeddedConfig? {
         val embedded = metadata.embeddedConfig ?: return null
         val content = if (embedded.isUrl) {
-            fetchAutomaticResource(embedded.payload, userAgent, timeout).body
+            fetchAutomaticResource(
+                url = embedded.payload,
+                userAgent = userAgent,
+                timeout = timeout,
+                requestClient = clientFor(proxy),
+            ).body
         } else {
             embedded.payload.decodeSkipiConfigPayloadOrNull() ?: embedded.payload.trim()
         }.trim()
@@ -98,6 +121,7 @@ class DesktopSubscriptionFetcher(
         rootPayload: String,
         userAgent: String,
         timeout: Duration,
+        requestClient: HttpClient,
     ): DesktopFetchedSubscriptionImport {
         var imported = DesktopMihomoPayloadImporter.import(rootPayload)
         if (!imported.recognizedYaml) {
@@ -121,7 +145,14 @@ class DesktopSubscriptionFetcher(
             if (pending.isEmpty()) return@repeat
             pending.forEach { request ->
                 attemptedProviders += request.url
-                runCatching { fetchAutomaticResource(request.url, userAgent, timeout) }
+                runCatching {
+                    fetchAutomaticResource(
+                        url = request.url,
+                        userAgent = userAgent,
+                        timeout = timeout,
+                        requestClient = requestClient,
+                    )
+                }
                     .onSuccess { provider -> providerBodies[request.url] = provider.body }
                     .onFailure {
                         diagnostics += "Провайдер '${request.name.ifBlank { "без названия" }}' не удалось загрузить; остальные серверы сохранены."
@@ -156,11 +187,13 @@ class DesktopSubscriptionFetcher(
         url: String,
         userAgent: String,
         timeout: Duration,
+        requestClient: HttpClient,
     ): SubscriptionFetchResponse = fetchResponse(
         url = url,
         userAgent = userAgent,
         timeout = timeout,
         automaticResource = true,
+        requestClient = requestClient,
     )
 
     private fun fetchResponse(
@@ -168,6 +201,7 @@ class DesktopSubscriptionFetcher(
         userAgent: String,
         timeout: Duration,
         automaticResource: Boolean,
+        requestClient: HttpClient,
     ): SubscriptionFetchResponse {
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
         var requestUri = URI(url.trim())
@@ -182,7 +216,7 @@ class DesktopSubscriptionFetcher(
                 .header("User-Agent", userAgent.ifBlank { DefaultDesktopSubscriptionUserAgent })
                 .GET()
                 .build()
-            val response = client.send(request, HttpResponse.BodyHandlers.ofInputStream())
+            val response = requestClient.send(request, HttpResponse.BodyHandlers.ofInputStream())
 
             // A caller may inject an HttpClient configured to follow redirects.
             // Re-check its final URI even though the production client disables it.
@@ -219,7 +253,50 @@ class DesktopSubscriptionFetcher(
             )
         }
     }
+
+    private fun clientFor(proxy: DesktopSubscriptionHttpProxy?): HttpClient = proxy?.let { endpoint ->
+        proxyClients.computeIfAbsent(endpoint) { proxyClientFactory(it) }
+    } ?: client
 }
+
+/**
+ * Loopback HTTP proxy endpoint used for subscription updates through the active tunnel.
+ *
+ * This deliberately rejects LAN and remote endpoints: the setting is for SKIPI's own
+ * local Xray HTTP inbound, not a general-purpose proxy configuration.
+ */
+data class DesktopSubscriptionHttpProxy(
+    val host: String,
+    val port: Int,
+) {
+    init {
+        require(host == host.trim() && host in LocalSubscriptionProxyHosts) {
+            "Subscription HTTP proxy host must be a loopback address"
+        }
+        require(port in 1..65_535) { "Subscription HTTP proxy port must be in 1..65535" }
+    }
+
+    internal fun toProxySelector(): ProxySelector = ProxySelector.of(
+        InetSocketAddress.createUnresolved(host, port),
+    )
+}
+
+/** Builds the direct client used for the default desktop subscription path. */
+internal fun createDesktopSubscriptionHttpClient(
+    proxy: DesktopSubscriptionHttpProxy? = null,
+): HttpClient {
+    val builder = HttpClient.newBuilder()
+        .connectTimeout(DefaultConnectTimeout)
+        // Redirects are followed explicitly below so automatic provider/config
+        // requests can be checked before every hop.
+        .followRedirects(HttpClient.Redirect.NEVER)
+    if (proxy != null) builder.proxy(proxy.toProxySelector())
+    return builder.build()
+}
+
+private fun createDesktopSubscriptionProxyHttpClient(
+    proxy: DesktopSubscriptionHttpProxy,
+): HttpClient = createDesktopSubscriptionHttpClient(proxy)
 
 /**
  * Validates an auxiliary URL found in subscription metadata or a Mihomo provider.
