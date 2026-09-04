@@ -18,6 +18,8 @@ internal enum class ProxyServerListAddAction {
     Socks,
     Hysteria2,
     Wireguard,
+    AmneziaWg,
+    OlcRtc,
 }
 
 internal enum class ProxyServerListToolAction {

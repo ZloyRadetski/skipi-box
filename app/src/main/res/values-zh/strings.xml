@@ -496,6 +496,8 @@
     <string name="proxy_server_list_add_socks">添加袜子</string>
     <string name="proxy_server_list_add_hysteria2">添加歇斯底里2</string>
     <string name="proxy_server_list_add_wireguard">添加线卫</string>
+    <string name="proxy_server_list_add_amnezia_wg">添加 AmneziaWG</string>
+    <string name="proxy_server_list_add_olcrtc">添加 OLCRTC</string>
     <string name="proxy_server_list_restart_service">重启服务</string>
     <string name="proxy_server_list_update_subscriptions">更新订阅</string>
     <string name="proxy_server_list_saved">{name}已保存</string>

@@ -544,6 +544,8 @@
     <string name="proxy_server_list_add_socks">Add Socks</string>
     <string name="proxy_server_list_add_hysteria2">Add Hysteria2</string>
     <string name="proxy_server_list_add_wireguard">Add Wireguard</string>
+    <string name="proxy_server_list_add_amnezia_wg">Add AmneziaWG</string>
+    <string name="proxy_server_list_add_olcrtc">Add OLCRTC</string>
     <string name="proxy_server_list_restart_service">Restart service</string>
     <string name="proxy_server_list_update_subscriptions">Update subscriptions</string>
     <string name="proxy_server_list_saved">{name} saved</string>

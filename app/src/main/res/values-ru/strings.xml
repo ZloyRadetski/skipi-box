@@ -535,6 +535,8 @@
     <string name="proxy_server_list_add_socks">Добавить Socks</string>
     <string name="proxy_server_list_add_hysteria2">Добавить Hysteria2</string>
     <string name="proxy_server_list_add_wireguard">Добавить Wireguard</string>
+    <string name="proxy_server_list_add_amnezia_wg">Добавить AmneziaWG</string>
+    <string name="proxy_server_list_add_olcrtc">Добавить OLCRTC</string>
     <string name="proxy_server_list_restart_service">Перезапустить службу</string>
     <string name="proxy_server_list_update_subscriptions">Обновить подписки</string>
     <string name="proxy_server_list_saved">Конфигурация {name} сохранена</string>

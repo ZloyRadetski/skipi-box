@@ -29,6 +29,22 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        val localCoreDir = file("../skipi-core")
+        if (localCoreDir.isDirectory && localCoreDir.resolve("skipicore.aar").isFile) {
+            ivy {
+                name = "SkipiCoreLocal"
+                url = localCoreDir.toURI()
+                patternLayout {
+                    artifact("[artifact].[ext]")
+                }
+                metadataSources {
+                    artifact()
+                }
+                content {
+                    includeModule("app.skipi.core", "skipicore")
+                }
+            }
+        }
         ivy {
             name = "SkipiCoreGitHubRelease"
             url = uri("https://github.com/ZloyRadetski/skipi-core/releases/download")

@@ -1149,6 +1149,8 @@ private fun proxyServerListManualInputMenuEntries() = listOf(
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_socks), ProxyServerListAddAction.Socks),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_hysteria2), ProxyServerListAddAction.Hysteria2),
     ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_wireguard), ProxyServerListAddAction.Wireguard),
+    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_amnezia_wg), ProxyServerListAddAction.AmneziaWg),
+    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_olcrtc), ProxyServerListAddAction.OlcRtc),
 ).map { entry ->
     proxyServerListAddMenuEntry(entry.title, entry.action)
 }

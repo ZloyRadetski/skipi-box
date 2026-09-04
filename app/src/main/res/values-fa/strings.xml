@@ -482,6 +482,8 @@
     <string name="proxy_server_list_add_socks">جوراب اضافه کنید</string>
     <string name="proxy_server_list_add_hysteria2">Hysteria2 را اضافه کنید</string>
     <string name="proxy_server_list_add_wireguard">Wireguard را اضافه کنید</string>
+    <string name="proxy_server_list_add_amnezia_wg">AmneziaWG را اضافه کنید</string>
+    <string name="proxy_server_list_add_olcrtc">OLCRTC را اضافه کنید</string>
     <string name="proxy_server_list_restart_service">سرویس را دوباره راه اندازی کنید</string>
     <string name="proxy_server_list_update_subscriptions">اشتراک ها را به روز کنید</string>
     <string name="proxy_server_list_saved">{name}ذخیره شد</string>

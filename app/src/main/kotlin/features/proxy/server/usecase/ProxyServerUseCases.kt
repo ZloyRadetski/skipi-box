@@ -7,10 +7,12 @@ import app.AppState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import features.proxy.server.list.ProxyServerListAddAction
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
+import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -532,6 +534,19 @@ internal fun createProxyServer(action: ProxyServerListAddAction): ProxyServer<*>
         ProxyServerListAddAction.Hysteria2 -> Hysteria2(port = "")
 
         ProxyServerListAddAction.Wireguard -> Wireguard(port = "", reserved = "", address = "", mtu = "")
+
+        ProxyServerListAddAction.AmneziaWg -> AmneziaWg(
+            server = "",
+            port = "",
+            secretKey = "",
+            publicKey = "",
+            preSharedKey = "",
+            reserved = "",
+            address = "",
+            mtu = "",
+        )
+
+        ProxyServerListAddAction.OlcRtc -> OlcRtc()
 
         ProxyServerListAddAction.Custom -> Custom()
     }
