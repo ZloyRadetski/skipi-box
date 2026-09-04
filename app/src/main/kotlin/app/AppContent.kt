@@ -97,6 +97,7 @@ import features.config.TrafficConfigRuleEditorPage
 import features.settings.LocalProxySettingsPage
 import features.settings.SettingsAppearancePage
 import features.settings.SettingsBackupResetPage
+import features.settings.SettingsGeneralPage
 import features.settings.SettingsIntegrationPage
 import features.settings.SettingsLogsPage
 import features.settings.SettingsPage
@@ -246,6 +247,11 @@ fun AppContent(
                 appEntry<Route.SettingsAppearance> {
                     key(languageMode) {
                         SettingsAppearancePage(padding = padding)
+                    }
+                }
+                appEntry<Route.SettingsGeneral> {
+                    key(languageMode) {
+                        SettingsGeneralPage(padding = padding)
                     }
                 }
                 appEntry<Route.SettingsVpn> {

@@ -28,3 +28,4 @@ gradle_out.txt
 *.log
 *.log.txt
 skipi-*.txt
+desktopApp/bin/

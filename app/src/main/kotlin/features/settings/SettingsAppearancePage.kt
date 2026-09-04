@@ -59,11 +59,6 @@ import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
 import app.modes.ConnectionDisplayModeClassic
-import app.modes.LanguageModeChinese
-import app.modes.LanguageModeEnglish
-import app.modes.LanguageModePersian
-import app.modes.LanguageModeRussian
-import app.modes.LanguageModeSystem
 import app.modes.normalizeBackgroundStyle
 import ui.background.clearCustomBackgroundPhoto
 import ui.background.customBackgroundPhotoExists
@@ -162,22 +157,6 @@ fun SettingsAppearancePage(
         stringResource(R.string.option_theme_dark),
         stringResource(R.string.option_amoled),
     )
-    val languageOptions = listOf(
-        stringResource(R.string.option_follow_system),
-        stringResource(R.string.option_english),
-        stringResource(R.string.option_russian),
-        stringResource(R.string.option_chinese),
-        stringResource(R.string.option_persian),
-    )
-    val languageModes = listOf(
-        LanguageModeSystem,
-        LanguageModeEnglish,
-        LanguageModeRussian,
-        LanguageModeChinese,
-        LanguageModePersian,
-    )
-    val languageSelectionIndex = languageModes.indexOf(appState.languageMode).coerceAtLeast(0)
-
     val keyColorOptions = listOf(
         stringResource(R.string.theme_color_default),
         stringResource(R.string.theme_color_blue),
@@ -376,38 +355,6 @@ fun SettingsAppearancePage(
                                 onClick = { activeColorPickerTarget = ColorPickerTarget.ACCENT },
                             )
                         }
-                        AppOverlayDropdownPreference(
-                            title = stringResource(R.string.settings_language),
-                            items = languageOptions,
-                            selectedIndex = languageSelectionIndex,
-                            onSelectedIndexChange = { index ->
-                                updateAppState { it.copy(languageMode = languageModes[index]) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_enable_haptics),
-                            summary = stringResource(R.string.settings_enable_haptics_summary),
-                            checked = appState.enableHaptics,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableHaptics = enabled) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_traffic_stats_notification),
-                            summary = stringResource(R.string.settings_traffic_stats_notification_summary),
-                            checked = appState.enableTrafficStatsNotification,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableTrafficStatsNotification = enabled) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_resource_files_notifications),
-                            summary = stringResource(R.string.settings_resource_files_notifications_summary),
-                            checked = appState.enableResourceFileNotifications,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableResourceFileNotifications = enabled) }
-                            },
-                        )
                     }
                 }
 
@@ -686,7 +633,7 @@ fun SettingsAppearancePage(
                 }
 
                 item(key = "appearance_layout") {
-                    SmallTitle(text = stringResource(R.string.settings_connection_display_mode))
+                    SmallTitle(text = stringResource(R.string.settings_header_layout))
                     SettingsSectionCard {
                         AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_bottom_bar_size),

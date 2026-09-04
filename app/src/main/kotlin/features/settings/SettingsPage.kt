@@ -162,29 +162,15 @@ private fun SettingsContent(
                 }
             }
 
-            item(key = "section_integration") {
-                SmallTitle(text = stringResource(R.string.settings_header_integration))
+            item(key = "section_general") {
+                SmallTitle(text = stringResource(R.string.settings_header_general))
                 SettingsCategoryGroupCard {
                     SettingsCategoryEntry(
-                        icon = SettingsIcons.Bolt,
+                        icon = SettingsIcons.Sliders,
                         iconBackgroundColor = categoryIconColor,
-                        title = stringResource(R.string.settings_category_integration),
-                        summary = stringResource(R.string.settings_category_integration_summary),
-                        onClick = { navigator.push(Route.SettingsIntegration) },
-                    )
-                }
-            }
-
-            item(key = "section_diagnostics") {
-                SmallTitle(text = stringResource(R.string.settings_header_diagnostics))
-                SettingsCategoryGroupCard {
-                    SettingsCategoryEntry(
-                        icon = SettingsIcons.Logs,
-                        iconBackgroundColor = categoryIconColor,
-                        title = stringResource(R.string.settings_category_logs),
-                        summary = stringResource(R.string.settings_category_logs_summary),
-                        value = SettingsLogLevelOptions.getOrNull(appState.coreLogLevel)?.uppercase(),
-                        onClick = { navigator.push(Route.SettingsLogs) },
+                        title = stringResource(R.string.settings_category_general),
+                        summary = stringResource(R.string.settings_category_general_summary),
+                        onClick = { navigator.push(Route.SettingsGeneral) },
                         showDivider = true,
                     )
                     SettingsCategoryEntry(
@@ -193,8 +179,13 @@ private fun SettingsContent(
                         title = stringResource(R.string.settings_category_backup_reset),
                         summary = stringResource(R.string.settings_category_backup_reset_summary),
                         onClick = { navigator.push(Route.SettingsBackupReset) },
-                        showDivider = true,
                     )
+                }
+            }
+
+            item(key = "section_tools") {
+                SmallTitle(text = stringResource(R.string.settings_header_tools))
+                SettingsCategoryGroupCard {
                     SettingsCategoryEntry(
                         icon = SettingsIcons.Bolt,
                         iconBackgroundColor = categoryIconColor,
@@ -217,6 +208,20 @@ private fun SettingsContent(
                         title = stringResource(R.string.settings_category_ip_info),
                         summary = stringResource(R.string.settings_category_ip_info_summary),
                         onClick = { navigator.push(Route.IpInfo) },
+                    )
+                }
+            }
+
+            item(key = "section_logs") {
+                SmallTitle(text = stringResource(R.string.settings_header_logs))
+                SettingsCategoryGroupCard {
+                    SettingsCategoryEntry(
+                        icon = SettingsIcons.Logs,
+                        iconBackgroundColor = categoryIconColor,
+                        title = stringResource(R.string.settings_category_logs),
+                        summary = stringResource(R.string.settings_category_logs_summary),
+                        value = SettingsLogLevelOptions.getOrNull(appState.coreLogLevel)?.uppercase(),
+                        onClick = { navigator.push(Route.SettingsLogs) },
                     )
                 }
             }
