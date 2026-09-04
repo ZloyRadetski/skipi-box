@@ -1346,8 +1346,8 @@
     <string name="proxy_editor_awg_h4">传输标头 (H4，uint32)</string>
 
     <!-- OLCRTC 编辑器 -->
-    <string name="proxy_editor_olcrtc_provider">提供商 (jitsi / telemost / wbstream / custom)</string>
-    <string name="proxy_editor_olcrtc_transport">传输类型 (datachannel / vp8channel / seichannel / videochannel)</string>
+    <string name="proxy_editor_olcrtc_provider">提供商</string>
+    <string name="proxy_editor_olcrtc_transport">传输类型</string>
     <string name="proxy_editor_olcrtc_room_url">会议室 URL</string>
     <string name="proxy_editor_olcrtc_encryption_key">加密密钥 (64 位十六进制)</string>
     <string name="proxy_editor_olcrtc_payload_optional">传输 Payload（可选）</string>

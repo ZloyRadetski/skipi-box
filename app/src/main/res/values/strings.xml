@@ -1374,8 +1374,8 @@
     <string name="proxy_editor_awg_h4">Transport header (H4, uint32)</string>
 
     <!-- OLCRTC editor -->
-    <string name="proxy_editor_olcrtc_provider">Provider (jitsi / telemost / wbstream / custom)</string>
-    <string name="proxy_editor_olcrtc_transport">Transport (datachannel / vp8channel / seichannel / videochannel)</string>
+    <string name="proxy_editor_olcrtc_provider">Provider</string>
+    <string name="proxy_editor_olcrtc_transport">Transport</string>
     <string name="proxy_editor_olcrtc_room_url">Room URL</string>
     <string name="proxy_editor_olcrtc_encryption_key">Encryption Key (64 hex chars)</string>
     <string name="proxy_editor_olcrtc_payload_optional">Transport Payload (optional)</string>

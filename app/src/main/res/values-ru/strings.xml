@@ -1364,8 +1364,8 @@
     <string name="proxy_editor_awg_h4">Транспортный заголовок (H4, uint32)</string>
 
     <!-- Редактор OLCRTC -->
-    <string name="proxy_editor_olcrtc_provider">Провайдер (jitsi / telemost / wbstream / custom)</string>
-    <string name="proxy_editor_olcrtc_transport">Транспорт (datachannel / vp8channel / seichannel / videochannel)</string>
+    <string name="proxy_editor_olcrtc_provider">Провайдер</string>
+    <string name="proxy_editor_olcrtc_transport">Транспорт</string>
     <string name="proxy_editor_olcrtc_room_url">URL комнаты</string>
     <string name="proxy_editor_olcrtc_encryption_key">Ключ шифрования (64 hex символа)</string>
     <string name="proxy_editor_olcrtc_payload_optional">Payload транспорта (опционально)</string>

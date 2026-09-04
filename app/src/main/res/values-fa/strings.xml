@@ -1345,8 +1345,8 @@
     <string name="proxy_editor_awg_h4">سرآیند انتقال (H4، uint32)</string>
 
     <!-- ویرایشگر OLCRTC -->
-    <string name="proxy_editor_olcrtc_provider">ارائه‌دهنده (jitsi / telemost / wbstream / custom)</string>
-    <string name="proxy_editor_olcrtc_transport">انتقال (datachannel / vp8channel / seichannel / videochannel)</string>
+    <string name="proxy_editor_olcrtc_provider">ارائه‌دهنده</string>
+    <string name="proxy_editor_olcrtc_transport">انتقال</string>
     <string name="proxy_editor_olcrtc_room_url">آدرس اتاق</string>
     <string name="proxy_editor_olcrtc_encryption_key">کلید رمزگذاری (64 کاراکتر hex)</string>
     <string name="proxy_editor_olcrtc_payload_optional">محموله انتقال (اختیاری)</string>
