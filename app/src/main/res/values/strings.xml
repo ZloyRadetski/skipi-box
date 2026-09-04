@@ -714,6 +714,8 @@
     <string name="proxy_validation_shadowsocks_2022_key_base64_invalid">Shadowsocks 2022 key must be base64</string>
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">Invalid Shadowsocks 2022 key length. Decoded length must be {lengths} bytes</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">VLESS Vision flow only supports RAW + TLS/REALITY</string>
+    <string name="proxy_validation_awg_jmin_max_invalid">Jmin cannot be greater than Jmax</string>
+    <string name="proxy_validation_olcrtc_key_invalid">Key must be exactly 64 hexadecimal characters</string>
 
     <!-- Routing -->
     <string name="routing_title">Routing rules</string>
@@ -1356,4 +1358,25 @@
     <!-- Home section titles -->
     <string name="home_section_subscription">Subscription</string>
     <string name="home_section_servers">Servers</string>
+
+    <!-- Amnezia WG editor -->
+    <string name="proxy_editor_amnezia_obfuscation">Obfuscation (AmneziaWG)</string>
+    <string name="proxy_editor_awg_jc">Junk Count (Jc, 0–128)</string>
+    <string name="proxy_editor_awg_jmin">Junk min size (Jmin, 0–1280)</string>
+    <string name="proxy_editor_awg_jmax">Junk max size (Jmax, 0–1280)</string>
+    <string name="proxy_editor_awg_s1">Init junk prefix size (S1, 0–1280)</string>
+    <string name="proxy_editor_awg_s2">Response junk prefix size (S2, 0–1280)</string>
+    <string name="proxy_editor_awg_h1">Init handshake header (H1, uint32)</string>
+    <string name="proxy_editor_awg_h2">Response handshake header (H2, uint32)</string>
+    <string name="proxy_editor_awg_h3">Cookie handshake header (H3, uint32)</string>
+    <string name="proxy_editor_awg_h4">Transport header (H4, uint32)</string>
+
+    <!-- OLCRTC editor -->
+    <string name="proxy_editor_olcrtc_provider">Provider (jitsi / telemost / wbstream / custom)</string>
+    <string name="proxy_editor_olcrtc_transport">Transport (datachannel / vp8channel / seichannel / videochannel)</string>
+    <string name="proxy_editor_olcrtc_room_url">Room URL</string>
+    <string name="proxy_editor_olcrtc_encryption_key">Encryption Key (64 hex chars)</string>
+    <string name="proxy_editor_olcrtc_payload_optional">Transport Payload (optional)</string>
+    <string name="proxy_editor_olcrtc_socks_port">Preferred local SOCKS5 port</string>
 </resources>
+

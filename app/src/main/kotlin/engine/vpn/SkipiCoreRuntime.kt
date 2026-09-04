@@ -23,10 +23,14 @@ internal object SkipiCoreRuntime {
             context.getString(R.string.error_skipi_core_data_dir_missing)
         }
         context.initializeAndroidXrayCoreEnvironment(config.dataDir)
+        if (!config.olcRtcConfigYaml.isNullOrBlank() && config.olcRtcSocksPort > 0) {
+            startOlcRtc(config.olcRtcConfigYaml, config.olcRtcSocksPort)
+        }
         val controller = Skipicore.newCoreController(SkipiCoreCallbackHandler())
         runCatching {
             controller.startLoop(config.xrayConfigJson, tunFd.toLong())
         }.onFailure { error ->
+            stopOlcRtc()
             runCatching { controller.stopLoop() }
                 .onFailure { stopError ->
                     AndroidAppLogger.warn(LogTag, "Failed to stop SKIPI Core after start failure", stopError)
@@ -40,6 +44,7 @@ internal object SkipiCoreRuntime {
     }
 
     fun stop() {
+        stopOlcRtc()
         val controller = coreController ?: return
         runCatching {
             controller.stopLoop()
@@ -47,6 +52,39 @@ internal object SkipiCoreRuntime {
             AndroidAppLogger.error(LogTag, "Failed to stop SKIPI Core", error)
         }
         coreController = null
+    }
+
+    fun startOlcRtc(configYaml: String, socksPort: Int) {
+        runCatching {
+            val method = Skipicore::class.java.methods.firstOrNull { it.name == "startOlcRtc" }
+            if (method != null) {
+                if (method.parameterTypes.size == 2) {
+                    val portArg: Any = if (method.parameterTypes[1] == Long::class.javaPrimitiveType || method.parameterTypes[1] == Long::class.javaObjectType) {
+                        socksPort.toLong()
+                    } else {
+                        socksPort
+                    }
+                    method.invoke(null, configYaml, portArg)
+                } else {
+                    method.invoke(null, configYaml)
+                }
+                AndroidAppLogger.info(LogTag, "OLCRTC started on socks port $socksPort")
+            } else {
+                AndroidAppLogger.warn(LogTag, "startOlcRtc not found in Skipicore library")
+            }
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to start OLCRTC", error)
+        }
+    }
+
+    fun stopOlcRtc() {
+        runCatching {
+            val method = Skipicore::class.java.methods.firstOrNull { it.name == "stopOlcRtc" }
+            method?.invoke(null)
+            AndroidAppLogger.info(LogTag, "OLCRTC stopped")
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to stop OLCRTC", error)
+        }
     }
 
     fun isRunning(): Boolean {

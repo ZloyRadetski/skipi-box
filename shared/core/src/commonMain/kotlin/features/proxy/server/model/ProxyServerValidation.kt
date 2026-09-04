@@ -497,3 +497,85 @@ private fun isValidIpv6(value: String): Boolean {
         }
     }
 }
+
+// ── AmneziaWG ────────────────────────────────────────────────────────────────
+
+private const val AwgJcMin = 0
+private const val AwgJcMax = 128
+private const val AwgJSizeMin = 0
+private const val AwgJSizeMax = 1280
+private const val AwgSSizeMin = 0
+private const val AwgSSizeMax = 1280
+private const val AwgHeaderMin = 0L
+private const val AwgHeaderMax = 4294967295L // 2^32 - 1 (uint32)
+
+internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgObfuscation(
+    jc: String,
+    jmin: String,
+    jmax: String,
+    s1: String,
+    s2: String,
+    h1: String,
+    h2: String,
+    h3: String,
+    h4: String,
+) {
+    // jc
+    if (jc.isNotBlank()) {
+        val jcVal = jc.toIntOrNull()
+        if (jcVal == null || jcVal !in AwgJcMin..AwgJcMax) {
+            addIssue(ProxyServerValidationError.AmneziaWgJcOutOfRange, AwgJcMin, AwgJcMax)
+        }
+    }
+    // jmin / jmax
+    val jminVal = jmin.toIntOrNull()
+    val jmaxVal = jmax.toIntOrNull()
+    if (jmin.isNotBlank() && (jminVal == null || jminVal !in AwgJSizeMin..AwgJSizeMax)) {
+        addIssue(ProxyServerValidationError.AmneziaWgJSizeOutOfRange, "Jmin", AwgJSizeMin, AwgJSizeMax)
+    }
+    if (jmax.isNotBlank() && (jmaxVal == null || jmaxVal !in AwgJSizeMin..AwgJSizeMax)) {
+        addIssue(ProxyServerValidationError.AmneziaWgJSizeOutOfRange, "Jmax", AwgJSizeMin, AwgJSizeMax)
+    }
+    if (jminVal != null && jmaxVal != null && jminVal > jmaxVal) {
+        addIssue(ProxyServerValidationError.AmneziaWgJminMaxInvalid)
+    }
+    // s1 / s2
+    if (s1.isNotBlank() && (s1.toIntOrNull() == null || s1.toInt() !in AwgSSizeMin..AwgSSizeMax)) {
+        addIssue(ProxyServerValidationError.AmneziaWgSSizeOutOfRange, "S1", AwgSSizeMin, AwgSSizeMax)
+    }
+    if (s2.isNotBlank() && (s2.toIntOrNull() == null || s2.toInt() !in AwgSSizeMin..AwgSSizeMax)) {
+        addIssue(ProxyServerValidationError.AmneziaWgSSizeOutOfRange, "S2", AwgSSizeMin, AwgSSizeMax)
+    }
+    // h1..h4
+    listOf("H1" to h1, "H2" to h2, "H3" to h3, "H4" to h4).forEach { (name, value) ->
+        if (value.isNotBlank()) {
+            val longVal = value.toLongOrNull()
+            if (longVal == null || longVal !in AwgHeaderMin..AwgHeaderMax) {
+                addIssue(ProxyServerValidationError.AmneziaWgHeaderInvalid, name, AwgHeaderMax)
+            }
+        }
+    }
+}
+
+// ── OLCRTC ───────────────────────────────────────────────────────────────────
+
+private val OlcRtcEncryptionKeyRegex = Regex("[0-9a-fA-F]{64}")
+
+internal fun MutableList<ProxyServerValidationIssue>.validateOlcRtcProvider(provider: String) {
+    if (provider.trim().lowercase() !in OlcRtc.AllowedProviders) {
+        addIssue(ProxyServerValidationError.OlcRtcProviderInvalid, OlcRtc.AllowedProviders.joinToString(", "))
+    }
+}
+
+internal fun MutableList<ProxyServerValidationIssue>.validateOlcRtcTransport(transport: String) {
+    if (transport.trim().lowercase() !in OlcRtc.AllowedTransports) {
+        addIssue(ProxyServerValidationError.OlcRtcTransportInvalid, OlcRtc.AllowedTransports.joinToString(", "))
+    }
+}
+
+internal fun MutableList<ProxyServerValidationIssue>.validateOlcRtcEncryptionKey(key: String) {
+    if (!OlcRtcEncryptionKeyRegex.matches(key.trim())) {
+        addIssue(ProxyServerValidationError.OlcRtcEncryptionKeyInvalid)
+    }
+}
+

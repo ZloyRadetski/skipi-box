@@ -52,6 +52,16 @@ enum class ProxyServerValidationError {
     Shadowsocks2022KeyBase64Invalid,
     Shadowsocks2022KeyLengthInvalid,
     VlessVisionFlowUnsupported,
+    // AmneziaWG
+    AmneziaWgJcOutOfRange,
+    AmneziaWgJminMaxInvalid,
+    AmneziaWgJSizeOutOfRange,
+    AmneziaWgSSizeOutOfRange,
+    AmneziaWgHeaderInvalid,
+    // OLCRTC
+    OlcRtcProviderInvalid,
+    OlcRtcTransportInvalid,
+    OlcRtcEncryptionKeyInvalid,
 }
 
 fun proxyValidationIssue(

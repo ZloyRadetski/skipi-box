@@ -82,6 +82,8 @@ internal fun rememberProxyServerValidationMessageResolver(): (ProxyServerValidat
         shadowsocks2022KeyLengthInvalid =
             stringResource(R.string.proxy_validation_shadowsocks_2022_key_length_invalid),
         vlessVisionFlowUnsupported = stringResource(R.string.proxy_validation_vless_vision_flow_unsupported),
+        awgJminMaxInvalid = stringResource(R.string.proxy_validation_awg_jmin_max_invalid),
+        olcRtcKeyInvalid = stringResource(R.string.proxy_validation_olcrtc_key_invalid),
     )
     return remember(messages) {
         { issue -> messages.messageOf(issue) }
@@ -133,6 +135,8 @@ private data class ProxyServerValidationMessages(
     val shadowsocks2022KeyBase64Invalid: String,
     val shadowsocks2022KeyLengthInvalid: String,
     val vlessVisionFlowUnsupported: String,
+    val awgJminMaxInvalid: String,
+    val olcRtcKeyInvalid: String,
 ) {
     fun messageOf(issue: ProxyServerValidationIssue): String {
         val values = issue.values
@@ -183,6 +187,19 @@ private data class ProxyServerValidationMessages(
             ProxyServerValidationError.Shadowsocks2022KeyLengthInvalid ->
                 shadowsocks2022KeyLengthInvalid.formatTemplate("lengths" to values.valueAt(0))
             ProxyServerValidationError.VlessVisionFlowUnsupported -> vlessVisionFlowUnsupported
+            ProxyServerValidationError.AmneziaWgJcOutOfRange -> valueOutOfRange.formatRange(values)
+            ProxyServerValidationError.AmneziaWgJminMaxInvalid -> awgJminMaxInvalid
+            ProxyServerValidationError.AmneziaWgJSizeOutOfRange ->
+                valueOutOfRange.formatTemplate("min" to values.valueAt(1), "max" to values.valueAt(2))
+            ProxyServerValidationError.AmneziaWgSSizeOutOfRange ->
+                valueOutOfRange.formatTemplate("min" to values.valueAt(1), "max" to values.valueAt(2))
+            ProxyServerValidationError.AmneziaWgHeaderInvalid ->
+                valueOutOfRange.formatTemplate("min" to "0", "max" to values.valueAt(1))
+            ProxyServerValidationError.OlcRtcProviderInvalid ->
+                unsupportedValue.formatTemplate("value" to values.valueAt(0))
+            ProxyServerValidationError.OlcRtcTransportInvalid ->
+                unsupportedValue.formatTemplate("value" to values.valueAt(0))
+            ProxyServerValidationError.OlcRtcEncryptionKeyInvalid -> olcRtcKeyInvalid
         }
     }
 

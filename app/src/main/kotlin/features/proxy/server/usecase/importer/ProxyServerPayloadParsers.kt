@@ -48,5 +48,6 @@ internal suspend fun parseProxyServersFromMihomoProviderText(
 private val ProxyServerImportParsers: List<ProxyServerPayloadParser> = listOf(
     ::parseProxyServersFromJsonConfig,
     ::parseProxyServersFromMihomoYamlConfig,
+    ::parseProxyServersFromWireguardConf,
     ::parseProxyServersFromUrls,
 )

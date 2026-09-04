@@ -91,6 +91,37 @@ class ProxyServerParserTest {
     }
 
     @Test
+    fun testParseAmneziaWgUrl() {
+        val link = "awg://secretKey@awg.example.com:51820?publickey=pubKey&jc=4&jmin=40&jmax=70&s1=15&s2=30#MyAwg"
+        val server = ProxyServer.parse(link)
+
+        assertIs<features.proxy.server.model.AmneziaWg>(server)
+        assertEquals("secretKey", server.secretKey)
+        assertEquals("pubKey", server.publicKey)
+        assertEquals("awg.example.com", server.server)
+        assertEquals("51820", server.port)
+        assertEquals("4", server.jc)
+        assertEquals("40", server.jmin)
+        assertEquals("70", server.jmax)
+        assertEquals("15", server.s1)
+        assertEquals("30", server.s2)
+        assertEquals("MyAwg", server.remarks)
+    }
+
+    @Test
+    fun testParseOlcRtcUrl() {
+        val link = "olcrtc://jitsi?datachannel@my-room#0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef${'$'}MyOlcRtc"
+        val server = ProxyServer.parse(link)
+
+        assertIs<features.proxy.server.model.OlcRtc>(server)
+        assertEquals("jitsi", server.provider)
+        assertEquals("datachannel", server.transport)
+        assertEquals("my-room", server.roomUrl)
+        assertEquals("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", server.encryptionKey)
+        assertEquals("MyOlcRtc", server.remarks)
+    }
+
+    @Test
     fun testGetTransportDisplay() {
         val vlessReality = ProxyServer.parse("vless://uuid@example.com:443?security=reality&type=tcp&sni=example.com#VlessReality")
         assertEquals("Reality", vlessReality.getTransportDisplay())
@@ -112,6 +143,12 @@ class ProxyServerParserTest {
 
         val wireguard = features.proxy.server.model.Wireguard()
         assertEquals("UDP", wireguard.getTransportDisplay())
+
+        val awg = features.proxy.server.model.AmneziaWg()
+        assertEquals("UDP", awg.getTransportDisplay())
+
+        val olcrtc = features.proxy.server.model.OlcRtc()
+        assertEquals("WebRTC", olcrtc.getTransportDisplay())
 
         val strategy = features.proxy.server.model.StrategyGroup()
         assertEquals(null, strategy.getTransportDisplay())

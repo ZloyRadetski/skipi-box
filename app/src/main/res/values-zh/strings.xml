@@ -660,6 +660,8 @@
     <string name="proxy_validation_shadowsocks_2022_key_base64_invalid">Shadowsocks 2022 密钥必须是 base64</string>
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">Shadowsocks 2022 密钥长度无效。解码长度必须为{lengths}字节</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">VLESS Vision流程仅支持RAW + TLS/REALITY</string>
+    <string name="proxy_validation_awg_jmin_max_invalid">Jmin 不能大于 Jmax</string>
+    <string name="proxy_validation_olcrtc_key_invalid">密钥必须正好是 64 个十六进制字符</string>
     <string name="routing_title">路由规则</string>
     <string name="routing_domain_policy">域名政策</string>
     <string name="routing_domain_strategy">领域策略</string>
@@ -1328,4 +1330,24 @@
     <string name="settings_font_weight_medium">中等</string>
     <string name="settings_font_weight_semibold">半粗</string>
     <string name="settings_font_weight_bold">粗体</string>
+
+    <!-- Amnezia WG 编辑器 -->
+    <string name="proxy_editor_amnezia_obfuscation">混淆设置 (AmneziaWG)</string>
+    <string name="proxy_editor_awg_jc">垃圾包数量 (Jc，0–128)</string>
+    <string name="proxy_editor_awg_jmin">垃圾包最小大小 (Jmin，0–1280)</string>
+    <string name="proxy_editor_awg_jmax">垃圾包最大大小 (Jmax，0–1280)</string>
+    <string name="proxy_editor_awg_s1">Init 垃圾前缀大小 (S1，0–1280)</string>
+    <string name="proxy_editor_awg_s2">Response 垃圾前缀大小 (S2，0–1280)</string>
+    <string name="proxy_editor_awg_h1">Init 握手标头 (H1，uint32)</string>
+    <string name="proxy_editor_awg_h2">Response 握手标头 (H2，uint32)</string>
+    <string name="proxy_editor_awg_h3">Cookie 握手标头 (H3，uint32)</string>
+    <string name="proxy_editor_awg_h4">传输标头 (H4，uint32)</string>
+
+    <!-- OLCRTC 编辑器 -->
+    <string name="proxy_editor_olcrtc_provider">提供商 (jitsi / telemost / wbstream / custom)</string>
+    <string name="proxy_editor_olcrtc_transport">传输类型 (datachannel / vp8channel / seichannel / videochannel)</string>
+    <string name="proxy_editor_olcrtc_room_url">会议室 URL</string>
+    <string name="proxy_editor_olcrtc_encryption_key">加密密钥 (64 位十六进制)</string>
+    <string name="proxy_editor_olcrtc_payload_optional">传输 Payload（可选）</string>
+    <string name="proxy_editor_olcrtc_socks_port">首选本地 SOCKS5 端口</string>
 </resources>

@@ -644,6 +644,8 @@
     <string name="proxy_validation_shadowsocks_2022_key_base64_invalid">کلید Shadowsocks 2022 باید base64 باشد</string>
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">طول کلید Shadowsocks 2022 نامعتبر است. طول رمزگشایی شده باید{lengths}بایت باشد</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">VLESS Vision flow فقط از RAW + TLS/REALITY پشتیبانی می کند</string>
+    <string name="proxy_validation_awg_jmin_max_invalid">Jmin نمی‌تواند بزرگتر از Jmax باشد</string>
+    <string name="proxy_validation_olcrtc_key_invalid">کلید باید دقیقا ۶۴ کاراکتر هگزادسیمال باشد</string>
     <string name="routing_title">قوانین مسیریابی</string>
     <string name="routing_domain_policy">خط مشی دامنه</string>
     <string name="routing_domain_strategy">استراتژی دامنه</string>
@@ -1327,4 +1329,24 @@
     <string name="settings_font_weight_medium">متوسط</string>
     <string name="settings_font_weight_semibold">نیمه‌ضخیم</string>
     <string name="settings_font_weight_bold">ضخیم</string>
+
+    <!-- ویرایشگر Amnezia WG -->
+    <string name="proxy_editor_amnezia_obfuscation">مبهم‌سازی (AmneziaWG)</string>
+    <string name="proxy_editor_awg_jc">تعداد بسته‌های جعلی (Jc، 0–128)</string>
+    <string name="proxy_editor_awg_jmin">حداقل اندازه بسته جعلی (Jmin، 0–1280)</string>
+    <string name="proxy_editor_awg_jmax">حداکثر اندازه بسته جعلی (Jmax، 0–1280)</string>
+    <string name="proxy_editor_awg_s1">اندازه پیشوند جعلی Init (S1، 0–1280)</string>
+    <string name="proxy_editor_awg_s2">اندازه پیشوند جعلی Response (S2، 0–1280)</string>
+    <string name="proxy_editor_awg_h1">سرآیند دست‌دهی Init (H1، uint32)</string>
+    <string name="proxy_editor_awg_h2">سرآیند دست‌دهی Response (H2، uint32)</string>
+    <string name="proxy_editor_awg_h3">سرآیند دست‌دهی Cookie (H3، uint32)</string>
+    <string name="proxy_editor_awg_h4">سرآیند انتقال (H4، uint32)</string>
+
+    <!-- ویرایشگر OLCRTC -->
+    <string name="proxy_editor_olcrtc_provider">ارائه‌دهنده (jitsi / telemost / wbstream / custom)</string>
+    <string name="proxy_editor_olcrtc_transport">انتقال (datachannel / vp8channel / seichannel / videochannel)</string>
+    <string name="proxy_editor_olcrtc_room_url">آدرس اتاق</string>
+    <string name="proxy_editor_olcrtc_encryption_key">کلید رمزگذاری (64 کاراکتر hex)</string>
+    <string name="proxy_editor_olcrtc_payload_optional">محموله انتقال (اختیاری)</string>
+    <string name="proxy_editor_olcrtc_socks_port">پورت ترجیحی SOCKS5 محلی</string>
 </resources>

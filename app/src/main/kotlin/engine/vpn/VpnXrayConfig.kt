@@ -27,6 +27,7 @@ import engine.xray.prepareXrayCoreLogPaths
 import engine.xray.validateXrayExternalRoutingResources
 import features.resources.runtime.prepareXrayResourceFilePaths
 import features.proxy.server.model.Custom
+import features.proxy.server.model.OlcRtc
 import system.toAndroidUserId
 import java.io.File
 import kotlinx.serialization.json.JsonObject
@@ -53,6 +54,8 @@ internal data class VpnServiceStartConfig(
     val enableKillSwitch: Boolean = false,
     val dataDir: String = "",
     val hevSocks5TunnelConfig: HevSocks5TunnelConfig? = null,
+    val olcRtcConfigYaml: String? = null,
+    val olcRtcSocksPort: Int = 0,
 )
 
 internal fun VpnServiceStartConfig.xrayTunFd(vpnTunFd: Int): Int {
@@ -122,6 +125,16 @@ internal object VpnXrayConfigFactory {
                 useHevTun = appState.enableVpnHevTun,
                 tcpReadWriteTimeoutMillis = appState.hevTcpReadWriteTimeoutMillis,
             ),
+            olcRtcConfigYaml = (request.selectedServer.server as? OlcRtc)?.let {
+                val port = it.localSocksPort.toIntOrNull()?.takeIf { p -> p in 1024..65535 } ?: 10808
+                it.toOlcRtcYamlConfig(port)
+            } ?: outboundPlan.proxyOutbounds.mapNotNull { it.server as? OlcRtc }.firstOrNull()?.let {
+                val port = it.localSocksPort.toIntOrNull()?.takeIf { p -> p in 1024..65535 } ?: 10808
+                it.toOlcRtcYamlConfig(port)
+            },
+            olcRtcSocksPort = (request.selectedServer.server as? OlcRtc)?.localSocksPort?.toIntOrNull()?.takeIf { p -> p in 1024..65535 }
+                ?: outboundPlan.proxyOutbounds.mapNotNull { it.server as? OlcRtc }.firstOrNull()?.localSocksPort?.toIntOrNull()?.takeIf { p -> p in 1024..65535 }
+                ?: 0,
         )
     }
 }

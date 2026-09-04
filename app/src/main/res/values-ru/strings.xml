@@ -697,6 +697,8 @@
     <string name="proxy_validation_shadowsocks_2022_key_base64_invalid">Ключ Shadowsocks 2022 должен быть закодирован в base64</string>
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">Неверная длина ключа Shadowsocks 2022. Длина после декодирования должна составлять {lengths} байт</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">Поток VLESS Vision поддерживает работу только в связке RAW + TLS/REALITY</string>
+    <string name="proxy_validation_awg_jmin_max_invalid">Jmin не может быть больше Jmax</string>
+    <string name="proxy_validation_olcrtc_key_invalid">Ключ должен содержать ровно 64 шестнадцатеричных символа</string>
 
     <string name="routing_title">Правила маршрутизации</string>
     <string name="routing_domain_policy">Политика доменов</string>
@@ -1346,4 +1348,24 @@
     <!-- Заголовки секций на главном экране -->
     <string name="home_section_subscription">Подписка</string>
     <string name="home_section_servers">Серверы</string>
+
+    <!-- Редактор Amnezia WG -->
+    <string name="proxy_editor_amnezia_obfuscation">Обфускация (AmneziaWG)</string>
+    <string name="proxy_editor_awg_jc">Количество мусорных пакетов (Jc, 0–128)</string>
+    <string name="proxy_editor_awg_jmin">Мин. размер мусорного пакета (Jmin, 0–1280)</string>
+    <string name="proxy_editor_awg_jmax">Макс. размер мусорного пакета (Jmax, 0–1280)</string>
+    <string name="proxy_editor_awg_s1">Размер мусорного префикса Init (S1, 0–1280)</string>
+    <string name="proxy_editor_awg_s2">Размер мусорного префикса Response (S2, 0–1280)</string>
+    <string name="proxy_editor_awg_h1">Заголовок Init рукопожатия (H1, uint32)</string>
+    <string name="proxy_editor_awg_h2">Заголовок Response рукопожатия (H2, uint32)</string>
+    <string name="proxy_editor_awg_h3">Заголовок Cookie рукопожатия (H3, uint32)</string>
+    <string name="proxy_editor_awg_h4">Транспортный заголовок (H4, uint32)</string>
+
+    <!-- Редактор OLCRTC -->
+    <string name="proxy_editor_olcrtc_provider">Провайдер (jitsi / telemost / wbstream / custom)</string>
+    <string name="proxy_editor_olcrtc_transport">Транспорт (datachannel / vp8channel / seichannel / videochannel)</string>
+    <string name="proxy_editor_olcrtc_room_url">URL комнаты</string>
+    <string name="proxy_editor_olcrtc_encryption_key">Ключ шифрования (64 hex символа)</string>
+    <string name="proxy_editor_olcrtc_payload_optional">Payload транспорта (опционально)</string>
+    <string name="proxy_editor_olcrtc_socks_port">Предпочтительный порт локального SOCKS5</string>
 </resources>

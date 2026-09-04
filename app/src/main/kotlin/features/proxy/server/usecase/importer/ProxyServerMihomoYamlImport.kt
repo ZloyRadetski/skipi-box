@@ -126,6 +126,7 @@ private fun MihomoYamlMap.toMihomoProxyServer(): ProxyServer<*> {
         "trojan" -> toMihomoTrojanProxyServer()
         "hy2", "hysteria2" -> toMihomoHysteria2ProxyServer()
         "wg", "wireguard" -> toMihomoWireguardProxyServer()
+        "amneziawg", "awg" -> toMihomoAmneziaWgProxyServer()
         else -> unsupported("unsupported proxy type")
     }.also { server ->
         val issues = server.validateBasic()
@@ -277,6 +278,8 @@ private val SupportedMihomoProxyTypes = setOf(
     "hysteria2",
     "wg",
     "wireguard",
+    "amneziawg",
+    "awg",
 )
 
 private data class MihomoProxyProvider(
