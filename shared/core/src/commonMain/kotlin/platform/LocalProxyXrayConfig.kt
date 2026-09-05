@@ -8,6 +8,8 @@ import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.isCompositeProxyServer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -26,6 +28,8 @@ data class LocalProxyXrayConfigOptions(
     val enableHttpProxy: Boolean = false,
     val listenAddress: String = "127.0.0.1",
     val logLevel: String = "warning",
+    val dnsServers: List<String> = emptyList(),
+    val includeDefaultRouting: Boolean = false,
 )
 
 object LocalProxyXrayConfigFactory {
@@ -65,6 +69,20 @@ object LocalProxyXrayConfigFactory {
                     put("loglevel", options.logLevel)
                 },
             )
+            if (options.dnsServers.isNotEmpty()) {
+                put(
+                    "dns",
+                    buildJsonObject {
+                        put(
+                            "servers",
+                            buildJsonArray {
+                                options.dnsServers.forEach { add(JsonPrimitive(it)) }
+                            },
+                        )
+                        put("queryStrategy", "UseIPv4")
+                    },
+                )
+            }
             put(
                 "inbounds",
                 buildJsonArray {
@@ -119,9 +137,48 @@ object LocalProxyXrayConfigFactory {
                     )
                 },
             )
+            if (options.includeDefaultRouting) {
+                put(
+                    "routing",
+                    buildJsonObject {
+                        put("domainStrategy", "IPIfNonMatch")
+                        put(
+                            "rules",
+                            buildJsonArray {
+                                add(
+                                    buildJsonObject {
+                                        put("type", "field")
+                                        put(
+                                            "ip",
+                                            buildJsonArray { add(JsonPrimitive("geoip:private")) },
+                                        )
+                                        put("outboundTag", DirectTag)
+                                    },
+                                )
+                                add(
+                                    buildJsonObject {
+                                        put("type", "field")
+                                        put("network", "tcp,udp")
+                                        put("outboundTag", ProxyTag)
+                                    },
+                                )
+                            },
+                        )
+                    },
+                )
+            }
         }
         return XrayConfigJson.encodeToString(config) + "\n"
     }
+
+    fun buildStandaloneConfig(
+        server: ProxyServer<*>,
+        options: LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(
+            enableHttpProxy = true,
+            dnsServers = listOf("1.1.1.1", "8.8.8.8"),
+            includeDefaultRouting = true,
+        ),
+    ): String = build(server, options)
 }
 
 const val DefaultLocalSocksPort = 10_808

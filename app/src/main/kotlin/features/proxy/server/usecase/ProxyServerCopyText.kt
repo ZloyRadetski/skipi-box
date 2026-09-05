@@ -6,10 +6,7 @@ package features.proxy.server.usecase
 import android.content.Context
 import app.AppState
 import app.ProxyServerState
-import app.effects.resolveActiveNetworkConfig
-import app.withActiveTrafficConfigApplied
-import engine.proxy.ProxyEngineStartRequest
-import engine.vpn.VpnXrayConfigFactory
+import engine.xray.XrayExportConfigFactory
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
@@ -32,14 +29,14 @@ internal enum class ProxyServerCopyTextType {
 }
 
 internal suspend fun ProxyServerState.proxyServerCopyText(
-    context: Context,
+    context: Context? = null,
     appState: AppState,
 ): ProxyServerCopyTextResult {
     return when (server) {
         is ChainProxy,
         is StrategyGroup -> withContext(Dispatchers.IO) {
             runCatching {
-                context.generatedProxyServerXrayConfig(appState, this@proxyServerCopyText).formatJsonText()
+                generatedProxyServerXrayConfig(appState, this@proxyServerCopyText).formatJsonText()
             }.fold(
                 onSuccess = { text -> ProxyServerCopyTextResult.Success(text) },
                 onFailure = { ProxyServerCopyTextResult.InvalidConfig },
@@ -56,7 +53,7 @@ internal suspend fun ProxyServerState.proxyServerCopyText(
 }
 
 internal suspend fun ProxyServerState.proxyServerCopyText(
-    context: Context,
+    context: Context? = null,
     appState: AppState,
     type: ProxyServerCopyTextType,
 ): ProxyServerCopyTextResult {
@@ -70,7 +67,7 @@ internal suspend fun ProxyServerState.proxyServerCopyText(
 
         ProxyServerCopyTextType.FullJson -> withContext(Dispatchers.IO) {
             runCatching {
-                context.generatedProxyServerXrayConfig(appState, this@proxyServerCopyText).formatJsonText()
+                generatedProxyServerXrayConfig(appState, this@proxyServerCopyText).formatJsonText()
             }.fold(
                 onSuccess = { text -> ProxyServerCopyTextResult.Success(text) },
                 onFailure = { ProxyServerCopyTextResult.InvalidConfig },
@@ -80,7 +77,7 @@ internal suspend fun ProxyServerState.proxyServerCopyText(
 }
 
 internal suspend fun ProxyServer<*>.proxyServerCopyText(
-    context: Context,
+    context: Context? = null,
     appState: AppState,
     serverId: Int?,
     groupId: Int?,
@@ -93,24 +90,17 @@ internal suspend fun ProxyServer<*>.proxyServerCopyText(
     return copyServer.proxyServerCopyText(context, appState)
 }
 
-private fun Context.generatedProxyServerXrayConfig(
+private fun generatedProxyServerXrayConfig(
     appState: AppState,
     selectedServer: ProxyServerState,
 ): String {
-    val copyState = appState
-        .resolveActiveNetworkConfig(this)
-        .withActiveTrafficConfigApplied()
-        .withCopyTargetServer(selectedServer)
-    val request = ProxyEngineStartRequest(
-        appState = copyState,
-        selectedServer = selectedServer,
-    )
-    return VpnXrayConfigFactory.create(applicationContext, request).xrayConfigJson
+    val copyState = appState.withCopyTargetServer(selectedServer)
+    return XrayExportConfigFactory.build(copyState, selectedServer)
 }
 
 private fun AppState.withCopyTargetServer(target: ProxyServerState): AppState {
     val index = proxyServers.indexOfFirst { server -> server.id == target.id }
-    if (index < 0) return this
+    if (index < 0) return copy(proxyServers = proxyServers + target)
     return copy(
         proxyServers = proxyServers.toMutableList().also { servers ->
             servers[index] = target

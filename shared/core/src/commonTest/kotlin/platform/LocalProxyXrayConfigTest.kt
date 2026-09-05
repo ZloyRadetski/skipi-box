@@ -107,4 +107,33 @@ class LocalProxyXrayConfigTest {
             )
         }
     }
+
+    @Test
+    fun createsStandaloneConfigWithBothInboundsDnsAndDefaultRouting() {
+        val config = Json.parseToJsonElement(
+            LocalProxyXrayConfigFactory.buildStandaloneConfig(
+                server = VLESS(
+                    remarks = "Standalone",
+                    id = "8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6",
+                    server = "example.com",
+                    port = "443",
+                ),
+            ),
+        ) as JsonObject
+
+        val inbounds = config.getValue("inbounds").jsonArray.map { it as JsonObject }
+        assertEquals(2, inbounds.size)
+        assertEquals("socks", inbounds[0]["protocol"]?.jsonPrimitive?.content)
+        assertEquals("http", inbounds[1]["protocol"]?.jsonPrimitive?.content)
+
+        val dns = config.getValue("dns") as JsonObject
+        val dnsServers = dns.getValue("servers").jsonArray.map { it.jsonPrimitive.content }
+        assertEquals(listOf("1.1.1.1", "8.8.8.8"), dnsServers)
+
+        val routing = config.getValue("routing") as JsonObject
+        val rules = routing.getValue("rules").jsonArray.map { it as JsonObject }
+        assertEquals(2, rules.size)
+        assertEquals("direct", rules[0]["outboundTag"]?.jsonPrimitive?.content)
+        assertEquals(LocalProxyXrayConfigFactory.ProxyTag, rules[1]["outboundTag"]?.jsonPrimitive?.content)
+    }
 }
