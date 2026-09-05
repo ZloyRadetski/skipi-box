@@ -34,4 +34,15 @@ class SubscriptionServerImportTest {
         assertEquals(1, result.servers.size)
         assertEquals(0, result.rejectedUrlCount)
     }
+
+    @Test
+    fun accepts_servers_satisfying_basic_validation() {
+        // Non-UUID user ID fails validateFull() but passes validateBasic()
+        val source = "vless://custom-token@example.com:443?security=tls#CustomToken"
+        val result = source.importSubscriptionServers()
+
+        assertEquals(1, result.urlCount)
+        assertEquals(1, result.servers.size)
+        assertEquals(0, result.rejectedUrlCount)
+    }
 }

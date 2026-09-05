@@ -29,7 +29,7 @@ fun String.importSubscriptionServers(): SubscriptionServerImportResult {
     val parsed = candidates.mapNotNull { candidate ->
         runCatching { ProxyServer.parse(candidate) }
             .getOrNull()
-            ?.takeIf { server -> server.validateFull().isEmpty() }
+            ?.takeIf { server -> server.validateBasic().isEmpty() }
     }
     val servers = parsed.distinctBy { it.connectionFingerprint() }
     return SubscriptionServerImportResult(

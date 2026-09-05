@@ -9,33 +9,35 @@ import features.subscription.SubscriptionMetadata
 import features.subscription.SubscriptionServerImportResult
 import features.subscription.isValidManualSubscriptionUrl
 import features.subscription.subscriptionMetadata
+import utils.encodeBase64
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.net.Authenticator
+import java.net.HttpURLConnection
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.PasswordAuthentication
+import java.net.Proxy
 import java.net.URI
-import java.net.ProxySelector
+import java.net.URL
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
+import java.util.zip.GZIPInputStream
+import java.util.zip.InflaterInputStream
 
 /** Desktop HTTP adapter for subscriptions. Parsing and validation stay in the shared core. */
 class DesktopSubscriptionFetcher(
     private val client: HttpClient = createDesktopSubscriptionHttpClient(),
     private val maxResponseBytes: Int = MaxDesktopSubscriptionResponseBytes,
     /**
-     * Optional test seam for the separate client required by a proxy request.
-     * Existing injected [client] instances continue to service every direct request.
+     * Optional test seam for opening HTTP connections, e.g. through a local SOCKS proxy.
      */
-    private val proxyClientFactory: (DesktopSubscriptionHttpProxy) -> HttpClient =
-        ::createDesktopSubscriptionProxyHttpClient,
+    private val urlConnectionFactory: (URL, Proxy?) -> HttpURLConnection = ::defaultUrlConnectionFactory,
 ) {
-    private val proxyClients = ConcurrentHashMap<DesktopSubscriptionHttpProxy, HttpClient>()
-
     init {
         require(maxResponseBytes > 0) { "Subscription response limit must be positive" }
     }
@@ -44,21 +46,20 @@ class DesktopSubscriptionFetcher(
         url: String,
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
-        proxy: DesktopSubscriptionHttpProxy? = null,
+        proxy: DesktopSubscriptionSocksProxy? = null,
     ): DesktopSubscriptionUpdate {
-        val requestClient = clientFor(proxy)
         val response = fetchResponse(
             url = url,
             userAgent = userAgent,
             timeout = timeout,
             automaticResource = false,
-            requestClient = requestClient,
+            proxy = proxy,
         )
         val imported = importMihomoOrStandardPayload(
             rootPayload = response.body,
             userAgent = userAgent,
             timeout = timeout,
-            requestClient = requestClient,
+            proxy = proxy,
         )
         return DesktopSubscriptionUpdate(
             response = response,
@@ -72,13 +73,13 @@ class DesktopSubscriptionFetcher(
         url: String,
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
-        proxy: DesktopSubscriptionHttpProxy? = null,
+        proxy: DesktopSubscriptionSocksProxy? = null,
     ): SubscriptionFetchResponse = fetchResponse(
         url = url,
         userAgent = userAgent,
         timeout = timeout,
         automaticResource = false,
-        requestClient = clientFor(proxy),
+        proxy = proxy,
     )
 
     /**
@@ -90,7 +91,7 @@ class DesktopSubscriptionFetcher(
         metadata: SubscriptionMetadata,
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
-        proxy: DesktopSubscriptionHttpProxy? = null,
+        proxy: DesktopSubscriptionSocksProxy? = null,
     ): DesktopResolvedEmbeddedConfig? {
         val embedded = metadata.embeddedConfig ?: return null
         val content = if (embedded.isUrl) {
@@ -98,7 +99,7 @@ class DesktopSubscriptionFetcher(
                 url = embedded.payload,
                 userAgent = userAgent,
                 timeout = timeout,
-                requestClient = clientFor(proxy),
+                proxy = proxy,
             ).body
         } else {
             embedded.payload.decodeSkipiConfigPayloadOrNull() ?: embedded.payload.trim()
@@ -121,7 +122,7 @@ class DesktopSubscriptionFetcher(
         rootPayload: String,
         userAgent: String,
         timeout: Duration,
-        requestClient: HttpClient,
+        proxy: DesktopSubscriptionSocksProxy?,
     ): DesktopFetchedSubscriptionImport {
         var imported = DesktopMihomoPayloadImporter.import(rootPayload)
         if (!imported.recognizedYaml) {
@@ -150,7 +151,7 @@ class DesktopSubscriptionFetcher(
                         url = request.url,
                         userAgent = userAgent,
                         timeout = timeout,
-                        requestClient = requestClient,
+                        proxy = proxy,
                     )
                 }
                     .onSuccess { provider -> providerBodies[request.url] = provider.body }
@@ -187,13 +188,13 @@ class DesktopSubscriptionFetcher(
         url: String,
         userAgent: String,
         timeout: Duration,
-        requestClient: HttpClient,
+        proxy: DesktopSubscriptionSocksProxy?,
     ): SubscriptionFetchResponse = fetchResponse(
         url = url,
         userAgent = userAgent,
         timeout = timeout,
         automaticResource = true,
-        requestClient = requestClient,
+        proxy = proxy,
     )
 
     private fun fetchResponse(
@@ -201,22 +202,49 @@ class DesktopSubscriptionFetcher(
         userAgent: String,
         timeout: Duration,
         automaticResource: Boolean,
-        requestClient: HttpClient,
+        proxy: DesktopSubscriptionSocksProxy?,
+    ): SubscriptionFetchResponse {
+        return if (proxy != null) {
+            fetchViaConnection(
+                url = url,
+                userAgent = userAgent,
+                timeout = timeout,
+                automaticResource = automaticResource,
+                proxy = proxy,
+            )
+        } else {
+            fetchViaHttpClient(
+                url = url,
+                userAgent = userAgent,
+                timeout = timeout,
+                automaticResource = automaticResource,
+            )
+        }
+    }
+
+    private fun fetchViaHttpClient(
+        url: String,
+        userAgent: String,
+        timeout: Duration,
+        automaticResource: Boolean,
     ): SubscriptionFetchResponse {
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        var requestUri = URI(url.trim())
+        var requestUri = URI(url.trim()).withoutFragment()
         var redirects = 0
 
         while (true) {
             if (automaticResource) {
-                requestUri = requireSafeAutomaticSubscriptionResourceUrl(requestUri.toString())
+                requestUri = requireSafeAutomaticSubscriptionResourceUrl(requestUri.toString()).withoutFragment()
             }
-            val request = HttpRequest.newBuilder(requestUri)
+            val requestBuilder = HttpRequest.newBuilder(requestUri)
                 .timeout(timeout)
                 .header("User-Agent", userAgent.ifBlank { DefaultDesktopSubscriptionUserAgent })
-                .GET()
-                .build()
-            val response = requestClient.send(request, HttpResponse.BodyHandlers.ofInputStream())
+                .header("Accept-Encoding", "gzip, deflate")
+            requestUri.toBasicAuthHeaderOrNull()?.let { authHeader ->
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.GET().build()
+            val response = client.send(request, HttpResponse.BodyHandlers.ofInputStream())
 
             // A caller may inject an HttpClient configured to follow redirects.
             // Re-check its final URI even though the production client disables it.
@@ -232,7 +260,7 @@ class DesktopSubscriptionFetcher(
                 val location = response.headers().firstValue("location").orElseThrow {
                     IllegalStateException("Subscription redirect does not provide Location")
                 }
-                requestUri = requestUri.resolve(location.trim())
+                requestUri = requestUri.resolve(location.trim()).withoutFragment()
                 require(requestUri.toString().isValidManualSubscriptionUrl()) {
                     "Subscription redirect has an invalid URL"
                 }
@@ -254,49 +282,168 @@ class DesktopSubscriptionFetcher(
         }
     }
 
-    private fun clientFor(proxy: DesktopSubscriptionHttpProxy?): HttpClient = proxy?.let { endpoint ->
-        proxyClients.computeIfAbsent(endpoint) { proxyClientFactory(it) }
-    } ?: client
+    private fun fetchViaConnection(
+        url: String,
+        userAgent: String,
+        timeout: Duration,
+        automaticResource: Boolean,
+        proxy: DesktopSubscriptionSocksProxy,
+    ): SubscriptionFetchResponse {
+        require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
+        var requestUri = URI(url.trim()).withoutFragment()
+        var redirects = 0
+        val timeoutMillis = timeout.toMillis().coerceIn(1_000, 600_000).toInt()
+
+        return proxy.withAuthenticator {
+            while (true) {
+                if (automaticResource) {
+                    requestUri = requireSafeAutomaticSubscriptionResourceUrl(requestUri.toString()).withoutFragment()
+                }
+                val javaUrl = requestUri.toURL()
+                val connection = urlConnectionFactory(javaUrl, proxy.toJavaProxy()).apply {
+                    connectTimeout = timeoutMillis
+                    readTimeout = timeoutMillis
+                    instanceFollowRedirects = false
+                    requestMethod = "GET"
+                    setRequestProperty("User-Agent", userAgent.ifBlank { DefaultDesktopSubscriptionUserAgent })
+                    setRequestProperty("Accept-Encoding", "gzip, deflate")
+                    setRequestProperty("Connection", "close")
+                    setEmbeddedBasicAuth(requestUri.toString())
+                }
+
+                try {
+                    val statusCode = connection.responseCode
+                    if (statusCode in HttpRedirectStatusCodes) {
+                        check(redirects < MaxSubscriptionRedirects) {
+                            "Subscription request exceeded $MaxSubscriptionRedirects redirects"
+                        }
+                        val location = connection.getHeaderField("Location")
+                            ?: throw IllegalStateException("Subscription redirect does not provide Location")
+                        requestUri = requestUri.resolve(location.trim()).withoutFragment()
+                        require(requestUri.toString().isValidManualSubscriptionUrl()) {
+                            "Subscription redirect has an invalid URL"
+                        }
+                        redirects += 1
+                        continue
+                    }
+
+                    val responseBody = if (statusCode in 200..299) {
+                        readUtf8BodyAtMost(
+                            rawStream = connection.inputStream,
+                            contentLength = connection.contentLengthLong.takeIf { it >= 0L },
+                            contentEncoding = connection.contentEncoding.orEmpty(),
+                            maxBytes = maxResponseBytes,
+                        )
+                    } else {
+                        val errorStream = connection.errorStream ?: InputStream.nullInputStream()
+                        val errorBody = runCatching {
+                            readUtf8BodyAtMost(
+                                rawStream = errorStream,
+                                contentLength = connection.contentLengthLong.takeIf { it >= 0L },
+                                contentEncoding = connection.contentEncoding.orEmpty(),
+                                maxBytes = maxResponseBytes,
+                            )
+                        }.getOrNull().orEmpty()
+                        throw DesktopSubscriptionHttpException(
+                            statusCode = statusCode,
+                            responseBody = errorBody,
+                        )
+                    }
+
+                    val headers = connection.headerFields
+                        .filterKeys { name -> name != null }
+                        .mapNotNull { (name, values) ->
+                            name?.lowercase()?.let { normalizedName ->
+                                normalizedName to values.orEmpty().joinToString(",")
+                            }
+                        }
+                        .toMap()
+
+                    return@withAuthenticator SubscriptionFetchResponse(
+                        body = responseBody,
+                        headers = headers,
+                    )
+                } finally {
+                    connection.disconnect()
+                }
+            }
+            @Suppress("UNREACHABLE_CODE")
+            error("Too many redirects")
+        }
+    }
 }
 
+internal val LocalSubscriptionProxyHosts: Set<String> = setOf(
+    "127.0.0.1",
+    "localhost",
+    "::1",
+    "[::1]",
+)
+
 /**
- * Loopback HTTP proxy endpoint used for subscription updates through the active tunnel.
+ * Loopback SOCKS proxy endpoint used for subscription updates through the active tunnel.
  *
  * This deliberately rejects LAN and remote endpoints: the setting is for SKIPI's own
- * local Xray HTTP inbound, not a general-purpose proxy configuration.
+ * local Xray SOCKS inbound, not a general-purpose proxy configuration.
  */
-data class DesktopSubscriptionHttpProxy(
+data class DesktopSubscriptionSocksProxy(
     val host: String,
     val port: Int,
+    val username: String = "",
+    val password: String = "",
 ) {
     init {
         require(host == host.trim() && host in LocalSubscriptionProxyHosts) {
-            "Subscription HTTP proxy host must be a loopback address"
+            "Subscription SOCKS proxy host must be a loopback address"
         }
-        require(port in 1..65_535) { "Subscription HTTP proxy port must be in 1..65535" }
+        require(port in 1..65_535) { "Subscription SOCKS proxy port must be in 1..65535" }
     }
 
-    internal fun toProxySelector(): ProxySelector = ProxySelector.of(
-        InetSocketAddress.createUnresolved(host, port),
+    internal fun toJavaProxy(): Proxy = Proxy(
+        Proxy.Type.SOCKS,
+        InetSocketAddress(host.removePrefix("[").removeSuffix("]"), port),
     )
 }
 
+@Deprecated("Use DesktopSubscriptionSocksProxy instead", ReplaceWith("DesktopSubscriptionSocksProxy"))
+typealias DesktopSubscriptionHttpProxy = DesktopSubscriptionSocksProxy
+
+private val SocksAuthenticatorLock = Any()
+
+internal fun <T> DesktopSubscriptionSocksProxy?.withAuthenticator(block: () -> T): T {
+    if (this == null || username.isBlank()) return block()
+    synchronized(SocksAuthenticatorLock) {
+        val previous = Authenticator.getDefault()
+        Authenticator.setDefault(object : Authenticator() {
+            override fun getPasswordAuthentication(): PasswordAuthentication? {
+                if (requestingPort == port && port in 1..65_535) {
+                    return PasswordAuthentication(username, password.toCharArray())
+                }
+                return null
+            }
+        })
+        return try {
+            block()
+        } finally {
+            Authenticator.setDefault(previous)
+        }
+    }
+}
+
+private fun defaultUrlConnectionFactory(url: URL, proxy: Proxy?): HttpURLConnection {
+    val connection = if (proxy != null) url.openConnection(proxy) else url.openConnection()
+    return connection as HttpURLConnection
+}
+
 /** Builds the direct client used for the default desktop subscription path. */
-internal fun createDesktopSubscriptionHttpClient(
-    proxy: DesktopSubscriptionHttpProxy? = null,
-): HttpClient {
-    val builder = HttpClient.newBuilder()
+internal fun createDesktopSubscriptionHttpClient(): HttpClient {
+    return HttpClient.newBuilder()
         .connectTimeout(DefaultConnectTimeout)
         // Redirects are followed explicitly below so automatic provider/config
         // requests can be checked before every hop.
         .followRedirects(HttpClient.Redirect.NEVER)
-    if (proxy != null) builder.proxy(proxy.toProxySelector())
-    return builder.build()
+        .build()
 }
-
-private fun createDesktopSubscriptionProxyHttpClient(
-    proxy: DesktopSubscriptionHttpProxy,
-): HttpClient = createDesktopSubscriptionHttpClient(proxy)
 
 /**
  * Validates an auxiliary URL found in subscription metadata or a Mihomo provider.
@@ -336,19 +483,42 @@ internal fun requireSafeAutomaticSubscriptionResourceUrl(
     return uri
 }
 
-private fun HttpResponse<InputStream>.readUtf8BodyAtMost(maxBytes: Int): String {
-    headers().firstValue("content-length").orElse(null)
-        ?.trim()
-        ?.toLongOrNull()
-        ?.takeIf { it >= 0L }
-        ?.let { contentLength ->
-            if (contentLength > maxBytes) {
-                body().close()
-                throw DesktopSubscriptionResponseTooLargeException(maxBytes)
-            }
-        }
+internal fun HttpURLConnection.setEmbeddedBasicAuth(rawUrl: String) {
+    val header = runCatching { URI(rawUrl).toBasicAuthHeaderOrNull() }.getOrNull() ?: return
+    setRequestProperty("Authorization", header)
+}
 
-    return body().use { input ->
+internal fun URI.toBasicAuthHeaderOrNull(): String? {
+    val info = userInfo?.takeIf(String::isNotBlank) ?: return null
+    val parts = info.split(":", limit = 2)
+    val user = parts.getOrElse(0) { "" }
+    val password = parts.getOrElse(1) { "" }
+    return "Basic " + "$user:$password".encodeBase64()
+}
+
+private fun readUtf8BodyAtMost(
+    rawStream: InputStream,
+    contentLength: Long?,
+    contentEncoding: String,
+    maxBytes: Int,
+): String {
+    if (contentLength != null && contentLength > maxBytes) {
+        rawStream.close()
+        throw DesktopSubscriptionResponseTooLargeException(maxBytes)
+    }
+
+    val stream = try {
+        when (contentEncoding.trim().lowercase()) {
+            "gzip", "x-gzip" -> GZIPInputStream(rawStream)
+            "deflate" -> InflaterInputStream(rawStream)
+            else -> rawStream
+        }
+    } catch (e: Throwable) {
+        rawStream.close()
+        throw e
+    }
+
+    return stream.use { input ->
         val output = ByteArrayOutputStream()
         val buffer = ByteArray(16 * 1024)
         var total = 0
@@ -362,6 +532,27 @@ private fun HttpResponse<InputStream>.readUtf8BodyAtMost(maxBytes: Int): String 
         }
         String(output.toByteArray(), StandardCharsets.UTF_8)
     }
+}
+
+private fun HttpResponse<InputStream>.readUtf8BodyAtMost(maxBytes: Int): String {
+    val contentEncoding = headers().firstValue("content-encoding").orElse("")
+    val contentLength = headers().firstValue("content-length").orElse(null)
+        ?.trim()
+        ?.toLongOrNull()
+        ?.takeIf { it >= 0L }
+    return readUtf8BodyAtMost(
+        rawStream = body(),
+        contentLength = contentLength,
+        contentEncoding = contentEncoding,
+        maxBytes = maxBytes,
+    )
+}
+
+internal fun URI.withoutFragment(): URI {
+    if (rawFragment == null) return this
+    val uriString = toString()
+    val hashIndex = uriString.indexOf('#')
+    return if (hashIndex >= 0) URI(uriString.substring(0, hashIndex)) else this
 }
 
 private fun String.isKnownLocalOrMetadataHost(): Boolean {

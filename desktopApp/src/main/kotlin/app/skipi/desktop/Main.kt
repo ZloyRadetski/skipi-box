@@ -690,6 +690,21 @@ fun main() = application {
                                     subscriptionMessage = "Обновление подписки уже выполняется."
                                 } else {
                                     val requestedUrl = subscriptionUrl.trim()
+                                    val subscription = subscriptionLibrary.subscriptions
+                                        .firstOrNull { subscription -> subscription.url == requestedUrl }
+                                    val subscriptionUserAgent = subscription
+                                        ?.userAgent
+                                        ?.takeIf(String::isNotBlank)
+                                        ?: desktopSettings.subscriptionUserAgent
+                                    val useProxy = (subscription?.updateViaProxy == true) && xrayProcessState.isRunning
+                                    val socksProxy = if (useProxy) {
+                                        DesktopSubscriptionSocksProxy(
+                                            host = desktopSettings.localProxyListenAddress,
+                                            port = desktopSettings.localProxyPort,
+                                            username = "",
+                                            password = "",
+                                        )
+                                    } else null
                                     // Keep only a baseline for conflict detection.  The actual
                                     // libraries are intentionally read again after all network
                                     // I/O, so a delayed response cannot write an old snapshot over
@@ -700,11 +715,6 @@ fun main() = application {
                                         configs = configLibrary,
                                         url = requestedUrl,
                                     )
-                                    val subscriptionUserAgent = subscriptionLibrary.subscriptions
-                                        .firstOrNull { subscription -> subscription.url == requestedUrl }
-                                        ?.userAgent
-                                        ?.takeIf(String::isNotBlank)
-                                        ?: desktopSettings.subscriptionUserAgent
                                     subscriptionUpdateInProgress = true
                                     subscriptionScope.launch {
                                         try {
@@ -718,6 +728,7 @@ fun main() = application {
                                                     timeout = Duration.ofSeconds(
                                                         desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
                                                     ),
+                                                    proxy = socksProxy,
                                                 )
                                             }
                                         }.getOrElse { error ->
@@ -759,6 +770,7 @@ fun main() = application {
                                                     timeout = Duration.ofSeconds(
                                                         desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
                                                     ),
+                                                    proxy = socksProxy,
                                                 )
                                             }
                                         }

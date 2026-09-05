@@ -15,6 +15,7 @@ import features.proxy.server.model.Wireguard
 import features.subscription.importSubscriptionServers
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import utils.decodeFlexibleBase64OrNull
 
 /**
  * A dependency-free Mihomo/Clash importer for the YAML subset normally returned by
@@ -57,7 +58,29 @@ internal object DesktopMihomoPayloadImporter {
         val root = runCatching { DesktopMinimalYamlParser(text).parse() }.getOrNull()
         val document = root?.toMihomoDocument()
         if (document == null || !document.recognized) {
-            return importDirectSubscriptionPayload(text)
+            val directResult = importDirectSubscriptionPayload(text)
+            if (directResult.servers.isNotEmpty() || directResult.proxyEntryCount > 0) {
+                return directResult
+            }
+            val decoded = text.filterNot(Char::isWhitespace).decodeFlexibleBase64OrNull()?.decodeToString()
+            if (decoded != null && decoded != text) {
+                val decodedRoot = runCatching { DesktopMinimalYamlParser(decoded).parse() }.getOrNull()
+                val decodedDoc = decodedRoot?.toMihomoDocument()
+                if (decodedDoc != null && decodedDoc.recognized) {
+                    return importInternal(
+                        text = decoded,
+                        providerPayloads = providerPayloads,
+                        maxProviderDepth = maxProviderDepth,
+                        providerDepth = providerDepth,
+                        fetchedProviderUrls = fetchedProviderUrls,
+                    )
+                }
+                val decodedDirect = importDirectSubscriptionPayload(decoded)
+                if (decodedDirect.servers.isNotEmpty() || decodedDirect.proxyEntryCount > 0) {
+                    return decodedDirect
+                }
+            }
+            return directResult
         }
 
         val servers = mutableListOf<ProxyServer<*>>()

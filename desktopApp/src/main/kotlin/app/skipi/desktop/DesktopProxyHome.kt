@@ -852,7 +852,7 @@ private fun SubscriptionProviderEditDialog(
                     )
                     SubscriptionProviderSwitch(
                         label = "Обновлять через прокси",
-                        description = "Использовать локальный HTTP-прокси SKIPI при загрузке подписки.",
+                        description = "Использовать локальный SOCKS-прокси SKIPI при загрузке подписки (при активном подключении).",
                         checked = draft.updateViaProxy,
                         onCheckedChange = { checked -> draft = draft.copy(updateViaProxy = checked) },
                     )
