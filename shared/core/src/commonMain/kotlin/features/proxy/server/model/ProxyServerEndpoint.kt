@@ -13,6 +13,8 @@ fun ProxyServer<*>.serverHost(): String {
         is VLESS -> server
         is VMess -> server
         is Wireguard -> server
+        is AmneziaWg -> server
+        is OlcRtc -> signalingEndpoint()?.first.orEmpty()
         else -> ""
     }
 }

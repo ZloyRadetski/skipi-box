@@ -17,9 +17,11 @@ import engine.network.NetworkDefaults
 import engine.network.toPortOrNull
 import engine.xray.strategyGroupMembers
 import features.proxy.server.display.CountryFlagUtils
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
+import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -30,12 +32,19 @@ import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
 import features.proxy.server.model.customXrayConfigProxyOutboundEndpoint
+import engine.vpn.SkipiCoreRuntime
+import engine.vpn.findAvailableLocalPort
+import engine.xray.XrayTags
+import engine.xray.buildXrayOutboundPlan
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -69,6 +78,7 @@ internal class AndroidProxyLatencyTester(
         appContext.initializeAndroidXrayCoreEnvironment(resourceFilePaths.dataDir)
         resourceFilePaths.dataDir
     }
+    private val tempOlcRtcMutex = Mutex()
 
     suspend fun test(
         appState: AppState,
@@ -402,26 +412,110 @@ internal class AndroidProxyLatencyTester(
         val timeoutMs = appState.subscriptionPingTimeoutMillis.resolvedPingTimeoutMillis().toLong()
         val pingUrl = appState.subscriptionPingUrl.resolvedPingUrl()
 
+        val olcServer = server.server as? OlcRtc
+        val activeBridge = SkipiCoreRuntime.activeOlcRtcBridge
+        val isBridgeActiveForServer = olcServer != null &&
+            activeBridge != null &&
+            SkipiCoreRuntime.isRunning() &&
+            olcServer.matchesEndpoint(activeBridge.server)
+
+        if (olcServer != null && !isBridgeActiveForServer) {
+            if (SkipiCoreRuntime.isRunning()) {
+                return FailedDelayMillis
+            }
+            return measureStandaloneOlcRtcLatency(appState, server, olcServer, pingUrl, timeoutMs)
+        }
+
+        val request = XrayConfigRequest(
+            appState = appState,
+            selectedServer = server,
+            inbounds = emptyList<JsonObject>(),
+            coreLogPaths = appContext.prepareXrayCoreLogPaths(),
+            dataDir = xrayDataDir,
+        )
+        return executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
+    }
+
+    private suspend fun measureStandaloneOlcRtcLatency(
+        appState: AppState,
+        server: ProxyServerState,
+        olcServer: OlcRtc,
+        pingUrl: String,
+        timeoutMs: Long,
+    ): Long = tempOlcRtcMutex.withLock {
+        if (SkipiCoreRuntime.isRunning()) {
+            return FailedDelayMillis
+        }
+        val preferredPort = olcServer.localSocksPort.toIntOrNull()?.takeIf { it in 1024..65535 } ?: 10808
+        val tempPort = findAvailableLocalPort(preferredPort, emptySet())
+        val tempUser = "skipi_rtc_test_" + java.util.UUID.randomUUID().toString().replace("-", "").take(8)
+        val tempPass = java.util.UUID.randomUUID().toString().replace("-", "")
+        val tempYaml = olcServer.toOlcRtcYamlConfig(
+            socksPort = tempPort,
+            socksUser = tempUser,
+            socksPass = tempPass,
+        )
+
+        try {
+            SkipiCoreRuntime.startOlcRtc(tempYaml, tempPort)
+            delay(100L)
+
+            val customOutbound = olcServer.toXrayOutboundWithPortAndAuth(
+                tag = XrayTags.PROXY,
+                port = tempPort,
+                user = tempUser,
+                pass = tempPass,
+            ).toJsonObject()
+
+            val speedTestState = appState.copy(
+                enableMux = false,
+                enableFakeDns = false,
+                enableDirectDnsForProxyServerDomains = true,
+            )
+            val basePlan = speedTestState.buildXrayOutboundPlan(server)
+            val updatedPlan = basePlan.copy(
+                proxyOutbounds = basePlan.proxyOutbounds.map { item ->
+                    if (item.server is OlcRtc) item.copy(customOutbound = customOutbound) else item
+                },
+            )
+
+            val request = XrayConfigRequest(
+                appState = appState,
+                selectedServer = server,
+                inbounds = emptyList<JsonObject>(),
+                coreLogPaths = appContext.prepareXrayCoreLogPaths(),
+                dataDir = xrayDataDir,
+                outboundPlan = updatedPlan,
+            )
+            executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
+        } catch (e: Throwable) {
+            AndroidAppLogger.warn(LogTag, "Standalone olcRTC latency test failed: ${e.logSummary()}")
+            FailedDelayMillis
+        } finally {
+            if (!SkipiCoreRuntime.isRunning()) {
+                SkipiCoreRuntime.stopOlcRtc()
+            }
+        }
+    }
+
+    private suspend fun executeXrayHttpPing(
+        request: XrayConfigRequest,
+        serverId: Int,
+        pingUrl: String,
+        timeoutMs: Long,
+    ): Long {
         val result = withTimeoutOrNull(timeoutMs) {
             suspendCancellableCoroutine { continuation ->
                 val future = httpPingExecutor.submit {
                     val millis = runCatching {
-                        val configJson = XraySpeedTestConfigFactory.buildXraySpeedTestConfig(
-                            XrayConfigRequest(
-                                appState = appState,
-                                selectedServer = server,
-                                inbounds = emptyList<JsonObject>(),
-                                coreLogPaths = appContext.prepareXrayCoreLogPaths(),
-                                dataDir = xrayDataDir,
-                            ),
-                        )
+                        val configJson = XraySpeedTestConfigFactory.buildXraySpeedTestConfig(request)
                         Skipicore.measureOutboundDelay(configJson, pingUrl)
                     }.onSuccess { delay ->
-                        AndroidAppLogger.debug(LogTag, "Real connection latency test serverId=${server.id} result=${delay}ms")
+                        AndroidAppLogger.debug(LogTag, "Real connection latency test serverId=$serverId result=${delay}ms")
                     }.onFailure { error ->
                         AndroidAppLogger.warn(
                             LogTag,
-                            "Real connection latency test failed serverId=${server.id}: ${error.logSummary()}",
+                            "Real connection latency test failed serverId=$serverId: ${error.logSummary()}",
                         )
                     }.getOrDefault(FailedDelayMillis)
 
@@ -476,6 +570,8 @@ private fun ProxyServer<*>.endpoint(): ProxyServerEndpoint? {
         is VLESS -> endpoint(server, port)
         is VMess -> endpoint(server, port)
         is Wireguard -> endpoint(server, port)
+        is AmneziaWg -> endpoint(server, port)
+        is OlcRtc -> signalingEndpoint()?.let { (host, port) -> ProxyServerEndpoint(host, port) }
         is Custom -> customXrayConfigProxyOutboundEndpoint(configJson)
             ?.let { endpoint -> ProxyServerEndpoint(endpoint.host, endpoint.port) }
         else -> null

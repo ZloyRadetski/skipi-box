@@ -3,8 +3,10 @@
 
 package app.skipi.desktop
 
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
+import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -43,6 +45,10 @@ data class DesktopServerTcpEndpoint(
 
 /** Strategy/chain/custom entries have no single endpoint and therefore cannot be TCP-probed directly. */
 fun ProxyServer<*>.desktopTcpEndpointOrNull(): DesktopServerTcpEndpoint? {
+    if (this is OlcRtc) {
+        val (host, port) = signalingEndpoint() ?: return null
+        return DesktopServerTcpEndpoint(host, port)
+    }
     val endpoint = when (this) {
         is HTTP -> server to port
         is Socks -> server to port
@@ -52,6 +58,7 @@ fun ProxyServer<*>.desktopTcpEndpointOrNull(): DesktopServerTcpEndpoint? {
         is Trojan -> server to port
         is Hysteria2 -> server to port
         is Wireguard -> server to port
+        is AmneziaWg -> server to port
         else -> return null
     }
     return endpoint.second.toIntOrNull()?.let { port ->

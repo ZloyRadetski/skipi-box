@@ -299,6 +299,9 @@ class SkipiVpnService : VpnService() {
             acquireWakeLock()
         }
         config.coreLogPaths.clearCoreLogs(LogTag)
+        SkipiCoreRuntime.setSocketProtector { fd ->
+            this@SkipiVpnService.protect(fd)
+        }
 
         if (config.hevSocks5TunnelConfig != null) {
             val tunDeferred = async(Dispatchers.IO) { establishTun(config) }

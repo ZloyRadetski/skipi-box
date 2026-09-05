@@ -6,6 +6,7 @@ package features.proxy.server.model
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class OlcRtcTest {
@@ -35,7 +36,22 @@ class OlcRtcTest {
         assertTrue(yaml.contains("transport: datachannel[mode=fast]"))
         assertTrue(yaml.contains("room: my-secret-room"))
         assertTrue(yaml.contains("socks5_listen: 127.0.0.1:10808"))
+
+        // Test YAML config generation with credentials
+        val authYaml = server.toOlcRtcYamlConfig(12345, socksUser = "user1", socksPass = "pass1")
+        assertTrue(authYaml.contains("socks5_listen: 127.0.0.1:12345"))
+        assertTrue(authYaml.contains("socks5_user: user1"))
+        assertTrue(authYaml.contains("socks5_pass: pass1"))
+
+        // Test Xray outbound generation with port and credentials
+        val authOutbound = server.toXrayOutboundWithPortAndAuth("custom-olc", 12345, "user1", "pass1")
+        assertEquals("custom-olc", authOutbound.tag)
+        val json = authOutbound.toJsonObject().toString()
+        assertTrue(json.contains("12345"))
+        assertTrue(json.contains("user1"))
+        assertTrue(json.contains("pass1"))
     }
+
 
     @Test
     fun persistenceRoundTrip() {
@@ -86,4 +102,58 @@ class OlcRtcTest {
         val issues = invalidProvider.validateFull()
         assertTrue(issues.any { it.error == ProxyServerValidationError.OlcRtcProviderInvalid })
     }
+
+    @Test
+    fun testSignalingEndpointResolution() {
+        // HTTPS full URL
+        val httpsServer = OlcRtc(
+            provider = "telemost",
+            roomUrl = "https://telemost.yandex.ru/j/1234567890",
+        )
+        val httpsEndpoint = httpsServer.signalingEndpoint()
+        assertNotNull(httpsEndpoint)
+        assertEquals("telemost.yandex.ru", httpsEndpoint.first)
+        assertEquals(443, httpsEndpoint.second)
+
+        // Custom host:port in roomUrl
+        val customPortServer = OlcRtc(
+            provider = "custom",
+            roomUrl = "my.signaling.host:8443/room",
+        )
+        val customPortEndpoint = customPortServer.signalingEndpoint()
+        assertNotNull(customPortEndpoint)
+        assertEquals("my.signaling.host", customPortEndpoint.first)
+        assertEquals(8443, customPortEndpoint.second)
+
+        // Provider fallback for Jitsi
+        val jitsiServer = OlcRtc(
+            provider = "jitsi",
+            roomUrl = "my-secret-room",
+        )
+        val jitsiEndpoint = jitsiServer.signalingEndpoint()
+        assertNotNull(jitsiEndpoint)
+        assertEquals("meet.jit.si", jitsiEndpoint.first)
+        assertEquals(443, jitsiEndpoint.second)
+
+        // Provider fallback for Telemost
+        val telemostServer = OlcRtc(
+            provider = "telemost",
+            roomUrl = "1234567890",
+        )
+        val telemostEndpoint = telemostServer.signalingEndpoint()
+        assertNotNull(telemostEndpoint)
+        assertEquals("telemost.yandex.ru", telemostEndpoint.first)
+        assertEquals(443, telemostEndpoint.second)
+    }
+
+    @Test
+    fun testMatchesEndpoint() {
+        val server1 = OlcRtc(provider = "jitsi", roomUrl = "room-1", encryptionKey = "key1")
+        val server2 = OlcRtc(provider = "jitsi", roomUrl = "room-1", encryptionKey = "key2")
+        val server3 = OlcRtc(provider = "jitsi", roomUrl = "room-2", encryptionKey = "key1")
+
+        assertTrue(server1.matchesEndpoint(server2))
+        assertTrue(!server1.matchesEndpoint(server3))
+    }
 }
+

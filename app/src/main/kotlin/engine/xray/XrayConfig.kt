@@ -7,7 +7,9 @@ import app.AppState
 import app.ProxyServerState
 import features.logs.AndroidAppLogger
 import features.proxy.server.model.Custom
+import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
+import engine.vpn.SkipiCoreRuntime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -89,7 +91,27 @@ internal object XraySpeedTestConfigFactory {
             enableFakeDns = false,
             enableDirectDnsForProxyServerDomains = true,
         )
-        val outboundPlan = speedTestState.buildXrayOutboundPlan(request.selectedServer)
+        val rawOutboundPlan = request.outboundPlan ?: speedTestState.buildXrayOutboundPlan(request.selectedServer)
+        val activeBridge = SkipiCoreRuntime.activeOlcRtcBridge
+        val outboundPlan = if (activeBridge != null) {
+            val updatedOutbounds = rawOutboundPlan.proxyOutbounds.map { item ->
+                val olc = item.server as? OlcRtc
+                if (olc != null && item.customOutbound == null && olc.matchesEndpoint(activeBridge.server)) {
+                    val customOutbound = olc.toXrayOutboundWithPortAndAuth(
+                        tag = item.tag,
+                        port = activeBridge.socksPort,
+                        user = activeBridge.socksUser,
+                        pass = activeBridge.socksPass,
+                    ).toJsonObject()
+                    item.copy(customOutbound = customOutbound)
+                } else {
+                    item
+                }
+            }
+            rawOutboundPlan.copy(proxyOutbounds = updatedOutbounds)
+        } else {
+            rawOutboundPlan
+        }
         val primaryTag = outboundPlan.proxyOutbounds.firstOrNull()?.tag ?: XrayTags.PROXY
         val startupProxyServerDomains = outboundPlan.proxyOutbounds.startupProxyServerDnsDomains()
 

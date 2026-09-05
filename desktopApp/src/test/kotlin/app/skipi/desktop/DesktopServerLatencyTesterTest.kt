@@ -90,6 +90,18 @@ class DesktopServerLatencyTesterTest {
         )
 
         assertEquals(DesktopServerTcpEndpoint("edge.example", 443), server.desktopTcpEndpointOrNull())
+
+        val awg = features.proxy.server.model.AmneziaWg(
+            server = "awg.example.com",
+            port = "51820",
+        )
+        assertEquals(DesktopServerTcpEndpoint("awg.example.com", 51820), awg.desktopTcpEndpointOrNull())
+
+        val olc = features.proxy.server.model.OlcRtc(
+            provider = "telemost",
+            roomUrl = "https://telemost.yandex.ru/j/1234567890",
+        )
+        assertEquals(DesktopServerTcpEndpoint("telemost.yandex.ru", 443), olc.desktopTcpEndpointOrNull())
     }
 }
 

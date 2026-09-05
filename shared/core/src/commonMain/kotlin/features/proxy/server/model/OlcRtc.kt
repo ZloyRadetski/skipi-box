@@ -51,6 +51,42 @@ data class OlcRtc(
     }
 
     /**
+     * Извлекает хост и порт сигнального сервера или комнаты для проверки доступности (TCP ping).
+     */
+    fun signalingEndpoint(): Pair<String, Int>? {
+        val clean = roomUrl.trim()
+        if (clean.startsWith("https://", ignoreCase = true)) {
+            val withoutScheme = clean.substring(8)
+            val hostPart = withoutScheme.substringBefore('/').substringBefore('?')
+            val host = hostPart.substringBefore(':').trim().trim('[', ']')
+            val port = hostPart.substringAfter(':', "443").toIntOrNull() ?: 443
+            if (host.isNotEmpty()) return host to port
+        } else if (clean.startsWith("http://", ignoreCase = true)) {
+            val withoutScheme = clean.substring(7)
+            val hostPart = withoutScheme.substringBefore('/').substringBefore('?')
+            val host = hostPart.substringBefore(':').trim().trim('[', ']')
+            val port = hostPart.substringAfter(':', "80").toIntOrNull() ?: 80
+            if (host.isNotEmpty()) return host to port
+        } else if (clean.contains(':') && clean.indexOf(':') < (clean.indexOf('/').takeIf { it >= 0 } ?: clean.length)) {
+            val host = clean.substringBefore(':').trim().trim('[', ']')
+            val port = clean.substringAfter(':').substringBefore('/').substringBefore('?').toIntOrNull()
+            if (host.isNotEmpty() && port != null && port in 1..65535) return host to port
+        } else if (clean.contains('.') && !clean.contains('/')) {
+            return clean.trim('[', ']') to 443
+        }
+        return when (provider.trim().lowercase()) {
+            "jitsi" -> "meet.jit.si" to 443
+            "telemost" -> "telemost.yandex.ru" to 443
+            else -> null
+        }
+    }
+
+    fun matchesEndpoint(other: OlcRtc): Boolean {
+        return roomUrl.trim().equals(other.roomUrl.trim(), ignoreCase = true) &&
+            provider.trim().equals(other.provider.trim(), ignoreCase = true)
+    }
+
+    /**
      * Генерирует Xray SOCKS5 outbound на localhost, где слушает клиент OLCRTC.
      * Порт localSocksPort используется как предпочтительный, но при запуске
      * SkipiCoreRuntime выделяет свободный порт динамически.
@@ -64,6 +100,18 @@ data class OlcRtc(
      * после того как был выделен реальный свободный порт.
      */
     fun toXrayOutboundWithPort(tag: String, port: Int): OutboundObject {
+        return toXrayOutboundWithPortAndAuth(tag, port)
+    }
+
+    /**
+     * Вариант с явным указанием порта и учетных данных авторизации SOCKS5.
+     */
+    fun toXrayOutboundWithPortAndAuth(
+        tag: String,
+        port: Int,
+        user: String = "",
+        pass: String = "",
+    ): OutboundObject {
         return OutboundObject(
             tag = tag,
             protocol = ProxyServerConstants.PROTOCOL_SOCKS,
@@ -72,6 +120,15 @@ data class OlcRtc(
                     add(buildJsonObject {
                         put("address", "127.0.0.1")
                         put("port", port)
+                        if (user.isNotBlank() || pass.isNotBlank()) {
+                            put("users", buildJsonArray {
+                                add(buildJsonObject {
+                                    put("user", user)
+                                    put("pass", pass)
+                                    put("level", 0)
+                                })
+                            })
+                        }
                     })
                 })
             },
@@ -82,7 +139,11 @@ data class OlcRtc(
      * Генерирует YAML конфигурацию для клиента OLCRTC (cnc режим).
      * Передаётся в skipi-core метод startOlcRtc(yamlConfig, socksPort).
      */
-    fun toOlcRtcYamlConfig(socksPort: Int): String {
+    fun toOlcRtcYamlConfig(
+        socksPort: Int,
+        socksUser: String = "",
+        socksPass: String = "",
+    ): String {
         val payloadStr = if (payload.isNotBlank()) "[$payload]" else ""
         return buildString {
             appendLine("mode: cnc")
@@ -91,6 +152,12 @@ data class OlcRtc(
             appendLine("room: $roomUrl")
             appendLine("key: $encryptionKey")
             appendLine("socks5_listen: 127.0.0.1:$socksPort")
+            if (socksUser.isNotBlank()) {
+                appendLine("socks5_user: $socksUser")
+            }
+            if (socksPass.isNotBlank()) {
+                appendLine("socks5_pass: $socksPass")
+            }
         }
     }
 

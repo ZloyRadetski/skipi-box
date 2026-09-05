@@ -21,16 +21,35 @@ import engine.proxy.xrayStatsApiConfig
 import engine.xray.XrayConfigFactory
 import engine.xray.XrayConfigRequest
 import engine.xray.XrayCoreLogPaths
+import engine.xray.XrayOutboundPlan
 import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
 import engine.xray.prepareXrayCoreLogPaths
 import engine.xray.validateXrayExternalRoutingResources
+import engine.network.findAvailableTcpPort
+import engine.network.isPort
+import engine.network.isTcpPortAvailable
 import features.resources.runtime.prepareXrayResourceFilePaths
 import features.proxy.server.model.Custom
 import features.proxy.server.model.OlcRtc
 import system.toAndroidUserId
 import java.io.File
 import kotlinx.serialization.json.JsonObject
+
+
+internal data class ActiveOlcRtcBridge(
+    val socksPort: Int,
+    val socksUser: String,
+    val socksPass: String,
+    val server: OlcRtc,
+)
+
+private data class OlcRtcPlanResult(
+    val outboundPlan: XrayOutboundPlan,
+    val yaml: String?,
+    val socksPort: Int,
+    val activeBridge: ActiveOlcRtcBridge?,
+)
 
 internal data class VpnServiceStartConfig(
     val sessionName: String,
@@ -56,6 +75,7 @@ internal data class VpnServiceStartConfig(
     val hevSocks5TunnelConfig: HevSocks5TunnelConfig? = null,
     val olcRtcConfigYaml: String? = null,
     val olcRtcSocksPort: Int = 0,
+    val activeOlcRtcBridge: ActiveOlcRtcBridge? = null,
 )
 
 internal fun VpnServiceStartConfig.xrayTunFd(vpnTunFd: Int): Int {
@@ -74,7 +94,52 @@ internal object VpnXrayConfigFactory {
         val coreLogPaths = context.prepareXrayCoreLogPaths()
         val resourceFilePaths = context.prepareXrayResourceFilePaths()
         appState.validateXrayExternalRoutingResources(resourceFilePaths.dataDir)
-        val outboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)
+        val rawOutboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)
+
+        val olcRtcServer = (request.selectedServer.server as? OlcRtc)
+            ?: rawOutboundPlan.proxyOutbounds.mapNotNull { it.server as? OlcRtc }.firstOrNull()
+
+        val (outboundPlan, olcRtcConfigYaml, olcRtcSocksPort, activeBridge) = if (olcRtcServer != null) {
+            val reservedPorts = setOfNotNull(
+                localProxyOptions.port,
+                appendHttpProxyOptions.port.takeIf { appendHttpProxyOptions.enabled },
+                request.xrayStatsApiPort,
+            )
+            val preferredPort = olcRtcServer.localSocksPort.toIntOrNull()?.takeIf { p -> p in 1024..65535 } ?: 10808
+            val allocatedPort = findAvailableLocalPort(preferredPort, reservedPorts)
+            val olcUser = "skipi_rtc_" + java.util.UUID.randomUUID().toString().replace("-", "").take(12)
+            val olcPass = java.util.UUID.randomUUID().toString().replace("-", "")
+
+            val yaml = olcRtcServer.toOlcRtcYamlConfig(
+                socksPort = allocatedPort,
+                socksUser = olcUser,
+                socksPass = olcPass,
+            )
+
+            val updatedProxyOutbounds = rawOutboundPlan.proxyOutbounds.map { item ->
+                if (item.server is OlcRtc) {
+                    val customOutbound = item.server.toXrayOutboundWithPortAndAuth(
+                        tag = item.tag,
+                        port = allocatedPort,
+                        user = olcUser,
+                        pass = olcPass,
+                    ).toJsonObject()
+                    item.copy(customOutbound = customOutbound)
+                } else {
+                    item
+                }
+            }
+            val bridge = ActiveOlcRtcBridge(
+                socksPort = allocatedPort,
+                socksUser = olcUser,
+                socksPass = olcPass,
+                server = olcRtcServer,
+            )
+            OlcRtcPlanResult(rawOutboundPlan.copy(proxyOutbounds = updatedProxyOutbounds), yaml, allocatedPort, bridge)
+        } else {
+            OlcRtcPlanResult(rawOutboundPlan, null, 0, null)
+        }
+
         val dnsHosts = appState.xrayDnsHosts(outboundPlan.dnsHostServers)
         val xrayConfigResult = XrayConfigFactory.buildXrayConfigResult(
             XrayConfigRequest(
@@ -125,16 +190,9 @@ internal object VpnXrayConfigFactory {
                 useHevTun = appState.enableVpnHevTun,
                 tcpReadWriteTimeoutMillis = appState.hevTcpReadWriteTimeoutMillis,
             ),
-            olcRtcConfigYaml = (request.selectedServer.server as? OlcRtc)?.let {
-                val port = it.localSocksPort.toIntOrNull()?.takeIf { p -> p in 1024..65535 } ?: 10808
-                it.toOlcRtcYamlConfig(port)
-            } ?: outboundPlan.proxyOutbounds.mapNotNull { it.server as? OlcRtc }.firstOrNull()?.let {
-                val port = it.localSocksPort.toIntOrNull()?.takeIf { p -> p in 1024..65535 } ?: 10808
-                it.toOlcRtcYamlConfig(port)
-            },
-            olcRtcSocksPort = (request.selectedServer.server as? OlcRtc)?.localSocksPort?.toIntOrNull()?.takeIf { p -> p in 1024..65535 }
-                ?: outboundPlan.proxyOutbounds.mapNotNull { it.server as? OlcRtc }.firstOrNull()?.localSocksPort?.toIntOrNull()?.takeIf { p -> p in 1024..65535 }
-                ?: 0,
+            olcRtcConfigYaml = olcRtcConfigYaml,
+            olcRtcSocksPort = olcRtcSocksPort,
+            activeOlcRtcBridge = activeBridge,
         )
     }
 }
@@ -190,4 +248,20 @@ internal fun buildVpnHevSocks5TunnelConfig(
         tcpReadWriteTimeoutMillis = tcpReadWriteTimeoutMillis.takeIf { it > 0 }
             ?: DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis,
     )
+}
+
+internal fun findAvailableLocalPort(preferredPort: Int, reservedPorts: Set<Int>): Int {
+    if (preferredPort.isPort() && preferredPort !in reservedPorts && isTcpPortAvailable("127.0.0.1", preferredPort)) {
+        return preferredPort
+    }
+    val discovered = findAvailableTcpPort("127.0.0.1", reservedPorts)
+    if (discovered != null && discovered.isPort()) {
+        return discovered
+    }
+    for (port in 10809..65535) {
+        if (port !in reservedPorts && isTcpPortAvailable("127.0.0.1", port)) {
+            return port
+        }
+    }
+    return if (preferredPort.isPort()) preferredPort else 10808
 }
