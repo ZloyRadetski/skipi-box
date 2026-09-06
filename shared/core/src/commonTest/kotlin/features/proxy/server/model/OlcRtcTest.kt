@@ -229,5 +229,73 @@ class OlcRtcTest {
         assertTrue(server1.matchesEndpoint(server2))
         assertTrue(!server1.matchesEndpoint(server3))
     }
+
+    @Test
+    fun testPayloadParameterManipulationAndAliases() {
+        val server = OlcRtc(
+            provider = "telemost",
+            transport = "vp8channel",
+            roomUrl = "12345",
+            encryptionKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            payload = "fps=25&batch=2",
+        )
+
+        // Initial check via alias
+        assertEquals("25", server.getPayloadParameter("vp8-fps", "fps"))
+        assertEquals("2", server.getPayloadParameter("vp8-batch", "batch"))
+
+        // Update vp8-fps and remove legacy alias "fps"
+        server.setPayloadParameter("vp8-fps", "30", "fps")
+        assertEquals("30", server.getPayloadParameter("vp8-fps", "fps"))
+        assertTrue(server.payload.contains("vp8-fps=30"))
+        assertTrue(server.payload.contains("batch=2"))
+        assertTrue(!server.payload.contains("fps=25"))
+
+        // Update vp8-batch and remove legacy alias "batch"
+        server.setPayloadParameter("vp8-batch", "4", "batch")
+        assertEquals("4", server.getPayloadParameter("vp8-batch", "batch"))
+        assertTrue(server.payload.contains("vp8-fps=30"))
+        assertTrue(server.payload.contains("vp8-batch=4"))
+        assertTrue(!server.payload.contains("batch=2"))
+
+        // Remove vp8-batch by setting to null
+        server.setPayloadParameter("vp8-batch", null)
+        assertEquals("", server.getPayloadParameter("vp8-batch", "batch"))
+        assertEquals("vp8-fps=30", server.payload)
+
+        // Verify YAML reflects new parameter values
+        val yaml = server.toOlcRtcYamlConfig(10808)
+        assertTrue(yaml.contains("fps: 30"))
+        assertTrue(!yaml.contains("batch_size"))
+    }
+
+    @Test
+    fun testCustomPayloadPreservesKnownKeys() {
+        val server = OlcRtc(
+            provider = "telemost",
+            transport = "vp8channel",
+            roomUrl = "12345",
+            encryptionKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            payload = "vp8-fps=25&vp8-batch=1&custom1=val1",
+        )
+
+        // Check custom payload extraction
+        assertEquals("custom1=val1", server.getCustomPayload(OlcRtc.KNOWN_VP8_KEYS))
+
+        // Update custom payload without altering known keys
+        server.setCustomPayload(OlcRtc.KNOWN_VP8_KEYS, "custom2=val2&custom3=val3")
+        assertEquals("25", server.getPayloadParameter("vp8-fps"))
+        assertEquals("1", server.getPayloadParameter("vp8-batch"))
+        assertEquals("custom2=val2&custom3=val3", server.getCustomPayload(OlcRtc.KNOWN_VP8_KEYS))
+        assertTrue(server.payload.contains("vp8-fps=25"))
+        assertTrue(server.payload.contains("vp8-batch=1"))
+        assertTrue(server.payload.contains("custom2=val2"))
+        assertTrue(server.payload.contains("custom3=val3"))
+
+        // Update known key without losing custom payload
+        server.setPayloadParameter("vp8-fps", "60", "fps")
+        assertEquals("60", server.getPayloadParameter("vp8-fps"))
+        assertEquals("custom2=val2&custom3=val3", server.getCustomPayload(OlcRtc.KNOWN_VP8_KEYS))
+    }
 }
 

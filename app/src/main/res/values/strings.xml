@@ -1388,5 +1388,23 @@
     <string name="proxy_editor_olcrtc_encryption_key">Encryption Key (64 hex chars)</string>
     <string name="proxy_editor_olcrtc_payload_optional">Transport Payload (optional)</string>
     <string name="proxy_editor_olcrtc_socks_port">Preferred local SOCKS5 port</string>
+    <string name="proxy_editor_olcrtc_vp8_options">VP8 Parameters</string>
+    <string name="proxy_editor_olcrtc_vp8_fps">Frame rate (FPS)</string>
+    <string name="proxy_editor_olcrtc_vp8_batch">Batch size (packets)</string>
+    <string name="proxy_editor_olcrtc_sei_options">SEI Parameters</string>
+    <string name="proxy_editor_olcrtc_sei_fps">Frame rate (FPS)</string>
+    <string name="proxy_editor_olcrtc_sei_batch">Batch size (packets)</string>
+    <string name="proxy_editor_olcrtc_sei_frag">Fragment size (bytes)</string>
+    <string name="proxy_editor_olcrtc_sei_ack_ms">ACK timeout (ms)</string>
+    <string name="proxy_editor_olcrtc_video_options">Video Channel Parameters</string>
+    <string name="proxy_editor_olcrtc_video_width">Width (pixels)</string>
+    <string name="proxy_editor_olcrtc_video_height">Height (pixels)</string>
+    <string name="proxy_editor_olcrtc_video_fps">Frame rate (FPS)</string>
+    <string name="proxy_editor_olcrtc_video_codec">Video codec</string>
+    <string name="proxy_editor_olcrtc_video_qr_size">QR code size</string>
+    <string name="proxy_editor_olcrtc_video_qr_recovery">QR error recovery (low/medium/high)</string>
+    <string name="proxy_editor_olcrtc_video_tile_module">Tile module size</string>
+    <string name="proxy_editor_olcrtc_video_tile_rs">Tile Reed-Solomon redundancy</string>
+    <string name="proxy_editor_olcrtc_custom_payload">Additional custom payload</string>
 </resources>
 

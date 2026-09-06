@@ -1358,4 +1358,22 @@
     <string name="proxy_editor_olcrtc_encryption_key">加密密钥 (64 位十六进制)</string>
     <string name="proxy_editor_olcrtc_payload_optional">传输 Payload（可选）</string>
     <string name="proxy_editor_olcrtc_socks_port">首选本地 SOCKS5 端口</string>
-</resources>
+    <string name="proxy_editor_olcrtc_vp8_options">VP8 参数</string>
+    <string name="proxy_editor_olcrtc_vp8_fps">帧率 (FPS)</string>
+    <string name="proxy_editor_olcrtc_vp8_batch">批处理大小 (包数)</string>
+    <string name="proxy_editor_olcrtc_sei_options">SEI 参数</string>
+    <string name="proxy_editor_olcrtc_sei_fps">帧率 (FPS)</string>
+    <string name="proxy_editor_olcrtc_sei_batch">批处理大小 (包数)</string>
+    <string name="proxy_editor_olcrtc_sei_frag">分片大小 (字节)</string>
+    <string name="proxy_editor_olcrtc_sei_ack_ms">ACK 超时 (毫秒)</string>
+    <string name="proxy_editor_olcrtc_video_options">视频通道参数</string>
+    <string name="proxy_editor_olcrtc_video_width">宽度 (像素)</string>
+    <string name="proxy_editor_olcrtc_video_height">高度 (像素)</string>
+    <string name="proxy_editor_olcrtc_video_fps">帧率 (FPS)</string>
+    <string name="proxy_editor_olcrtc_video_codec">视频编码</string>
+    <string name="proxy_editor_olcrtc_video_qr_size">二维码大小</string>
+    <string name="proxy_editor_olcrtc_video_qr_recovery">二维码纠错级别 (low/medium/high)</string>
+    <string name="proxy_editor_olcrtc_video_tile_module">Tile 模块大小</string>
+    <string name="proxy_editor_olcrtc_video_tile_rs">Tile Reed-Solomon 冗余</string>
+    <string name="proxy_editor_olcrtc_custom_payload">附加自定义 Payload</string>
+ </resources>

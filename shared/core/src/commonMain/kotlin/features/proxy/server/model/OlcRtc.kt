@@ -43,6 +43,33 @@ data class OlcRtc(
     companion object {
         val AllowedProviders = setOf("jitsi", "telemost", "wbstream", "custom")
         val AllowedTransports = setOf("datachannel", "vp8channel", "seichannel", "videochannel")
+
+        val KNOWN_VP8_KEYS = setOf("vp8-fps", "fps", "vp8-batch", "batch")
+        val KNOWN_SEI_KEYS = setOf("fps", "batch", "frag", "ack-ms", "ack_timeout_ms", "vp8-fps", "vp8-batch")
+        val KNOWN_VIDEO_KEYS = setOf(
+            "video-w", "width", "video-h", "height", "video-fps", "fps",
+            "video-codec", "codec", "video-qr-size", "qr_size",
+            "video-qr-recovery", "qr_recovery", "video-tile-module", "tile_module",
+            "video-tile-rs", "tile_rs"
+        )
+
+        fun parsePayloadString(payloadStr: String): Map<String, String> {
+            if (payloadStr.isBlank()) return emptyMap()
+            val result = mutableMapOf<String, String>()
+            for (part in payloadStr.split('&')) {
+                val trimmed = part.trim()
+                if (trimmed.isEmpty()) continue
+                val equalsIdx = trimmed.indexOf('=')
+                if (equalsIdx >= 0) {
+                    val k = trimmed.substring(0, equalsIdx).trim().lowercase()
+                    val v = trimmed.substring(equalsIdx + 1).trim()
+                    result[k] = v
+                } else {
+                    result[trimmed.lowercase()] = ""
+                }
+            }
+            return result
+        }
     }
 
     override fun getInfo(): ProxyServerInfo {
@@ -138,23 +165,7 @@ data class OlcRtc(
     /**
      * Разбирает строку payload на пары ключ-значение.
      */
-    fun payloadParameters(): Map<String, String> {
-        if (payload.isBlank()) return emptyMap()
-        val result = mutableMapOf<String, String>()
-        for (part in payload.split('&')) {
-            val trimmed = part.trim()
-            if (trimmed.isEmpty()) continue
-            val equalsIdx = trimmed.indexOf('=')
-            if (equalsIdx >= 0) {
-                val k = trimmed.substring(0, equalsIdx).trim().lowercase()
-                val v = trimmed.substring(equalsIdx + 1).trim()
-                result[k] = v
-            } else {
-                result[trimmed.lowercase()] = ""
-            }
-        }
-        return result
-    }
+    fun payloadParameters(): Map<String, String> = parsePayloadString(payload)
 
     // VP8 параметры
     val vp8Fps: Int? get() = payloadParameters()["vp8-fps"]?.toIntOrNull()
@@ -175,6 +186,50 @@ data class OlcRtc(
     val videoQrRecovery: String? get() = payloadParameters()["video-qr-recovery"] ?: payloadParameters()["qr_recovery"]
     val videoTileModule: Int? get() = (payloadParameters()["video-tile-module"] ?: payloadParameters()["tile_module"])?.toIntOrNull()
     val videoTileRs: Int? get() = (payloadParameters()["video-tile-rs"] ?: payloadParameters()["tile_rs"])?.toIntOrNull()
+
+    fun setPayloadParameter(key: String, value: String?, vararg aliasesToRemove: String) {
+        val params = payloadParameters().toMutableMap()
+        val normalizedKey = key.trim().lowercase()
+        for (alias in aliasesToRemove) {
+            params.remove(alias.trim().lowercase())
+        }
+        if (value.isNullOrBlank()) {
+            params.remove(normalizedKey)
+        } else {
+            params[normalizedKey] = value.trim()
+        }
+        payload = params.entries.joinToString("&") { (k, v) ->
+            if (v.isEmpty()) k else "$k=$v"
+        }
+    }
+
+    fun getPayloadParameter(vararg keys: String): String {
+        val params = payloadParameters()
+        for (k in keys) {
+            val v = params[k.trim().lowercase()]
+            if (!v.isNullOrEmpty()) return v
+        }
+        return ""
+    }
+
+    fun getCustomPayload(knownKeys: Set<String>): String {
+        val params = payloadParameters()
+        val custom = params.filterKeys { it !in knownKeys }
+        return custom.entries.joinToString("&") { (k, v) ->
+            if (v.isEmpty()) k else "$k=$v"
+        }
+    }
+
+    fun setCustomPayload(knownKeys: Set<String>, value: String?) {
+        val currentParams = payloadParameters().filterKeys { it in knownKeys }.toMutableMap()
+        if (!value.isNullOrBlank()) {
+            val customParams = parsePayloadString(value)
+            currentParams.putAll(customParams)
+        }
+        payload = currentParams.entries.joinToString("&") { (k, v) ->
+            if (v.isEmpty()) k else "$k=$v"
+        }
+    }
 
     /**
      * Генерирует YAML конфигурацию для клиента OLCRTC (cnc режим).

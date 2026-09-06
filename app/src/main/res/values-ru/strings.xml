@@ -1378,4 +1378,22 @@
     <string name="proxy_editor_olcrtc_encryption_key">Ключ шифрования (64 hex символа)</string>
     <string name="proxy_editor_olcrtc_payload_optional">Payload транспорта (опционально)</string>
     <string name="proxy_editor_olcrtc_socks_port">Предпочтительный порт локального SOCKS5</string>
+    <string name="proxy_editor_olcrtc_vp8_options">Параметры VP8</string>
+    <string name="proxy_editor_olcrtc_vp8_fps">Частота кадров (FPS)</string>
+    <string name="proxy_editor_olcrtc_vp8_batch">Размер пакета (батч)</string>
+    <string name="proxy_editor_olcrtc_sei_options">Параметры SEI</string>
+    <string name="proxy_editor_olcrtc_sei_fps">Частота кадров (FPS)</string>
+    <string name="proxy_editor_olcrtc_sei_batch">Размер пакета (батч)</string>
+    <string name="proxy_editor_olcrtc_sei_frag">Размер фрагмента (байт)</string>
+    <string name="proxy_editor_olcrtc_sei_ack_ms">Таймаут ACK (мс)</string>
+    <string name="proxy_editor_olcrtc_video_options">Параметры видеоканала</string>
+    <string name="proxy_editor_olcrtc_video_width">Ширина (пиксели)</string>
+    <string name="proxy_editor_olcrtc_video_height">Высота (пиксели)</string>
+    <string name="proxy_editor_olcrtc_video_fps">Частота кадров (FPS)</string>
+    <string name="proxy_editor_olcrtc_video_codec">Видеокодек</string>
+    <string name="proxy_editor_olcrtc_video_qr_size">Размер QR-кода</string>
+    <string name="proxy_editor_olcrtc_video_qr_recovery">Восстановление ошибок QR (low/medium/high)</string>
+    <string name="proxy_editor_olcrtc_video_tile_module">Размер модуля тайла</string>
+    <string name="proxy_editor_olcrtc_video_tile_rs">Избыточность Рида-Соломона (RS)</string>
+    <string name="proxy_editor_olcrtc_custom_payload">Дополнительный payload</string>
 </resources>

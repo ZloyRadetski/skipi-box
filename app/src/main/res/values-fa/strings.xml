@@ -1351,4 +1351,22 @@
     <string name="proxy_editor_olcrtc_encryption_key">کلید رمزگذاری (64 کاراکتر hex)</string>
     <string name="proxy_editor_olcrtc_payload_optional">محموله انتقال (اختیاری)</string>
     <string name="proxy_editor_olcrtc_socks_port">پورت ترجیحی SOCKS5 محلی</string>
+    <string name="proxy_editor_olcrtc_vp8_options">پارامترهای VP8</string>
+    <string name="proxy_editor_olcrtc_vp8_fps">نرخ فریم (FPS)</string>
+    <string name="proxy_editor_olcrtc_vp8_batch">اندازه دسته (بسته)</string>
+    <string name="proxy_editor_olcrtc_sei_options">پارامترهای SEI</string>
+    <string name="proxy_editor_olcrtc_sei_fps">نرخ فریم (FPS)</string>
+    <string name="proxy_editor_olcrtc_sei_batch">اندازه دسته (بسته)</string>
+    <string name="proxy_editor_olcrtc_sei_frag">اندازه بخش (بایت)</string>
+    <string name="proxy_editor_olcrtc_sei_ack_ms">مهلت زمانی ACK (میلی‌ثانیه)</string>
+    <string name="proxy_editor_olcrtc_video_options">پارامترهای کانال ویدیو</string>
+    <string name="proxy_editor_olcrtc_video_width">عرض (پیکسل)</string>
+    <string name="proxy_editor_olcrtc_video_height">ارتفاع (پیکسل)</string>
+    <string name="proxy_editor_olcrtc_video_fps">نرخ فریم (FPS)</string>
+    <string name="proxy_editor_olcrtc_video_codec">کدک ویدیو</string>
+    <string name="proxy_editor_olcrtc_video_qr_size">اندازه QR کد</string>
+    <string name="proxy_editor_olcrtc_video_qr_recovery">سطح بازیابی خطای QR (low/medium/high)</string>
+    <string name="proxy_editor_olcrtc_video_tile_module">اندازه ماژول Tile</string>
+    <string name="proxy_editor_olcrtc_video_tile_rs">افزونگی Reed-Solomon برای Tile</string>
+    <string name="proxy_editor_olcrtc_custom_payload">محموله سفارشی اضافی</string>
 </resources>
