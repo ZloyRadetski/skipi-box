@@ -87,7 +87,17 @@ private fun String.importFailureMessage(
 
 private fun String.embeddedProxyServerUrls(): Sequence<String> {
     return ProxyServerUrlRegex.findAll(this)
-        .map { match -> match.value.trimEnd(',', ';') }
+        .map { match ->
+            val raw = match.value.trimEnd(',', ';')
+            if (raw.startsWith("${ProxyServerConstants.PROTOCOL_OLCRTC}://", ignoreCase = true) &&
+                raw.endsWith('>') &&
+                raw.lastIndexOf('>') > raw.lastIndexOf('@')
+            ) {
+                raw.dropLast(1)
+            } else {
+                raw
+            }
+        }
 }
 
 private fun String.startsWithProxyServerScheme(): Boolean {
@@ -113,7 +123,7 @@ private val ProxyServerUrlPrefixes = listOf(
 )
 
 private val ProxyServerUrlRegex = Regex(
-    "(?i)\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|wireguard|amneziawg|awg|olcrtc)://[^\\s<>\"']+",
+    "(?i)\\b(?:olcrtc://[^\\s\"']+|\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|wireguard|amneziawg|awg)://[^\\s<>\"']+)",
 )
 
 private const val ProxyServerImportLogTag = "ProxyServerImport"

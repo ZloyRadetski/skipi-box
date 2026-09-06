@@ -29,6 +29,7 @@ internal object SkipiCoreRuntime {
         if (!config.olcRtcConfigYaml.isNullOrBlank() && config.olcRtcSocksPort > 0) {
             runCatching {
                 startOlcRtc(config.olcRtcConfigYaml, config.olcRtcSocksPort)
+                awaitOlcRtcReady(config.olcRtcSocksPort)
             }.onFailure { error ->
                 stopOlcRtc()
                 activeOlcRtcBridge = null
@@ -129,6 +130,40 @@ internal object SkipiCoreRuntime {
         }.onFailure { error ->
             AndroidAppLogger.warn(LogTag, "Failed to stop OLCRTC", error)
         }
+    }
+
+    fun awaitOlcRtcReady(port: Int, timeoutMs: Long = 15_000L): Boolean {
+        runCatching {
+            val waitMethod = Skipicore::class.java.methods.firstOrNull { it.name == "waitOlcRtcReady" }
+            if (waitMethod != null) {
+                val arg: Any = if (waitMethod.parameterTypes[0] == Long::class.javaPrimitiveType || waitMethod.parameterTypes[0] == Long::class.javaObjectType) {
+                    timeoutMs
+                } else {
+                    timeoutMs.toInt().coerceAtMost(Int.MAX_VALUE)
+                }
+                waitMethod.invoke(null, arg)
+            }
+        }
+
+        val deadline = android.os.SystemClock.elapsedRealtime() + timeoutMs
+        AndroidAppLogger.info(LogTag, "Waiting for local SOCKS 127.0.0.1:$port to accept connections (timeout ${timeoutMs}ms)")
+        while (android.os.SystemClock.elapsedRealtime() < deadline) {
+            try {
+                java.net.Socket().use { sock ->
+                    sock.connect(java.net.InetSocketAddress("127.0.0.1", port), 300)
+                }
+                AndroidAppLogger.info(LogTag, "Local SOCKS 127.0.0.1:$port is ready")
+                return true
+            } catch (_: Exception) {
+                try {
+                    Thread.sleep(200)
+                } catch (_: InterruptedException) {
+                    break
+                }
+            }
+        }
+        AndroidAppLogger.warn(LogTag, "Local SOCKS 127.0.0.1:$port did not become ready within ${timeoutMs}ms; continuing anyway")
+        return false
     }
 
     fun isRunning(): Boolean {

@@ -41,6 +41,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -458,7 +459,9 @@ internal class AndroidProxyLatencyTester(
 
         try {
             SkipiCoreRuntime.startOlcRtc(tempYaml, tempPort)
-            delay(100L)
+            withContext(Dispatchers.IO) {
+                SkipiCoreRuntime.awaitOlcRtcReady(tempPort, 15_000L)
+            }
 
             val customOutbound = olcServer.toXrayOutboundWithPortAndAuth(
                 tag = XrayTags.PROXY,
