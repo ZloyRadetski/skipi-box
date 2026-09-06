@@ -49,6 +49,7 @@ import ui.feedback.LocalAppHaptics
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.usecase.ProxyServerLatencyTracker
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.restartProxyServiceAfterSelection
 import features.proxy.server.usecase.runProxyServerLatencyTest
@@ -127,6 +128,8 @@ fun ProxyServerListPage(
     var editingSubscriptionGroupId by rememberSaveable { mutableStateOf<Int?>(null) }
     var selectingGroupMemberForServer by remember { mutableStateOf<ProxyServerState?>(null) }
     var pingingGroupIds by remember { mutableStateOf(emptySet<Int>()) }
+    var activeGlobalLatencyJob by remember { mutableStateOf<Job?>(null) }
+    val activeGroupLatencyJobs = remember { mutableStateMapOf<Int, Job>() }
     val servers = proxyListState.proxyServers
     val editingSubscriptionGroup = editingSubscriptionGroupId?.let { groupId ->
         proxyListState.subscriptionGroups.firstOrNull { group -> group.id == groupId }
@@ -164,6 +167,12 @@ fun ProxyServerListPage(
 
     fun toggleProxyFromConnectionPanel() {
         haptics.vpnToggle()
+        ProxyServerLatencyTracker.cancelAll()
+        activeGlobalLatencyJob?.cancel()
+        activeGlobalLatencyJob = null
+        activeGroupLatencyJobs.values.forEach { it.cancel() }
+        activeGroupLatencyJobs.clear()
+        pingingGroupIds = emptySet()
         runProxyServiceOperation {
             var currentState = stateStore.state.value
             val resolvedState = currentState.resolveActiveNetworkConfig(context)
@@ -230,10 +239,8 @@ fun ProxyServerListPage(
             }
     }
 
-    var activeGlobalLatencyJob by remember { mutableStateOf<Job?>(null) }
-    val activeGroupLatencyJobs = remember { mutableStateMapOf<Int, Job>() }
-
     fun cancelAllLatencyTests() {
+        ProxyServerLatencyTracker.cancelAll()
         activeGlobalLatencyJob?.cancel()
         activeGlobalLatencyJob = null
         activeGroupLatencyJobs.values.forEach { it.cancel() }

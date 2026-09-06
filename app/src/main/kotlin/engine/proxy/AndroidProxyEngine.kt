@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
 import engine.proxy.latency.AndroidProxyLatencyTester
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
+import features.proxy.server.usecase.ProxyServerLatencyTracker
 
 /** VPN-only runtime for SKIPI. ROOT runtimes intentionally are not linked here. */
 class AndroidProxyEngine(
@@ -77,6 +78,7 @@ class AndroidProxyEngine(
         request: ProxyEngineStartRequest,
         restart: Boolean,
     ): ProxyEngineStatus = withContext(Dispatchers.Default) {
+        ProxyServerLatencyTracker.cancelAll()
         val startRequestedAt = SystemClock.elapsedRealtime()
         // A paused notification deliberately outlives its VPN tunnel so the
         // user can resume it. A regular start replaces a live notification.

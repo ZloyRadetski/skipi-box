@@ -1142,6 +1142,7 @@
     <string name="configs_dns_proxy_section">سرورهای DNS پروکسی</string>
     <string name="configs_dns_proxy_summary">برای تفکیک و حل دامنه‌های پروکسی‌شده از راه دور</string>
     <string name="configs_dns_add_server">افزودن سرور DNS</string>
+    <string name="configs_dns_edit_server">ویرایش سرور DNS</string>
     <string name="configs_dns_empty_servers">هیچ سروری تنظیم نشده است. روی افزودن ضربه بزنید.</string>
     <string name="configs_dns_protocol_doh">DNS over HTTPS (DoH)</string>
     <string name="configs_dns_protocol_dot">DNS over TLS (DoT)</string>

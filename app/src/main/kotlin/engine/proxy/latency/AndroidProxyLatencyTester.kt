@@ -33,6 +33,7 @@ import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
 import features.proxy.server.model.customXrayConfigProxyOutboundEndpoint
 import engine.vpn.SkipiCoreRuntime
+import engine.vpn.SkipiVpnService
 import engine.vpn.findAvailableLocalPort
 import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
@@ -495,7 +496,7 @@ internal class AndroidProxyLatencyTester(
             AndroidAppLogger.warn(LogTag, "Standalone olcRTC latency test failed: ${e.logSummary()}")
             FailedDelayMillis
         } finally {
-            if (!SkipiCoreRuntime.isRunning()) {
+            if (!SkipiCoreRuntime.isRunning() && !SkipiVpnService.isRunning() && SkipiCoreRuntime.activeOlcRtcBridge == null) {
                 SkipiCoreRuntime.stopOlcRtc()
             }
         }

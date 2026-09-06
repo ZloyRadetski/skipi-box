@@ -21,11 +21,13 @@ internal class ProxyServiceUseCase(
     }
 
     suspend fun restart(state: AppState, selectedServer: ProxyServerState?): ProxyServiceResult {
+        ProxyServerLatencyTracker.cancelAll()
         val server = selectedServer ?: return ProxyServiceResult.MissingServer
         return runCatching { proxyEngine.restart(ProxyEngineStartRequest(state, server)) }.toResult()
     }
 
     suspend fun start(state: AppState, selectedServer: ProxyServerState?): ProxyServiceResult {
+        ProxyServerLatencyTracker.cancelAll()
         val server = selectedServer ?: return ProxyServiceResult.MissingServer
         return runCatching { proxyEngine.start(ProxyEngineStartRequest(state, server)) }.toResult()
     }

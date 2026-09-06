@@ -123,6 +123,7 @@ class SkipiVpnService : VpnService() {
             }
 
             SkipiVpnServiceIntents.ACTION_START -> {
+                features.proxy.server.usecase.ProxyServerLatencyTracker.cancelAll()
                 val config = VpnServiceStartConfigStore.take(operationId)
                 if (config == null) {
                     val error = IllegalStateException(getString(R.string.error_vpn_start_config_missing))

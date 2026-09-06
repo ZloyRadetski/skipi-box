@@ -30,8 +30,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.byValue
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.text.input.then
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -610,7 +612,9 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
 
     var showTunDnsDialog by remember { mutableStateOf(false) }
     var showAddProxyDnsDialog by remember { mutableStateOf(false) }
+    var editingProxyDnsIndex by remember { mutableIntStateOf(-1) }
     var showAddDirectDnsDialog by remember { mutableStateOf(false) }
+    var editingDirectDnsIndex by remember { mutableIntStateOf(-1) }
     var showDirectDomainsDialog by remember { mutableStateOf(false) }
     var showDnsHostsDialog by remember { mutableStateOf(false) }
 
@@ -775,10 +779,11 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                         )
                     } else {
-                        proxyDns.forEach { server ->
+                        proxyDns.forEachIndexed { index, server ->
                             DnsServerRow(
                                 server = server,
-                                onDelete = { proxyDns = proxyDns - server },
+                                onEdit = { editingProxyDnsIndex = index },
+                                onDelete = { proxyDns = proxyDns.filterIndexed { i, _ -> i != index } },
                             )
                         }
                     }
@@ -824,10 +829,11 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                         )
                     } else {
-                        directDns.forEach { server ->
+                        directDns.forEachIndexed { index, server ->
                             DnsServerRow(
                                 server = server,
-                                onDelete = { directDns = directDns - server },
+                                onEdit = { editingDirectDnsIndex = index },
+                                onDelete = { directDns = directDns.filterIndexed { i, _ -> i != index } },
                             )
                         }
                     }
@@ -876,9 +882,10 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
         onConfirm = { tunVpnDns = it },
     )
 
-    AddDnsServerDialog(
+    DnsServerDialog(
         show = showAddProxyDnsDialog,
-        title = stringResource(R.string.configs_dns_proxy_section),
+        title = stringResource(R.string.configs_dns_add_server),
+        confirmButtonText = stringResource(R.string.common_add),
         suggestions = proxyQuickChips,
         onDismissRequest = { showAddProxyDnsDialog = false },
         onConfirm = { server ->
@@ -886,13 +893,42 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
         },
     )
 
-    AddDnsServerDialog(
+    DnsServerDialog(
+        show = editingProxyDnsIndex in proxyDns.indices,
+        title = stringResource(R.string.configs_dns_edit_server),
+        initialValue = proxyDns.getOrElse(editingProxyDnsIndex) { "" },
+        confirmButtonText = stringResource(R.string.common_save),
+        suggestions = proxyQuickChips,
+        onDismissRequest = { editingProxyDnsIndex = -1 },
+        onConfirm = { updated ->
+            if (editingProxyDnsIndex in proxyDns.indices) {
+                proxyDns = proxyDns.toMutableList().also { it[editingProxyDnsIndex] = updated }
+            }
+        },
+    )
+
+    DnsServerDialog(
         show = showAddDirectDnsDialog,
-        title = stringResource(R.string.configs_dns_direct_section),
+        title = stringResource(R.string.configs_dns_add_server),
+        confirmButtonText = stringResource(R.string.common_add),
         suggestions = directQuickChips,
         onDismissRequest = { showAddDirectDnsDialog = false },
         onConfirm = { server ->
             if (server !in directDns) directDns = directDns + server
+        },
+    )
+
+    DnsServerDialog(
+        show = editingDirectDnsIndex in directDns.indices,
+        title = stringResource(R.string.configs_dns_edit_server),
+        initialValue = directDns.getOrElse(editingDirectDnsIndex) { "" },
+        confirmButtonText = stringResource(R.string.common_save),
+        suggestions = directQuickChips,
+        onDismissRequest = { editingDirectDnsIndex = -1 },
+        onConfirm = { updated ->
+            if (editingDirectDnsIndex in directDns.indices) {
+                directDns = directDns.toMutableList().also { it[editingDirectDnsIndex] = updated }
+            }
         },
     )
 
@@ -946,6 +982,7 @@ private fun DnsProtocolBadge(protocol: String) {
 @Composable
 private fun DnsServerRow(
     server: String,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -953,6 +990,7 @@ private fun DnsServerRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clickable(onClick = onEdit)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -966,6 +1004,18 @@ private fun DnsServerRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        IconButton(
+            onClick = onEdit,
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Edit,
+                contentDescription = stringResource(R.string.configs_dns_edit_server),
+                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Spacer(Modifier.width(4.dp))
         IconButton(
             onClick = onDelete,
             modifier = Modifier.size(32.dp),
@@ -1051,16 +1101,19 @@ private fun AddServerActionRow(
 }
 
 @Composable
-private fun AddDnsServerDialog(
+private fun DnsServerDialog(
     show: Boolean,
     title: String,
+    initialValue: String = "",
+    confirmButtonText: String = stringResource(R.string.common_add),
     suggestions: List<Pair<String, String>>,
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
     if (!show) return
-    var input by remember { mutableStateOf("") }
+    val textFieldState = remember(show, initialValue) { TextFieldState(initialValue) }
     val invalidMessage = stringResource(R.string.configs_dns_server_invalid)
+    val input = textFieldState.text.toString()
     val error = remember(input) {
         if (input.isBlank()) null else configDnsServerInputError(input, invalidMessage)
     }
@@ -1072,8 +1125,7 @@ private fun AddDnsServerDialog(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             TextField(
-                state = rememberTextFieldState(input),
-                inputTransformation = { input = asCharSequence().toString() },
+                state = textFieldState,
                 label = stringResource(R.string.configs_dns_server_address),
                 lineLimits = TextFieldLineLimits.SingleLine,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -1095,7 +1147,7 @@ private fun AddDnsServerDialog(
                 )
                 DnsQuickChipsRow(
                     chips = suggestions,
-                    onAdd = { input = it },
+                    onAdd = { textFieldState.setTextAndPlaceCursorAtEnd(it) },
                 )
             }
             Spacer(Modifier.height(16.dp))
@@ -1109,9 +1161,9 @@ private fun AddDnsServerDialog(
                 )
                 Spacer(Modifier.width(8.dp))
                 TextButton(
-                    text = stringResource(R.string.common_add),
+                    text = confirmButtonText,
                     onClick = {
-                        val trimmed = input.trim()
+                        val trimmed = textFieldState.text.toString().trim()
                         if (trimmed.isNotEmpty() && configDnsServerInputError(trimmed, invalidMessage) == null) {
                             onConfirm(trimmed)
                             onDismissRequest()

@@ -1189,6 +1189,7 @@
     <string name="configs_dns_proxy_section">代理 DNS 服务器</string>
     <string name="configs_dns_proxy_summary">用于代理流量的远程域名解析</string>
     <string name="configs_dns_add_server">添加 DNS 服务器</string>
+    <string name="configs_dns_edit_server">编辑 DNS 服务器</string>
     <string name="configs_dns_empty_servers">未配置服务器。点击添加。</string>
     <string name="configs_dns_protocol_doh">DNS over HTTPS (DoH)</string>
     <string name="configs_dns_protocol_dot">DNS over TLS (DoT)</string>

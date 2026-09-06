@@ -1157,6 +1157,7 @@
     <string name="configs_dns_protocol_dou">DoU (UDP)</string>
     <string name="configs_dns_protocol_tcp">TCP</string>
     <string name="configs_dns_add_server">Добавить DNS-сервер</string>
+    <string name="configs_dns_edit_server">Редактировать DNS-сервер</string>
     <string name="configs_dns_server_address">Адрес сервера или URL</string>
     <string name="configs_dns_server_invalid">Введите корректный адрес DNS (например, https://1.1.1.1/dns-query, tls://1.1.1.1:853, tcp://1.1.1.1:53 или 1.1.1.1)</string>
     <string name="configs_dns_empty_servers">DNS-серверы не настроены</string>

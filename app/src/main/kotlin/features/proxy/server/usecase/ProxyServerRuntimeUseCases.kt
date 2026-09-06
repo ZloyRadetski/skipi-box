@@ -122,7 +122,7 @@ internal fun runProxyServerLatencyTest(
 
     val previousLatencies = targetServers.associate { it.id to it.latency }
 
-    return scope.launch {
+    val job = scope.launch {
         try {
             val stateSnapshot = stateStore.state.value
             val targetIds = targetServers.map { server -> server.id }.toSet()
@@ -201,6 +201,8 @@ internal fun runProxyServerLatencyTest(
             }
         }
     }
+    ProxyServerLatencyTracker.register(job)
+    return job
 }
 
 private fun ProxyServerLatencyTestResult.toLatencyText(failedMessage: String): String {
