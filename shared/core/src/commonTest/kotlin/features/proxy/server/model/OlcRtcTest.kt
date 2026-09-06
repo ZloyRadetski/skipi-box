@@ -33,7 +33,7 @@ class OlcRtcTest {
         val yaml = server.toOlcRtcYamlConfig(10808)
         assertTrue(yaml.contains("mode: cnc"))
         assertTrue(yaml.contains("provider: jitsi"))
-        assertTrue(yaml.contains("transport: datachannel[mode=fast]"))
+        assertTrue(yaml.contains("transport: datachannel"))
         assertTrue(yaml.contains("room: my-secret-room"))
         assertTrue(yaml.contains("socks5_listen: 127.0.0.1:10808"))
 
@@ -50,6 +50,80 @@ class OlcRtcTest {
         assertTrue(json.contains("12345"))
         assertTrue(json.contains("user1"))
         assertTrue(json.contains("pass1"))
+    }
+
+    @Test
+    fun parseOlcRtcVp8ChannelWithAngleBrackets() {
+        val url = "olcrtc://telemost?vp8channel<vp8-fps=25&vp8-batch=1>@56026201482837#30330bd1da1c7ad6e7d518e423662b3bb2b53ca1bbb65612263a494610fa73e4\$olcRTC TELEMOST"
+        val server = assertIs<OlcRtc>(ProxyServer.parse(url))
+
+        assertEquals("olcRTC TELEMOST", server.remarks)
+        assertEquals("telemost", server.provider)
+        assertEquals("vp8channel", server.transport)
+        assertEquals("56026201482837", server.roomUrl)
+        assertEquals("30330bd1da1c7ad6e7d518e423662b3bb2b53ca1bbb65612263a494610fa73e4", server.encryptionKey)
+        assertEquals("vp8-fps=25&vp8-batch=1", server.payload)
+        assertEquals(25, server.vp8Fps)
+        assertEquals(1, server.vp8Batch)
+        assertTrue(server.validateFull().isEmpty(), "Validation should pass for canonical vp8 URL")
+
+        val generatedUrl = server.getUrl()
+        assertEquals(url, generatedUrl)
+
+        val yaml = server.toOlcRtcYamlConfig(10808)
+        assertTrue(yaml.contains("provider: telemost"))
+        assertTrue(yaml.contains("transport: vp8channel"))
+        assertTrue(yaml.contains("vp8:"))
+        assertTrue(yaml.contains("  fps: 25"))
+        assertTrue(yaml.contains("  batch_size: 1"))
+    }
+
+    @Test
+    fun parseOlcRtcSeiChannelWithAngleBrackets() {
+        val url = "olcrtc://wbstream?seichannel<fps=60&batch=64&frag=900&ack-ms=2000>@room-01#d823fa01cb3e0609b67322f7cf984c4ee2e4ce2e294936fc24ef38c9e59f4799\$DE / olc free sub"
+        val server = assertIs<OlcRtc>(ProxyServer.parse(url))
+
+        assertEquals("DE / olc free sub", server.remarks)
+        assertEquals("wbstream", server.provider)
+        assertEquals("seichannel", server.transport)
+        assertEquals("room-01", server.roomUrl)
+        assertEquals("d823fa01cb3e0609b67322f7cf984c4ee2e4ce2e294936fc24ef38c9e59f4799", server.encryptionKey)
+        assertEquals(60, server.seiFps)
+        assertEquals(64, server.seiBatch)
+        assertEquals(900, server.seiFragmentSize)
+        assertEquals(2000, server.seiAckTimeoutMs)
+
+        val yaml = server.toOlcRtcYamlConfig(10808)
+        assertTrue(yaml.contains("provider: wbstream"))
+        assertTrue(yaml.contains("transport: seichannel"))
+        assertTrue(yaml.contains("sei:"))
+        assertTrue(yaml.contains("  fps: 60"))
+        assertTrue(yaml.contains("  batch_size: 64"))
+        assertTrue(yaml.contains("  fragment_size: 900"))
+        assertTrue(yaml.contains("  ack_timeout_ms: 2000"))
+    }
+
+    @Test
+    fun parseOlcRtcVideoChannelWithAngleBrackets() {
+        val url = "olcrtc://telemost?videochannel<video-w=1080&video-h=1080&video-fps=60&video-codec=qrcode>@room-01#30330bd1da1c7ad6e7d518e423662b3bb2b53ca1bbb65612263a494610fa73e4\$MIMO"
+        val server = assertIs<OlcRtc>(ProxyServer.parse(url))
+
+        assertEquals("MIMO", server.remarks)
+        assertEquals("telemost", server.provider)
+        assertEquals("videochannel", server.transport)
+        assertEquals(1080, server.videoWidth)
+        assertEquals(1080, server.videoHeight)
+        assertEquals(60, server.videoFps)
+        assertEquals("qrcode", server.videoCodec)
+
+        val yaml = server.toOlcRtcYamlConfig(10808)
+        assertTrue(yaml.contains("provider: telemost"))
+        assertTrue(yaml.contains("transport: videochannel"))
+        assertTrue(yaml.contains("video:"))
+        assertTrue(yaml.contains("  width: 1080"))
+        assertTrue(yaml.contains("  height: 1080"))
+        assertTrue(yaml.contains("  fps: 60"))
+        assertTrue(yaml.contains("  codec: qrcode"))
     }
 
 

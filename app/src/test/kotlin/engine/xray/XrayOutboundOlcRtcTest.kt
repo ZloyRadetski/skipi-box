@@ -59,7 +59,7 @@ class XrayOutboundOlcRtcTest {
         // Test YAML generation
         val yaml = olcrtc.toOlcRtcYamlConfig(10808)
         assertTrue(yaml.contains("provider: telemost"))
-        assertTrue(yaml.contains("transport: vp8channel[mode=turbo]"))
+        assertTrue(yaml.contains("transport: vp8channel"))
         assertTrue(yaml.contains("room: https://telemost.yandex.ru/j/1234567890"))
         assertTrue(yaml.contains("socks5_listen: 127.0.0.1:10808"))
 

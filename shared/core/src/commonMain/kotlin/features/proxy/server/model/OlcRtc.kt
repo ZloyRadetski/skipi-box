@@ -25,7 +25,7 @@ import utils.proxyUrlRemarks
  * Допустимые провайдеры: jitsi, telemost, wbstream, custom.
  * Допустимые транспорты: datachannel, vp8channel, seichannel, videochannel.
  *
- * URI формат: olcrtc://<Provider>?<Transport>[<payload>]@<RoomID>#<EncryptionKey>$<Remarks>
+ * URI формат: olcrtc://<Provider>?<Transport><payload>@<RoomID>#<EncryptionKey>$<Remarks> (также поддерживается устаревший [...])
  */
 @Serializable
 data class OlcRtc(
@@ -136,6 +136,47 @@ data class OlcRtc(
     }
 
     /**
+     * Разбирает строку payload на пары ключ-значение.
+     */
+    fun payloadParameters(): Map<String, String> {
+        if (payload.isBlank()) return emptyMap()
+        val result = mutableMapOf<String, String>()
+        for (part in payload.split('&')) {
+            val trimmed = part.trim()
+            if (trimmed.isEmpty()) continue
+            val equalsIdx = trimmed.indexOf('=')
+            if (equalsIdx >= 0) {
+                val k = trimmed.substring(0, equalsIdx).trim().lowercase()
+                val v = trimmed.substring(equalsIdx + 1).trim()
+                result[k] = v
+            } else {
+                result[trimmed.lowercase()] = ""
+            }
+        }
+        return result
+    }
+
+    // VP8 параметры
+    val vp8Fps: Int? get() = payloadParameters()["vp8-fps"]?.toIntOrNull()
+    val vp8Batch: Int? get() = (payloadParameters()["vp8-batch"] ?: payloadParameters()["batch"])?.toIntOrNull()
+
+    // SEI параметры
+    val seiFps: Int? get() = payloadParameters()["fps"]?.toIntOrNull()
+    val seiBatch: Int? get() = payloadParameters()["batch"]?.toIntOrNull()
+    val seiFragmentSize: Int? get() = payloadParameters()["frag"]?.toIntOrNull()
+    val seiAckTimeoutMs: Int? get() = (payloadParameters()["ack-ms"] ?: payloadParameters()["ack_timeout_ms"])?.toIntOrNull()
+
+    // Videochannel параметры
+    val videoWidth: Int? get() = (payloadParameters()["video-w"] ?: payloadParameters()["width"])?.toIntOrNull()
+    val videoHeight: Int? get() = (payloadParameters()["video-h"] ?: payloadParameters()["height"])?.toIntOrNull()
+    val videoFps: Int? get() = (payloadParameters()["video-fps"] ?: payloadParameters()["fps"])?.toIntOrNull()
+    val videoCodec: String? get() = payloadParameters()["video-codec"] ?: payloadParameters()["codec"]
+    val videoQrSize: Int? get() = (payloadParameters()["video-qr-size"] ?: payloadParameters()["qr_size"])?.toIntOrNull()
+    val videoQrRecovery: String? get() = payloadParameters()["video-qr-recovery"] ?: payloadParameters()["qr_recovery"]
+    val videoTileModule: Int? get() = (payloadParameters()["video-tile-module"] ?: payloadParameters()["tile_module"])?.toIntOrNull()
+    val videoTileRs: Int? get() = (payloadParameters()["video-tile-rs"] ?: payloadParameters()["tile_rs"])?.toIntOrNull()
+
+    /**
      * Генерирует YAML конфигурацию для клиента OLCRTC (cnc режим).
      * Передаётся в skipi-core метод startOlcRtc(yamlConfig, socksPort).
      */
@@ -144,11 +185,12 @@ data class OlcRtc(
         socksUser: String = "",
         socksPass: String = "",
     ): String {
-        val payloadStr = if (payload.isNotBlank()) "[$payload]" else ""
+        val cleanTransport = transport.trim().lowercase().ifBlank { "datachannel" }
+        val params = payloadParameters()
         return buildString {
             appendLine("mode: cnc")
             appendLine("provider: $provider")
-            appendLine("transport: $transport$payloadStr")
+            appendLine("transport: $cleanTransport")
             appendLine("room: $roomUrl")
             appendLine("key: $encryptionKey")
             appendLine("socks5_listen: 127.0.0.1:$socksPort")
@@ -158,7 +200,69 @@ data class OlcRtc(
             if (socksPass.isNotBlank()) {
                 appendLine("socks5_pass: $socksPass")
             }
+            when (cleanTransport) {
+                "vp8channel" -> {
+                    val fps = params["vp8-fps"]?.toIntOrNull()
+                    val batch = (params["vp8-batch"] ?: params["batch"])?.toIntOrNull()
+                    if (fps != null || batch != null) {
+                        appendLine("vp8:")
+                        if (fps != null) appendLine("  fps: $fps")
+                        if (batch != null) appendLine("  batch_size: $batch")
+                    }
+                }
+                "seichannel" -> {
+                    val fps = params["fps"]?.toIntOrNull()
+                    val batch = params["batch"]?.toIntOrNull()
+                    val frag = params["frag"]?.toIntOrNull()
+                    val ackMs = (params["ack-ms"] ?: params["ack_timeout_ms"])?.toIntOrNull()
+                    if (fps != null || batch != null || frag != null || ackMs != null) {
+                        appendLine("sei:")
+                        if (fps != null) appendLine("  fps: $fps")
+                        if (batch != null) appendLine("  batch_size: $batch")
+                        if (frag != null) appendLine("  fragment_size: $frag")
+                        if (ackMs != null) appendLine("  ack_timeout_ms: $ackMs")
+                    }
+                }
+                "videochannel" -> {
+                    val w = (params["video-w"] ?: params["width"])?.toIntOrNull()
+                    val h = (params["video-h"] ?: params["height"])?.toIntOrNull()
+                    val fps = (params["video-fps"] ?: params["fps"])?.toIntOrNull()
+                    val codec = params["video-codec"] ?: params["codec"]
+                    val qrSize = (params["video-qr-size"] ?: params["qr_size"])?.toIntOrNull()
+                    val qrRecovery = params["video-qr-recovery"] ?: params["qr_recovery"]
+                    val tileModule = (params["video-tile-module"] ?: params["tile_module"])?.toIntOrNull()
+                    val tileRs = (params["video-tile-rs"] ?: params["tile_rs"])?.toIntOrNull()
+                    if (w != null || h != null || fps != null || codec != null || qrSize != null || qrRecovery != null || tileModule != null || tileRs != null) {
+                        appendLine("video:")
+                        if (w != null) appendLine("  width: $w")
+                        if (h != null) appendLine("  height: $h")
+                        if (fps != null) appendLine("  fps: $fps")
+                        if (codec != null) appendLine("  codec: $codec")
+                        if (qrSize != null) appendLine("  qr_size: $qrSize")
+                        if (qrRecovery != null) appendLine("  qr_recovery: $qrRecovery")
+                        if (tileModule != null) appendLine("  tile_module: $tileModule")
+                        if (tileRs != null) appendLine("  tile_rs: $tileRs")
+                    }
+                }
+            }
         }
+    }
+
+    private fun extractTransportAndPayload(raw: String): Pair<String, String> {
+        val clean = raw.trim()
+        val angleOpen = clean.indexOf('<')
+        if (angleOpen >= 0 && clean.endsWith('>')) {
+            val transport = clean.substring(0, angleOpen).ifBlank { "datachannel" }
+            val payload = clean.substring(angleOpen + 1, clean.length - 1)
+            return transport to payload
+        }
+        val squareOpen = clean.indexOf('[')
+        if (squareOpen >= 0 && clean.endsWith(']')) {
+            val transport = clean.substring(0, squareOpen).ifBlank { "datachannel" }
+            val payload = clean.substring(squareOpen + 1, clean.length - 1)
+            return transport to payload
+        }
+        return clean.ifBlank { "datachannel" } to ""
     }
 
     override fun parse(url: Url): OlcRtc {
@@ -177,21 +281,16 @@ data class OlcRtc(
             this.remarks = url.proxyUrlRemarks()
         }
 
-        // Before hash: <Provider>?<Transport>[<payload>]@<RoomID>
+        // Before hash: <Provider>?<Transport><payload>@<RoomID>
         if (beforeHash.contains('?') && beforeHash.contains('@')) {
             this.provider = beforeHash.substringBefore('?').lowercase().ifBlank { "jitsi" }
             val middleAndEnd = beforeHash.substringAfter('?')
             val transportWithPayload = middleAndEnd.substringBefore('@')
             val roomAndParams = middleAndEnd.substringAfter('@')
 
-            val bracketIdx = transportWithPayload.indexOf('[')
-            if (bracketIdx >= 0 && transportWithPayload.endsWith(']')) {
-                this.transport = transportWithPayload.substring(0, bracketIdx)
-                this.payload = transportWithPayload.substring(bracketIdx + 1, transportWithPayload.length - 1)
-            } else {
-                this.transport = transportWithPayload.ifBlank { "datachannel" }
-                this.payload = ""
-            }
+            val (parsedTransport, parsedPayload) = extractTransportAndPayload(transportWithPayload)
+            this.transport = parsedTransport
+            this.payload = parsedPayload
 
             this.roomUrl = roomAndParams.substringBefore('?')
             val paramsPart = if (roomAndParams.contains('?')) roomAndParams.substringAfter('?') else ""
@@ -204,14 +303,10 @@ data class OlcRtc(
             // Fallback to standard URL parsing
             this.provider = url.host.lowercase().ifBlank { "jitsi" }
             val userInfo = url.encodedUser ?: ""
-            val bracketIdx = userInfo.indexOf('[')
-            if (bracketIdx >= 0 && userInfo.endsWith(']')) {
-                this.transport = userInfo.substring(0, bracketIdx)
-                this.payload = userInfo.substring(bracketIdx + 1, userInfo.length - 1)
-            } else {
-                this.transport = userInfo.ifBlank { "datachannel" }
-                this.payload = ""
-            }
+            val (parsedTransport, parsedPayload) = extractTransportAndPayload(userInfo)
+            this.transport = parsedTransport
+            this.payload = parsedPayload
+
             this.roomUrl = url.password ?: url.encodedPath.trimStart('/')
             this.localSocksPort = url.parameters["socksport"] ?: "10808"
         }
@@ -219,7 +314,7 @@ data class OlcRtc(
     }
 
     override fun getUrl(): String {
-        val payloadStr = if (payload.isNotBlank()) "[$payload]" else ""
+        val payloadStr = if (payload.isNotBlank()) "<$payload>" else ""
         val keyAndRemarks = if (remarks.isNotBlank()) "$encryptionKey$$remarks" else encryptionKey
         val socksParam = if (localSocksPort.isNotBlank() && localSocksPort != "10808") "?socksport=$localSocksPort" else ""
         return "olcrtc://$provider?$transport$payloadStr@$roomUrl$socksParam#$keyAndRemarks"
