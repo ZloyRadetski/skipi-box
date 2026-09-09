@@ -12,7 +12,7 @@ class AmneziaWgTest {
 
     @Test
     fun parseAwgUrlAndGenerateOutbound() {
-        val url = "awg://aGVsbG8=@192.168.1.100:51820?publickey=d29ybGQ=&jc=5&jmin=30&jmax=80&s1=20&s2=40&h1=100&h2=200&h3=300&h4=400#MyAWG"
+        val url = "awg://aGVsbG8=@192.168.1.100:51820?publickey=d29ybGQ=&jc=5&jmin=30&jmax=80&s1=20&s2=40&s3=60&s4=80&h1=100&h2=200&h3=300&h4=400#MyAWG"
         val server = assertIs<AmneziaWg>(ProxyServer.parse(url))
 
         assertEquals("MyAWG", server.remarks)
@@ -25,6 +25,8 @@ class AmneziaWgTest {
         assertEquals("80", server.jmax)
         assertEquals("20", server.s1)
         assertEquals("40", server.s2)
+        assertEquals("60", server.s3)
+        assertEquals("80", server.s4)
         assertEquals("100", server.h1)
         assertEquals("200", server.h2)
         assertEquals("300", server.h3)
@@ -41,6 +43,8 @@ class AmneziaWgTest {
         assertEquals(80, settings["jmax"]?.toString()?.toIntOrNull())
         assertEquals(20, settings["s1"]?.toString()?.toIntOrNull())
         assertEquals(40, settings["s2"]?.toString()?.toIntOrNull())
+        assertEquals(60, settings["s3"]?.toString()?.toIntOrNull())
+        assertEquals(80, settings["s4"]?.toString()?.toIntOrNull())
         assertEquals(100L, settings["h1"]?.toString()?.toLongOrNull())
     }
 
@@ -57,6 +61,8 @@ class AmneziaWgTest {
             jmax = "90",
             s1 = "12",
             s2 = "24",
+            s3 = "36",
+            s4 = "48",
             h1 = "999",
         )
 
@@ -71,6 +77,8 @@ class AmneziaWgTest {
         assertEquals(original.jmax, restored.jmax)
         assertEquals(original.s1, restored.s1)
         assertEquals(original.s2, restored.s2)
+        assertEquals(original.s3, restored.s3)
+        assertEquals(original.s4, restored.s4)
         assertEquals(original.h1, restored.h1)
     }
 

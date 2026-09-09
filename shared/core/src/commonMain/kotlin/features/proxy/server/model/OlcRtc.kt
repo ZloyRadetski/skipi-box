@@ -22,7 +22,7 @@ import utils.proxyUrlRemarks
  * - Xray направляет трафик через этот локальный SOCKS5 с помощью стандартного socks outbound.
  * - Весь трафик маскируется под WebRTC видеозвонок на указанной платформе.
  *
- * Допустимые провайдеры: jitsi, telemost, wbstream, custom.
+ * Допустимые провайдеры: jitsi, telemost, wbstream.
  * Допустимые транспорты: datachannel, vp8channel, seichannel, videochannel.
  *
  * URI формат: olcrtc://<Provider>?<Transport><payload>@<RoomID>#<EncryptionKey>$<Remarks> (также поддерживается устаревший [...])
@@ -41,7 +41,10 @@ data class OlcRtc(
 ) : UrlProxyServer<OlcRtc> {
 
     companion object {
-        val AllowedProviders = setOf("jitsi", "telemost", "wbstream", "custom")
+        // These names are the providers exposed by the embedded olcrtc mobile
+        // runtime. "custom" was previously offered by the UI but cannot be
+        // started by that runtime, so it only produced a late connection error.
+        val AllowedProviders = setOf("jitsi", "telemost", "wbstream")
         val AllowedTransports = setOf("datachannel", "vp8channel", "seichannel", "videochannel")
 
         val KNOWN_VP8_KEYS = setOf("vp8-fps", "fps", "vp8-batch", "batch")
@@ -82,18 +85,11 @@ data class OlcRtc(
      */
     fun signalingEndpoint(): Pair<String, Int>? {
         val clean = roomUrl.trim()
-        if (clean.startsWith("https://", ignoreCase = true)) {
-            val withoutScheme = clean.substring(8)
-            val hostPart = withoutScheme.substringBefore('/').substringBefore('?')
-            val host = hostPart.substringBefore(':').trim().trim('[', ']')
-            val port = hostPart.substringAfter(':', "443").toIntOrNull() ?: 443
-            if (host.isNotEmpty()) return host to port
-        } else if (clean.startsWith("http://", ignoreCase = true)) {
-            val withoutScheme = clean.substring(7)
-            val hostPart = withoutScheme.substringBefore('/').substringBefore('?')
-            val host = hostPart.substringBefore(':').trim().trim('[', ']')
-            val port = hostPart.substringAfter(':', "80").toIntOrNull() ?: 80
-            if (host.isNotEmpty()) return host to port
+        if (clean.startsWith("https://", ignoreCase = true) || clean.startsWith("http://", ignoreCase = true)) {
+            val parsed = runCatching { Url(clean) }.getOrNull()
+            if (parsed != null && parsed.host.isNotBlank()) {
+                return parsed.host.trim('[', ']') to parsed.port
+            }
         } else if (clean.contains(':') && clean.indexOf(':') < (clean.indexOf('/').takeIf { it >= 0 } ?: clean.length)) {
             val host = clean.substringBefore(':').trim().trim('[', ']')
             val port = clean.substringAfter(':').substringBefore('/').substringBefore('?').toIntOrNull()
@@ -108,9 +104,30 @@ data class OlcRtc(
         }
     }
 
-    fun matchesEndpoint(other: OlcRtc): Boolean {
-        return roomUrl.trim().equals(other.roomUrl.trim(), ignoreCase = true) &&
-            provider.trim().equals(other.provider.trim(), ignoreCase = true)
+    /**
+     * Compares the fields that define an olcRTC runtime. There is one native
+     * runtime per process, therefore equal room/provider alone is not enough:
+     * a different transport, key or payload must never reuse another bridge.
+     */
+    fun matchesRuntimeConfig(other: OlcRtc): Boolean {
+        return runtimeIdentity() == other.runtimeIdentity()
+    }
+
+    @Deprecated("Use matchesRuntimeConfig: endpoint equality is not enough for an olcRTC bridge")
+    fun matchesEndpoint(other: OlcRtc): Boolean = matchesRuntimeConfig(other)
+
+    private fun runtimeIdentity(): String {
+        val normalizedPayload = payloadParameters()
+            .toSortedMap()
+            .entries
+            .joinToString("&") { (key, value) -> "$key=${value.trim()}" }
+        return listOf(
+            provider.trim().lowercase(),
+            transport.trim().lowercase(),
+            roomUrl.trim(),
+            encryptionKey.trim().lowercase(),
+            normalizedPayload,
+        ).joinToString("|")
     }
 
     /**
@@ -239,7 +256,9 @@ data class OlcRtc(
         socksPort: Int,
         socksUser: String = "",
         socksPass: String = "",
+        dnsServer: String,
     ): String {
+        require(dnsServer.isNotBlank()) { "olcRTC requires a raw DNS server" }
         val cleanTransport = transport.trim().lowercase().ifBlank { "datachannel" }
         val params = payloadParameters()
         return buildString {
@@ -248,6 +267,7 @@ data class OlcRtc(
             appendLine("transport: $cleanTransport")
             appendLine("room: $roomUrl")
             appendLine("key: $encryptionKey")
+            appendLine("dns: ${dnsServer.trim()}")
             appendLine("socks5_listen: 127.0.0.1:$socksPort")
             if (socksUser.isNotBlank()) {
                 appendLine("socks5_user: $socksUser")

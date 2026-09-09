@@ -6,9 +6,11 @@ package engine.xray
 import app.AppState
 import app.ProxyServerState
 import features.logs.AndroidAppLogger
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
+import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.SkipiCoreRuntime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -92,20 +94,38 @@ internal object XraySpeedTestConfigFactory {
             enableDirectDnsForProxyServerDomains = true,
         )
         val rawOutboundPlan = request.outboundPlan ?: speedTestState.buildXrayOutboundPlan(request.selectedServer)
-        val activeBridge = SkipiCoreRuntime.activeOlcRtcBridge
-        val outboundPlan = if (activeBridge != null) {
+        val activeOlcRtcBridge = SkipiCoreRuntime.activeOlcRtcBridge
+        val activeAmneziaWgBridge = SkipiCoreRuntime.activeAmneziaWgBridge
+        val outboundPlan = if (activeOlcRtcBridge != null || activeAmneziaWgBridge != null) {
             val updatedOutbounds = rawOutboundPlan.proxyOutbounds.map { item ->
                 val olc = item.server as? OlcRtc
-                if (olc != null && item.customOutbound == null && olc.matchesEndpoint(activeBridge.server)) {
-                    val customOutbound = olc.toXrayOutboundWithPortAndAuth(
-                        tag = item.tag,
-                        port = activeBridge.socksPort,
-                        user = activeBridge.socksUser,
-                        pass = activeBridge.socksPass,
-                    ).toJsonObject()
-                    item.copy(customOutbound = customOutbound)
-                } else {
-                    item
+                val awg = item.server as? AmneziaWg
+                when {
+                    olc != null &&
+                        activeOlcRtcBridge != null &&
+                        item.customOutbound == null &&
+                        olc.matchesRuntimeConfig(activeOlcRtcBridge.server) -> {
+                        item.copy(
+                            customOutbound = buildLoopbackSocksOutbound(
+                                tag = item.tag,
+                                port = activeOlcRtcBridge.socksPort,
+                                user = activeOlcRtcBridge.socksUser,
+                                pass = activeOlcRtcBridge.socksPass,
+                            ),
+                        )
+                    }
+                    awg != null &&
+                        activeAmneziaWgBridge != null &&
+                        item.customOutbound == null &&
+                        awg.matchesRuntimeConfig(activeAmneziaWgBridge.server) -> {
+                        item.copy(
+                            customOutbound = buildLoopbackSocksOutbound(
+                                tag = item.tag,
+                                port = activeAmneziaWgBridge.socksPort,
+                            ),
+                        )
+                    }
+                    else -> item
                 }
             }
             rawOutboundPlan.copy(proxyOutbounds = updatedOutbounds)

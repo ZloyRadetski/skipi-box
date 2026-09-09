@@ -20,21 +20,38 @@ private val dnsResolutionExecutor = Executors.newFixedThreadPool(8) { runnable -
 private const val DnsLookupTimeoutMillis = 600L
 
 internal fun AppState.xrayDnsHosts(proxyServerHosts: List<String>): List<String> {
+    return xrayDnsHosts(proxyServerHosts, String::resolveHostAddresses)
+}
+
+/**
+ * Adds temporary bootstrap records for proxy endpoints. Explicit user hosts
+ * remain authoritative: resolving the same name again could overwrite a pin
+ * with a stale or censored system-DNS answer.
+ */
+internal fun AppState.xrayDnsHosts(
+    proxyServerHosts: List<String>,
+    resolveAddresses: (String) -> List<String>,
+): List<String> {
     if (!enableResolveProxyServerDomain) return dnsHosts
+    val explicitlyMappedHosts = dnsHosts.asSequence()
+        .map { entry -> entry.substringBefore(':').normalizedDnsHostKey() }
+        .filter(String::isNotEmpty)
+        .toSet()
     val candidateHosts = proxyServerHosts
-        .map { it.normalizedServerHost() }
+        .map(String::normalizedDnsHostKey)
         .filter { host ->
             host.isNotBlank() &&
                 !isIpv4Address(host) &&
                 !isIpv6Address(host) &&
-                !host.equals("localhost", ignoreCase = true)
+                !host.equals("localhost", ignoreCase = true) &&
+                host !in explicitlyMappedHosts
         }
         .distinct()
     if (candidateHosts.isEmpty()) return dnsHosts
 
     val futures = candidateHosts.map { host ->
         CompletableFuture.supplyAsync({
-            val addresses = host.resolveHostAddresses()
+            val addresses = resolveAddresses(host)
             if (addresses.isEmpty()) null else "$host:${addresses.joinToString(",")}"
         }, dnsResolutionExecutor)
     }
@@ -48,6 +65,10 @@ internal fun AppState.xrayDnsHosts(proxyServerHosts: List<String>): List<String>
     }
 
     return (dnsHosts + resolvedEntries).distinct()
+}
+
+private fun String.normalizedDnsHostKey(): String {
+    return normalizedServerHost().removeSuffix(".").lowercase()
 }
 
 private fun String.resolveHostAddresses(): List<String> {

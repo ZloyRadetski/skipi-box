@@ -27,14 +27,20 @@ import engine.xray.buildXrayOutboundPlan
 import engine.xray.prepareXrayCoreLogPaths
 import engine.xray.validateXrayExternalRoutingResources
 import engine.network.findAvailableTcpPort
+import engine.network.isIpv4Address
 import engine.network.isPort
 import engine.network.isTcpPortAvailable
 import features.resources.runtime.prepareXrayResourceFilePaths
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.OlcRtc
 import system.toAndroidUserId
 import java.io.File
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 
 internal data class ActiveOlcRtcBridge(
@@ -44,11 +50,19 @@ internal data class ActiveOlcRtcBridge(
     val server: OlcRtc,
 )
 
-private data class OlcRtcPlanResult(
-    val outboundPlan: XrayOutboundPlan,
-    val yaml: String?,
+internal data class ActiveAmneziaWgBridge(
     val socksPort: Int,
-    val activeBridge: ActiveOlcRtcBridge?,
+    val server: AmneziaWg,
+)
+
+internal data class NativeBridgePlanResult(
+    val outboundPlan: XrayOutboundPlan,
+    val olcRtcYaml: String?,
+    val olcRtcSocksPort: Int,
+    val activeOlcRtcBridge: ActiveOlcRtcBridge?,
+    val amneziaWgConfigJson: String?,
+    val amneziaWgSocksPort: Int,
+    val activeAmneziaWgBridge: ActiveAmneziaWgBridge?,
 )
 
 internal data class VpnServiceStartConfig(
@@ -76,6 +90,9 @@ internal data class VpnServiceStartConfig(
     val olcRtcConfigYaml: String? = null,
     val olcRtcSocksPort: Int = 0,
     val activeOlcRtcBridge: ActiveOlcRtcBridge? = null,
+    val amneziaWgConfigJson: String? = null,
+    val amneziaWgSocksPort: Int = 0,
+    val activeAmneziaWgBridge: ActiveAmneziaWgBridge? = null,
 )
 
 internal fun VpnServiceStartConfig.xrayTunFd(vpnTunFd: Int): Int {
@@ -96,49 +113,16 @@ internal object VpnXrayConfigFactory {
         appState.validateXrayExternalRoutingResources(resourceFilePaths.dataDir)
         val rawOutboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)
 
-        val olcRtcServer = (request.selectedServer.server as? OlcRtc)
-            ?: rawOutboundPlan.proxyOutbounds.mapNotNull { it.server as? OlcRtc }.firstOrNull()
-
-        val (outboundPlan, olcRtcConfigYaml, olcRtcSocksPort, activeBridge) = if (olcRtcServer != null) {
-            val reservedPorts = setOfNotNull(
+        val bridgePlan = buildNativeBridgePlan(
+            rawOutboundPlan = rawOutboundPlan,
+            tunOptions = tunOptions,
+            reservedPorts = setOfNotNull(
                 localProxyOptions.port,
                 appendHttpProxyOptions.port.takeIf { appendHttpProxyOptions.enabled },
                 request.xrayStatsApiPort,
-            )
-            val preferredPort = olcRtcServer.localSocksPort.toIntOrNull()?.takeIf { p -> p in 1024..65535 } ?: 10808
-            val allocatedPort = findAvailableLocalPort(preferredPort, reservedPorts)
-            val olcUser = "skipi_rtc_" + java.util.UUID.randomUUID().toString().replace("-", "").take(12)
-            val olcPass = java.util.UUID.randomUUID().toString().replace("-", "")
-
-            val yaml = olcRtcServer.toOlcRtcYamlConfig(
-                socksPort = allocatedPort,
-                socksUser = olcUser,
-                socksPass = olcPass,
-            )
-
-            val updatedProxyOutbounds = rawOutboundPlan.proxyOutbounds.map { item ->
-                if (item.server is OlcRtc) {
-                    val customOutbound = item.server.toXrayOutboundWithPortAndAuth(
-                        tag = item.tag,
-                        port = allocatedPort,
-                        user = olcUser,
-                        pass = olcPass,
-                    ).toJsonObject()
-                    item.copy(customOutbound = customOutbound)
-                } else {
-                    item
-                }
-            }
-            val bridge = ActiveOlcRtcBridge(
-                socksPort = allocatedPort,
-                socksUser = olcUser,
-                socksPass = olcPass,
-                server = olcRtcServer,
-            )
-            OlcRtcPlanResult(rawOutboundPlan.copy(proxyOutbounds = updatedProxyOutbounds), yaml, allocatedPort, bridge)
-        } else {
-            OlcRtcPlanResult(rawOutboundPlan, null, 0, null)
-        }
+            ),
+        )
+        val outboundPlan = bridgePlan.outboundPlan
 
         val dnsHosts = appState.xrayDnsHosts(outboundPlan.dnsHostServers)
         val xrayConfigResult = XrayConfigFactory.buildXrayConfigResult(
@@ -190,10 +174,213 @@ internal object VpnXrayConfigFactory {
                 useHevTun = appState.enableVpnHevTun,
                 tcpReadWriteTimeoutMillis = appState.hevTcpReadWriteTimeoutMillis,
             ),
-            olcRtcConfigYaml = olcRtcConfigYaml,
-            olcRtcSocksPort = olcRtcSocksPort,
-            activeOlcRtcBridge = activeBridge,
+            olcRtcConfigYaml = bridgePlan.olcRtcYaml,
+            olcRtcSocksPort = bridgePlan.olcRtcSocksPort,
+            activeOlcRtcBridge = bridgePlan.activeOlcRtcBridge,
+            amneziaWgConfigJson = bridgePlan.amneziaWgConfigJson,
+            amneziaWgSocksPort = bridgePlan.amneziaWgSocksPort,
+            activeAmneziaWgBridge = bridgePlan.activeAmneziaWgBridge,
         )
+    }
+}
+
+/**
+ * olcRTC and AmneziaWG are process-wide native runtimes. Build their local
+ * SOCKS bridges before Xray is started and fail clearly if a routing plan asks
+ * one runtime to represent two different tunnels.
+ */
+internal fun buildNativeBridgePlan(
+    rawOutboundPlan: XrayOutboundPlan,
+    tunOptions: TunOptions,
+    reservedPorts: Set<Int>,
+): NativeBridgePlanResult {
+    val olcRtcServer = rawOutboundPlan.proxyOutbounds
+        .mapNotNull { it.server as? OlcRtc }
+        .singleOlcRtcRuntimeOrNull()
+    val amneziaWgServer = rawOutboundPlan.proxyOutbounds
+        .mapNotNull { it.server as? AmneziaWg }
+        .singleAmneziaWgRuntimeOrNull()
+
+    var updatedPlan = rawOutboundPlan
+    val usedPorts = reservedPorts.toMutableSet()
+
+    var olcRtcYaml: String? = null
+    var olcRtcSocksPort = 0
+    var activeOlcRtcBridge: ActiveOlcRtcBridge? = null
+    if (olcRtcServer != null) {
+        val port = findAvailableLocalPort(
+            preferredPort = olcRtcServer.localSocksPort.toIntOrNull()?.takeIf { it in 1024..65535 } ?: 10808,
+            reservedPorts = usedPorts,
+        )
+        usedPorts += port
+        val user = "skipi_rtc_" + java.util.UUID.randomUUID().toString().replace("-", "").take(12)
+        val pass = java.util.UUID.randomUUID().toString().replace("-", "")
+        val bridge = ActiveOlcRtcBridge(
+            socksPort = port,
+            socksUser = user,
+            socksPass = pass,
+            server = olcRtcServer,
+        )
+
+        olcRtcYaml = olcRtcServer.toOlcRtcYamlConfig(
+            socksPort = port,
+            socksUser = user,
+            socksPass = pass,
+            // olcRTC accepts a raw DNS endpoint, so it follows the explicit
+            // TUN adapter resolver rather than silently using 8.8.8.8.
+            dnsServer = olcRtcRawDnsEndpoint(tunOptions),
+        )
+        updatedPlan = updatedPlan.copy(
+            proxyOutbounds = updatedPlan.proxyOutbounds.map { item ->
+                val olc = item.server as? OlcRtc
+                if (olc != null && olc.matchesRuntimeConfig(olcRtcServer)) {
+                    item.copy(
+                        customOutbound = buildLoopbackSocksOutbound(
+                            tag = item.tag,
+                            port = port,
+                            user = user,
+                            pass = pass,
+                        ),
+                    )
+                } else {
+                    item
+                }
+            },
+        )
+        olcRtcSocksPort = port
+        activeOlcRtcBridge = bridge
+    }
+
+    var amneziaWgConfigJson: String? = null
+    var amneziaWgSocksPort = 0
+    var activeAmneziaWgBridge: ActiveAmneziaWgBridge? = null
+    if (amneziaWgServer != null) {
+        require(amneziaWgServer.finalMask.isBlank()) {
+            "AmneziaWG FinalMask is not supported by the native AmneziaWG runtime"
+        }
+        val port = findAvailableLocalPort(preferredPort = 10809, reservedPorts = usedPorts)
+        usedPorts += port
+        val bridge = ActiveAmneziaWgBridge(socksPort = port, server = amneziaWgServer)
+
+        // Pass precisely this AWG outbound to skipi-core. Its generic JSON
+        // rewriter would also rewrite ordinary WireGuard outbounds, which is
+        // unsafe in mixed profiles.
+        amneziaWgConfigJson = amneziaWgServer.toNativeRunnerConfigJson(
+            tag = "skipi_awg_runtime",
+            dnsServers = tunOptions.dnsServers,
+        )
+        updatedPlan = updatedPlan.copy(
+            proxyOutbounds = updatedPlan.proxyOutbounds.map { item ->
+                val awg = item.server as? AmneziaWg
+                if (awg != null && awg.matchesRuntimeConfig(amneziaWgServer)) {
+                    item.copy(customOutbound = buildLoopbackSocksOutbound(tag = item.tag, port = port))
+                } else {
+                    item
+                }
+            },
+        )
+        amneziaWgSocksPort = port
+        activeAmneziaWgBridge = bridge
+    }
+
+    return NativeBridgePlanResult(
+        outboundPlan = updatedPlan,
+        olcRtcYaml = olcRtcYaml,
+        olcRtcSocksPort = olcRtcSocksPort,
+        activeOlcRtcBridge = activeOlcRtcBridge,
+        amneziaWgConfigJson = amneziaWgConfigJson,
+        amneziaWgSocksPort = amneziaWgSocksPort,
+        activeAmneziaWgBridge = activeAmneziaWgBridge,
+    )
+}
+
+/**
+ * The native AmneziaWG runner uses its own netstack, so its resolver must be
+ * supplied separately from the Xray outbound. Keep this runtime-only field out
+ * of the Xray configuration: Xray's WireGuard outbound does not understand it.
+ */
+internal fun AmneziaWg.toNativeRunnerConfigJson(
+    tag: String,
+    dnsServers: List<String>,
+): String {
+    val outbound = toXrayOutbound(tag).toJsonObject()
+    val settings = outbound["settings"] as? JsonObject
+        ?: error("AmneziaWG outbound has no settings")
+    return buildJsonObject {
+        outbound.forEach { (key, value) ->
+            if (key != "settings") put(key, value)
+        }
+        put(
+            "settings",
+            buildJsonObject {
+                settings.forEach { (key, value) -> put(key, value) }
+                put("dnsServers", buildJsonArray {
+                    dnsServers.forEach { server -> add(server) }
+                })
+            },
+        )
+    }.toString()
+}
+
+private fun List<OlcRtc>.singleOlcRtcRuntimeOrNull(): OlcRtc? {
+    val distinct = fold(mutableListOf<OlcRtc>()) { runtimes, server ->
+        if (runtimes.none { it.matchesRuntimeConfig(server) }) runtimes += server
+        runtimes
+    }
+    require(distinct.size <= 1) {
+        "The selected route contains multiple different olcRTC tunnels; only one native olcRTC runtime can run at a time"
+    }
+    return distinct.singleOrNull()
+}
+
+private fun List<AmneziaWg>.singleAmneziaWgRuntimeOrNull(): AmneziaWg? {
+    val distinct = fold(mutableListOf<AmneziaWg>()) { runtimes, server ->
+        if (runtimes.none { it.matchesRuntimeConfig(server) }) runtimes += server
+        runtimes
+    }
+    require(distinct.size <= 1) {
+        "The selected route contains multiple different AmneziaWG tunnels; only one native AmneziaWG runtime can run at a time"
+    }
+    return distinct.singleOrNull()
+}
+
+/** Native olcRTC only supports UDP/TCP DNS, not a DoH URL. */
+internal fun olcRtcRawDnsEndpoint(tunOptions: TunOptions): String {
+    val resolver = tunOptions.dnsServers
+        .asSequence()
+        .map(String::trim)
+        .firstOrNull(::isIpv4Address)
+        ?: error("olcRTC requires a valid IPv4 DNS adapter address")
+    return "$resolver:53"
+}
+
+/** Builds a private loopback SOCKS outbound for a native bridge. */
+internal fun buildLoopbackSocksOutbound(
+    tag: String,
+    port: Int,
+    user: String = "",
+    pass: String = "",
+): JsonObject {
+    return buildJsonObject {
+        put("tag", tag)
+        put("protocol", "socks")
+        put("settings", buildJsonObject {
+            put("servers", buildJsonArray {
+                add(buildJsonObject {
+                    put("address", "127.0.0.1")
+                    put("port", port)
+                    if (user.isNotBlank() || pass.isNotBlank()) {
+                        put("users", buildJsonArray {
+                            add(buildJsonObject {
+                                put("user", user)
+                                put("pass", pass)
+                                put("level", 0)
+                            })
+                        })
+                    }
+                })
+            })
+        })
     }
 }
 
@@ -263,5 +450,5 @@ internal fun findAvailableLocalPort(preferredPort: Int, reservedPorts: Set<Int>)
             return port
         }
     }
-    return if (preferredPort.isPort()) preferredPort else 10808
+    throw IllegalStateException("No free local TCP port is available for the native proxy bridge")
 }

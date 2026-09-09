@@ -109,7 +109,7 @@ import androidx.compose.ui.graphics.Color
 import engine.network.isIpAddress
 import engine.network.isIpv4Address
 import engine.vpn.VpnDefaults
-import features.settings.sheets.isPort
+import engine.xray.isSupportedXrayDnsServer
 
 /** The full-screen Material entry point for a single SKIPI traffic profile. */
 @Composable
@@ -623,11 +623,11 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
         "https://8.8.8.8/dns-query,https://8.8.4.4/dns-query" to "Google DoH",
         "https://dns.adguard-dns.com/dns-query" to "AdGuard DoH",
         "https://dns.quad9.net/dns-query" to "Quad9 DoH",
-        "tls://1.1.1.1:853,tls://1.0.0.1:853" to "Cloudflare DoT",
-        "tls://8.8.8.8:853,tls://8.8.4.4:853" to "Google DoT",
+        "https://dns.nullsproxy.com/dns-query" to "Nulls Proxy DoH",
         "tcp://8.8.8.8:53,tcp://8.8.4.4:53" to "Google TCP",
         "8.8.8.8,8.8.4.4" to "Google DoU",
         "1.1.1.1,1.0.0.1" to "Cloudflare DoU",
+        "localhost" to "System DNS (Private DNS)",
     )
     val proxyPresetLabels = proxyDnsPresets.map { it.second } + stringResource(R.string.configs_dns_custom)
     val currentProxyJoined = proxyDns.joinToString(",")
@@ -640,9 +640,9 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
         "https://77.88.8.8/dns-query" to "Yandex DoH",
         "https://1.1.1.1/dns-query" to "Cloudflare DoH",
         "https://8.8.8.8/dns-query" to "Google DoH",
-        "tls://77.88.8.8:853" to "Yandex DoT",
         "77.88.8.8,77.88.8.1" to "Yandex DoU",
         "1.1.1.1,8.8.8.8" to "Cloudflare + Google DoU",
+        "localhost" to "System DNS (Private DNS)",
     )
     val directPresetLabels = directDnsPresets.map { it.second } + stringResource(R.string.configs_dns_custom)
     val currentDirectJoined = directDns.joinToString(",")
@@ -654,19 +654,19 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
     val proxyQuickChips = listOf(
         "DoH (1.1.1.1)" to "https://1.1.1.1/dns-query",
         "DoH (8.8.8.8)" to "https://8.8.8.8/dns-query",
-        "DoT (1.1.1.1)" to "tls://1.1.1.1:853",
-        "DoT (8.8.8.8)" to "tls://8.8.8.8:853",
+        "DoH (Nulls Proxy)" to "https://dns.nullsproxy.com/dns-query",
         "TCP (8.8.8.8)" to "tcp://8.8.8.8:53",
         "DoU (1.1.1.1)" to "1.1.1.1",
         "DoU (8.8.8.8)" to "8.8.8.8",
+        "System DNS (Private DNS)" to "localhost",
     )
 
     val directQuickChips = listOf(
         "DoH (Yandex)" to "https://77.88.8.8/dns-query",
-        "DoT (Yandex)" to "tls://77.88.8.8:853",
         "DoU (Yandex)" to "77.88.8.8",
         "DoH (Cloudflare)" to "https://1.1.1.1/dns-query",
         "DoU (Google)" to "8.8.8.8",
+        "System DNS (Private DNS)" to "localhost",
     )
 
     fun save() {
@@ -950,8 +950,12 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
 private fun dnsProtocolBadge(server: String): String {
     val trimmed = server.trim().lowercase()
     return when {
-        trimmed.startsWith("https://") || trimmed.startsWith("h2c://") || trimmed.startsWith("https+local://") -> "DoH"
-        trimmed.startsWith("tls://") || trimmed.startsWith("tls+local://") -> "DoT"
+        trimmed.equals("localhost") -> "System"
+        trimmed.startsWith("https://") ||
+            trimmed.startsWith("h2c://") ||
+            trimmed.startsWith("https+local://") ||
+            trimmed.startsWith("h2c+local://") -> "DoH"
+        trimmed.startsWith("quic+local://") -> "DoQ"
         trimmed.startsWith("tcp://") || trimmed.startsWith("tcp+local://") -> "TCP"
         else -> "DoU"
     }
@@ -961,7 +965,7 @@ private fun dnsProtocolBadge(server: String): String {
 private fun DnsProtocolBadge(protocol: String) {
     val (bgColor, textColor) = when (protocol) {
         "DoH" -> Color(0xFF6750A4).copy(alpha = 0.22f) to Color(0xFFD0BCFF)
-        "DoT" -> Color(0xFF00838F).copy(alpha = 0.22f) to Color(0xFF80DEEA)
+        "DoQ" -> Color(0xFF00838F).copy(alpha = 0.22f) to Color(0xFF80DEEA)
         "TCP" -> Color(0xFFE65100).copy(alpha = 0.22f) to Color(0xFFFFB74D)
         else -> Color(0xFF546E7A).copy(alpha = 0.22f) to Color(0xFFCFD8DC)
     }
@@ -1362,64 +1366,9 @@ private fun SuggestionChip(label: String, onClick: () -> Unit) {
 }
 
 private const val ConfigDnsHostSeparator = ':'
-private val ConfigXrayDnsUrlSchemes = setOf(
-    "https",
-    "h2c",
-    "https+local",
-    "h2c+local",
-    "quic+local",
-    "tls",
-    "tls+local",
-    "tcp",
-    "tcp+local",
-    "udp",
-    "udp+local",
-)
 
 private fun configDnsServerInputError(input: String, invalidMessage: String): String? {
-    val trimmed = input.trim()
-    if (trimmed.isEmpty() || trimmed.any(Char::isWhitespace)) return invalidMessage
-    return if (isConfigXrayDnsServer(trimmed)) null else invalidMessage
-}
-
-private fun isConfigXrayDnsServer(value: String): Boolean {
-    if (value.equals("localhost", ignoreCase = true) || value.equals("fakedns", ignoreCase = true)) {
-        return true
-    }
-    val schemeEnd = value.indexOf("://")
-    if (schemeEnd >= 0) {
-        val scheme = value.substring(0, schemeEnd).lowercase()
-        if (scheme !in ConfigXrayDnsUrlSchemes) return false
-        val authority = value.substring(schemeEnd + 3)
-            .substringBefore('/')
-            .substringBefore('?')
-            .substringBefore('#')
-            .substringAfterLast('@')
-        return isConfigXrayDnsAuthority(authority)
-    }
-    return isIpAddress(value) || (!value.contains(":") && isConfigDnsHostDomain(value))
-}
-
-private fun isConfigXrayDnsAuthority(authority: String): Boolean {
-    val trimmed = authority.trim()
-    if (trimmed.isBlank()) return false
-    if (trimmed.startsWith("[")) {
-        val closeBracketIndex = trimmed.indexOf(']')
-        if (closeBracketIndex <= 1) return false
-        val host = trimmed.substring(1, closeBracketIndex)
-        val rest = trimmed.substring(closeBracketIndex + 1)
-        return isIpAddress(host) && (rest.isEmpty() || (rest.startsWith(":") && isPort(rest.drop(1))))
-    }
-    val colonCount = trimmed.count { it == ':' }
-    if (colonCount == 0) {
-        return isIpAddress(trimmed) || isConfigDnsHostDomain(trimmed)
-    }
-    if (colonCount == 1) {
-        val host = trimmed.substringBefore(':')
-        val port = trimmed.substringAfter(':')
-        return (isIpAddress(host) || isConfigDnsHostDomain(host)) && isPort(port)
-    }
-    return isIpAddress(trimmed)
+    return if (isSupportedXrayDnsServer(input)) null else invalidMessage
 }
 
 private fun configDnsDomainInputError(input: String, invalidMessage: String): String? {

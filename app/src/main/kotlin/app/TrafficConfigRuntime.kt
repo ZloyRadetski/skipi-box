@@ -28,6 +28,22 @@ internal fun AppState.withActiveTrafficConfigApplied(): AppState {
     val hosts = analysis.sections["host"].orEmpty()
         .mapNotNull(::shadowrocketHostToXrayHost)
         .toTrimmedNonEmptyDistinctList()
+    val skipiDnsKeys = analysis.sections["skipi"].orEmpty()
+        .asSequence()
+        .map(String::trim)
+        .filter { line -> line.isNotEmpty() && !line.startsWith('#') && !line.startsWith(';') }
+        .map { line -> line.substringBefore('=').trim().lowercase() }
+        .filter(String::isNotEmpty)
+        .toSet()
+    val configuredProxyDns = androidSettings.proxyDns.takeIf {
+        "proxy-dns" in skipiDnsKeys && it.isNotEmpty()
+    }
+    val configuredDirectDns = androidSettings.directDns.takeIf {
+        "direct-dns" in skipiDnsKeys && it.isNotEmpty()
+    }
+    val configuredDnsHosts = androidSettings.dnsHosts.takeIf {
+        "dns-hosts" in skipiDnsKeys && it.isNotEmpty()
+    }
     val finalRule = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
     val resolvedRules = analysis.rules
         .filterNot(ShadowrocketRule::isFinal)
@@ -64,10 +80,10 @@ internal fun AppState.withActiveTrafficConfigApplied(): AppState {
         enableIpv6Prefer = general["prefer-ipv6"].toConfigBooleanOrDefault(enableIpv6Prefer),
         enableDirectDnsForProxyServerDomains = androidSettings.enableDirectDnsForProxyServerDomains,
         enableResolveProxyServerDomain = androidSettings.enableResolveProxyServerDomain,
-        proxyDns = androidSettings.proxyDns.takeIf(List<String>::isNotEmpty) ?: dnsServers.takeIf(List<String>::isNotEmpty) ?: proxyDns,
-        directDns = androidSettings.directDns.takeIf(List<String>::isNotEmpty) ?: dnsServers.takeIf(List<String>::isNotEmpty) ?: directDns,
+        proxyDns = configuredProxyDns ?: dnsServers.takeIf(List<String>::isNotEmpty) ?: androidSettings.proxyDns.takeIf(List<String>::isNotEmpty) ?: proxyDns,
+        directDns = configuredDirectDns ?: dnsServers.takeIf(List<String>::isNotEmpty) ?: androidSettings.directDns.takeIf(List<String>::isNotEmpty) ?: directDns,
         directDnsDomains = androidSettings.directDnsDomains.takeIf(List<String>::isNotEmpty) ?: directDnsDomains,
-        dnsHosts = androidSettings.dnsHosts.takeIf(List<String>::isNotEmpty) ?: hosts.takeIf(List<String>::isNotEmpty) ?: dnsHosts,
+        dnsHosts = configuredDnsHosts ?: hosts.takeIf(List<String>::isNotEmpty) ?: androidSettings.dnsHosts.takeIf(List<String>::isNotEmpty) ?: dnsHosts,
         proxyAppListMode = config.proxyAppListMode,
         proxyAppListSelectedApps = config.proxyAppListSelectedApps,
         shadowrocketPolicyGroups = analysis.proxyGroups,

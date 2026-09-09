@@ -515,6 +515,8 @@ internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgObfuscatio
     jmax: String,
     s1: String,
     s2: String,
+    s3: String,
+    s4: String,
     h1: String,
     h2: String,
     h3: String,
@@ -539,12 +541,18 @@ internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgObfuscatio
     if (jminVal != null && jmaxVal != null && jminVal > jmaxVal) {
         addIssue(ProxyServerValidationError.AmneziaWgJminMaxInvalid)
     }
-    // s1 / s2
+    // s1 / s4
     if (s1.isNotBlank() && (s1.toIntOrNull() == null || s1.toInt() !in AwgSSizeMin..AwgSSizeMax)) {
         addIssue(ProxyServerValidationError.AmneziaWgSSizeOutOfRange, "S1", AwgSSizeMin, AwgSSizeMax)
     }
     if (s2.isNotBlank() && (s2.toIntOrNull() == null || s2.toInt() !in AwgSSizeMin..AwgSSizeMax)) {
         addIssue(ProxyServerValidationError.AmneziaWgSSizeOutOfRange, "S2", AwgSSizeMin, AwgSSizeMax)
+    }
+    if (s3.isNotBlank() && (s3.toIntOrNull() == null || s3.toInt() !in AwgSSizeMin..AwgSSizeMax)) {
+        addIssue(ProxyServerValidationError.AmneziaWgSSizeOutOfRange, "S3", AwgSSizeMin, AwgSSizeMax)
+    }
+    if (s4.isNotBlank() && (s4.toIntOrNull() == null || s4.toInt() !in AwgSSizeMin..AwgSSizeMax)) {
+        addIssue(ProxyServerValidationError.AmneziaWgSSizeOutOfRange, "S4", AwgSSizeMin, AwgSSizeMax)
     }
     // h1..h4
     listOf("H1" to h1, "H2" to h2, "H3" to h3, "H4" to h4).forEach { (name, value) ->

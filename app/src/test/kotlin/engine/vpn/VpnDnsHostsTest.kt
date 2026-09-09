@@ -12,6 +12,7 @@ import engine.xray.XrayCoreLogPaths
 import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigState
 import features.proxy.server.model.VLESS
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -56,6 +57,20 @@ class VpnDnsHostsTest {
         val result = state.xrayDnsHosts(listOf("node.example.org"))
         assertTrue(result.contains("example.com:1.2.3.4"))
         assertFalse(result.any { it.startsWith("node.example.org") })
+    }
+
+    @Test
+    fun xrayDnsHosts_keeps_explicit_host_mapping_over_system_bootstrap() {
+        val state = AppState(
+            enableResolveProxyServerDomain = true,
+            dnsHosts = listOf("node.example.org:203.0.113.7"),
+        )
+
+        val result = state.xrayDnsHosts(listOf("NODE.EXAMPLE.ORG.")) {
+            error("An explicit DNS host mapping must prevent a system lookup")
+        }
+
+        assertEquals(listOf("node.example.org:203.0.113.7"), result)
     }
 
     @Test

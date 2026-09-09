@@ -32,9 +32,14 @@ import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
 import features.proxy.server.model.customXrayConfigProxyOutboundEndpoint
+import engine.vpn.OlcRtcReadinessTimeoutMillis
 import engine.vpn.SkipiCoreRuntime
 import engine.vpn.SkipiVpnService
+import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.findAvailableLocalPort
+import engine.vpn.olcRtcRawDnsEndpoint
+import engine.vpn.toNativeRunnerConfigJson
+import engine.vpn.toTunOptions
 import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
 import kotlinx.coroutines.Dispatchers
@@ -81,6 +86,7 @@ internal class AndroidProxyLatencyTester(
         resourceFilePaths.dataDir
     }
     private val tempOlcRtcMutex = Mutex()
+    private val tempAmneziaWgMutex = Mutex()
 
     suspend fun test(
         appState: AppState,
@@ -419,13 +425,27 @@ internal class AndroidProxyLatencyTester(
         val isBridgeActiveForServer = olcServer != null &&
             activeBridge != null &&
             SkipiCoreRuntime.isRunning() &&
-            olcServer.matchesEndpoint(activeBridge.server)
+            olcServer.matchesRuntimeConfig(activeBridge.server)
 
         if (olcServer != null && !isBridgeActiveForServer) {
             if (SkipiCoreRuntime.isRunning()) {
                 return FailedDelayMillis
             }
             return measureStandaloneOlcRtcLatency(appState, server, olcServer, pingUrl, timeoutMs)
+        }
+
+        val amneziaWgServer = server.server as? AmneziaWg
+        val activeAmneziaWgBridge = SkipiCoreRuntime.activeAmneziaWgBridge
+        val isAmneziaWgBridgeActiveForServer = amneziaWgServer != null &&
+            activeAmneziaWgBridge != null &&
+            SkipiCoreRuntime.isRunning() &&
+            amneziaWgServer.matchesRuntimeConfig(activeAmneziaWgBridge.server)
+
+        if (amneziaWgServer != null && !isAmneziaWgBridgeActiveForServer) {
+            if (SkipiCoreRuntime.isRunning()) {
+                return FailedDelayMillis
+            }
+            return measureStandaloneAmneziaWgLatency(appState, server, amneziaWgServer, pingUrl, timeoutMs)
         }
 
         val request = XrayConfigRequest(
@@ -456,12 +476,13 @@ internal class AndroidProxyLatencyTester(
             socksPort = tempPort,
             socksUser = tempUser,
             socksPass = tempPass,
+            dnsServer = olcRtcRawDnsEndpoint(appState.toTunOptions()),
         )
 
         try {
             SkipiCoreRuntime.startOlcRtc(tempYaml, tempPort)
-            withContext(Dispatchers.IO) {
-                SkipiCoreRuntime.awaitOlcRtcReady(tempPort, 15_000L)
+            check(SkipiCoreRuntime.awaitOlcRtcReady(tempPort)) {
+                "OLCRTC local SOCKS listener did not become ready within ${OlcRtcReadinessTimeoutMillis}ms"
             }
 
             val customOutbound = olcServer.toXrayOutboundWithPortAndAuth(
@@ -479,7 +500,12 @@ internal class AndroidProxyLatencyTester(
             val basePlan = speedTestState.buildXrayOutboundPlan(server)
             val updatedPlan = basePlan.copy(
                 proxyOutbounds = basePlan.proxyOutbounds.map { item ->
-                    if (item.server is OlcRtc) item.copy(customOutbound = customOutbound) else item
+                    val candidate = item.server as? OlcRtc
+                    if (candidate != null && candidate.matchesRuntimeConfig(olcServer)) {
+                        item.copy(customOutbound = customOutbound)
+                    } else {
+                        item
+                    }
                 },
             )
 
@@ -498,6 +524,70 @@ internal class AndroidProxyLatencyTester(
         } finally {
             if (!SkipiCoreRuntime.isRunning() && !SkipiVpnService.isRunning() && SkipiCoreRuntime.activeOlcRtcBridge == null) {
                 SkipiCoreRuntime.stopOlcRtc()
+            }
+        }
+    }
+
+    private suspend fun measureStandaloneAmneziaWgLatency(
+        appState: AppState,
+        server: ProxyServerState,
+        amneziaWgServer: AmneziaWg,
+        pingUrl: String,
+        timeoutMs: Long,
+    ): Long = tempAmneziaWgMutex.withLock {
+        if (SkipiCoreRuntime.isRunning() || SkipiVpnService.isRunning()) {
+            return FailedDelayMillis
+        }
+        val tempPort = findAvailableLocalPort(preferredPort = 10809, reservedPorts = emptySet())
+        val runnerConfigJson = amneziaWgServer.toNativeRunnerConfigJson(
+            tag = "skipi_awg_latency",
+            dnsServers = appState.toTunOptions().dnsServers,
+        )
+
+        try {
+            // There is no active VpnService during a standalone latency test,
+            // so no socket needs exclusion from a TUN. The runtime installs a
+            // no-op bridge only for this isolated native run.
+            SkipiCoreRuntime.startAmneziaWg(
+                configJson = runnerConfigJson,
+                socksPort = tempPort,
+                requireSocketProtector = false,
+            )
+            check(SkipiCoreRuntime.awaitAmneziaWgReady(tempPort)) {
+                "AmneziaWG local SOCKS listener did not become ready within ${OlcRtcReadinessTimeoutMillis}ms"
+            }
+
+            val speedTestState = appState.copy(
+                enableMux = false,
+                enableFakeDns = false,
+                enableDirectDnsForProxyServerDomains = true,
+            )
+            val basePlan = speedTestState.buildXrayOutboundPlan(server)
+            val updatedPlan = basePlan.copy(
+                proxyOutbounds = basePlan.proxyOutbounds.map { item ->
+                    val candidate = item.server as? AmneziaWg
+                    if (candidate != null && candidate.matchesRuntimeConfig(amneziaWgServer)) {
+                        item.copy(customOutbound = buildLoopbackSocksOutbound(tag = item.tag, port = tempPort))
+                    } else {
+                        item
+                    }
+                },
+            )
+            val request = XrayConfigRequest(
+                appState = appState,
+                selectedServer = server,
+                inbounds = emptyList<JsonObject>(),
+                coreLogPaths = appContext.prepareXrayCoreLogPaths(),
+                dataDir = xrayDataDir,
+                outboundPlan = updatedPlan,
+            )
+            executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
+        } catch (error: Throwable) {
+            AndroidAppLogger.warn(LogTag, "Standalone AmneziaWG latency test failed: ${error.logSummary()}")
+            FailedDelayMillis
+        } finally {
+            if (!SkipiCoreRuntime.isRunning() && !SkipiVpnService.isRunning() && SkipiCoreRuntime.activeAmneziaWgBridge == null) {
+                SkipiCoreRuntime.stopAmneziaWg()
             }
         }
     }

@@ -4,6 +4,7 @@
 package features.config
 
 import app.ResourceFileUpdateSources
+import engine.xray.isSupportedXrayDnsServer
 import features.resources.ResourceFileSourceCustom
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -134,33 +135,40 @@ private fun routingValueToShadowrocketRule(value: String, policy: String): Strin
     }
 }
 
-/**
- * Resolves one remote/domestic DNS entry. DoH/DoT/DoQ use their explicit
- * domain field; everything else falls back to the plain server address.
- */
+/** Resolves one remote/domestic DNS entry without serializing an unsupported Xray transport. */
 private fun JsonObject.dnsServer(typeKey: String, domainKey: String, ipKey: String, legacyKey: String): String? {
     val type = string(typeKey)?.trim()?.lowercase().orEmpty()
     val domain = string(domainKey)?.trim().orEmpty()
     val ip = string(ipKey)?.trim().orEmpty()
     val legacy = string(legacyKey)?.trim().orEmpty()
 
-    val resolved = when {
-        type in setOf("doh", "https", "dot", "tls", "doq", "quic") && domain.isNotEmpty() ->
-            if ("://" in domain) {
-                domain
-            } else {
-                when (type) {
-                    "dot", "tls" -> "tls://$domain"
-                    "doq", "quic" -> "quic://$domain"
-                    else -> domain
-                }
+    val candidates = buildList {
+        when {
+            type in setOf("doh", "https") && domain.isNotEmpty() -> {
+                add(if ("://" in domain) domain else "https://$domain/dns-query")
             }
 
-        ip.isNotEmpty() -> ip
-        else -> ""
-    }.ifBlank { legacy }
+            // Xray does not provide DoT or remote DoQ in this DNS module.
+            // Preserve an explicitly supplied supported URL, otherwise use
+            // the provider's plain IP fallback rather than generating a
+            // non-working tls:// or quic:// entry.
+            type in setOf("dot", "tls", "doq", "quic") && "://" in domain -> add(domain)
+            domain.isNotEmpty() -> add(domain)
+        }
+        if (ip.isNotEmpty()) add(ip)
+        if (legacy.isNotEmpty()) add(legacy)
+    }
 
-    return resolved.takeIf(CharSequence::isNotEmpty)
+    return candidates.firstNotNullOfOrNull { candidate -> candidate.supportedXrayDnsServersOrNull() }
+}
+
+private fun String.supportedXrayDnsServersOrNull(): String? {
+    return split(',')
+        .map(String::trim)
+        .filter { server -> isSupportedXrayDnsServer(server) }
+        .distinct()
+        .joinToString(",")
+        .takeIf(String::isNotEmpty)
 }
 
 private fun JsonObject.dnsHosts(): List<String> {

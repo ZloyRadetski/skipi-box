@@ -30,7 +30,7 @@ class OlcRtcTest {
         assertEquals(ProxyServerConstants.PROTOCOL_SOCKS, outbound.protocol)
 
         // Test YAML config generation
-        val yaml = server.toOlcRtcYamlConfig(10808)
+        val yaml = server.toOlcRtcYamlConfig(10808, dnsServer = "1.1.1.1:53")
         assertTrue(yaml.contains("mode: cnc"))
         assertTrue(yaml.contains("provider: jitsi"))
         assertTrue(yaml.contains("transport: datachannel"))
@@ -38,7 +38,7 @@ class OlcRtcTest {
         assertTrue(yaml.contains("socks5_listen: 127.0.0.1:10808"))
 
         // Test YAML config generation with credentials
-        val authYaml = server.toOlcRtcYamlConfig(12345, socksUser = "user1", socksPass = "pass1")
+        val authYaml = server.toOlcRtcYamlConfig(12345, socksUser = "user1", socksPass = "pass1", dnsServer = "1.1.1.1:53")
         assertTrue(authYaml.contains("socks5_listen: 127.0.0.1:12345"))
         assertTrue(authYaml.contains("socks5_user: user1"))
         assertTrue(authYaml.contains("socks5_pass: pass1"))
@@ -70,7 +70,7 @@ class OlcRtcTest {
         val generatedUrl = server.getUrl()
         assertEquals(url, generatedUrl)
 
-        val yaml = server.toOlcRtcYamlConfig(10808)
+        val yaml = server.toOlcRtcYamlConfig(10808, dnsServer = "1.1.1.1:53")
         assertTrue(yaml.contains("provider: telemost"))
         assertTrue(yaml.contains("transport: vp8channel"))
         assertTrue(yaml.contains("vp8:"))
@@ -93,7 +93,7 @@ class OlcRtcTest {
         assertEquals(900, server.seiFragmentSize)
         assertEquals(2000, server.seiAckTimeoutMs)
 
-        val yaml = server.toOlcRtcYamlConfig(10808)
+        val yaml = server.toOlcRtcYamlConfig(10808, dnsServer = "1.1.1.1:53")
         assertTrue(yaml.contains("provider: wbstream"))
         assertTrue(yaml.contains("transport: seichannel"))
         assertTrue(yaml.contains("sei:"))
@@ -116,7 +116,7 @@ class OlcRtcTest {
         assertEquals(60, server.videoFps)
         assertEquals("qrcode", server.videoCodec)
 
-        val yaml = server.toOlcRtcYamlConfig(10808)
+        val yaml = server.toOlcRtcYamlConfig(10808, dnsServer = "1.1.1.1:53")
         assertTrue(yaml.contains("provider: telemost"))
         assertTrue(yaml.contains("transport: videochannel"))
         assertTrue(yaml.contains("video:"))
@@ -191,7 +191,7 @@ class OlcRtcTest {
 
         // Custom host:port in roomUrl
         val customPortServer = OlcRtc(
-            provider = "custom",
+            provider = "jitsi",
             roomUrl = "my.signaling.host:8443/room",
         )
         val customPortEndpoint = customPortServer.signalingEndpoint()
@@ -221,13 +221,15 @@ class OlcRtcTest {
     }
 
     @Test
-    fun testMatchesEndpoint() {
+    fun testMatchesRuntimeConfig() {
         val server1 = OlcRtc(provider = "jitsi", roomUrl = "room-1", encryptionKey = "key1")
         val server2 = OlcRtc(provider = "jitsi", roomUrl = "room-1", encryptionKey = "key2")
         val server3 = OlcRtc(provider = "jitsi", roomUrl = "room-2", encryptionKey = "key1")
+        val server4 = OlcRtc(provider = "jitsi", roomUrl = "room-1", encryptionKey = "key1", payload = "fps=30")
 
-        assertTrue(server1.matchesEndpoint(server2))
-        assertTrue(!server1.matchesEndpoint(server3))
+        assertTrue(!server1.matchesRuntimeConfig(server2))
+        assertTrue(!server1.matchesRuntimeConfig(server3))
+        assertTrue(!server1.matchesRuntimeConfig(server4))
     }
 
     @Test
@@ -264,7 +266,7 @@ class OlcRtcTest {
         assertEquals("vp8-fps=30", server.payload)
 
         // Verify YAML reflects new parameter values
-        val yaml = server.toOlcRtcYamlConfig(10808)
+        val yaml = server.toOlcRtcYamlConfig(10808, dnsServer = "1.1.1.1:53")
         assertTrue(yaml.contains("fps: 30"))
         assertTrue(!yaml.contains("batch_size"))
     }
@@ -298,4 +300,3 @@ class OlcRtcTest {
         assertEquals("custom2=val2&custom3=val3", server.getCustomPayload(OlcRtc.KNOWN_VP8_KEYS))
     }
 }
-

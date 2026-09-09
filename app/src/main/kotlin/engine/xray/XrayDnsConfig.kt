@@ -50,18 +50,25 @@ private fun AppState.buildXrayDnsPlan(
     startupProxyServerDomains: List<String>,
     dataDir: String? = null,
 ): XrayDnsPlan {
+    val sanitizedProxyDnsServers = proxyDnsServers.toSupportedXrayDnsServers()
+    val effectiveDirectDnsServers = xrayDirectDnsServers(directDnsServers)
+    val systemBootstrapDnsDomains = systemDnsBootstrapDomains(
+        proxyDnsServers = sanitizedProxyDnsServers,
+        directDnsServers = effectiveDirectDnsServers,
+    )
     val sanitizedDirectDnsDomains = XrayGeoRuleSanitizer.filterValidDomainRules(directDnsDomains, dataDir)
     val effectiveDirectDnsDomains = xrayDirectDnsDomains(
         directDnsDomains = sanitizedDirectDnsDomains,
         startupProxyServerDomains = startupProxyServerDomains,
-        proxyDnsServers = proxyDnsServers,
+        proxyDnsServers = sanitizedProxyDnsServers,
+        systemBootstrapDnsDomains = systemBootstrapDnsDomains,
     )
-    val effectiveDirectDnsServers = xrayDirectDnsServers(directDnsServers)
     return XrayDnsPlan(
         servers = xrayDnsServers(
-            proxyDnsServers = proxyDnsServers,
+            proxyDnsServers = sanitizedProxyDnsServers,
             effectiveDirectDnsServers = effectiveDirectDnsServers,
             effectiveDirectDnsDomains = effectiveDirectDnsDomains,
+            systemBootstrapDnsDomains = systemBootstrapDnsDomains,
         ),
         queryStrategy = if (enableIpv6) "UseIP" else "UseIPv4",
         tag = XrayTags.PROXY_DNS,
@@ -69,12 +76,12 @@ private fun AppState.buildXrayDnsPlan(
         fakeDns = if (effectiveFakeDnsEnabled) buildXrayFakeDnsConfig() else null,
         routingOptions = XrayDnsRoutingOptions(
             routeProxyDns = xrayProxyDnsServers(
-                proxyDnsServers = proxyDnsServers,
+                proxyDnsServers = sanitizedProxyDnsServers,
                 directDnsServers = effectiveDirectDnsServers,
                 directDnsDomains = effectiveDirectDnsDomains,
             ).isNotEmpty(),
-            routeDirectDns = effectiveDirectDnsDomains.isNotEmpty() &&
-                effectiveDirectDnsServers.isNotEmpty(),
+            routeDirectDns = systemBootstrapDnsDomains.isNotEmpty() ||
+                (effectiveDirectDnsDomains.isNotEmpty() && effectiveDirectDnsServers.isNotEmpty()),
         ),
     )
 }
@@ -105,11 +112,11 @@ internal fun AppState.xrayProxyDnsServers(
     directDnsServers: List<String>,
     directDnsDomains: List<String>? = null,
 ): List<String> {
-    val sanitizedProxyDns = proxyDnsServers.toTrimmedNonEmptyDistinctList()
+    val sanitizedProxyDns = proxyDnsServers.toSupportedXrayDnsServers()
     if (sanitizedProxyDns.isNotEmpty()) {
         return sanitizedProxyDns
     }
-    val hasDirectDns = directDnsServers.toTrimmedNonEmptyDistinctList().isNotEmpty() &&
+    val hasDirectDns = directDnsServers.toSupportedXrayDnsServers().isNotEmpty() &&
         (directDnsDomains == null || directDnsDomains.isNotEmpty())
     return if (!hasDirectDns) {
         listOf(
@@ -123,40 +130,48 @@ internal fun AppState.xrayProxyDnsServers(
 }
 
 internal fun AppState.xrayDirectDnsServers(directDnsServers: List<String>): List<String> {
-    val configured = directDnsServers.toTrimmedNonEmptyDistinctList()
+    val configured = directDnsServers.toSupportedXrayDnsServers()
     if (configured.isNotEmpty()) {
         return configured
     }
-    val appDirect = directDns.toTrimmedNonEmptyDistinctList()
+    val appDirect = directDns.toSupportedXrayDnsServers()
     if (appDirect.isNotEmpty()) {
         return appDirect
     }
     return VpnDefaults.DIRECT_DNS_SERVERS
 }
 
-internal fun extractDohHost(dohUrl: String): String? {
-    val trimmed = dohUrl.trim()
-    if (!trimmed.startsWith("https://", ignoreCase = true) && !trimmed.startsWith("http://", ignoreCase = true)) {
-        return null
-    }
-    val afterScheme = trimmed.substringAfter("://")
-    val hostPort = afterScheme.substringBefore('/')
-    val host = hostPort.substringBefore(':').trim()
-    if (host.isBlank() || isIpAddress(host)) {
-        return null
-    }
-    return host
-}
-
 internal fun AppState.xrayDirectDnsDomains(
     directDnsDomains: List<String>,
     startupProxyServerDomains: List<String> = emptyList(),
     proxyDnsServers: List<String> = emptyList(),
+    systemBootstrapDnsDomains: List<String> = emptyList(),
 ): List<String> {
-    val dohDomains = proxyDnsServers.mapNotNull { dohUrl ->
-        extractDohHost(dohUrl)?.let { host -> "domain:$host" }
+    val remoteDnsDomains = proxyDnsServers.mapNotNull { server ->
+        server.remoteXrayDnsHostOrNull()?.let { host -> "domain:$host" }
     }
-    return (directDnsDomains.toTrimmedNonEmptyDistinctList() + startupProxyServerDomains + dohDomains).distinct()
+    val proxyServerDomains = if (enableDirectDnsForProxyServerDomains) startupProxyServerDomains else emptyList()
+    return (directDnsDomains.toTrimmedNonEmptyDistinctList() + proxyServerDomains + remoteDnsDomains)
+        .filterNot(systemBootstrapDnsDomains.toSet()::contains)
+        .distinct()
+}
+
+/**
+ * A DoH/TCP proxy DNS server cannot resolve its own hostname. If the same
+ * server was also selected as Direct DNS, use Android's resolver only for
+ * that bootstrap lookup instead of creating a recursive Xray DNS route.
+ */
+internal fun systemDnsBootstrapDomains(
+    proxyDnsServers: List<String>,
+    directDnsServers: List<String>,
+): List<String> {
+    val directDnsHosts = directDnsServers.mapNotNull(String::remoteXrayDnsHostOrNull).toSet()
+    if (directDnsHosts.isEmpty()) return emptyList()
+    return proxyDnsServers.mapNotNull { server ->
+        server.remoteXrayDnsHostOrNull()
+            ?.takeIf(directDnsHosts::contains)
+            ?.let { host -> "domain:$host" }
+    }.distinct()
 }
 
 internal fun Iterable<XrayProxyOutboundServer>.startupProxyServerDnsDomains(): List<String> {
@@ -171,6 +186,7 @@ private fun AppState.xrayDnsServers(
     proxyDnsServers: List<String>,
     effectiveDirectDnsServers: List<String>,
     effectiveDirectDnsDomains: List<String>,
+    systemBootstrapDnsDomains: List<String>,
 ): JsonArray {
     val proxyDns = xrayProxyDnsServers(
         proxyDnsServers = proxyDnsServers,
@@ -180,6 +196,16 @@ private fun AppState.xrayDnsServers(
     return buildJsonArray {
         if (effectiveFakeDnsEnabled) {
             add(JsonPrimitive("fakedns"))
+        }
+        if (systemBootstrapDnsDomains.isNotEmpty()) {
+            add(
+                buildJsonObject {
+                    put("address", "localhost")
+                    put("domains", systemBootstrapDnsDomains.toJsonStringArray())
+                    put("skipFallback", true)
+                    put("tag", XrayTags.DIRECT_DNS)
+                },
+            )
         }
         if (effectiveDirectDnsDomains.isNotEmpty()) {
             effectiveDirectDnsServers.forEach { server ->

@@ -207,6 +207,28 @@ class RoscomRoutingJsonTest {
         assertEquals("proxy", applied.defaultRouteOutboundTag)
     }
 
+    @Test
+    fun conversion_does_not_generate_unsupported_dot_or_doq_urls() {
+        listOf("DoT", "DoQ").forEach { dnsType ->
+            val routingJson = """
+                {
+                  "Name": "DNS transport test",
+                  "RouteOrder": "proxy",
+                  "ProxySites": ["example.com"],
+                  "RemoteDNSType": "$dnsType",
+                  "RemoteDNSDomain": "dns.example:853",
+                  "RemoteDNSIP": "203.0.113.9"
+                }
+            """.trimIndent().toRoscomRoutingJsonOrNull()
+
+            assertNotNull(routingJson)
+            val conf = routingJson!!.toRoscomRoutingShadowrocketConf(fallbackName = "Test")
+            assertTrue(conf.contains("proxy-dns = 203.0.113.9"))
+            assertFalse(conf.contains("tls://"))
+            assertFalse(conf.contains("quic://"))
+        }
+    }
+
     private companion object {
         // happ://routing/onadd/{base64} sample from a real provider; decodes to
         // the routing JSON with versioned geo resource URLs.

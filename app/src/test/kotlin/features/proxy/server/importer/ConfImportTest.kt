@@ -61,6 +61,8 @@ class ConfImportTest {
             Jmax = 70
             S1 = 15
             S2 = 30
+            S3 = 45
+            S4 = 60
             H1 = 12345678
             H2 = 87654321
             H3 = 11223344
@@ -84,6 +86,8 @@ class ConfImportTest {
         assertEquals("70", server.jmax)
         assertEquals("15", server.s1)
         assertEquals("30", server.s2)
+        assertEquals("45", server.s3)
+        assertEquals("60", server.s4)
         assertEquals("12345678", server.h1)
         assertEquals("87654321", server.h2)
         assertEquals("11223344", server.h3)

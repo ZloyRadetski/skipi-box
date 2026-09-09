@@ -68,12 +68,14 @@ internal suspend fun parseProxyServersFromWireguardConf(
         val jmax = interfaceProps["jmax"]
         val s1 = interfaceProps["s1"]
         val s2 = interfaceProps["s2"]
+        val s3 = interfaceProps["s3"]
+        val s4 = interfaceProps["s4"]
         val h1 = interfaceProps["h1"]
         val h2 = interfaceProps["h2"]
         val h3 = interfaceProps["h3"]
         val h4 = interfaceProps["h4"]
 
-        val isAmneziaWg = listOf(jc, jmin, jmax, s1, s2, h1, h2, h3, h4).any { !it.isNullOrBlank() }
+        val isAmneziaWg = listOf(jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4).any { !it.isNullOrBlank() }
 
         val remarks = foundFirstComment.ifBlank {
             if (isAmneziaWg) "Amnezia WG ($server:$port)" else "WireGuard ($server:$port)"
@@ -94,6 +96,8 @@ internal suspend fun parseProxyServersFromWireguardConf(
                 jmax = jmax ?: "70",
                 s1 = s1 ?: "15",
                 s2 = s2 ?: "30",
+                s3 = s3.orEmpty(),
+                s4 = s4.orEmpty(),
                 h1 = h1.orEmpty(),
                 h2 = h2.orEmpty(),
                 h3 = h3.orEmpty(),

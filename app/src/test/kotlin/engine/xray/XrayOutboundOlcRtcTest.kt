@@ -57,14 +57,14 @@ class XrayOutboundOlcRtcTest {
         assertEquals(10808, firstServer["port"]?.toString()?.toIntOrNull())
 
         // Test YAML generation
-        val yaml = olcrtc.toOlcRtcYamlConfig(10808)
+        val yaml = olcrtc.toOlcRtcYamlConfig(10808, dnsServer = "1.1.1.1:53")
         assertTrue(yaml.contains("provider: telemost"))
         assertTrue(yaml.contains("transport: vp8channel"))
         assertTrue(yaml.contains("room: https://telemost.yandex.ru/j/1234567890"))
         assertTrue(yaml.contains("socks5_listen: 127.0.0.1:10808"))
 
         // Test YAML generation with credentials
-        val authYaml = olcrtc.toOlcRtcYamlConfig(12345, "secret_user", "secret_pass")
+        val authYaml = olcrtc.toOlcRtcYamlConfig(12345, "secret_user", "secret_pass", dnsServer = "1.1.1.1:53")
         assertTrue(authYaml.contains("socks5_listen: 127.0.0.1:12345"))
         assertTrue(authYaml.contains("socks5_user: secret_user"))
         assertTrue(authYaml.contains("socks5_pass: secret_pass"))
@@ -145,4 +145,3 @@ class XrayOutboundOlcRtcTest {
         }
     }
 }
-

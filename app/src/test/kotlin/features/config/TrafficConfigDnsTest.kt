@@ -45,7 +45,7 @@ class TrafficConfigDnsTest {
         assertTrue(android.enableFakeDns)
         assertTrue(android.enableDirectDnsForProxyServerDomains)
         assertEquals("1.1.1.1", android.tunVpnDns)
-        assertEquals(listOf("https://1.1.1.1/dns-query", "tls://1.0.0.1:853"), android.proxyDns)
+        assertEquals(listOf("https://1.1.1.1/dns-query"), android.proxyDns)
         assertEquals(listOf("https://77.88.8.8/dns-query", "77.88.8.1"), android.directDns)
         assertEquals(listOf("geosite:cn", "domain:ru"), android.directDnsDomains)
         assertEquals(listOf("example.com:1.2.3.4", "test.org:5.6.7.8"), android.dnsHosts)
@@ -53,6 +53,7 @@ class TrafficConfigDnsTest {
         val serializedState = state.withSkipiSettingsInRawConfig()
         val reparsedState = serializedState.withSkipiSettingsReadFromRawConfig()
 
+        assertFalse(serializedState.rawConfig.contains("tls://"))
         assertEquals(state.androidSettings, reparsedState.androidSettings)
     }
 
@@ -123,5 +124,44 @@ class TrafficConfigDnsTest {
         assertEquals(listOf("https://77.88.8.8/dns-query"), appliedState.directDns)
         assertEquals(listOf("geosite:category-gov-ru"), appliedState.directDnsDomains)
         assertEquals(listOf("myhost.local:192.168.1.1"), appliedState.dnsHosts)
+    }
+
+    @Test
+    fun standard_profile_dns_and_hosts_override_stale_android_profile_values() {
+        val standardProfile = TrafficConfigState(
+            id = 7,
+            name = "Standard profile",
+            rawConfig = """
+                [General]
+                dns-server = 9.9.9.9,149.112.112.112
+
+                [Host]
+                cdn.example = 203.0.113.8
+
+                [Rule]
+                FINAL,PROXY
+            """.trimIndent(),
+            androidSettings = TrafficConfigAndroidSettings(
+                proxyDns = listOf("8.8.8.8"),
+                directDns = listOf("1.1.1.1"),
+                dnsHosts = listOf("old.example:198.51.100.8"),
+            ),
+        )
+        val imported = standardProfile.withSkipiSettingsReadFromRawConfig()
+
+        assertTrue(imported.androidSettings.proxyDns.isEmpty())
+        assertTrue(imported.androidSettings.directDns.isEmpty())
+        assertTrue(imported.androidSettings.dnsHosts.isEmpty())
+
+        val applied = AppState(
+            // Runtime must honor the standard profile even before an import
+            // caller has normalized it through withSkipiSettingsReadFromRawConfig.
+            trafficConfigs = listOf(standardProfile),
+            activeTrafficConfigId = standardProfile.id,
+        ).withActiveTrafficConfigApplied()
+
+        assertEquals(listOf("9.9.9.9", "149.112.112.112"), applied.proxyDns)
+        assertEquals(listOf("9.9.9.9", "149.112.112.112"), applied.directDns)
+        assertEquals(listOf("cdn.example:203.0.113.8"), applied.dnsHosts)
     }
 }

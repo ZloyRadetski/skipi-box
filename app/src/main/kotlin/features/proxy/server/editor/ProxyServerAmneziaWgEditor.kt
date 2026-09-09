@@ -211,6 +211,36 @@ internal fun LazyListScope.amneziaWgProxyServer(awgEdit: AmneziaWg) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
+            label = stringResource(R.string.proxy_editor_awg_s3),
+            state = rememberTextFieldState(initialText = awgEdit.s3),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                if (!asCharSequence().isDigitsOnly()) {
+                    revertAllChanges()
+                    return@InputTransformation
+                }
+                awgEdit.s3 = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = stringResource(R.string.proxy_editor_awg_s4),
+            state = rememberTextFieldState(initialText = awgEdit.s4),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                if (!asCharSequence().isDigitsOnly()) {
+                    revertAllChanges()
+                    return@InputTransformation
+                }
+                awgEdit.s4 = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
             label = stringResource(R.string.proxy_editor_awg_h1),
             state = rememberTextFieldState(initialText = awgEdit.h1),
             lineLimits = TextFieldLineLimits.SingleLine,

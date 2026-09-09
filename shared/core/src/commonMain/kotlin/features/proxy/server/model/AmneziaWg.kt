@@ -45,6 +45,8 @@ data class AmneziaWg(
     var jmax: String = "70",
     var s1: String = "15",
     var s2: String = "30",
+    var s3: String = "",
+    var s4: String = "",
     var h1: String = "",
     var h2: String = "",
     var h3: String = "",
@@ -90,6 +92,8 @@ data class AmneziaWg(
                 jmax.toIntOrNull()?.takeIf { it > 0 }?.let { put("jmax", it) }
                 s1.toIntOrNull()?.takeIf { it > 0 }?.let { put("s1", it) }
                 s2.toIntOrNull()?.takeIf { it > 0 }?.let { put("s2", it) }
+                s3.toIntOrNull()?.takeIf { it > 0 }?.let { put("s3", it) }
+                s4.toIntOrNull()?.takeIf { it > 0 }?.let { put("s4", it) }
                 h1.toLongOrNull()?.takeIf { it > 0 }?.let { put("h1", it) }
                 h2.toLongOrNull()?.takeIf { it > 0 }?.let { put("h2", it) }
                 h3.toLongOrNull()?.takeIf { it > 0 }?.let { put("h3", it) }
@@ -119,6 +123,8 @@ data class AmneziaWg(
         this.jmax = url.parameters["jmax"] ?: "70"
         this.s1 = url.parameters["s1"] ?: "15"
         this.s2 = url.parameters["s2"] ?: "30"
+        this.s3 = url.parameters["s3"] ?: ""
+        this.s4 = url.parameters["s4"] ?: ""
         this.h1 = url.parameters["h1"] ?: ""
         this.h2 = url.parameters["h2"] ?: ""
         this.h3 = url.parameters["h3"] ?: ""
@@ -152,6 +158,8 @@ data class AmneziaWg(
             if (this@AmneziaWg.jmax.isNotBlank()) parameters.append("jmax", this@AmneziaWg.jmax)
             if (this@AmneziaWg.s1.isNotBlank()) parameters.append("s1", this@AmneziaWg.s1)
             if (this@AmneziaWg.s2.isNotBlank()) parameters.append("s2", this@AmneziaWg.s2)
+            if (this@AmneziaWg.s3.isNotBlank()) parameters.append("s3", this@AmneziaWg.s3)
+            if (this@AmneziaWg.s4.isNotBlank()) parameters.append("s4", this@AmneziaWg.s4)
             if (this@AmneziaWg.h1.isNotBlank()) parameters.append("h1", this@AmneziaWg.h1)
             if (this@AmneziaWg.h2.isNotBlank()) parameters.append("h2", this@AmneziaWg.h2)
             if (this@AmneziaWg.h3.isNotBlank()) parameters.append("h3", this@AmneziaWg.h3)
@@ -181,6 +189,8 @@ data class AmneziaWg(
             jmax = other.jmax
             s1 = other.s1
             s2 = other.s2
+            s3 = other.s3
+            s4 = other.s4
             h1 = other.h1
             h2 = other.h2
             h3 = other.h3
@@ -203,11 +213,20 @@ data class AmneziaWg(
         validateWireguardAddresses(address)
         validateMtu(mtu)
         validateOptionalJsonObject(finalMask, "FinalMask")
-        validateAmneziaWgObfuscation(jc, jmin, jmax, s1, s2, h1, h2, h3, h4)
+        validateAmneziaWgObfuscation(jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4)
     }
 
     override fun connectionFingerprint(): String {
-        return "amneziawg|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address"
+        return "amneziawg|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address|$mtu|$reserved|$jc|$jmin|$jmax|$s1|$s2|$s3|$s4|$h1|$h2|$h3|$h4|$finalMask"
+    }
+
+    /**
+     * Native AmneziaWG has one process-wide runner. Only profiles with the
+     * same effective tunnel parameters may share that runner; a label or a
+     * different local presentation must not make unrelated peers look equal.
+     */
+    fun matchesRuntimeConfig(other: AmneziaWg): Boolean {
+        return connectionFingerprint() == other.connectionFingerprint()
     }
 
     private fun toWireguardEndpoint(): String {

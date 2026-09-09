@@ -433,6 +433,7 @@
     <string name="settings_proxy_dns_empty">DNS для прокси не добавлен</string>
     <string name="settings_direct_dns">Прямой DNS (Direct DNS)</string>
     <string name="settings_direct_dns_empty">Прямой DNS не добавлен</string>
+    <string name="settings_dns_server_system_hint">Используйте localhost для системного DNS Android, включая Private DNS.</string>
     <string name="settings_direct_dns_domains">Домены для прямого DNS</string>
     <string name="settings_direct_dns_domains_empty">Правила доменов для прямого DNS не добавлены</string>
     <string name="settings_direct_dns_resolve_proxy_server_domains">Разрешать прокси через прямой DNS</string>
@@ -1135,7 +1136,7 @@
 
     <!-- DNS Section in Traffic Config -->
     <string name="configs_dns_title">Настройки DNS</string>
-    <string name="configs_dns_summary">Локальный DNS VPN, Proxy и Direct DNS (DoH, DoT, DoU, TCP), FakeDNS</string>
+    <string name="configs_dns_summary">Локальный DNS VPN, Proxy и Direct DNS (DoH, локальный DoQ, DoU, TCP), FakeDNS</string>
     <string name="configs_dns_master_switches">Поведение DNS</string>
     <string name="configs_dns_proxy_section">Удаленный DNS (Proxy)</string>
     <string name="configs_dns_proxy_summary">DNS-серверы, опрашиваемые через прокси для заблокированных и зарубежных доменов</string>
@@ -1151,7 +1152,7 @@
     <string name="configs_dns_hosts_empty">Нет статических записей DNS Hosts</string>
     <string name="configs_dns_hosts_input">domain.com: 1.2.3.4</string>
     <string name="configs_dns_tun_dns">DNS адаптера TUN</string>
-    <string name="configs_dns_tun_dns_summary">Виртуальный IPv4 DNS-адрес адаптера Android VPN (например, 8.8.8.8)</string>
+    <string name="configs_dns_tun_dns_summary">Виртуальный IPv4 DNS-адрес Android VPN (например, 1.1.1.1). Его использует olcRTC; «Удалённый» и «Прямой DNS» ниже — настройки Xray (DoH/DoT) и в olcRTC не передаются.</string>
     <string name="configs_dns_protocol_doh">DoH</string>
     <string name="configs_dns_protocol_dot">DoT</string>
     <string name="configs_dns_protocol_dou">DoU (UDP)</string>
@@ -1159,7 +1160,7 @@
     <string name="configs_dns_add_server">Добавить DNS-сервер</string>
     <string name="configs_dns_edit_server">Редактировать DNS-сервер</string>
     <string name="configs_dns_server_address">Адрес сервера или URL</string>
-    <string name="configs_dns_server_invalid">Введите корректный адрес DNS (например, https://1.1.1.1/dns-query, tls://1.1.1.1:853, tcp://1.1.1.1:53 или 1.1.1.1)</string>
+    <string name="configs_dns_server_invalid">Введите корректный адрес DNS (например, https://1.1.1.1/dns-query, tcp://1.1.1.1:53, localhost или 1.1.1.1)</string>
     <string name="configs_dns_empty_servers">DNS-серверы не настроены</string>
     <string name="configs_dns_domain_rule_input">Правило домена (напр. geosite:cn, domain:example.com)</string>
     <string name="configs_dns_domain_invalid">Введите корректное правило домена (напр. geosite:cn, domain:example.com, full:google.com)</string>
@@ -1367,6 +1368,8 @@
     <string name="proxy_editor_awg_jmax">Макс. размер мусорного пакета (Jmax, 0–1280)</string>
     <string name="proxy_editor_awg_s1">Размер мусорного префикса Init (S1, 0–1280)</string>
     <string name="proxy_editor_awg_s2">Размер мусорного префикса Response (S2, 0–1280)</string>
+    <string name="proxy_editor_awg_s3">Размер мусорного префикса Cookie (S3, 0–1280)</string>
+    <string name="proxy_editor_awg_s4">Размер мусорного префикса Transport (S4, 0–1280)</string>
     <string name="proxy_editor_awg_h1">Заголовок Init рукопожатия (H1, uint32)</string>
     <string name="proxy_editor_awg_h2">Заголовок Response рукопожатия (H2, uint32)</string>
     <string name="proxy_editor_awg_h3">Заголовок Cookie рукопожатия (H3, uint32)</string>

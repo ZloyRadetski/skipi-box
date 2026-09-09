@@ -28,7 +28,7 @@ internal fun LazyListScope.olcRtcProxyServer(olcEdit: OlcRtc) {
         val focusManager = LocalFocusManager.current
 
         val providerOptions = remember {
-            val base = listOf("jitsi", "telemost", "wbstream", "custom")
+            val base = listOf("jitsi", "telemost", "wbstream")
             if (olcEdit.provider.isNotBlank() && olcEdit.provider !in base) {
                 base + olcEdit.provider
             } else {
