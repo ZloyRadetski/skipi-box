@@ -167,6 +167,10 @@ internal class AppSettingsPreferences(
                 KeyLocalProxyListenAllInterfaces,
                 defaults.localProxyListenAllInterfaces,
             ),
+            enableLocalProxyAuth = preferences.getBoolean(
+                KeyEnableLocalProxyAuth,
+                defaults.enableLocalProxyAuth,
+            ),
             localProxyUsername = preferences.getString(
                 KeyLocalProxyUsername,
                 defaults.localProxyUsername,
@@ -184,6 +188,10 @@ internal class AppSettingsPreferences(
                 defaults.enableVpnHevTun,
             ),
             enableKillSwitch = preferences.getBoolean(KeyEnableKillSwitch, defaults.enableKillSwitch),
+            enableStrictFullTunnel = preferences.getBoolean(
+                KeyEnableStrictFullTunnel,
+                defaults.enableStrictFullTunnel,
+            ),
             tunMtu = preferences.getString(KeyTunMtu, defaults.tunMtu) ?: defaults.tunMtu,
             tunVpnDns = preferences.getString(KeyTunVpnDns, defaults.tunVpnDns) ?: defaults.tunVpnDns,
             tunIpv4Cidr = preferences.getString(KeyTunIpv4Cidr, defaults.tunIpv4Cidr) ?: defaults.tunIpv4Cidr,
@@ -453,11 +461,13 @@ internal class AppSettingsPreferences(
             .putString(KeyLocalProxyPort, state.localProxyPort)
             .putBoolean(KeyEnableDynamicLocalProxyPort, state.enableDynamicLocalProxyPort)
             .putBoolean(KeyLocalProxyListenAllInterfaces, state.localProxyListenAllInterfaces)
+            .putBoolean(KeyEnableLocalProxyAuth, state.enableLocalProxyAuth)
             .putString(KeyLocalProxyUsername, state.localProxyUsername)
             .putString(KeyLocalProxyPassword, state.localProxyPassword)
             .putBoolean(KeyEnableVpnAppendHttpProxy, state.enableVpnAppendHttpProxy)
             .putBoolean(KeyEnableVpnHevTun, state.enableVpnHevTun)
             .putBoolean(KeyEnableKillSwitch, state.enableKillSwitch)
+            .putBoolean(KeyEnableStrictFullTunnel, state.enableStrictFullTunnel)
             .putString(KeyTunMtu, state.tunMtu)
             .putString(KeyTunVpnDns, state.tunVpnDns)
             .putString(KeyTunIpv4Cidr, state.tunIpv4Cidr)
@@ -818,11 +828,13 @@ private const val KeyEnableVpnLocalDns = "enable_vpn_local_dns"
 private const val KeyLocalProxyPort = "local_proxy_port"
 private const val KeyEnableDynamicLocalProxyPort = "enable_dynamic_local_proxy_port"
 private const val KeyLocalProxyListenAllInterfaces = "local_proxy_listen_all_interfaces"
+private const val KeyEnableLocalProxyAuth = "enable_local_proxy_auth"
 private const val KeyLocalProxyUsername = "local_proxy_username"
 private const val KeyLocalProxyPassword = "local_proxy_password"
 private const val KeyEnableVpnAppendHttpProxy = "enable_vpn_append_http_proxy"
 private const val KeyEnableVpnHevTun = "enable_vpn_hev_tun"
 private const val KeyEnableKillSwitch = "enable_kill_switch"
+private const val KeyEnableStrictFullTunnel = "enable_strict_full_tunnel"
 private const val KeyTunMtu = "tun_mtu"
 private const val KeyTunVpnDns = "tun_vpn_dns"
 private const val KeyTunIpv4Cidr = "tun_ipv4_cidr"

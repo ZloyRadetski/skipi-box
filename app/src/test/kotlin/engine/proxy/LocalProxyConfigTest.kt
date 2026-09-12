@@ -4,7 +4,10 @@
 package engine.proxy
 
 import app.AppState
+import app.withVpnSettingsReset
 import engine.vpn.toVpnAppendHttpProxyOptions
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,5 +54,36 @@ class LocalProxyConfigTest {
     fun localPortBindingFailureIsRecognizedForRetry() {
         assertTrue(IllegalStateException("failed to listen TCP 127.0.0.1:20001").isLocalPortBindFailure())
         assertTrue(IllegalStateException("Address already in use").isLocalPortBindFailure())
+    }
+
+    @Test
+    fun localProxyOptions_omitsCredentialsWhenAuthIsDisabled() {
+        val state = AppState(
+            enableLocalProxyAuth = false,
+            localProxyUsername = "user",
+            localProxyPassword = "secret",
+        )
+        val options = state.toLocalProxyOptions()
+        assertEquals("", options.username)
+        assertEquals("", options.password)
+    }
+
+    @Test
+    fun localProxyOptions_preservesCredentialsWhenAuthIsEnabled() {
+        val state = AppState(
+            enableLocalProxyAuth = true,
+            localProxyUsername = "user",
+            localProxyPassword = "secret",
+        )
+        val options = state.toLocalProxyOptions()
+        assertEquals("user", options.username)
+        assertEquals("secret", options.password)
+    }
+
+    @Test
+    fun withVpnSettingsReset_restoresEnableLocalProxyAuthToDefault() {
+        val state = AppState(enableLocalProxyAuth = false)
+        val resetState = state.withVpnSettingsReset()
+        assertTrue("withVpnSettingsReset should restore enableLocalProxyAuth to true", resetState.enableLocalProxyAuth)
     }
 }

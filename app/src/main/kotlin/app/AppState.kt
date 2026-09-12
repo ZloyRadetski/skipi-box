@@ -108,6 +108,8 @@ data class AppState(
     val enableVpnAppendHttpProxy: Boolean = false,
     val enableVpnHevTun: Boolean = true,
     val enableKillSwitch: Boolean = false,
+    /** Applies a strict policy at tunnel start without rewriting the stored profile. */
+    val enableStrictFullTunnel: Boolean = false,
     val tunMtu: String = VpnDefaults.MTU.toString(),
     val tunVpnDns: String = VpnDefaults.IPV4_DNS,
     val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,

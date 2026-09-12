@@ -19,6 +19,7 @@ internal fun AppState.withVpnSettingsReset(): AppState {
         localProxyPort = defaults.localProxyPort,
         enableDynamicLocalProxyPort = defaults.enableDynamicLocalProxyPort,
         localProxyListenAllInterfaces = defaults.localProxyListenAllInterfaces,
+        enableLocalProxyAuth = defaults.enableLocalProxyAuth,
         // Keep existing credentials so that external clients configured with
         // the current username/password are not silently broken by a settings
         // reset.  Credentials are regenerated only via an explicit UI action.
@@ -27,6 +28,7 @@ internal fun AppState.withVpnSettingsReset(): AppState {
         enableVpnAppendHttpProxy = defaults.enableVpnAppendHttpProxy,
         enableVpnHevTun = defaults.enableVpnHevTun,
         enableKillSwitch = defaults.enableKillSwitch,
+        enableStrictFullTunnel = defaults.enableStrictFullTunnel,
         tunMtu = defaults.tunMtu,
         tunVpnDns = defaults.tunVpnDns,
         tunIpv4Cidr = defaults.tunIpv4Cidr,
