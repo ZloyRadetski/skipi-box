@@ -56,7 +56,10 @@ internal object AndroidAppLogger {
             append(": ")
             append(message)
             if (error != null) {
-                val stackTrace = Log.getStackTraceString(error).trim()
+                // Android returns a String here, but JVM test doubles may return null.
+                // Logging an invalid imported profile must never turn its rejection into a crash.
+                @Suppress("UNNECESSARY_SAFE_CALL")
+                val stackTrace = Log.getStackTraceString(error)?.trim().orEmpty()
                 if (stackTrace.isNotEmpty()) {
                     append('\n')
                     append(stackTrace)

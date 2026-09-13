@@ -257,11 +257,11 @@ fun AppTheme(
     LaunchedEffect(activity, fontScaleFactor) {
         activity?.let { act ->
             val config = act.resources.configuration
+            @Suppress("DEPRECATION")
             if (config.fontScale != fontScaleFactor) {
                 config.fontScale = fontScaleFactor
                 val metrics = act.resources.displayMetrics
                 metrics.scaledDensity = config.fontScale * metrics.density
-                @Suppress("DEPRECATION")
                 act.resources.updateConfiguration(config, metrics)
             }
         }
