@@ -56,6 +56,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -848,8 +849,7 @@ internal fun OnboardingAppearancePage(
     updateAppState: ((AppState) -> AppState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val themeModes = listOf(
-        ColorModeSystem to stringResource(R.string.option_follow_system),
+    val manualThemeModes = listOf(
         ColorModeLight to stringResource(R.string.option_light),
         ColorModeDark to stringResource(R.string.option_dark),
         ColorModeAmoled to stringResource(R.string.option_amoled),
@@ -903,43 +903,85 @@ internal fun OnboardingAppearancePage(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    themeModes.forEach { (mode, label) ->
-                        val isSelected = appState.colorMode == mode
-                        val bg by animateColorAsState(
-                            targetValue = if (isSelected) AppTheme.colors.accent else itemBg,
-                            label = "theme_mode_bg_$mode",
-                        )
-                        val textColor by animateColorAsState(
-                            targetValue = if (isSelected) AppTheme.colors.onAccent else AppTheme.colors.onSurface,
-                            label = "theme_mode_text_$mode",
-                        )
+                    val isSystemSelected = appState.colorMode == ColorModeSystem
+                    val sysBg by animateColorAsState(
+                        targetValue = if (isSystemSelected) AppTheme.colors.accent else itemBg,
+                        label = "theme_mode_bg_system",
+                    )
+                    val sysTextColor by animateColorAsState(
+                        targetValue = if (isSystemSelected) AppTheme.colors.onAccent else AppTheme.colors.onSurface,
+                        label = "theme_mode_text_system",
+                    )
 
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(bg)
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isSelected) Color.Transparent else itemBorder,
-                                    shape = RoundedCornerShape(12.dp),
-                                )
-                                .clickable {
-                                    updateAppState { it.copy(colorMode = mode) }
-                                }
-                                .padding(vertical = 11.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = label,
-                                color = textColor,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 13.sp,
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(sysBg)
+                            .border(
+                                width = 1.dp,
+                                color = if (isSystemSelected) Color.Transparent else itemBorder,
+                                shape = RoundedCornerShape(12.dp),
                             )
+                            .clickable {
+                                updateAppState { it.copy(colorMode = ColorModeSystem) }
+                            }
+                            .padding(vertical = 11.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.option_follow_system),
+                            color = sysTextColor,
+                            fontWeight = if (isSystemSelected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        manualThemeModes.forEach { (mode, label) ->
+                            val isSelected = appState.colorMode == mode
+                            val bg by animateColorAsState(
+                                targetValue = if (isSelected) AppTheme.colors.accent else itemBg,
+                                label = "theme_mode_bg_$mode",
+                            )
+                            val textColor by animateColorAsState(
+                                targetValue = if (isSelected) AppTheme.colors.onAccent else AppTheme.colors.onSurface,
+                                label = "theme_mode_text_$mode",
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(bg)
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isSelected) Color.Transparent else itemBorder,
+                                        shape = RoundedCornerShape(12.dp),
+                                    )
+                                    .clickable {
+                                        updateAppState { it.copy(colorMode = mode) }
+                                    }
+                                    .padding(vertical = 11.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = textColor,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 13.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 }
@@ -1087,6 +1129,8 @@ internal fun OnboardingAppearancePage(
                                 color = textColor,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
