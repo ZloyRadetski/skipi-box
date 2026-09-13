@@ -6,19 +6,35 @@
 package features.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import app.MaxTrafficStatsNotificationRefreshIntervalSeconds
+import app.MinTrafficStatsNotificationRefreshIntervalSeconds
 import app.LocalAppChromeState
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -35,18 +51,23 @@ import app.navigation.Route
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
 import ui.components.AppOverlayDropdownPreference
+import ui.components.AppSlider
 import ui.components.BackNavigationIcon
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
+import ui.text.themedFontWeight
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingsGeneralPage(
@@ -144,6 +165,16 @@ fun SettingsGeneralPage(
                                 updateAppState { it.copy(enableTrafficStatsNotification = enabled) }
                             },
                         )
+                        if (appState.enableTrafficStatsNotification) {
+                            TrafficStatsNotificationRefreshIntervalPreference(
+                                refreshIntervalSeconds = appState.trafficStatsNotificationRefreshIntervalSeconds,
+                                onRefreshIntervalSecondsChange = { seconds ->
+                                    updateAppState {
+                                        it.copy(trafficStatsNotificationRefreshIntervalSeconds = seconds)
+                                    }
+                                },
+                            )
+                        }
                         SwitchPreference(
                             title = stringResource(R.string.settings_resource_files_notifications),
                             summary = stringResource(R.string.settings_resource_files_notifications_summary),
@@ -198,6 +229,89 @@ fun SettingsGeneralPage(
                 adapter = rememberScrollBarAdapter(lazyListState),
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = innerContentPadding,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrafficStatsNotificationRefreshIntervalPreference(
+    refreshIntervalSeconds: Int,
+    onRefreshIntervalSecondsChange: (Int) -> Unit,
+) {
+    val clampedRefreshInterval = refreshIntervalSeconds.coerceIn(
+        MinTrafficStatsNotificationRefreshIntervalSeconds,
+        MaxTrafficStatsNotificationRefreshIntervalSeconds,
+    )
+    var sliderValue by remember(refreshIntervalSeconds) {
+        mutableFloatStateOf(clampedRefreshInterval.toFloat())
+    }
+    val secondsUnit = stringResource(R.string.unit_seconds_short)
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.settings_traffic_stats_notification_refresh_interval),
+                fontSize = 14.sp,
+                fontWeight = themedFontWeight(FontWeight.Medium),
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "${sliderValue.roundToInt()} $secondsUnit",
+                    fontSize = 14.sp,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        AppSlider(
+            value = sliderValue,
+            onValueChange = { value ->
+                sliderValue = value
+            },
+            onValueChangeFinished = {
+                onRefreshIntervalSecondsChange(
+                    sliderValue.roundToInt().coerceIn(
+                        MinTrafficStatsNotificationRefreshIntervalSeconds,
+                        MaxTrafficStatsNotificationRefreshIntervalSeconds,
+                    ),
+                )
+            },
+            valueRange = MinTrafficStatsNotificationRefreshIntervalSeconds.toFloat()..
+                MaxTrafficStatsNotificationRefreshIntervalSeconds.toFloat(),
+            steps = MaxTrafficStatsNotificationRefreshIntervalSeconds -
+                MinTrafficStatsNotificationRefreshIntervalSeconds - 1,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "$MinTrafficStatsNotificationRefreshIntervalSeconds $secondsUnit",
+                fontSize = 11.sp,
+                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
+            Text(
+                text = "$MaxTrafficStatsNotificationRefreshIntervalSeconds $secondsUnit",
+                fontSize = 11.sp,
+                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
             )
         }
     }

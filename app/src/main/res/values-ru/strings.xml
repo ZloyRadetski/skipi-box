@@ -281,6 +281,7 @@
     <string name="settings_private_addresses_empty">Диапазоны CIDR не добавлены</string>
     <string name="settings_traffic_stats_notification">Показывать статистику трафика</string>
     <string name="settings_traffic_stats_notification_summary">Выводить текущую скорость и общий объем трафика в шторке уведомлений</string>
+    <string name="settings_traffic_stats_notification_refresh_interval">Интервал обновления</string>
     <string name="settings_ipv6_summary">Включить поддержку IPv6</string>
     <string name="settings_ipv6_prefer">Приоритет IPv6</string>
     <string name="settings_ipv6_prefer_summary">Предпочитать IPv6-адреса при установлении соединений</string>
@@ -967,6 +968,8 @@
     <string name="proxy_active_server_status_stopped">Туннель остановлен</string>
     <string name="proxy_active_server_select_to_connect">Выберите сервер для подключения</string>
     <string name="settings_reset">Сброс</string>
+    <string name="settings_reset_tunnel">Сбросить туннель</string>
+    <string name="settings_reset_tunnel_summary">Принудительно остановить VPN-туннель и прокси-ядро, не меняя серверы и настройки.</string>
     <string name="settings_reset_vpn">Сбросить настройки VPN</string>
     <string name="settings_reset_vpn_summary">Восстановить настройки туннеля и общие VPN-настройки, не удаляя подписки, серверы и .conf-файлы.</string>
     <string name="settings_reset_app">Сбросить приложение</string>
@@ -975,6 +978,11 @@
     <string name="settings_reset_vpn_confirm_summary">VPN будет остановлен. Сбросятся настройки туннеля в каждом конфиге и общие VPN-настройки. Подписки, серверы и .conf-файлы останутся.</string>
     <string name="settings_reset_vpn_confirm">Сбросить</string>
     <string name="settings_reset_vpn_completed">Настройки VPN сброшены</string>
+    <string name="settings_reset_tunnel_confirm_title">Сбросить туннель?</string>
+    <string name="settings_reset_tunnel_confirm_summary">VPN-туннель и прокси-ядро будут остановлены. Серверы и настройки останутся без изменений.</string>
+    <string name="settings_reset_tunnel_confirm">Остановить туннель</string>
+    <string name="settings_reset_tunnel_completed">Туннель остановлен</string>
+    <string name="settings_reset_tunnel_failed">Не удалось остановить туннель</string>
     <string name="settings_reset_app_confirm_title">Сбросить SKIPI полностью?</string>
     <string name="settings_reset_app_confirm_summary">VPN будет остановлен, а все данные приложения будут удалены: подписки, ручные серверы, автобалансеры, конфиги, правила и настройки. Это нельзя отменить.</string>
     <string name="settings_reset_app_confirm">Сбросить</string>

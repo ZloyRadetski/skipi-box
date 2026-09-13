@@ -332,6 +332,13 @@ internal class AppSettingsPreferences(
                 KeyEnableTrafficStatsNotification,
                 defaults.enableTrafficStatsNotification,
             ),
+            trafficStatsNotificationRefreshIntervalSeconds = preferences.getInt(
+                KeyTrafficStatsNotificationRefreshIntervalSeconds,
+                defaults.trafficStatsNotificationRefreshIntervalSeconds,
+            ).coerceIn(
+                app.MinTrafficStatsNotificationRefreshIntervalSeconds,
+                app.MaxTrafficStatsNotificationRefreshIntervalSeconds,
+            ),
             enableResourceFileNotifications = preferences.getBoolean(
                 KeyEnableResourceFileNotifications,
                 defaults.enableResourceFileNotifications,
@@ -421,7 +428,7 @@ internal class AppSettingsPreferences(
             .putInt(KeyColorMode, state.colorMode)
             .putInt(KeyLanguageMode, state.languageMode)
             .putInt(KeyFontFamilyMode, state.fontFamilyMode)
-            .putInt(KeyFontSizeMode, state.fontSizeMode)
+            .putInt(KeyFontSizeMode, normalizeFontSizeMode(state.fontSizeMode))
             .putInt(KeyFontWeightMode, state.fontWeightMode)
             .putBoolean(KeyEnableMaterialYou, state.enableMaterialYou)
             .putInt(KeySeedIndex, state.seedIndex)
@@ -519,6 +526,13 @@ internal class AppSettingsPreferences(
             .putString(KeyFragmentLength, state.fragmentLength)
             .putString(KeyFragmentInterval, state.fragmentInterval)
             .putBoolean(KeyEnableTrafficStatsNotification, state.enableTrafficStatsNotification)
+            .putInt(
+                KeyTrafficStatsNotificationRefreshIntervalSeconds,
+                state.trafficStatsNotificationRefreshIntervalSeconds.coerceIn(
+                    app.MinTrafficStatsNotificationRefreshIntervalSeconds,
+                    app.MaxTrafficStatsNotificationRefreshIntervalSeconds,
+                ),
+            )
             .putBoolean(KeyEnableResourceFileNotifications, state.enableResourceFileNotifications)
             .putBoolean(KeyShowServerSearch, state.showServerSearch)
             .putInt(KeyConnectionDisplayMode, state.connectionDisplayMode)
@@ -886,6 +900,8 @@ private const val KeyFragmentPackets = "fragment_packets"
 private const val KeyFragmentLength = "fragment_length"
 private const val KeyFragmentInterval = "fragment_interval"
 private const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_notification"
+private const val KeyTrafficStatsNotificationRefreshIntervalSeconds =
+    "traffic_stats_notification_refresh_interval_seconds"
 private const val KeyEnableResourceFileNotifications = "enable_resource_file_notifications"
 private const val KeyShowServerSearch = "show_server_search"
 private const val KeyConnectionDisplayMode = "connection_display_mode"

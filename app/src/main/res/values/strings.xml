@@ -282,6 +282,7 @@
     <string name="settings_private_addresses_empty">No CIDR ranges added</string>
     <string name="settings_traffic_stats_notification">Show traffic statistics</string>
     <string name="settings_traffic_stats_notification_summary">Show current speed and total traffic in notifications</string>
+    <string name="settings_traffic_stats_notification_refresh_interval">Refresh interval</string>
     <string name="settings_ipv6_summary">Enable IPv6 support</string>
     <string name="settings_ipv6_prefer">IPv6 preferred</string>
     <string name="settings_ipv6_prefer_summary">Prefer IPv6 addresses when connecting</string>
@@ -964,6 +965,8 @@
     <string name="url_scheme_clashmeta_desc">Clash.Meta subscription import</string>
     <string name="url_scheme_flclash_desc">FlClash subscription import</string>
     <string name="settings_reset">Reset</string>
+    <string name="settings_reset_tunnel">Reset tunnel</string>
+    <string name="settings_reset_tunnel_summary">Force-stop the VPN tunnel and proxy core without changing your servers or settings.</string>
     <string name="settings_reset_vpn">Reset VPN settings</string>
     <string name="settings_reset_vpn_summary">Restore tunnel and global VPN defaults without deleting subscriptions, servers or .conf files.</string>
     <string name="settings_reset_app">Reset application</string>
@@ -972,6 +975,11 @@
     <string name="settings_reset_vpn_confirm_summary">The VPN will stop. Tunnel settings in every configuration and global VPN defaults will be restored. Your subscriptions, servers and .conf files will stay.</string>
     <string name="settings_reset_vpn_confirm">Reset</string>
     <string name="settings_reset_vpn_completed">VPN settings reset</string>
+    <string name="settings_reset_tunnel_confirm_title">Reset tunnel?</string>
+    <string name="settings_reset_tunnel_confirm_summary">The VPN tunnel and proxy core will be stopped. Your servers and settings will remain unchanged.</string>
+    <string name="settings_reset_tunnel_confirm">Stop tunnel</string>
+    <string name="settings_reset_tunnel_completed">Tunnel stopped</string>
+    <string name="settings_reset_tunnel_failed">Could not stop the tunnel</string>
     <string name="settings_reset_app_confirm_title">Reset SKIPI completely?</string>
     <string name="settings_reset_app_confirm_summary">The VPN will stop and all application data will be erased: subscriptions, manual servers, auto balancers, configurations, routing rules and preferences. This cannot be undone.</string>
     <string name="settings_reset_app_confirm">Reset</string>

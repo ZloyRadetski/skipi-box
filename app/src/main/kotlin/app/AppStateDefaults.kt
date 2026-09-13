@@ -8,6 +8,10 @@ import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.DefaultSubscriptionUserAgent
 
 const val DefaultRouteOutboundTag = "proxy"
+const val MinTrafficStatsNotificationRefreshIntervalSeconds = 1
+const val MaxTrafficStatsNotificationRefreshIntervalSeconds = 10
+const val DefaultTrafficStatsNotificationRefreshIntervalSeconds =
+    MinTrafficStatsNotificationRefreshIntervalSeconds
 
 fun generateRandomProxyCredential(prefix: String = "skipi_"): String {
     val chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

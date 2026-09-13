@@ -74,6 +74,27 @@ class AndroidProxyEngine(
         }
     }
 
+    /**
+     * Requests an emergency shutdown without waiting for a possibly stalled
+     * start/restart operation that owns [globalOperationMutex].
+     */
+    suspend fun forceStop(): ProxyEngineStatus = withContext(Dispatchers.Default) {
+        ProxyServerLatencyTracker.cancelAll()
+        LocalProxyRuntime.clear()
+        runCatching {
+            ProxyTrafficStatsService.reconcile(appContext, null)
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to stop traffic statistics during forced tunnel shutdown", error)
+        }
+        runCatching {
+            ProxyTrafficStatsRuntimeStore.clear(appContext)
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to clear traffic statistics during forced tunnel shutdown", error)
+        }
+        vpnXrayEngine.forceStop()
+        ProxyEngineStatus(running = false, runMode = RunModeVpnService)
+    }
+
     suspend fun stopCurrentRunMode(runMode: Int): ProxyEngineStatus = stop(runMode)
 
     suspend fun shutdownCurrentRunMode(runMode: Int): ProxyEngineStatus = stop(runMode)

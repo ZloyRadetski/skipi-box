@@ -18,6 +18,8 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
+import app.MaxTrafficStatsNotificationRefreshIntervalSeconds
+import app.MinTrafficStatsNotificationRefreshIntervalSeconds
 import app.R
 import app.activeTunnelTargetDisplayName
 import data.AndroidAppStateStore
@@ -35,6 +37,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import java.util.Locale
 
 class ProxyTrafficStatsService : Service() {
@@ -205,7 +209,22 @@ class ProxyTrafficStatsService : Service() {
 
         val sessionAccumulator = accumulator
         pollingJob = serviceScope.launch {
-            CoreTrafficStatsSampler.acquire(applicationContext).use {
+            CoreTrafficStatsSampler.acquire(
+                context = applicationContext,
+                requestedRefreshIntervalMillis = notificationRefreshIntervalMillis(),
+            ).use { samplerLease ->
+                launch {
+                    stateStore.state
+                        .map { state ->
+                            trafficStatsNotificationRefreshIntervalMillis(
+                                state.trafficStatsNotificationRefreshIntervalSeconds,
+                            )
+                        }
+                        .distinctUntilChanged()
+                        .collect { refreshIntervalMillis ->
+                            samplerLease.updateRequestedRefreshIntervalMillis(refreshIntervalMillis)
+                        }
+                }
                 CoreTrafficStatsSampler.samples.collect { sharedSample ->
                     if (sharedSample == null || sharedSample.runtime != activeRuntime) return@collect
 
@@ -238,18 +257,17 @@ class ProxyTrafficStatsService : Service() {
                                 )
                             }
                     }
-                    if (activeTargetChanged && isScreenInteractive) {
+                    if (activeTargetChanged) {
                         activeTargetName = resolveActiveTargetName(runtime)
                     }
 
                     latestSample = sessionAccumulator.record(sharedSample.inboundDelta, elapsedMillis)
                     if (
-                        isScreenInteractive &&
                         shouldPublishTrafficNotification(
-                            trafficDelta = sharedSample.inboundDelta,
                             lastPublishedAtElapsedRealtime = lastNotificationPublishedAtElapsedRealtime,
                             nowElapsedRealtime = now,
                             activeTargetChanged = activeTargetChanged,
+                            refreshIntervalMillis = notificationRefreshIntervalMillis(),
                         )
                     ) {
                         publishNotification(runtime, latestSample)
@@ -375,6 +393,12 @@ class ProxyTrafficStatsService : Service() {
             blockName = getString(R.string.routing_outbound_block),
         ).takeUnless { name -> name == "—" }
             ?: runtime.serverName
+    }
+
+    private fun notificationRefreshIntervalMillis(): Long {
+        return trafficStatsNotificationRefreshIntervalMillis(
+            stateStore.state.value.trafficStatsNotificationRefreshIntervalSeconds,
+        )
     }
 
     private fun buildNotification(
@@ -515,16 +539,21 @@ class ProxyTrafficStatsService : Service() {
 }
 
 internal fun shouldPublishTrafficNotification(
-    trafficDelta: XrayTrafficBytes,
     lastPublishedAtElapsedRealtime: Long,
     nowElapsedRealtime: Long,
     activeTargetChanged: Boolean,
+    refreshIntervalMillis: Long,
 ): Boolean {
     return activeTargetChanged ||
-        trafficDelta.uplink > 0L ||
-        trafficDelta.downlink > 0L ||
         lastPublishedAtElapsedRealtime == 0L ||
-        nowElapsedRealtime - lastPublishedAtElapsedRealtime >= NotificationIdleRefreshMillis
+        nowElapsedRealtime - lastPublishedAtElapsedRealtime >= refreshIntervalMillis.coerceAtLeast(1_000L)
+}
+
+internal fun trafficStatsNotificationRefreshIntervalMillis(refreshIntervalSeconds: Int): Long {
+    return refreshIntervalSeconds.coerceIn(
+        MinTrafficStatsNotificationRefreshIntervalSeconds,
+        MaxTrafficStatsNotificationRefreshIntervalSeconds,
+    ).toLong() * 1_000L
 }
 
 private fun connectionDurationString(runtime: ProxyTrafficStatsRuntime): String {
@@ -547,7 +576,6 @@ private const val ActionDisconnect = "app.action.DISCONNECT_PROXY_FROM_NOTIFICAT
 private const val PauseRequestCode = 3002
 private const val ResumeRequestCode = 3003
 private const val DisconnectRequestCode = 3004
-private const val NotificationIdleRefreshMillis = 60_000L
 private val EmptyTrafficSample = XrayTrafficSessionSample(
     speedBytesPerSecond = XrayTrafficBytes(),
     totalBytes = XrayTrafficBytes(),

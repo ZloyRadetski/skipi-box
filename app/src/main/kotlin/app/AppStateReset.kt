@@ -5,6 +5,12 @@ package app
 
 import features.config.TrafficConfigAndroidSettings
 
+/** Clears ephemeral tunnel state without changing the user's VPN configuration. */
+internal fun AppState.withTunnelStopped(): AppState = copy(
+    proxyRunning = false,
+    unappliedRoutingRules = emptyList(),
+)
+
 /**
  * Restores only SKIPI's VPN runtime parameters. Subscription data, servers,
  * Shadowrocket .conf files and configuration routing rules are deliberately
@@ -44,6 +50,7 @@ internal fun AppState.withVpnSettingsReset(): AppState {
         fragmentLength = defaults.fragmentLength,
         fragmentInterval = defaults.fragmentInterval,
         enableTrafficStatsNotification = defaults.enableTrafficStatsNotification,
+        trafficStatsNotificationRefreshIntervalSeconds = defaults.trafficStatsNotificationRefreshIntervalSeconds,
         enableResourceFileNotifications = defaults.enableResourceFileNotifications,
         enableIpv6 = defaults.enableIpv6,
         enableIpv6Prefer = defaults.enableIpv6Prefer,

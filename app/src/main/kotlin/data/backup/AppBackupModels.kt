@@ -139,6 +139,8 @@ internal data class AppBackupSettings(
     val fragmentLength: String = BackupDefaults.fragmentLength,
     val fragmentInterval: String = BackupDefaults.fragmentInterval,
     val enableTrafficStatsNotification: Boolean = BackupDefaults.enableTrafficStatsNotification,
+    val trafficStatsNotificationRefreshIntervalSeconds: Int =
+        BackupDefaults.trafficStatsNotificationRefreshIntervalSeconds,
     val enableResourceFileNotifications: Boolean = BackupDefaults.enableResourceFileNotifications,
     val showServerSearch: Boolean = BackupDefaults.showServerSearch,
     val connectionDisplayMode: Int = BackupDefaults.connectionDisplayMode,

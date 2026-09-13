@@ -228,6 +228,7 @@
     <string name="settings_private_addresses_empty">هیچ محدوده CIDR اضافه نشده است</string>
     <string name="settings_traffic_stats_notification">نمایش آمار ترافیک</string>
     <string name="settings_traffic_stats_notification_summary">نمایش سرعت فعلی و کل ترافیک در اعلان‌ها</string>
+    <string name="settings_traffic_stats_notification_refresh_interval">فاصله به‌روزرسانی</string>
     <string name="settings_ipv6_summary">پشتیبانی IPv6 را فعال کنید</string>
     <string name="settings_ipv6_prefer">IPv6 ترجیح داده می شود</string>
     <string name="settings_ipv6_prefer_summary">هنگام اتصال، آدرس های IPv6 را ترجیح دهید</string>
@@ -880,6 +881,8 @@
     <string name="url_scheme_clashmeta_desc">وارد کردن اشتراک Clash.Meta</string>
     <string name="url_scheme_flclash_desc">واردات اشتراک FlClash</string>
     <string name="settings_reset">بازنشانی کنید</string>
+    <string name="settings_reset_tunnel">بازنشانی تونل</string>
+    <string name="settings_reset_tunnel_summary">تونل VPN و هسته پراکسی را بدون تغییر سرورها یا تنظیمات، به‌اجبار متوقف کنید.</string>
     <string name="settings_reset_vpn">تنظیمات VPN را بازنشانی کنید</string>
     <string name="settings_reset_vpn_summary">بدون حذف اشتراک‌ها، سرورها یا فایل‌های .conf، پیش‌فرض‌های تونل و VPN جهانی را بازیابی کنید.</string>
     <string name="settings_reset_app">بازنشانی برنامه</string>
@@ -888,6 +891,11 @@
     <string name="settings_reset_vpn_confirm_summary">VPN متوقف خواهد شد. تنظیمات تونل در هر پیکربندی و پیش‌فرض‌های VPN جهانی بازیابی خواهند شد. اشتراک ها، سرورها و فایل های .conf شما باقی خواهند ماند.</string>
     <string name="settings_reset_vpn_confirm">بازنشانی کنید</string>
     <string name="settings_reset_vpn_completed">تنظیمات VPN بازنشانی می شود</string>
+    <string name="settings_reset_tunnel_confirm_title">تونل بازنشانی شود؟</string>
+    <string name="settings_reset_tunnel_confirm_summary">تونل VPN و هسته پراکسی متوقف می‌شوند. سرورها و تنظیمات شما بدون تغییر می‌مانند.</string>
+    <string name="settings_reset_tunnel_confirm">توقف تونل</string>
+    <string name="settings_reset_tunnel_completed">تونل متوقف شد</string>
+    <string name="settings_reset_tunnel_failed">توقف تونل ممکن نشد</string>
     <string name="settings_reset_app_confirm_title">SKIPI به طور کامل بازنشانی شود؟</string>
     <string name="settings_reset_app_confirm_summary">VPN متوقف می شود و همه داده های برنامه پاک می شوند: اشتراک ها، سرورهای دستی، متعادل کننده های خودکار، تنظیمات، قوانین مسیریابی و تنظیمات برگزیده. این قابل واگرد نیست.</string>
     <string name="settings_reset_app_confirm">بازنشانی کنید</string>

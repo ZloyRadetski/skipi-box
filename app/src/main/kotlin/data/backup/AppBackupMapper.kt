@@ -12,6 +12,7 @@ import app.CustomResourceFileState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.modes.RunModeVpnService
+import app.modes.normalizeFontSizeMode
 import features.config.TrafficConfigState
 import features.config.withConfigProxyGroupsReflected
 import features.config.withSkipiSettingsInRawConfig
@@ -63,7 +64,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         colorMode = colorMode,
         languageMode = languageMode,
         fontFamilyMode = fontFamilyMode,
-        fontSizeMode = fontSizeMode,
+        fontSizeMode = normalizeFontSizeMode(fontSizeMode),
         fontWeightMode = fontWeightMode,
         enableMaterialYou = enableMaterialYou,
         seedIndex = seedIndex,
@@ -150,6 +151,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         fragmentLength = fragmentLength,
         fragmentInterval = fragmentInterval,
         enableTrafficStatsNotification = enableTrafficStatsNotification,
+        trafficStatsNotificationRefreshIntervalSeconds = trafficStatsNotificationRefreshIntervalSeconds,
         enableResourceFileNotifications = enableResourceFileNotifications,
         showServerSearch = showServerSearch,
         connectionDisplayMode = connectionDisplayMode,
@@ -354,7 +356,7 @@ private fun AppBackupData.toAppState(): AppState {
         colorMode = settings.colorMode,
         languageMode = settings.languageMode,
         fontFamilyMode = settings.fontFamilyMode,
-        fontSizeMode = settings.fontSizeMode,
+        fontSizeMode = normalizeFontSizeMode(settings.fontSizeMode),
         fontWeightMode = settings.fontWeightMode,
         enableMaterialYou = settings.enableMaterialYou,
         seedIndex = settings.seedIndex,
@@ -476,6 +478,10 @@ private fun AppBackupData.toAppState(): AppState {
         fragmentLength = settings.fragmentLength,
         fragmentInterval = settings.fragmentInterval,
         enableTrafficStatsNotification = settings.enableTrafficStatsNotification,
+        trafficStatsNotificationRefreshIntervalSeconds = settings.trafficStatsNotificationRefreshIntervalSeconds.coerceIn(
+            app.MinTrafficStatsNotificationRefreshIntervalSeconds,
+            app.MaxTrafficStatsNotificationRefreshIntervalSeconds,
+        ),
         enableResourceFileNotifications = settings.enableResourceFileNotifications,
         showServerSearch = settings.showServerSearch,
         connectionDisplayMode = settings.connectionDisplayMode,

@@ -9,6 +9,7 @@ import android.net.VpnService
 import android.os.SystemClock
 import app.modes.RunModeVpnService
 import app.R
+import app.withTunnelStopped
 import engine.proxy.mode.AndroidModeProxyEngine
 import engine.proxy.ProxyEngineStartRequest
 import engine.proxy.ProxyEngineStatus
@@ -53,6 +54,14 @@ internal class VpnXrayEngine(
             current.copy(unappliedRoutingRules = emptyList())
         }
         return status()
+    }
+
+    suspend fun forceStop(): ProxyEngineStatus {
+        SkipiVpnService.forceStop(context)
+        (context.applicationContext as? app.SkipiApplication)?.stateStore?.update(persist = false) { current ->
+            current.withTunnelStopped()
+        }
+        return ProxyEngineStatus(running = false, runMode = runMode)
     }
 
     override suspend fun status(): ProxyEngineStatus {

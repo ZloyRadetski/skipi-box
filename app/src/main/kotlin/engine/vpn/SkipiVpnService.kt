@@ -613,6 +613,7 @@ class SkipiVpnService : VpnService() {
         private var running = false
 
         private val startMutex = Mutex()
+        private val stopRequestLock = Any()
         private val operationSequence = AtomicLong()
         private val latestOperationId = AtomicLong()
 
@@ -666,30 +667,47 @@ class SkipiVpnService : VpnService() {
             context: Context,
             keepForegroundNotification: Boolean = false,
         ) {
-            // Only serialise creation of the service request. Holding this
-            // mutex while waiting for Android's STOP callback made a following
-            // START wait the complete 5-second stop timeout.
             val request = startMutex.withLock {
-                pendingStop ?: PendingStop(
-                    operationId = nextOperationId(),
-                    result = CompletableDeferred(),
-                ).also { pending ->
-                    pendingStop = pending
-                    running = false
-                    runCatching {
-                        context.applicationContext.startService(
-                            SkipiVpnServiceIntents.stopIntent(
-                                context = context.applicationContext,
-                                operationId = pending.operationId,
-                                keepForegroundNotification = keepForegroundNotification,
-                            ),
-                        )
-                    }.onFailure { error ->
-                        AndroidAppLogger.warn(LogTag, "Failed to request VPN service stop", error)
-                        pending.result.complete(Unit)
-                    }
+                requestStop(context, keepForegroundNotification)
+            }
+            awaitStop(request)
+        }
+
+        /**
+         * Sends STOP immediately, even while a previous START is waiting for
+         * its bounded service callback. The newer operation id invalidates the
+         * stale start so it cannot own a tunnel after recovery was requested.
+         */
+        internal suspend fun forceStop(context: Context) {
+            awaitStop(requestStop(context, keepForegroundNotification = false))
+        }
+
+        private fun requestStop(
+            context: Context,
+            keepForegroundNotification: Boolean,
+        ): PendingStop = synchronized(stopRequestLock) {
+            pendingStop ?: PendingStop(
+                operationId = nextOperationId(),
+                result = CompletableDeferred(),
+            ).also { pending ->
+                pendingStop = pending
+                running = false
+                runCatching {
+                    context.applicationContext.startService(
+                        SkipiVpnServiceIntents.stopIntent(
+                            context = context.applicationContext,
+                            operationId = pending.operationId,
+                            keepForegroundNotification = keepForegroundNotification,
+                        ),
+                    )
+                }.onFailure { error ->
+                    AndroidAppLogger.warn(LogTag, "Failed to request VPN service stop", error)
+                    pending.result.complete(Unit)
                 }
             }
+        }
+
+        private suspend fun awaitStop(request: PendingStop) {
             try {
                 withTimeout(5_000.milliseconds) {
                     request.result.await()
@@ -699,9 +717,7 @@ class SkipiVpnService : VpnService() {
                 // tear down the old core unless a newer START supersedes it.
                 AndroidAppLogger.warn(LogTag, "VPN service stop timed out", error)
             } finally {
-                if (pendingStop === request) {
-                    pendingStop = null
-                }
+                clearPendingStop(request)
             }
         }
 
@@ -735,10 +751,20 @@ class SkipiVpnService : VpnService() {
         }
 
         private fun completeStop(operationId: Long) {
-            val request = pendingStop
-            if (request != null && request.operationId == operationId) {
-                request.result.complete(Unit)
-                pendingStop = null
+            synchronized(stopRequestLock) {
+                val request = pendingStop
+                if (request != null && request.operationId == operationId) {
+                    request.result.complete(Unit)
+                    pendingStop = null
+                }
+            }
+        }
+
+        private fun clearPendingStop(request: PendingStop) {
+            synchronized(stopRequestLock) {
+                if (pendingStop === request) {
+                    pendingStop = null
+                }
             }
         }
 

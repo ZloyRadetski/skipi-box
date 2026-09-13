@@ -242,6 +242,7 @@
     <string name="settings_private_addresses_empty">未添加 CIDR 范围</string>
     <string name="settings_traffic_stats_notification">显示流量统计</string>
     <string name="settings_traffic_stats_notification_summary">在通知中显示当前速度和总流量</string>
+    <string name="settings_traffic_stats_notification_refresh_interval">刷新间隔</string>
     <string name="settings_ipv6_summary">启用 IPv6 支持</string>
     <string name="settings_ipv6_prefer">IPv6首选</string>
     <string name="settings_ipv6_prefer_summary">连接时首选 IPv6 地址</string>
@@ -902,6 +903,8 @@
     <string name="url_scheme_clashmeta_desc">Clash.Meta 订阅导入</string>
     <string name="url_scheme_flclash_desc">FlClash 订阅导入</string>
     <string name="settings_reset">重置</string>
+    <string name="settings_reset_tunnel">重置隧道</string>
+    <string name="settings_reset_tunnel_summary">强制停止 VPN 隧道和代理核心，不会更改服务器或设置。</string>
     <string name="settings_reset_vpn">重置 VPN 设置</string>
     <string name="settings_reset_vpn_summary">恢复隧道和全局 VPN 默认值，无需删除订阅、服务器或 .conf 文件。</string>
     <string name="settings_reset_app">重置应用程序</string>
@@ -910,6 +913,11 @@
     <string name="settings_reset_vpn_confirm_summary">VPN 将停止。每个配置中的隧道设置和全局 VPN 默认值都将恢复。您的订阅、服务器和 .conf 文件将保留。</string>
     <string name="settings_reset_vpn_confirm">重置</string>
     <string name="settings_reset_vpn_completed">VPN 设置重置</string>
+    <string name="settings_reset_tunnel_confirm_title">重置隧道？</string>
+    <string name="settings_reset_tunnel_confirm_summary">VPN 隧道和代理核心将被停止。服务器和设置将保持不变。</string>
+    <string name="settings_reset_tunnel_confirm">停止隧道</string>
+    <string name="settings_reset_tunnel_completed">隧道已停止</string>
+    <string name="settings_reset_tunnel_failed">无法停止隧道</string>
     <string name="settings_reset_app_confirm_title">完全重置 SKIPI 吗？</string>
     <string name="settings_reset_app_confirm_summary">VPN 将停止，所有应用程序数据将被删除：订阅、手动服务器、自动平衡器、配置、路由规则和首选项。此操作无法撤消。</string>
     <string name="settings_reset_app_confirm">重置</string>

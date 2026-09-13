@@ -68,31 +68,51 @@ fun normalizeFontFamilyMode(value: Int): Int = when (value) {
     else -> FontFamilyModeDefault
 }
 
-const val FontSizeModeTiny = 0
-const val FontSizeModeExtraSmall = 1
-const val FontSizeModeVerySmall = 2
-const val FontSizeModeSmall = 3
-const val FontSizeModeDefault = 4
-const val FontSizeModeMedium = 5
-const val FontSizeModeLarge = 6
-const val FontSizeModeExtraLarge = 7
+/** Font scale values are persisted as percentages in five-percent increments. */
+const val FontSizeModeTiny = 55
+const val FontSizeModeExtraSmall = 65
+const val FontSizeModeVerySmall = 75
+const val FontSizeModeSmall = 85
+const val FontSizeModeDefault = 100
+const val FontSizeModeMedium = 115
+const val FontSizeModeLarge = 130
+const val FontSizeModeExtraLarge = 145
+const val FontSizeModeStepPercent = 5
 
-fun normalizeFontSizeMode(value: Int): Int = when (value) {
-    in FontSizeModeTiny..FontSizeModeExtraLarge -> value
+/**
+ * Keeps values from releases that stored one of eight font-size option indices
+ * (0 through 7), while accepting the current five-percent slider values.
+ */
+fun normalizeFontSizeMode(value: Int): Int = when {
+    value in LegacyFontSizeModeTiny..LegacyFontSizeModeExtraLarge -> legacyFontSizeModePercent(value)
+    value in FontSizeModeTiny..FontSizeModeExtraLarge &&
+        (value - FontSizeModeTiny) % FontSizeModeStepPercent == 0 -> value
+
     else -> FontSizeModeDefault
 }
 
-fun resolveFontSizeScale(fontSizeMode: Int): Float = when (normalizeFontSizeMode(fontSizeMode)) {
-    FontSizeModeTiny -> 0.55f
-    FontSizeModeExtraSmall -> 0.65f
-    FontSizeModeVerySmall -> 0.75f
-    FontSizeModeSmall -> 0.85f
-    FontSizeModeDefault -> 1.0f
-    FontSizeModeMedium -> 1.15f
-    FontSizeModeLarge -> 1.30f
-    FontSizeModeExtraLarge -> 1.45f
-    else -> 1.0f
+fun resolveFontSizeScale(fontSizeMode: Int): Float = normalizeFontSizeMode(fontSizeMode) / 100f
+
+private fun legacyFontSizeModePercent(value: Int): Int = when (value) {
+    LegacyFontSizeModeTiny -> FontSizeModeTiny
+    LegacyFontSizeModeExtraSmall -> FontSizeModeExtraSmall
+    LegacyFontSizeModeVerySmall -> FontSizeModeVerySmall
+    LegacyFontSizeModeSmall -> FontSizeModeSmall
+    LegacyFontSizeModeDefault -> FontSizeModeDefault
+    LegacyFontSizeModeMedium -> FontSizeModeMedium
+    LegacyFontSizeModeLarge -> FontSizeModeLarge
+    LegacyFontSizeModeExtraLarge -> FontSizeModeExtraLarge
+    else -> FontSizeModeDefault
 }
+
+private const val LegacyFontSizeModeTiny = 0
+private const val LegacyFontSizeModeExtraSmall = 1
+private const val LegacyFontSizeModeVerySmall = 2
+private const val LegacyFontSizeModeSmall = 3
+private const val LegacyFontSizeModeDefault = 4
+private const val LegacyFontSizeModeMedium = 5
+private const val LegacyFontSizeModeLarge = 6
+private const val LegacyFontSizeModeExtraLarge = 7
 
 const val FontWeightModeDefault = 0
 const val FontWeightModeLight = 1

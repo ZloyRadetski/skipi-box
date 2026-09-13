@@ -63,9 +63,24 @@ class UiModesTest {
         assertEquals(FontSizeModeMedium, normalizeFontSizeMode(FontSizeModeMedium))
         assertEquals(FontSizeModeLarge, normalizeFontSizeMode(FontSizeModeLarge))
         assertEquals(FontSizeModeExtraLarge, normalizeFontSizeMode(FontSizeModeExtraLarge))
+        assertEquals(60, normalizeFontSizeMode(60))
+        assertEquals(90, normalizeFontSizeMode(90))
+        assertEquals(105, normalizeFontSizeMode(105))
+        assertEquals(140, normalizeFontSizeMode(140))
+
+        // Font-size indices written by older versions keep their visual scale.
+        assertEquals(FontSizeModeTiny, normalizeFontSizeMode(0))
+        assertEquals(FontSizeModeExtraSmall, normalizeFontSizeMode(1))
+        assertEquals(FontSizeModeVerySmall, normalizeFontSizeMode(2))
+        assertEquals(FontSizeModeSmall, normalizeFontSizeMode(3))
+        assertEquals(FontSizeModeDefault, normalizeFontSizeMode(4))
+        assertEquals(FontSizeModeMedium, normalizeFontSizeMode(5))
+        assertEquals(FontSizeModeLarge, normalizeFontSizeMode(6))
+        assertEquals(FontSizeModeExtraLarge, normalizeFontSizeMode(7))
 
         // Invalid values default to FontSizeModeDefault
         assertEquals(FontSizeModeDefault, normalizeFontSizeMode(-1))
+        assertEquals(FontSizeModeDefault, normalizeFontSizeMode(58))
         assertEquals(FontSizeModeDefault, normalizeFontSizeMode(99))
     }
 
@@ -79,6 +94,9 @@ class UiModesTest {
         assertEquals(1.15f, resolveFontSizeScale(FontSizeModeMedium), 0.001f)
         assertEquals(1.30f, resolveFontSizeScale(FontSizeModeLarge), 0.001f)
         assertEquals(1.45f, resolveFontSizeScale(FontSizeModeExtraLarge), 0.001f)
+        assertEquals(0.60f, resolveFontSizeScale(60), 0.001f)
+        assertEquals(1.05f, resolveFontSizeScale(105), 0.001f)
+        assertEquals(1.40f, resolveFontSizeScale(140), 0.001f)
         assertEquals(1.0f, resolveFontSizeScale(-1), 0.001f)
     }
 
@@ -108,4 +126,3 @@ class UiModesTest {
         org.junit.Assert.assertFalse(isFontWeightSupported(FontFamilyModeClimateCrisis))
     }
 }
-

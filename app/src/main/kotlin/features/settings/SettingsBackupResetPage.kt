@@ -34,6 +34,7 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
+import app.withTunnelStopped
 import app.withVpnSettingsReset
 import data.backup.AppBackupRestorePreview
 import features.proxy.server.usecase.ProxyServiceResult
@@ -74,6 +75,8 @@ fun SettingsBackupResetPage(
     var backupRestoreInProgress by rememberSaveable { mutableStateOf(false) }
     var resetInProgress by rememberSaveable { mutableStateOf(false) }
     var pendingRestorePreview by remember { mutableStateOf<AppBackupRestorePreview?>(null) }
+    var tunnelResetInProgress by rememberSaveable { mutableStateOf(false) }
+    var showTunnelResetConfirmation by rememberSaveable { mutableStateOf(false) }
     var showVpnResetConfirmation by rememberSaveable { mutableStateOf(false) }
     var showAppResetConfirmation by rememberSaveable { mutableStateOf(false) }
 
@@ -83,6 +86,8 @@ fun SettingsBackupResetPage(
     val restoreReadFailedMessage = stringResource(R.string.settings_restore_read_failed)
     val restoreCompletedMessage = stringResource(R.string.settings_restore_completed)
     val restoreFailedMessage = stringResource(R.string.settings_restore_failed)
+    val tunnelResetCompletedMessage = stringResource(R.string.settings_reset_tunnel_completed)
+    val tunnelResetFailedMessage = stringResource(R.string.settings_reset_tunnel_failed)
     val vpnResetCompletedMessage = stringResource(R.string.settings_reset_vpn_completed)
     val appResetCompletedMessage = stringResource(R.string.settings_reset_app_completed)
     val resetFailedMessage = stringResource(R.string.settings_reset_failed)
@@ -179,14 +184,31 @@ fun SettingsBackupResetPage(
                     SmallTitle(text = stringResource(R.string.settings_reset))
                     SettingsSectionCard {
                         ArrowPreference(
+                            title = stringResource(R.string.settings_reset_tunnel),
+                            summary = stringResource(R.string.settings_reset_tunnel_summary),
+                            onClick = {
+                                if (!tunnelResetInProgress) {
+                                    showTunnelResetConfirmation = true
+                                }
+                            },
+                        )
+                        ArrowPreference(
                             title = stringResource(R.string.settings_reset_vpn),
                             summary = stringResource(R.string.settings_reset_vpn_summary),
-                            onClick = { showVpnResetConfirmation = true },
+                            onClick = {
+                                if (!resetInProgress && !tunnelResetInProgress) {
+                                    showVpnResetConfirmation = true
+                                }
+                            },
                         )
                         ArrowPreference(
                             title = stringResource(R.string.settings_reset_app),
                             summary = stringResource(R.string.settings_reset_app_summary),
-                            onClick = { showAppResetConfirmation = true },
+                            onClick = {
+                                if (!resetInProgress && !tunnelResetInProgress) {
+                                    showAppResetConfirmation = true
+                                }
+                            },
                         )
                     }
                 }
@@ -224,6 +246,40 @@ fun SettingsBackupResetPage(
                                 tipNotifier.showError(error, restoreFailedMessage)
                             } finally {
                                 backupRestoreInProgress = false
+                            }
+                        }
+                    }
+                },
+            )
+
+            WarningConfirmDialog(
+                show = showTunnelResetConfirmation,
+                title = stringResource(R.string.settings_reset_tunnel_confirm_title),
+                summary = stringResource(R.string.settings_reset_tunnel_confirm_summary),
+                dismissText = stringResource(R.string.common_cancel),
+                confirmText = stringResource(R.string.settings_reset_tunnel_confirm),
+                onDismissRequest = { showTunnelResetConfirmation = false },
+                onConfirm = {
+                    if (!tunnelResetInProgress) {
+                        tunnelResetInProgress = true
+                        showTunnelResetConfirmation = false
+                        scope.launch {
+                            try {
+                                when (val result = proxyServiceUseCase.forceShutdown()) {
+                                    is ProxyServiceResult.Success,
+                                    ProxyServiceResult.MissingServer -> {
+                                        updateAppState { state -> state.withTunnelStopped() }
+                                        tipNotifier.show(tunnelResetCompletedMessage)
+                                    }
+
+                                    is ProxyServiceResult.Failed -> {
+                                        tipNotifier.showError(result.error, tunnelResetFailedMessage)
+                                    }
+                                }
+                            } catch (error: Throwable) {
+                                tipNotifier.showError(error, tunnelResetFailedMessage)
+                            } finally {
+                                tunnelResetInProgress = false
                             }
                         }
                     }

@@ -80,7 +80,7 @@ class FontFamilyModeTest {
     fun testBackupRestorePreservesFontSettings() {
         val state = AppState(
             fontFamilyMode = FontFamilyModeJetBrainsMono,
-            fontSizeMode = FontSizeModeLarge,
+            fontSizeMode = 105,
             fontWeightMode = FontWeightModeBold,
         )
         val backup = state.toAppBackupFile(
@@ -90,8 +90,24 @@ class FontFamilyModeTest {
         )
         val restored = backup.toRestorePreview().restoredState
         assertEquals(FontFamilyModeJetBrainsMono, restored.fontFamilyMode)
-        assertEquals(FontSizeModeLarge, restored.fontSizeMode)
+        assertEquals(105, restored.fontSizeMode)
         assertEquals(FontWeightModeBold, restored.fontWeightMode)
+    }
+
+    @Test
+    fun testBackupRestoreMigratesLegacyFontSizeIndex() {
+        val backup = AppState().toAppBackupFile(
+            createdAtMillis = 1000L,
+            appVersionName = "1.0.0",
+            appVersionCode = 1,
+        )
+        val legacyBackup = backup.copy(
+            data = backup.data.copy(
+                settings = backup.data.settings.copy(fontSizeMode = 6),
+            ),
+        )
+
+        assertEquals(FontSizeModeLarge, legacyBackup.toRestorePreview().restoredState.fontSizeMode)
     }
 
     @Test
@@ -104,4 +120,3 @@ class FontFamilyModeTest {
         org.junit.Assert.assertFalse(state.enableResourceFileNotifications)
     }
 }
-

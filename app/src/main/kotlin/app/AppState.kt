@@ -177,6 +177,8 @@ data class AppState(
     val fragmentInterval: String = DefaultFragmentInterval,
 
     val enableTrafficStatsNotification: Boolean = true,
+    /** How often the persistent traffic notification refreshes while it is enabled. */
+    val trafficStatsNotificationRefreshIntervalSeconds: Int = DefaultTrafficStatsNotificationRefreshIntervalSeconds,
     /** Show system notifications while geo/resource files are being updated. */
     val enableResourceFileNotifications: Boolean = false,
     val showServerSearch: Boolean = false,

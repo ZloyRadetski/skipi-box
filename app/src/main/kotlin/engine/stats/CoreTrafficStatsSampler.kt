@@ -15,12 +15,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 
 /**
  * One immutable result of the only native traffic-counter read performed for a
@@ -44,8 +45,9 @@ internal data class CoreTrafficStatsSample(
 internal object CoreTrafficStatsSampler {
     private val lock = Any()
     private val samplingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val activeLeases = mutableSetOf<Long>()
+    private val activeLeases = mutableMapOf<Long, Long?>()
     private val mutableSamples = MutableStateFlow<CoreTrafficStatsSample?>(null)
+    private val mutablePollingPolicyVersion = MutableStateFlow(0L)
 
     val samples: StateFlow<CoreTrafficStatsSample?> = mutableSamples.asStateFlow()
 
@@ -74,8 +76,13 @@ internal object CoreTrafficStatsSampler {
      * Acquires one consumer lease. The caller must close it when its screen,
      * notification or widget is no longer active.
      */
-    fun acquire(context: Context): Closeable {
+    fun acquire(
+        context: Context,
+        requestedRefreshIntervalMillis: Long? = null,
+    ): CoreTrafficStatsLease {
         val applicationContext = context.applicationContext
+        val normalizedRequestedInterval = requestedRefreshIntervalMillis
+            ?.coerceAtLeast(MinimumRequestedRefreshIntervalMillis)
         // Rehydrate the runtime after process recreation. Reading preferences
         // here is intentionally one-off; the sampler loop never polls them.
         val storedRuntime = ProxyTrafficStatsRuntimeStore.read(applicationContext)
@@ -86,7 +93,8 @@ internal object CoreTrafficStatsSampler {
                 stopPollingLocked(clearSample = true)
             }
             val id = ++nextLeaseId
-            activeLeases += id
+            activeLeases[id] = normalizedRequestedInterval
+            signalPollingPolicyChangedLocked()
             startPollingIfNeededLocked()
             id
         }
@@ -95,10 +103,27 @@ internal object CoreTrafficStatsSampler {
 
     private fun release(leaseId: Long) {
         synchronized(lock) {
-            if (!activeLeases.remove(leaseId)) return
+            if (!activeLeases.containsKey(leaseId)) return
+            activeLeases.remove(leaseId)
+            signalPollingPolicyChangedLocked()
             if (activeLeases.isEmpty()) {
                 stopPollingLocked(clearSample = true)
             }
+        }
+    }
+
+    private fun updateRequestedRefreshInterval(
+        leaseId: Long,
+        requestedRefreshIntervalMillis: Long?,
+    ) {
+        val normalizedRequestedInterval = requestedRefreshIntervalMillis
+            ?.coerceAtLeast(MinimumRequestedRefreshIntervalMillis)
+        synchronized(lock) {
+            if (!activeLeases.containsKey(leaseId) || activeLeases[leaseId] == normalizedRequestedInterval) return
+            activeLeases[leaseId] = normalizedRequestedInterval
+            // Interrupt the current delay rather than leaving a newly selected
+            // one-second cadence waiting behind an old ten-second interval.
+            signalPollingPolicyChangedLocked()
         }
     }
 
@@ -189,21 +214,55 @@ internal object CoreTrafficStatsSampler {
                 )
             }
 
-            delay(
-                coreTrafficStatsPollIntervalMillis(
+            val pollingPolicy = currentPollingPolicy()
+            awaitNextPoll(
+                delayMillis = coreTrafficStatsPollIntervalMillis(
                     isScreenInteractive = powerManager?.isInteractive ?: true,
                     hasMeaningfulTraffic = hasMeaningfulTraffic,
+                    requestedRefreshIntervalMillis = pollingPolicy.requestedRefreshIntervalMillis,
+                    hasDefaultFrequencyConsumer = pollingPolicy.hasDefaultFrequencyConsumer,
                 ),
+                observedPolicyVersion = pollingPolicy.version,
             )
+        }
+    }
+
+    private fun currentPollingPolicy(): PollingPolicy = synchronized(lock) {
+        PollingPolicy(
+            version = mutablePollingPolicyVersion.value,
+            requestedRefreshIntervalMillis = activeLeases.values.filterNotNull().minOrNull(),
+            hasDefaultFrequencyConsumer = activeLeases.values.any { interval -> interval == null },
+        )
+    }
+
+    private fun signalPollingPolicyChangedLocked() {
+        mutablePollingPolicyVersion.value += 1L
+    }
+
+    private suspend fun awaitNextPoll(
+        delayMillis: Long,
+        observedPolicyVersion: Long,
+    ) {
+        withTimeoutOrNull(delayMillis) {
+            mutablePollingPolicyVersion.first { version -> version != observedPolicyVersion }
         }
     }
 
     private fun isCurrent(token: Long): Boolean = synchronized(lock) { generation == token }
 
-    private class CoreTrafficStatsLease(
+    internal class CoreTrafficStatsLease(
         private val leaseId: Long,
     ) : Closeable {
         private val released = AtomicBoolean(false)
+
+        fun updateRequestedRefreshIntervalMillis(requestedRefreshIntervalMillis: Long?) {
+            if (!released.get()) {
+                CoreTrafficStatsSampler.updateRequestedRefreshInterval(
+                    leaseId = leaseId,
+                    requestedRefreshIntervalMillis = requestedRefreshIntervalMillis,
+                )
+            }
+        }
 
         override fun close() {
             if (released.compareAndSet(false, true)) {
@@ -214,19 +273,37 @@ internal object CoreTrafficStatsSampler {
 
     private const val LogTag = "CoreTrafficStatsSampler"
     private const val MaxConsecutiveFailures = 5
+    private const val MinimumRequestedRefreshIntervalMillis = 1_000L
+
+    private data class PollingPolicy(
+        val version: Long,
+        val requestedRefreshIntervalMillis: Long?,
+        val hasDefaultFrequencyConsumer: Boolean,
+    )
 }
 
 /**
  * Keeps immediate feedback while traffic is flowing, but does not wake the CPU
- * at one-second cadence for an idle screen or for a pocketed device.
+ * at one-second cadence for an idle screen or for a pocketed device unless the
+ * traffic-notification consumer explicitly requested that cadence.
  */
 internal fun coreTrafficStatsPollIntervalMillis(
     isScreenInteractive: Boolean,
     hasMeaningfulTraffic: Boolean,
-): Long = when {
-    !isScreenInteractive -> CoreTrafficStatsScreenOffPollIntervalMillis
-    hasMeaningfulTraffic -> CoreTrafficStatsActivePollIntervalMillis
-    else -> CoreTrafficStatsIdlePollIntervalMillis
+    requestedRefreshIntervalMillis: Long? = null,
+    hasDefaultFrequencyConsumer: Boolean = false,
+): Long {
+    val defaultInterval = when {
+        !isScreenInteractive -> CoreTrafficStatsScreenOffPollIntervalMillis
+        hasMeaningfulTraffic -> CoreTrafficStatsActivePollIntervalMillis
+        else -> CoreTrafficStatsIdlePollIntervalMillis
+    }
+    val requestedInterval = requestedRefreshIntervalMillis ?: return defaultInterval
+    return if (hasDefaultFrequencyConsumer) {
+        minOf(defaultInterval, requestedInterval)
+    } else {
+        requestedInterval
+    }
 }
 
 internal const val CoreTrafficStatsActivePollIntervalMillis = 2_000L

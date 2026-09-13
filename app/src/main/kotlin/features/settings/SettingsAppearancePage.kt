@@ -15,6 +15,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,7 +61,11 @@ import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
 import app.modes.ConnectionDisplayModeClassic
+import app.modes.FontSizeModeExtraLarge
+import app.modes.FontSizeModeStepPercent
+import app.modes.FontSizeModeTiny
 import app.modes.normalizeBackgroundStyle
+import app.modes.normalizeFontSizeMode
 import ui.background.clearCustomBackgroundPhoto
 import ui.background.customBackgroundPhotoExists
 import ui.background.saveCustomBackgroundPhoto
@@ -83,6 +89,7 @@ import features.settings.sheets.appIconDescriptorForMode
 import ui.AppTheme
 import ui.KeyColors
 import ui.StatusColorDefaults
+import ui.components.AppSlider
 import ui.components.BackNavigationIcon
 import ui.components.ColorPickerDialog
 import ui.isInDarkTheme
@@ -92,6 +99,7 @@ import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import ui.resolveSystemAccentColor
+import kotlin.math.roundToInt
 
 private enum class ColorPickerTarget {
     MATERIAL_YOU_SEED,
@@ -209,17 +217,6 @@ fun SettingsAppearancePage(
         stringResource(R.string.settings_font_family_onest),
     )
 
-    val fontSizeOptions = listOf(
-        stringResource(R.string.settings_font_size_tiny),
-        stringResource(R.string.settings_font_size_extra_small),
-        stringResource(R.string.settings_font_size_very_small),
-        stringResource(R.string.settings_font_size_small),
-        stringResource(R.string.settings_font_size_default),
-        stringResource(R.string.settings_font_size_medium),
-        stringResource(R.string.settings_font_size_large),
-        stringResource(R.string.settings_font_size_extra_large),
-    )
-
     val fontWeightOptions = listOf(
         stringResource(R.string.settings_font_weight_default),
         stringResource(R.string.settings_font_weight_light),
@@ -281,11 +278,11 @@ fun SettingsAppearancePage(
                             selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
                             onSelectedIndexChange = { index -> updateAppState { it.copy(fontFamilyMode = index) } },
                         )
-                        AppOverlayDropdownPreference(
-                            title = stringResource(R.string.settings_font_size),
-                            items = fontSizeOptions,
-                            selectedIndex = appState.fontSizeMode.coerceIn(0, fontSizeOptions.lastIndex),
-                            onSelectedIndexChange = { index -> updateAppState { it.copy(fontSizeMode = index) } },
+                        FontSizeSliderPreference(
+                            fontSizeMode = appState.fontSizeMode,
+                            onFontSizeModeChange = { mode ->
+                                updateAppState { it.copy(fontSizeMode = mode) }
+                            },
                         )
                         AnimatedVisibility(
                             visible = app.modes.isFontWeightSupported(appState.fontFamilyMode),
@@ -817,6 +814,79 @@ fun SettingsAppearancePage(
         }
     }
 }
+
+@Composable
+private fun FontSizeSliderPreference(
+    fontSizeMode: Int,
+    onFontSizeModeChange: (Int) -> Unit,
+) {
+    val selectedMode = normalizeFontSizeMode(fontSizeMode)
+    var sliderValue by remember(selectedMode) { mutableFloatStateOf(selectedMode.toFloat()) }
+    val selectedPercent = fontSizePercent(sliderValue.roundToInt())
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.settings_font_size),
+                fontSize = 14.sp,
+                fontWeight = themedFontWeight(FontWeight.Medium),
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "$selectedPercent%",
+                    fontSize = 14.sp,
+                    fontWeight = themedFontWeight(FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        AppSlider(
+            value = sliderValue,
+            onValueChange = { value -> sliderValue = value },
+            onValueChangeFinished = {
+                onFontSizeModeChange(
+                    normalizeFontSizeMode(sliderValue.roundToInt()),
+                )
+            },
+            valueRange = FontSizeModeTiny.toFloat()..FontSizeModeExtraLarge.toFloat(),
+            steps = (FontSizeModeExtraLarge - FontSizeModeTiny) / FontSizeModeStepPercent - 1,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "${fontSizePercent(FontSizeModeTiny)}%",
+                fontSize = 11.sp,
+                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
+            Text(
+                text = "${fontSizePercent(FontSizeModeExtraLarge)}%",
+                fontSize = 11.sp,
+                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
+        }
+    }
+}
+
+private fun fontSizePercent(fontSizeMode: Int): Int = normalizeFontSizeMode(fontSizeMode)
 
 @Composable
 private fun SettingsColorItem(

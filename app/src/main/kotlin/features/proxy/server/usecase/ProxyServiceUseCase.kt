@@ -36,6 +36,9 @@ internal class ProxyServiceUseCase(
 
     suspend fun shutdown(runMode: Int): ProxyServiceResult = stop(runMode)
 
+    /** Stops a tunnel recovery path without waiting for a concurrent startup operation. */
+    suspend fun forceShutdown(): ProxyServiceResult = runCatching { proxyEngine.forceStop() }.toResult()
+
     private fun Result<ProxyEngineStatus>.toResult(): ProxyServiceResult = fold(
         onSuccess = { status -> ProxyServiceResult.Success(status.running, status.appState) },
         onFailure = { error ->
