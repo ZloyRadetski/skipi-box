@@ -478,7 +478,7 @@ fun defaultShadowrocketConfig(): String = """
     # SKIPI configuration
     [General]
     dns-server = 94.140.14.14,94.140.15.15
-    ipv6 = false
+    ipv6 = true
 
     [Rule]
     FINAL,PROXY

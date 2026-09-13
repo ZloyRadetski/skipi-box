@@ -90,4 +90,10 @@ class ShadowrocketConfigTest {
         )
         assertEquals(null, "not a config payload".decodeSkipiConfigPayloadOrNull())
     }
+
+    @Test
+    fun defaultShadowrocketConfigEnablesIpv6ByDefault() {
+        val analysis = defaultShadowrocketConfig().analyzeShadowrocketConfig()
+        assertEquals("true", analysis.general["ipv6"])
+    }
 }

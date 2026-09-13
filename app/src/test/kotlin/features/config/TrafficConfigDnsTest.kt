@@ -164,4 +164,11 @@ class TrafficConfigDnsTest {
         assertEquals(listOf("9.9.9.9", "149.112.112.112"), applied.directDns)
         assertEquals(listOf("cdn.example:203.0.113.8"), applied.dnsHosts)
     }
+
+    @Test
+    fun defaultTrafficConfigEnablesIpv6WhenApplied() {
+        val appState = AppState()
+        val applied = appState.withActiveTrafficConfigApplied()
+        assertTrue(applied.enableIpv6)
+    }
 }
