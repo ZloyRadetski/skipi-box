@@ -147,10 +147,11 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                 .collect { (autoCheck, autoInstall) ->
                     appUpdateScheduleGateway.schedulePeriodicCheck(autoCheck, autoInstall)
                     if (autoCheck) {
-                        launch(Dispatchers.IO) {
-                            val update = features.updater.GitHubReleaseChecker(applicationContext).checkLatestRelease()
-                            stateStore.update { it.copy(availableAppUpdate = update) }
-                        }
+                        // Application may be created by a tile, receiver or
+                        // widget. Queue at most one TTL-gated WorkManager job;
+                        // never perform a network request on every process
+                        // start.
+                        appUpdateScheduleGateway.enqueueAutomaticCheckIfDue(autoInstall)
                     }
                 }
         }

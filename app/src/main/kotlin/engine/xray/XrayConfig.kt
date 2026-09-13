@@ -12,6 +12,7 @@ import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.SkipiCoreRuntime
+import engine.vpn.withStrictFullTunnelApplied
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -29,7 +30,8 @@ internal data class XrayConfigRequest(
     val directDnsDomains: List<String> = appState.directDnsDomains,
     val dnsHosts: List<String> = appState.dnsHosts,
     val dnsHijackInboundTags: List<String> = listOf(XrayTags.VPN_TUN_INBOUND),
-    val statsApiConfig: XrayStatsApiConfig? = null,
+    /** Keep in-process counters for notifications, widgets, and active-route UI. */
+    val collectTrafficStats: Boolean = true,
     /**
      * The VPN startup path already needs this plan to derive direct-DNS hosts.
      * Reusing it here avoids walking every balancer member a second time.
@@ -53,12 +55,17 @@ internal data class BuiltXrayConfig(
 
 internal object XrayConfigFactory {
     fun buildXrayConfigResult(request: XrayConfigRequest): BuiltXrayConfig {
-        val customServer = request.selectedServer.server as? Custom
+        // Keep this boundary safe for future callers that do not go through
+        // VpnXrayConfigFactory (the standard VPN path applies it earlier too).
+        val resolvedRequest = request.copy(
+            appState = request.appState.withStrictFullTunnelApplied(),
+        )
+        val customServer = resolvedRequest.selectedServer.server as? Custom
         if (customServer != null) {
-            return BuiltXrayConfig(json = buildCustomXrayConfig(request, customServer))
+            return BuiltXrayConfig(json = buildCustomXrayConfig(resolvedRequest, customServer))
         }
 
-        val (generated, routingPlan) = buildGeneratedXrayConfig(request)
+        val (generated, routingPlan) = buildGeneratedXrayConfig(resolvedRequest)
         val config = generated.toJsonObject()
         return BuiltXrayConfig(
             json = encodeRuntimeXrayConfig(config),
@@ -78,6 +85,7 @@ internal object XraySpeedTestConfigFactory {
             val speedTestState = request.appState.copy(
                 enableMux = false,
                 enableFakeDns = false,
+                enableStrictFullTunnel = false,
             )
             return buildCustomXrayConfig(
                 request.copy(
@@ -92,6 +100,7 @@ internal object XraySpeedTestConfigFactory {
             enableMux = false,
             enableFakeDns = false,
             enableDirectDnsForProxyServerDomains = true,
+            enableStrictFullTunnel = false,
         )
         val rawOutboundPlan = request.outboundPlan ?: speedTestState.buildXrayOutboundPlan(request.selectedServer)
         val activeOlcRtcBridge = SkipiCoreRuntime.activeOlcRtcBridge
@@ -181,12 +190,13 @@ internal object XraySpeedTestConfigFactory {
                 appState = speedTestState,
                 proxyOutbounds = outboundPlan.proxyOutbounds,
                 primaryOutboundTag = primaryTag,
+                dnsPlan = dnsPlan,
             ),
             routing = routing,
             fakeDns = null,
             observatory = null,
             burstObservatory = null,
-            statsApiConfig = null,
+            collectTrafficStats = false,
         ).encodeToJsonString()
     }
 }
@@ -212,6 +222,8 @@ private fun buildGeneratedXrayConfig(request: XrayConfigRequest): Pair<Generated
             appState = request.appState,
             proxyOutbounds = outboundPlan.proxyOutbounds,
             primaryOutboundTag = routingPlan.primaryOutboundTag,
+            dnsPlan = dnsPlan,
+            dnsProxyOutboundTag = outboundPlan.dnsDialerProxyTag(),
         ),
         routing = buildXrayRouting(routingPlan),
         fakeDns = dnsPlan.fakeDns,
@@ -222,7 +234,7 @@ private fun buildGeneratedXrayConfig(request: XrayConfigRequest): Pair<Generated
             probeTimeout = outboundPlan.observatoryProbeTimeout,
         ),
         burstObservatory = null,
-        statsApiConfig = request.statsApiConfig,
+        collectTrafficStats = request.collectTrafficStats,
     )
     return generated to routingPlan
 }
@@ -231,8 +243,19 @@ private fun buildCustomXrayConfig(
     request: XrayConfigRequest,
     server: Custom,
 ): String {
+    check(!request.appState.enableStrictFullTunnel) {
+        "Strict full-tunnel mode cannot safely rewrite a raw Xray configuration"
+    }
+    // Logging belongs to the application rather than a pasted raw profile.
+    // Otherwise a profile's "log": {"loglevel":"none"} silently disables
+    // the access/error viewer and DNS diagnostics selected in Skipi.
     val config = CustomXrayConfigRewriter.rewrite(request, server)
-        .withXrayStatsApiConfig(request.statsApiConfig)
+        .updated {
+            put("log", request.buildXrayLogConfig())
+        }
+        .let { rewritten ->
+            if (request.collectTrafficStats) rewritten.withXrayTrafficStatsConfig() else rewritten
+        }
     return encodeRuntimeXrayConfig(config)
 }
 

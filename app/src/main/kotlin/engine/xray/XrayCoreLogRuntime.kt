@@ -16,6 +16,7 @@ internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): Lis
             CoreLogFileTailer(
                 logFiles = listOf(errorLogFile()),
                 repository = AndroidCoreLogRepository,
+                startAtEnd = false,
             ),
         )
         if (enableAccessLog) {
@@ -23,10 +24,15 @@ internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): Lis
                 CoreLogFileTailer(
                     logFiles = listOf(accessLogFile()),
                     repository = AndroidAccessLogRepository,
+                    startAtEnd = false,
                 ),
             )
         }
     }.onEach { tailer -> tailer.start() }
+}
+
+internal fun List<CoreLogFileTailer>.stopCoreLogTailers() {
+    forEach { tailer -> tailer.stop() }
 }
 
 internal fun XrayCoreLogPaths.clearCoreLogs(logTag: String) {

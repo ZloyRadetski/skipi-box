@@ -287,7 +287,7 @@ internal fun ShadowrocketPolicyGroup.toEditableStrategyGroup(
         displayMode = displayMode,
         sourceTrafficConfigId = trafficConfigId,
         sourcePolicyGroupName = name,
-        probeInterval = intervalSeconds?.let { "${it}s" } ?: "15s",
+        probeInterval = intervalSeconds?.let { "${it}s" } ?: "1m",
         probeTimeout = timeoutSeconds?.let { "${it}s" } ?: "5s",
         probeUrl = url,
         enableBurstProbe = enableBurstProbe,

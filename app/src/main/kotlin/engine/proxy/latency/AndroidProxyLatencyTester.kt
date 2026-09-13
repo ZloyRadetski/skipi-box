@@ -7,11 +7,13 @@ import android.content.Context
 import android.os.SystemClock
 import app.AppState
 import app.ProxyServerState
+import app.activeTrafficConfig
 import features.logs.AndroidAppLogger
 import engine.xray.XrayConfigRequest
 import engine.xray.XraySpeedTestConfigFactory
 import engine.xray.initializeAndroidXrayCoreEnvironment
 import features.resources.runtime.prepareXrayResourceFilePaths
+import features.resources.runtime.XrayResourceFileScope
 import engine.xray.prepareXrayCoreLogPaths
 import engine.network.NetworkDefaults
 import engine.network.toPortOrNull
@@ -42,11 +44,15 @@ import engine.vpn.toNativeRunnerConfigJson
 import engine.vpn.toTunOptions
 import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
@@ -65,6 +71,8 @@ import java.nio.channels.Selector
 import java.nio.channels.SocketChannel
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 
 private val dnsDispatcher = Dispatchers.IO.limitedParallelism(32)
@@ -80,10 +88,16 @@ internal class AndroidProxyLatencyTester(
     context: Context,
 ) {
     private val appContext = context.applicationContext
-    private val xrayDataDir by lazy {
-        val resourceFilePaths = appContext.prepareXrayResourceFilePaths()
+    private fun xrayDataDir(appState: AppState): String {
+        val scope = appState.activeTrafficConfig()?.let { config ->
+            XrayResourceFileScope(
+                trafficConfigId = config.id,
+                resourceFileSource = config.resourceSettings.source,
+            )
+        }
+        val resourceFilePaths = appContext.prepareXrayResourceFilePaths(scope = scope)
         appContext.initializeAndroidXrayCoreEnvironment(resourceFilePaths.dataDir)
-        resourceFilePaths.dataDir
+        return resourceFilePaths.dataDir
     }
     private val tempOlcRtcMutex = Mutex()
     private val tempAmneziaWgMutex = Mutex()
@@ -133,7 +147,9 @@ internal class AndroidProxyLatencyTester(
         elapsedMillis: Long,
         mode: ProxyServerLatencyTestMode,
     ) {
-        if (server.server is StrategyGroup) return
+        // A TCP socket check is not evidence that a UDP/QUIC/WebRTC proxy is
+        // usable. Do not let such a result become a future startup fallback.
+        if (!server.server.supportsTcpStartupProbe()) return
         runCatching {
             if (elapsedMillis >= 0) {
                 ProxyPingResultCache.record(appContext, server.id, elapsedMillis)
@@ -200,33 +216,31 @@ internal class AndroidProxyLatencyTester(
         val members = appState.strategyGroupMembers(strategyGroup)
             .filter { member -> member.server !is StrategyGroup }
         if (members.isEmpty()) return@withContext emptyMap()
+        val tcpProbeMembers = members.filter { member -> member.server.supportsTcpStartupProbe() }
+        if (tcpProbeMembers.isEmpty()) {
+            AndroidAppLogger.debug(
+                LogTag,
+                "Startup TCP probe skipped: group has no TCP-compatible members",
+            )
+            return@withContext emptyMap()
+        }
 
-        // 1. Persistent fast-path: verify top cached candidates in parallel.
-        val cachedCandidates = ProxyPingResultCache.freshest(appContext, members.map { member -> member.id })
+        // 1. Persistent fast-path: use the first cached TCP-compatible member
+        // that answers. Waiting for every losing candidate delayed startup even
+        // after a healthy member had already replied.
+        val cachedCandidates = ProxyPingResultCache.freshest(appContext, tcpProbeMembers.map { member -> member.id })
             .entries
             .sortedBy { entry -> entry.value }
             .take(CachedCandidateAttempts)
 
         if (cachedCandidates.isNotEmpty()) {
-            val verifiedWinner = withTimeoutOrNull(CachedCandidateBudgetMillis) {
-                coroutineScope {
-                    val deferreds = cachedCandidates.map { (candidateId, _) ->
-                        val candidate = members.firstOrNull { member -> member.id == candidateId } ?: return@map null
-                        async {
-                            val verifiedMillis = verifyCachedCandidate(candidate)
-                            if (verifiedMillis >= 0) {
-                                ProxyPingResultCache.record(appContext, candidateId, verifiedMillis)
-                                candidateId to verifiedMillis
-                            } else {
-                                ProxyPingResultCache.invalidate(appContext, candidateId)
-                                null
-                            }
-                        }
-                    }.filterNotNull()
-
-                    deferreds.awaitAll().filterNotNull().minByOrNull { it.second }
-                }
-            }
+            val verifiedWinner = firstReachableTcpStartupCandidate(
+                candidates = cachedCandidates.mapNotNull { (candidateId, _) ->
+                    tcpProbeMembers.firstOrNull { member -> member.id == candidateId }
+                },
+                budgetMillis = CachedCandidateBudgetMillis,
+                updatePersistentCache = true,
+            )
 
             if (verifiedWinner != null) {
                 AndroidAppLogger.debug(
@@ -239,7 +253,7 @@ internal class AndroidProxyLatencyTester(
 
         // 2. In-memory fast-path: if the user ran a ping test this session, use
         // the member with the lowest known latency immediately without any network calls.
-        val knownLatencies = members
+        val knownLatencies = tcpProbeMembers
             .mapNotNull { member ->
                 val parsed = member.latency.trim().removeSuffix("ms").trim().toLongOrNull()
                 if (parsed != null && parsed >= 0) member.id to parsed else null
@@ -251,25 +265,16 @@ internal class AndroidProxyLatencyTester(
             }
         }
 
-        // 3. Cold start: fast parallel race among first 4 group candidates with a strict budget (350ms).
-        val coldCandidates = members.take(4)
+        // 3. Cold start: fast race among TCP-compatible group candidates with a
+        // strict budget. UDP-only transports are left to Xray Observatory or a
+        // previously observed real-traffic member.
+        val coldCandidates = tcpProbeMembers.take(4)
         if (coldCandidates.isNotEmpty()) {
-            val coldWinner = withTimeoutOrNull(ColdCandidateBudgetMillis) {
-                coroutineScope {
-                    val deferreds = coldCandidates.map { candidate ->
-                        async {
-                            val verifiedMillis = verifyCachedCandidate(candidate)
-                            if (verifiedMillis >= 0) {
-                                ProxyPingResultCache.record(appContext, candidate.id, verifiedMillis)
-                                candidate.id to verifiedMillis
-                            } else {
-                                null
-                            }
-                        }
-                    }
-                    deferreds.awaitAll().filterNotNull().minByOrNull { it.second }
-                }
-            }
+            val coldWinner = firstReachableTcpStartupCandidate(
+                candidates = coldCandidates,
+                budgetMillis = ColdCandidateBudgetMillis,
+                updatePersistentCache = true,
+            )
 
             if (coldWinner != null) {
                 AndroidAppLogger.debug(
@@ -283,12 +288,55 @@ internal class AndroidProxyLatencyTester(
         emptyMap()
     }
 
+    private suspend fun firstReachableTcpStartupCandidate(
+        candidates: List<ProxyServerState>,
+        budgetMillis: Long,
+        updatePersistentCache: Boolean,
+    ): Pair<Int, Long>? {
+        if (candidates.isEmpty()) return null
+        return withTimeoutOrNull(budgetMillis) {
+            supervisorScope {
+                val winner = CompletableDeferred<Pair<Int, Long>?>()
+                val remaining = AtomicInteger(candidates.size)
+                candidates.forEach { candidate ->
+                    launch {
+                        val verifiedMillis = runCatching {
+                            verifyTcpStartupCandidate(candidate)
+                        }.getOrDefault(FailedDelayMillis)
+                        val result = if (verifiedMillis >= 0) {
+                            if (updatePersistentCache) {
+                                ProxyPingResultCache.record(appContext, candidate.id, verifiedMillis)
+                            }
+                            candidate.id to verifiedMillis
+                        } else {
+                            if (updatePersistentCache) {
+                                ProxyPingResultCache.invalidate(appContext, candidate.id)
+                            }
+                            null
+                        }
+                        result?.let(winner::complete)
+                        if (remaining.decrementAndGet() == 0) {
+                            winner.complete(null)
+                        }
+                    }
+                }
+                try {
+                    winner.await()
+                } finally {
+                    // The startup fallback is only a short hint. Once a member
+                    // answers, abandoned probes must not compete with the real core.
+                    coroutineContext.cancelChildren()
+                }
+            }
+        }
+    }
+
     /**
-     * One short TCP connect against a cached balancer candidate. Confirms the
-     * remembered server is still reachable before committing the tunnel start
-     * to it; returns the measured round trip or [FailedDelayMillis].
+     * One short TCP connect against a TCP-compatible balancer candidate.
+     * This is intentionally never called for Hysteria, WireGuard, AmneziaWG,
+     * OLCRTC, or an opaque custom outbound.
      */
-    private suspend fun verifyCachedCandidate(member: ProxyServerState): Long {
+    private suspend fun verifyTcpStartupCandidate(member: ProxyServerState): Long {
         val endpoint = member.server.endpoint() ?: return FailedDelayMillis
         return withContext(Dispatchers.IO) {
             val startedAt = SystemClock.elapsedRealtime()
@@ -453,7 +501,7 @@ internal class AndroidProxyLatencyTester(
             selectedServer = server,
             inbounds = emptyList<JsonObject>(),
             coreLogPaths = appContext.prepareXrayCoreLogPaths(),
-            dataDir = xrayDataDir,
+            dataDir = xrayDataDir(appState),
         )
         return executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
     }
@@ -514,7 +562,7 @@ internal class AndroidProxyLatencyTester(
                 selectedServer = server,
                 inbounds = emptyList<JsonObject>(),
                 coreLogPaths = appContext.prepareXrayCoreLogPaths(),
-                dataDir = xrayDataDir,
+                dataDir = xrayDataDir(appState),
                 outboundPlan = updatedPlan,
             )
             executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
@@ -578,7 +626,7 @@ internal class AndroidProxyLatencyTester(
                 selectedServer = server,
                 inbounds = emptyList<JsonObject>(),
                 coreLogPaths = appContext.prepareXrayCoreLogPaths(),
-                dataDir = xrayDataDir,
+                dataDir = xrayDataDir(appState),
                 outboundPlan = updatedPlan,
             )
             executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
@@ -652,6 +700,49 @@ data class ProxyServerLatencyTestResult(
 private data class ProxyServerEndpoint(
     val host: String,
     val port: Int,
+)
+
+/** A raw TCP connect may only warm startup fallback for a TCP transport. */
+internal fun ProxyServer<*>.supportsTcpStartupProbe(): Boolean {
+    return when (this) {
+        is HTTP,
+        is Socks -> true
+
+        is VLESS -> parms.usesTcpStartupTransport()
+        is VMess -> parms.usesTcpStartupTransport()
+        is Trojan -> parms.usesTcpStartupTransport()
+        is Shadowsocks -> parms.usesTcpStartupTransport()
+
+        // Hysteria2, WireGuard, AmneziaWG and OLCRTC are UDP/QUIC/WebRTC
+        // transports. Custom JSON is opaque, so treating it as TCP would be
+        // just as unsafe.
+        is Hysteria2,
+        is Wireguard,
+        is AmneziaWg,
+        is OlcRtc,
+        is Custom,
+        is StrategyGroup -> false
+
+        else -> false
+    }
+}
+
+private fun features.proxy.server.model.V2RayParameters.usesTcpStartupTransport(): Boolean {
+    return type
+        .trim()
+        .lowercase()
+        .ifBlank { "raw" } in TcpStartupTransports
+}
+
+private val TcpStartupTransports = setOf(
+    "raw",
+    "tcp",
+    "ws",
+    "websocket",
+    "httpupgrade",
+    "xhttp",
+    "splithttp",
+    "grpc",
 )
 
 private fun ProxyServer<*>.endpoint(): ProxyServerEndpoint? {

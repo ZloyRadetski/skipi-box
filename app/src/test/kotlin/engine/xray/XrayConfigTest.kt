@@ -521,7 +521,7 @@ class XrayConfigTest {
             ProxyGroupServerChoice(id = 2, rawName = "Server B"),
         )
         val line = group.toShadowrocketLine(choices)
-        assertEquals("FallbackGroup = fallback, Server A, Server B, url=http://cp.cloudflare.com/generate_204, interval=10, skipi-display=never, skipi-burst-probe=true", line)
+        assertEquals("FallbackGroup = fallback, Server A, Server B, url=http://cp.cloudflare.com/generate_204, interval=10, skipi-display=never, skipi-burst-probe=false", line)
     }
 
     @Test
@@ -539,7 +539,7 @@ class XrayConfigTest {
             ProxyGroupServerChoice(id = 2, rawName = "Server B"),
         )
         val line = group.toShadowrocketLine(choices)
-        assertEquals("AutoLeastPing = url-test, Server A, Server B, url=http://www.google.com/generate_204, interval=15, skipi-display=always, skipi-burst-probe=true", line)
+        assertEquals("AutoLeastPing = url-test, Server A, Server B, url=http://www.google.com/generate_204, interval=15, skipi-display=always, skipi-burst-probe=false", line)
     }
 
     @Test

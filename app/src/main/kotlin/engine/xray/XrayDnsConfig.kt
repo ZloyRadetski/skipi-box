@@ -26,7 +26,18 @@ internal data class XrayDnsPlan(
     val tag: String,
     val hosts: JsonObject,
     val fakeDns: JsonElement?,
+    /**
+     * Xray's DNS outbound only hands A/AAAA queries to the built-in DNS
+     * module by default.  Other record types need an explicit plaintext DNS
+     * destination, otherwise the core returns an empty RCODE 0 response.
+     */
+    val nonIpQueryFallback: XrayDnsTcpFallback,
     val routingOptions: XrayDnsRoutingOptions,
+)
+
+internal data class XrayDnsTcpFallback(
+    val address: String,
+    val port: Int = 53,
 )
 
 internal fun XrayConfigRequest.buildXrayDnsPlan(
@@ -74,6 +85,13 @@ private fun AppState.buildXrayDnsPlan(
         tag = XrayTags.PROXY_DNS,
         hosts = dnsHosts.toDnsHostsJson(),
         fakeDns = if (effectiveFakeDnsEnabled) buildXrayFakeDnsConfig() else null,
+        nonIpQueryFallback = sanitizedProxyDnsServers
+            .asSequence()
+            .mapNotNull(String::toXrayTcpDnsFallbackOrNull)
+            .firstOrNull()
+            ?: XrayDnsTcpFallback(
+                address = tunVpnDns.trim().takeIf(::isIpAddress) ?: VpnDefaults.IPV4_DNS,
+            ),
         routingOptions = XrayDnsRoutingOptions(
             routeProxyDns = xrayProxyDnsServers(
                 proxyDnsServers = sanitizedProxyDnsServers,
@@ -150,7 +168,17 @@ internal fun AppState.xrayDirectDnsDomains(
     val remoteDnsDomains = proxyDnsServers.mapNotNull { server ->
         server.remoteXrayDnsHostOrNull()?.let { host -> "domain:$host" }
     }
-    val proxyServerDomains = if (enableDirectDnsForProxyServerDomains) startupProxyServerDomains else emptyList()
+    // Each generated proxy outbound needs its endpoint address before that
+    // outbound can carry the remote DNS request.  This is especially visible
+    // for a least-ping balancer: Observatory starts probes for every member as
+    // soon as Xray starts.  Sending those endpoint lookups through proxy DNS
+    // creates a bootstrap cycle (DNS needs the proxy; the proxy needs DNS),
+    // which waits for Xray's DNS timeout before any member can become usable.
+    //
+    // Therefore endpoint bootstrap is deliberately direct regardless of the
+    // user-facing optional direct-DNS preference.  The preference predates
+    // proxy-DNS routing and cannot safely disable this required bootstrap.
+    val proxyServerDomains = startupProxyServerDomains
     return (directDnsDomains.toTrimmedNonEmptyDistinctList() + proxyServerDomains + remoteDnsDomains)
         .filterNot(systemBootstrapDnsDomains.toSet()::contains)
         .distinct()

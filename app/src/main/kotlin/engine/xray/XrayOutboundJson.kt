@@ -20,10 +20,15 @@ internal fun buildXrayOutbounds(
     appState: AppState,
     proxyOutbounds: List<XrayProxyOutboundServer>,
     primaryOutboundTag: String? = appState.defaultRouteOutboundTag,
+    dnsPlan: XrayDnsPlan? = null,
+    dnsProxyOutboundTag: String? = proxyOutbounds.firstOrNull()?.tag,
 ): JsonArray {
     val outbounds = buildJsonArray {
         if (primaryOutboundTag?.trim() == XrayTags.DEFAULT_ROUTE_LOOPBACK) {
             add(buildDefaultRouteOutbound())
+        }
+        if (appState.effectiveLocalDnsEnabled && dnsProxyOutboundTag == XrayTags.DNS_PROXY_LOOPBACK) {
+            add(buildDnsProxyLoopbackOutbound())
         }
         proxyOutbounds.forEach { outboundServer ->
             add(buildProxyOutbound(appState, outboundServer))
@@ -31,7 +36,13 @@ internal fun buildXrayOutbounds(
         add(buildFreedomOutbound(XrayTags.DIRECT, appState.xrayDirectOutboundDomainStrategy(), appState))
         add(buildSimpleOutbound(XrayTags.BLOCK, XrayProtocols.BLACKHOLE))
         if (appState.effectiveLocalDnsEnabled) {
-            add(buildSimpleOutbound(XrayTags.DNS_OUT, XrayProtocols.DNS))
+            val dnsOutbound = dnsPlan?.let { plan ->
+                buildXrayDnsOutbound(
+                    fallback = plan.nonIpQueryFallback,
+                    proxyOutboundTag = dnsProxyOutboundTag,
+                )
+            } ?: buildSimpleOutbound(XrayTags.DNS_OUT, XrayProtocols.DNS)
+            add(dnsOutbound)
         }
         if (appState.enableFragment) {
             add(buildFragmentOutbound(appState))
@@ -47,6 +58,25 @@ internal fun buildXrayOutbounds(
             if (index != primaryIndex) {
                 add(outbound)
             }
+        }
+    }
+}
+
+/**
+ * `dialerProxy` accepts an outbound tag, not a balancer tag.  A loopback is
+ * therefore used for a selected strategy group so DNS can re-enter routing and
+ * use the live balancer instead of being pinned to its initial fallback.
+ */
+internal fun XrayOutboundPlan.dnsDialerProxyTag(): String? {
+    return when (val proxyTarget = routeTargets[XrayTags.PROXY]) {
+        null -> balancers
+            .firstOrNull { balancer -> balancer.tag == XrayTags.PROXY }
+            ?.fallbackTag
+            ?: proxyOutbounds.firstOrNull()?.tag
+
+        else -> when (proxyTarget.kind) {
+            XrayRouteTargetKind.Balancer -> XrayTags.DNS_PROXY_LOOPBACK
+            XrayRouteTargetKind.Outbound -> proxyTarget.tag
         }
     }
 }
@@ -131,14 +161,9 @@ private fun buildProxyOutbound(appState: AppState, outboundServer: XrayProxyOutb
         }
     }
     if (appState.enableFragment && outboundServer.allowFragment) {
-        outbound = outbound.updated {
-            put(
-                "proxySettings",
-                buildJsonObject {
-                    put("tag", XrayTags.FRAGMENT)
-                },
-            )
-        }
+        // Xray removed outbound.proxySettings; dialerProxy is its supported
+        // replacement and keeps this generated config valid on current core.
+        outbound = outbound.withDialerProxyTag(XrayTags.FRAGMENT)
     }
     return outbound
 }
@@ -180,6 +205,48 @@ internal fun buildSimpleOutbound(tag: String, protocol: String): JsonObject {
     }
 }
 
+/**
+ * Handles all DNS query types sent by TUN/transparent clients.  The explicit
+ * catch-all rule prevents Xray's implicit empty success response for records
+ * such as HTTPS/SVCB, SRV and TXT.  It is chained through the selected proxy
+ * so the TCP fallback never escapes through Android's underlying network.
+ */
+internal fun buildXrayDnsOutbound(
+    fallback: XrayDnsTcpFallback,
+    proxyOutboundTag: String?,
+): JsonObject {
+    val outbound = buildJsonObject {
+        put("tag", XrayTags.DNS_OUT)
+        put("protocol", XrayProtocols.DNS)
+        put(
+            "settings",
+            buildJsonObject {
+                put("rewriteNetwork", "tcp")
+                put("rewriteAddress", fallback.address)
+                put("rewritePort", fallback.port)
+                put(
+                    "rules",
+                    buildJsonArray {
+                        add(
+                            buildJsonObject {
+                                put("action", "hijack")
+                                put("qType", "1,28")
+                            },
+                        )
+                        add(
+                            buildJsonObject {
+                                put("action", "direct")
+                            },
+                        )
+                    },
+                )
+            },
+        )
+    }
+    val proxyTag = proxyOutboundTag?.trim()?.takeIf(String::isNotEmpty) ?: return outbound
+    return outbound.withDialerProxyTag(proxyTag)
+}
+
 internal fun buildFreedomOutbound(
     tag: String,
     domainStrategy: String,
@@ -219,6 +286,19 @@ private fun buildDefaultRouteOutbound(): JsonObject {
             "settings",
             buildJsonObject {
                 put("inboundTag", XrayTags.DEFAULT_ROUTE_LOOPBACK_INBOUND)
+            },
+        )
+    }
+}
+
+private fun buildDnsProxyLoopbackOutbound(): JsonObject {
+    return buildJsonObject {
+        put("tag", XrayTags.DNS_PROXY_LOOPBACK)
+        put("protocol", XrayProtocols.LOOPBACK)
+        put(
+            "settings",
+            buildJsonObject {
+                put("inboundTag", XrayTags.DNS_PROXY_LOOPBACK_INBOUND)
             },
         )
     }
@@ -285,4 +365,4 @@ private fun Int.toMuxUdp443Mode(): String {
 }
 
 private const val XrayObservatoryProbeUrl = NetworkDefaults.CONNECTIVITY_CHECK_URL
-private const val XrayObservatoryProbeInterval = "10s"
+private const val XrayObservatoryProbeInterval = "1m"

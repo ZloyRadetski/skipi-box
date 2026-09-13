@@ -54,6 +54,7 @@ import engine.network.toPortOrNull
 import features.config.TrafficConfigResourceSettings
 import features.config.withSkipiSettingsInRawConfig
 import features.config.withUpdatedTrafficConfig
+import features.resources.runtime.XrayResourceFileScope
 import features.subscription.sanitizeSubscriptionIntervalInput
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -92,6 +93,10 @@ fun ResourceManagementPage(
     val trafficConfig = appState.trafficConfigs.firstOrNull { config -> config.id == trafficConfigId }
         ?: return
     val resourceSettings = trafficConfig.resourceSettings
+    val resourceScope = XrayResourceFileScope(
+        trafficConfigId = trafficConfig.id,
+        resourceFileSource = resourceSettings.source,
+    )
     val services = LocalAppServices.current
     val resourceFileUseCase = services.resourceFileUseCase
     val resourceFileUpdateCoordinator = services.resourceFileUpdateCoordinator
@@ -161,6 +166,7 @@ fun ResourceManagementPage(
     fun updateResourceFile(kind: ResourceFileKind) {
         resourceFileUpdateCoordinator.enqueue(
             ResourceFileUpdateRequest.BuiltIn(
+                scope = resourceScope,
                 kind = kind,
                 source = resourceSettings.resourceFileUpdateSource(),
                 options = appState.resourceFileUpdateOptions(resourceSettings.userAgent),
@@ -172,6 +178,7 @@ fun ResourceManagementPage(
     fun updateCustomResourceFile(file: CustomResourceFileState) {
         resourceFileUpdateCoordinator.enqueue(
             ResourceFileUpdateRequest.Custom(
+                scope = resourceScope,
                 file = file,
                 options = appState.resourceFileUpdateOptions(resourceSettings.userAgent),
                 customResourceFiles = resourceSettings.customFiles,
@@ -225,6 +232,7 @@ fun ResourceManagementPage(
             runResourceFileAction(
                 action = {
                     resourceFileUseCase.replaceCustom(
+                        scope = resourceScope,
                         customFile = file,
                         customResourceFiles = nextCustomResourceFiles,
                     )
@@ -258,6 +266,7 @@ fun ResourceManagementPage(
             runResourceFileAction(
                 action = {
                     resourceFileUseCase.renameCustom(
+                        scope = resourceScope,
                         previousFile = file,
                         customFile = nextFile,
                         customResourceFiles = nextCustomResourceFiles,
@@ -277,7 +286,7 @@ fun ResourceManagementPage(
                     remainingCustomFiles = settings.customFiles.filterNot { it.id == file.id }
                     settings.copy(customFiles = remainingCustomFiles)
                 }
-                resourceFileUseCase.deleteCustom(file, remainingCustomFiles)
+                resourceFileUseCase.deleteCustom(resourceScope, file, remainingCustomFiles)
             },
             successMessage = deletedMessage.formatTemplate("name" to file.name),
         )
@@ -292,7 +301,7 @@ fun ResourceManagementPage(
     }
 
     LaunchedEffect(resourceSettings.customFiles, updateQueueState.completionRevision) {
-        status = resourceFileUseCase.status(resourceSettings.customFiles)
+        status = resourceFileUseCase.status(resourceScope, resourceSettings.customFiles)
     }
     LaunchedEffect(resourceFileUpdateCoordinator, updatedMessage, updatedOneMessage) {
         resourceFileUpdateCoordinator.results.collect { result ->
@@ -406,6 +415,7 @@ fun ResourceManagementPage(
                         onUpdate = {
                             resourceFileUpdateCoordinator.enqueue(
                                 ResourceFileUpdateRequest.All(
+                                    scope = resourceScope,
                                     source = resourceSettings.resourceFileUpdateSource(),
                                     options = appState.resourceFileUpdateOptions(resourceSettings.userAgent),
                                     customResourceFiles = resourceSettings.customFiles,
@@ -476,7 +486,7 @@ fun ResourceManagementPage(
                             onUpdate = { updateResourceFile(kind) },
                             onReplace = {
                                 runResourceFileAction(
-                                    action = { resourceFileUseCase.replace(kind, resourceSettings.customFiles) },
+                                    action = { resourceFileUseCase.replace(resourceScope, kind, resourceSettings.customFiles) },
                                     successMessage = replacedMessage.formatTemplate("name" to kind.displayName),
                                 )
                             },
@@ -484,8 +494,8 @@ fun ResourceManagementPage(
                                 runResourceFileAction(
                                     action = {
                                         resourceFileUseCase.restoreBundled(
+                                            scope = resourceScope,
                                             kind = kind,
-                                            resourceFileSource = resourceSettings.source,
                                             customResourceFiles = resourceSettings.customFiles,
                                         )
                                     },
@@ -508,6 +518,7 @@ fun ResourceManagementPage(
                                 runResourceFileAction(
                                     action = {
                                         resourceFileUseCase.replaceCustom(
+                                            scope = resourceScope,
                                             customFile = file,
                                             customResourceFiles = resourceSettings.customFiles,
                                         )

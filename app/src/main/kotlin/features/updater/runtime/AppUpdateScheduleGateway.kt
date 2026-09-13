@@ -11,30 +11,26 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.workDataOf
 import java.util.concurrent.TimeUnit
 
 private const val AppUpdatePeriodicWorkName = "app-update-checker-periodic"
-private const val AppUpdateOneTimeWorkName = "app-update-checker-onetime"
+private const val AppUpdateAutomaticWorkName = "app-update-checker-auto"
+private const val AppUpdateManualWorkName = "app-update-checker-manual"
+internal const val AppUpdateForceCheckInputKey = "force_check"
 
 internal class AppUpdateScheduleGateway(
     context: Context,
 ) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
+    private val checkStore = AppUpdateCheckStore(context)
 
     fun schedulePeriodicCheck(enabled: Boolean, autoInstallAtNight: Boolean) {
         if (!enabled) {
             workManager.cancelUniqueWork(AppUpdatePeriodicWorkName)
+            workManager.cancelUniqueWork(AppUpdateAutomaticWorkName)
             return
         }
-
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(if (autoInstallAtNight) NetworkType.UNMETERED else NetworkType.CONNECTED)
-            .apply {
-                if (autoInstallAtNight) {
-                    setRequiresCharging(true)
-                }
-            }
-            .build()
 
         val request = PeriodicWorkRequestBuilder<AppUpdateWorker>(
             repeatInterval = 12,
@@ -42,12 +38,27 @@ internal class AppUpdateScheduleGateway(
             flexTimeInterval = 2,
             flexTimeIntervalUnit = TimeUnit.HOURS,
         )
-            .setConstraints(constraints)
+            .setConstraints(checkConstraints(autoInstallAtNight))
+            .setInputData(workDataOf(AppUpdateForceCheckInputKey to false))
             .build()
 
         workManager.enqueueUniquePeriodicWork(
             AppUpdatePeriodicWorkName,
             ExistingPeriodicWorkPolicy.UPDATE,
+            request,
+        )
+    }
+
+    /** Queues an initial automatic check only when the persisted 24-hour TTL has expired. */
+    fun enqueueAutomaticCheckIfDue(autoInstallAtNight: Boolean) {
+        if (!checkStore.isDue()) return
+        val request = OneTimeWorkRequestBuilder<AppUpdateWorker>()
+            .setConstraints(checkConstraints(autoInstallAtNight))
+            .setInputData(workDataOf(AppUpdateForceCheckInputKey to false))
+            .build()
+        workManager.enqueueUniqueWork(
+            AppUpdateAutomaticWorkName,
+            ExistingWorkPolicy.KEEP,
             request,
         )
     }
@@ -59,12 +70,24 @@ internal class AppUpdateScheduleGateway(
                     .setRequiredNetworkType(NetworkType.CONNECTED)
                     .build(),
             )
+            .setInputData(workDataOf(AppUpdateForceCheckInputKey to true))
             .build()
 
         workManager.enqueueUniqueWork(
-            AppUpdateOneTimeWorkName,
+            AppUpdateManualWorkName,
             ExistingWorkPolicy.REPLACE,
             request,
         )
+    }
+
+    private fun checkConstraints(autoInstallAtNight: Boolean): Constraints {
+        return Constraints.Builder()
+            .setRequiredNetworkType(if (autoInstallAtNight) NetworkType.UNMETERED else NetworkType.CONNECTED)
+            .apply {
+                if (autoInstallAtNight) {
+                    setRequiresCharging(true)
+                }
+            }
+            .build()
     }
 }

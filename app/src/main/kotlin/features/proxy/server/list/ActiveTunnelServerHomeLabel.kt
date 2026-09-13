@@ -5,21 +5,21 @@ package features.proxy.server.list
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import app.AppState
 import app.R
 import app.activeTunnelTargetDisplayName
+import engine.stats.CoreTrafficStatsSampler
 import engine.stats.ProxyTrafficStatsRuntime
-import engine.stats.XrayStatsClientSession
-import engine.stats.XrayTrafficBytes
-import engine.stats.maxTrafficDeltaComparedTo
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.collect
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -67,52 +67,32 @@ internal fun ActiveTunnelServerHomeLabel(
 internal fun produceActiveTunnelRuntimeSample(
     context: Context,
     proxyRunning: Boolean,
-) = produceState<ActiveTunnelRuntimeSample?>(
-    initialValue = null,
-    context,
-    proxyRunning,
-) {
-    var previousRuntime: ProxyTrafficStatsRuntime? = null
-    var previousTotals = emptyMap<String, XrayTrafficBytes>()
-    var lastActiveOutboundTag: String? = null
-    // One reusable stats channel for the whole sampling loop instead of a new
-    // gRPC handshake on every tick.
-    XrayStatsClientSession(context).use { session ->
-        while (true) {
-            if (!proxyRunning) {
-                previousRuntime = null
-                previousTotals = emptyMap()
-                lastActiveOutboundTag = null
-                value = null
-            } else {
-                val totals = withContext(Dispatchers.IO) {
-                    runCatching {
-                        session.withClient { client -> client.queryOutboundTraffic(reset = false) }
-                    }.getOrNull()
-                }
-                val runtime = session.lastRuntime
-                if (totals != null && runtime != null) {
-                    if (runtime != previousRuntime) {
-                        previousRuntime = runtime
-                        previousTotals = emptyMap()
-                        lastActiveOutboundTag = null
+) : State<ActiveTunnelRuntimeSample?> {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    return produceState(
+        initialValue = null,
+        context,
+        proxyRunning,
+        lifecycleOwner,
+    ) {
+        if (!proxyRunning) {
+            value = null
+        } else {
+            // Home can retain pager pages while the activity is stopped. A
+            // lifecycle-bound lease makes that invisible composition free: it
+            // neither wakes the CPU nor keeps the shared sampler alive.
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                CoreTrafficStatsSampler.acquire(context).use {
+                    CoreTrafficStatsSampler.samples.collect { sample ->
+                        value = sample?.let { current ->
+                            ActiveTunnelRuntimeSample(
+                                runtime = current.runtime,
+                                outboundTag = current.activeOutboundTag,
+                            )
+                        }
                     }
-                    totals.maxTrafficDeltaComparedTo(previousTotals, currentActiveTag = lastActiveOutboundTag)?.let { tag ->
-                        lastActiveOutboundTag = tag
-                    }
-                    previousTotals = totals
-                    value = ActiveTunnelRuntimeSample(runtime, lastActiveOutboundTag)
-                } else {
-                    // Tunnel stopped or stats unreachable; reset the baseline.
-                    previousRuntime = null
-                    previousTotals = emptyMap()
-                    lastActiveOutboundTag = null
-                    value = null
                 }
             }
-            delay(ActiveTunnelSampleIntervalMillis)
         }
     }
 }
-
-private const val ActiveTunnelSampleIntervalMillis = 1_000L

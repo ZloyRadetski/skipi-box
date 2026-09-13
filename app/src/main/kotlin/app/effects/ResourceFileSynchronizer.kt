@@ -9,6 +9,7 @@ import data.AndroidAppStateStore
 import app.activeTrafficConfig
 import features.logs.AndroidAppLogger
 import features.resources.ResourceFileUseCase
+import features.resources.runtime.XrayResourceFileScope
 
 @Composable
 internal fun ResourceFileSynchronizer(
@@ -17,11 +18,12 @@ internal fun ResourceFileSynchronizer(
 ) {
     LaunchedEffect(resourceFileUseCase, stateStore) {
         runCatching {
+            val activeConfig = stateStore.state.value.activeTrafficConfig()
             resourceFileUseCase.synchronizeBundledFilesAfterPackageUpdate(
-                resourceFileSource = stateStore.state.value.activeTrafficConfig()
-                    ?.resourceSettings
-                    ?.source
-                    ?: 0,
+                scope = XrayResourceFileScope(
+                    trafficConfigId = activeConfig?.id ?: 1,
+                    resourceFileSource = activeConfig?.resourceSettings?.source ?: 0,
+                ),
             )
         }
             .onFailure { error ->

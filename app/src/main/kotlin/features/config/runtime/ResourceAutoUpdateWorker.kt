@@ -10,6 +10,7 @@ import app.SkipiApplication
 import features.resources.resourceFileUpdateOptions
 import features.resources.resourceFileUpdateSource
 import features.resources.runtime.AndroidResourceFileRepository
+import features.resources.runtime.XrayResourceFileScope
 
 internal class ResourceAutoUpdateWorker(
     appContext: Context,
@@ -27,10 +28,15 @@ internal class ResourceAutoUpdateWorker(
         }
         return runCatching {
             val resourceSettings = config.resourceSettings
+            val scope = XrayResourceFileScope(
+                trafficConfigId = config.id,
+                resourceFileSource = resourceSettings.source,
+            )
             val options = state.resourceFileUpdateOptions(resourceSettings.userAgent)
             val source = resourceSettings.resourceFileUpdateSource()
             val repository = AndroidResourceFileRepository(application.applicationContext)
             repository.update(
+                scope = scope,
                 source = source,
                 options = options,
                 customResourceFiles = resourceSettings.customFiles,

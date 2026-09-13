@@ -61,6 +61,37 @@ internal fun String.remoteXrayDnsHostOrNull(): String? {
         ?.lowercase()
 }
 
+/**
+ * Builds the raw TCP DNS destination used for record types which Xray cannot
+ * pass to its built-in DNS module. A `tcp://` endpoint preserves its explicitly
+ * selected port. A DoH URL alone does not prove that its host also offers raw
+ * TCP DNS, so the only HTTPS exception is Null's Proxy, whose documented TCP
+ * endpoint is the configured host on port 53. Local-only transports
+ * deliberately stay out of this path.
+ */
+internal fun String.toXrayTcpDnsFallbackOrNull(): XrayDnsTcpFallback? {
+    val trimmed = trim()
+    if (!isSupportedXrayDnsServer(trimmed) || trimmed.equals("localhost", ignoreCase = true)) {
+        return null
+    }
+
+    val schemeEnd = trimmed.indexOf("://")
+    if (schemeEnd < 0) {
+        return XrayDnsTcpFallback(address = trimmed.removeSuffix("."))
+    }
+
+    val scheme = trimmed.substring(0, schemeEnd).lowercase()
+    if (scheme !in RemoteXrayDnsUrlSchemes) return null
+    val authority = trimmed.xrayDnsAuthority()
+    val host = authority.xrayDnsHost()?.removeSuffix(".") ?: return null
+    if (scheme == "tcp") {
+        return XrayDnsTcpFallback(address = host, port = authority.xrayDnsPortOrNull() ?: 53)
+    }
+    return host
+        .takeIf { value -> value.equals(NullsProxyDnsHost, ignoreCase = true) }
+        ?.let { address -> XrayDnsTcpFallback(address = address) }
+}
+
 private fun String.xrayDnsAuthority(): String {
     val schemeEnd = indexOf("://")
     if (schemeEnd < 0) return ""
@@ -83,6 +114,16 @@ private fun String.xrayDnsHost(): String? {
         1 -> trimmed.substringBefore(':')
         else -> trimmed // An unbracketed IPv6 literal; rejected by the caller.
     }
+}
+
+private fun String.xrayDnsPortOrNull(): Int? {
+    val trimmed = trim()
+    val rawPort = when {
+        trimmed.startsWith("[") -> trimmed.substringAfter(']', missingDelimiterValue = "").removePrefix(":")
+        trimmed.count { it == ':' } == 1 -> trimmed.substringAfter(':')
+        else -> ""
+    }
+    return rawPort.toIntOrNull()?.takeIf { port -> port in 1..65_535 }
 }
 
 private fun isXrayDnsAuthority(authority: String): Boolean {
@@ -135,3 +176,4 @@ private val SupportedXrayDnsUrlSchemes = setOf(
 )
 
 private val RemoteXrayDnsUrlSchemes = setOf("https", "h2c", "tcp")
+private const val NullsProxyDnsHost = "dns.nullsproxy.com"

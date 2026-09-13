@@ -21,6 +21,17 @@ interface CoreLogRepository {
 
     fun append(level: String, message: String, time: String = currentLogTime())
 
+    /** Commits a file-tail batch as one UI state update. */
+    fun appendBatch(lines: List<ParsedCoreLogLine>) {
+        lines.forEach { line ->
+            append(
+                level = line.level,
+                message = line.message,
+                time = line.time ?: currentLogTime(),
+            )
+        }
+    }
+
     fun clear()
 
     fun pruneOlderThanDays(days: Int) = Unit
@@ -44,18 +55,40 @@ open class InMemoryCoreLogRepository(
     }
 
     override fun append(level: String, message: String, time: String) {
-        val normalizedMessage = message.trim()
-        if (normalizedMessage.isEmpty()) {
-            return
+        appendBatch(
+            listOf(
+                ParsedCoreLogLine(
+                    time = time,
+                    level = level,
+                    message = message,
+                ),
+            ),
+        )
+    }
+
+    override fun appendBatch(lines: List<ParsedCoreLogLine>) {
+        val normalizedLines = lines.mapNotNull { line ->
+            val normalizedMessage = line.message.trim()
+            normalizedMessage.takeIf(String::isNotEmpty)?.let { message ->
+                line.copy(
+                    time = line.time ?: currentLogTime(),
+                    level = line.level.normalizedLogLevel(),
+                    message = message,
+                )
+            }
         }
+        if (normalizedLines.isEmpty()) return
         mutableEntries.update { entries ->
-            val nextId = (entries.lastOrNull()?.id ?: 0L) + 1L
-            (entries + CoreLogEntry(
-                id = nextId,
-                time = time,
-                level = level.normalizedLogLevel(),
-                message = normalizedMessage,
-            )).takeLast(maxEntries)
+            var nextId = (entries.lastOrNull()?.id ?: 0L) + 1L
+            val additions = normalizedLines.map { line ->
+                CoreLogEntry(
+                    id = nextId++,
+                    time = checkNotNull(line.time),
+                    level = line.level,
+                    message = line.message,
+                )
+            }
+            (entries + additions).takeLast(maxEntries)
         }
     }
 

@@ -15,9 +15,8 @@ import kotlinx.serialization.json.Json
  * In-memory `ProxyServerState.latency` values die with the process, so right
  * after an app restart a balancer would previously pick its startup member by
  * racing blind short TCP probes. This cache keeps the last measured latency
- * for every tested server, letting the startup path go straight to a recently
- * verified member. Xray's Observatory still health-checks members after the
- * tunnel starts, so a stale entry can never trap traffic on a dead server.
+ * for TCP-compatible servers only. UDP/QUIC/WebRTC members are restored from
+ * the separate real-traffic cache instead of being mistaken for TCP endpoints.
  *
  * Only positive measurements are stored; a failed test drops the entry so a
  * dead server cannot be resurrected from stale data.

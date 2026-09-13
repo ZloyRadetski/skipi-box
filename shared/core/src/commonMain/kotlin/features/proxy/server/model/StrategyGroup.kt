@@ -40,10 +40,11 @@ data class StrategyGroup(
     /** Config-owned groups keep resolving their current named members after subscription refreshes. */
     var sourceTrafficConfigId: Int? = null,
     var sourcePolicyGroupName: String = "",
-    var probeInterval: String = "15s",
+    /** One minute is responsive enough for ordinary failover without a constant radio wakeup. */
+    var probeInterval: String = "1m",
     var probeUrl: String = "",
-    /** Prefer parallel health probes on startup; users can disable this for low-power networks. */
-    var enableBurstProbe: Boolean = true,
+    /** An explicit opt-in for the expensive first-start parallel probe race. */
+    var enableBurstProbe: Boolean = false,
     var tolerance: String = "50ms",
     var probeTimeout: String = "5s",
 ) : ProxyServer<StrategyGroup> {

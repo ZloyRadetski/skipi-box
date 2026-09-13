@@ -21,81 +21,102 @@ internal class AndroidResourceFileRepository(
     context: Context,
 ) {
     private val appContext = context.applicationContext
-    private val store = AndroidResourceFileStore(appContext)
     private val downloader = AndroidResourceFileDownloader(appContext)
 
-    suspend fun status(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus =
+    private fun store(scope: XrayResourceFileScope): AndroidResourceFileStore =
+        AndroidResourceFileStore(appContext, scope)
+
+    suspend fun status(
+        scope: XrayResourceFileScope,
+        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+    ): ResourceFilesStatus =
         withContext(Dispatchers.IO) {
-            store.status(customResourceFiles)
+            store(scope).status(customResourceFiles)
         }
 
-    suspend fun synchronizeBundledFilesAfterPackageUpdate(resourceFileSource: Int) {
+    suspend fun synchronizeBundledFilesAfterPackageUpdate(scope: XrayResourceFileScope) {
         withContext(Dispatchers.IO) {
-            store.synchronizeBundledFilesAfterPackageUpdate(resourceFileSource)
+            store(scope).synchronizeBundledFilesAfterPackageUpdate(scope.resourceFileSource)
         }
     }
 
     suspend fun deleteCustom(
+        scope: XrayResourceFileScope,
         customFile: CustomResourceFileState,
         customResourceFiles: List<CustomResourceFileState>,
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
+        val store = store(scope)
         store.deleteCustom(customFile)
         store.currentStatus(customResourceFiles)
     }
 
     suspend fun renameCustom(
+        scope: XrayResourceFileScope,
         previousFile: CustomResourceFileState,
         customFile: CustomResourceFileState,
         customResourceFiles: List<CustomResourceFileState>,
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
+        val store = store(scope)
         store.renameCustom(previousFile, customFile)
         store.currentStatus(customResourceFiles)
     }
 
     suspend fun update(
+        scope: XrayResourceFileScope,
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
+            scope = scope,
             downloads = UpdateableResourceFileKinds.map { kind ->
-                kind.toDownloadTarget(source)
-            } + customResourceFiles.mapNotNull { customFile -> customFile.toDownloadTargetOrNull() },
+                kind.toDownloadTarget(scope, source)
+            } + customResourceFiles.mapNotNull { customFile -> customFile.toDownloadTargetOrNull(scope) },
             options = options,
             customResourceFiles = customResourceFiles,
+            markSourceAfterUpdate = true,
         )
     }
 
     suspend fun update(
+        scope: XrayResourceFileScope,
         kind: ResourceFileKind,
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
-            downloads = listOf(kind.toDownloadTarget(source)),
+            scope = scope,
+            downloads = listOf(kind.toDownloadTarget(scope, source)),
             options = options,
             customResourceFiles = customResourceFiles,
+            markSourceAfterUpdate = false,
         )
     }
 
     suspend fun updateCustom(
+        scope: XrayResourceFileScope,
         customFile: CustomResourceFileState,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
-            downloads = listOfNotNull(customFile.toDownloadTargetOrNull()),
+            scope = scope,
+            downloads = listOfNotNull(customFile.toDownloadTargetOrNull(scope)),
             options = options,
             customResourceFiles = customResourceFiles,
+            markSourceAfterUpdate = false,
         )
     }
 
     private fun updateTargets(
+        scope: XrayResourceFileScope,
         downloads: List<ResourceFileDownloadTarget>,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<CustomResourceFileState>,
+        markSourceAfterUpdate: Boolean,
     ): ResourceFilesStatus {
+        val store = store(scope)
         if (downloads.isEmpty()) {
             return store.currentStatus(customResourceFiles)
         }
@@ -136,6 +157,9 @@ internal class AndroidResourceFileRepository(
             store.currentStatus(customResourceFiles)
         }
         result.onSuccess {
+            if (markSourceAfterUpdate) {
+                store.markResourceFileSource(scope.resourceFileSource)
+            }
             runCatching { notifier.showComplete() }
         }.onFailure { error ->
             if (error is AndroidResourceFileDownloadCancelledException) {
@@ -156,8 +180,8 @@ internal class AndroidResourceFileRepository(
         }
     }
 
-    private fun CustomResourceFileState.toDownloadTargetOrNull(): ResourceFileDownloadTarget? {
-        val target = store.file(this)
+    private fun CustomResourceFileState.toDownloadTargetOrNull(scope: XrayResourceFileScope): ResourceFileDownloadTarget? {
+        val target = store(scope).file(this)
         if (ResourceFileKind.entries.any { kind -> kind.fileName == target.name }) return null
         val updateUrl = url.trim()
         if (updateUrl.isBlank()) return null
@@ -168,7 +192,10 @@ internal class AndroidResourceFileRepository(
         )
     }
 
-    private fun ResourceFileKind.toDownloadTarget(source: ResourceFileUpdateSource): ResourceFileDownloadTarget {
+    private fun ResourceFileKind.toDownloadTarget(
+        scope: XrayResourceFileScope,
+        source: ResourceFileUpdateSource,
+    ): ResourceFileDownloadTarget {
         val updateUrl = when (this) {
             ResourceFileKind.GeoIp -> source.geoIpUrl
             ResourceFileKind.GeoSite -> source.geoSiteUrl
@@ -180,35 +207,40 @@ internal class AndroidResourceFileRepository(
         return ResourceFileDownloadTarget(
             displayName = displayName,
             url = updateUrl,
-            targetFile = store.file(this),
-            applyPermissions = { store.applyPermissions(this) },
+            targetFile = store(scope).file(this),
+            applyPermissions = { store(scope).applyPermissions(this) },
         )
     }
 
     suspend fun replaceCustom(
+        scope: XrayResourceFileScope,
         customFile: CustomResourceFileState,
         uri: Uri,
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
+        val store = store(scope)
         store.replaceCustom(customFile, uri)
         store.currentStatus(customResourceFiles)
     }
 
     suspend fun replace(
+        scope: XrayResourceFileScope,
         kind: ResourceFileKind,
         uri: Uri,
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
+        val store = store(scope)
         store.replace(kind, uri)
         store.currentStatus(customResourceFiles)
     }
 
     suspend fun restoreBundled(
+        scope: XrayResourceFileScope,
         kind: ResourceFileKind,
-        resourceFileSource: Int = features.resources.ResourceFileSourceLoyalsoldierGithub,
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
-        store.restoreBundled(kind, resourceFileSource)
+        val store = store(scope)
+        store.restoreBundled(kind, scope.resourceFileSource)
         store.currentStatus(customResourceFiles)
     }
 }

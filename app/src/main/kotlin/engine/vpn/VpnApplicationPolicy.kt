@@ -15,6 +15,9 @@ internal data class VpnApplicationPolicy(
 )
 
 internal fun AppState.toVpnApplicationPolicy(currentUserId: Int): VpnApplicationPolicy {
+    if (enableStrictFullTunnel) {
+        return VpnApplicationPolicy(mode = ProxyAppListModeGlobal)
+    }
     val mode = when (proxyAppListMode) {
         ProxyAppListModeBlacklist,
         ProxyAppListModeWhitelist,

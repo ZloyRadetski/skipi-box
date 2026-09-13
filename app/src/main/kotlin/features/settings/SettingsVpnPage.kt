@@ -156,6 +156,14 @@ fun SettingsVpnPage(
                                 updateAppState { it.copy(enableVpnAppendHttpProxy = enabled) }
                             },
                         )
+                        SwitchPreference(
+                            title = stringResource(R.string.settings_strict_full_tunnel),
+                            summary = stringResource(R.string.settings_strict_full_tunnel_summary),
+                            checked = appState.enableStrictFullTunnel,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(enableStrictFullTunnel = enabled) }
+                            },
+                        )
                     }
                 }
 

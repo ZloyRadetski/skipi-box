@@ -10,30 +10,26 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.PowerManager
-import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import data.AndroidAppStateStore
+import engine.stats.CoreTrafficStatsSampler
 import engine.stats.ProxyTrafficStatsRuntime
-import engine.stats.XrayStatsClientSession
 import engine.stats.XrayTrafficBytes
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Keeps home screen widgets in sync while the app process is alive:
  * re-renders them on relevant state changes and polls live traffic speeds
- * from the Xray Stats API whenever the tunnel is running.
+ * from the process-wide SkipiCore sampler whenever the tunnel is running.
  *
- * Battery care: polling reuses a single stats channel instead of opening a
- * new one per tick, slows down when the screen is off, and does not push
+ * Battery care: this is a consumer, not another reader. It does not push
  * RemoteViews updates while the screen is off (launcher stays asleep).
  */
 internal class ProxyWidgetRuntime(
@@ -50,7 +46,17 @@ internal class ProxyWidgetRuntime(
     private val screenStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                Intent.ACTION_SCREEN_ON -> isScreenInteractive = true
+                Intent.ACTION_SCREEN_ON -> {
+                    isScreenInteractive = true
+                    scope.launch(Dispatchers.IO) {
+                        if (hasWidgets()) {
+                            runCatching { SkipiWidgetRenderer.renderAll(this@ProxyWidgetRuntime.context) }
+                                .onFailure { error ->
+                                    AndroidAppLogger.warn(LogTag, "Failed to refresh widgets after screen-on", error)
+                                }
+                        }
+                    }
+                }
                 Intent.ACTION_SCREEN_OFF -> isScreenInteractive = false
             }
         }
@@ -92,29 +98,22 @@ internal class ProxyWidgetRuntime(
         if (pollingJob?.isActive == true) return
         pollingJob =
             scope.launch(Dispatchers.IO) {
-                // One reusable stats channel for the whole polling loop.
-                XrayStatsClientSession(context).use { session ->
+                CoreTrafficStatsSampler.acquire(context).use {
                     var previousRuntime: ProxyTrafficStatsRuntime? = null
                     var previousTotals = emptyMap<String, XrayTrafficBytes>()
                     var previousAtElapsedRealtime = 0L
                     var sessionTotals = XrayTrafficBytes()
-                    while (isActive) {
-                        val interactive = isScreenInteractive
-                        val totals =
-                            runCatching {
-                                session.withClient { client -> client.queryOutboundTraffic(reset = false) }
-                            }.onFailure { error ->
-                                AndroidAppLogger.warn(LogTag, "Failed to query traffic for widgets", error)
-                            }.getOrNull() ?: emptyMap<String, XrayTrafficBytes>()
-                        val runtime = session.lastRuntime
-                        if (runtime != null) {
+                    CoreTrafficStatsSampler.samples.collect { sharedSample ->
+                        if (sharedSample != null) {
+                            val runtime = sharedSample.runtime
+                            val totals = sharedSample.snapshot.outbound
                             if (runtime != previousRuntime) {
                                 previousRuntime = runtime
                                 previousTotals = emptyMap()
                                 previousAtElapsedRealtime = 0L
                                 sessionTotals = XrayTrafficBytes()
                             }
-                            val now = SystemClock.elapsedRealtime()
+                            val now = sharedSample.sampledAtElapsedRealtime
                             if (previousAtElapsedRealtime > 0L && totals.isNotEmpty()) {
                                 var uplinkDelta = 0L
                                 var downlinkDelta = 0L
@@ -131,12 +130,17 @@ internal class ProxyWidgetRuntime(
                                         uplinkBytesPerSecond = (uplinkDelta / elapsedSeconds).toLong(),
                                         downlinkBytesPerSecond = (downlinkDelta / elapsedSeconds).toLong(),
                                         totalUplinkBytes = sessionTotals.uplink,
-                                        totalDownlinkBytes = sessionTotals.downlink,
-                                        updatedAtElapsedRealtime = now,
-                                    )
-                                WidgetSpeedStore.write(context, sample)
-                                if (interactive) {
-                                    runCatching { SkipiWidgetRenderer.updateTraffic(context, sample) }
+                                    totalDownlinkBytes = sessionTotals.downlink,
+                                    updatedAtElapsedRealtime = now,
+                                )
+                                if (uplinkDelta + downlinkDelta > 0L && hasWidgets()) {
+                                    WidgetSpeedStore.write(context, sample)
+                                    if (isScreenInteractive) {
+                                        runCatching { SkipiWidgetRenderer.updateTraffic(context, sample) }
+                                            .onFailure { error ->
+                                                AndroidAppLogger.warn(LogTag, "Failed to update widget traffic", error)
+                                            }
+                                    }
                                 }
                             }
                             previousTotals = totals
@@ -148,9 +152,6 @@ internal class ProxyWidgetRuntime(
                             previousAtElapsedRealtime = 0L
                             sessionTotals = XrayTrafficBytes()
                         }
-                        val pollIntervalMillis =
-                            if (interactive) PollIntervalMillis else ScreenOffPollIntervalMillis
-                        delay(pollIntervalMillis.milliseconds)
                     }
                 }
             }
@@ -170,7 +171,5 @@ internal class ProxyWidgetRuntime(
 
     private companion object {
         private const val LogTag = "ProxyWidgetRuntime"
-        private const val PollIntervalMillis = 2_000L
-        private const val ScreenOffPollIntervalMillis = 15_000L
     }
 }

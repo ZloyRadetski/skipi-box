@@ -71,17 +71,20 @@ fun App(
             execute = { request ->
                 when (request) {
                     is ResourceFileUpdateRequest.BuiltIn -> resourceFileUseCase.update(
+                        scope = request.scope,
                         kind = request.kind,
                         source = request.source,
                         options = request.options,
                         customResourceFiles = request.customResourceFiles,
                     )
                     is ResourceFileUpdateRequest.Custom -> resourceFileUseCase.updateCustom(
+                        scope = request.scope,
                         customFile = request.file,
                         options = request.options,
                         customResourceFiles = request.customResourceFiles,
                     )
                     is ResourceFileUpdateRequest.All -> resourceFileUseCase.update(
+                        scope = request.scope,
                         source = request.source,
                         options = request.options,
                         customResourceFiles = request.customResourceFiles,

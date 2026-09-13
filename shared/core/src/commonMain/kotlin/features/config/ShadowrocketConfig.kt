@@ -38,7 +38,7 @@ data class ShadowrocketPolicyGroup(
     val displayMode: String = StrategyGroupDisplayMode.NEVER,
     val showInAutoBalancerList: Boolean = displayMode != StrategyGroupDisplayMode.NEVER,
     /** SKIPI extension: use the faster burst observatory for health checks. */
-    val enableBurstProbe: Boolean = true,
+    val enableBurstProbe: Boolean = false,
     /** SKIPI extension: maximum latency difference allowed before switching. */
     val tolerance: String = "50ms",
     val raw: String = "",

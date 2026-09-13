@@ -618,7 +618,7 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
                 showInAutoBalancerList = source.group.displayMode != features.proxy.server.model.StrategyGroupDisplayMode.NEVER,
                 sourceTrafficConfigId = source.configId,
                 sourcePolicyGroupName = source.group.name,
-                probeInterval = source.group.intervalSeconds?.let { "${it}s" } ?: "15s",
+                probeInterval = source.group.intervalSeconds?.let { "${it}s" } ?: "1m",
                 probeTimeout = source.group.timeoutSeconds?.let { "${it}s" } ?: existingStrategy?.probeTimeout ?: "5s",
                 probeUrl = source.group.url,
                 enableBurstProbe = source.group.enableBurstProbe,

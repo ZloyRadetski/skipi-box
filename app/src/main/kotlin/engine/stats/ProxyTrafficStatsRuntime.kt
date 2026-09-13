@@ -6,13 +6,9 @@ package engine.stats
 import android.content.Context
 import android.os.SystemClock
 import androidx.core.content.edit
-import engine.xray.XrayStatsApiTag
 
 internal data class ProxyTrafficStatsRuntime(
-    val listenAddress: String,
-    val port: Int,
     val serverName: String,
-    val apiTag: String = XrayStatsApiTag,
     /** Effective FINAL target frozen when the current tunnel was started. */
     val finalOutboundTag: String = "proxy",
     val selectedServerId: Int = -1,
@@ -29,32 +25,21 @@ internal data class ProxyTrafficStatsRuntime(
 internal object ProxyTrafficStatsRuntimeStore {
     fun read(context: Context): ProxyTrafficStatsRuntime? {
         val preferences = context.preferences()
-        val port = preferences.getInt(KeyPort, 0).takeIf { value -> value > 0 } ?: return null
+        val startedAt = preferences.getLong(KeyStartedAtElapsedRealtime, 0L)
+            .takeIf { value -> value > 0L }
+            ?: return null
         return ProxyTrafficStatsRuntime(
-            listenAddress = preferences.getString(KeyListenAddress, XrayStatsApiListenAddress)
-                ?.takeIf(String::isNotBlank)
-                ?: XrayStatsApiListenAddress,
-            port = port,
             serverName = preferences.getString(KeyServerName, "").orEmpty(),
-            apiTag = preferences.getString(KeyApiTag, XrayStatsApiTag)
-                ?.takeIf(String::isNotBlank)
-                ?: XrayStatsApiTag,
             finalOutboundTag = preferences.getString(KeyFinalOutboundTag, "proxy")
                 ?.takeIf(String::isNotBlank)
                 ?: "proxy",
             selectedServerId = preferences.getInt(KeySelectedServerId, -1),
             startupStrategyMemberId = preferences.getInt(KeyStartupStrategyMemberId, -1)
                 .takeIf { value -> value >= 0 },
-            startedAtElapsedRealtime = preferences.getLong(KeyStartedAtElapsedRealtime, 0L)
-                .takeIf { value -> value > 0L }
-                ?: SystemClock.elapsedRealtime(),
+            startedAtElapsedRealtime = startedAt,
             paused = preferences.getBoolean(KeyPaused, false),
             pausedAtElapsedRealtime = preferences.getLong(KeyPausedAtElapsedRealtime, 0L),
         )
-    }
-
-    fun readPort(context: Context): Int? {
-        return context.preferences().getInt(KeyPort, 0).takeIf { value -> value > 0 }
     }
 
     fun write(
@@ -62,10 +47,12 @@ internal object ProxyTrafficStatsRuntimeStore {
         runtime: ProxyTrafficStatsRuntime,
     ) {
         context.preferences().edit {
-            putString(KeyListenAddress, runtime.listenAddress)
-            putInt(KeyPort, runtime.port)
+            // Clear the old gRPC endpoint metadata as part of the migration;
+            // it is not consulted by this runtime anymore.
+            remove(LegacyKeyListenAddress)
+            remove(LegacyKeyPort)
+            remove(LegacyKeyApiTag)
             putString(KeyServerName, runtime.serverName)
-            putString(KeyApiTag, runtime.apiTag)
             putString(KeyFinalOutboundTag, runtime.finalOutboundTag)
             putInt(KeySelectedServerId, runtime.selectedServerId)
             runtime.startupStrategyMemberId?.let { memberId ->
@@ -75,14 +62,15 @@ internal object ProxyTrafficStatsRuntimeStore {
             putBoolean(KeyPaused, runtime.paused)
             putLong(KeyPausedAtElapsedRealtime, runtime.pausedAtElapsedRealtime)
         }
+        CoreTrafficStatsSampler.reconcile(context, runtime)
     }
 
     fun clear(context: Context) {
         context.preferences().edit {
-            remove(KeyListenAddress)
-            remove(KeyPort)
+            remove(LegacyKeyListenAddress)
+            remove(LegacyKeyPort)
+            remove(LegacyKeyApiTag)
             remove(KeyServerName)
-            remove(KeyApiTag)
             remove(KeyFinalOutboundTag)
             remove(KeySelectedServerId)
             remove(KeyStartupStrategyMemberId)
@@ -90,6 +78,7 @@ internal object ProxyTrafficStatsRuntimeStore {
             remove(KeyPaused)
             remove(KeyPausedAtElapsedRealtime)
         }
+        CoreTrafficStatsSampler.reconcile(context, null)
     }
 
     private fun Context.preferences() = applicationContext.getSharedPreferences(
@@ -99,10 +88,10 @@ internal object ProxyTrafficStatsRuntimeStore {
 }
 
 private const val PreferencesName = "proxy_traffic_stats"
-private const val KeyListenAddress = "listen_address"
-private const val KeyPort = "port"
+private const val LegacyKeyListenAddress = "listen_address"
+private const val LegacyKeyPort = "port"
+private const val LegacyKeyApiTag = "api_tag"
 private const val KeyServerName = "server_name"
-private const val KeyApiTag = "api_tag"
 private const val KeyFinalOutboundTag = "final_outbound_tag"
 private const val KeySelectedServerId = "selected_server_id"
 private const val KeyStartupStrategyMemberId = "startup_strategy_member_id"

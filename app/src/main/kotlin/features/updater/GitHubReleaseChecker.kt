@@ -30,7 +30,19 @@ internal class GitHubReleaseChecker(
     private val context: Context? = null,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
-    suspend fun checkLatestRelease(): AppUpdateInfo? = withContext(Dispatchers.IO) {
+    /** Backward-compatible one-off check used by the explicit user action. */
+    suspend fun checkLatestRelease(): AppUpdateInfo? {
+        return (checkLatestReleaseResult() as? GitHubReleaseCheckResult.Success)?.update
+    }
+
+    /**
+     * Performs a conditional request when an ETag is available. Callers can
+     * distinguish an unchanged release from a failed request, so a temporary
+     * network failure never clears a previously discovered update.
+     */
+    suspend fun checkLatestReleaseResult(
+        ifNoneMatch: String? = null,
+    ): GitHubReleaseCheckResult = withContext(Dispatchers.IO) {
         runCatching {
             TunnelNetworks.withLocalProxyAuthenticator {
                 val url = URL(GitHubApiUrl)
@@ -42,21 +54,36 @@ internal class GitHubReleaseChecker(
                     readTimeout = 20000
                     setRequestProperty("Accept", "application/vnd.github.v3+json")
                     setRequestProperty("User-Agent", "SKIPI-App/${ProjectInfo.VERSION_NAME}")
+                    ifNoneMatch?.takeIf(String::isNotBlank)?.let { value ->
+                        setRequestProperty("If-None-Match", value)
+                    }
                 }
 
-                val statusCode = connection.responseCode
-                if (statusCode != HttpURLConnection.HTTP_OK) {
-                    AndroidAppLogger.warn(LogTag, "GitHub release check failed: HTTP $statusCode")
-                    return@withLocalProxyAuthenticator null
-                }
+                try {
+                    when (val statusCode = connection.responseCode) {
+                        HttpURLConnection.HTTP_OK -> {
+                            val responseText = connection.inputStream.bufferedReader().use(BufferedReader::readText)
+                            val releaseJson = json.parseToJsonElement(responseText).jsonObject
+                            GitHubReleaseCheckResult.Success(
+                                update = parseRelease(releaseJson),
+                                eTag = connection.getHeaderField("ETag"),
+                            )
+                        }
 
-                val responseText = connection.inputStream.bufferedReader().use(BufferedReader::readText)
-                val releaseJson = json.parseToJsonElement(responseText).jsonObject
-                parseRelease(releaseJson)
+                        HttpURLConnection.HTTP_NOT_MODIFIED -> GitHubReleaseCheckResult.NotModified
+
+                        else -> {
+                            AndroidAppLogger.warn(LogTag, "GitHub release check failed: HTTP $statusCode")
+                            GitHubReleaseCheckResult.Failed
+                        }
+                    }
+                } finally {
+                    connection.disconnect()
+                }
             }
         }.onFailure { error ->
             AndroidAppLogger.warn(LogTag, "Error checking GitHub release: ${error.message}", error)
-        }.getOrNull()
+        }.getOrElse { GitHubReleaseCheckResult.Failed }
     }
 
     private fun parseRelease(root: JsonObject): AppUpdateInfo? {
@@ -161,4 +188,15 @@ internal class GitHubReleaseChecker(
             return (remoteVersionCode ?: 0) > currentVersionCode
         }
     }
+}
+
+internal sealed interface GitHubReleaseCheckResult {
+    data class Success(
+        val update: AppUpdateInfo?,
+        val eTag: String?,
+    ) : GitHubReleaseCheckResult
+
+    data object NotModified : GitHubReleaseCheckResult
+
+    data object Failed : GitHubReleaseCheckResult
 }

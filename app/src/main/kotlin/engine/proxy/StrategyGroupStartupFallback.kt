@@ -4,6 +4,7 @@
 package engine.proxy
 
 import app.AppState
+import app.proxyServerIdFromOutboundTag
 import engine.xray.strategyGroupMembers
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
@@ -36,4 +37,22 @@ internal fun AppState.withStrategyGroupStartupFallback(
             }
         },
     )
+}
+
+/**
+ * Resolves a concrete member observed in Xray outbound counters back to the
+ * selected strategy group.  Tags from unrelated policy groups are rejected.
+ */
+internal fun AppState.strategyGroupMemberIdForOutbound(
+    strategyGroupId: Int,
+    outboundTag: String,
+): Int? {
+    val memberId = outboundTag.proxyServerIdFromOutboundTag() ?: return null
+    val group = proxyServers
+        .firstOrNull { server -> server.id == strategyGroupId }
+        ?.server as? StrategyGroup
+        ?: return null
+    return memberId.takeIf { id ->
+        strategyGroupMembers(group).any { member -> member.id == id }
+    }
 }

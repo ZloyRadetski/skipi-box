@@ -112,4 +112,40 @@ class AndroidResourceFileStoreTest {
             ),
         )
     }
+
+    @Test
+    fun testProfileActivatesItsOwnBundledSnapshotWhenProviderChanges() {
+        assertTrue(
+            requiresBundledResourceSourceActivation(
+                isProfileScoped = true,
+                storedSource = ResourceFileSourceLoyalsoldierGithub,
+                requestedSource = ResourceFileSourceRoscomvpnGithub,
+            ),
+        )
+        assertTrue(
+            requiresBundledResourceSourceActivation(
+                isProfileScoped = true,
+                storedSource = null,
+                requestedSource = ResourceFileSourceV2FlyGithub,
+            ),
+        )
+        assertFalse(
+            requiresBundledResourceSourceActivation(
+                isProfileScoped = true,
+                storedSource = ResourceFileSourceRunetFreedomGithub,
+                requestedSource = ResourceFileSourceRunetFreedomGithub,
+            ),
+        )
+    }
+
+    @Test
+    fun testLegacyUnscopedDirectoryDoesNotReinterpretItsProvider() {
+        assertFalse(
+            requiresBundledResourceSourceActivation(
+                isProfileScoped = false,
+                storedSource = ResourceFileSourceLoyalsoldierGithub,
+                requestedSource = ResourceFileSourceRoscomvpnGithub,
+            ),
+        )
+    }
 }

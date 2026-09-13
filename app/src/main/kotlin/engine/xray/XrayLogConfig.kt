@@ -11,6 +11,9 @@ import kotlinx.serialization.json.put
 internal fun XrayConfigRequest.buildXrayLogConfig(): JsonObject {
     return buildJsonObject {
         put("loglevel", appState.xrayLogLevel())
+        // DNS query entries are valuable when explicitly diagnosing a DNS
+        // path, but are too noisy for the normal info/warning/error modes.
+        put("dnsLog", appState.coreLogLevel == 0)
         put("access", appState.xrayAccessLogPath(coreLogPaths))
         put("error", coreLogPaths.errorLogPath)
     }

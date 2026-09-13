@@ -8,6 +8,7 @@ import app.ResourceFileKind
 import app.ResourceFileUpdateSource
 import app.ResourceFilesStatus
 import features.resources.runtime.AndroidResourceFileDownloadCancelledException
+import features.resources.runtime.XrayResourceFileScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -37,6 +38,7 @@ internal sealed interface ResourceFileUpdateRequest {
     val targets: Set<ResourceFileUpdateTarget>
 
     class BuiltIn(
+        val scope: XrayResourceFileScope,
         val kind: ResourceFileKind,
         val source: ResourceFileUpdateSource,
         val options: ResourceFileUpdateOptions,
@@ -47,6 +49,7 @@ internal sealed interface ResourceFileUpdateRequest {
     }
 
     class Custom(
+        val scope: XrayResourceFileScope,
         val file: CustomResourceFileState,
         val options: ResourceFileUpdateOptions,
         customResourceFiles: List<CustomResourceFileState>,
@@ -56,6 +59,7 @@ internal sealed interface ResourceFileUpdateRequest {
     }
 
     class All(
+        val scope: XrayResourceFileScope,
         val source: ResourceFileUpdateSource,
         val options: ResourceFileUpdateOptions,
         customResourceFiles: List<CustomResourceFileState>,

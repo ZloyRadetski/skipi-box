@@ -201,7 +201,7 @@ private const val TrafficUnitThreshold = 1000L
 private const val TrafficUnitDivisor = 1024.0
 
 private val TrafficUnits = listOf("B", "KB", "MB", "GB", "TB", "PB")
-internal fun xrayTrafficExcludedInboundTags(apiTag: String): Set<String> = setOf(
-    apiTag,
+internal fun xrayTrafficExcludedInboundTags(): Set<String> = setOf(
     XrayTags.DEFAULT_ROUTE_LOOPBACK_INBOUND,
+    XrayTags.DNS_PROXY_LOOPBACK_INBOUND,
 )

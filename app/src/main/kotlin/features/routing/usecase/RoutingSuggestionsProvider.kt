@@ -9,6 +9,7 @@ import app.CustomResourceFileState
 import app.ResourceFileKind
 import app.sanitizeCustomResourceFileName
 import features.config.TrafficConfigState
+import features.resources.runtime.XrayResourceFileScope
 import features.resources.runtime.xrayResourceFilesDir
 import java.io.File
 
@@ -137,7 +138,8 @@ object RoutingSuggestionsProvider {
         trafficConfigId: Int? = null,
     ): List<GeoSuggestionItem> {
         val result = mutableListOf<GeoSuggestionItem>()
-        val dataDir = context.xrayResourceFilesDir()
+        val targetConfig = findTargetTrafficConfig(appState, trafficConfigId)
+        val dataDir = context.xrayResourceFilesDir(targetConfig.resourceFileScopeOrNull())
 
         // 1. Standard geosite.dat
         val standardGeoSiteFile = File(dataDir, ResourceFileKind.GeoSite.fileName)
@@ -160,7 +162,6 @@ object RoutingSuggestionsProvider {
         }
 
         // 2. Custom files from the target profile and global AppState
-        val targetConfig = findTargetTrafficConfig(appState, trafficConfigId)
         val customFiles = collectCustomFiles(targetConfig, appState)
 
         customFiles.forEach { customFile ->
@@ -209,7 +210,8 @@ object RoutingSuggestionsProvider {
         forShadowrocket: Boolean = false,
     ): List<GeoSuggestionItem> {
         val result = mutableListOf<GeoSuggestionItem>()
-        val dataDir = context.xrayResourceFilesDir()
+        val targetConfig = findTargetTrafficConfig(appState, trafficConfigId)
+        val dataDir = context.xrayResourceFilesDir(targetConfig.resourceFileScopeOrNull())
 
         // 1. Standard geoip.dat
         val standardGeoIpFile = File(dataDir, ResourceFileKind.GeoIp.fileName)
@@ -232,7 +234,6 @@ object RoutingSuggestionsProvider {
         }
 
         // 2. Custom files
-        val targetConfig = findTargetTrafficConfig(appState, trafficConfigId)
         val customFiles = collectCustomFiles(targetConfig, appState)
 
         customFiles.forEach { customFile ->
@@ -307,5 +308,14 @@ object RoutingSuggestionsProvider {
         }
 
         return list
+    }
+
+    private fun TrafficConfigState?.resourceFileScopeOrNull(): XrayResourceFileScope? {
+        return this?.let { config ->
+            XrayResourceFileScope(
+                trafficConfigId = config.id,
+                resourceFileSource = config.resourceSettings.source,
+            )
+        }
     }
 }

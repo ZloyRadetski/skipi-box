@@ -19,6 +19,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.os.PowerManager
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import app.MainActivity
 import app.R
@@ -39,7 +40,10 @@ import engine.stats.ProxyTrafficStatsService
 import features.quicksettings.ProxyQuickSettingsTileService
 import engine.vpn.hevtun.HevTunRuntime
 import engine.xray.clearCoreLogs
+import engine.xray.startCoreLogTailers
+import engine.xray.stopCoreLogTailers
 import features.logs.AndroidAppLogger
+import features.logs.CoreLogFileTailer
 import ui.feedback.AppHapticFeedback
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -61,6 +65,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class SkipiVpnService : VpnService() {
     private var tunFileDescriptor: ParcelFileDescriptor? = null
     private var hevTunRuntime: HevTunRuntime? = null
+    private var coreLogTailers: List<CoreLogFileTailer> = emptyList()
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.IO)
     private val operationMutex = Mutex()
@@ -300,6 +305,9 @@ class SkipiVpnService : VpnService() {
             acquireWakeLock()
         }
         config.coreLogPaths.clearCoreLogs(LogTag)
+        // Start before Xray so startup and first DNS/access events cannot be
+        // missed by a tailer that otherwise begins at the current file end.
+        coreLogTailers = config.coreLogPaths.startCoreLogTailers(config.enableAccessLog)
         SkipiCoreRuntime.setSocketProtector { fd ->
             this@SkipiVpnService.protect(fd)
         }
@@ -480,6 +488,12 @@ class SkipiVpnService : VpnService() {
             AndroidAppLogger.warn(LogTag, "Failed to stop SKIPI Core while stopping VPN Service", error)
         }
         runCatching {
+            coreLogTailers.stopCoreLogTailers()
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to stop Xray log tailers while stopping VPN Service", error)
+        }
+        coreLogTailers = emptyList()
+        runCatching {
             tunFileDescriptor?.close()
         }.onFailure { error ->
             AndroidAppLogger.warn(LogTag, "Failed to close VPN TUN file descriptor", error)
@@ -593,6 +607,7 @@ class SkipiVpnService : VpnService() {
 
     companion object {
         private const val LogTag = "SkipiVpnService"
+        private const val RequestQueueLogThresholdMillis = 100L
 
         @Volatile
         private var running = false
@@ -604,35 +619,42 @@ class SkipiVpnService : VpnService() {
         @Volatile
         private var pendingStart: PendingStart? = null
 
-        internal suspend fun start(context: Context, config: VpnServiceStartConfig) = startMutex.withLock {
-            val request = PendingStart(
-                operationId = nextOperationId(),
-                result = CompletableDeferred(),
-            )
-            pendingStart = request
-            try {
-                ContextCompat.startForegroundService(
-                    context.applicationContext,
-                    SkipiVpnServiceIntents.startIntent(
-                        context = context.applicationContext,
-                        config = config,
-                        operationId = request.operationId,
-                    ),
+        internal suspend fun start(context: Context, config: VpnServiceStartConfig) {
+            val queuedAt = SystemClock.elapsedRealtime()
+            startMutex.withLock {
+                val lockWaitMillis = SystemClock.elapsedRealtime() - queuedAt
+                if (lockWaitMillis >= RequestQueueLogThresholdMillis) {
+                    AndroidAppLogger.info(LogTag, "VPN start waited ${lockWaitMillis}ms for a service request")
+                }
+                val request = PendingStart(
+                    operationId = nextOperationId(),
+                    result = CompletableDeferred(),
                 )
-                withTimeout(15_000.milliseconds) {
-                    request.result.await()
-                }.getOrThrow()
-            } catch (error: TimeoutCancellationException) {
-                invalidateOperation(request.operationId)
-                VpnServiceStartConfigStore.remove(request.operationId)
-                throw IllegalStateException("VPN service start timed out", error)
-            } catch (error: Throwable) {
-                invalidateOperation(request.operationId)
-                VpnServiceStartConfigStore.remove(request.operationId)
-                throw error
-            } finally {
-                if (pendingStart === request) {
-                    pendingStart = null
+                pendingStart = request
+                try {
+                    ContextCompat.startForegroundService(
+                        context.applicationContext,
+                        SkipiVpnServiceIntents.startIntent(
+                            context = context.applicationContext,
+                            config = config,
+                            operationId = request.operationId,
+                        ),
+                    )
+                    withTimeout(15_000.milliseconds) {
+                        request.result.await()
+                    }.getOrThrow()
+                } catch (error: TimeoutCancellationException) {
+                    invalidateOperation(request.operationId)
+                    VpnServiceStartConfigStore.remove(request.operationId)
+                    throw IllegalStateException("VPN service start timed out", error)
+                } catch (error: Throwable) {
+                    invalidateOperation(request.operationId)
+                    VpnServiceStartConfigStore.remove(request.operationId)
+                    throw error
+                } finally {
+                    if (pendingStart === request) {
+                        pendingStart = null
+                    }
                 }
             }
         }
@@ -643,21 +665,32 @@ class SkipiVpnService : VpnService() {
         internal suspend fun stop(
             context: Context,
             keepForegroundNotification: Boolean = false,
-        ) = startMutex.withLock {
-            val request = PendingStop(
-                operationId = nextOperationId(),
-                result = CompletableDeferred(),
-            )
-            pendingStop = request
-            running = false
+        ) {
+            // Only serialise creation of the service request. Holding this
+            // mutex while waiting for Android's STOP callback made a following
+            // START wait the complete 5-second stop timeout.
+            val request = startMutex.withLock {
+                pendingStop ?: PendingStop(
+                    operationId = nextOperationId(),
+                    result = CompletableDeferred(),
+                ).also { pending ->
+                    pendingStop = pending
+                    running = false
+                    runCatching {
+                        context.applicationContext.startService(
+                            SkipiVpnServiceIntents.stopIntent(
+                                context = context.applicationContext,
+                                operationId = pending.operationId,
+                                keepForegroundNotification = keepForegroundNotification,
+                            ),
+                        )
+                    }.onFailure { error ->
+                        AndroidAppLogger.warn(LogTag, "Failed to request VPN service stop", error)
+                        pending.result.complete(Unit)
+                    }
+                }
+            }
             try {
-                context.applicationContext.startService(
-                    SkipiVpnServiceIntents.stopIntent(
-                        context = context.applicationContext,
-                        operationId = request.operationId,
-                        keepForegroundNotification = keepForegroundNotification,
-                    ),
-                )
                 withTimeout(5_000.milliseconds) {
                     request.result.await()
                 }
@@ -665,8 +698,6 @@ class SkipiVpnService : VpnService() {
                 // Keep this operation current. A delayed STOP must still
                 // tear down the old core unless a newer START supersedes it.
                 AndroidAppLogger.warn(LogTag, "VPN service stop timed out", error)
-            } catch (error: Throwable) {
-                AndroidAppLogger.warn(LogTag, "Failed to request VPN service stop", error)
             } finally {
                 if (pendingStop === request) {
                     pendingStop = null

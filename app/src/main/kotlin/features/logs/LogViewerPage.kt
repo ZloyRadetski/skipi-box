@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +35,7 @@ import app.R
 import ui.components.BackNavigationIcon
 import ui.components.NavigationIcon
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.stringResource
@@ -126,11 +127,18 @@ private fun LogViewerPage(
     val exportedMessage = stringResource(R.string.logs_exported)
     val exportFailedMessage = stringResource(R.string.logs_export_failed)
 
+    DisposableEffect(repository) {
+        val viewerLease = CoreLogTailerPollingPolicy.acquireViewer()
+        onDispose { viewerLease.close() }
+    }
+
     LaunchedEffect(repository) {
-        while (true) {
-            repository.refresh()
-            logEntries = repository.entries.value
-            delay(1500)
+        // A tailer pushes new entries into this flow. Re-reading the complete
+        // log file every 1.5 seconds made the viewer wake storage and rebuild
+        // its list even while no line had arrived.
+        repository.refresh()
+        repository.entries.collect { entries ->
+            logEntries = entries
         }
     }
 

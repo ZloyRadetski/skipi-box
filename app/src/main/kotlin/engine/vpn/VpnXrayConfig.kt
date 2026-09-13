@@ -6,6 +6,7 @@ package engine.vpn
 import android.content.Context
 import android.os.Process
 import app.AppState
+import app.activeTrafficConfig
 import app.effectiveLocalDnsEnabled
 import engine.hevtun.DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis
 import engine.hevtun.HevSocks5TunnelConfig
@@ -17,7 +18,6 @@ import engine.proxy.LocalProxyOptions
 import engine.proxy.ProxyEngineStartRequest
 import engine.proxy.buildLocalSocksInbound
 import engine.proxy.toLocalProxyOptions
-import engine.proxy.xrayStatsApiConfig
 import engine.xray.XrayConfigFactory
 import engine.xray.XrayConfigRequest
 import engine.xray.XrayCoreLogPaths
@@ -31,6 +31,7 @@ import engine.network.isIpv4Address
 import engine.network.isPort
 import engine.network.isTcpPortAvailable
 import features.resources.runtime.prepareXrayResourceFilePaths
+import features.resources.runtime.XrayResourceFileScope
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.OlcRtc
@@ -101,15 +102,23 @@ internal fun VpnServiceStartConfig.xrayTunFd(vpnTunFd: Int): Int {
 
 internal object VpnXrayConfigFactory {
     fun create(context: Context, request: ProxyEngineStartRequest): VpnServiceStartConfig {
-        val appState = request.appState
+        // Android's Always-on entry point reaches this factory directly, so
+        // enforce the strict policy here as well as in AndroidProxyEngine.
+        val appState = request.appState.withStrictFullTunnelApplied()
         val tunOptions = appState.toTunOptions()
         val localProxyOptions = appState.toLocalProxyOptions()
         val appendHttpProxyOptions = appState.toVpnAppendHttpProxyOptions(
             localProxyOptions = localProxyOptions,
-            excludedPorts = setOfNotNull(request.xrayStatsApiPort),
+            excludedPorts = emptySet(),
         )
         val coreLogPaths = context.prepareXrayCoreLogPaths()
-        val resourceFilePaths = context.prepareXrayResourceFilePaths()
+        val resourceScope = appState.activeTrafficConfig()?.let { config ->
+            XrayResourceFileScope(
+                trafficConfigId = config.id,
+                resourceFileSource = config.resourceSettings.source,
+            )
+        }
+        val resourceFilePaths = context.prepareXrayResourceFilePaths(scope = resourceScope)
         appState.validateXrayExternalRoutingResources(resourceFilePaths.dataDir)
         val rawOutboundPlan = appState.buildXrayOutboundPlan(request.selectedServer)
 
@@ -119,7 +128,6 @@ internal object VpnXrayConfigFactory {
             reservedPorts = setOfNotNull(
                 localProxyOptions.port,
                 appendHttpProxyOptions.port.takeIf { appendHttpProxyOptions.enabled },
-                request.xrayStatsApiPort,
             ),
         )
         val outboundPlan = bridgePlan.outboundPlan
@@ -139,7 +147,7 @@ internal object VpnXrayConfigFactory {
                 dataDir = resourceFilePaths.dataDir,
                 dnsHosts = dnsHosts,
                 dnsHijackInboundTags = vpnDnsHijackInboundTags(appState.enableVpnHevTun),
-                statsApiConfig = request.xrayStatsApiConfig(),
+                collectTrafficStats = true,
                 outboundPlan = outboundPlan,
             ),
         )

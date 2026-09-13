@@ -15,7 +15,6 @@ import java.io.RandomAccessFile
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.time.Duration.Companion.milliseconds
 
 internal data class CoreLogFile(
     val path: String,
@@ -25,6 +24,7 @@ internal data class CoreLogFile(
 internal class CoreLogFileTailer(
     private val logFiles: List<CoreLogFile>,
     private val repository: CoreLogRepository,
+    private val startAtEnd: Boolean = true,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -45,16 +45,21 @@ internal class CoreLogFileTailer(
     private suspend fun tail(logFile: CoreLogFile) {
         val file = File(logFile.path)
         file.parentFile?.mkdirs()
-        var position = runCatching { file.length() }.getOrDefault(0L)
+        var position = if (startAtEnd) {
+            runCatching { file.length() }.getOrDefault(0L)
+        } else {
+            0L
+        }
         var failureLogged = false
 
         while (scope.isActive) {
             if (!file.exists()) {
-                delay(TailIntervalMillis.milliseconds)
+                delay(CoreLogTailerPollingPolicy.intervalMillis())
                 continue
             }
 
             runCatching {
+                val lines = ArrayList<String>()
                 RandomAccessFile(file, "r").use { reader ->
                     if (position > reader.length()) {
                         position = 0L
@@ -63,11 +68,12 @@ internal class CoreLogFileTailer(
 
                     var line = reader.readUtf8Line()
                     while (line != null) {
-                        repository.appendParsedCoreLogLine(line, logFile.defaultLevel)
+                        lines += line
                         line = reader.readUtf8Line()
                     }
                     position = reader.filePointer
                 }
+                repository.appendParsedCoreLogLines(lines, logFile.defaultLevel)
             }.onSuccess {
                 failureLogged = false
             }.onFailure { error ->
@@ -77,7 +83,7 @@ internal class CoreLogFileTailer(
                 }
             }
 
-            delay(TailIntervalMillis.milliseconds)
+            delay(CoreLogTailerPollingPolicy.intervalMillis())
         }
     }
 
@@ -89,11 +95,10 @@ internal class CoreLogFileTailer(
 
     private companion object {
         private const val LogTag = "CoreLogFileTailer"
-        private const val TailIntervalMillis = 500L
     }
 }
 
-internal data class ParsedCoreLogLine(
+data class ParsedCoreLogLine(
     val time: String?,
     val level: String,
     val message: String,
@@ -152,6 +157,10 @@ internal fun CoreLogRepository.appendParsedCoreLogLine(line: String, defaultLeve
     } else {
         append(level = parsedLine.level, message = parsedLine.message, time = parsedLine.time)
     }
+}
+
+internal fun CoreLogRepository.appendParsedCoreLogLines(lines: List<String>, defaultLevel: String) {
+    appendBatch(lines.mapNotNull { line -> parseCoreLogLine(line, defaultLevel) })
 }
 
 internal fun parseCoreLogLine(line: String, defaultLevel: String): ParsedCoreLogLine? {

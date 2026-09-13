@@ -37,6 +37,7 @@ private fun JsonObject.overwriteInboundDns(
     val outboundsRewrite = rewriteCustomDnsOutbounds(
         appState = request.appState,
         enableLocalDns = request.appState.effectiveLocalDnsEnabled,
+        dnsPlan = dnsPlan,
     )
     val routing = rewriteCustomDnsRouting(
         CustomDnsRoutingPlan(
@@ -65,6 +66,7 @@ private data class CustomOutboundsRewrite(
 private fun JsonObject.rewriteCustomDnsOutbounds(
     appState: AppState,
     enableLocalDns: Boolean,
+    dnsPlan: XrayDnsPlan,
 ): CustomOutboundsRewrite {
     val proxyOutbounds = (arrayValue("outbounds") ?: buildJsonArray {}).withProxyOutboundTag()
     val rewrittenOutbounds = buildJsonArray {
@@ -83,9 +85,9 @@ private fun JsonObject.rewriteCustomDnsOutbounds(
         )
         if (enableLocalDns) {
             add(
-                buildSimpleOutbound(
-                    tag = XrayTags.DNS_OUT,
-                    protocol = XrayProtocols.DNS,
+                buildXrayDnsOutbound(
+                    fallback = dnsPlan.nonIpQueryFallback,
+                    proxyOutboundTag = proxyOutbounds.proxyOutboundTag,
                 ),
             )
         }

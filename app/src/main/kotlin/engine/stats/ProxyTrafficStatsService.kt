@@ -22,9 +22,10 @@ import app.R
 import app.activeTunnelTargetDisplayName
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
+import engine.proxy.StrategyGroupActiveMemberStore
+import engine.proxy.strategyGroupMemberIdForOutbound
 import engine.vpn.SkipiVpnService
 import engine.vpn.VpnForegroundNotification
-import engine.xray.XrayStatsApiTag
 import features.logs.AndroidAppLogger
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
@@ -32,11 +33,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import java.util.Locale
-import kotlin.time.Duration.Companion.milliseconds
 
 class ProxyTrafficStatsService : Service() {
     private val serviceJob = SupervisorJob()
@@ -88,9 +87,10 @@ class ProxyTrafficStatsService : Service() {
     private var activeRuntime: ProxyTrafficStatsRuntime? = null
     private var accumulator = XrayTrafficSessionAccumulator()
     private var latestSample = EmptyTrafficSample
-    private var previousOutboundTotals = emptyMap<String, XrayTrafficBytes>()
     private var activeOutboundTag: String? = null
     private var activeTargetName = ""
+    private var lastSampleAtElapsedRealtime = 0L
+    private var lastNotificationPublishedAtElapsedRealtime = 0L
     private var resumeInProgress = false
     @Volatile
     private var pauseStopJob: Job? = null
@@ -105,6 +105,7 @@ class ProxyTrafficStatsService : Service() {
                     val runtime = activeRuntime
                     if (runtime != null && !runtime.paused) {
                         publishNotification(runtime, latestSample)
+                        lastNotificationPublishedAtElapsedRealtime = SystemClock.elapsedRealtime()
                     }
                 }
                 Intent.ACTION_SCREEN_OFF -> {
@@ -154,7 +155,7 @@ class ProxyTrafficStatsService : Service() {
             return START_NOT_STICKY
         }
 
-        val runtime = ProxyTrafficStatsRuntimeStore.read(this) ?: intent?.readRuntime()
+        val runtime = ProxyTrafficStatsRuntimeStore.read(this)
         if (runtime == null) {
             stopStats()
             return START_NOT_STICKY
@@ -166,9 +167,10 @@ class ProxyTrafficStatsService : Service() {
         if (runtime != activeRuntime) {
             accumulator = XrayTrafficSessionAccumulator()
             latestSample = EmptyTrafficSample
-            previousOutboundTotals = emptyMap()
             activeOutboundTag = null
             activeTargetName = runtime.serverName
+            lastSampleAtElapsedRealtime = 0L
+            lastNotificationPublishedAtElapsedRealtime = 0L
         }
         activeRuntime = runtime
         startStats(runtime)
@@ -197,58 +199,61 @@ class ProxyTrafficStatsService : Service() {
             if (runtime.paused) stopStats()
             return
         }
+        lastNotificationPublishedAtElapsedRealtime = SystemClock.elapsedRealtime()
 
         if (runtime.paused) return
 
         val sessionAccumulator = accumulator
         pollingJob = serviceScope.launch {
-            var lastPollAt = SystemClock.elapsedRealtime()
-            var nextOutboundPollAt = 0L
-            var failures = 0
-            XrayStatsClient(
-                listenAddress = runtime.listenAddress,
-                port = runtime.port,
-                apiTag = runtime.apiTag,
-            ).use { client ->
-                while (isActive) {
-                    val currentPollInterval = if (isScreenInteractive) {
-                        PollIntervalMillis
-                    } else {
-                        ScreenOffPollIntervalMillis
+            CoreTrafficStatsSampler.acquire(applicationContext).use {
+                CoreTrafficStatsSampler.samples.collect { sharedSample ->
+                    if (sharedSample == null || sharedSample.runtime != activeRuntime) return@collect
+
+                    val now = sharedSample.sampledAtElapsedRealtime
+                    val previousSampleAt = lastSampleAtElapsedRealtime
+                        .takeIf { value -> value > 0L }
+                        ?: runtime.startedAtElapsedRealtime
+                    val elapsedMillis = (now - previousSampleAt).coerceAtLeast(1_000L)
+                    lastSampleAtElapsedRealtime = now
+
+                    val previousActiveTag = activeOutboundTag
+                    sharedSample.activeOutboundTag?.let { tag ->
+                        activeOutboundTag = tag
                     }
-                    delay(currentPollInterval.milliseconds)
-                    val now = SystemClock.elapsedRealtime()
-                    val elapsedMillis = now - lastPollAt
-                    lastPollAt = now
-                    runCatching {
-                        client.queryInboundTraffic(reset = true)
-                    }.onSuccess { delta ->
-                        failures = 0
-                        if (isScreenInteractive && now >= nextOutboundPollAt) {
-                            nextOutboundPollAt = now + OutboundPollIntervalMillis
-                            runCatching { client.queryOutboundTraffic(reset = false) }
-                                .onSuccess { totals ->
-                                    totals.maxTrafficDeltaComparedTo(previousOutboundTotals, currentActiveTag = activeOutboundTag)?.let { tag ->
-                                        activeOutboundTag = tag
-                                    }
-                                    previousOutboundTotals = totals
-                                    activeTargetName = resolveActiveTargetName(runtime)
-                                }
-                                .onFailure { error ->
-                                    AndroidAppLogger.warn(LogTag, "Failed to resolve active VPN outbound", error)
-                                }
-                        }
-                        latestSample = sessionAccumulator.record(delta, elapsedMillis)
-                        if (isScreenInteractive) {
-                            publishNotification(runtime, latestSample)
-                        }
-                    }.onFailure { error ->
-                        failures += 1
-                        AndroidAppLogger.warn(LogTag, "Failed to query Xray traffic stats", error)
-                        if (failures >= MaxConsecutiveFailures) {
-                            AndroidAppLogger.warn(LogTag, "Stopping traffic stats notification after repeated failures")
-                            stopStats()
-                        }
+                    val activeTargetChanged = activeOutboundTag != previousActiveTag
+                    if (activeTargetChanged && activeOutboundTag != null) {
+                        stateStore.state.value
+                            .strategyGroupMemberIdForOutbound(
+                                strategyGroupId = runtime.selectedServerId,
+                                outboundTag = activeOutboundTag.orEmpty(),
+                            )
+                            ?.let { memberId ->
+                                // The shared sample is based on Xray's actual
+                                // per-outbound byte counters, so it is safe to
+                                // reuse this member on the next startup.
+                                StrategyGroupActiveMemberStore.record(
+                                    context = applicationContext,
+                                    strategyGroupId = runtime.selectedServerId,
+                                    memberId = memberId,
+                                )
+                            }
+                    }
+                    if (activeTargetChanged && isScreenInteractive) {
+                        activeTargetName = resolveActiveTargetName(runtime)
+                    }
+
+                    latestSample = sessionAccumulator.record(sharedSample.inboundDelta, elapsedMillis)
+                    if (
+                        isScreenInteractive &&
+                        shouldPublishTrafficNotification(
+                            trafficDelta = sharedSample.inboundDelta,
+                            lastPublishedAtElapsedRealtime = lastNotificationPublishedAtElapsedRealtime,
+                            nowElapsedRealtime = now,
+                            activeTargetChanged = activeTargetChanged,
+                        )
+                    ) {
+                        publishNotification(runtime, latestSample)
+                        lastNotificationPublishedAtElapsedRealtime = now
                     }
                 }
             }
@@ -261,9 +266,10 @@ class ProxyTrafficStatsService : Service() {
         activeRuntime = null
         accumulator = XrayTrafficSessionAccumulator()
         latestSample = EmptyTrafficSample
-        previousOutboundTotals = emptyMap()
         activeOutboundTag = null
         activeTargetName = ""
+        lastSampleAtElapsedRealtime = 0L
+        lastNotificationPublishedAtElapsedRealtime = 0L
         resumeInProgress = false
         if (ownsForegroundNotification) {
             runCatching {
@@ -473,20 +479,6 @@ class ProxyTrafficStatsService : Service() {
         }
     }
 
-    private fun Intent.readRuntime(): ProxyTrafficStatsRuntime? {
-        val listenAddress = getStringExtra(ExtraListenAddress)?.takeIf(String::isNotBlank) ?: return null
-        val port = getIntExtra(ExtraPort, 0).takeIf { value -> value > 0 } ?: return null
-        val serverName = getStringExtra(ExtraServerName).orEmpty()
-        return ProxyTrafficStatsRuntime(
-            listenAddress = listenAddress,
-            port = port,
-            serverName = serverName,
-            apiTag = getStringExtra(ExtraApiTag)
-                ?.takeIf(String::isNotBlank)
-                ?: XrayStatsApiTag,
-        )
-    }
-
     companion object {
         internal fun reconcile(context: Context, runtime: ProxyTrafficStatsRuntime?) {
             if (runtime == null) {
@@ -504,10 +496,6 @@ class ProxyTrafficStatsService : Service() {
             ProxyTrafficStatsRuntimeStore.write(appContext, runtime)
             val startIntent = Intent(appContext, ProxyTrafficStatsService::class.java)
                 .setAction(ActionStart)
-                .putExtra(ExtraListenAddress, runtime.listenAddress)
-                .putExtra(ExtraPort, runtime.port)
-                .putExtra(ExtraServerName, runtime.serverName)
-                .putExtra(ExtraApiTag, runtime.apiTag)
             runCatching {
                 if (runtime.paused) {
                     ContextCompat.startForegroundService(appContext, startIntent)
@@ -524,6 +512,19 @@ class ProxyTrafficStatsService : Service() {
             appContext.stopService(Intent(appContext, ProxyTrafficStatsService::class.java))
         }
     }
+}
+
+internal fun shouldPublishTrafficNotification(
+    trafficDelta: XrayTrafficBytes,
+    lastPublishedAtElapsedRealtime: Long,
+    nowElapsedRealtime: Long,
+    activeTargetChanged: Boolean,
+): Boolean {
+    return activeTargetChanged ||
+        trafficDelta.uplink > 0L ||
+        trafficDelta.downlink > 0L ||
+        lastPublishedAtElapsedRealtime == 0L ||
+        nowElapsedRealtime - lastPublishedAtElapsedRealtime >= NotificationIdleRefreshMillis
 }
 
 private fun connectionDurationString(runtime: ProxyTrafficStatsRuntime): String {
@@ -543,17 +544,10 @@ private const val ActionStop = "app.action.STOP_PROXY_TRAFFIC_STATS"
 private const val ActionPause = "app.action.PAUSE_PROXY_FROM_NOTIFICATION"
 private const val ActionResume = "app.action.RESUME_PROXY_FROM_NOTIFICATION"
 private const val ActionDisconnect = "app.action.DISCONNECT_PROXY_FROM_NOTIFICATION"
-private const val ExtraListenAddress = "listen_address"
-private const val ExtraPort = "port"
-private const val ExtraServerName = "server_name"
-private const val ExtraApiTag = "api_tag"
 private const val PauseRequestCode = 3002
 private const val ResumeRequestCode = 3003
 private const val DisconnectRequestCode = 3004
-private const val PollIntervalMillis = 2_000L
-private const val ScreenOffPollIntervalMillis = 15_000L
-private const val OutboundPollIntervalMillis = 3_000L
-private const val MaxConsecutiveFailures = 5
+private const val NotificationIdleRefreshMillis = 60_000L
 private val EmptyTrafficSample = XrayTrafficSessionSample(
     speedBytesPerSecond = XrayTrafficBytes(),
     totalBytes = XrayTrafficBytes(),

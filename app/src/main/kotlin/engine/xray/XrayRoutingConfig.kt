@@ -77,6 +77,9 @@ private fun AppState.routingRules(
             ?.takeIf { target -> target.kind == XrayRouteTargetKind.Balancer }
             ?.let { target -> add(buildDefaultBalancerRoute(target)) }
         if (effectiveLocalDnsEnabled) {
+            routeTargets[XrayTags.PROXY]
+                ?.takeIf { target -> target.kind == XrayRouteTargetKind.Balancer }
+                ?.let { target -> add(buildDnsProxyBalancerRoute(target)) }
             buildXrayDnsHijackRule(dnsHijackInboundTags)?.let(::add)
         }
         if (routeDirectDns) {
@@ -110,6 +113,13 @@ private fun buildDefaultBalancerRoute(target: XrayRouteTarget): JsonObject {
     return buildJsonObject {
         target.applyTo(this)
         put("inboundTag", listOf(XrayTags.DEFAULT_ROUTE_LOOPBACK_INBOUND).toJsonStringArray())
+    }
+}
+
+private fun buildDnsProxyBalancerRoute(target: XrayRouteTarget): JsonObject {
+    return buildJsonObject {
+        target.applyTo(this)
+        put("inboundTag", listOf(XrayTags.DNS_PROXY_LOOPBACK_INBOUND).toJsonStringArray())
     }
 }
 
@@ -199,4 +209,5 @@ private val ReservedDefaultRouteOutboundTags = setOf(
     XrayTags.DNS_OUT,
     XrayTags.FRAGMENT,
     XrayTags.DEFAULT_ROUTE_LOOPBACK,
+    XrayTags.DNS_PROXY_LOOPBACK,
 )

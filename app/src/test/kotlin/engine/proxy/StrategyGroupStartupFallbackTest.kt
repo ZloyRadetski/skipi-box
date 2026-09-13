@@ -105,4 +105,24 @@ class StrategyGroupStartupFallbackTest {
         val warmedGroup = warmed.proxyServers.single { server -> server.id == 10 }.server as StrategyGroup
         assertEquals(2, warmedGroup.selectedMemberId)
     }
+
+    @Test
+    fun resolves_only_members_of_the_selected_group_from_observed_outbound_tags() {
+        val group = StrategyGroup(
+            strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+            proxyServerIds = listOf(10, 20),
+        )
+        val state = AppState(
+            proxyServers = listOf(
+                ProxyServerState(10, VLESS(remarks = "First", id = "10", server = "first.example", port = "443"), groupId = 0),
+                ProxyServerState(20, VLESS(remarks = "Second", id = "20", server = "second.example", port = "443"), groupId = 0),
+                ProxyServerState(30, VLESS(remarks = "Other", id = "30", server = "other.example", port = "443"), groupId = 0),
+                ProxyServerState(100, group, groupId = 0),
+            ),
+        )
+
+        assertEquals(20, state.strategyGroupMemberIdForOutbound(100, "proxy-policy-20"))
+        assertNull(state.strategyGroupMemberIdForOutbound(100, "proxy-policy-30"))
+        assertNull(state.strategyGroupMemberIdForOutbound(100, "proxy"))
+    }
 }

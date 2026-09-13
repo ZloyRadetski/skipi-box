@@ -163,7 +163,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
         )
         val probeIntervalIndex = remember(strategyGroupEdit.probeInterval) {
             mutableIntStateOf(
-                probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 3 },
+                probeIntervalValues.indexOf(strategyGroupEdit.probeInterval).let { if (it >= 0) it else 5 },
             )
         }
         val initialTimeoutSec = remember(strategyGroupEdit.probeTimeout) {
@@ -281,7 +281,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     strategyGroupEdit.filter = filterState.text.toString()
                     strategyGroupEdit.strategy = currentStrategy
                     strategyGroupEdit.subscriptionGroupId = effectiveGroupOptions.getOrNull(groupIndex.intValue)?.id
-                    strategyGroupEdit.probeInterval = probeIntervalValues.getOrElse(probeIntervalIndex.intValue) { "15s" }
+                    strategyGroupEdit.probeInterval = probeIntervalValues.getOrElse(probeIntervalIndex.intValue) { "1m" }
                     strategyGroupEdit.probeTimeout = "${probeTimeoutSliderValue.roundToInt().coerceIn(1, 30)}s"
                     strategyGroupEdit.tolerance = toleranceValues.getOrElse(toleranceIndex.intValue) { "50ms" }
                     strategyGroupEdit.enableBurstProbe = burstProbeState.value

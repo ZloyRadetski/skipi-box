@@ -247,6 +247,8 @@
     <string name="settings_seamless_network_switching_summary">Let Android automatically select Wi-Fi or mobile data without restarting the tunnel</string>
     <string name="settings_kill_switch">Kill Switch</string>
     <string name="settings_kill_switch_summary">Opens Android settings to enable Always-on VPN and block connections without VPN</string>
+    <string name="settings_strict_full_tunnel">Strict full tunnel</string>
+    <string name="settings_strict_full_tunnel_summary">Routes managed app traffic through the selected tunnel and disables app exceptions and Direct rules. Raw Xray profiles are not supported.</string>
     <string name="settings_system_vpn_settings">System VPN settings</string>
     <string name="settings_system_vpn_settings_summary">Configure Android Always-on VPN and \"Block connections without VPN\"</string>
     <string name="settings_inbound">Inbound proxy settings</string>

@@ -54,6 +54,9 @@ internal object XrayTags {
     const val BPF2SOCKS_HTTP_INBOUND = "bpf2socks-http-in"
     const val DEFAULT_ROUTE_LOOPBACK = "skipi-internal-default-route-loopback"
     const val DEFAULT_ROUTE_LOOPBACK_INBOUND = "skipi-internal-default-route-loopback-in"
+    /** Lets an outbound-only DNS dialer re-enter routing and use the proxy balancer. */
+    const val DNS_PROXY_LOOPBACK = "skipi-internal-dns-proxy-loopback"
+    const val DNS_PROXY_LOOPBACK_INBOUND = "skipi-internal-dns-proxy-loopback-in"
 
     val FIXED_OUTBOUND_TAGS = setOf(
         PROXY,

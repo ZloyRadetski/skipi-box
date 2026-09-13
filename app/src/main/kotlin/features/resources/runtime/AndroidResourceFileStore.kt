@@ -25,9 +25,11 @@ import java.util.zip.ZipInputStream
 
 internal class AndroidResourceFileStore(
     context: Context,
+    private val scope: XrayResourceFileScope? = null,
 ) {
     private val appContext = context.applicationContext
-    val dataDir: File = appContext.xrayResourceFilesDir()
+    private val legacyDataDir: File = appContext.xrayResourceFilesDir()
+    val dataDir: File = appContext.xrayResourceFilesDir(scope)
 
     fun status(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus {
         return currentStatus(customResourceFiles)
@@ -51,7 +53,8 @@ internal class AndroidResourceFileStore(
     }
 
     fun file(kind: ResourceFileKind): File {
-        return File(dataDir, kind.fileName)
+        val parent = if (kind == ResourceFileKind.XrayCore) legacyDataDir else dataDir
+        return File(parent, kind.fileName)
     }
 
     fun file(customFile: CustomResourceFileState): File {
@@ -65,6 +68,7 @@ internal class AndroidResourceFileStore(
     }
 
     fun synchronizeBundledFilesAfterPackageUpdate(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub) {
+        migrateLegacyFilesIfNeeded(resourceFileSource)
         ensureBundledFiles(
             resourceFileSource = resourceFileSource,
             restoreAfterPackageUpdate = true,
@@ -75,16 +79,18 @@ internal class AndroidResourceFileStore(
         resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
         restoreAfterPackageUpdate: Boolean = false,
     ) {
-        if (!restoreAfterPackageUpdate && verifiedBundledFilesSource == resourceFileSource) {
-            return
-        }
+        val sourceChanged = requiresBundledResourceSourceActivation(
+            isProfileScoped = scope != null,
+            storedSource = storedResourceFileSource(),
+            requestedSource = resourceFileSource,
+        )
         val bundledUpdatedAtMillis = appContext.packageUpdatedAtMillis()
         var allOk = true
         ResourceFileKind.entries.forEach { kind ->
             if (kind == ResourceFileKind.XrayCore) return@forEach
             val target = file(kind)
             if (
-                !target.shouldRestoreBundled(
+                !sourceChanged && !target.shouldRestoreBundled(
                     kind = kind,
                     resourceFileSource = resourceFileSource,
                     bundledUpdatedAtMillis = bundledUpdatedAtMillis,
@@ -93,7 +99,7 @@ internal class AndroidResourceFileStore(
             ) {
                 return@forEach
             }
-            if (!kind.hasBundledAsset(resourceFileSource)) return@forEach
+            if (!sourceChanged && !kind.hasBundledAsset(resourceFileSource)) return@forEach
             runCatching { restoreBundled(kind, resourceFileSource) }
                 .onFailure { error ->
                     allOk = false
@@ -104,7 +110,7 @@ internal class AndroidResourceFileStore(
                 }
         }
         if (allOk) {
-            verifiedBundledFilesSource = resourceFileSource
+            storeResourceFileSource(resourceFileSource)
         }
     }
 
@@ -268,6 +274,11 @@ internal class AndroidResourceFileStore(
         kind.applyPermissions(file(kind))
     }
 
+    /** Records that this profile snapshot now contains files for [resourceFileSource]. */
+    fun markResourceFileSource(resourceFileSource: Int) {
+        storeResourceFileSource(resourceFileSource)
+    }
+
     fun deleteCustom(customFile: CustomResourceFileState) {
         val target = file(customFile)
         if (ResourceFileKind.entries.any { kind -> kind.fileName == target.name }) return
@@ -293,10 +304,14 @@ internal class AndroidResourceFileStore(
         }
     }
 
-    fun preparePaths(restoreBundledFiles: Boolean = true): XrayResourceFilePaths {
+    fun preparePaths(
+        resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
+        restoreBundledFiles: Boolean = true,
+    ): XrayResourceFilePaths {
         dataDir.mkdirs()
+        migrateLegacyFilesIfNeeded(resourceFileSource)
         if (restoreBundledFiles) {
-            ensureBundledFiles()
+            ensureBundledFiles(resourceFileSource = resourceFileSource)
         }
         return currentPaths()
     }
@@ -310,6 +325,59 @@ internal class AndroidResourceFileStore(
             directCidrIpv6Path = file(ResourceFileKind.DirectCidrIpv6).absolutePath,
         )
     }
+
+    /**
+     * Old SKIPI versions kept every profile's files in one shared directory.
+     * Move that snapshot only once, into whichever profile is actually opened
+     * first after the migration. This preserves a user's downloaded data
+     * without letting a later profile inherit a different provider's files.
+     */
+    private fun migrateLegacyFilesIfNeeded(resourceFileSource: Int) {
+        if (scope == null || sourceMarkerFile().isFile || legacyMigrationMarkerFile().isFile) return
+        synchronized(writeLockFor(legacyMigrationMarkerFile())) {
+            if (sourceMarkerFile().isFile || legacyMigrationMarkerFile().isFile) return
+            dataDir.mkdirs()
+            legacyDataDir.listFiles()
+                .orEmpty()
+                .asSequence()
+                .filter { file ->
+                    file.isFile &&
+                        file.name != ResourceFileKind.XrayCore.fileName &&
+                        !file.name.startsWith('.')
+                }
+                .forEach { legacyFile ->
+                    val target = File(dataDir, legacyFile.name)
+                    if (!target.isFile || target.length() <= 0) {
+                        legacyFile.inputStream().use { input ->
+                            writeAtomically(target) { output -> input.copyTo(output) }
+                        }
+                    }
+                }
+            storeResourceFileSource(resourceFileSource)
+            writeAtomically(legacyMigrationMarkerFile()) { output ->
+                output.write(LegacyMigrationMarkerValue.toByteArray(Charsets.UTF_8))
+            }
+        }
+    }
+
+    private fun storedResourceFileSource(): Int? {
+        return sourceMarkerFile()
+            .takeIf(File::isFile)
+            ?.readText()
+            ?.trim()
+            ?.toIntOrNull()
+    }
+
+    private fun storeResourceFileSource(resourceFileSource: Int) {
+        if (scope == null) return
+        writeAtomically(sourceMarkerFile()) { output ->
+            output.write(resourceFileSource.toString().toByteArray(Charsets.UTF_8))
+        }
+    }
+
+    private fun sourceMarkerFile(): File = File(dataDir, ResourceSourceMarkerFileName)
+
+    private fun legacyMigrationMarkerFile(): File = File(legacyDataDir, LegacyMigrationMarkerFileName)
 }
 
 private fun File.shouldRestoreBundled(
@@ -354,18 +422,40 @@ internal data class XrayResourceFilePaths(
     val directCidrIpv6Path: String,
 )
 
-internal fun Context.xrayResourceFilesDir(): File {
-    return File(filesDir, "xray")
+/** Identifies one traffic profile's isolated Xray resource snapshot. */
+internal data class XrayResourceFileScope(
+    val trafficConfigId: Int,
+    val resourceFileSource: Int,
+) {
+    init {
+        require(trafficConfigId > 0) { "Traffic config id must be positive" }
+    }
+}
+
+/** A profile must receive its own bundled snapshot when its selected provider changes. */
+internal fun requiresBundledResourceSourceActivation(
+    isProfileScoped: Boolean,
+    storedSource: Int?,
+    requestedSource: Int,
+): Boolean = isProfileScoped && storedSource != requestedSource
+
+internal fun Context.xrayResourceFilesDir(scope: XrayResourceFileScope? = null): File {
+    val root = File(filesDir, "xray")
+    return scope?.let { File(File(root, XrayResourceProfilesDirName), it.trafficConfigId.toString()) } ?: root
 }
 
 internal fun Context.prepareXrayResourceFilePaths(
+    scope: XrayResourceFileScope? = null,
     restoreBundledFiles: Boolean = true,
 ): XrayResourceFilePaths {
-    return AndroidResourceFileStore(this).preparePaths(restoreBundledFiles = restoreBundledFiles)
+    return AndroidResourceFileStore(this, scope).preparePaths(
+        resourceFileSource = scope?.resourceFileSource ?: ResourceFileSourceLoyalsoldierGithub,
+        restoreBundledFiles = restoreBundledFiles,
+    )
 }
 
-internal fun Context.xrayResourceFilePaths(): XrayResourceFilePaths {
-    return AndroidResourceFileStore(this).currentPaths()
+internal fun Context.xrayResourceFilePaths(scope: XrayResourceFileScope? = null): XrayResourceFilePaths {
+    return AndroidResourceFileStore(this, scope).currentPaths()
 }
 
 private fun ResourceFileKind.hasBundledAsset(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub): Boolean {
@@ -392,9 +482,6 @@ private fun currentRuntimeAbi(): String {
 @Volatile
 private var cachedPackageUpdatedAtMillis: Long? = null
 
-@Volatile
-private var verifiedBundledFilesSource: Int? = null
-
 private fun Context.packageUpdatedAtMillis(): Long {
     cachedPackageUpdatedAtMillis?.let { return it }
     return runCatching {
@@ -415,6 +502,10 @@ private const val Arm64Abi = "arm64-v8a"
 private const val XrayCoreLibraryName = "libxray.so"
 private const val HevSocks5TunnelLibraryName = "libhev-socks5-tunnel-cli.so"
 private const val XrayBundledResourceFilesDir = "xray"
+private const val XrayResourceProfilesDirName = "profiles"
+private const val ResourceSourceMarkerFileName = ".resource-source"
+private const val LegacyMigrationMarkerFileName = ".profile-resources-migrated-v1"
+private const val LegacyMigrationMarkerValue = "done"
 private const val XrayExecutableMode = 493
 
 private val SupportedAndroidAbis = setOf(Arm64Abi, "armeabi-v7a", "x86", "x86_64")
@@ -446,13 +537,11 @@ private fun replaceFile(source: File, target: File) {
         source.delete()
         error("${target.name} is empty")
     }
-    if (target.exists()) {
-        target.delete()
-    }
-    if (!source.renameTo(target)) {
+    try {
         source.inputStream().use { input ->
             writeAtomically(target) { output -> input.copyTo(output) }
         }
+    } finally {
         source.delete()
     }
 }
@@ -474,14 +563,10 @@ internal fun writeAtomically(
                 tempFile.delete()
                 error("${target.name} is empty")
             }
-            if (target.exists() && !target.delete()) {
-                tempFile.delete()
-                error("Failed to replace ${target.name}")
-            }
-            if (!tempFile.renameTo(target)) {
-                tempFile.delete()
-                error("Failed to replace ${target.name}")
-            }
+            // POSIX rename replaces the old entry atomically.  Deleting the
+            // target first made Xray occasionally observe a missing geo file
+            // while a profile update was finishing.
+            Os.rename(tempFile.absolutePath, target.absolutePath)
         } catch (error: Throwable) {
             tempFile.delete()
             throw error
