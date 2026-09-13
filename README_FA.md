@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>کلاینت پروکسی زیبا، سریع و مدرن برای اندروید</strong>
+  <strong>کلاینت پروکسی سریع و راحت برای اندروید</strong>
 </p>
 
 <p align="center">
@@ -20,13 +20,13 @@
 
 ---
 
-## 📢 جامعه و کانال تلگرام
+## کانال و گروه گفتگوی تلگرام
 
-به کانال رسمی تلگرام ما بپیوندید: **[@skipi_public](https://t.me/skipi_public)** ✈️
+کانال پروژه: **[@skipi_public](https://t.me/skipi_public)**
 
-* 🚀 **آخرین نسخه‌ها و فایل‌های APK:** دسترسی زودهنگام به نسخه‌های آزمایشی و قابلیت‌های جدید.
-* 💬 **جامعه و گفتگوها:** سوالات خود را بپرسید، کانفیگ به اشتراک بگذارید و راهنمایی بگیرید.
-* 📢 **اخبار و نقشه راه:** از روند پیشرفت توسعه و اطلاعیه‌ها مطلع شوید.
+* نسخه‌ها و فایل‌های نصبی جدید
+* گفتگو پیرامون کانفیگ‌ها و راهنمایی در مسیریابی
+* اخبار و روند توسعه برنامه
 
 <p align="center">
   <a href="https://t.me/skipi_public">
@@ -38,11 +38,9 @@
 
 ## درباره پروژه
 
-**SKIPI** یک کلاینت مدرن برای دور زدن سانسور اینترنت و مدیریت ترافیک شبکه در اندروید است.
+برنامه SKIPI یک کلاینت اندروید است که عملکرد منعطف شبکه را با رابط کاربری روان و ساده بر پایه Jetpack Compose و پشتیبانی از تم‌های Material You ترکیب می‌کند.
 
-ایده اصلی این پروژه ارائه ابزاری قدرتمند و چندمنظوره با رابط کاربری روان، تمیز و دلنشین برای استفاده روزمره است.
-
-در بخش زیرساخت، برنامه از [Xray-core](https://github.com/XTLS/Xray-core)، [SKIPI Core](https://github.com/ZloyRadetski/skipi-core) و [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) بهره می‌برد. در بخش ظاهری، رابط کاربری با Jetpack Compose ساخته شده و از رنگ‌های پویای Material You و شخصی‌سازی عمیق پشتیبانی می‌کند.
+در بخش زیرساخت، از هسته‌های Xray-core، SKIPI Core، hev-socks5-tunnel و همچنین موتورهای AmneziaWG و olcRTC استفاده می‌شود.
 
 ---
 
@@ -58,16 +56,15 @@
 
 ---
 
-## قابلیت‌های کلیدی
+## امکانات و قابلیت‌ها
 
-* **پشتیبانی از پروتکل‌های اصلی:** VLESS (با پشتیبانی از XTLS Reality و Vision)، VMess، Trojan، Shadowsocks (شامل SS-2022)، Hysteria 2، WireGuard و پروکسی‌های استاندارد SOCKS5/HTTP.
-* **مسیریابی هوشمند ترافیک:** سازگاری کامل با قوانین Shadowrocket (`.conf`). مسیریابی انعطاف‌پذیر بر اساس دامنه، GeoIP، GeoSite و محدوده‌های IP، همراه با جابجایی آسان قوانین.
-* **پشتیبانی آسان از اشتراک‌ها:** خواندن فرمت‌های v2rayNG، Clash، Clash Meta (شامل رمزگشایی کلیدهای age) و Base64.
-* **اتوماسیون و زمان‌بندی:** به‌روزرسانی خودکار اشتراک‌ها و پایگاه داده‌های GeoIP/GeoSite در پس‌زمینه از طریق WorkManager و تغییر خودکار سرور بر اساس شبکه Wi-Fi فعال (On-Demand).
-* **تعادل بار و زنجیره پروکسی:** گروه‌بندی سرورها برای انتخاب سریع‌ترین گره (URL-Test)، جایگزینی در صورت قطعی (Fallback) یا ساخت زنجیره‌های چندمرحله‌ای.
-* **پروکسی به تفکیک برنامه (Per-App Proxy):** عبور دادن ترافیک برنامه‌های دلخواه از تونل VPN.
-* **شخصی‌سازی گسترده:** پشتیبانی از رنگ‌های پویای Material You، انتخاب پالت‌های رنگی دلخواه و ۹ استایل مختلف آیکون برنامه.
-* **اشتراک‌گذاری پروکسی (Hotspot & LAN):** سرویس‌های داخلی HTTP و SOCKS5 برای اشتراک اتصال VPN با سایر دستگاه‌ها از طریق Wi-Fi.
+* پشتیبانی از پروتکل‌های VLESS، AmneziaWG، olcRTC، Hysteria 2، Trojan، VMess، Shadowsocks و WireGuard
+* مسیریابی بر پایه قوانین Shadowrocket (.conf)، فهرست دامنه‌ها، GeoIP و GeoSite همراه با ویرایشگر بصری
+* وارد کردن اشتراک‌های v2rayNG، Clash، Clash Meta (شامل رمزگشایی کلیدهای age) و Base64
+* به‌روزرسانی خودکار اشتراک‌ها و پایگاه‌های داده در پس‌زمینه بر اساس زمان‌بندی از طریق WorkManager
+* بررسی تأخیر پینگ سرورها، تعادل بار (Load Balancing) و ایجاد زنجیره پروکسی
+* پروکسی انتخابی برای برنامه‌های مشخص (Per-App Proxy)
+* تنظیمات ظاهر و تم، انتخاب رنگ شاخص و تغییر آیکون برنامه
 
 ---
 
@@ -75,17 +72,19 @@
 
 | پروتکل | انتقال و امنیت |
 | :--- | :--- |
-| **VLESS** | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
-| **VMess** | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |
-| **Trojan** | TLS, gRPC, WebSocket, TCP |
-| **Shadowsocks** | AEAD, SS-2022 (blake3) |
-| **Hysteria 2** | UDP / QUIC |
-| **WireGuard** | UDP |
-| **SOCKS5 / HTTP** | TCP / Auth |
-| **Custom JSON** | پیکربندی‌های دلخواه و سفارشی Xray |
+| VLESS | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
+| AmneziaWG | پروتکل UDP با هدرهای سفارشی و محافظت در برابر DPI |
+| olcRTC | انتقال بر بستر WebRTC |
+| WireGuard | تونل استاندارد UDP |
+| Hysteria 2 | UDP / QUIC |
+| VMess | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |
+| Trojan | TLS, gRPC, WebSocket, TCP |
+| Shadowsocks | AEAD, SS-2022 (blake3) |
+| SOCKS5 / HTTP | TCP / Auth |
+| Custom JSON | کانفیگ‌های سفارشی Xray |
 
 ---
 
-## مجوز (License)
+## مجوز
 
-این پروژه متن‌باز بوده و تحت مجوز [GPL-3.0 License](LICENSE) منتشر شده است.
+این پروژه متن‌باز بوده و تحت مجوز [GPL-3.0](LICENSE) منتشر می‌شود.

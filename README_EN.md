@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>Beautiful, fast, and modern proxy client for Android</strong>
+  <strong>Fast and convenient proxy client for Android</strong>
 </p>
 
 <p align="center">
@@ -20,13 +20,13 @@
 
 ---
 
-## 📢 Community & Telegram Channel
+## Telegram Channel & Chat
 
-Join our official Telegram channel: **[@skipi_public](https://t.me/skipi_public)** ✈️
+Project channel: **[@skipi_public](https://t.me/skipi_public)**
 
-* 🚀 **Latest Releases & APKs:** get early access to test builds and newest features.
-* 💬 **Community & Discussions:** ask questions, share configs, and get help.
-* 📢 **News & Roadmap:** stay tuned with development progress and announcements.
+* Latest builds and releases
+* Config discussions and routing help
+* Development news
 
 <p align="center">
   <a href="https://t.me/skipi_public">
@@ -38,11 +38,9 @@ Join our official Telegram channel: **[@skipi_public](https://t.me/skipi_public)
 
 ## About The Project
 
-**SKIPI** is a modern anti-censorship and network traffic management client for Android.
+SKIPI is an Android client that combines flexible networking capabilities with an intuitive Jetpack Compose interface supporting Material You themes.
 
-The core philosophy of the project is to deliver a powerhouse tool with extensive capabilities while preserving a smooth, clean, and pleasant user interface designed for comfortable daily use.
-
-Under the hood, SKIPI integrates [Xray-core](https://github.com/XTLS/Xray-core), [SKIPI Core](https://github.com/ZloyRadetski/skipi-core), and [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel). On the outside, it features a fully customizable UI built with Jetpack Compose, supporting dynamic Material You theming and deep visual personalization.
+Under the hood, it is powered by Xray-core, SKIPI Core, hev-socks5-tunnel, as well as AmneziaWG and olcRTC engines.
 
 ---
 
@@ -60,14 +58,13 @@ Under the hood, SKIPI integrates [Xray-core](https://github.com/XTLS/Xray-core),
 
 ## Features
 
-* **All Essential Protocols:** VLESS (with XTLS Reality & Vision), VMess, Trojan, Shadowsocks (including SS-2022), Hysteria 2, WireGuard, and standard SOCKS5/HTTP proxies.
-* **Smart Traffic Routing:** Full compatibility with Shadowrocket (`.conf`) rules and profiles. Flexible routing based on domains, GeoIP, GeoSite, and IP CIDR ranges, with intuitive drag-and-drop rule ordering.
-* **Hassle-free Subscriptions:** Parses subscription formats from v2rayNG, Clash, Clash Meta (including age-key decryption), and Base64.
-* **Automation & Scheduling:** Background updates for subscriptions and GeoIP/GeoSite databases via WorkManager, auto-switching based on active Wi-Fi networks.
-* **Balancing & Chains:** Group servers for automatic lowest-latency selection (URL-Test), fallback routing, or multi-hop proxy chains.
-* **Per-App Proxy:** Route only selected applications through the VPN tunnel.
-* **Deep Customization:** Material You dynamic colors, custom accent palettes, and 9 vector launcher icon styles configurable in theme settings.
-* **Proxy Sharing (Hotspot & LAN):** Built-in HTTP and SOCKS5 endpoints for sharing VPN connection with other devices over Wi-Fi.
+* Support for VLESS, AmneziaWG, olcRTC, Hysteria 2, Trojan, VMess, Shadowsocks, and WireGuard
+* Shadowrocket rule-based routing (.conf), domain lists, GeoIP, and GeoSite with a visual rule editor
+* Subscription import from v2rayNG, Clash, Clash Meta (with age-key decryption), and Base64
+* Scheduled background updates for subscriptions and Geo databases via WorkManager
+* Node latency testing, load balancing, and proxy chains
+* Per-app proxying
+* Customization for themes, accent colors, and app icon selection
 
 ---
 
@@ -75,17 +72,19 @@ Under the hood, SKIPI integrates [Xray-core](https://github.com/XTLS/Xray-core),
 
 | Protocol | Transport & Security |
 | :--- | :--- |
-| **VLESS** | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
-| **VMess** | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |
-| **Trojan** | TLS, gRPC, WebSocket, TCP |
-| **Shadowsocks** | AEAD, SS-2022 (blake3) |
-| **Hysteria 2** | UDP / QUIC |
-| **WireGuard** | UDP |
-| **SOCKS5 / HTTP** | TCP / Auth |
-| **Custom JSON** | Arbitrary Xray configurations |
+| VLESS | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
+| AmneziaWG | UDP with custom headers and anti-DPI protection |
+| olcRTC | WebRTC transport |
+| WireGuard | Standard UDP tunnel |
+| Hysteria 2 | UDP / QUIC |
+| VMess | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |
+| Trojan | TLS, gRPC, WebSocket, TCP |
+| Shadowsocks | AEAD, SS-2022 (blake3) |
+| SOCKS5 / HTTP | TCP / Auth |
+| Custom JSON | Custom Xray configurations |
 
 ---
 
 ## License
 
-This project is open-source and released under the [GPL-3.0 License](LICENSE).
+This project is open-source and distributed under the [GPL-3.0](LICENSE) license.
