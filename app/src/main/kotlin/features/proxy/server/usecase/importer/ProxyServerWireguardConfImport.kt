@@ -74,8 +74,14 @@ internal suspend fun parseProxyServersFromWireguardConf(
         val h2 = interfaceProps["h2"]
         val h3 = interfaceProps["h3"]
         val h4 = interfaceProps["h4"]
+        val i1 = interfaceProps["i1"]
+        val i2 = interfaceProps["i2"]
+        val i3 = interfaceProps["i3"]
+        val i4 = interfaceProps["i4"]
+        val i5 = interfaceProps["i5"]
 
-        val isAmneziaWg = listOf(jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4).any { !it.isNullOrBlank() }
+        val isAmneziaWg = listOf(jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4, i1, i2, i3, i4, i5)
+            .any { !it.isNullOrBlank() }
 
         val remarks = foundFirstComment.ifBlank {
             if (isAmneziaWg) "Amnezia WG ($server:$port)" else "WireGuard ($server:$port)"
@@ -102,6 +108,11 @@ internal suspend fun parseProxyServersFromWireguardConf(
                 h2 = h2.orEmpty(),
                 h3 = h3.orEmpty(),
                 h4 = h4.orEmpty(),
+                i1 = i1.orEmpty(),
+                i2 = i2.orEmpty(),
+                i3 = i3.orEmpty(),
+                i4 = i4.orEmpty(),
+                i5 = i5.orEmpty(),
             )
         } else {
             Wireguard(
@@ -116,9 +127,9 @@ internal suspend fun parseProxyServersFromWireguardConf(
             )
         }
 
-        val issues = serverObj.validateBasic()
+        val issues = if (serverObj is AmneziaWg) serverObj.validateFull() else serverObj.validateBasic()
         if (issues.isNotEmpty()) {
-            throw IllegalArgumentException("Basic validation failed: ${issues.joinToString { it.error.name }}")
+            throw IllegalArgumentException("Proxy validation failed: ${issues.joinToString { it.error.name }}")
         }
 
         ProxyServerImportResult(

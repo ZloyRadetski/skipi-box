@@ -285,6 +285,61 @@ internal fun LazyListScope.amneziaWgProxyServer(awgEdit: AmneziaWg) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
+            label = "I1",
+            state = rememberTextFieldState(initialText = awgEdit.i1),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.i1 = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "I2",
+            state = rememberTextFieldState(initialText = awgEdit.i2),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.i2 = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "I3",
+            state = rememberTextFieldState(initialText = awgEdit.i3),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.i3 = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "I4",
+            state = rememberTextFieldState(initialText = awgEdit.i4),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.i4 = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "I5",
+            state = rememberTextFieldState(initialText = awgEdit.i5),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.i5 = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
             label = stringResource(R.string.proxy_editor_final_mask),
             state = rememberTextFieldState(initialText = awgEdit.finalMask),
             lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 5, maxHeightInLines = 20),

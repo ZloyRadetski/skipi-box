@@ -56,6 +56,7 @@ import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.display.displayName
 import features.proxy.server.display.displayNameById
 import features.proxy.server.display.displayNameWithGroup
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.ProxyServerValidationIssue
@@ -193,7 +194,16 @@ fun ProxyServerPage(
         }
         val fullIssues = psEdit.validateFull()
         if (fullIssues.isNotEmpty()) {
-            pendingSaveIssues = fullIssues
+            if (psEdit is AmneziaWg) {
+                // Unlike other optional protocol details, invalid AWG
+                // obfuscation reaches a native Go runtime and can terminate
+                // the whole process. Do not offer a force-save path.
+                scope.launch {
+                    tipNotifier.show(validationMessageOf(fullIssues.first()))
+                }
+            } else {
+                pendingSaveIssues = fullIssues
+            }
         } else {
             saveProxyServer()
         }

@@ -42,6 +42,7 @@ import engine.vpn.findAvailableLocalPort
 import engine.vpn.olcRtcRawDnsEndpoint
 import engine.vpn.toNativeRunnerConfigJson
 import engine.vpn.toTunOptions
+import engine.vpn.withNativeRunnerEndpointResolved
 import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
 import kotlinx.coroutines.CompletableDeferred
@@ -587,7 +588,7 @@ internal class AndroidProxyLatencyTester(
             return FailedDelayMillis
         }
         val tempPort = findAvailableLocalPort(preferredPort = 10809, reservedPorts = emptySet())
-        val runnerConfigJson = amneziaWgServer.toNativeRunnerConfigJson(
+        val runnerConfigJson = amneziaWgServer.withNativeRunnerEndpointResolved().toNativeRunnerConfigJson(
             tag = "skipi_awg_latency",
             dnsServers = appState.toTunOptions().dnsServers,
         )

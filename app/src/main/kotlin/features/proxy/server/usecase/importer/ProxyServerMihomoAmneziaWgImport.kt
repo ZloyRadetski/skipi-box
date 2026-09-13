@@ -10,7 +10,7 @@ import utils.toCsvValues
  * Imports an AmneziaWG proxy from Mihomo/Clash YAML format.
  *
  * Expected YAML keys (in addition to standard WG keys):
- *   amnezia-wg-option.jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4
+ *   amnezia-wg-option.jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4, i1..i5
  */
 internal fun MihomoYamlMap.toMihomoAmneziaWgProxyServer(): AmneziaWg {
     val peers = list("peers").orEmpty().mapNotNull { item -> item.asStringMap() }
@@ -44,6 +44,11 @@ internal fun MihomoYamlMap.toMihomoAmneziaWgProxyServer(): AmneziaWg {
         h2 = awgOptions.string("h2") ?: "",
         h3 = awgOptions.string("h3") ?: "",
         h4 = awgOptions.string("h4") ?: "",
+        i1 = awgOptions.string("i1") ?: "",
+        i2 = awgOptions.string("i2") ?: "",
+        i3 = awgOptions.string("i3") ?: "",
+        i4 = awgOptions.string("i4") ?: "",
+        i5 = awgOptions.string("i5") ?: "",
     )
 }
 

@@ -12,7 +12,7 @@ class AmneziaWgTest {
 
     @Test
     fun parseAwgUrlAndGenerateOutbound() {
-        val url = "awg://aGVsbG8=@192.168.1.100:51820?publickey=d29ybGQ=&jc=5&jmin=30&jmax=80&s1=20&s2=40&s3=60&s4=80&h1=100&h2=200&h3=300&h4=400#MyAWG"
+        val url = "awg://aGVsbG8=@192.168.1.100:51820?publickey=d29ybGQ=&jc=5&jmin=30&jmax=80&s1=20&s2=40&s3=60&s4=80&h1=100-200&h2=200&h3=300&h4=400&i1=%3Cb%200x0003%3E%3Cr%202%3E#MyAWG"
         val server = assertIs<AmneziaWg>(ProxyServer.parse(url))
 
         assertEquals("MyAWG", server.remarks)
@@ -27,10 +27,11 @@ class AmneziaWgTest {
         assertEquals("40", server.s2)
         assertEquals("60", server.s3)
         assertEquals("80", server.s4)
-        assertEquals("100", server.h1)
+        assertEquals("100-200", server.h1)
         assertEquals("200", server.h2)
         assertEquals("300", server.h3)
         assertEquals("400", server.h4)
+        assertEquals("<b 0x0003><r 2>", server.i1)
 
         val outbound = server.toXrayOutbound("test-tag")
         assertEquals("test-tag", outbound.tag)
@@ -45,7 +46,8 @@ class AmneziaWgTest {
         assertEquals(40, settings["s2"]?.toString()?.toIntOrNull())
         assertEquals(60, settings["s3"]?.toString()?.toIntOrNull())
         assertEquals(80, settings["s4"]?.toString()?.toIntOrNull())
-        assertEquals(100L, settings["h1"]?.toString()?.toLongOrNull())
+        assertEquals("\"100-200\"", settings["h1"]?.toString())
+        assertEquals("\"<b 0x0003><r 2>\"", settings["i1"]?.toString())
     }
 
     @Test
@@ -63,7 +65,8 @@ class AmneziaWgTest {
             s2 = "24",
             s3 = "36",
             s4 = "48",
-            h1 = "999",
+            h1 = "999-1000",
+            i1 = "<b 0x0003><r 2>",
         )
 
         val restored = assertIs<AmneziaWg>(original.encodePersistedProxyServer().decodePersistedProxyServer())
@@ -80,6 +83,7 @@ class AmneziaWgTest {
         assertEquals(original.s3, restored.s3)
         assertEquals(original.s4, restored.s4)
         assertEquals(original.h1, restored.h1)
+        assertEquals(original.i1, restored.i1)
     }
 
     @Test

@@ -63,10 +63,13 @@ class ConfImportTest {
             S2 = 30
             S3 = 45
             S4 = 60
-            H1 = 12345678
-            H2 = 87654321
-            H3 = 11223344
-            H4 = 44332211
+            H1 = 12345678-22345678
+            H2 = 87654321-97654321
+            H3 = 11223344-21223344
+            H4 = 44332211-54332211
+            I1 = <b 0x0003><r 2><b 0x2112A442><r 12><r 20>
+            I2 = <b 0x0103><r 2><b 0x2112A442><r 12><r 24>
+            I3 = <b 0x0008><r 2><b 0x2112A442><r 12><r 16>
 
             [Peer]
             PublicKey = YW5vdGhlciB2YWxpZCBrZXkgZm9yIHRlc3Rpbmcgb2s=
@@ -88,9 +91,32 @@ class ConfImportTest {
         assertEquals("30", server.s2)
         assertEquals("45", server.s3)
         assertEquals("60", server.s4)
-        assertEquals("12345678", server.h1)
-        assertEquals("87654321", server.h2)
-        assertEquals("11223344", server.h3)
-        assertEquals("44332211", server.h4)
+        assertEquals("12345678-22345678", server.h1)
+        assertEquals("87654321-97654321", server.h2)
+        assertEquals("11223344-21223344", server.h3)
+        assertEquals("44332211-54332211", server.h4)
+        assertEquals("<b 0x0003><r 2><b 0x2112A442><r 12><r 20>", server.i1)
+        assertEquals("<b 0x0103><r 2><b 0x2112A442><r 12><r 24>", server.i2)
+        assertEquals("<b 0x0008><r 2><b 0x2112A442><r 12><r 16>", server.i3)
+    }
+
+    @Test
+    fun unsafeAmneziaWireguardConfIsRejectedBeforeItCanReachTheNativeRunner() = runTest {
+        val conf = """
+            [Interface]
+            PrivateKey = aGVsbG8gd29ybGQgdGhpcyBpcyBhIHZhbGlkIGtleSE=
+            Address = 10.8.0.2/32
+            Jc = 129
+            Jmin = 40
+            Jmax = 70
+
+            [Peer]
+            PublicKey = YW5vdGhlciB2YWxpZCBrZXkgZm9yIHRlc3Rpbmcgb2s=
+            Endpoint = 198.51.100.2:51820
+        """.trimIndent()
+
+        val result = parseProxyServersFromWireguardConf(conf, context)
+
+        assertEquals(0, result.servers.size)
     }
 }

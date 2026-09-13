@@ -4,6 +4,7 @@
 package features.proxy.server.usecase.importer
 
 import features.logs.AndroidAppLogger
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.usecase.EmptyProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportContext
@@ -129,9 +130,9 @@ private fun MihomoYamlMap.toMihomoProxyServer(): ProxyServer<*> {
         "amneziawg", "awg" -> toMihomoAmneziaWgProxyServer()
         else -> unsupported("unsupported proxy type")
     }.also { server ->
-        val issues = server.validateBasic()
+        val issues = if (server is AmneziaWg) server.validateFull() else server.validateBasic()
         if (issues.isNotEmpty()) {
-            unsupported("basic validation failed: ${issues.joinToString { it.error.name }}")
+            unsupported("proxy validation failed: ${issues.joinToString { it.error.name }}")
         }
     }
 }

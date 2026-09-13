@@ -28,7 +28,6 @@ dependencyResolutionManagement {
                 includeGroupAndSubgroups("com.google")
             }
         }
-        mavenCentral()
         val localCoreDir = file("../skipi-core")
         if (localCoreDir.isDirectory && localCoreDir.resolve("skipicore.aar").isFile) {
             ivy {
@@ -58,6 +57,7 @@ dependencyResolutionManagement {
                 includeModule("app.skipi.core", "skipicore")
             }
         }
+        mavenCentral()
         maven("https://jitpack.io") {
             content {
                 includeGroupAndSubgroups("com.github.android-password-store")

@@ -4,6 +4,7 @@
 package features.proxy.server.usecase.importer
 
 import features.logs.AndroidAppLogger
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.ProxyServerConstants
 import features.proxy.server.usecase.ProxyServerImportContext
@@ -61,9 +62,9 @@ private fun parseProxyServerUrlOrNull(
 ): ProxyServer<*>? {
     return runCatching {
         val server = ProxyServer.parse(url)
-        val issues = server.validateBasic()
+        val issues = if (server is AmneziaWg) server.validateFull() else server.validateBasic()
         if (issues.isNotEmpty()) {
-            throw IllegalArgumentException("Basic validation failed: ${issues.joinToString { it.error.name }}")
+            throw IllegalArgumentException("Proxy validation failed: ${issues.joinToString { it.error.name }}")
         }
         server
     }

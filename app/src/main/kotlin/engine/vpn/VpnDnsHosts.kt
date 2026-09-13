@@ -7,6 +7,7 @@ import app.AppState
 import features.logs.AndroidAppLogger
 import engine.network.isIpv4Address
 import engine.network.isIpv6Address
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.normalizedServerHost
 import java.net.InetAddress
 import java.util.concurrent.CompletableFuture
@@ -71,7 +72,7 @@ private fun String.normalizedDnsHostKey(): String {
     return normalizedServerHost().removeSuffix(".").lowercase()
 }
 
-private fun String.resolveHostAddresses(): List<String> {
+private fun String.resolveHostAddresses(logFailure: Boolean = true): List<String> {
     val host = this
     return runCatching {
         InetAddress.getAllByName(host)
@@ -79,7 +80,51 @@ private fun String.resolveHostAddresses(): List<String> {
             .filter(String::isNotBlank)
             .distinct()
     }.onFailure { error ->
-        AndroidAppLogger.warn(LogTag, "Failed to resolve proxy server host via system DNS: $host", error)
+        if (logFailure) {
+            AndroidAppLogger.warn(LogTag, "Failed to resolve proxy server host via system DNS: $host", error)
+        }
+    }.getOrDefault(emptyList())
+}
+
+/**
+ * Native AmneziaWG passes its peer endpoint to an IPC parser that accepts an
+ * address literal only. Bootstrap a hostname while the application is still
+ * outside its own VPN when possible. A failed bootstrap is not fatal: the
+ * native core retries the original hostname with its configured DNS before it
+ * reaches the IPC parser.
+ */
+internal fun AmneziaWg.withNativeRunnerEndpointResolved(
+    resolveAddresses: (String) -> List<String> = String::resolveHostAddressesWithinTimeout,
+): AmneziaWg {
+    val host = server.normalizedServerHost().removeSuffix(".")
+    if (host.isBlank() || isIpv4Address(host) || isIpv6Address(host)) {
+        return copy(server = host.ifBlank { server })
+    }
+    val addresses = resolveAddresses(host)
+        .asSequence()
+        .map { candidate -> candidate.substringBefore('%').trim() }
+        .filter { candidate -> isIpv4Address(candidate) || isIpv6Address(candidate) }
+        .toList()
+    val address = addresses.firstOrNull(::isIpv4Address)
+        ?: addresses.firstOrNull(::isIpv6Address)
+    if (address == null) {
+        AndroidAppLogger.info(
+            LogTag,
+            "Deferring AmneziaWG endpoint hostname resolution to native core: $host",
+        )
+        return copy(server = host)
+    }
+    return copy(server = address)
+}
+
+private fun String.resolveHostAddressesWithinTimeout(): List<String> {
+    val host = this
+    val future = CompletableFuture.supplyAsync({ host.resolveHostAddresses(logFailure = false) }, dnsResolutionExecutor)
+    return runCatching {
+        future.get(DnsLookupTimeoutMillis, TimeUnit.MILLISECONDS)
+    }.onFailure {
+        future.cancel(true)
+        AndroidAppLogger.info(LogTag, "Native AmneziaWG endpoint bootstrap lookup did not complete: $host")
     }.getOrDefault(emptyList())
 }
 

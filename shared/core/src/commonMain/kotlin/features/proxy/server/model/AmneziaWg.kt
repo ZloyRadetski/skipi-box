@@ -51,6 +51,11 @@ data class AmneziaWg(
     var h2: String = "",
     var h3: String = "",
     var h4: String = "",
+    var i1: String = "",
+    var i2: String = "",
+    var i3: String = "",
+    var i4: String = "",
+    var i5: String = "",
 ) : UrlProxyServer<AmneziaWg> {
 
     override fun getInfo(): ProxyServerInfo {
@@ -94,10 +99,24 @@ data class AmneziaWg(
                 s2.toIntOrNull()?.takeIf { it > 0 }?.let { put("s2", it) }
                 s3.toIntOrNull()?.takeIf { it > 0 }?.let { put("s3", it) }
                 s4.toIntOrNull()?.takeIf { it > 0 }?.let { put("s4", it) }
-                h1.toLongOrNull()?.takeIf { it > 0 }?.let { put("h1", it) }
-                h2.toLongOrNull()?.takeIf { it > 0 }?.let { put("h2", it) }
-                h3.toLongOrNull()?.takeIf { it > 0 }?.let { put("h3", it) }
-                h4.toLongOrNull()?.takeIf { it > 0 }?.let { put("h4", it) }
+                // The current native AWG runtime accepts either a single
+                // uint32 header value or an inclusive uint32 range such as
+                // "123-456". Preserve a plain number as JSON number for
+                // Xray compatibility, and a range as its required string.
+                listOf("h1" to h1, "h2" to h2, "h3" to h3, "h4" to h4).forEach { (name, value) ->
+                    val header = value.trim()
+                    if (header.isNotEmpty() && header != "0") {
+                        val numericHeader = header.toLongOrNull()
+                        if (numericHeader != null) {
+                            put(name, numericHeader)
+                        } else {
+                            put(name, header)
+                        }
+                    }
+                }
+                listOf("i1" to i1, "i2" to i2, "i3" to i3, "i4" to i4, "i5" to i5).forEach { (name, value) ->
+                    value.trim().takeIf(String::isNotEmpty)?.let { put(name, it) }
+                }
             },
             streamSettings = finalMask.toXrayJsonObjectOrNull("FinalMask")?.let { parsedFinalMask ->
                 buildJsonObject {
@@ -129,6 +148,11 @@ data class AmneziaWg(
         this.h2 = url.parameters["h2"] ?: ""
         this.h3 = url.parameters["h3"] ?: ""
         this.h4 = url.parameters["h4"] ?: ""
+        this.i1 = url.parameters["i1"] ?: ""
+        this.i2 = url.parameters["i2"] ?: ""
+        this.i3 = url.parameters["i3"] ?: ""
+        this.i4 = url.parameters["i4"] ?: ""
+        this.i5 = url.parameters["i5"] ?: ""
         return this
     }
 
@@ -164,6 +188,11 @@ data class AmneziaWg(
             if (this@AmneziaWg.h2.isNotBlank()) parameters.append("h2", this@AmneziaWg.h2)
             if (this@AmneziaWg.h3.isNotBlank()) parameters.append("h3", this@AmneziaWg.h3)
             if (this@AmneziaWg.h4.isNotBlank()) parameters.append("h4", this@AmneziaWg.h4)
+            if (this@AmneziaWg.i1.isNotBlank()) parameters.append("i1", this@AmneziaWg.i1)
+            if (this@AmneziaWg.i2.isNotBlank()) parameters.append("i2", this@AmneziaWg.i2)
+            if (this@AmneziaWg.i3.isNotBlank()) parameters.append("i3", this@AmneziaWg.i3)
+            if (this@AmneziaWg.i4.isNotBlank()) parameters.append("i4", this@AmneziaWg.i4)
+            if (this@AmneziaWg.i5.isNotBlank()) parameters.append("i5", this@AmneziaWg.i5)
 
             fragment = this@AmneziaWg.remarks
         }.buildString()
@@ -195,6 +224,11 @@ data class AmneziaWg(
             h2 = other.h2
             h3 = other.h3
             h4 = other.h4
+            i1 = other.i1
+            i2 = other.i2
+            i3 = other.i3
+            i4 = other.i4
+            i5 = other.i5
         }
     }
 
@@ -217,7 +251,7 @@ data class AmneziaWg(
     }
 
     override fun connectionFingerprint(): String {
-        return "amneziawg|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address|$mtu|$reserved|$jc|$jmin|$jmax|$s1|$s2|$s3|$s4|$h1|$h2|$h3|$h4|$finalMask"
+        return "amneziawg|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address|$mtu|$reserved|$jc|$jmin|$jmax|$s1|$s2|$s3|$s4|$h1|$h2|$h3|$h4|$i1|$i2|$i3|$i4|$i5|$finalMask"
     }
 
     /**

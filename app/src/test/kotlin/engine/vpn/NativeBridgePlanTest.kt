@@ -50,6 +50,42 @@ class NativeBridgePlanTest {
     }
 
     @Test
+    fun hostnameEndpointIsResolvedBeforeNativeAmneziaWgConfiguration() {
+        val awg = amneziaWg().copy(server = "relay.example", port = "50125")
+        val result = buildNativeBridgePlan(
+            rawOutboundPlan = outboundPlan(XrayProxyOutboundServer(tag = "awg", server = awg)),
+            tunOptions = tunOptions(dns = "9.9.9.9"),
+            reservedPorts = emptySet(),
+            resolveAmneziaWgEndpoint = { source ->
+                source.withNativeRunnerEndpointResolved {
+                    listOf("2001:db8::10", "198.51.100.25")
+                }
+            },
+        )
+
+        assertTrue(result.amneziaWgConfigJson.orEmpty().contains("198.51.100.25:50125"))
+        assertTrue(!result.amneziaWgConfigJson.orEmpty().contains("relay.example"))
+        assertEquals("relay.example", result.activeAmneziaWgBridge?.server?.server)
+    }
+
+    @Test
+    fun unresolvedHostnameEndpointIsDeferredToNativeAmneziaWgResolver() {
+        val awg = amneziaWg().copy(server = "relay.example", port = "50125")
+
+        val result = buildNativeBridgePlan(
+            rawOutboundPlan = outboundPlan(XrayProxyOutboundServer(tag = "awg", server = awg)),
+            tunOptions = tunOptions(dns = "9.9.9.9"),
+            reservedPorts = emptySet(),
+            resolveAmneziaWgEndpoint = { source ->
+                source.withNativeRunnerEndpointResolved { emptyList() }
+            },
+        )
+
+        assertTrue(result.amneziaWgConfigJson.orEmpty().contains("relay.example:50125"))
+        assertEquals("relay.example", result.activeAmneziaWgBridge?.server?.server)
+    }
+
+    @Test
     fun differentOlcRtcRuntimesAreRejectedInsteadOfBeingSilentlyRewritten() {
         val plan = outboundPlan(
             XrayProxyOutboundServer(tag = "first", server = olcRtc(key = "a".repeat(64))),
@@ -88,6 +124,20 @@ class NativeBridgePlanTest {
             )
         }
         assertTrue(error.message.orEmpty().contains("FinalMask"))
+    }
+
+    @Test
+    fun unsafeAmneziaWgObfuscationIsRejectedBeforeTheNativeRunnerStarts() {
+        val server = amneziaWg().apply { jc = "129" }
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            server.toNativeRunnerConfigJson(
+                tag = "skipi_awg_runtime",
+                dnsServers = listOf("9.9.9.9"),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("AmneziaWgJcOutOfRange"))
     }
 
     private fun outboundPlan(vararg outbounds: XrayProxyOutboundServer) = XrayOutboundPlan(

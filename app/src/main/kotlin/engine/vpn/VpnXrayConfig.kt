@@ -201,6 +201,7 @@ internal fun buildNativeBridgePlan(
     rawOutboundPlan: XrayOutboundPlan,
     tunOptions: TunOptions,
     reservedPorts: Set<Int>,
+    resolveAmneziaWgEndpoint: (AmneziaWg) -> AmneziaWg = AmneziaWg::withNativeRunnerEndpointResolved,
 ): NativeBridgePlanResult {
     val olcRtcServer = rawOutboundPlan.proxyOutbounds
         .mapNotNull { it.server as? OlcRtc }
@@ -269,11 +270,12 @@ internal fun buildNativeBridgePlan(
         val port = findAvailableLocalPort(preferredPort = 10809, reservedPorts = usedPorts)
         usedPorts += port
         val bridge = ActiveAmneziaWgBridge(socksPort = port, server = amneziaWgServer)
+        val nativeAmneziaWgServer = resolveAmneziaWgEndpoint(amneziaWgServer)
 
         // Pass precisely this AWG outbound to skipi-core. Its generic JSON
         // rewriter would also rewrite ordinary WireGuard outbounds, which is
         // unsafe in mixed profiles.
-        amneziaWgConfigJson = amneziaWgServer.toNativeRunnerConfigJson(
+        amneziaWgConfigJson = nativeAmneziaWgServer.toNativeRunnerConfigJson(
             tag = "skipi_awg_runtime",
             dnsServers = tunOptions.dnsServers,
         )
@@ -311,6 +313,7 @@ internal fun AmneziaWg.toNativeRunnerConfigJson(
     tag: String,
     dnsServers: List<String>,
 ): String {
+    requireNativeRunnerCompatibility()
     val outbound = toXrayOutbound(tag).toJsonObject()
     val settings = outbound["settings"] as? JsonObject
         ?: error("AmneziaWG outbound has no settings")
@@ -328,6 +331,24 @@ internal fun AmneziaWg.toNativeRunnerConfigJson(
             },
         )
     }.toString()
+}
+
+/**
+ * The native AmneziaWG implementation cannot safely recover from every
+ * malformed obfuscation setting: some values make its Go runtime abort the
+ * whole Android process. Profiles can predate validation or arrive from an
+ * import, so this boundary must be strict even when the editor showed a
+ * warning earlier.
+ */
+private fun AmneziaWg.requireNativeRunnerCompatibility() {
+    require(finalMask.isBlank()) {
+        "AmneziaWG FinalMask is not supported by the native AmneziaWG runtime"
+    }
+    val issues = validateFull()
+    require(issues.isEmpty()) {
+        "AmneziaWG configuration is invalid for the native runtime: " +
+            issues.joinToString { issue -> issue.error.name }
+    }
 }
 
 private fun List<OlcRtc>.singleOlcRtcRuntimeOrNull(): OlcRtc? {

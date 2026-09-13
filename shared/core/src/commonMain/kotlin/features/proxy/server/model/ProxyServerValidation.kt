@@ -554,15 +554,31 @@ internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgObfuscatio
     if (s4.isNotBlank() && (s4.toIntOrNull() == null || s4.toInt() !in AwgSSizeMin..AwgSSizeMax)) {
         addIssue(ProxyServerValidationError.AmneziaWgSSizeOutOfRange, "S4", AwgSSizeMin, AwgSSizeMax)
     }
-    // h1..h4
+    // h1..h4 are uint32 values or inclusive uint32 ranges. The native
+    // AmneziaWG parser accepts the range form, for example 7291435-486117520.
     listOf("H1" to h1, "H2" to h2, "H3" to h3, "H4" to h4).forEach { (name, value) ->
-        if (value.isNotBlank()) {
-            val longVal = value.toLongOrNull()
-            if (longVal == null || longVal !in AwgHeaderMin..AwgHeaderMax) {
-                addIssue(ProxyServerValidationError.AmneziaWgHeaderInvalid, name, AwgHeaderMax)
-            }
+        if (value.isNotBlank() && !value.isValidAmneziaWgHeaderRange()) {
+            addIssue(ProxyServerValidationError.AmneziaWgHeaderInvalid, name, AwgHeaderMax)
         }
     }
+}
+
+private fun String.isValidAmneziaWgHeaderRange(): Boolean {
+    if (this != trim()) return false
+    val separator = indexOf('-')
+    if (separator >= 0 && indexOf('-', startIndex = separator + 1) >= 0) return false
+    val lowerText = if (separator >= 0) substring(0, separator) else this
+    val upperText = if (separator >= 0) substring(separator + 1) else lowerText
+    if (lowerText.isEmpty() || upperText.isEmpty() ||
+        !lowerText.all(Char::isDigit) || !upperText.all(Char::isDigit)
+    ) {
+        return false
+    }
+    val lower = lowerText.toLongOrNull() ?: return false
+    val upper = upperText.toLongOrNull() ?: return false
+    return lower in AwgHeaderMin..AwgHeaderMax &&
+        upper in AwgHeaderMin..AwgHeaderMax &&
+        lower <= upper
 }
 
 // ── OLCRTC ───────────────────────────────────────────────────────────────────

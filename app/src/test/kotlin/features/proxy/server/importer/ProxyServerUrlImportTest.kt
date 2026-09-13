@@ -50,4 +50,13 @@ class ProxyServerUrlImportTest {
         assertEquals("room123", server.roomUrl)
         assertEquals("EmbeddedTest", server.remarks)
     }
+
+    @Test
+    fun unsafeAmneziaWgUrlIsRejectedBeforeItCanReachTheNativeRunner() = runTest {
+        val link = "awg://aGVsbG8gd29ybGQgdGhpcyBpcyBhIHZhbGlkIGtleSE=@198.51.100.2:51820?publickey=YW5vdGhlciB2YWxpZCBrZXkgZm9yIHRlc3Rpbmcgb2s=&jc=129&jmin=40&jmax=70&s1=15&s2=30"
+
+        val result = parseProxyServersFromUrls(link, context)
+
+        assertEquals(0, result.servers.size)
+    }
 }
