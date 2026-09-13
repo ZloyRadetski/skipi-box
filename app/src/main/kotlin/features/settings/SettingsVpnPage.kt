@@ -9,10 +9,11 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.os.PowerManager
 import android.provider.Settings
+import system.isIgnoringBatteryOptimizations
+import system.openAppDetailsSettings
+import system.openBatteryOptimizationSettings
+import system.requestIgnoreBatteryOptimizations
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -268,49 +269,6 @@ private fun openSystemVpnSettings(context: Context) {
     runCatching {
         context.startActivity(intent)
     }.onFailure {
-        runCatching {
-            val appDetailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.parse("package:${context.packageName}")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(appDetailsIntent)
-        }
-    }
-}
-
-private fun isIgnoringBatteryOptimizations(context: Context): Boolean {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
-    val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-    return powerManager?.isIgnoringBatteryOptimizations(context.packageName) == true
-}
-
-private fun requestIgnoreBatteryOptimizations(context: Context) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
-    val directIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-        data = Uri.parse("package:${context.packageName}")
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    runCatching {
-        context.startActivity(directIntent)
-    }.onFailure {
-        openBatteryOptimizationSettings(context)
-    }
-}
-
-private fun openBatteryOptimizationSettings(context: Context) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
-    val settingsIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    runCatching {
-        context.startActivity(settingsIntent)
-    }.onFailure {
-        runCatching {
-            val appDetailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.parse("package:${context.packageName}")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(appDetailsIntent)
-        }
+        openAppDetailsSettings(context)
     }
 }

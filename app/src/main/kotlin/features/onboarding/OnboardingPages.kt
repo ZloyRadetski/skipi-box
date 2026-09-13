@@ -10,8 +10,9 @@ import android.content.Intent
 import android.net.Uri
 import android.net.VpnService
 import android.os.Build
-import android.os.PowerManager
 import android.provider.Settings
+import system.isIgnoringBatteryOptimizations
+import system.openBatteryOptimizationSettings
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -626,10 +628,10 @@ internal fun OnboardingPermissionsPage(
         )
     }
     var isBatteryOptIgnored by remember {
-        mutableStateOf(
-            (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
-                ?.isIgnoringBatteryOptimizations(context.packageName) == true,
-        )
+        mutableStateOf(isIgnoringBatteryOptimizations(context))
+    }
+    var isBatteryConfigured by rememberSaveable {
+        mutableStateOf(false)
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -643,8 +645,7 @@ internal fun OnboardingPermissionsPage(
                         Manifest.permission.POST_NOTIFICATIONS,
                     ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 }
-                isBatteryOptIgnored = (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
-                    ?.isIgnoringBatteryOptimizations(context.packageName) == true
+                isBatteryOptIgnored = isIgnoringBatteryOptimizations(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -721,22 +722,10 @@ internal fun OnboardingPermissionsPage(
             iconColor = permGreen,
             title = stringResource(R.string.onboarding_perm_battery_title),
             description = stringResource(R.string.onboarding_perm_battery_desc),
-            isGranted = isBatteryOptIgnored,
+            isGranted = isBatteryOptIgnored || isBatteryConfigured,
             onGrantClick = {
-                val directIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                runCatching {
-                    context.startActivity(directIntent)
-                }.onFailure {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        val settingsIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        runCatching { context.startActivity(settingsIntent) }
-                    }
-                }
+                isBatteryConfigured = true
+                openBatteryOptimizationSettings(context)
             },
         )
     }
