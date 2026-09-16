@@ -338,7 +338,8 @@ class NetworkAutomationMonitor(
     /**
      * A server switch/disconnect already recreates or tears down the entire
      * VPN. Hold the service's smaller physical-handover recovery until this
-     * operation finishes; its bounded gate releases recovery on failure too.
+     * operation finishes; its operation-owned gate releases recovery in the
+     * finally block even when the operation fails.
      */
     private suspend fun <T> withNetworkHandoverOwnership(operation: suspend () -> T): T {
         val token = NetworkHandoverRecoveryGate.beginExternalVpnOperation()

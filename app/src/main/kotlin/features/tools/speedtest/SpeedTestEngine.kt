@@ -3,29 +3,32 @@
 
 package features.tools.speedtest
 
+import android.content.Context
+import engine.network.TunnelNetworks
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlinx.coroutines.currentCoroutineContext
 import kotlin.random.Random
 
 /**
  * Measures ping/jitter and real download/upload throughput against the
- * Cloudflare speed endpoints. The test runs as plain HTTP traffic, so it
- * measures the effective network path (direct or through the VPN tunnel).
+ * Cloudflare speed endpoints through the active SKIPI tunnel. It never falls
+ * back to the device's direct network path.
  * Cancelling the calling coroutine stops the run promptly.
  */
 internal class SpeedTestEngine(
     private val onState: (SpeedTestState) -> Unit,
+    private val connectionFactory: SpeedTestConnectionFactory,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    private val transfer = SpeedTestTransfer()
+    private val transfer = SpeedTestTransfer(connectionFactory)
 
     suspend fun run(): SpeedTestResult? = withContext(ioDispatcher) {
         try {
@@ -110,11 +113,11 @@ internal class SpeedTestEngine(
      */
     private fun measureRoundTrip(keepAlive: Boolean): Double {
         val startedAt = System.nanoTime()
-        val connection = openConnection(downloadUrl(bytes = 0))
+        val connection = connectionFactory.connect(downloadUrl(bytes = 0)) { target ->
+            configure(target, connectTimeoutMillis = PingConnectTimeoutMillis)
+            target.requestMethod = "GET"
+        }
         try {
-            configure(connection, connectTimeoutMillis = PingConnectTimeoutMillis)
-            connection.requestMethod = "GET"
-            connection.connect()
             connection.inputStream.use { input ->
                 while (input.read() != -1) {
                     // Drain fully so the connection stays reusable.
@@ -142,9 +145,33 @@ internal class SpeedTestEngine(
     }
 }
 
-/** Opens a plain [HttpURLConnection] against one absolute [url]. */
-internal fun openConnection(url: String): HttpURLConnection {
-    return URL(url).openConnection() as HttpURLConnection
+internal interface SpeedTestConnectionFactory {
+    /**
+     * Configures and connects a tunnel-only HTTP request before returning it.
+     * SOCKS authentication must remain installed for the connect call itself.
+     */
+    fun connect(
+        url: String,
+        configure: (HttpURLConnection) -> Unit,
+    ): HttpURLConnection
+}
+
+internal class TunnelSpeedTestConnectionFactory(
+    context: Context,
+) : SpeedTestConnectionFactory {
+    private val appContext = context.applicationContext
+
+    override fun connect(
+        url: String,
+        configure: (HttpURLConnection) -> Unit,
+    ): HttpURLConnection {
+        return TunnelNetworks.withLocalProxyAuthenticator {
+            TunnelNetworks.openTunnelHttpConnection(appContext, URL(url)).apply {
+                configure(this)
+                connect()
+            }
+        }
+    }
 }
 
 /** Applies shared timeout/cache settings to a speed test connection. */
@@ -156,7 +183,9 @@ internal fun configure(
     connection.connectTimeout = connectTimeoutMillis
     connection.readTimeout = readTimeoutMillis
     connection.useCaches = false
-    connection.instanceFollowRedirects = true
+    // A redirected request could open after the SOCKS authenticator scope has
+    // ended. Failing it is preferable to ever measuring a direct path.
+    connection.instanceFollowRedirects = false
     connection.setRequestProperty("Cache-Control", "no-cache")
 }
 

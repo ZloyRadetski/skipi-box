@@ -283,9 +283,8 @@ internal object CoreTrafficStatsSampler {
 }
 
 /**
- * Keeps immediate feedback while traffic is flowing, but does not wake the CPU
- * at one-second cadence for an idle screen or for a pocketed device unless the
- * traffic-notification consumer explicitly requested that cadence.
+ * Keeps immediate feedback while traffic is flowing, but never wakes the CPU
+ * at a notification-selected cadence while the display is off.
  */
 internal fun coreTrafficStatsPollIntervalMillis(
     isScreenInteractive: Boolean,
@@ -299,10 +298,10 @@ internal fun coreTrafficStatsPollIntervalMillis(
         else -> CoreTrafficStatsIdlePollIntervalMillis
     }
     val requestedInterval = requestedRefreshIntervalMillis ?: return defaultInterval
-    return if (hasDefaultFrequencyConsumer) {
-        minOf(defaultInterval, requestedInterval)
-    } else {
-        requestedInterval
+    return when {
+        !isScreenInteractive -> maxOf(defaultInterval, requestedInterval)
+        hasDefaultFrequencyConsumer -> minOf(defaultInterval, requestedInterval)
+        else -> requestedInterval
     }
 }
 

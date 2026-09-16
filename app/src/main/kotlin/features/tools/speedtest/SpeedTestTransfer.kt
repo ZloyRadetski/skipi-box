@@ -19,7 +19,9 @@ import kotlin.random.Random
  * while a sampler coroutine reports smoothed live speed. The returned value is
  * total bytes over actual elapsed wall time.
  */
-internal class SpeedTestTransfer {
+internal class SpeedTestTransfer(
+    private val connectionFactory: SpeedTestConnectionFactory,
+) {
     suspend fun measureDownload(onSample: (Float, Double) -> Unit): Double {
         return measure(
             streamCount = DownloadStreams,
@@ -104,11 +106,11 @@ internal class SpeedTestTransfer {
 
     /** Downloads one [PayloadBytes] payload and counts every read byte. */
     private suspend fun downloadChunk(transferredBytes: AtomicLong) {
-        val connection = openConnection(downloadUrl(PayloadBytes))
+        val connection = connectionFactory.connect(downloadUrl(PayloadBytes)) { target ->
+            configure(target)
+            target.requestMethod = "GET"
+        }
         try {
-            configure(connection)
-            connection.requestMethod = "GET"
-            connection.connect()
             connection.inputStream.use { input ->
                 val buffer = ByteArray(BufferSizeBytes)
                 while (true) {
@@ -125,13 +127,13 @@ internal class SpeedTestTransfer {
 
     /** Uploads one random [UploadPayloadBytes] payload to the sink endpoint. */
     private suspend fun uploadChunk(transferredBytes: AtomicLong) {
-        val connection = openConnection(uploadUrl())
+        val connection = connectionFactory.connect(uploadUrl()) { target ->
+            configure(target)
+            target.requestMethod = "POST"
+            target.doOutput = true
+            target.setFixedLengthStreamingMode(UploadPayloadBytes)
+        }
         try {
-            configure(connection)
-            connection.requestMethod = "POST"
-            connection.doOutput = true
-            connection.setFixedLengthStreamingMode(UploadPayloadBytes)
-            connection.connect()
             connection.outputStream.use { output ->
                 val buffer = Random.nextBytes(UploadChunkSizeBytes)
                 var remaining = UploadPayloadBytes

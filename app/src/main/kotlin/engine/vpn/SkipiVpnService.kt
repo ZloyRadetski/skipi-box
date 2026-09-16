@@ -732,8 +732,8 @@ class SkipiVpnService : VpnService() {
 
             // A network rule can deliberately restart or disconnect the VPN.
             // Let that full operation own this handover instead of rebuilding
-            // TUN/core immediately before it. The gate has a short timeout, so
-            // a failed operation still falls back to ordinary recovery.
+            // TUN/core immediately before it. The operation-owned gate is
+            // released in the caller's finally block on success or failure.
             if (NetworkHandoverRecoveryGate.isNetworkAutomationHandoverPending()) {
                 scheduleNetworkHandoverReconciliation(callback, ExternalVpnOperationRetryMillis)
                 return@withLock

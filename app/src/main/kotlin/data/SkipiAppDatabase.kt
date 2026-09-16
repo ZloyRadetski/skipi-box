@@ -17,7 +17,7 @@ internal const val SkipiDatabaseName = "skipi.db"
         RouteRuleEntity::class,
         ProxyAppListSelectedAppEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 internal abstract class SkipiAppDatabase : RoomDatabase() {
@@ -65,5 +65,30 @@ internal val Migration5To6 = object : Migration(5, 6) {
         db.execSQL("ALTER TABLE subscription_groups ADD COLUMN supportEmail TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE subscription_groups ADD COLUMN profileWebPageUrl TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE subscription_groups ADD COLUMN announceUrl TEXT NOT NULL DEFAULT ''")
+    }
+}
+
+/**
+ * Removes only the former stock QUIC-blocking rule. The narrow match leaves
+ * independently created UDP:443 block rules untouched.
+ */
+internal val Migration6To7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            DELETE FROM routing_rules
+            WHERE id = 2
+              AND position = 1
+              AND remarks = 'block_udp_443'
+              AND outboundTag = 'block'
+              AND domainJson = '[]'
+              AND ipJson = '[]'
+              AND processJson = '[]'
+              AND port = '443'
+              AND protocol = ''
+              AND network = 'udp'
+              AND enabled = 1
+            """.trimIndent(),
+        )
     }
 }

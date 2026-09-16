@@ -9,12 +9,12 @@ import android.os.SystemClock
  * Lets a full VPN operation (server switch or disconnect) take ownership of a
  * network handover before the service starts a smaller TUN/core recovery.
  *
- * The short timeout is a fail-safe: if the full operation never reaches the
- * service, ordinary handover recovery becomes eligible again.
+ * Callers complete operation-owned reservations in a finally block, so an
+ * in-progress full restart cannot be pre-empted by a second recovery.
  */
 internal class NetworkHandoverRecoveryDeferral(
     private val nowMillis: () -> Long,
-    private val maxDeferralMillis: Long,
+    private val maxDeferralMillis: Long?,
 ) {
     private val lock = Any()
     private var nextToken = 0L
@@ -24,7 +24,7 @@ internal class NetworkHandoverRecoveryDeferral(
     fun begin(): Long = synchronized(lock) {
         (++nextToken).also { token ->
             pendingToken = token
-            deadlineMillis = nowMillis() + maxDeferralMillis
+            deadlineMillis = maxDeferralMillis?.let { maxMillis -> nowMillis() + maxMillis } ?: Long.MAX_VALUE
         }
     }
 
@@ -50,7 +50,7 @@ internal class NetworkHandoverRecoveryDeferral(
     }
 
     private fun expireIfNeeded() {
-        if (pendingToken != null && nowMillis() >= deadlineMillis) {
+        if (maxDeferralMillis != null && pendingToken != null && nowMillis() >= deadlineMillis) {
             pendingToken = null
             deadlineMillis = 0L
         }
@@ -60,11 +60,11 @@ internal class NetworkHandoverRecoveryDeferral(
 internal object NetworkHandoverRecoveryGate {
     private val externalVpnOperationDeferral = NetworkHandoverRecoveryDeferral(
         nowMillis = SystemClock::elapsedRealtime,
-        maxDeferralMillis = MaxDeferralMillis,
+        maxDeferralMillis = null,
     )
     private val networkAutomationEvaluationDeferral = NetworkHandoverRecoveryDeferral(
         nowMillis = SystemClock::elapsedRealtime,
-        maxDeferralMillis = MaxDeferralMillis,
+        maxDeferralMillis = MaxNetworkAutomationEvaluationDeferralMillis,
     )
 
     fun beginExternalVpnOperation(): Long = externalVpnOperationDeferral.begin()
@@ -87,5 +87,5 @@ internal object NetworkHandoverRecoveryGate {
         networkAutomationEvaluationDeferral.clear()
     }
 
-    private const val MaxDeferralMillis = 5_000L
+    private const val MaxNetworkAutomationEvaluationDeferralMillis = 5_000L
 }

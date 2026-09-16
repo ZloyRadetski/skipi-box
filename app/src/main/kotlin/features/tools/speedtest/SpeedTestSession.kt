@@ -3,6 +3,7 @@
 
 package features.tools.speedtest
 
+import android.content.Context
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,11 +29,15 @@ internal object SpeedTestSession {
 
     private var job: Job? = null
 
-    fun start() {
+    fun start(context: Context) {
         stop()
         state = SpeedTestState(phase = SpeedTestPhase.Ping)
+        val connectionFactory = TunnelSpeedTestConnectionFactory(context.applicationContext)
         job = scope.launch {
-            SpeedTestEngine(onState = { fresh -> state = fresh }).run()
+            SpeedTestEngine(
+                onState = { fresh -> state = fresh },
+                connectionFactory = connectionFactory,
+            ).run()
         }
     }
 

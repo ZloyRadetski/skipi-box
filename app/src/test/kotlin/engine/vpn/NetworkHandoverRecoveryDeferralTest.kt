@@ -42,4 +42,22 @@ class NetworkHandoverRecoveryDeferralTest {
         nowMillis += 1L
         assertFalse(deferral.isPending())
     }
+
+    @Test
+    fun operation_owned_deferral_waits_for_explicit_completion() {
+        var nowMillis = 100L
+        val deferral = NetworkHandoverRecoveryDeferral(
+            nowMillis = { nowMillis },
+            maxDeferralMillis = null,
+        )
+
+        val token = deferral.begin()
+        nowMillis += 60_000L
+
+        assertTrue(deferral.isPending())
+
+        deferral.complete(token)
+
+        assertFalse(deferral.isPending())
+    }
 }

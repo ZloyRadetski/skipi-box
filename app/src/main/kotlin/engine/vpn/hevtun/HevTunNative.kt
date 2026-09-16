@@ -9,6 +9,7 @@ internal interface HevTunNativeGateway {
     fun startService(configPath: String, fd: Int): Boolean
     fun stopService(): Boolean
     fun isRunning(): Boolean
+    fun isReady(): Boolean
 }
 
 @Keep
@@ -30,6 +31,10 @@ internal object HevTunNative : HevTunNativeGateway {
     private external fun TProxyIsRunning(): Boolean
 
     @JvmStatic
+    @Suppress("FunctionName")
+    private external fun TProxyIsReady(): Boolean
+
+    @JvmStatic
     @Keep
     @Suppress("FunctionName")
     private external fun TProxyGetStats(): LongArray
@@ -44,5 +49,9 @@ internal object HevTunNative : HevTunNativeGateway {
 
     override fun isRunning(): Boolean {
         return TProxyIsRunning()
+    }
+
+    override fun isReady(): Boolean {
+        return TProxyIsReady()
     }
 }

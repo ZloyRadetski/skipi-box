@@ -48,11 +48,22 @@ abstract class SyncGitSubmoduleVersionTask : DefaultTask() {
         if (runGit(moduleDirectory, "rev-parse", "--verify", "refs/tags/$version^{commit}", ignoreExitValue = true) != 0) {
             runGit(moduleDirectory, "fetch", "--depth", "1", "origin", "tag", version)
         }
-        val targetCommit = gitOutput(moduleDirectory, "rev-parse", "refs/tags/$version^{commit}")
         val currentHead = gitOutput(moduleDirectory, "rev-parse", "HEAD")
         val yamlSubmodulePopulated = moduleDirectory.resolve("third-part/yaml/src/loader.c").exists()
 
-        if (currentHead != targetCommit || !yamlSubmodulePopulated) {
+        val isConfiguredVersionOrDescendant = runGit(
+            moduleDirectory,
+            "merge-base",
+            "--is-ancestor",
+            "refs/tags/$version^{commit}",
+            currentHead,
+            ignoreExitValue = true,
+        ) == 0
+
+        // Keep a clean project-owned patch commit on top of the configured
+        // upstream tag. Resetting it here would silently build an older native
+        // implementation than the parent checkout records.
+        if (!isConfiguredVersionOrDescendant || !yamlSubmodulePopulated) {
             runGit(moduleDirectory, "checkout", "--detach", "refs/tags/$version")
             runGit(moduleDirectory, "submodule", "update", "--init", "--recursive")
             requireClean(moduleDirectory, modulePath)
