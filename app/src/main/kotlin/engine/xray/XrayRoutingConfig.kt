@@ -72,6 +72,7 @@ private fun AppState.routingRules(
     dataDir: String? = null,
 ): Pair<JsonArray, List<String>> {
     val unapplied = mutableListOf<String>()
+    val usedRuleTags = mutableSetOf<String>()
     val rulesArray = buildJsonArray {
         defaultTarget
             ?.takeIf { target -> target.kind == XrayRouteTargetKind.Balancer }
@@ -95,7 +96,7 @@ private fun AppState.routingRules(
                 val invalidIps = rule.ip.filterNot { XrayGeoRuleSanitizer.isIpRuleValid(it, dataDir) }
                 unapplied.addAll(invalidDomains)
                 unapplied.addAll(invalidIps)
-                val xrayRule = rule.toXrayRule(routeTargets, dataDir)
+                val xrayRule = rule.toXrayRule(routeTargets, dataDir, usedRuleTags)
                 if (xrayRule != null) {
                     add(xrayRule)
                 }
@@ -165,6 +166,7 @@ private fun buildDnsUpstreamRoute(
 private fun RouteRule.toXrayRule(
     routeTargets: Map<String, XrayRouteTarget>,
     dataDir: String? = null,
+    usedRuleTags: MutableSet<String>? = null,
 ): JsonObject? {
     val targetOutboundTag = outboundTag.trim().ifBlank { XrayTags.PROXY }
     val target = routeTargets[targetOutboundTag] ?: return null
@@ -184,6 +186,8 @@ private fun RouteRule.toXrayRule(
 
     if (!hasConditions) return null
 
+    val resolvedTag = resolveUniqueRuleTag(remarks, id, usedRuleTags)
+
     val rule = buildJsonObject {
         target.applyTo(this)
         putJsonStringArrayIfNotEmpty("domain", sanitizedDomains)
@@ -192,9 +196,34 @@ private fun RouteRule.toXrayRule(
         putIfNotBlank("port", sanitizedPort)
         putIfNotBlank("network", sanitizedNetwork)
         putJsonStringArrayIfNotEmpty("protocol", sanitizedProtocol)
-        putIfNotBlank("ruleTag", remarks)
+        putIfNotBlank("ruleTag", resolvedTag)
     }
     return rule
+}
+
+internal fun resolveUniqueRuleTag(
+    remarks: String,
+    ruleId: Int,
+    usedTags: MutableSet<String>?,
+): String? {
+    val trimmed = remarks.trim()
+    if (trimmed.isEmpty()) return null
+    if (usedTags == null) return trimmed
+    if (usedTags.add(trimmed)) {
+        return trimmed
+    }
+    val withId = if (ruleId > 0) "$trimmed #$ruleId" else null
+    if (withId != null && usedTags.add(withId)) {
+        return withId
+    }
+    var counter = 2
+    while (true) {
+        val candidate = "$trimmed #$counter"
+        if (usedTags.add(candidate)) {
+            return candidate
+        }
+        counter++
+    }
 }
 
 internal fun Int.toXrayRoutingDomainStrategy(): String {

@@ -149,4 +149,70 @@ class XrayRoutingConfigTest {
         assertFalse(XrayGeoRuleSanitizer.isIpRuleValid("300.400.500.600", null))
         assertFalse(XrayGeoRuleSanitizer.isIpRuleValid("", null))
     }
+
+    @Test
+    fun testDuplicateRuleRemarksProduceUniqueRuleTags() {
+        val rule1 = RouteRule(
+            id = 101,
+            remarks = "DOMAIN-SUFFIX,domain:yoomoney.ru",
+            outboundTag = "direct",
+            domain = listOf("yoomoney.ru"),
+            enabled = true,
+        )
+        val rule2 = RouteRule(
+            id = 102,
+            remarks = "DOMAIN-SUFFIX,domain:yoomoney.ru",
+            outboundTag = "direct",
+            domain = listOf("*.yoomoney.ru"),
+            enabled = true,
+        )
+        val rule3 = RouteRule(
+            id = 0,
+            remarks = "DOMAIN-SUFFIX,domain:yoomoney.ru",
+            outboundTag = "direct",
+            domain = listOf("api.yoomoney.ru"),
+            enabled = true,
+        )
+
+        val appState = AppState(
+            routeRules = listOf(rule1, rule2, rule3),
+            defaultRouteOutboundTag = "proxy",
+        )
+
+        val targets = mapOf(
+            "proxy" to XrayRouteTarget("proxy", XrayRouteTargetKind.Outbound),
+            "direct" to XrayRouteTarget("direct", XrayRouteTargetKind.Outbound),
+        )
+
+        val plan = appState.buildXrayRoutingPlan(
+            routeTargets = targets,
+            balancers = emptyList(),
+            routeProxyDns = false,
+            routeDirectDns = false,
+            dnsHijackInboundTags = emptyList(),
+        )
+
+        val ruleTags = plan.rules.mapNotNull { element ->
+            element.jsonObject["ruleTag"]?.jsonPrimitive?.content
+        }
+
+        assertEquals(3, ruleTags.size)
+        // All ruleTags must be distinct to prevent Xray duplicate ruleTag crash
+        assertEquals(ruleTags.size, ruleTags.distinct().size)
+        assertEquals("DOMAIN-SUFFIX,domain:yoomoney.ru", ruleTags[0])
+        assertEquals("DOMAIN-SUFFIX,domain:yoomoney.ru #102", ruleTags[1])
+        assertEquals("DOMAIN-SUFFIX,domain:yoomoney.ru #2", ruleTags[2])
+    }
+
+    @Test
+    fun testResolveUniqueRuleTagHelper() {
+        val tags = mutableSetOf<String>()
+        assertEquals("tag", resolveUniqueRuleTag("tag", 0, tags))
+        assertEquals("tag #10", resolveUniqueRuleTag("tag", 10, tags))
+        assertEquals("tag #2", resolveUniqueRuleTag("tag", 0, tags))
+        assertEquals("tag #3", resolveUniqueRuleTag("tag", 0, tags))
+        assertEquals(null, resolveUniqueRuleTag("", 0, tags))
+        assertEquals(null, resolveUniqueRuleTag("   ", 0, tags))
+    }
 }
+
