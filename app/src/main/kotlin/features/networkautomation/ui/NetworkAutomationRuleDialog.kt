@@ -193,6 +193,13 @@ internal fun NetworkAutomationRuleDialog(
                             .padding(bottom = 8.dp),
                     )
 
+                    Text(
+                        text = stringResource(R.string.network_automation_wifi_permission_summary),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,

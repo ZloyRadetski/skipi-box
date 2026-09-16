@@ -78,7 +78,14 @@ internal class ProxyWidgetRuntime(
         }
         scope.launch {
             stateStore.state
-                .map { state -> WidgetStateKey(state.proxyRunning, state.selectedProxyServerId, state.runMode) }
+                .map { state ->
+                    WidgetStateKey(
+                        running = state.proxyRunning,
+                        selectedProxyServerId = state.selectedProxyServerId,
+                        activeTrafficConfigId = state.activeTrafficConfigId,
+                        runMode = state.runMode,
+                    )
+                }
                 .distinctUntilChanged()
                 .collect { key ->
                     if (!key.running || !hasWidgets()) {
@@ -159,13 +166,18 @@ internal class ProxyWidgetRuntime(
 
     private fun hasWidgets(): Boolean {
         val manager = AppWidgetManager.getInstance(context) ?: return false
-        val component = ComponentName(context, SkipiWidgetProvider::class.java)
-        return manager.getAppWidgetIds(component).isNotEmpty()
+        return listOf(
+            SkipiWidgetProvider::class.java,
+            SkipiControlWidgetProvider::class.java,
+        ).any { providerClass ->
+            manager.getAppWidgetIds(ComponentName(context, providerClass)).isNotEmpty()
+        }
     }
 
     private data class WidgetStateKey(
         val running: Boolean,
         val selectedProxyServerId: Int,
+        val activeTrafficConfigId: Int,
         val runMode: Int,
     )
 

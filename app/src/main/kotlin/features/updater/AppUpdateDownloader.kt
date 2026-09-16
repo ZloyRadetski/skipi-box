@@ -3,164 +3,253 @@
 
 package features.updater
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import app.R
-import features.logs.AndroidAppLogger
 import engine.network.TunnelNetworks
+import features.logs.AndroidAppLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.io.InputStream
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 
 private const val LogTag = "AppUpdateDownloader"
-private const val NotificationChannelId = "app_update_channel"
-private const val NotificationId = 10091
 
+/**
+ * Streaming APK downloader used exclusively by [features.updater.runtime.AppUpdateDownloadWorker].
+ * The partial file intentionally survives cancellation and transient failures so WorkManager can resume it.
+ */
 internal class AppUpdateDownloader(
-    private val context: Context,
+    context: Context,
 ) {
-    private val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val appContext = context.applicationContext
 
-    init {
-        createNotificationChannel()
-    }
+    fun downloadApk(updateInfo: AppUpdateInfo): Flow<AppUpdateDownloadProgress> = flow {
+        val updatesDir = File(appContext.filesDir, UpdatesDirectoryName)
+        if (!updatesDir.exists() && !updatesDir.mkdirs()) {
+            throw IOException("Could not create the update directory")
+        }
 
-    fun downloadApk(
-        updateInfo: AppUpdateInfo,
-        showNotification: Boolean = true,
-    ): Flow<AppUpdateDownloadProgress> = flow {
-        emit(AppUpdateDownloadProgress.Downloading(0f, 0L, updateInfo.apkSizeBytes))
-
-        val updatesDir = File(context.cacheDir, "updates").apply { mkdirs() }
-        val targetFile = File(updatesDir, updateInfo.assetName)
-        val tempFile = File(updatesDir, "${updateInfo.assetName}.tmp")
+        val targetFile = targetFileFor(updatesDir, updateInfo)
+        val partialFile = File(updatesDir, "${targetFile.name}.part")
 
         try {
-            if (showNotification) {
-                showProgressNotification(updateInfo.versionName, 0)
+            if (isCompleteFile(targetFile, updateInfo)) {
+                emit(AppUpdateDownloadProgress.Completed(targetFile.absolutePath))
+                return@flow
+            }
+
+            // A finished part can be left behind if the process dies between fsync and rename.
+            if (isCompleteFile(partialFile, updateInfo)) {
+                promotePartialFile(partialFile, targetFile)
+                emit(AppUpdateDownloadProgress.Completed(targetFile.absolutePath))
+                return@flow
+            }
+
+            var retainedBytes = partialFile.takeIf(File::isFile)?.length() ?: 0L
+            if (updateInfo.apkSizeBytes > 0L && retainedBytes >= updateInfo.apkSizeBytes) {
+                if (!partialFile.delete()) throw IOException("Could not reset invalid partial APK")
+                retainedBytes = 0L
             }
 
             var totalBytes = updateInfo.apkSizeBytes
-            var downloadedBytes = 0L
-            var lastEmittedProgress = 0f
+            emit(
+                AppUpdateDownloadProgress.Downloading(
+                    progress = progressFor(retainedBytes, totalBytes),
+                    downloadedBytes = retainedBytes,
+                    totalBytes = totalBytes,
+                ),
+            )
 
             val connection = TunnelNetworks.withLocalProxyAuthenticator {
-                openConnectionWithRedirects(updateInfo.downloadUrl)
+                openConnectionWithRedirects(updateInfo.downloadUrl, retainedBytes)
             }
-            val contentLength = connection.contentLengthLong
-            if (contentLength > 0) {
-                totalBytes = contentLength
-            }
+            try {
+                val status = connection.responseCode
+                if (status != HttpURLConnection.HTTP_OK && status != HttpURLConnection.HTTP_PARTIAL) {
+                    throw IOException("APK download failed: HTTP $status")
+                }
 
-            connection.inputStream.use { input ->
-                FileOutputStream(tempFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
-                        output.write(buffer, 0, bytesRead)
-                        downloadedBytes += bytesRead
+                val append = retainedBytes > 0L && status == HttpURLConnection.HTTP_PARTIAL
+                if (!append && retainedBytes > 0L) {
+                    if (!partialFile.delete()) throw IOException("Could not restart partial APK download")
+                    retainedBytes = 0L
+                }
 
-                        val progress = if (totalBytes > 0) {
-                            (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-                        } else 0f
+                totalBytes = totalBytesFrom(connection, retainedBytes, append, updateInfo.apkSizeBytes)
+                var downloadedBytes = retainedBytes
+                var lastEmittedProgress = progressFor(downloadedBytes, totalBytes)
 
-                        if (progress - lastEmittedProgress >= 0.02f || downloadedBytes == totalBytes) {
-                            lastEmittedProgress = progress
-                            emit(AppUpdateDownloadProgress.Downloading(progress, downloadedBytes, totalBytes))
-                            if (showNotification) {
-                                showProgressNotification(updateInfo.versionName, (progress * 100).toInt())
+                connection.inputStream.use { input ->
+                    FileOutputStream(partialFile, append).use { output ->
+                        val buffer = ByteArray(BufferSize)
+                        while (true) {
+                            currentCoroutineContext().ensureActive()
+                            val bytesRead = input.read(buffer)
+                            if (bytesRead < 0) break
+                            output.write(buffer, 0, bytesRead)
+                            downloadedBytes += bytesRead
+
+                            val progress = progressFor(downloadedBytes, totalBytes)
+                            if (progress - lastEmittedProgress >= ProgressStep ||
+                                (totalBytes > 0L && downloadedBytes >= totalBytes)
+                            ) {
+                                lastEmittedProgress = progress
+                                emit(
+                                    AppUpdateDownloadProgress.Downloading(
+                                        progress = progress,
+                                        downloadedBytes = downloadedBytes,
+                                        totalBytes = totalBytes,
+                                    ),
+                                )
                             }
                         }
+                        output.fd.sync()
                     }
                 }
-            }
 
-            if (tempFile.exists()) {
-                if (targetFile.exists()) targetFile.delete()
-                tempFile.renameTo(targetFile)
+                val finalBytes = partialFile.length()
+                if (totalBytes > 0L && finalBytes != totalBytes) {
+                    throw IOException("Incomplete APK download: $finalBytes of $totalBytes bytes")
+                }
+                verifySha256IfPresent(partialFile, updateInfo.assetSha256)
+                promotePartialFile(partialFile, targetFile)
+                emit(AppUpdateDownloadProgress.Completed(targetFile.absolutePath))
+            } finally {
+                connection.disconnect()
             }
-
-            if (showNotification) {
-                notificationManager.cancel(NotificationId)
-            }
-
-            emit(AppUpdateDownloadProgress.Completed(targetFile.absolutePath))
-        } catch (e: Exception) {
-            AndroidAppLogger.warn(LogTag, "APK download failed: ${e.message}", e)
-            tempFile.delete()
-            if (showNotification) {
-                notificationManager.cancel(NotificationId)
-            }
-            emit(AppUpdateDownloadProgress.Failed(e.localizedMessage ?: "Download failed"))
+        } catch (cancelled: CancellationException) {
+            // Do not convert cancellation into a failure or delete the partial file: the work will resume.
+            throw cancelled
+        } catch (error: Exception) {
+            AndroidAppLogger.warn(LogTag, "APK download failed: ${error.message}", error)
+            emit(AppUpdateDownloadProgress.Failed(error.localizedMessage ?: "Download failed"))
         }
     }.flowOn(Dispatchers.IO)
 
-    private fun openConnectionWithRedirects(initialUrl: String, maxRedirects: Int = 5): HttpURLConnection {
-        var currentUrl = initialUrl
-        var redirectCount = 0
-        while (redirectCount < maxRedirects) {
-            // The app is excluded from its own VPN, so bind to the tunnel
-            // explicitly when it is up to download the APK through it.
-            val connection = TunnelNetworks.openHttpConnection(context, URL(currentUrl)).apply {
+    private fun openConnectionWithRedirects(
+        initialUrl: String,
+        retainedBytes: Long,
+        maxRedirects: Int = 5,
+    ): HttpURLConnection {
+        var currentUrl = URL(initialUrl)
+        repeat(maxRedirects) {
+            // The app is excluded from its own VPN, so bind to the tunnel explicitly when it is up.
+            val connection = TunnelNetworks.openHttpConnection(appContext, currentUrl).apply {
                 instanceFollowRedirects = false
-                connectTimeout = 30000
-                readTimeout = 60000
+                connectTimeout = 30_000
+                readTimeout = 60_000
                 setRequestProperty("User-Agent", "SKIPI-App")
-            }
-
-            val status = connection.responseCode
-            if (status == HttpURLConnection.HTTP_MOVED_TEMP ||
-                status == HttpURLConnection.HTTP_MOVED_PERM ||
-                status == HttpURLConnection.HTTP_SEE_OTHER ||
-                status == 307 || status == 308
-            ) {
-                val newUrl = connection.getHeaderField("Location")
-                if (newUrl.isNullOrBlank()) {
-                    return connection
+                if (retainedBytes > 0L) {
+                    setRequestProperty("Range", "bytes=$retainedBytes-")
                 }
-                currentUrl = newUrl
-                redirectCount++
+            }
+            val status = connection.responseCode
+            if (status in RedirectStatusCodes) {
+                val location = connection.getHeaderField("Location")
+                if (location.isNullOrBlank()) return connection
+                currentUrl = URL(currentUrl, location)
                 connection.disconnect()
-                continue
+            } else {
+                return connection
             }
-
-            return connection
         }
-        throw java.io.IOException("Too many redirects downloading APK")
+        throw IOException("Too many redirects downloading APK")
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                NotificationChannelId,
-                context.getString(R.string.app_update_notification_channel_name),
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = context.getString(R.string.app_update_notification_channel_description)
-                setShowBadge(false)
-            }
-            notificationManager.createNotificationChannel(channel)
+    private fun totalBytesFrom(
+        connection: HttpURLConnection,
+        retainedBytes: Long,
+        append: Boolean,
+        advertisedSize: Long,
+    ): Long {
+        val rangeTotal = connection.getHeaderField("Content-Range")
+            ?.substringAfter('/', missingDelimiterValue = "")
+            ?.toLongOrNull()
+            ?.takeIf { it > 0L }
+        if (rangeTotal != null) return rangeTotal
+
+        val responseSize = connection.contentLengthLong.takeIf { it > 0L } ?: 0L
+        return when {
+            append && responseSize > 0L -> retainedBytes + responseSize
+            responseSize > 0L -> responseSize
+            else -> advertisedSize
         }
     }
 
-    private fun showProgressNotification(version: String, progress: Int) {
-        val notification = NotificationCompat.Builder(context, NotificationChannelId)
-            .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle(context.getString(R.string.app_update_downloading_notification_title, version))
-            .setProgress(100, progress, progress == 0)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .build()
-        notificationManager.notify(NotificationId, notification)
+    private fun isCompleteFile(file: File, updateInfo: AppUpdateInfo): Boolean {
+        if (!file.isFile) return false
+        if (updateInfo.apkSizeBytes > 0L && file.length() != updateInfo.apkSizeBytes) return false
+        return runCatching {
+            verifySha256IfPresent(file, updateInfo.assetSha256)
+            true
+        }.getOrDefault(false)
+    }
+
+    private fun promotePartialFile(partialFile: File, targetFile: File) {
+        if (targetFile.exists() && !targetFile.delete()) {
+            throw IOException("Could not replace previous APK")
+        }
+        if (!partialFile.renameTo(targetFile)) {
+            throw IOException("Could not finalize APK download")
+        }
+    }
+
+    private fun verifySha256IfPresent(file: File, expectedDigest: String?) {
+        val expected = expectedDigest
+            ?.removePrefix("sha256:")
+            ?.trim()
+            ?.lowercase()
+            ?.takeIf { it.matches(Regex("[0-9a-f]{64}")) }
+            ?: return
+        val digest = MessageDigest.getInstance("SHA-256")
+        FileInputStream(file).use { input ->
+            val buffer = ByteArray(BufferSize)
+            while (true) {
+                val bytesRead = input.read(buffer)
+                if (bytesRead < 0) break
+                digest.update(buffer, 0, bytesRead)
+            }
+        }
+        val actual = digest.digest().joinToString(separator = "") { byte ->
+            "%02x".format(byte.toInt() and 0xff)
+        }
+        if (!actual.equals(expected, ignoreCase = true)) {
+            throw IOException("Downloaded APK checksum does not match the release")
+        }
+    }
+
+    private fun targetFileFor(updatesDir: File, updateInfo: AppUpdateInfo): File {
+        val safeAssetName = File(updateInfo.assetName).name.ifBlank { "SKIPI.apk" }
+        return File(updatesDir, "v${updateInfo.versionCode}-$safeAssetName")
+    }
+
+    private companion object {
+        const val UpdatesDirectoryName = "updates"
+        const val BufferSize = 8 * 1024
+        const val ProgressStep = 0.02f
+        val RedirectStatusCodes = setOf(
+            HttpURLConnection.HTTP_MOVED_TEMP,
+            HttpURLConnection.HTTP_MOVED_PERM,
+            HttpURLConnection.HTTP_SEE_OTHER,
+            307,
+            308,
+        )
+
+        fun progressFor(downloadedBytes: Long, totalBytes: Long): Float {
+            return if (totalBytes > 0L) {
+                (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+        }
     }
 }

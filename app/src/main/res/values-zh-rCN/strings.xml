@@ -414,6 +414,10 @@
     <string name="option_theme_light">光（莫奈）</string>
     <string name="option_theme_dark">黑暗（莫奈）</string>
     <string name="option_amoled">AMOLED</string>
+    <string name="option_theme_aurora">极光</string>
+    <string name="option_theme_sakura">樱花</string>
+    <string name="option_theme_forest">森林</string>
+    <string name="option_theme_sunset">日落</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
@@ -861,6 +865,7 @@
     <string name="subscriptions_refreshing">正在更新订阅...</string>
     <string name="subscriptions_refreshed">订阅已更新</string>
     <string name="settings_color_mode_summary">选择 SKIPI 是否跟随系统，或使用浅色、深色或 AMOLED 纯黑主题。</string>
+    <string name="settings_theme_preset_summary">此配色方案使用自己的颜色；自定义界面颜色仍可覆盖它。</string>
     <string name="settings_theme_color_summary">选择用于按钮、选项和指示器的主要颜色。</string>
     <string name="settings_language_summary">选择 SKIPI 界面使用的语言。</string>
     <string name="subscription_ping_mode_summary">Ping 使用 TCP 连接； HTTP 检查对配置的 URL 的请求。</string>
@@ -1050,8 +1055,8 @@
     <string name="settings_updates_title">更新</string>
     <string name="settings_auto_check_updates_title">检查更新</string>
     <string name="settings_auto_check_updates_summary">定期在 GitHub 上检查 SKIPI 的新版本</string>
-    <string name="settings_auto_install_night_title">夜间自动更新</string>
-    <string name="settings_auto_install_night_summary">夜间通过 Wi-Fi 并在充电时自动下载并安装更新</string>
+    <string name="settings_auto_install_night_title">通过 Wi-Fi 自动下载</string>
+    <string name="settings_auto_install_night_summary">在充电且使用非计费 Wi-Fi 时下载更新。安装前 Android 始终会请求确认。</string>
     <string name="settings_check_updates_now_action">立即检查更新</string>
     <string name="app_update_checking">正在检查更新…</string>
     <string name="app_update_already_latest">您正在使用最新版本的 SKIPI</string>
@@ -1385,4 +1390,18 @@
     <string name="proxy_editor_olcrtc_video_tile_module">Tile 模块大小</string>
     <string name="proxy_editor_olcrtc_video_tile_rs">Tile Reed-Solomon 冗余</string>
     <string name="proxy_editor_olcrtc_custom_payload">附加自定义 Payload</string>
- </resources>
+    <!-- 扩展桌面小组件 -->
+    <string name="widget_compact_label">隧道开关</string>
+    <string name="widget_control_label">隧道控制面板</string>
+    <string name="widget_control_description">控制 VPN 隧道、配置和服务器</string>
+    <string name="widget_config_label">配置</string>
+    <string name="widget_server_label">服务器</string>
+    <string name="widget_previous_config">上一个配置</string>
+    <string name="widget_next_config">下一个配置</string>
+    <string name="widget_previous_server">上一个服务器</string>
+    <string name="widget_next_server">下一个服务器</string>
+    <string name="widget_speed_idle">等待流量</string>
+    <string name="widget_config_changed">配置：%1$s</string>
+    <string name="widget_server_changed">服务器：%1$s</string>
+    <string name="widget_no_config">没有配置</string>
+</resources>

@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import app.LocalAppServices
@@ -37,14 +36,11 @@ import app.collectAppState
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import features.settings.SettingsSectionCard
-import features.updater.AppUpdateDownloader
-import features.updater.AppUpdateDownloadProgress
+import features.updater.AppUpdateDownloadStatus
 import features.updater.AppUpdateInfo
-import features.updater.AppUpdateInstaller
-import features.updater.GitHubReleaseChecker
+import features.updater.runtime.AppUpdateCheckOutcome
 import features.updater.ui.AppUpdateBanner
 import features.updater.ui.AppUpdateChangelogDialog
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -52,7 +48,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.io.File
 
 import androidx.compose.foundation.layout.aspectRatio
 
@@ -175,34 +170,16 @@ internal fun AboutUpdatesCard(
     val stateStore = LocalAppStateStore.current
     val appState by stateStore.collectAppState()
     val updateAppState = LocalUpdateAppState.current
-    val tipNotifier = LocalAppServices.current.tipNotifier
+    val services = LocalAppServices.current
+    val tipNotifier = services.tipNotifier
     val scope = rememberCoroutineScope()
     var isChecking by remember { mutableStateOf(false) }
     var updateInfoToShow by remember { mutableStateOf<AppUpdateInfo?>(null) }
-    var downloadProgress by remember { mutableStateOf<AppUpdateDownloadProgress>(AppUpdateDownloadProgress.Idle) }
     val checkingText = stringResource(R.string.app_update_checking)
     val latestText = stringResource(R.string.app_update_already_latest)
-    val context = LocalContext.current
+    val checkFailedText = stringResource(R.string.app_update_check_failed)
 
-    fun startDownload(update: AppUpdateInfo) {
-        scope.launch {
-            val downloader = AppUpdateDownloader(context)
-            downloader.downloadApk(update).collectLatest { progress ->
-                downloadProgress = progress
-                if (progress is AppUpdateDownloadProgress.Completed) {
-                    AppUpdateInstaller.installApk(context, File(progress.apkFilePath))
-                }
-            }
-        }
-    }
-
-    appState.availableAppUpdate?.let { update ->
-        AppUpdateBanner(
-            updateInfo = update,
-            dismissedVersion = "",
-            modifier = modifier.padding(bottom = 8.dp),
-        )
-    }
+    AppUpdateBanner(modifier = modifier.padding(bottom = 8.dp))
 
     SmallTitle(text = stringResource(R.string.settings_updates_title))
     SettingsSectionCard(
@@ -231,8 +208,15 @@ internal fun AboutUpdatesCard(
             title = stringResource(R.string.settings_check_updates_now_action),
             summary = when {
                 isChecking -> checkingText
-                downloadProgress is AppUpdateDownloadProgress.Downloading -> {
-                    val p = (downloadProgress as AppUpdateDownloadProgress.Downloading).progress
+                appState.appUpdateDownloadStatus in setOf(
+                    AppUpdateDownloadStatus.QUEUED,
+                    AppUpdateDownloadStatus.DOWNLOADING,
+                ) -> {
+                    val p = if (appState.appUpdateTotalBytes > 0L) {
+                        appState.appUpdateDownloadedBytes.toFloat() / appState.appUpdateTotalBytes.toFloat()
+                    } else {
+                        0f
+                    }
                     "${stringResource(R.string.app_update_downloading_action)} ${(p * 100).toInt()}%"
                 }
                 appState.availableAppUpdate != null -> {
@@ -244,15 +228,20 @@ internal fun AboutUpdatesCard(
                 if (isChecking) return@ArrowPreference
                 isChecking = true
                 scope.launch {
-                    val update = GitHubReleaseChecker(context).checkLatestRelease()
-                    isChecking = false
-                    if (update != null) {
-                        updateAppState { it.copy(availableAppUpdate = update, dismissedUpdateVersion = "") }
-                        updateInfoToShow = update
-                    } else {
-                        updateAppState { it.copy(availableAppUpdate = null) }
-                        tipNotifier.show(latestText)
+                    when (val outcome = services.appUpdateCheckCoordinator.checkLatestRelease()) {
+                        is AppUpdateCheckOutcome.UpdateAvailable -> updateInfoToShow = outcome.update
+                        AppUpdateCheckOutcome.UpToDate -> tipNotifier.show(latestText)
+                        AppUpdateCheckOutcome.NotModified -> {
+                            val knownUpdate = stateStore.currentState.availableAppUpdate
+                            if (knownUpdate != null) {
+                                updateInfoToShow = knownUpdate
+                            } else {
+                                tipNotifier.show(latestText)
+                            }
+                        }
+                        AppUpdateCheckOutcome.Failed -> tipNotifier.show(checkFailedText)
                     }
+                    isChecking = false
                 }
             },
         )
@@ -267,7 +256,7 @@ internal fun AboutUpdatesCard(
                 val update = updateInfoToShow
                 updateInfoToShow = null
                 if (update != null) {
-                    startDownload(update)
+                    services.appUpdateDownloadCoordinator.enqueue(update, automatic = false)
                 }
             },
         )

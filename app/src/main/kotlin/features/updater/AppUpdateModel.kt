@@ -16,8 +16,18 @@ data class AppUpdateInfo(
     val assetName: String,
     val apkSizeBytes: Long,
     val publishedAt: String,
-    val isNightAutoUpdate: Boolean = false,
+    /** SHA-256 published by GitHub, when the release API provides one. */
+    val assetSha256: String? = null,
 )
+
+/** Durable state exposed by the UI while WorkManager owns the transfer. */
+enum class AppUpdateDownloadStatus {
+    IDLE,
+    QUEUED,
+    DOWNLOADING,
+    READY_TO_INSTALL,
+    FAILED,
+}
 
 sealed interface AppUpdateDownloadProgress {
     data object Idle : AppUpdateDownloadProgress

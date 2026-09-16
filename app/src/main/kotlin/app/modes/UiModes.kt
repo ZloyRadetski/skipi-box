@@ -10,13 +10,43 @@ const val ColorModeThemeSystem = 3
 const val ColorModeThemeLight = 4
 const val ColorModeThemeDark = 5
 const val ColorModeAmoled = 6
+const val ColorModeAurora = 7
+const val ColorModeSakura = 8
+const val ColorModeForest = 9
+const val ColorModeSunset = 10
 
 fun normalizeColorMode(value: Int): Int = when (value) {
     ColorModeThemeSystem -> ColorModeSystem
     ColorModeThemeLight -> ColorModeLight
     ColorModeThemeDark -> ColorModeDark
-    ColorModeSystem, ColorModeLight, ColorModeDark, ColorModeAmoled -> value
+    ColorModeSystem,
+    ColorModeLight,
+    ColorModeDark,
+    ColorModeAmoled,
+    ColorModeAurora,
+    ColorModeSakura,
+    ColorModeForest,
+    ColorModeSunset -> value
     else -> ColorModeSystem
+}
+
+/** Returns null when the theme should follow the system appearance. */
+fun explicitColorModeIsDark(value: Int): Boolean? = when (normalizeColorMode(value)) {
+    ColorModeLight, ColorModeSakura -> false
+    ColorModeDark,
+    ColorModeAmoled,
+    ColorModeAurora,
+    ColorModeForest,
+    ColorModeSunset -> true
+    else -> null
+}
+
+fun isNamedColorTheme(value: Int): Boolean = when (normalizeColorMode(value)) {
+    ColorModeAurora,
+    ColorModeSakura,
+    ColorModeForest,
+    ColorModeSunset -> true
+    else -> false
 }
 
 const val LanguageModeSystem = 0

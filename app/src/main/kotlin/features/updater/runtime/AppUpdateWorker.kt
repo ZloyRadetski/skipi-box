@@ -8,16 +8,10 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.SkipiApplication
 import features.logs.AndroidAppLogger
-import features.updater.AppUpdateDownloader
-import features.updater.AppUpdateDownloadProgress
-import features.updater.AppUpdateInstaller
-import features.updater.GitHubReleaseChecker
-import features.updater.GitHubReleaseCheckResult
-import kotlinx.coroutines.flow.lastOrNull
-import java.io.File
 
 private const val LogTag = "AppUpdateWorker"
 
+/** Periodic release check. Downloading is delegated to a separate durable worker. */
 internal class AppUpdateWorker(
     appContext: Context,
     workerParameters: WorkerParameters,
@@ -25,8 +19,7 @@ internal class AppUpdateWorker(
 
     override suspend fun doWork(): Result {
         val application = applicationContext as? SkipiApplication ?: return Result.failure()
-        val stateStore = application.stateStore
-        val appState = stateStore.state.value
+        val appState = application.stateStore.currentState
         val forceCheck = inputData.getBoolean(AppUpdateForceCheckInputKey, false)
 
         if (!forceCheck && !appState.autoCheckAppUpdates) {
@@ -41,42 +34,30 @@ internal class AppUpdateWorker(
         }
 
         AndroidAppLogger.debug(LogTag, "Checking for app updates in background worker...")
-        val checker = GitHubReleaseChecker(applicationContext)
         checkStore.recordAttempt()
-        return when (val result = checker.checkLatestReleaseResult(checkStore.eTag())) {
-            is GitHubReleaseCheckResult.Success -> {
-                checkStore.recordSuccessfulCheck(result.eTag)
-                val update = result.update
-                if (update != null) {
-                    AndroidAppLogger.info(LogTag, "Found new app update: v${update.versionName} (${update.assetName})")
-                    stateStore.update { it.copy(availableAppUpdate = update) }
-
-                    if (!forceCheck && appState.autoInstallAppUpdatesAtNight) {
-                        AndroidAppLogger.info(LogTag, "Night auto-update is enabled. Downloading and installing v${update.versionName}...")
-                        val downloader = AppUpdateDownloader(applicationContext)
-                        val downloadResult = downloader.downloadApk(update, showNotification = false).lastOrNull()
-                        if (downloadResult is AppUpdateDownloadProgress.Completed) {
-                            val apkFile = File(downloadResult.apkFilePath)
-                            AppUpdateInstaller.installSilentlyOrPrompt(applicationContext, apkFile)
-                        }
-                    }
-                } else {
-                    AndroidAppLogger.debug(LogTag, "No newer update found.")
-                    stateStore.update { it.copy(availableAppUpdate = null) }
+        return when (val outcome = application.appUpdateCheckCoordinator.checkLatestRelease()) {
+            is AppUpdateCheckOutcome.UpdateAvailable -> {
+                AndroidAppLogger.info(LogTag, "Found new app update: v${outcome.update.versionName} (${outcome.update.assetName})")
+                if (!forceCheck && appState.autoInstallAppUpdatesAtNight) {
+                    // The compatibility setting now means "download on Wi-Fi while charging".
+                    // Installation is always left to Android's explicit user confirmation.
+                    application.appUpdateDownloadCoordinator.enqueue(outcome.update, automatic = true)
                 }
                 Result.success()
             }
 
-            GitHubReleaseCheckResult.NotModified -> {
-                checkStore.recordSuccessfulCheck(checkStore.eTag())
-                AndroidAppLogger.debug(LogTag, "Latest app release is unchanged (HTTP 304).")
-                // Keep a previously discovered update visible.
-                Result.success()
-            }
+            AppUpdateCheckOutcome.UpToDate,
+            AppUpdateCheckOutcome.NotModified -> Result.success()
 
-            // Avoid a retry loop that repeatedly wakes a weak mobile radio.
-            // The 12-hour periodic worker will retry after the 24-hour TTL.
-            GitHubReleaseCheckResult.Failed -> Result.success()
+            AppUpdateCheckOutcome.Failed -> {
+                // A few bounded retries improve transient connectivity without turning a failed check
+                // into a 24-hour blackout or an unbounded radio wake-up loop.
+                if (runAttemptCount < MaxRetryAttempts) Result.retry() else Result.failure()
+            }
         }
+    }
+
+    private companion object {
+        const val MaxRetryAttempts = 3
     }
 }

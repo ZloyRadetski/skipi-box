@@ -12,6 +12,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
@@ -48,10 +52,12 @@ import ui.feedback.AppHapticFeedback
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -69,6 +75,7 @@ class SkipiVpnService : VpnService() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.IO)
     private val operationMutex = Mutex()
+    private val networkHandoverLock = Any()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val stateStore by lazy { AndroidAppStateStore.get(applicationContext) }
     private val notificationManager by lazy { getSystemService(NotificationManager::class.java) }
@@ -84,6 +91,10 @@ class SkipiVpnService : VpnService() {
     }
     private var wakeLock: PowerManager.WakeLock? = null
     private var currentConfig: VpnServiceStartConfig? = null
+    @Volatile
+    private var networkHandoverCallback: ConnectivityManager.NetworkCallback? = null
+    private var pendingNetworkHandover: PendingNetworkHandover? = null
+    private val physicalNetworkHandoverTracker = PhysicalNetworkHandoverTracker<Network>()
     private var ownsForegroundNotification = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -359,6 +370,7 @@ class SkipiVpnService : VpnService() {
                 "VPN start timing: stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
             )
         }
+        registerNetworkHandoverCallback(config)
     }
 
     private fun establishTun(config: VpnServiceStartConfig): ParcelFileDescriptor {
@@ -475,6 +487,8 @@ class SkipiVpnService : VpnService() {
     private fun stopVpn(
         notificationDisposition: ForegroundNotificationDisposition = ForegroundNotificationDisposition.Remove,
     ) {
+        unregisterNetworkHandoverCallback()
+        NetworkHandoverRecoveryGate.clear()
         releaseWakeLock()
         currentConfig = null
         runCatching {
@@ -596,6 +610,219 @@ class SkipiVpnService : VpnService() {
         wakeLock = null
     }
 
+    /**
+     * Watches the actual physical upstream independently of optional profile
+     * automation. Existing outbound sockets can stay bound to a disappeared
+     * Wi-Fi/LTE link, so a real handover requires a small in-place runtime
+     * restart instead of making the user reconnect the whole VPN manually.
+     */
+    private fun registerNetworkHandoverCallback(config: VpnServiceStartConfig) {
+        if (!config.enableSeamlessNetworkSwitching || networkHandoverCallback != null) return
+        val connectivityManager = getSystemService(ConnectivityManager::class.java) ?: return
+        val initialNetwork = connectivityManager.activePhysicalNetwork()
+        physicalNetworkHandoverTracker.reset(initialNetwork)
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                scheduleNetworkHandoverReconciliation(this)
+            }
+
+            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                if (
+                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) &&
+                    !networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                ) {
+                    scheduleNetworkHandoverReconciliation(this)
+                }
+            }
+
+            override fun onLost(network: Network) {
+                scheduleNetworkHandoverReconciliation(this)
+            }
+        }
+        networkHandoverCallback = callback
+        runCatching {
+            val request = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                .build()
+            connectivityManager.registerNetworkCallback(request, callback)
+            updateUnderlyingNetworks(initialNetwork)
+            AndroidAppLogger.info(LogTag, "Registered physical-network handover observer (initial=$initialNetwork)")
+        }.onFailure { error ->
+            if (networkHandoverCallback === callback) {
+                networkHandoverCallback = null
+            }
+            physicalNetworkHandoverTracker.clear()
+            AndroidAppLogger.warn(LogTag, "Failed to observe physical network handovers", error)
+        }
+    }
+
+    private fun unregisterNetworkHandoverCallback() {
+        val callback = networkHandoverCallback
+        networkHandoverCallback = null
+        cancelPendingNetworkHandover()
+        physicalNetworkHandoverTracker.clear()
+        if (callback == null) return
+        runCatching {
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to stop physical-network handover observer", error)
+        }
+    }
+
+    /**
+     * Callbacks arrive in bursts during Wi-Fi/LTE handover. Only the delayed
+     * task is cancellable: once recovery starts it remains serialized with a
+     * user start/stop request through [operationMutex].
+     */
+    private fun scheduleNetworkHandoverReconciliation(
+        callback: ConnectivityManager.NetworkCallback,
+        delayMillis: Long = networkHandoverDebounceMillis(),
+    ) {
+        if (networkHandoverCallback !== callback) return
+        val token = Any()
+        synchronized(networkHandoverLock) {
+            if (networkHandoverCallback !== callback) return
+            pendingNetworkHandover?.job?.cancel()
+            val job = serviceScope.launch {
+                delay(delayMillis)
+                val shouldReconcile = synchronized(networkHandoverLock) {
+                    if (pendingNetworkHandover?.token !== token) {
+                        false
+                    } else {
+                        pendingNetworkHandover = null
+                        true
+                    }
+                }
+                if (shouldReconcile) {
+                    reconcileNetworkHandover(callback)
+                }
+            }
+            pendingNetworkHandover = PendingNetworkHandover(token, job)
+        }
+    }
+
+    private fun cancelPendingNetworkHandover() {
+        synchronized(networkHandoverLock) {
+            pendingNetworkHandover?.job?.cancel()
+            pendingNetworkHandover = null
+        }
+    }
+
+    private suspend fun reconcileNetworkHandover(callback: ConnectivityManager.NetworkCallback) {
+        if (networkHandoverCallback !== callback) return
+        val connectivityManager = getSystemService(ConnectivityManager::class.java) ?: return
+
+        operationMutex.withLock {
+            if (networkHandoverCallback !== callback) return@withLock
+            val config = currentConfig ?: return@withLock
+            if (!running || !config.enableSeamlessNetworkSwitching) return@withLock
+
+            // This delayed worker is outside NetworkCallback. Taking the
+            // snapshot under the operation lock avoids recovering an upstream
+            // that a concurrent full VPN restart has already replaced.
+            val currentNetwork = connectivityManager.activePhysicalNetwork()
+            physicalNetworkHandoverTracker.observe(currentNetwork)
+            updateUnderlyingNetworks(currentNetwork)
+            if (currentNetwork == null || !physicalNetworkHandoverTracker.hasPendingRecovery(currentNetwork)) {
+                return@withLock
+            }
+
+            // A network rule can deliberately restart or disconnect the VPN.
+            // Let that full operation own this handover instead of rebuilding
+            // TUN/core immediately before it. The gate has a short timeout, so
+            // a failed operation still falls back to ordinary recovery.
+            if (NetworkHandoverRecoveryGate.isNetworkAutomationHandoverPending()) {
+                scheduleNetworkHandoverReconciliation(callback, ExternalVpnOperationRetryMillis)
+                return@withLock
+            }
+
+            physicalNetworkHandoverTracker.acknowledgeRecovery(currentNetwork)
+            reloadRuntimeAfterNetworkHandover(config, currentNetwork)
+        }
+    }
+
+    private fun networkHandoverDebounceMillis(): Long {
+        val state = stateStore.state.value
+        val hasEnabledRules = state.networkAutomationRules.any { rule -> rule.enabled }
+        return if ((state.enableNetworkAutomation || state.enableOnDemandVpn) && hasEnabledRules) {
+            // NetworkAutomationMonitor first coalesces callback bursts. Give it
+            // priority to reserve a full server switch/disconnect when needed.
+            NetworkHandoverWithAutomationDebounceMillis
+        } else {
+            NetworkHandoverDebounceMillis
+        }
+    }
+
+    private fun ConnectivityManager.activePhysicalNetwork(): Network? {
+        val activeNetwork = activeNetwork ?: return null
+        val capabilities = getNetworkCapabilities(activeNetwork) ?: return null
+        return activeNetwork.takeIf {
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) &&
+                !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+        }
+    }
+
+    private fun updateUnderlyingNetworks(network: Network?) {
+        runCatching {
+            val updated = setUnderlyingNetworks(network?.let(::arrayOf))
+            if (!updated) {
+                AndroidAppLogger.warn(LogTag, "Could not update VPN underlying network: tunnel is no longer established")
+            }
+        }.onFailure { error ->
+            AndroidAppLogger.warn(LogTag, "Failed to update VPN underlying network", error)
+        }
+    }
+
+    private suspend fun reloadRuntimeAfterNetworkHandover(
+        config: VpnServiceStartConfig,
+        network: Network,
+    ) {
+        AndroidAppLogger.info(LogTag, "Physical network changed to $network; recreating TUN and proxy runtime")
+        runCatching {
+            runCatching { hevTunRuntime?.stop() }
+                .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to stop Hev TUN for network handover", error) }
+            runCatching { SkipiCoreRuntime.stop() }
+                .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to stop SKIPI Core for network handover", error) }
+            runCatching { tunFileDescriptor?.close() }
+                .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to close TUN for network handover", error) }
+            tunFileDescriptor = null
+
+            val newTun = establishTun(config)
+            tunFileDescriptor = newTun
+            updateUnderlyingNetworks(network)
+            SkipiCoreRuntime.setSocketProtector { fd ->
+                this@SkipiVpnService.protect(fd)
+            }
+            SkipiCoreRuntime.start(
+                context = this@SkipiVpnService,
+                config = config,
+                tunFd = config.xrayTunFd(newTun.fd),
+            )
+            config.hevSocks5TunnelConfig?.let { hevConfig ->
+                val runtime = hevTunRuntime ?: HevTunRuntime().also { hevTunRuntime = it }
+                runtime.start(hevConfig, newTun.fd)
+            }
+        }.onSuccess {
+            AndroidAppLogger.info(LogTag, "Recovered VPN runtime after physical network handover")
+        }.onFailure { error ->
+            AndroidAppLogger.error(LogTag, "Failed to recover VPN runtime after physical network handover", error)
+            stopVpn(ForegroundNotificationDisposition.Remove)
+            stateStore.update { state -> state.copy(proxyRunning = false) }
+            ProxyTrafficStatsRuntimeStore.clear(applicationContext)
+            ProxyTrafficStatsService.reconcile(applicationContext, null)
+            stopSelfOnMain()
+        }
+    }
+
+    private data class PendingNetworkHandover(
+        val token: Any,
+        val job: Job,
+    )
+
     private enum class ForegroundNotificationDisposition {
         /** A replacement configuration is about to take ownership immediately. */
         Keep,
@@ -608,6 +835,9 @@ class SkipiVpnService : VpnService() {
     companion object {
         private const val LogTag = "SkipiVpnService"
         private const val RequestQueueLogThresholdMillis = 100L
+        private const val NetworkHandoverDebounceMillis = 750L
+        private const val NetworkHandoverWithAutomationDebounceMillis = 1_500L
+        private const val ExternalVpnOperationRetryMillis = 500L
 
         @Volatile
         private var running = false

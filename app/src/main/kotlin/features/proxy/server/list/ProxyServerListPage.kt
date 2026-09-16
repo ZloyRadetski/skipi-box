@@ -311,12 +311,7 @@ fun ProxyServerListPage(
         allSubscriptionsUpdateMutex.withLock {
             services.appScope.launch(Dispatchers.IO) {
                 runCatching {
-                    val update = features.updater.GitHubReleaseChecker(context).checkLatestRelease()
-                    if (update != null) {
-                        updateAppState { state ->
-                            state.copy(availableAppUpdate = update)
-                        }
-                    }
+                    services.appUpdateCheckCoordinator.checkLatestRelease()
                 }
             }
 
@@ -749,10 +744,7 @@ fun ProxyServerListPage(
             onCancelProxyServerLatency = ::cancelAllLatencyTests,
         )
 
-        features.updater.ui.AppUpdateBanner(
-            updateInfo = proxyListState.availableAppUpdate,
-            dismissedVersion = proxyListState.dismissedUpdateVersion,
-        )
+        features.updater.ui.AppUpdateBanner()
 
         features.routing.ui.UnappliedRulesWarningNotification(
             unappliedRules = proxyListState.unappliedRoutingRules,

@@ -19,6 +19,7 @@ import data.AppSettingsPreferences
 import engine.proxy.AndroidProxyEngine
 import features.config.withActiveTrafficConfig
 import features.logs.AndroidAppLogger
+import features.proxy.server.display.displayName
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import features.settings.locale.localizedAppContext
@@ -32,10 +33,10 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Home screen widget: toggles the proxy and shows the connection status,
- * the selected server and live traffic speeds.
+ * Base provider for both home screen variants. It serializes all widget-driven
+ * tunnel changes so a rapid series of taps cannot start overlapping core operations.
  */
-class SkipiWidgetProvider : AppWidgetProvider() {
+open class SkipiWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(
         context: Context,
@@ -45,6 +46,10 @@ class SkipiWidgetProvider : AppWidgetProvider() {
         val appContext = context.applicationContext.localizedContext()
         when (intent.action) {
             ActionToggle -> handleToggle(appContext)
+            ActionPreviousConfig -> handleSelection(appContext, WidgetSelection.Config, WidgetCycleDirection.Previous)
+            ActionNextConfig -> handleSelection(appContext, WidgetSelection.Config, WidgetCycleDirection.Next)
+            ActionPreviousServer -> handleSelection(appContext, WidgetSelection.Server, WidgetCycleDirection.Previous)
+            ActionNextServer -> handleSelection(appContext, WidgetSelection.Server, WidgetCycleDirection.Next)
             ActionRefresh -> handleRefresh(appContext)
         }
     }
@@ -58,46 +63,76 @@ class SkipiWidgetProvider : AppWidgetProvider() {
         handleRefresh(context.applicationContext.localizedContext())
     }
 
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        handleRefresh(context.applicationContext.localizedContext())
+    }
+
     private fun handleRefresh(appContext: Context) {
         val result = goAsync()
         operationScope.launch {
-            runCatching { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
+            try {
+                runCatching { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
+                    AndroidAppLogger.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
+                }
+            } finally {
+                result.finish()
             }
-            result.finish()
         }
     }
 
     private fun handleToggle(appContext: Context) {
+        handleWidgetOperation(appContext) {
+            toggleProxy(appContext)
+        }
+    }
+
+    private fun handleSelection(
+        appContext: Context,
+        selection: WidgetSelection,
+        direction: WidgetCycleDirection,
+    ) {
+        handleWidgetOperation(appContext) {
+            changeSelection(appContext, selection, direction)
+        }
+    }
+
+    private fun handleWidgetOperation(
+        appContext: Context,
+        operation: suspend () -> Unit,
+    ) {
         if (!operationInProgress.compareAndSet(false, true)) return
         val result = goAsync()
         operationScope.launch {
             try {
-                toggleProxy(appContext)
+                operation()
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error
-                AndroidAppLogger.warn(LogTag, "Failed to toggle proxy from home screen widget", error)
+                AndroidAppLogger.warn(LogTag, "Failed to handle action from home screen widget", error)
                 showToast(appContext, appContext.getString(R.string.quick_settings_tile_toggle_failed))
             } finally {
-                operationInProgress.set(false)
+                try {
+                    delay(WidgetRenderSettleDelayMillis.milliseconds)
+                    runCatching { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
+                        AndroidAppLogger.warn(LogTag, "Failed to refresh SKIPI home screen widgets", error)
+                    }
+                } finally {
+                    operationInProgress.set(false)
+                    result.finish()
+                }
             }
-            delay(WidgetRenderSettleDelayMillis.milliseconds)
-            runCatching { SkipiWidgetRenderer.renderAll(appContext) }
-            result.finish()
         }
     }
 
     private suspend fun toggleProxy(appContext: Context) {
         SkipiWidgetRenderer.renderAll(appContext, processing = true)
         val stateStore = AndroidAppStateStore.get(appContext)
-        val proxyEngine =
-            AndroidProxyEngine(
-                context = appContext,
-                requestVpnPermission = { intent ->
-                    launchMainActivity(appContext, intent)
-                    false
-                },
-            )
+        val proxyEngine = widgetProxyEngine(appContext)
         val proxyServiceUseCase = ProxyServiceUseCase(proxyEngine)
 
         val running = syncProxyRunningState(appContext, stateStore, proxyEngine)
@@ -148,6 +183,127 @@ class SkipiWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    private suspend fun changeSelection(
+        appContext: Context,
+        selection: WidgetSelection,
+        direction: WidgetCycleDirection,
+    ) {
+        val stateStore = AndroidAppStateStore.get(appContext)
+        val proxyEngine = widgetProxyEngine(appContext)
+        val running = syncProxyRunningState(appContext, stateStore, proxyEngine)
+        val stateBefore = stateStore.state.value
+        val optionIds = when (selection) {
+            WidgetSelection.Config -> stateBefore.widgetConfigIds()
+            WidgetSelection.Server -> stateBefore.widgetServerIds()
+        }
+        val currentId = when (selection) {
+            WidgetSelection.Config -> stateBefore.activeTrafficConfigId
+            WidgetSelection.Server -> stateBefore.selectedProxyServerId
+        }
+        val targetId = cycleWidgetOptionId(optionIds, currentId, direction)
+        if (targetId == null) {
+            val message = when (selection) {
+                WidgetSelection.Config -> R.string.widget_no_config
+                WidgetSelection.Server -> R.string.proxy_server_list_select_first
+            }
+            showToast(appContext, appContext.getString(message))
+            return
+        }
+
+        val proposedState = stateBefore.withWidgetSelection(selection, targetId)
+        if (proposedState.sameWidgetSelectionAs(stateBefore)) return
+        val selectedServer = proposedState.proxyServers
+            .firstOrNull { server -> server.id == proposedState.selectedProxyServerId }
+        if (running && selectedServer == null) {
+            showToast(appContext, appContext.getString(R.string.proxy_server_list_select_first))
+            return
+        }
+
+        SkipiWidgetRenderer.renderAll(appContext, processing = true)
+        stateStore.update { currentState -> currentState.withWidgetSelection(selection, targetId) }
+        val selectedState = stateStore.state.value
+        if (selectedState.sameWidgetSelectionAs(stateBefore)) return
+
+        if (running) {
+            when (
+                val restartResult = ProxyServiceUseCase(proxyEngine).restart(
+                    selectedState,
+                    selectedState.proxyServers.firstOrNull { server -> server.id == selectedState.selectedProxyServerId },
+                )
+            ) {
+                is ProxyServiceResult.Success -> {
+                    stateStore.update { currentState ->
+                        if (currentState.sameWidgetSelectionAs(selectedState)) {
+                            currentState.copy(
+                                proxyRunning = restartResult.proxyRunning,
+                                localProxyPort = restartResult.appState?.localProxyPort ?: currentState.localProxyPort,
+                            )
+                        } else {
+                            currentState
+                        }
+                    }
+                }
+
+                ProxyServiceResult.MissingServer -> {
+                    showToast(appContext, appContext.getString(R.string.proxy_server_list_select_first))
+                    return
+                }
+
+                is ProxyServiceResult.Failed -> {
+                    stateStore.update { currentState ->
+                        if (currentState.sameWidgetSelectionAs(selectedState)) {
+                            currentState.copy(proxyRunning = false)
+                        } else {
+                            currentState
+                        }
+                    }
+                    showToast(
+                        appContext,
+                        restartResult.error.message ?: appContext.getString(R.string.quick_settings_tile_toggle_failed),
+                    )
+                    return
+                }
+            }
+        }
+
+        val message = when (selection) {
+            WidgetSelection.Config -> appContext.getString(
+                R.string.widget_config_changed,
+                selectedState.trafficConfigs.firstOrNull { config ->
+                    config.id == selectedState.activeTrafficConfigId
+                }?.name?.ifBlank { "#${selectedState.activeTrafficConfigId}" } ?: "#${selectedState.activeTrafficConfigId}",
+            )
+
+            WidgetSelection.Server -> appContext.getString(
+                R.string.widget_server_changed,
+                selectedState.proxyServers.firstOrNull { server ->
+                    server.id == selectedState.selectedProxyServerId
+                }?.displayName() ?: "#${selectedState.selectedProxyServerId}",
+            )
+        }
+        showToast(appContext, message)
+    }
+
+    private fun AppState.withWidgetSelection(
+        selection: WidgetSelection,
+        targetId: Int,
+    ): AppState {
+        return when (selection) {
+            WidgetSelection.Config -> {
+                if (targetId in widgetConfigIds()) withActiveTrafficConfig(targetId) else this
+            }
+
+            WidgetSelection.Server -> {
+                if (targetId in widgetServerIds()) copy(selectedProxyServerId = targetId) else this
+            }
+        }
+    }
+
+    private fun AppState.sameWidgetSelectionAs(other: AppState): Boolean {
+        return activeTrafficConfigId == other.activeTrafficConfigId &&
+            selectedProxyServerId == other.selectedProxyServerId
+    }
+
     private suspend fun syncProxyRunningState(
         appContext: Context,
         stateStore: AndroidAppStateStore,
@@ -164,6 +320,16 @@ class SkipiWidgetProvider : AppWidgetProvider() {
             stateStore.update { state -> state.copy(proxyRunning = running) }
         }
         return running
+    }
+
+    private fun widgetProxyEngine(appContext: Context): AndroidProxyEngine {
+        return AndroidProxyEngine(
+            context = appContext,
+            requestVpnPermission = { intent ->
+                launchMainActivity(appContext, intent)
+                false
+            },
+        )
     }
 
     private fun AppState.requiresVpnPermission(appContext: Context): Boolean {
@@ -195,6 +361,10 @@ class SkipiWidgetProvider : AppWidgetProvider() {
 
     internal companion object {
         const val ActionToggle = "features.widgets.action.TOGGLE_PROXY"
+        const val ActionPreviousConfig = "features.widgets.action.PREVIOUS_CONFIG"
+        const val ActionNextConfig = "features.widgets.action.NEXT_CONFIG"
+        const val ActionPreviousServer = "features.widgets.action.PREVIOUS_SERVER"
+        const val ActionNextServer = "features.widgets.action.NEXT_SERVER"
         const val ActionRefresh = "features.widgets.action.REFRESH"
 
         private const val LogTag = "SkipiWidgetProvider"
@@ -203,4 +373,9 @@ class SkipiWidgetProvider : AppWidgetProvider() {
         private val operationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         private val operationInProgress = AtomicBoolean(false)
     }
+}
+
+private enum class WidgetSelection {
+    Config,
+    Server,
 }

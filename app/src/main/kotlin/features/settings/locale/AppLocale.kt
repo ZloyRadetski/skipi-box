@@ -18,15 +18,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import app.modes.ColorModeAmoled
-import app.modes.ColorModeDark
-import app.modes.ColorModeLight
 import app.modes.LanguageModeChinese
 import app.modes.LanguageModeEnglish
 import app.modes.LanguageModePersian
 import app.modes.LanguageModeRussian
 import app.modes.LanguageModeSystem
-import app.modes.normalizeColorMode
+import app.modes.explicitColorModeIsDark
 import java.util.Locale
 
 private fun languageTagForMode(mode: Int): String? = when (mode) {
@@ -114,9 +111,9 @@ private fun Context.localizedConfiguration(
 }
 
 private fun Configuration.applyAppColorMode(colorMode: Int) {
-    val nightMode = when (normalizeColorMode(colorMode)) {
-        ColorModeLight -> Configuration.UI_MODE_NIGHT_NO
-        ColorModeDark, ColorModeAmoled -> Configuration.UI_MODE_NIGHT_YES
+    val nightMode = when (explicitColorModeIsDark(colorMode)) {
+        false -> Configuration.UI_MODE_NIGHT_NO
+        true -> Configuration.UI_MODE_NIGHT_YES
         else -> return
     }
     uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or nightMode

@@ -14,6 +14,8 @@ import features.proxy.server.usecase.ProxyServiceUseCase
 import features.resources.ResourceFileUpdateCoordinator
 import features.resources.ResourceFileUseCase
 import features.subscription.runtime.AndroidSubscriptionFetcher
+import features.updater.runtime.AppUpdateCheckCoordinator
+import features.updater.runtime.AppUpdateDownloadCoordinator
 import kotlinx.coroutines.CoroutineScope
 import system.AndroidPackageProvider
 import system.AndroidUserSpaceProvider
@@ -28,6 +30,8 @@ internal data class AppServices(
     val resourceFileUpdateCoordinator: ResourceFileUpdateCoordinator,
     val appBackupUseCase: AppBackupUseCase,
     val subscriptionFetcher: AndroidSubscriptionFetcher,
+    val appUpdateCheckCoordinator: AppUpdateCheckCoordinator,
+    val appUpdateDownloadCoordinator: AppUpdateDownloadCoordinator,
     val qrScanner: suspend () -> String?,
     val proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
     val proxyLatencyTester: AndroidProxyLatencyTester,
@@ -38,6 +42,7 @@ internal data class AppServices(
     val accessLogRepository: CoreLogRepository,
     val logcatRepository: CoreLogRepository,
     val requestVpnPermission: suspend (android.content.Intent) -> Boolean = { false },
+    val requestWifiSsidPermission: suspend () -> Boolean = { false },
     val photoFilePicker: suspend () -> Uri? = { null },
 )
 

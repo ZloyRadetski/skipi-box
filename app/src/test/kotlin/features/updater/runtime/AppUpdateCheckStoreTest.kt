@@ -25,4 +25,21 @@ class AppUpdateCheckStoreTest {
             ),
         )
     }
+
+    @Test
+    fun failed_automatic_attempt_has_a_short_retry_guard_without_changing_the_check_ttl() {
+        val now = 1_000_000_000L
+        assertFalse(
+            isAppUpdateAutomaticAttemptDue(
+                lastAttemptMillis = now - AppUpdateAutomaticRetryMinMillis + 1L,
+                nowMillis = now,
+            ),
+        )
+        assertTrue(
+            isAppUpdateAutomaticAttemptDue(
+                lastAttemptMillis = now - AppUpdateAutomaticRetryMinMillis,
+                nowMillis = now,
+            ),
+        )
+    }
 }

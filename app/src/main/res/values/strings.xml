@@ -459,6 +459,10 @@
     <string name="option_theme_light">Light (Monet)</string>
     <string name="option_theme_dark">Dark (Monet)</string>
     <string name="option_amoled">AMOLED</string>
+    <string name="option_theme_aurora">Aurora</string>
+    <string name="option_theme_sakura">Sakura</string>
+    <string name="option_theme_forest">Forest</string>
+    <string name="option_theme_sunset">Sunset</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
@@ -924,6 +928,7 @@
     <string name="subscriptions_refreshing">Updating subscriptions…</string>
     <string name="subscriptions_refreshed">Subscriptions updated</string>
     <string name="settings_color_mode_summary">Choose whether SKIPI follows the system or uses a light, dark, or AMOLED true-black theme.</string>
+    <string name="settings_theme_preset_summary">This palette defines its own colors. Custom UI colors can still override it.</string>
     <string name="settings_theme_color_summary">Choose the primary color used for buttons, selections, and indicators.</string>
     <string name="settings_language_summary">Choose the language used by the SKIPI interface.</string>
     <string name="subscription_ping_mode_summary">Ping uses a TCP connection; HTTP checks a request to the configured URL.</string>
@@ -1118,11 +1123,12 @@
     <string name="settings_updates_title">Updates</string>
     <string name="settings_auto_check_updates_title">Check for updates</string>
     <string name="settings_auto_check_updates_summary">Periodically check GitHub for new SKIPI versions</string>
-    <string name="settings_auto_install_night_title">Night auto-update</string>
-    <string name="settings_auto_install_night_summary">Automatically download and install updates at night via Wi-Fi while charging</string>
+    <string name="settings_auto_install_night_title">Auto-download on Wi-Fi</string>
+    <string name="settings_auto_install_night_summary">Download updates on unmetered Wi-Fi while charging. Android will always ask before installation.</string>
     <string name="settings_check_updates_now_action">Check for updates now</string>
     <string name="app_update_checking">Checking for updates…</string>
     <string name="app_update_already_latest">You are using the latest version of SKIPI</string>
+    <string name="app_update_check_failed">Could not check for updates. Your current update notice was kept.</string>
 
     <string name="settings_network_automation_title">Network Automation &amp; On-Demand</string>
     <string name="settings_network_automation_summary">Auto-switch servers by network and On-Demand VPN</string>
@@ -1143,6 +1149,9 @@
     <string name="network_automation_ssid_label">Network name (SSID)</string>
     <string name="network_automation_ssid_placeholder">Enter SSID (e.g. Home_5G)</string>
     <string name="network_automation_use_current_wifi">Insert current Wi-Fi</string>
+    <string name="network_automation_wifi_permission_summary">To insert and recognize a specific Wi-Fi name, Android requires Location permission. SKIPI uses it only for the Wi-Fi name, not GPS tracking.</string>
+    <string name="network_automation_wifi_permission_denied">Location permission is required to read the current Wi-Fi name</string>
+    <string name="network_automation_wifi_permission_launcher_missing">Unable to request Wi-Fi name permission</string>
     <string name="network_automation_server_label">Target server</string>
     <string name="network_automation_ssid_exists_error">A rule for this SSID already exists</string>
     <string name="network_automation_type_exists_error">A rule for this network type already exists</string>
@@ -1368,7 +1377,7 @@
     <string name="settings_background_dim">Background dimming</string>
     <!-- App update notifications -->
     <string name="app_update_notification_channel_name">App Updates</string>
-    <string name="app_update_notification_channel_description">Shows app download progress</string>
+    <string name="app_update_notification_channel_description">Shows available updates and download progress</string>
     <string name="app_update_downloading_notification_title">Downloading SKIPI v%1$s</string>
     <string name="app_update_ready_notification_title">SKIPI update ready to install</string>
     <string name="app_update_ready_notification_text">Tap to complete update</string>
@@ -1420,5 +1429,19 @@
     <string name="proxy_editor_olcrtc_video_tile_module">Tile module size</string>
     <string name="proxy_editor_olcrtc_video_tile_rs">Tile Reed-Solomon redundancy</string>
     <string name="proxy_editor_olcrtc_custom_payload">Additional custom payload</string>
+    <!-- Expanded home screen widget -->
+    <string name="widget_compact_label">Tunnel switch</string>
+    <string name="widget_control_label">Tunnel control panel</string>
+    <string name="widget_control_description">Control the VPN tunnel, configuration, and server</string>
+    <string name="widget_config_label">CONFIG</string>
+    <string name="widget_server_label">SERVER</string>
+    <string name="widget_previous_config">Previous configuration</string>
+    <string name="widget_next_config">Next configuration</string>
+    <string name="widget_previous_server">Previous server</string>
+    <string name="widget_next_server">Next server</string>
+    <string name="widget_speed_idle">Waiting for traffic</string>
+    <string name="widget_config_changed">Configuration: %1$s</string>
+    <string name="widget_server_changed">Server: %1$s</string>
+    <string name="widget_no_config">No configurations</string>
 </resources>
 

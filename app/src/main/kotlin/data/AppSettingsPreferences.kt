@@ -13,6 +13,8 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.edit
 import app.AppState
+import features.updater.AppUpdateDownloadStatus
+import features.updater.AppUpdateInfo
 import features.config.TrafficConfigState
 import features.networkautomation.model.NetworkAutomationRule
 import app.CustomResourceFileState
@@ -41,6 +43,9 @@ import javax.crypto.Mac
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 internal class AppSettingsPreferences(
     context: Context,
@@ -406,7 +411,17 @@ internal class AppSettingsPreferences(
             proxyAppListMode = preferences.getInt(KeyProxyAppListMode, defaults.proxyAppListMode),
             autoCheckAppUpdates = preferences.getBoolean(KeyAutoCheckAppUpdates, defaults.autoCheckAppUpdates),
             autoInstallAppUpdatesAtNight = preferences.getBoolean(KeyAutoInstallAppUpdatesAtNight, defaults.autoInstallAppUpdatesAtNight),
+            availableAppUpdate = preferences.getAppUpdateInfo(defaults.availableAppUpdate),
             dismissedUpdateVersion = preferences.getString(KeyDismissedUpdateVersion, defaults.dismissedUpdateVersion) ?: defaults.dismissedUpdateVersion,
+            appUpdateDownloadStatus = preferences.getAppUpdateDownloadStatus(defaults.appUpdateDownloadStatus),
+            appUpdateDownloadedBytes = preferences.getLong(KeyAppUpdateDownloadedBytes, defaults.appUpdateDownloadedBytes),
+            appUpdateTotalBytes = preferences.getLong(KeyAppUpdateTotalBytes, defaults.appUpdateTotalBytes),
+            appUpdateApkFilePath = preferences.getString(KeyAppUpdateApkFilePath, defaults.appUpdateApkFilePath),
+            appUpdateDownloadError = preferences.getString(KeyAppUpdateDownloadError, defaults.appUpdateDownloadError),
+            appUpdateDownloadIsAutomatic = preferences.getBoolean(
+                KeyAppUpdateDownloadIsAutomatic,
+                defaults.appUpdateDownloadIsAutomatic,
+            ),
             autoConnectOnBoot = preferences.getBoolean(KeyAutoConnectOnBoot, defaults.autoConnectOnBoot),
             autoConnectOnAppOpen = preferences.getBoolean(KeyAutoConnectOnAppOpen, defaults.autoConnectOnAppOpen),
         )
@@ -555,6 +570,10 @@ internal class AppSettingsPreferences(
             .putInt(KeyProxyAppListMode, state.proxyAppListMode)
             .putBoolean(KeyAutoCheckAppUpdates, state.autoCheckAppUpdates)
             .putBoolean(KeyAutoInstallAppUpdatesAtNight, state.autoInstallAppUpdatesAtNight)
+            .putString(
+                KeyAvailableAppUpdate,
+                state.availableAppUpdate?.let { update -> AppUpdateJson.encodeToString(update) },
+            )
             .putBoolean(KeyAutoConnectOnBoot, state.autoConnectOnBoot)
             .putBoolean(KeyAutoConnectOnAppOpen, state.autoConnectOnAppOpen)
             .putBoolean(KeyEnableHaptics, state.enableHaptics)
@@ -566,6 +585,24 @@ internal class AppSettingsPreferences(
                 state.subscriptionExpiryReminders.map { it.toSerializedString() },
             )
             .putString(KeyDismissedUpdateVersion, state.dismissedUpdateVersion)
+            .putString(KeyAppUpdateDownloadStatus, state.appUpdateDownloadStatus.name)
+            .putLong(KeyAppUpdateDownloadedBytes, state.appUpdateDownloadedBytes)
+            .putLong(KeyAppUpdateTotalBytes, state.appUpdateTotalBytes)
+            .putString(KeyAppUpdateApkFilePath, state.appUpdateApkFilePath)
+            .putString(KeyAppUpdateDownloadError, state.appUpdateDownloadError)
+            .putBoolean(KeyAppUpdateDownloadIsAutomatic, state.appUpdateDownloadIsAutomatic)
+    }
+
+    private fun SharedPreferences.getAppUpdateInfo(default: AppUpdateInfo?): AppUpdateInfo? {
+        val serialized = getString(KeyAvailableAppUpdate, null) ?: return default
+        return runCatching { AppUpdateJson.decodeFromString<AppUpdateInfo>(serialized) }.getOrDefault(default)
+    }
+
+    private fun SharedPreferences.getAppUpdateDownloadStatus(
+        default: AppUpdateDownloadStatus,
+    ): AppUpdateDownloadStatus {
+        val serialized = getString(KeyAppUpdateDownloadStatus, null) ?: return default
+        return AppUpdateDownloadStatus.values().firstOrNull { it.name == serialized } ?: default
     }
 
     private fun SharedPreferences.getServiceControl(
@@ -942,6 +979,13 @@ private const val KeyServiceControlWifiDisconnectStopBssids = "service_control_w
 private const val KeyProxyAppListMode = "proxy_app_list_mode"
 private const val KeyAutoCheckAppUpdates = "auto_check_app_updates"
 private const val KeyAutoInstallAppUpdatesAtNight = "auto_install_app_updates_at_night"
+private const val KeyAvailableAppUpdate = "available_app_update"
+private const val KeyAppUpdateDownloadStatus = "app_update_download_status"
+private const val KeyAppUpdateDownloadedBytes = "app_update_downloaded_bytes"
+private const val KeyAppUpdateTotalBytes = "app_update_total_bytes"
+private const val KeyAppUpdateApkFilePath = "app_update_apk_file_path"
+private const val KeyAppUpdateDownloadError = "app_update_download_error"
+private const val KeyAppUpdateDownloadIsAutomatic = "app_update_download_is_automatic"
 private const val KeyAutoConnectOnBoot = "auto_connect_on_boot"
 private const val KeyAutoConnectOnAppOpen = "auto_connect_on_app_open"
 private const val KeyEnableSubscriptionExpiryNotifications = "enable_subscription_expiry_notifications"
@@ -950,3 +994,7 @@ private const val KeyDismissedUpdateVersion = "dismissed_update_version"
 private const val KeyHasCompletedOnboarding = "has_completed_onboarding"
 
 private val SubscriptionHwidLock = Any()
+private val AppUpdateJson = Json {
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+}

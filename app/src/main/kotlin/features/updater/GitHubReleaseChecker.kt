@@ -105,6 +105,8 @@ internal class GitHubReleaseChecker(
         val downloadUrl = bestAsset["browser_download_url"]?.jsonPrimitive?.contentOrNull ?: return null
         val assetName = bestAsset["name"]?.jsonPrimitive?.contentOrNull ?: "SKIPI.apk"
         val apkSize = bestAsset["size"]?.jsonPrimitive?.longOrNull ?: 0L
+        val assetSha256 = bestAsset["digest"]?.jsonPrimitive?.contentOrNull
+            ?.takeIf { digest -> digest.startsWith("sha256:", ignoreCase = true) }
 
         val isNewer = isVersionNewer(
             currentVersionName = ProjectInfo.VERSION_NAME,
@@ -127,6 +129,7 @@ internal class GitHubReleaseChecker(
             assetName = assetName,
             apkSizeBytes = apkSize,
             publishedAt = publishedAt,
+            assetSha256 = assetSha256,
         )
     }
 

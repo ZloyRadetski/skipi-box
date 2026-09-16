@@ -394,6 +394,10 @@
     <string name="option_theme_light">نور (مونته)</string>
     <string name="option_theme_dark">تاریک (مونته)</string>
     <string name="option_amoled">AMOLED</string>
+    <string name="option_theme_aurora">شفق قطبی</string>
+    <string name="option_theme_sakura">ساکورا</string>
+    <string name="option_theme_forest">جنگل</string>
+    <string name="option_theme_sunset">غروب</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
@@ -839,6 +843,7 @@
     <string name="subscriptions_refreshing">در حال به‌روزرسانی اشتراک‌ها…</string>
     <string name="subscriptions_refreshed">اشتراک ها به روز شد</string>
     <string name="settings_color_mode_summary">انتخاب کنید که آیا SKIPI از سیستم پیروی می کند یا از یک تم روشن، تیره یا AMOLED با مشکی واقعی استفاده می کند.</string>
+    <string name="settings_theme_preset_summary">این پالت رنگ‌های خودش را دارد؛ رنگ‌های سفارشی رابط همچنان می‌توانند آن را تغییر دهند.</string>
     <string name="settings_theme_color_summary">رنگ اصلی مورد استفاده برای دکمه ها، انتخاب ها و نشانگرها را انتخاب کنید.</string>
     <string name="settings_language_summary">زبان مورد استفاده توسط رابط SKIPI را انتخاب کنید.</string>
     <string name="subscription_ping_mode_summary">پینگ از اتصال TCP استفاده می کند. HTTP یک درخواست به URL پیکربندی شده را بررسی می کند.</string>
@@ -1028,8 +1033,8 @@
     <string name="settings_updates_title">به‌روزرسانی‌ها</string>
     <string name="settings_auto_check_updates_title">بررسی به‌روزرسانی‌ها</string>
     <string name="settings_auto_check_updates_summary">بررسی دوره‌ای نسخه جدید SKIPI در GitHub</string>
-    <string name="settings_auto_install_night_title">به‌روزرسانی خودکار شبانه</string>
-    <string name="settings_auto_install_night_summary">دانلود و نصب خودکار در شب از طریق وای‌فای هنگام شارژ</string>
+    <string name="settings_auto_install_night_title">دانلود خودکار با Wi-Fi</string>
+    <string name="settings_auto_install_night_summary">به‌روزرسانی‌ها را با Wi-Fi بدون‌هزینه هنگام شارژ دانلود می‌کند. Android همیشه پیش از نصب تأیید می‌خواهد.</string>
     <string name="settings_check_updates_now_action">بررسی اکنون</string>
     <string name="app_update_checking">در حال بررسی به‌روزرسانی…</string>
     <string name="app_update_already_latest">شما از آخرین نسخه SKIPI استفاده می‌کنید</string>
@@ -1378,4 +1383,18 @@
     <string name="proxy_editor_olcrtc_video_tile_module">اندازه ماژول Tile</string>
     <string name="proxy_editor_olcrtc_video_tile_rs">افزونگی Reed-Solomon برای Tile</string>
     <string name="proxy_editor_olcrtc_custom_payload">محموله سفارشی اضافی</string>
+    <!-- ویجت توسعه‌یافته صفحهٔ اصلی -->
+    <string name="widget_compact_label">کلید تونل</string>
+    <string name="widget_control_label">پنل کنترل تونل</string>
+    <string name="widget_control_description">کنترل تونل VPN، پیکربندی و سرور</string>
+    <string name="widget_config_label">پیکربندی</string>
+    <string name="widget_server_label">سرور</string>
+    <string name="widget_previous_config">پیکربندی قبلی</string>
+    <string name="widget_next_config">پیکربندی بعدی</string>
+    <string name="widget_previous_server">سرور قبلی</string>
+    <string name="widget_next_server">سرور بعدی</string>
+    <string name="widget_speed_idle">در انتظار ترافیک</string>
+    <string name="widget_config_changed">پیکربندی: %1$s</string>
+    <string name="widget_server_changed">سرور: %1$s</string>
+    <string name="widget_no_config">پیکربندی وجود ندارد</string>
 </resources>

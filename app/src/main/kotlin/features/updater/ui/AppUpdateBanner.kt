@@ -1,10 +1,9 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.updater.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import ui.text.themedFontWeight
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -27,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,14 +35,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.LocalAppServices
+import app.LocalAppStateStore
 import app.LocalUpdateAppState
 import app.R
-import features.updater.AppUpdateDownloader
-import features.updater.AppUpdateDownloadProgress
-import features.updater.AppUpdateInfo
+import app.collectAppState
+import features.updater.AppUpdateDownloadStatus
 import features.updater.AppUpdateInstaller
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -56,34 +53,37 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import ui.text.themedFontWeight
 import java.io.File
 import java.util.Locale
 
+/** UI only observes durable state; WorkManager owns every APK transfer. */
 @Composable
 fun AppUpdateBanner(
-    updateInfo: AppUpdateInfo?,
-    dismissedVersion: String,
     modifier: Modifier = Modifier,
 ) {
-    if (updateInfo == null || updateInfo.versionName == dismissedVersion) return
+    val stateStore = LocalAppStateStore.current
+    val appState by stateStore.collectAppState()
+    val updateInfo = appState.availableAppUpdate ?: return
+    if (updateInfo.versionName == appState.dismissedUpdateVersion) return
 
     val context = LocalContext.current
+    val services = LocalAppServices.current
     val updateAppState = LocalUpdateAppState.current
-    val scope = rememberCoroutineScope()
-    var showChangelog by remember { mutableStateOf(false) }
-    var downloadProgress by remember { mutableStateOf<AppUpdateDownloadProgress>(AppUpdateDownloadProgress.Idle) }
+    var showChangelog by remember(updateInfo.versionCode, updateInfo.versionName) { mutableStateOf(false) }
+    val status = appState.appUpdateDownloadStatus
+    val isDownloading = status == AppUpdateDownloadStatus.QUEUED || status == AppUpdateDownloadStatus.DOWNLOADING
+    val isReadyToInstall = status == AppUpdateDownloadStatus.READY_TO_INSTALL
 
-    fun startDownloadAndInstall() {
-        scope.launch {
-            val downloader = AppUpdateDownloader(context)
-            downloader.downloadApk(updateInfo).collectLatest { progress ->
-                downloadProgress = progress
-                if (progress is AppUpdateDownloadProgress.Completed) {
-                    val apkFile = File(progress.apkFilePath)
-                    AppUpdateInstaller.installApk(context, apkFile)
-                }
+    fun startOrInstall() {
+        if (isReadyToInstall) {
+            val apkFile = appState.appUpdateApkFilePath?.let(::File)
+            if (apkFile?.isFile == true) {
+                AppUpdateInstaller.installApk(context, apkFile)
+                return
             }
         }
+        services.appUpdateDownloadCoordinator.enqueue(updateInfo, automatic = false)
     }
 
     AnimatedVisibility(
@@ -136,7 +136,9 @@ fun AppUpdateBanner(
                             )
                             val sizeText = if (updateInfo.apkSizeBytes > 0) {
                                 String.format(Locale.US, "%.1f MB", updateInfo.apkSizeBytes / (1024f * 1024f))
-                            } else ""
+                            } else {
+                                ""
+                            }
                             Text(
                                 text = if (sizeText.isNotBlank()) sizeText else stringResource(R.string.app_update_ready_description),
                                 fontSize = 12.sp,
@@ -159,43 +161,46 @@ fun AppUpdateBanner(
                     }
                 }
 
-                // Download Progress Indicator
-                when (val progress = downloadProgress) {
-                    is AppUpdateDownloadProgress.Downloading -> {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Column(modifier = Modifier.fillMaxWidth()) {
+                if (isDownloading) {
+                    val total = appState.appUpdateTotalBytes
+                    val progress = if (total > 0L) {
+                        (appState.appUpdateDownloadedBytes.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(MiuixTheme.colorScheme.surfaceVariant),
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(MiuixTheme.colorScheme.surfaceVariant),
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(progress.progress)
-                                        .fillMaxHeight()
-                                        .background(MiuixTheme.colorScheme.primary),
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "${(progress.progress * 100).toInt()}%",
-                                fontSize = 11.sp,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                modifier = Modifier.align(Alignment.End),
+                                    .fillMaxWidth(progress)
+                                    .fillMaxHeight()
+                                    .background(MiuixTheme.colorScheme.primary),
                             )
                         }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (total > 0L) "${(progress * 100).toInt()}%" else stringResource(R.string.app_update_downloading_action),
+                            fontSize = 11.sp,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier.align(Alignment.End),
+                        )
                     }
-                    is AppUpdateDownloadProgress.Failed -> {
+                } else if (status == AppUpdateDownloadStatus.FAILED) {
+                    appState.appUpdateDownloadError?.takeIf(String::isNotBlank)?.let { error ->
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = progress.errorMessage,
+                            text = error,
                             fontSize = 12.sp,
                             color = MiuixTheme.colorScheme.error,
                         )
                     }
-                    else -> {}
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -213,14 +218,17 @@ fun AppUpdateBanner(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
 
-                    val isDownloading = downloadProgress is AppUpdateDownloadProgress.Downloading
                     Button(
                         colors = ButtonDefaults.buttonColorsPrimary(),
                         enabled = !isDownloading,
-                        onClick = { startDownloadAndInstall() },
+                        onClick = ::startOrInstall,
                     ) {
                         Text(
-                            text = if (isDownloading) stringResource(R.string.app_update_downloading_action) else stringResource(R.string.app_update_install_action),
+                            text = when {
+                                isDownloading -> stringResource(R.string.app_update_downloading_action)
+                                isReadyToInstall -> stringResource(R.string.app_update_install_action)
+                                else -> stringResource(R.string.app_update_install_action)
+                            },
                             color = MiuixTheme.colorScheme.onPrimary,
                         )
                     }
@@ -234,7 +242,7 @@ fun AppUpdateBanner(
             show = showChangelog,
             updateInfo = updateInfo,
             onDismiss = { showChangelog = false },
-            onInstallClick = { startDownloadAndInstall() },
+            onInstallClick = ::startOrInstall,
         )
     }
 }

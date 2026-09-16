@@ -20,15 +20,15 @@ import androidx.core.view.WindowCompat
 import app.R
 import app.modes.BackgroundStyleClassic
 import app.modes.ColorModeAmoled
-import app.modes.ColorModeDark
-import app.modes.ColorModeLight
+import app.modes.ColorModeAurora
+import app.modes.ColorModeForest
+import app.modes.ColorModeSakura
 import app.modes.ColorModeSystem
-import app.modes.ColorModeThemeDark
-import app.modes.ColorModeThemeLight
-import app.modes.ColorModeThemeSystem
+import app.modes.ColorModeSunset
 import app.modes.FontFamilyModeDefault
 import app.modes.FontSizeModeSmall
 import app.modes.FontWeightModeDefault
+import app.modes.explicitColorModeIsDark
 import app.modes.normalizeColorMode
 import app.modes.resolveFontSizeScale
 import ui.text.ThemedTypography
@@ -123,54 +123,32 @@ fun AppTheme(
 ) {
     val context = LocalContext.current
     SynchronizeSplashTheme(colorMode)
-    val isAmoled = normalizeColorMode(colorMode) == ColorModeAmoled
-    val resolvedDark = when (normalizeColorMode(colorMode)) {
-        ColorModeLight -> false
-        ColorModeDark, ColorModeAmoled -> true
-        else -> systemDark
-    }
+    val normalizedColorMode = normalizeColorMode(colorMode)
+    val namedThemePalette = remember(normalizedColorMode) { namedThemePaletteFor(normalizedColorMode) }
+    val isAmoled = normalizedColorMode == ColorModeAmoled
+    val resolvedDark = explicitColorModeIsDark(normalizedColorMode) ?: systemDark
     val systemAccent = remember(context) { resolveSystemAccentColor(context) }
-    val effectiveKeyColor = keyColor ?: (if (enableMaterialYou) systemAccent else DefaultAppAccentColor)
+    val effectiveKeyColor = namedThemePalette?.accent ?: keyColor ?: (
+        if (enableMaterialYou) systemAccent else DefaultAppAccentColor
+    )
+    val usesTonalPalette = enableMaterialYou || namedThemePalette != null
 
-    val controller = remember(colorMode, enableMaterialYou, effectiveKeyColor, resolvedDark) {
-        if (enableMaterialYou) {
-            when (colorMode) {
-                ColorModeLight, ColorModeThemeLight -> ThemeController(
-                    ColorSchemeMode.MonetLight,
-                    keyColor = effectiveKeyColor,
-                    colorSpec = AndroidDynamicColorSpec,
-                    paletteStyle = AndroidDynamicPaletteStyle,
-                )
-                ColorModeDark, ColorModeThemeDark, ColorModeAmoled -> ThemeController(
-                    ColorSchemeMode.MonetDark,
-                    keyColor = effectiveKeyColor,
-                    colorSpec = AndroidDynamicColorSpec,
-                    paletteStyle = AndroidDynamicPaletteStyle,
-                )
-                else -> ThemeController(
-                    if (resolvedDark) ColorSchemeMode.MonetDark else ColorSchemeMode.MonetLight,
-                    keyColor = effectiveKeyColor,
-                    colorSpec = AndroidDynamicColorSpec,
-                    paletteStyle = AndroidDynamicPaletteStyle,
-                )
-            }
+    val controller = remember(normalizedColorMode, usesTonalPalette, effectiveKeyColor, resolvedDark) {
+        if (usesTonalPalette) {
+            ThemeController(
+                if (resolvedDark) ColorSchemeMode.MonetDark else ColorSchemeMode.MonetLight,
+                keyColor = effectiveKeyColor,
+                colorSpec = AndroidDynamicColorSpec,
+                paletteStyle = AndroidDynamicPaletteStyle,
+            )
         } else {
-            when (colorMode) {
-                ColorModeLight, ColorModeThemeLight -> ThemeController(
-                    ColorSchemeMode.Light,
-                )
-                ColorModeDark, ColorModeThemeDark, ColorModeAmoled -> ThemeController(
-                    ColorSchemeMode.Dark,
-                )
-                else -> ThemeController(
-                    if (resolvedDark) ColorSchemeMode.Dark else ColorSchemeMode.Light,
-                )
-            }
+            ThemeController(if (resolvedDark) ColorSchemeMode.Dark else ColorSchemeMode.Light)
         }
     }
     val baseMiuixColors = controller.currentColors()
     val activeAccentColor = when {
         enableCustomColors && customAccentColor != null -> customAccentColor
+        namedThemePalette != null -> namedThemePalette.accent
         !enableMaterialYou && customAccentColor != null -> customAccentColor
         !enableMaterialYou -> DefaultAppAccentColor
         else -> baseMiuixColors.primary
@@ -180,6 +158,7 @@ fun AppTheme(
         resolvedDark,
         colorMode,
         enableMaterialYou,
+        namedThemePalette,
         activeAccentColor,
         enableCustomColors,
         customBackgroundColor,
@@ -190,23 +169,27 @@ fun AppTheme(
         backgroundStyle,
     ) {
         val baseBackground = when {
+            namedThemePalette != null -> namedThemePalette.background
             isAmoled -> Color.Black
             resolvedDark -> Color(0xFF16171A)
             else -> Color(0xFFF5F6F8)
         }
-        val baseOnBackground = if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
+        val baseOnBackground = namedThemePalette?.onBackground ?: if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
         val baseSurface = when {
+            namedThemePalette != null -> namedThemePalette.surface
             isAmoled -> Color(0xFF0A0A0A)
             resolvedDark -> Color(0xFF202227)
             else -> Color(0xFFFFFFFF)
         }
-        val baseOnSurface = if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
+        val baseOnSurface = namedThemePalette?.onSurface ?: if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
         val baseSurfaceVariant = when {
+            namedThemePalette != null -> namedThemePalette.surfaceVariant
             isAmoled -> Color(0xFF141414)
             resolvedDark -> Color(0xFF282A31)
             else -> Color(0xFFE8EAEE)
         }
-        val baseOnSurfaceVariant = if (resolvedDark) Color(0xFF9EA3AE) else Color(0xFF6B7280)
+        val baseOnSurfaceVariant = namedThemePalette?.onSurfaceVariant ?: if (resolvedDark) Color(0xFF9EA3AE) else Color(0xFF6B7280)
+        val baseOnAccent = namedThemePalette?.onAccent ?: if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
 
         // AMOLED provides true black defaults. An explicit user palette still wins,
         // otherwise the custom background controls would appear to have no effect.
@@ -216,7 +199,7 @@ fun AppTheme(
         val finalAccent = activeAccentColor
         val finalOnBackground = if (enableCustomColors && customTextColor != null) customTextColor else baseOnBackground
         val finalOnSurface = if (enableCustomColors && customTextColor != null) customTextColor else baseOnSurface
-        val finalOnAccent = if (enableCustomColors && customTextColor != null) customTextColor else (if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E))
+        val finalOnAccent = if (enableCustomColors && customTextColor != null) customTextColor else baseOnAccent
         val finalOnSurfaceVariant = if (enableCustomColors && customTextSecondaryColor != null) customTextSecondaryColor else baseOnSurfaceVariant
 
         AppColors(
@@ -232,8 +215,8 @@ fun AppTheme(
         )
     }
 
-    val miuixColors = remember(baseMiuixColors, appColors, enableCustomColors, enableMaterialYou, activeAccentColor, backgroundStyle) {
-        val overridePrimary = (!enableMaterialYou) || (enableCustomColors && customAccentColor != null)
+    val miuixColors = remember(baseMiuixColors, appColors, namedThemePalette, enableCustomColors, enableMaterialYou, activeAccentColor, backgroundStyle) {
+        val overridePrimary = namedThemePalette != null || !enableMaterialYou || (enableCustomColors && customAccentColor != null)
         baseMiuixColors.copy(
             surface = appColors.surface,
             surfaceContainer = appColors.surface,
@@ -387,10 +370,11 @@ private fun SynchronizeSplashTheme(colorMode: Int) {
     if (view.isInEditMode) return
     LaunchedEffect(view, colorMode) {
         val activity = view.context as? Activity ?: return@LaunchedEffect
-        val themeId = when (normalizeColorMode(colorMode)) {
-            ColorModeLight -> R.style.AppTheme_Starting_Light
-            ColorModeDark -> R.style.AppTheme_Starting_Dark
-            ColorModeAmoled -> R.style.AppTheme_Starting_Amoled
+        val normalizedColorMode = normalizeColorMode(colorMode)
+        val themeId = when {
+            normalizedColorMode == ColorModeAmoled -> R.style.AppTheme_Starting_Amoled
+            explicitColorModeIsDark(normalizedColorMode) == false -> R.style.AppTheme_Starting_Light
+            explicitColorModeIsDark(normalizedColorMode) == true -> R.style.AppTheme_Starting_Dark
             else -> Resources.ID_NULL
         }
         activity.splashScreen.setSplashScreenTheme(themeId)
@@ -411,6 +395,62 @@ private fun SystemBarAppearance(
             isAppearanceLightNavigationBars = !navigationBarDark
         }
     }
+}
+
+@Immutable
+internal data class NamedThemePalette(
+    val background: Color,
+    val onBackground: Color,
+    val accent: Color,
+    val onAccent: Color,
+    val surface: Color,
+    val onSurface: Color,
+    val surfaceVariant: Color,
+    val onSurfaceVariant: Color,
+)
+
+internal fun namedThemePaletteFor(colorMode: Int): NamedThemePalette? = when (normalizeColorMode(colorMode)) {
+    ColorModeAurora -> NamedThemePalette(
+        background = Color(0xFF081427),
+        onBackground = Color(0xFFE7F1FF),
+        accent = Color(0xFF3B82F6),
+        onAccent = Color.White,
+        surface = Color(0xFF102443),
+        onSurface = Color(0xFFE7F1FF),
+        surfaceVariant = Color(0xFF18345E),
+        onSurfaceVariant = Color(0xFFB2C8EA),
+    )
+    ColorModeSakura -> NamedThemePalette(
+        background = Color(0xFFFFF7FB),
+        onBackground = Color(0xFF351321),
+        accent = Color(0xFFB93872),
+        onAccent = Color.White,
+        surface = Color(0xFFFFFFFF),
+        onSurface = Color(0xFF351321),
+        surfaceVariant = Color(0xFFF7E4EE),
+        onSurfaceVariant = Color(0xFF806171),
+    )
+    ColorModeForest -> NamedThemePalette(
+        background = Color(0xFF061B15),
+        onBackground = Color(0xFFE6FFF4),
+        accent = Color(0xFF16835A),
+        onAccent = Color.White,
+        surface = Color(0xFF0C2A20),
+        onSurface = Color(0xFFE6FFF4),
+        surfaceVariant = Color(0xFF164235),
+        onSurfaceVariant = Color(0xFFA9D7C0),
+    )
+    ColorModeSunset -> NamedThemePalette(
+        background = Color(0xFF211015),
+        onBackground = Color(0xFFFFF0ED),
+        accent = Color(0xFFC85048),
+        onAccent = Color.White,
+        surface = Color(0xFF32161D),
+        onSurface = Color(0xFFFFF0ED),
+        surfaceVariant = Color(0xFF4A2029),
+        onSurfaceVariant = Color(0xFFE9B8B1),
+    )
+    else -> null
 }
 
 val KeyColors: List<Color> = listOf(

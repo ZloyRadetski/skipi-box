@@ -15,6 +15,7 @@
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE"
         tools:ignore="ForegroundServicesPolicy" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
         tools:ignore="ForegroundServicesPolicy" />
@@ -241,10 +242,6 @@
             tools:ignore="DiscouragedApi,LockedOrientationActivity" />
 
         <receiver
-            android:name="features.updater.AppUpdateInstallReceiver"
-            android:exported="false" />
-
-        <receiver
             android:name="features.subscription.notification.SubscriptionExpiryReceiver"
             android:exported="false" />
 
@@ -262,13 +259,26 @@
 
         <receiver
             android:name="features.widgets.SkipiWidgetProvider"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/widget_compact_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_skipi_info" />
+        </receiver>
+
+        <receiver
+            android:name="features.widgets.SkipiControlWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_control_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_skipi_control_info" />
         </receiver>
 
         <service
@@ -279,6 +289,13 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Displays current upload and download speed and accumulated proxy traffic in an ongoing notification while the user-enabled proxy is running." />
         </service>
+
+        <!-- WorkManager uses this service only while a user-started APK download is active. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
         <service
             android:name="features.quicksettings.ProxyQuickSettingsTileService"
