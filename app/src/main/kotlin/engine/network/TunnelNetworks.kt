@@ -65,7 +65,7 @@ object TunnelNetworks {
         }
     }
 
-    /** The device's active VPN network, or null when no tunnel is up. */
+    /** The device's active VPN network, or null when no tunnel is up or socket cannot be bound. */
     fun locateVpnNetwork(context: Context?): Network? {
         val connectivity = context?.getSystemService(ConnectivityManager::class.java) ?: return null
         // allNetworks is deprecated in favor of network callbacks, but a VPN
@@ -73,7 +73,18 @@ object TunnelNetworks {
         @Suppress("DEPRECATION")
         return connectivity.allNetworks.firstOrNull { network ->
             connectivity.getNetworkCapabilities(network)
-                ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+                ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true && canBindSocket(network)
+        }
+    }
+
+    internal fun canBindSocket(network: Network): Boolean {
+        return try {
+            java.net.Socket().use { socket ->
+                network.bindSocket(socket)
+            }
+            true
+        } catch (_: Throwable) {
+            false
         }
     }
 

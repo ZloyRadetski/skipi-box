@@ -14,4 +14,5 @@ class TunnelNetworksTest {
         assertFalse(isSocksProxyAuthenticationRequest(requestingPort = 2081, proxyPort = 2080))
         assertFalse(isSocksProxyAuthenticationRequest(requestingPort = 0, proxyPort = 0))
     }
+
 }
