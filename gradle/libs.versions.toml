@@ -17,6 +17,7 @@ reorderable = "3.1.0"
 snakeyaml-engine = "3.1.1"
 sora-editor = "0.24.6"
 zxing-android-embedded = "4.3.0"
+xz = "1.10"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
@@ -44,6 +45,7 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyaml-engine" }
 sora-editor = { module = "io.github.rosemoe:editor", version.ref = "sora-editor" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing-android-embedded" }
+tukaani-xz = { module = "org.tukaani:xz", version.ref = "xz" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
