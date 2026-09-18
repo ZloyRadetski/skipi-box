@@ -400,4 +400,24 @@ class XrayDnsConfigTest {
                 ?.content,
         )
     }
+
+    @Test
+    fun dnsPlan_usesUseIpQueryStrategyEvenWhenEnableIpv6IsFalse() {
+        val server = ProxyServerState(
+            id = 1,
+            groupId = 0,
+            server = Custom(remarks = "Test", configJson = "{}"),
+        )
+        val request = XrayConfigRequest(
+            appState = AppState(enableIpv6 = false),
+            selectedServer = server,
+            inbounds = emptyList(),
+            coreLogPaths = XrayCoreLogPaths(
+                accessLogPath = "/tmp/access.log",
+                errorLogPath = "/tmp/error.log",
+            ),
+        )
+        val plan = request.buildXrayDnsPlan()
+        assertEquals("UseIP", plan.queryStrategy)
+    }
 }

@@ -389,7 +389,7 @@ class SkipiVpnService : VpnService() {
             config.dnsServers.forEach { dnsServer ->
                 builder.addDnsServer(dnsServer)
             }
-            if (config.dnsServers.none { it.contains(":") }) {
+            if (config.enableIpv6 && config.dnsServers.none { it.contains(":") }) {
                 builder.addDnsServer(VpnDefaults.IPV6_DNS)
             }
         }

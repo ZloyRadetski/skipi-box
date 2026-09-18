@@ -81,7 +81,7 @@ private fun AppState.buildXrayDnsPlan(
             effectiveDirectDnsDomains = effectiveDirectDnsDomains,
             systemBootstrapDnsDomains = systemBootstrapDnsDomains,
         ),
-        queryStrategy = if (enableIpv6) "UseIP" else "UseIPv4",
+        queryStrategy = "UseIP",
         tag = XrayTags.PROXY_DNS,
         hosts = dnsHosts.toDnsHostsJson(),
         fakeDns = if (effectiveFakeDnsEnabled) buildXrayFakeDnsConfig() else null,
