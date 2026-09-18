@@ -34,9 +34,7 @@ internal fun buildVpnTunInbound(
 ): JsonObject {
     val gateway = buildList {
         add(tunOptions.ipv4Address.toCidrString())
-        if (appState.enableIpv6) {
-            add(tunOptions.ipv6Address.toCidrString())
-        }
+        add(tunOptions.ipv6Address.toCidrString())
     }
     val settings = buildJsonObject {
         put("name", "skipi0")

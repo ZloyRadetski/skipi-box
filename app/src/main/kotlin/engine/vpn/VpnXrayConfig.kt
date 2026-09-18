@@ -158,7 +158,7 @@ internal object VpnXrayConfigFactory {
             ipv4Address = tunOptions.ipv4Address.address,
             ipv4PrefixLength = tunOptions.ipv4Address.prefixLength,
             enableIpv6 = appState.enableIpv6,
-            ipv6Address = if (appState.enableIpv6) tunOptions.ipv6Address.address else null,
+            ipv6Address = tunOptions.ipv6Address.address,
             ipv6PrefixLength = tunOptions.ipv6Address.prefixLength,
             enableLocalDns = appState.effectiveLocalDnsEnabled,
             dnsServers = tunOptions.dnsServers,
@@ -457,7 +457,7 @@ internal fun buildVpnHevSocks5TunnelConfig(
         socksPassword = localProxyOptions.password,
         mtu = tunOptions.mtu,
         ipv4Address = tunOptions.ipv4Address.address,
-        ipv6Address = tunOptions.ipv6Address.address.takeIf { enableIpv6 },
+        ipv6Address = tunOptions.ipv6Address.address,
         tunnelName = "skipi0",
         // Android supplies one ParcelFileDescriptor. Native multi-queue only
         // applies when HEV creates its own TUN, so do not advertise an inert

@@ -379,16 +379,18 @@ class SkipiVpnService : VpnService() {
             .setMtu(config.mtu)
             .addAddress(config.ipv4Address, config.ipv4PrefixLength)
 
-        if (config.enableIpv6 && config.ipv6Address != null) {
-            builder
-                .addAddress(config.ipv6Address, config.ipv6PrefixLength)
-        }
+        val ipv6Address = config.ipv6Address ?: defaultIpv6TunAddress.address
+        val ipv6PrefixLength = if (config.ipv6PrefixLength > 0) config.ipv6PrefixLength else defaultIpv6TunAddress.prefixLength
+        builder.addAddress(ipv6Address, ipv6PrefixLength)
 
         builder.applyVpnRoutes(config)
 
         if (config.enableLocalDns) {
             config.dnsServers.forEach { dnsServer ->
                 builder.addDnsServer(dnsServer)
+            }
+            if (config.dnsServers.none { it.contains(":") }) {
+                builder.addDnsServer(VpnDefaults.IPV6_DNS)
             }
         }
 
@@ -404,9 +406,7 @@ class SkipiVpnService : VpnService() {
 
     private fun Builder.applyVpnRoutes(config: VpnServiceStartConfig): Builder {
         addRoute(NetworkDefaults.IPV4_ANY_ADDRESS, 0)
-        if (config.enableIpv6 && config.ipv6Address != null) {
-            addRoute(NetworkDefaults.IPV6_ANY_ADDRESS, 0)
-        }
+        addRoute(NetworkDefaults.IPV6_ANY_ADDRESS, 0)
         return this
     }
 

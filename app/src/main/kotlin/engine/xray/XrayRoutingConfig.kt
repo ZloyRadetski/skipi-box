@@ -5,6 +5,7 @@ package engine.xray
 
 import app.AppState
 import app.effectiveLocalDnsEnabled
+import engine.vpn.VpnDefaults
 import features.routing.model.RouteRule
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -101,6 +102,9 @@ private fun AppState.routingRules(
                     add(xrayRule)
                 }
             }
+        if (!enableIpv6) {
+            routeTargets[XrayTags.BLOCK]?.let(::buildIpv6BlackholeRoute)?.let(::add)
+        }
         // Xray otherwise falls back to the first outbound.  That makes a
         // Shadowrocket FINAL choice look ignored whenever the selected card is
         // still the first proxy outbound.  Keep FINAL as the last rule so
@@ -130,6 +134,14 @@ private fun buildFinalRoute(target: XrayRouteTarget): JsonObject {
         // A generated config handles TCP and UDP application traffic.  DNS
         // inbounds have earlier, dedicated rules, and user rules remain above
         // this fallback in their original Shadowrocket order.
+        put("network", "tcp,udp")
+    }
+}
+
+private fun buildIpv6BlackholeRoute(target: XrayRouteTarget): JsonObject {
+    return buildJsonObject {
+        target.applyTo(this)
+        put("ip", listOf(VpnDefaults.IPV6_ALL_CIDR).toJsonStringArray())
         put("network", "tcp,udp")
     }
 }
