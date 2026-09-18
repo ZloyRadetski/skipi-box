@@ -29,26 +29,27 @@ class VpnTunIpv6ConfigTest {
     }
 
     @Test
-    fun buildVpnTunInbound_alwaysIncludesIpv6Gateway() {
-        val appState = AppState(enableIpv6 = false)
-        val tunOptions = appState.toTunOptions()
-        val inbound = buildVpnTunInbound(appState, tunOptions)
+    fun buildVpnTunInbound_includesIpv6GatewayOnlyWhenEnableIpv6IsTrue() {
+        val disabledState = AppState(enableIpv6 = false)
+        val tunOptions = disabledState.toTunOptions()
+        val disabledInbound = buildVpnTunInbound(disabledState, tunOptions)
 
-        val settings = inbound["settings"]?.jsonObject
-        assertNotNull(settings)
-        val gatewayArray = settings?.get("gateway")?.jsonArray
-        assertNotNull(gatewayArray)
+        val disabledGateways = disabledInbound["settings"]?.jsonObject?.get("gateway")?.jsonArray
+            ?.map { it.jsonPrimitive.content }.orEmpty()
+        assertTrue("Expected IPv4 gateway in TUN settings", disabledGateways.any { it.startsWith("172.19.") })
+        org.junit.Assert.assertFalse("Expected no IPv6 gateway in TUN settings when enableIpv6 is false", disabledGateways.any { it.contains(":") })
 
-        val gateways = gatewayArray?.map { it.jsonPrimitive.content }.orEmpty()
-        assertTrue("Expected IPv4 gateway in TUN settings", gateways.any { it.startsWith("172.19.") })
-        assertTrue("Expected IPv6 gateway in TUN settings even when enableIpv6 is false", gateways.any { it.contains(":") })
+        val enabledState = AppState(enableIpv6 = true)
+        val enabledInbound = buildVpnTunInbound(enabledState, tunOptions)
+        val enabledGateways = enabledInbound["settings"]?.jsonObject?.get("gateway")?.jsonArray
+            ?.map { it.jsonPrimitive.content }.orEmpty()
+        assertTrue("Expected IPv6 gateway in TUN settings when enableIpv6 is true", enabledGateways.any { it.contains(":") })
     }
 
     @Test
-    fun buildVpnHevSocks5TunnelConfig_alwaysIncludesIpv6Address() {
-        val appState = AppState(enableIpv6 = false)
-        val tunOptions = appState.toTunOptions()
-        val config = buildVpnHevSocks5TunnelConfig(
+    fun buildVpnHevSocks5TunnelConfig_includesIpv6AddressOnlyWhenEnableIpv6IsTrue() {
+        val tunOptions = AppState().toTunOptions()
+        val disabledConfig = buildVpnHevSocks5TunnelConfig(
             dataDir = "/data/data/com.example/files",
             coreLogPaths = XrayCoreLogPaths(
                 accessLogPath = "/data/data/com.example/files/logs/access.log",
@@ -65,7 +66,27 @@ class VpnTunIpv6ConfigTest {
             useHevTun = true,
         )
 
-        assertNotNull(config)
-        assertEquals("fdfe:dcba:9876::1", config?.ipv6Address)
+        assertNotNull(disabledConfig)
+        org.junit.Assert.assertNull(disabledConfig?.ipv6Address)
+
+        val enabledConfig = buildVpnHevSocks5TunnelConfig(
+            dataDir = "/data/data/com.example/files",
+            coreLogPaths = XrayCoreLogPaths(
+                accessLogPath = "/data/data/com.example/files/logs/access.log",
+                errorLogPath = "/data/data/com.example/files/logs/error.log",
+            ),
+            localProxyOptions = LocalProxyOptions(
+                listenAddress = "127.0.0.1",
+                port = 10808,
+                username = "u",
+                password = "p",
+            ),
+            tunOptions = tunOptions,
+            enableIpv6 = true,
+            useHevTun = true,
+        )
+
+        assertNotNull(enabledConfig)
+        assertEquals("fdfe:dcba:9876::1", enabledConfig?.ipv6Address)
     }
 }

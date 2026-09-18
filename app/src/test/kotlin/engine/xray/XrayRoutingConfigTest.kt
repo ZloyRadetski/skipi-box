@@ -216,7 +216,7 @@ class XrayRoutingConfigTest {
     }
 
     @Test
-    fun testIpv6BlackholeRouteAddedWhenEnableIpv6IsFalse() {
+    fun testIpv6BlackholeRouteNotAdded() {
         val appState = AppState(
             enableIpv6 = false,
             defaultRouteOutboundTag = "proxy",
@@ -238,33 +238,7 @@ class XrayRoutingConfigTest {
             obj["outboundTag"]?.jsonPrimitive?.content == "block" &&
                 obj["ip"]?.toString()?.contains("::/0") == true
         }
-        assertTrue("Expected ::/0 blackhole rule when enableIpv6 is false", ipv6BlockRule != null)
-    }
-
-    @Test
-    fun testIpv6BlackholeRouteOmittedWhenEnableIpv6IsTrue() {
-        val appState = AppState(
-            enableIpv6 = true,
-            defaultRouteOutboundTag = "proxy",
-        )
-        val targets = mapOf(
-            "proxy" to XrayRouteTarget("proxy", XrayRouteTargetKind.Outbound),
-            "block" to XrayRouteTarget("block", XrayRouteTargetKind.Outbound),
-        )
-        val plan = appState.buildXrayRoutingPlan(
-            routeTargets = targets,
-            balancers = emptyList(),
-            routeProxyDns = false,
-            routeDirectDns = false,
-            dnsHijackInboundTags = emptyList(),
-        )
-
-        val ipv6BlockRule = plan.rules.find { element ->
-            val obj = element.jsonObject
-            obj["outboundTag"]?.jsonPrimitive?.content == "block" &&
-                obj["ip"]?.toString()?.contains("::/0") == true
-        }
-        assertTrue("Expected no ::/0 blackhole rule when enableIpv6 is true", ipv6BlockRule == null)
+        assertTrue("Expected no ::/0 blackhole rule", ipv6BlockRule == null)
     }
 }
 
