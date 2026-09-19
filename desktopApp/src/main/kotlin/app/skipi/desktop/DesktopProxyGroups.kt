@@ -78,7 +78,8 @@ class DesktopProxyGroupCatalog internal constructor(
     private val searchTextByServerId: Map<Int, String>,
 ) {
     val defaultGroupId: String?
-        get() = groups.firstOrNull { group -> group.kind != DesktopProxyGroupKind.All }?.id
+        get() = groups.firstOrNull { group -> group.kind != DesktopProxyGroupKind.All && group.enabled }?.id
+            ?: groups.firstOrNull { group -> group.kind != DesktopProxyGroupKind.All }?.id
 
     fun group(groupId: String?): DesktopProxyGroup? = groups.firstOrNull { it.id == groupId }
 
@@ -161,17 +162,15 @@ object DesktopProxyGroups {
                 )
             }
             subscriptionLibrary.subscriptions.forEach { subscription ->
-                if (subscriptionEnabled(subscription.id)) {
-                    add(
-                        DesktopProxyGroup(
-                            id = DesktopProxyGroupIds.subscription(subscription.id),
-                            kind = DesktopProxyGroupKind.Subscription,
-                            title = subscription.name.trim().ifBlank { subscription.url },
-                            serverIds = subscriptionRecordsById[subscription.id].orEmpty().map(DesktopProxyGroupRecord::id),
-                            enabled = true,
-                        ),
-                    )
-                }
+                add(
+                    DesktopProxyGroup(
+                        id = DesktopProxyGroupIds.subscription(subscription.id),
+                        kind = DesktopProxyGroupKind.Subscription,
+                        title = subscription.name.trim().ifBlank { subscription.url },
+                        serverIds = subscriptionRecordsById[subscription.id].orEmpty().map(DesktopProxyGroupRecord::id),
+                        enabled = subscriptionEnabled(subscription.id),
+                    ),
+                )
             }
             if (manualRecords.isNotEmpty()) {
                 add(

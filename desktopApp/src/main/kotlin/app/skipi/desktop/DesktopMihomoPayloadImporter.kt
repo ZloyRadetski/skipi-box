@@ -2,6 +2,7 @@
 
 package app.skipi.desktop
 
+import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
 import features.proxy.server.model.ProxyServer
@@ -12,7 +13,10 @@ import features.proxy.server.model.V2RayParameters
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
+import features.proxy.server.model.formatCustomXrayConfigJson
 import features.subscription.importSubscriptionServers
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import utils.decodeFlexibleBase64OrNull
@@ -153,12 +157,60 @@ internal object DesktopMihomoPayloadImporter {
     }
 
     private fun importDirectSubscriptionPayload(text: String): InternalMihomoImportResult {
+        val jsonResult = parseSubscriptionJsonConfigs(text)
+        if (jsonResult != null && (jsonResult.servers.isNotEmpty() || jsonResult.proxyEntryCount > 0)) {
+            return jsonResult
+        }
         val imported = text.importSubscriptionServers()
         return InternalMihomoImportResult(
             recognizedYaml = false,
             proxyEntryCount = imported.urlCount,
             servers = imported.servers,
             rejectedProxyCount = imported.rejectedUrlCount,
+            pendingProviders = emptyList(),
+            diagnostics = emptyList(),
+        )
+    }
+
+    private fun parseSubscriptionJsonConfigs(text: String): InternalMihomoImportResult? {
+        val candidate = text.trimStart('\uFEFF', ' ', '\t', '\r', '\n')
+        if (!candidate.startsWith('{') && !candidate.startsWith('[')) return null
+
+        val root = runCatching {
+            ProxyServer.json.parseToJsonElement(candidate)
+        }.getOrNull() ?: return null
+
+        val configs = when (root) {
+            is JsonObject -> listOf(root)
+            is JsonArray -> root.mapNotNull { element -> element as? JsonObject }
+            else -> return null
+        }
+        if (configs.isEmpty()) return null
+
+        var rejectedCount = 0
+        val parsedServers = configs.mapIndexedNotNull { index, config ->
+            runCatching {
+                val server = Custom(
+                    remarks = config.customXrayRemarks(index),
+                    configJson = formatCustomXrayConfigJson(config),
+                )
+                val issues = server.validateBasic()
+                if (issues.isNotEmpty()) {
+                    throw IllegalArgumentException("Validation failed: ${issues.joinToString { it.error.name }}")
+                }
+                server
+            }.onFailure {
+                rejectedCount += 1
+            }.getOrNull()
+        }
+
+        if (parsedServers.isEmpty() && rejectedCount == 0) return null
+
+        return InternalMihomoImportResult(
+            recognizedYaml = false,
+            proxyEntryCount = configs.size,
+            servers = parsedServers,
+            rejectedProxyCount = rejectedCount,
             pendingProviders = emptyList(),
             diagnostics = emptyList(),
         )

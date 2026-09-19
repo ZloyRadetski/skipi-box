@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import features.proxy.server.model.AmneziaWg
+import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
 import features.proxy.server.model.OlcRtc
@@ -14,6 +15,7 @@ import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
+import features.proxy.server.model.customXrayConfigProxyOutboundEndpoint
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -48,6 +50,10 @@ fun ProxyServer<*>.desktopTcpEndpointOrNull(): DesktopServerTcpEndpoint? {
     if (this is OlcRtc) {
         val (host, port) = signalingEndpoint() ?: return null
         return DesktopServerTcpEndpoint(host, port)
+    }
+    if (this is Custom) {
+        val endpoint = customXrayConfigProxyOutboundEndpoint(configJson) ?: return null
+        return DesktopServerTcpEndpoint(host = endpoint.host, port = endpoint.port)
     }
     val endpoint = when (this) {
         is HTTP -> server to port

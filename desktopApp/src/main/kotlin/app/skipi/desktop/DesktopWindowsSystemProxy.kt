@@ -52,21 +52,9 @@ internal fun isDesktopWindowsSystemProxySupported(
 ): Boolean = osName.startsWith("Windows", ignoreCase = true)
 
 /** Result action lets UI distinguish a successful recovery from an unsafe no-op. */
-enum class DesktopWindowsSystemProxyLeaseAction {
-    Acquired,
-    AlreadyAcquired,
-    Released,
-    NothingToRelease,
-    Recovered,
-    SkippedNotOwner,
-}
+typealias DesktopWindowsSystemProxyLeaseAction = DesktopSystemProxyLeaseAction
 
-data class DesktopWindowsSystemProxyLeaseResult(
-    val action: DesktopWindowsSystemProxyLeaseAction,
-    /** Successful release/recovery always includes a successful WinINet refresh. */
-    val refreshApplied: Boolean = true,
-    val message: String = "",
-)
+typealias DesktopWindowsSystemProxyLeaseResult = DesktopSystemProxyLeaseResult
 
 /** Small process boundary that keeps registry and WinINet calls unit-testable. */
 fun interface DesktopWindowsCommandRunner {
@@ -269,7 +257,10 @@ class DesktopWindowsSystemProxyLeaseManager(
     commandRunner: DesktopWindowsCommandRunner = ProcessDesktopWindowsCommandRunner,
     private val registry: DesktopWindowsRegistry = RegExeDesktopWindowsRegistry(commandRunner),
     private val refresher: DesktopWindowsInternetSettingsRefresher = PowerShellWinInetSettingsRefresher(commandRunner),
-) {
+) : DesktopSystemProxyManager {
+    override fun acquire(endpoints: DesktopSystemProxyEndpoints): Result<DesktopSystemProxyLeaseResult> =
+        acquire(DesktopWindowsHttpProxyEndpoint(host = endpoints.host, port = endpoints.httpPort))
+
     /**
      * Snapshots the current per-user proxy values, starts a lease, and makes the
      * local HTTP Xray endpoint the Windows HTTP/HTTPS proxy. Call this only after
@@ -340,7 +331,7 @@ class DesktopWindowsSystemProxyLeaseManager(
         }
 
     /** Restores the exact values captured by [acquire] only while the lease still owns them. */
-    fun release(): Result<DesktopWindowsSystemProxyLeaseResult> = withExclusiveLeaseLock {
+    override fun release(): Result<DesktopWindowsSystemProxyLeaseResult> = withExclusiveLeaseLock {
         val lease = DesktopWindowsSystemProxyLeaseStore.load(leasePath).getOrThrow()
             ?: return@withExclusiveLeaseLock DesktopWindowsSystemProxyLeaseResult(
                 action = DesktopWindowsSystemProxyLeaseAction.NothingToRelease,
@@ -368,7 +359,7 @@ class DesktopWindowsSystemProxyLeaseManager(
     }
 
     /** Invoke at startup before offering a new connection to recover from a crash. */
-    fun recover(): Result<DesktopWindowsSystemProxyLeaseResult> = withExclusiveLeaseLock {
+    override fun recover(): Result<DesktopWindowsSystemProxyLeaseResult> = withExclusiveLeaseLock {
         val lease = DesktopWindowsSystemProxyLeaseStore.load(leasePath).getOrThrow()
             ?: return@withExclusiveLeaseLock DesktopWindowsSystemProxyLeaseResult(
                 action = DesktopWindowsSystemProxyLeaseAction.NothingToRelease,
@@ -396,7 +387,14 @@ class DesktopWindowsSystemProxyLeaseManager(
     }
 
     /** A small capability probe for callers that want to hide the Windows-only preference. */
-    fun isSupportedHost(): Boolean = isDesktopWindowsSystemProxySupported()
+    override fun isSupportedHost(): Boolean = isDesktopWindowsSystemProxySupported()
+
+    override fun forceClear(): Result<Unit> = withExclusiveLeaseLock {
+        registry.write(InternetSettingsKey, ProxyEnableValue, DesktopWindowsRegistryValue.dword(0)).getOrNull()
+        refresher.refresh().getOrNull()
+        registry.delete(MarkerRegistryKey, MarkerRegistryValue).getOrNull()
+        DesktopWindowsSystemProxyLeaseStore.clear(leasePath).getOrNull()
+    }.map { }
 
     private fun readSnapshot(): Result<DesktopWindowsSystemProxySnapshot> = runCatching {
         DesktopWindowsSystemProxySnapshot(

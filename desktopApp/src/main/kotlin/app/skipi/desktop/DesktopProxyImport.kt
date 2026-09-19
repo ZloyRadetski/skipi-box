@@ -534,14 +534,14 @@ private fun String.ensureTrailingLineFeed(): String = configDeduplicationKey().t
 private fun String.removeSuffixIgnoreCase(suffix: String): String =
     if (endsWith(suffix, ignoreCase = true)) dropLast(suffix.length) else this
 
-private fun JsonObject.customXrayRemarks(index: Int): String =
+internal fun JsonObject.customXrayRemarks(index: Int): String =
     string("remarks")
         ?: string("remark")
         ?: string("name")
         ?: string("tag")
         ?: "${customXrayTypePrefix()} ${index + 1}"
 
-private fun JsonObject.customXrayTypePrefix(): String {
+internal fun JsonObject.customXrayTypePrefix(): String {
     val outbounds = this["outbounds"] as? JsonArray
     val objects = outbounds?.mapNotNull { element -> element as? JsonObject }.orEmpty()
     val primary = objects.firstOrNull { outbound -> outbound.string("tag") == "proxy" }
@@ -565,7 +565,7 @@ private fun JsonObject.customXrayTypePrefix(): String {
     return if (protocol == null) "JSON" else "JSON ($protocol)"
 }
 
-private fun JsonObject.string(name: String): String? =
+internal fun JsonObject.string(name: String): String? =
     (this[name] as? JsonPrimitive)?.contentOrNull?.takeIf(String::isNotBlank)
 
 private const val ImportByteOrderMark = "\uFEFF"

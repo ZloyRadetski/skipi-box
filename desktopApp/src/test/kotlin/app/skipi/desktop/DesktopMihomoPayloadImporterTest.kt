@@ -128,4 +128,53 @@ class DesktopMihomoPayloadImporterTest {
         assertEquals(1, result.servers.size)
         assertEquals("Root SS", assertIs<Shadowsocks>(result.servers.single()).remarks)
     }
+
+    @Test
+    fun importsJsonArrayOfXrayConfigs() {
+        val jsonPayload = """
+            [
+              {
+                "tag": "Amsterdam Node",
+                "inbounds": [
+                  { "tag": "socks-in", "listen": "127.0.0.1", "port": 10808, "protocol": "socks" }
+                ],
+                "outbounds": [
+                  {
+                    "tag": "proxy",
+                    "protocol": "vless",
+                    "settings": {
+                      "vnext": [{ "address": "ams.example.com", "port": 443, "users": [{ "id": "uuid-123" }] }]
+                    }
+                  },
+                  { "tag": "direct", "protocol": "freedom" }
+                ]
+              },
+              {
+                "remarks": "Helsinki Node",
+                "outbounds": [
+                  {
+                    "tag": "proxy",
+                    "protocol": "hysteria2",
+                    "settings": {
+                      "servers": [{ "address": "hel.example.com", "port": 443 }]
+                    }
+                  }
+                ]
+              }
+            ]
+        """.trimIndent()
+
+        val result = DesktopMihomoPayloadImporter.import(jsonPayload)
+
+        assertEquals(false, result.recognizedYaml)
+        assertEquals(2, result.proxyEntryCount)
+        assertEquals(2, result.servers.size)
+        assertEquals(0, result.rejectedProxyCount)
+
+        val server1 = kotlin.test.assertIs<features.proxy.server.model.Custom>(result.servers[0])
+        assertEquals("Amsterdam Node", server1.remarks)
+
+        val server2 = kotlin.test.assertIs<features.proxy.server.model.Custom>(result.servers[1])
+        assertEquals("Helsinki Node", server2.remarks)
+    }
 }

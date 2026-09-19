@@ -24,8 +24,9 @@ enum class DesktopThemeMode { Dark, Amoled }
 data class DesktopAppSettings(
     val localProxyPort: Int = DefaultLocalSocksPort,
     val localHttpProxyPort: Int = DefaultLocalHttpProxyPort,
-    /** Mirrors Android's one-tap connection by temporarily applying a Windows HTTP proxy. */
-    val useWindowsSystemProxy: Boolean = isDesktopWindowsSystemProxySupported(),
+    val useWindowsSystemProxy: Boolean = isDesktopSystemProxySupported(),
+    /** Enables OS system proxy (gsettings/KDE on Linux, WinINet on Windows). */
+    val useSystemProxy: Boolean = useWindowsSystemProxy,
     val localProxyListenAddress: String = "127.0.0.1",
     val coreLogLevel: String = "warning",
     val subscriptionUserAgent: String = DefaultDesktopSubscriptionUserAgent,
@@ -82,7 +83,8 @@ val DesktopCoreLogLevels = listOf("debug", "info", "warning", "error", "none")
  */
 internal fun DesktopAppSettings.normalized(
     validate: Boolean = false,
-    supportsWindowsSystemProxy: Boolean = isDesktopWindowsSystemProxySupported(),
+    supportsSystemProxy: Boolean = isDesktopSystemProxySupported(),
+    supportsWindowsSystemProxy: Boolean = supportsSystemProxy,
 ): DesktopAppSettings {
     if (validate) {
         require(localProxyPort in 1..65_535) { "Local proxy port must be in 1..65535" }
@@ -104,12 +106,14 @@ internal fun DesktopAppSettings.normalized(
         .takeIf { it in 1..65_535 && it != normalizedSocksPort }
         ?: fallbackHttpProxyPort
     val normalizedListenAddress = localProxyListenAddress.trim().ifBlank { "127.0.0.1" }
+    val effectiveSupported = supportsWindowsSystemProxy && supportsSystemProxy
+    val effectiveSystemProxy = (useWindowsSystemProxy || useSystemProxy) && effectiveSupported
     return copy(
         localProxyPort = normalizedSocksPort,
         localHttpProxyPort = normalizedHttpProxyPort,
         localProxyListenAddress = normalizedListenAddress,
-        // Do not start a useless HTTP inbound on non-Windows hosts, even for legacy settings.json files.
-        useWindowsSystemProxy = useWindowsSystemProxy && supportsWindowsSystemProxy,
+        useSystemProxy = effectiveSystemProxy,
+        useWindowsSystemProxy = effectiveSystemProxy,
         coreLogLevel = coreLogLevel.trim().lowercase().takeIf { it in DesktopCoreLogLevels } ?: "warning",
         subscriptionUserAgent = subscriptionUserAgent.trim().ifBlank { DefaultDesktopSubscriptionUserAgent },
         subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(10, 120),

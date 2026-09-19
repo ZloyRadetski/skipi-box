@@ -51,6 +51,15 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import features.proxy.server.model.Custom
+import features.proxy.server.model.formatCustomXrayConfigJson
+import features.proxy.server.model.parseCustomXrayConfigJsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
 import platform.TunnelConnectRequest
@@ -59,7 +68,7 @@ import java.time.Duration
 @OptIn(ExperimentalMaterial3Api::class)
 fun main() = application {
     val xrayController = remember { DesktopXrayProcessController() }
-    val windowsSystemProxy = remember { DesktopWindowsSystemProxyLeaseManager() }
+    val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
     // Closing is handled from the composable below so it can serialize with an
     // in-flight connect/reconnect and keep Xray alive if proxy restoration fails.
     var closeRequested by remember { mutableStateOf(false) }
@@ -129,7 +138,7 @@ fun main() = application {
                 // The reason is user-facing text; the revision is the actual event
                 // identity, so two successive edits with identical text still restart.
                 var pendingTunnelReconnectRevision by remember { mutableStateOf(0L) }
-                var systemProxyRecoveryInProgress by remember { mutableStateOf(windowsSystemProxy.isSupportedHost()) }
+                var systemProxyRecoveryInProgress by remember { mutableStateOf(systemProxyManager.isSupportedHost()) }
                 var tunnelOperationInProgress by remember { mutableStateOf(false) }
                 var desiredTunnelRunning by remember { mutableStateOf(xrayProcessState.isRunning) }
                 var tunnelIntentVersion by remember { mutableStateOf(0L) }
@@ -140,20 +149,20 @@ fun main() = application {
                     pendingTunnelReconnectRevision += 1
                 }
 
-                LaunchedEffect(windowsSystemProxy) {
-                    if (!windowsSystemProxy.isSupportedHost()) {
+                LaunchedEffect(systemProxyManager) {
+                    if (!systemProxyManager.isSupportedHost()) {
                         systemProxyRecoveryInProgress = false
                         return@LaunchedEffect
                     }
                     systemProxyRecoveryInProgress = true
-                    withContext(Dispatchers.IO) { windowsSystemProxy.recover() }
+                    withContext(Dispatchers.IO) { systemProxyManager.recover() }
                         .onSuccess { recovery ->
-                            if (recovery.action != DesktopWindowsSystemProxyLeaseAction.NothingToRelease) {
+                            if (recovery.action != DesktopSystemProxyLeaseAction.NothingToRelease) {
                                 xrayProcessMessage = recovery.message
                             }
                         }
                         .onFailure { error ->
-                            xrayProcessMessage = "Не удалось восстановить системный прокси Windows: ${error.message.orEmpty()}"
+                            xrayProcessMessage = "Не удалось восстановить системный прокси: ${error.message.orEmpty()}"
                         }
                     systemProxyRecoveryInProgress = false
                 }
@@ -161,7 +170,7 @@ fun main() = application {
                     LocalProxyXrayConfigOptions(
                         socksPort = desktopSettings.localProxyPort,
                         httpProxyPort = desktopSettings.localHttpProxyPort,
-                        enableHttpProxy = desktopSettings.useWindowsSystemProxy,
+                        enableHttpProxy = desktopSettings.useSystemProxy,
                         listenAddress = desktopSettings.localProxyListenAddress,
                         logLevel = desktopSettings.coreLogLevel,
                     )
@@ -182,10 +191,14 @@ fun main() = application {
                             ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
                             ?.decode()
                             ?.mapCatching { server ->
-                                LocalProxyXrayConfigFactory.build(
-                                    server = server,
-                                    options = localProxyOptions,
-                                )
+                                if (server is Custom) {
+                                    buildDesktopCustomXrayConfig(server, localProxyOptions)
+                                } else {
+                                    LocalProxyXrayConfigFactory.build(
+                                        server = server,
+                                        options = localProxyOptions,
+                                    )
+                                }
                             }
                     }
                 }
@@ -194,7 +207,7 @@ fun main() = application {
                     ?.name
                 val latestSelectedServerConfig by rememberUpdatedState(selectedServerConfig)
                 val latestDesktopSettings by rememberUpdatedState(desktopSettings)
-                val desktopTunnelController = remember(xrayController, windowsSystemProxy) {
+                val desktopTunnelController = remember(xrayController, systemProxyManager) {
                     DesktopTunnelController(
                         configForProfile = {
                             latestSelectedServerConfig?.fold(
@@ -207,7 +220,7 @@ fun main() = application {
                         processState = xrayController::state,
                         awaitSystemProxyEndpoint = {
                             val settings = latestDesktopSettings
-                            if (!settings.useWindowsSystemProxy || !windowsSystemProxy.isSupportedHost()) {
+                            if (!settings.useSystemProxy || !systemProxyManager.isSupportedHost()) {
                                 Result.success(Unit)
                             } else {
                                 localProxyReadiness.awaitLoopbackHttpEndpoint(
@@ -219,24 +232,27 @@ fun main() = application {
                         acquireSystemProxy = {
                             val settings = latestDesktopSettings
                             when {
-                                !settings.useWindowsSystemProxy -> Result.success(Unit)
-                                !windowsSystemProxy.isSupportedHost() -> Result.failure(
-                                    IllegalStateException("Windows system proxy is available only on Windows"),
+                                !settings.useSystemProxy -> Result.success(Unit)
+                                !systemProxyManager.isSupportedHost() -> Result.failure(
+                                    IllegalStateException("Системный прокси не поддерживается на этой платформе"),
                                 )
 
-                                else -> windowsSystemProxy.acquire(
-                                    DesktopWindowsHttpProxyEndpoint(port = settings.localHttpProxyPort),
+                                else -> systemProxyManager.acquire(
+                                    DesktopSystemProxyEndpoints(
+                                        httpPort = settings.localHttpProxyPort,
+                                        socksPort = settings.localProxyPort,
+                                    ),
                                 ).map { }
                             }
                         },
                         releaseSystemProxy = {
-                            if (windowsSystemProxy.isSupportedHost()) {
-                                windowsSystemProxy.release().map { }
+                            if (systemProxyManager.isSupportedHost()) {
+                                systemProxyManager.release().map { }
                             } else {
                                 Result.success(Unit)
                             }
                         },
-                        systemProxySupported = windowsSystemProxy::isSupportedHost,
+                        systemProxySupported = systemProxyManager::isSupportedHost,
                     )
                 }
                 val selectedTunnelProfileId = configLibrary.selectedConfigId?.toString()
@@ -307,8 +323,8 @@ fun main() = application {
                             desktopTunnelController.connect(TunnelConnectRequest(selectedTunnelProfileId))
                         }.onSuccess {
                             xrayProcessState = xrayController.state()
-                            val systemProxySuffix = if (desktopSettings.useWindowsSystemProxy) {
-                                " и системный прокси Windows"
+                            val systemProxySuffix = if (desktopSettings.useSystemProxy) {
+                                " и системный прокси"
                             } else {
                                 ""
                             }
@@ -381,6 +397,7 @@ fun main() = application {
                             subscriptionUrl = subscriptionUrl,
                             updatingSubscription = subscriptionUpdateInProgress,
                             running = xrayProcessState.isRunning,
+                            connecting = tunnelOperationInProgress && desiredTunnelRunning,
                             // Keep the connected hero actionable while a reconnect is underway:
                             // the handler records a newer user intent before it observes the
                             // operation guard, so a click on Power can still cancel/reverse it.
@@ -432,37 +449,42 @@ fun main() = application {
                                                 xrayProcessMessage = "Туннель Xray уже подключён."
                                             } else {
                                                 xrayProcessMessage = "Подключение Xray…"
+                                                DesktopLogger.info("Tunnel", "Connecting to profile $selectedTunnelProfileId")
                                                 withContext(Dispatchers.IO) {
                                                     desktopTunnelController.connect(TunnelConnectRequest(selectedTunnelProfileId))
                                                 }.onSuccess {
                                                     xrayProcessState = xrayController.state()
-                                                    val systemProxySuffix = if (desktopSettings.useWindowsSystemProxy) {
-                                                        " и системный прокси Windows"
+                                                    val systemProxySuffix = if (desktopSettings.useSystemProxy) {
+                                                        " и системный прокси"
                                                     } else {
                                                         ""
                                                     }
                                                     xrayProcessMessage = "Туннель Xray$systemProxySuffix запущен, PID ${xrayProcessState.pid}."
+                                                    DesktopLogger.info("Tunnel", "Connected: PID ${xrayProcessState.pid}")
                                                 }.onFailure { error ->
                                                     xrayProcessState = xrayController.state()
                                                     if (operationIntentVersion == tunnelIntentVersion) {
                                                         desiredTunnelRunning = xrayProcessState.isRunning
                                                     }
                                                     xrayProcessMessage = "Не удалось запустить Xray: ${error.message.orEmpty()}"
+                                                    DesktopLogger.error("Tunnel", "Connection failed", error)
                                                 }
                                             }
                                         } else {
                                             xrayProcessMessage = "Отключение Xray…"
+                                            DesktopLogger.info("Tunnel", "Disconnecting tunnel")
                                             withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
                                                 .onSuccess {
                                                     xrayProcessState = xrayController.state()
                                                     if (operationIntentVersion == tunnelIntentVersion) {
                                                         desiredTunnelRunning = false
                                                     }
-                                                    xrayProcessMessage = if (desktopSettings.useWindowsSystemProxy) {
-                                                        "Туннель Xray и системный прокси Windows остановлены."
+                                                    xrayProcessMessage = if (desktopSettings.useSystemProxy) {
+                                                        "Туннель Xray и системный прокси остановлены."
                                                     } else {
                                                         "Локальный туннель Xray остановлен."
                                                     }
+                                                    DesktopLogger.info("Tunnel", "Disconnected successfully")
                                                 }
                                                 .onFailure { error ->
                                                     xrayProcessState = xrayController.state()
@@ -470,6 +492,7 @@ fun main() = application {
                                                         desiredTunnelRunning = xrayProcessState.isRunning
                                                     }
                                                     xrayProcessMessage = "Не удалось остановить Xray: ${error.message.orEmpty()}"
+                                                    DesktopLogger.error("Tunnel", "Disconnect failed", error)
                                                 }
                                         }
                                     } finally {
@@ -964,7 +987,7 @@ fun main() = application {
                             onSettingsChange = { updated ->
                                 val restartRequired = desktopSettings.localProxyPort != updated.localProxyPort ||
                                     desktopSettings.localHttpProxyPort != updated.localHttpProxyPort ||
-                                    desktopSettings.useWindowsSystemProxy != updated.useWindowsSystemProxy ||
+                                    desktopSettings.useSystemProxy != updated.useSystemProxy ||
                                     desktopSettings.localProxyListenAddress != updated.localProxyListenAddress ||
                                     desktopSettings.coreLogLevel != updated.coreLogLevel
                                 desktopSettings = updated
@@ -974,6 +997,17 @@ fun main() = application {
                             },
                             contentPadding = contentPadding,
                             isTunnelRunning = xrayProcessState.isRunning,
+                            onClearSystemProxy = {
+                                subscriptionScope.launch {
+                                    withContext(Dispatchers.IO) { systemProxyManager.forceClear() }
+                                        .onSuccess {
+                                            xrayProcessMessage = "Системный прокси успешно сброшен."
+                                        }
+                                        .onFailure { error ->
+                                            xrayProcessMessage = "Не удалось сбросить системный прокси: ${error.message.orEmpty()}"
+                                        }
+                                }
+                            },
                         )
                     }
                 }
@@ -1048,3 +1082,73 @@ private val SkipiMuted = Color(0xFF9A9DA8)
 private const val MaxHomeLatencyChecks = 24
 private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
 private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L
+
+internal fun buildDesktopCustomXrayConfig(
+    server: Custom,
+    options: LocalProxyXrayConfigOptions,
+): String {
+    val customJson = parseCustomXrayConfigJsonObject(server.configJson)
+    val inbounds = buildJsonArray {
+        add(
+            buildJsonObject {
+                put("tag", LocalProxyXrayConfigFactory.SocksInboundTag)
+                put("listen", options.listenAddress)
+                put("port", options.socksPort)
+                put("protocol", "socks")
+                put(
+                    "settings",
+                    buildJsonObject {
+                        put("auth", "noauth")
+                        put("udp", true)
+                    },
+                )
+                put(
+                    "sniffing",
+                    buildJsonObject {
+                        put("enabled", true)
+                        put(
+                            "destOverride",
+                            buildJsonArray {
+                                add(JsonPrimitive("http"))
+                                add(JsonPrimitive("tls"))
+                                add(JsonPrimitive("fakedns"))
+                            },
+                        )
+                    },
+                )
+            },
+        )
+        if (options.enableHttpProxy) {
+            add(
+                buildJsonObject {
+                    put("tag", LocalProxyXrayConfigFactory.HttpInboundTag)
+                    put("listen", options.httpProxyListenAddress)
+                    put("port", options.httpProxyPort)
+                    put("protocol", "http")
+                    put(
+                        "settings",
+                        buildJsonObject {
+                            put("allowTransparent", false)
+                        },
+                    )
+                },
+            )
+        }
+    }
+    val cleanConfig = buildJsonObject {
+        put(
+            "log",
+            buildJsonObject {
+                put("loglevel", options.logLevel)
+            },
+        )
+        put("inbounds", inbounds)
+        customJson.forEach { (key, value) ->
+            if (key != "inbounds" && key != "log") {
+                put(key, value)
+            }
+        }
+    }
+    return formatCustomXrayConfigJson(cleanConfig)
+}
+

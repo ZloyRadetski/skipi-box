@@ -51,6 +51,7 @@ class DesktopProxyGroupsTest {
                 DesktopProxyGroupIds.All,
                 DesktopProxyGroupIds.AutoBalancers,
                 DesktopProxyGroupIds.subscription(2),
+                DesktopProxyGroupIds.subscription(3),
                 DesktopProxyGroupIds.Manual,
             ),
             catalog.groups.map(DesktopProxyGroup::id),
@@ -60,7 +61,9 @@ class DesktopProxyGroupsTest {
         assertEquals(listOf(10, 11, 20), catalog.group(DesktopProxyGroupIds.All)?.serverIds)
         assertEquals(listOf(20, 21), catalog.group(DesktopProxyGroupIds.AutoBalancers)?.serverIds)
         assertEquals(1, catalog.group(DesktopProxyGroupIds.subscription(2))?.serverCount)
-        assertNull(catalog.group(DesktopProxyGroupIds.subscription(3)))
+        assertEquals(true, catalog.group(DesktopProxyGroupIds.subscription(2))?.enabled)
+        assertEquals(false, catalog.group(DesktopProxyGroupIds.subscription(3))?.enabled)
+        assertEquals(1, catalog.group(DesktopProxyGroupIds.subscription(3))?.serverCount)
         assertEquals(listOf(10), catalog.group(DesktopProxyGroupIds.Manual)?.serverIds)
 
         assertEquals(

@@ -74,7 +74,7 @@ class DesktopTunnelController(
                 IllegalStateException("Xray process stopped unexpectedly")
             } else {
                 IllegalStateException(
-                    "Xray process stopped unexpectedly; Windows system proxy may still point to SKIPI: " +
+                    "Xray process stopped unexpectedly; system proxy may still point to SKIPI: " +
                         proxyRestoreFailure.message.orEmpty(),
                     proxyRestoreFailure,
                 )

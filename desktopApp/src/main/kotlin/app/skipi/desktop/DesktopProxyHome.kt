@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.MoreVert
@@ -112,6 +113,7 @@ internal fun DesktopProxyHome(
     subscriptionUrl: String,
     updatingSubscription: Boolean,
     running: Boolean,
+    connecting: Boolean = false,
     canToggleTunnel: Boolean,
     tunnelMessage: String,
     serverMessage: String,
@@ -252,7 +254,9 @@ internal fun DesktopProxyHome(
 
             ConnectionHeroCard(
                 running = running,
+                connecting = connecting,
                 enabled = canToggleTunnel,
+                hasSelectedServer = serverLibrary.selectedServerId != null,
                 selectedTitle = selectedTitle,
                 compact = compactConnection,
                 activeProfileName = activeProfileName,
@@ -355,13 +359,45 @@ internal fun DesktopProxyHome(
             listOf(tunnelMessage, subscriptionMessage, serverMessage, localMessage)
                 .firstOrNull { it.isNotBlank() }
                 ?.let { message ->
-                    Text(
-                        text = message,
-                        color = HomeMuted,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    )
-            }
+                    val isError = message.contains("не удалось", ignoreCase = true) ||
+                        message.contains("ошибка", ignoreCase = true) ||
+                        message.contains("failed", ignoreCase = true) ||
+                        message.contains("rejected", ignoreCase = true)
+                    if (isError) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF331515),
+                            border = BorderStroke(1.dp, Color(0xFF8B2626)),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.ErrorOutline,
+                                    contentDescription = "Ошибка",
+                                    tint = Color(0xFFFF8B8B),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Text(
+                                    text = message,
+                                    color = Color(0xFFFF8B8B),
+                                    fontSize = 13.sp,
+                                    lineHeight = 17.sp,
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = message,
+                            color = HomeMuted,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                }
             Spacer(Modifier.height(8.dp))
             }
         }
@@ -525,17 +561,45 @@ private fun HomeHeader(
 @Composable
 private fun ConnectionHeroCard(
     running: Boolean,
+    connecting: Boolean,
     enabled: Boolean,
+    hasSelectedServer: Boolean,
     selectedTitle: String,
     compact: Boolean,
     activeProfileName: String?,
     onToggle: () -> Unit,
 ) {
+    val statusTitle = when {
+        running -> "Подключено"
+        connecting -> "Подключение…"
+        else -> "Отключено"
+    }
+    val statusSubtitle = when {
+        running -> selectedTitle
+        connecting -> if (selectedTitle.isNotBlank()) selectedTitle else "Подготовка туннеля Xray…"
+        hasSelectedServer -> "Нажмите для подключения"
+        else -> "Сначала выберите сервер"
+    }
+    val buttonColor = when {
+        running -> HomeGreen
+        connecting -> Color(0xFFE5A93C)
+        else -> Color(0xFF555861)
+    }
+    val iconTint = when {
+        running -> HomeGreen
+        connecting -> Color(0xFFE5A93C)
+        else -> HomeMuted
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = HomeSurface),
-        border = BorderStroke(1.dp, if (running) HomeGreen.copy(alpha = 0.48f) else HomeBorder),
+        border = BorderStroke(
+            1.dp,
+            if (running) HomeGreen.copy(alpha = 0.48f)
+            else if (connecting) Color(0xFFE5A93C).copy(alpha = 0.48f)
+            else HomeBorder,
+        ),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(
@@ -550,14 +614,14 @@ private fun ConnectionHeroCard(
                         .size(if (compact) 70.dp else 86.dp)
                         .clip(CircleShape)
                         .background(HomeSurfaceRaised)
-                        .border(3.dp, if (running) HomeGreen else Color(0xFF555861), CircleShape)
+                        .border(3.dp, buttonColor, CircleShape)
                         .clickable(enabled = enabled, onClick = onToggle),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Icons.Outlined.PowerSettingsNew,
                         contentDescription = if (running) "Отключить" else "Подключить",
-                        tint = if (running) HomeGreen else HomeMuted,
+                        tint = iconTint,
                         modifier = Modifier.size(if (compact) 40.dp else 48.dp),
                     )
                 }
@@ -565,17 +629,13 @@ private fun ConnectionHeroCard(
             Spacer(Modifier.width(if (compact) 14.dp else 20.dp))
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = if (running) "Подключено" else "Отключено",
+                    text = statusTitle,
                     color = HomeText,
                     fontSize = if (compact) 25.sp else 30.sp,
                     fontWeight = FontWeight.Black,
                 )
                 Text(
-                    text = when {
-                        running -> selectedTitle
-                        enabled -> "Нажмите для подключения"
-                        else -> "Сначала выберите сервер"
-                    },
+                    text = statusSubtitle,
                     color = HomeMuted,
                     fontSize = if (compact) 16.sp else 18.sp,
                     maxLines = 1,
@@ -621,6 +681,7 @@ private fun GroupSelector(
                 ) {
                     groups.forEach { group ->
                         val selected = group.id == selectedGroupId
+                        val isEnabled = group.enabled
                         Surface(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(13.dp))
@@ -631,8 +692,8 @@ private fun GroupSelector(
                         ) {
                             Column(modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)) {
                                 Text(
-                                    group.title,
-                                    color = HomeText,
+                                    text = if (!isEnabled) "${group.title} (откл.)" else group.title,
+                                    color = if (isEnabled) HomeText else HomeMuted,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,

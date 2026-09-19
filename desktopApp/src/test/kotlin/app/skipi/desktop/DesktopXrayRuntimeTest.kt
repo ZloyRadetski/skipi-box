@@ -52,4 +52,16 @@ class DesktopXrayRuntimeTest {
             xrayCommand(runtime, configPath, testOnly = true),
         )
     }
+
+    @Test
+    fun discoversSplitRuntimeIfSystemFilesExist() {
+        val hasSystemXray = Files.isRegularFile(java.nio.file.Path.of("/usr/local/bin/xray")) &&
+            Files.isRegularFile(java.nio.file.Path.of("/usr/local/share/xray/geoip.dat"))
+        if (hasSystemXray) {
+            val runtime = DesktopXrayRuntimes.discover().getOrThrow()
+            assertTrue(Files.isRegularFile(runtime.executable))
+            assertTrue(Files.isRegularFile(runtime.geoIp))
+            assertTrue(Files.isRegularFile(runtime.geoSite))
+        }
+    }
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,6 +41,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -98,6 +100,7 @@ internal fun DesktopSettingsScreen(
     onSettingsChange: (DesktopAppSettings) -> Unit,
     contentPadding: PaddingValues,
     isTunnelRunning: Boolean = false,
+    onClearSystemProxy: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var destination by remember { mutableStateOf(DesktopSettingsDestination.Overview) }
@@ -139,6 +142,7 @@ internal fun DesktopSettingsScreen(
             message = message,
             onBack = { destination = DesktopSettingsDestination.Overview },
             onPersist = ::persist,
+            onClearSystemProxy = onClearSystemProxy,
             contentPadding = contentPadding,
             modifier = modifier,
         )
@@ -186,7 +190,7 @@ private fun DesktopSettingsOverview(
     contentPadding: PaddingValues,
     modifier: Modifier,
 ) {
-    val supportsWindowsSystemProxy = isDesktopWindowsSystemProxySupported()
+    val supportsSystemProxy = isDesktopSystemProxySupported()
     SettingsScreenColumn(
         contentPadding = contentPadding,
         modifier = modifier,
@@ -213,20 +217,20 @@ private fun DesktopSettingsOverview(
                 title = "Локальный прокси",
                 summary = buildString {
                     append("SOCKS5 · ${settings.localProxyListenAddress}:${settings.localProxyPort}")
-                    if (supportsWindowsSystemProxy && settings.useWindowsSystemProxy) append(" · системный HTTP")
+                    if (supportsSystemProxy && settings.useSystemProxy) append(" · системный прокси")
                 },
                 onClick = { onNavigate(DesktopSettingsDestination.LocalProxy) },
-                showDivider = supportsWindowsSystemProxy,
+                showDivider = supportsSystemProxy,
             )
-            if (supportsWindowsSystemProxy) {
+            if (supportsSystemProxy) {
                 SettingsCategoryRow(
                     icon = Icons.Outlined.Tune,
                     iconBackground = Color(0xFF397A94),
-                    title = "Туннель Windows",
-                    summary = if (settings.useWindowsSystemProxy) {
-                        "Системный HTTP-прокси будет включаться вместе с Xray"
+                    title = "Системный прокси",
+                    summary = if (settings.useSystemProxy) {
+                        "Системный прокси будет включаться вместе с Xray"
                     } else {
-                        "Только локальный SOCKS5 — системный прокси выключен"
+                        "Только локальный SOCKS5/HTTP — системный прокси выключен"
                     },
                     onClick = { onNavigate(DesktopSettingsDestination.LocalProxy) },
                 )
@@ -342,13 +346,14 @@ private fun DesktopLocalProxySettings(
     onBack: () -> Unit,
     onPersist: (DesktopAppSettings, String) -> Unit,
     contentPadding: PaddingValues,
-    modifier: Modifier,
+    onClearSystemProxy: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
-    val supportsWindowsSystemProxy = isDesktopWindowsSystemProxySupported()
+    val supportsSystemProxy = isDesktopSystemProxySupported()
     var portText by remember(settings.localProxyPort) { mutableStateOf(settings.localProxyPort.toString()) }
     var httpPortText by remember(settings.localHttpProxyPort) { mutableStateOf(settings.localHttpProxyPort.toString()) }
-    var useWindowsSystemProxy by remember(settings.useWindowsSystemProxy) {
-        mutableStateOf(settings.useWindowsSystemProxy)
+    var useSystemProxy by remember(settings.useSystemProxy) {
+        mutableStateOf(settings.useSystemProxy)
     }
     var listenAddress by remember(settings.localProxyListenAddress) {
         mutableStateOf(settings.localProxyListenAddress)
@@ -376,8 +381,8 @@ private fun DesktopLocalProxySettings(
     SettingsScreenColumn(contentPadding, modifier) {
         SettingsHeader(
             title = "Локальный прокси",
-            subtitle = if (supportsWindowsSystemProxy) {
-                "SOCKS5 и системный HTTP-прокси для Windows"
+            subtitle = if (supportsSystemProxy) {
+                "SOCKS5, HTTP и системный прокси"
             } else {
                 "Локальный SOCKS5-прокси"
             },
@@ -400,12 +405,12 @@ private fun DesktopLocalProxySettings(
                 if (portError != null) {
                     Text(portError, color = SettingsRed, fontSize = 12.sp)
                 }
-                if (supportsWindowsSystemProxy) {
+                if (supportsSystemProxy) {
                     OutlinedTextField(
                         value = httpPortText,
                         onValueChange = { httpPortText = it.filter(Char::isDigit).take(5) },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Порт HTTP-прокси Windows") },
+                        label = { Text("Порт HTTP-прокси") },
                         singleLine = true,
                         isError = httpPortError != null,
                     )
@@ -432,14 +437,14 @@ private fun DesktopLocalProxySettings(
                 onCheckedChange = { allowLan ->
                     listenAddress = if (allowLan) "0.0.0.0" else "127.0.0.1"
                 },
-                showDivider = true,
+                showDivider = supportsSystemProxy,
             )
-            if (supportsWindowsSystemProxy) {
+            if (supportsSystemProxy) {
                 SettingsSwitchPreference(
-                    title = "Использовать системный прокси Windows",
-                    summary = "При подключении SKIPI временно направит HTTP/HTTPS Windows на локальный Xray и восстановит прежние параметры при отключении. HTTP всегда слушает только 127.0.0.1.",
-                    checked = useWindowsSystemProxy,
-                    onCheckedChange = { useWindowsSystemProxy = it },
+                    title = "Использовать системный прокси",
+                    summary = "При подключении SKIPI временно настроит системный HTTP/SOCKS прокси и восстановит прежние параметры при отключении. HTTP всегда слушает только 127.0.0.1.",
+                    checked = useSystemProxy,
+                    onCheckedChange = { useSystemProxy = it },
                 )
             }
         }
@@ -474,13 +479,13 @@ private fun DesktopLocalProxySettings(
                 title = "SOCKS5",
                 summary = "${listenAddress.trim().ifBlank { "127.0.0.1" }}:${port ?: "—"}",
             )
-            if (supportsWindowsSystemProxy) {
+            if (supportsSystemProxy) {
                 SettingsInfoRow(
-                    title = "HTTP Windows",
-                    summary = if (useWindowsSystemProxy) {
+                    title = "Системный HTTP/SOCKS",
+                    summary = if (useSystemProxy) {
                         "127.0.0.1:${httpPort ?: "—"} · будет применяться при подключении"
                     } else {
-                        "Выключен — используйте SOCKS5 вручную"
+                        "Выключен — используйте порты вручную"
                     },
                 )
             }
@@ -494,7 +499,8 @@ private fun DesktopLocalProxySettings(
                         settings.copy(
                             localProxyPort = port,
                             localHttpProxyPort = httpPort,
-                            useWindowsSystemProxy = supportsWindowsSystemProxy && useWindowsSystemProxy,
+                            useSystemProxy = supportsSystemProxy && useSystemProxy,
+                            useWindowsSystemProxy = supportsSystemProxy && useSystemProxy,
                             localProxyListenAddress = listenAddress.trim(),
                             coreLogLevel = logLevel,
                         ),
@@ -506,6 +512,14 @@ private fun DesktopLocalProxySettings(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Сохранить параметры")
+        }
+        if (supportsSystemProxy && onClearSystemProxy != null) {
+            OutlinedButton(
+                onClick = onClearSystemProxy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Сбросить системный прокси")
+            }
         }
         Text(
             "Изменения применяются при следующем подключении Xray.",
@@ -749,11 +763,94 @@ private fun DesktopDiagnosticsSettings(
             )
         }
 
+        var showRecentLogs by remember { mutableStateOf(false) }
+        var recentLogs by remember { mutableStateOf(DesktopLogger.recentEntries(30)) }
+        val logFile = remember { DesktopLogger.logFile() }
+        val logDir = remember { DesktopLogger.logDirectory() }
+
         SettingsGroup(title = "ЖУРНАЛЫ") {
             SettingsInfoRow(
                 title = "Уровень журналирования",
                 summary = settings.coreLogLevel.uppercase() + " · настраивается в «Локальном прокси»",
+                showDivider = true,
             )
+            SettingsPreferenceRow(
+                title = "Открыть папку с логами",
+                summary = logDir.toString(),
+                onClick = {
+                    val result = runCatching {
+                        Files.createDirectories(logDir)
+                        check(Desktop.isDesktopSupported()) { "Открытие папки не поддерживается системой." }
+                        Desktop.getDesktop().open(logDir.toFile())
+                    }
+                    onMessage(
+                        result.fold(
+                            onSuccess = { "Папка журналов открыта." },
+                            onFailure = { "Не удалось открыть папку: ${it.message.orEmpty()}" },
+                        ),
+                    )
+                },
+                showDivider = true,
+            )
+            SettingsPreferenceRow(
+                title = if (showRecentLogs) "Скрыть журнал" else "Показать последние записи журнала",
+                summary = if (Files.exists(logFile)) "Размер файла: ${Files.size(logFile)} байт" else "Файл журнала ещё не создан",
+                onClick = {
+                    recentLogs = DesktopLogger.recentEntries(40)
+                    showRecentLogs = !showRecentLogs
+                },
+            )
+            if (showRecentLogs) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF141416)),
+                    border = BorderStroke(1.dp, SettingsBorder),
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "skipi.log (последние записи)",
+                                color = SettingsMuted,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = "Обновить",
+                                color = SettingsGreen,
+                                fontSize = 12.sp,
+                                modifier = Modifier.clickable { recentLogs = DesktopLogger.recentEntries(40) },
+                            )
+                        }
+                        if (recentLogs.isEmpty()) {
+                            Text("Записей пока нет", color = SettingsMuted, fontSize = 12.sp)
+                        } else {
+                            val logScrollState = rememberScrollState()
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 240.dp)
+                                    .verticalScroll(logScrollState),
+                            ) {
+                                Text(
+                                    text = recentLogs.joinToString("\n"),
+                                    color = Color(0xFFD4D4D4),
+                                    fontSize = 11.sp,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    lineHeight = 15.sp,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         SettingsGroup(title = "ДАННЫЕ SKIPI") {

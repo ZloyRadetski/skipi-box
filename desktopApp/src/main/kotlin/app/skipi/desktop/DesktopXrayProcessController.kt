@@ -44,25 +44,33 @@ class DesktopXrayProcessController(
         val runtime = runtimeProvider().getOrThrow()
         val configPath = writeRuntimeConfig(config)
         validateConfig(runtime, configPath)
-        val started = ProcessBuilder(xrayCommand(runtime, configPath))
+        val processBuilder = ProcessBuilder(xrayCommand(runtime, configPath))
             .directory(runtime.directory.toFile())
             .redirectErrorStream(true)
-            .start()
+        processBuilder.environment()["XRAY_LOCATION_ASSET"] = runtime.geoIp.parent.toString()
+        val started = processBuilder.start()
         process = started
+        DesktopLogger.info("XrayController", "Started Xray process (PID ${started.pid()}) with config $configPath")
         collectOutput(started)
         state()
+    }.onFailure { error ->
+        DesktopLogger.error("XrayController", "Failed to start Xray", error)
     }
 
     @Synchronized
     fun stop(): Result<DesktopXrayProcessState> = runCatching {
         val active = process ?: return@runCatching state()
+        val pid = active.pid()
         active.destroy()
         if (!active.waitFor(3, TimeUnit.SECONDS)) {
             active.destroyForcibly()
             active.waitFor(3, TimeUnit.SECONDS)
         }
         process = null
+        DesktopLogger.info("XrayController", "Stopped Xray process (PID $pid)")
         state()
+    }.onFailure { error ->
+        DesktopLogger.error("XrayController", "Failed to stop Xray", error)
     }
 
     private fun writeRuntimeConfig(config: String): Path {
@@ -80,14 +88,16 @@ class DesktopXrayProcessController(
     }
 
     private fun validateConfig(runtime: DesktopXrayRuntime, configPath: Path) {
-        val validation = ProcessBuilder(xrayCommand(runtime, configPath, testOnly = true))
+        val processBuilder = ProcessBuilder(xrayCommand(runtime, configPath, testOnly = true))
             .directory(runtime.directory.toFile())
             .redirectErrorStream(true)
-            .start()
+        processBuilder.environment()["XRAY_LOCATION_ASSET"] = runtime.geoIp.parent.toString()
+        val validation = processBuilder.start()
         val output = validation.inputStream.bufferedReader(StandardCharsets.UTF_8).use { reader -> reader.readText() }
         val exitCode = validation.waitFor()
         check(exitCode == 0) {
-            "Xray rejected the generated config${output.trim().takeIf(String::isNotEmpty)?.let { ": ${it.take(1_000)}" }.orEmpty()}"
+            val detail = output.trim().takeIf(String::isNotEmpty)?.let { ": ${it.take(1_000)}" }.orEmpty()
+            "Xray rejected the generated config$detail"
         }
     }
 
@@ -96,6 +106,7 @@ class DesktopXrayProcessController(
             {
                 started.inputStream.bufferedReader(StandardCharsets.UTF_8).useLines { lines ->
                     lines.forEach { line ->
+                        DesktopLogger.info("Xray", line)
                         synchronized(this) {
                             outputLines.addLast(line)
                             while (outputLines.size > MaxStoredOutputLines) outputLines.removeFirst()
