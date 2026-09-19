@@ -7,7 +7,7 @@ val desktopXrayRuntime = layout.buildDirectory.dir("generated/xray-runtime")
 
 val downloadDesktopXray = tasks.register<DownloadDesktopXrayTask>("downloadDesktopXray") {
     xrayVersion.set(ProjectConfig.XRAY_CORE_VERSION)
-    expectedArchiveSha256.set("c7172078fca4711bcd92a4774dcd1822544579c58816197575c47533317fd8d1")
+    expectedArchiveSha256.set("244deaba2098c2964e49bba90df3707777e5f5f428a82d2f29604015f24beec2")
     outputDirectory.set(desktopXrayRuntime)
 }
 

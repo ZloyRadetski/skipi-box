@@ -34,6 +34,8 @@ data class DesktopAppSettings(
     val compactHome: Boolean = false,
     val showTunnelMemory: Boolean = true,
     val confirmDeletion: Boolean = true,
+    val sendDeviceHeaders: Boolean = true,
+    val installationUuid: String = "",
 )
 
 object DesktopSettingsLibraries {
@@ -111,5 +113,7 @@ internal fun DesktopAppSettings.normalized(
         coreLogLevel = coreLogLevel.trim().lowercase().takeIf { it in DesktopCoreLogLevels } ?: "warning",
         subscriptionUserAgent = subscriptionUserAgent.trim().ifBlank { DefaultDesktopSubscriptionUserAgent },
         subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(10, 120),
+        sendDeviceHeaders = sendDeviceHeaders,
+        installationUuid = installationUuid.trim(),
     )
 }

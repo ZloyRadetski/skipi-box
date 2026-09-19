@@ -847,7 +847,8 @@ private fun SubscriptionProviderEditDialog(
                         value = draft.userAgent,
                         onValueChange = { value -> draft = draft.copy(userAgent = value) },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("User-Agent") },
+                        label = { Text("User-Agent (пусто — из настроек)") },
+                        supportingText = { Text("Если пусто, используется значение из общих настроек подписок.") },
                         singleLine = true,
                     )
                     SubscriptionProviderSwitch(

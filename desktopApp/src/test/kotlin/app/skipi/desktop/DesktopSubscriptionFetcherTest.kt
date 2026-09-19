@@ -310,6 +310,51 @@ class DesktopSubscriptionFetcherTest {
 
         assertEquals(null, proxy)
     }
+
+    @Test
+    fun sends_device_headers_with_http_client_and_url_connection() {
+        withSubscriptionServer { server ->
+            val receivedHeaders = mutableMapOf<String, String>()
+            server.createContext("/sub") { exchange ->
+                exchange.requestHeaders.forEach { (key, values) ->
+                    receivedHeaders[key.lowercase()] = values.firstOrNull().orEmpty()
+                }
+                val body = "vless://123e4567-e89b-42d3-a456-426614174000@example.com:443?security=tls#One"
+                exchange.sendResponseHeaders(200, body.encodeToByteArray().size.toLong())
+                exchange.responseBody.use { it.write(body.encodeToByteArray()) }
+            }
+
+            val testHeaders = mapOf(
+                "x-client" to "SKIPI",
+                "x-hwid" to "testhwid123",
+                "x-device-os" to "Linux",
+            )
+
+            // Via standard HTTP client
+            DesktopSubscriptionFetcher().fetch(
+                url = "http://127.0.0.1:${server.address.port}/sub",
+                deviceHeaders = testHeaders,
+            )
+            assertEquals("SKIPI", receivedHeaders["x-client"])
+            assertEquals("testhwid123", receivedHeaders["x-hwid"])
+            assertEquals("Linux", receivedHeaders["x-device-os"])
+
+            // Via HttpURLConnection
+            receivedHeaders.clear()
+            val connFetcher = DesktopSubscriptionFetcher(
+                urlConnectionFactory = { url, _ -> url.openConnection() as java.net.HttpURLConnection },
+            )
+            val proxy = DesktopSubscriptionSocksProxy(host = "127.0.0.1", port = 10808)
+            connFetcher.fetch(
+                url = "http://127.0.0.1:${server.address.port}/sub",
+                proxy = proxy,
+                deviceHeaders = testHeaders,
+            )
+            assertEquals("SKIPI", receivedHeaders["x-client"])
+            assertEquals("testhwid123", receivedHeaders["x-hwid"])
+            assertEquals("Linux", receivedHeaders["x-device-os"])
+        }
+    }
 }
 
 private fun withSubscriptionServer(block: (HttpServer) -> Unit) {

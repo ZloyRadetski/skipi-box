@@ -47,6 +47,7 @@ class DesktopSubscriptionFetcher(
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
+        deviceHeaders: Map<String, String> = emptyMap(),
     ): DesktopSubscriptionUpdate {
         val response = fetchResponse(
             url = url,
@@ -54,12 +55,14 @@ class DesktopSubscriptionFetcher(
             timeout = timeout,
             automaticResource = false,
             proxy = proxy,
+            deviceHeaders = deviceHeaders,
         )
         val imported = importMihomoOrStandardPayload(
             rootPayload = response.body,
             userAgent = userAgent,
             timeout = timeout,
             proxy = proxy,
+            deviceHeaders = deviceHeaders,
         )
         return DesktopSubscriptionUpdate(
             response = response,
@@ -74,12 +77,14 @@ class DesktopSubscriptionFetcher(
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
+        deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse = fetchResponse(
         url = url,
         userAgent = userAgent,
         timeout = timeout,
         automaticResource = false,
         proxy = proxy,
+        deviceHeaders = deviceHeaders,
     )
 
     /**
@@ -92,6 +97,7 @@ class DesktopSubscriptionFetcher(
         userAgent: String = DefaultDesktopSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
+        deviceHeaders: Map<String, String> = emptyMap(),
     ): DesktopResolvedEmbeddedConfig? {
         val embedded = metadata.embeddedConfig ?: return null
         val content = if (embedded.isUrl) {
@@ -100,6 +106,7 @@ class DesktopSubscriptionFetcher(
                 userAgent = userAgent,
                 timeout = timeout,
                 proxy = proxy,
+                deviceHeaders = deviceHeaders,
             ).body
         } else {
             embedded.payload.decodeSkipiConfigPayloadOrNull() ?: embedded.payload.trim()
@@ -123,6 +130,7 @@ class DesktopSubscriptionFetcher(
         userAgent: String,
         timeout: Duration,
         proxy: DesktopSubscriptionSocksProxy?,
+        deviceHeaders: Map<String, String> = emptyMap(),
     ): DesktopFetchedSubscriptionImport {
         var imported = DesktopMihomoPayloadImporter.import(rootPayload)
         if (!imported.recognizedYaml) {
@@ -152,6 +160,7 @@ class DesktopSubscriptionFetcher(
                         userAgent = userAgent,
                         timeout = timeout,
                         proxy = proxy,
+                        deviceHeaders = deviceHeaders,
                     )
                 }
                     .onSuccess { provider -> providerBodies[request.url] = provider.body }
@@ -189,12 +198,14 @@ class DesktopSubscriptionFetcher(
         userAgent: String,
         timeout: Duration,
         proxy: DesktopSubscriptionSocksProxy?,
+        deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse = fetchResponse(
         url = url,
         userAgent = userAgent,
         timeout = timeout,
         automaticResource = true,
         proxy = proxy,
+        deviceHeaders = deviceHeaders,
     )
 
     private fun fetchResponse(
@@ -203,6 +214,7 @@ class DesktopSubscriptionFetcher(
         timeout: Duration,
         automaticResource: Boolean,
         proxy: DesktopSubscriptionSocksProxy?,
+        deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse {
         return if (proxy != null) {
             fetchViaConnection(
@@ -211,6 +223,7 @@ class DesktopSubscriptionFetcher(
                 timeout = timeout,
                 automaticResource = automaticResource,
                 proxy = proxy,
+                deviceHeaders = deviceHeaders,
             )
         } else {
             fetchViaHttpClient(
@@ -218,6 +231,7 @@ class DesktopSubscriptionFetcher(
                 userAgent = userAgent,
                 timeout = timeout,
                 automaticResource = automaticResource,
+                deviceHeaders = deviceHeaders,
             )
         }
     }
@@ -227,6 +241,7 @@ class DesktopSubscriptionFetcher(
         userAgent: String,
         timeout: Duration,
         automaticResource: Boolean,
+        deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse {
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
         var requestUri = URI(url.trim()).withoutFragment()
@@ -240,6 +255,11 @@ class DesktopSubscriptionFetcher(
                 .timeout(timeout)
                 .header("User-Agent", userAgent.ifBlank { DefaultDesktopSubscriptionUserAgent })
                 .header("Accept-Encoding", "gzip, deflate")
+            deviceHeaders.forEach { (name, value) ->
+                if (name.isNotBlank() && value.isNotBlank() && !name.equals("User-Agent", ignoreCase = true)) {
+                    requestBuilder.header(name, value)
+                }
+            }
             requestUri.toBasicAuthHeaderOrNull()?.let { authHeader ->
                 requestBuilder.header("Authorization", authHeader)
             }
@@ -288,6 +308,7 @@ class DesktopSubscriptionFetcher(
         timeout: Duration,
         automaticResource: Boolean,
         proxy: DesktopSubscriptionSocksProxy,
+        deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse {
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
         var requestUri = URI(url.trim()).withoutFragment()
@@ -308,6 +329,11 @@ class DesktopSubscriptionFetcher(
                     setRequestProperty("User-Agent", userAgent.ifBlank { DefaultDesktopSubscriptionUserAgent })
                     setRequestProperty("Accept-Encoding", "gzip, deflate")
                     setRequestProperty("Connection", "close")
+                    deviceHeaders.forEach { (name, value) ->
+                        if (name.isNotBlank() && value.isNotBlank() && !name.equals("User-Agent", ignoreCase = true)) {
+                            setRequestProperty(name, value)
+                        }
+                    }
                     setEmbeddedBasicAuth(requestUri.toString())
                 }
 

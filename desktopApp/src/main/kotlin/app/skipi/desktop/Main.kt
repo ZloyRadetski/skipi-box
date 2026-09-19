@@ -694,8 +694,12 @@ fun main() = application {
                                         .firstOrNull { subscription -> subscription.url == requestedUrl }
                                     val subscriptionUserAgent = subscription
                                         ?.userAgent
-                                        ?.takeIf(String::isNotBlank)
-                                        ?: desktopSettings.subscriptionUserAgent
+                                        ?.trim()
+                                        ?.takeIf(String::isNotEmpty)
+                                        ?: desktopSettings.subscriptionUserAgent.trim().ifBlank { DefaultDesktopSubscriptionUserAgent }
+                                    val deviceHeaders = if (desktopSettings.sendDeviceHeaders) {
+                                        DesktopDeviceIdentity.deviceHeaders(desktopSettings.installationUuid)
+                                    } else emptyMap()
                                     val useProxy = (subscription?.updateViaProxy == true) && xrayProcessState.isRunning
                                     val socksProxy = if (useProxy) {
                                         DesktopSubscriptionSocksProxy(
@@ -729,6 +733,7 @@ fun main() = application {
                                                         desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
                                                     ),
                                                     proxy = socksProxy,
+                                                    deviceHeaders = deviceHeaders,
                                                 )
                                             }
                                         }.getOrElse { error ->
@@ -740,7 +745,7 @@ fun main() = application {
                                                 DesktopSubscriptionLibraries.addOrReplace(
                                                     library = subscriptionLibrary,
                                                     url = requestedUrl,
-                                                    userAgent = subscriptionUserAgent,
+                                                    userAgent = subscription?.userAgent.orEmpty(),
                                                     name = update.metadata.profileTitle.orEmpty(),
                                                     metadata = update.metadata,
                                                 )
@@ -771,6 +776,7 @@ fun main() = application {
                                                         desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
                                                     ),
                                                     proxy = socksProxy,
+                                                    deviceHeaders = deviceHeaders,
                                                 )
                                             }
                                         }
@@ -781,7 +787,7 @@ fun main() = application {
                                                 latestSubscriptions = subscriptionLibrary,
                                                 latestServers = serverLibrary,
                                                 url = requestedUrl,
-                                                userAgent = subscriptionUserAgent,
+                                                userAgent = subscription?.userAgent.orEmpty(),
                                                 name = update.metadata.profileTitle.orEmpty(),
                                                 metadata = update.metadata,
                                                 importedServers = update.importResult.servers,

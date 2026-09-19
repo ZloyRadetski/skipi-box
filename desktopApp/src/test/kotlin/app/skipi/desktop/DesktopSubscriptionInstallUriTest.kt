@@ -18,7 +18,7 @@ class DesktopSubscriptionInstallUriTest {
         assertEquals(DesktopSubscriptionInstallSource.RawHttp, https?.source)
         assertEquals("My VPN+One", https?.name)
         assertEquals("https://example.com/subscription#My%20VPN%2BOne", https?.url)
-        assertEquals(DefaultDesktopSubscriptionUserAgent, https?.userAgent)
+        assertEquals("", https?.userAgent)
 
         assertEquals(DesktopSubscriptionInstallSource.RawHttp, http?.source)
         assertEquals("import sub", http?.name)

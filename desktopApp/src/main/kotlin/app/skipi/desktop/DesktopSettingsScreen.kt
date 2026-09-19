@@ -39,6 +39,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -530,6 +531,8 @@ private fun DesktopSubscriptionSettings(
     var timeoutSeconds by remember(settings.subscriptionFetchTimeoutSeconds) {
         mutableStateOf(settings.subscriptionFetchTimeoutSeconds)
     }
+    var sendDeviceHeaders by remember(settings.sendDeviceHeaders) { mutableStateOf(settings.sendDeviceHeaders) }
+    val hwid = remember(settings.installationUuid) { DesktopDeviceIdentity.computeHwid(settings.installationUuid) }
     var timeoutExpanded by remember { mutableStateOf(false) }
 
     SettingsScreenColumn(contentPadding, modifier) {
@@ -538,6 +541,51 @@ private fun DesktopSubscriptionSettings(
             subtitle = "Загрузка и проверка подписок",
             onBack = onBack,
         )
+
+        SettingsGroup(title = "ИДЕНТИФИКАЦИЯ УСТРОЙСТВА") {
+            SettingsSwitchPreference(
+                title = "Отправлять данные устройства и HWID",
+                summary = "Передавать X-HWID, X-Device-ID, ОС и модель устройства при обновлении подписок",
+                checked = sendDeviceHeaders,
+                onCheckedChange = { sendDeviceHeaders = it },
+                showDivider = true,
+            )
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text("Идентификатор устройства (HWID)", color = SettingsText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = hwid,
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodySmall,
+                    )
+                    IconButton(
+                        onClick = {
+                            Toolkit.getDefaultToolkit().systemClipboard.setContents(
+                                StringSelection(hwid),
+                                null,
+                            )
+                        },
+                    ) {
+                        Icon(Icons.Outlined.ContentCopy, contentDescription = "Копировать HWID", tint = SettingsText)
+                    }
+                }
+                Text(
+                    "Используется серверами подписок для учёта лимита активных устройств.",
+                    color = SettingsMuted,
+                    fontSize = 12.sp,
+                )
+            }
+        }
 
         SettingsGroup(title = "ЗАГРУЗКА") {
             Box {
@@ -570,11 +618,11 @@ private fun DesktopSubscriptionSettings(
                     value = userAgent,
                     onValueChange = { userAgent = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("User-Agent") },
+                    label = { Text("User-Agent по умолчанию") },
                     singleLine = true,
                 )
                 Text(
-                    "Передаётся провайдеру при следующем обновлении подписки.",
+                    "Применяется по умолчанию ко всем подпискам. Для индивидуальной настройки укажите User-Agent в параметрах конкретной подписки.",
                     color = SettingsMuted,
                     fontSize = 12.sp,
                 )
@@ -598,6 +646,7 @@ private fun DesktopSubscriptionSettings(
                     settings.copy(
                         subscriptionUserAgent = userAgent.trim().ifBlank { DefaultDesktopSubscriptionUserAgent },
                         subscriptionFetchTimeoutSeconds = timeoutSeconds,
+                        sendDeviceHeaders = sendDeviceHeaders,
                     ),
                     "Параметры подписок сохранены.",
                 )

@@ -46,9 +46,10 @@ class DesktopXrayRuntimeTest {
             geoSite = java.nio.file.Path.of("C:/SKIPI/resources/geosite.dat"),
         )
 
+        val configPath = java.nio.file.Path.of("C:/SKIPI/runtime/active-config.json")
         assertEquals(
-            listOf("C:\\SKIPI\\resources\\xray.exe", "run", "-test", "-c", "C:\\SKIPI\\runtime\\active-config.json"),
-            xrayCommand(runtime, java.nio.file.Path.of("C:/SKIPI/runtime/active-config.json"), testOnly = true),
+            listOf(runtime.executable.toString(), "run", "-test", "-c", configPath.toString()),
+            xrayCommand(runtime, configPath, testOnly = true),
         )
     }
 }

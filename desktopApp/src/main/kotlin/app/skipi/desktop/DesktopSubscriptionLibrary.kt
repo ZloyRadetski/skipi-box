@@ -60,7 +60,7 @@ data class DesktopSubscriptionExpiryReminder(
 data class DesktopStoredSubscription(
     val id: Int,
     val url: String,
-    val userAgent: String = DefaultDesktopSubscriptionUserAgent,
+    val userAgent: String = "",
     val name: String = "",
     val metadata: DesktopStoredSubscriptionMetadata = DesktopStoredSubscriptionMetadata(),
     /** Matches Android's group switch; disabled providers stay stored for a reversible edit. */
@@ -141,7 +141,7 @@ object DesktopSubscriptionLibraries {
     fun addOrReplace(
         library: DesktopSubscriptionLibrary,
         url: String,
-        userAgent: String,
+        userAgent: String = "",
         name: String = "",
         metadata: SubscriptionMetadata? = null,
     ): DesktopSubscriptionLibrary {
@@ -154,7 +154,7 @@ object DesktopSubscriptionLibraries {
         val stored = DesktopStoredSubscription(
             id = existing?.id ?: (library.subscriptions.maxOfOrNull { it.id } ?: 0) + 1,
             url = normalizedUrl,
-            userAgent = userAgent.trim().ifBlank { existing?.userAgent ?: DefaultDesktopSubscriptionUserAgent },
+            userAgent = userAgent.trim().ifBlank { existing?.userAgent.orEmpty() },
             name = normalizedName,
             metadata = metadata?.toStoredSubscriptionMetadata(existing?.metadata ?: DesktopStoredSubscriptionMetadata())
                 ?: existing?.metadata
@@ -199,7 +199,6 @@ object DesktopSubscriptionLibraries {
         ) { "A subscription with this URL already exists" }
 
         val normalizedUserAgent = edit.userAgent.trim()
-            .ifBlank { DefaultDesktopSubscriptionUserAgent }
         require(normalizedUserAgent.none { it == '\r' || it == '\n' || it == '\u0000' }) {
             "Invalid subscription user agent"
         }

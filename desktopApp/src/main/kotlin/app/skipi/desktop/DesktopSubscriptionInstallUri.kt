@@ -61,7 +61,7 @@ private fun URI.toRawSubscriptionOrNull(rawValue: String): DesktopSubscriptionIn
     return DesktopSubscriptionInstallUri(
         name = name,
         url = rawValue,
-        userAgent = DefaultDesktopSubscriptionUserAgent,
+        userAgent = "",
         source = DesktopSubscriptionInstallSource.RawHttp,
     )
 }
