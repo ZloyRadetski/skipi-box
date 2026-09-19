@@ -61,9 +61,31 @@ abstract class UpdateResourceFileAssetsTask : DefaultTask() {
     }
 
     private fun useExistingFile(target: File, force: Boolean): Boolean {
-        if (force || !target.isFile || target.length() <= 0) return false
-        logger.lifecycle("Using existing ${target.absolutePath} (${target.length()} bytes)")
-        return true
+        if (force) return false
+        if (target.isFile && target.length() > 0) {
+            logger.lifecycle("Using existing ${target.absolutePath} (${target.length()} bytes)")
+            return true
+        }
+        if (target.name.endsWith(".xz")) {
+            val uncompressed = File(target.parentFile, target.name.removeSuffix(".xz"))
+            if (uncompressed.isFile && uncompressed.length() > 0) {
+                logger.lifecycle("Compressing existing ${uncompressed.name} -> ${target.name}")
+                compressToXz(uncompressed, target)
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun compressToXz(source: File, target: File) {
+        target.parentFile.mkdirs()
+        source.inputStream().buffered().use { input ->
+            target.outputStream().buffered().use { output ->
+                val xzOut = org.tukaani.xz.XZOutputStream(output, org.tukaani.xz.LZMA2Options(6))
+                input.copyTo(xzOut)
+                xzOut.finish()
+            }
+        }
     }
 
     private fun openConnectionWithRedirects(initialUrl: String): HttpURLConnection {
@@ -167,7 +189,15 @@ abstract class UpdateResourceFileAssetsTask : DefaultTask() {
                     throw GradleException("Failed to download $url: HTTP $code")
                 }
                 connection.inputStream.use { input ->
-                    target.outputStream().use { output -> input.copyTo(output) }
+                    if (target.name.endsWith(".xz")) {
+                        target.outputStream().buffered().use { fileOut ->
+                            val xzOut = org.tukaani.xz.XZOutputStream(fileOut, org.tukaani.xz.LZMA2Options(6))
+                            input.copyTo(xzOut)
+                            xzOut.finish()
+                        }
+                    } else {
+                        target.outputStream().use { output -> input.copyTo(output) }
+                    }
                 }
             } finally {
                 connection.disconnect()
@@ -195,31 +225,27 @@ private data class GeoResourceFileAsset(
 
 private val BundledGeoResourceAssets = listOf(
     // Loyalsoldier (default)
-    GeoResourceFileAsset("geo/loyalsoldier/geoip.dat", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"),
-    GeoResourceFileAsset("geo/loyalsoldier/geosite.dat", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"),
-    // Root default fallbacks
-    GeoResourceFileAsset("geoip.dat", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"),
-    GeoResourceFileAsset("geosite.dat", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"),
+    GeoResourceFileAsset("geo/loyalsoldier/geoip.dat.xz", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"),
+    GeoResourceFileAsset("geo/loyalsoldier/geosite.dat.xz", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"),
 
     // V2Fly
-    GeoResourceFileAsset("geo/v2fly/geoip.dat", "https://github.com/v2fly/geoip/releases/latest/download/geoip.dat"),
-    GeoResourceFileAsset("geo/v2fly/geosite.dat", "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"),
-    GeoResourceFileAsset("geo/v2fly/geoip-only-cn-private.dat", "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat"),
-    GeoResourceFileAsset("geoip-only-cn-private.dat", "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat"),
+    GeoResourceFileAsset("geo/v2fly/geoip.dat.xz", "https://github.com/v2fly/geoip/releases/latest/download/geoip.dat"),
+    GeoResourceFileAsset("geo/v2fly/geosite.dat.xz", "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"),
+    GeoResourceFileAsset("geo/v2fly/geoip-only-cn-private.dat.xz", "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat"),
 
     // Chocolate4U (Iran)
-    GeoResourceFileAsset("geo/chocolate4u/geoip.dat", "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geoip.dat"),
-    GeoResourceFileAsset("geo/chocolate4u/geosite.dat", "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geosite.dat"),
+    GeoResourceFileAsset("geo/chocolate4u/geoip.dat.xz", "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geoip.dat"),
+    GeoResourceFileAsset("geo/chocolate4u/geosite.dat.xz", "https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geosite.dat"),
 
     // RunetFreedom (Russia)
-    GeoResourceFileAsset("geo/runetfreedom/geoip.dat", "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat"),
-    GeoResourceFileAsset("geo/runetfreedom/geosite.dat", "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat"),
+    GeoResourceFileAsset("geo/runetfreedom/geoip.dat.xz", "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geoip.dat"),
+    GeoResourceFileAsset("geo/runetfreedom/geosite.dat.xz", "https://github.com/runetfreedom/russia-v2ray-rules-dat/releases/latest/download/geosite.dat"),
 
     // Roscomvpn (Russia)
-    GeoResourceFileAsset("geo/roscomvpn/geoip.dat", "https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geoip/release/geoip.dat"),
-    GeoResourceFileAsset("geo/roscomvpn/geosite.dat", "https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geosite/release/geosite.dat"),
+    GeoResourceFileAsset("geo/roscomvpn/geoip.dat.xz", "https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geoip/release/geoip.dat"),
+    GeoResourceFileAsset("geo/roscomvpn/geosite.dat.xz", "https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geosite/release/geosite.dat"),
 
     // Direct CIDR lists
-    GeoResourceFileAsset("xray/direct-cidr-v4.txt", "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt"),
-    GeoResourceFileAsset("xray/direct-cidr-v6.txt", "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt"),
+    GeoResourceFileAsset("xray/direct-cidr-v4.txt.xz", "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt"),
+    GeoResourceFileAsset("xray/direct-cidr-v6.txt.xz", "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt"),
 )

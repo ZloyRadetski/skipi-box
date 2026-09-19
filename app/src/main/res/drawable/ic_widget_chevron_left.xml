@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Copyright 2026, Radetski -->
+<!-- SPDX-License-Identifier: GPL-3.0 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14.7,5.3L8,12L14.7,18.7L16.1,17.3L10.8,12L16.1,6.7Z" />
+</vector>

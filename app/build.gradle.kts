@@ -30,6 +30,7 @@ android {
 
     androidResources {
         localeFilters += listOf("en", "ru", "zh", "zh-rCN", "fa")
+        noCompress += listOf("xz")
     }
 
     bundle {
@@ -137,6 +138,7 @@ dependencies {
     }
     implementation(libs.sora.editor)
     implementation(libs.zxing.android.embedded)
+    implementation(libs.tukaani.xz)
     ksp(libs.androidx.room.compiler)
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test")

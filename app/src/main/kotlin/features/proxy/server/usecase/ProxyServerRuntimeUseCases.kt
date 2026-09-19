@@ -18,7 +18,6 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import engine.proxy.latency.AndroidProxyLatencyTester
 import engine.proxy.latency.ProxyServerLatencyTestMode
@@ -143,21 +142,19 @@ internal fun runProxyServerLatencyTest(
             coroutineScope {
                 targetServers.map { server ->
                     async {
-                        val latency = semaphore.withPermit {
-                            runCatching {
-                                proxyLatencyTester.test(
-                                    appState = stateSnapshot,
-                                    server = server,
-                                    mode = mode,
-                                    sessionCache = sessionCache,
-                                    semaphore = semaphore,
-                                    dnsCache = dnsCache,
-                                    failedDnsCache = failedDnsCache,
-                                )
-                            }.getOrElse {
-                                ProxyServerLatencyTestResult.Failed
-                            }.toLatencyText(latencyFailedMessage)
-                        }
+                        val latency = runCatching {
+                            proxyLatencyTester.test(
+                                appState = stateSnapshot,
+                                server = server,
+                                mode = mode,
+                                sessionCache = sessionCache,
+                                semaphore = semaphore,
+                                dnsCache = dnsCache,
+                                failedDnsCache = failedDnsCache,
+                            )
+                        }.getOrElse {
+                            ProxyServerLatencyTestResult.Failed
+                        }.toLatencyText(latencyFailedMessage)
                         stateStore.update(persist = false) { state ->
                             state.copy(
                                 proxyServers = state.proxyServers.map {

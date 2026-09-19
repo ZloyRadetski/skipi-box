@@ -10,6 +10,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Proxy
+import java.net.SocketException
 import java.net.URI
 import engine.network.TunnelNetworks
 
@@ -70,16 +71,28 @@ internal class AndroidResourceFileDownloader(
         userAgent: String?,
         onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit,
     ) {
-        // The app is excluded from its own VPN, so without an explicit bind
-        // geo file downloads would bypass the active tunnel.
-        val vpnNetwork = TunnelNetworks.locateVpnNetwork(context)
+        var vpnNetwork = TunnelNetworks.locateVpnNetwork(context)
         var currentUrl = url
         repeat(MaxRedirects) {
-            val connection = URI.create(currentUrl).toUrlConnection(proxy, userAgent, vpnNetwork)
+            var connection = URI.create(currentUrl).toUrlConnection(proxy, userAgent, vpnNetwork)
             try {
                 AndroidResourceFileDownloadCancellation.track(connection)
                 AndroidResourceFileDownloadCancellation.throwIfCancelled()
-                val code = connection.responseCode
+                val code = try {
+                    connection.responseCode
+                } catch (error: SocketException) {
+                    if (vpnNetwork != null) {
+                        AndroidResourceFileLogger.info("VPN socket binding failed ($error), falling back to direct network")
+                        vpnNetwork = null
+                        AndroidResourceFileDownloadCancellation.untrack(connection)
+                        connection.disconnect()
+                        connection = URI.create(currentUrl).toUrlConnection(proxy, userAgent, null)
+                        AndroidResourceFileDownloadCancellation.track(connection)
+                        connection.responseCode
+                    } else {
+                        throw error
+                    }
+                }
                 AndroidResourceFileDownloadCancellation.throwIfCancelled()
                 if (code in 300..399) {
                     val location = connection.getHeaderField("Location")

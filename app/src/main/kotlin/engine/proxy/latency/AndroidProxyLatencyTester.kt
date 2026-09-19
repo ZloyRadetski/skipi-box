@@ -119,9 +119,12 @@ internal class AndroidProxyLatencyTester(
         val result = if (server.server is StrategyGroup) {
             testStrategyGroupLatency(appState, server, mode, sessionCache, semaphore, dnsCache, failedDnsCache)
         } else {
-            val elapsedMillis = when (mode) {
-                ProxyServerLatencyTestMode.TcpConnect -> tcpConnectLatency(appState, server, dnsCache, failedDnsCache)
-                ProxyServerLatencyTestMode.RealConnection -> realConnectionLatency(appState, server, dnsCache, failedDnsCache)
+            val elapsedMillis = if (semaphore != null) {
+                semaphore.withPermit {
+                    measureServerLatency(appState, server, mode, dnsCache, failedDnsCache)
+                }
+            } else {
+                measureServerLatency(appState, server, mode, dnsCache, failedDnsCache)
             }
             ProxyServerLatencyTestResult(elapsedMillis)
         }
@@ -187,7 +190,7 @@ internal class AndroidProxyLatencyTester(
                     server = member,
                     mode = mode,
                     sessionCache = sessionCache,
-                    semaphore = null,
+                    semaphore = semaphore,
                     dnsCache = dnsCache,
                     failedDnsCache = failedDnsCache,
                 )
@@ -208,6 +211,19 @@ internal class AndroidProxyLatencyTester(
         }
 
         ProxyServerLatencyTestResult(chosenDelay)
+    }
+
+    private suspend fun measureServerLatency(
+        appState: AppState,
+        server: ProxyServerState,
+        mode: ProxyServerLatencyTestMode,
+        dnsCache: ConcurrentMap<String, java.net.InetAddress>?,
+        failedDnsCache: ConcurrentMap<String, Boolean>?,
+    ): Long {
+        return when (mode) {
+            ProxyServerLatencyTestMode.TcpConnect -> tcpConnectLatency(appState, server, dnsCache, failedDnsCache)
+            ProxyServerLatencyTestMode.RealConnection -> realConnectionLatency(appState, server, dnsCache, failedDnsCache)
+        }
     }
 
     suspend fun fastProbeStrategyGroupMembers(

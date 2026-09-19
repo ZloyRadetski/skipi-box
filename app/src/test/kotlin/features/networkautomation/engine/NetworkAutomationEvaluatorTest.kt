@@ -11,7 +11,9 @@ import features.networkautomation.model.NetworkRuleType
 import features.proxy.server.model.VLESS
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class NetworkAutomationEvaluatorTest {
 
@@ -189,5 +191,57 @@ class NetworkAutomationEvaluatorTest {
     fun testMakeDecisionForNullRule() {
         val decision = NetworkAutomationEvaluator.makeDecision(null, appState)
         assertEquals(NetworkAutomationDecision.NoChange, decision)
+    }
+
+    @Test
+    fun `physical Internet may trigger automation before validation completes`() {
+        assertTrue(
+            isPhysicalInternetNetwork(
+                hasPhysicalTransport = true,
+                hasInternetCapability = true,
+                isVpn = false,
+            ),
+        )
+        assertFalse(
+            isPhysicalInternetNetwork(
+                hasPhysicalTransport = true,
+                hasInternetCapability = false,
+                isVpn = false,
+            ),
+        )
+        assertFalse(
+            isPhysicalInternetNetwork(
+                hasPhysicalTransport = false,
+                hasInternetCapability = true,
+                isVpn = false,
+            ),
+        )
+        assertFalse(
+            isPhysicalInternetNetwork(
+                hasPhysicalTransport = true,
+                hasInternetCapability = true,
+                isVpn = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `SSID access is only needed for an enabled specific Wi-Fi rule`() {
+        val anyWifi = NetworkAutomationRule(
+            id = "any",
+            type = NetworkRuleType.ANY_WIFI,
+            action = NetworkRuleAction.DISCONNECT_VPN,
+        )
+        val disabledSpecificWifi = NetworkAutomationRule(
+            id = "disabled-specific",
+            type = NetworkRuleType.SPECIFIC_WIFI,
+            ssid = "Home",
+            enabled = false,
+            action = NetworkRuleAction.DISCONNECT_VPN,
+        )
+        val enabledSpecificWifi = disabledSpecificWifi.copy(id = "enabled-specific", enabled = true)
+
+        assertFalse(NetworkAutomationEvaluator.requiresWifiSsid(listOf(anyWifi, disabledSpecificWifi)))
+        assertTrue(NetworkAutomationEvaluator.requiresWifiSsid(listOf(anyWifi, enabledSpecificWifi)))
     }
 }

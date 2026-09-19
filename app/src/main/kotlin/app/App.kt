@@ -48,6 +48,7 @@ fun App(
     photoFilePicker: suspend () -> Uri? = { null },
     logFileCreator: suspend (String) -> Uri?,
     requestVpnPermission: suspend (Intent) -> Boolean,
+    requestWifiSsidPermission: suspend () -> Boolean = { false },
 ) {
     val appContext = LocalContext.current.applicationContext
     val systemUiSnapshot = appContext.currentSystemUiSnapshot()
@@ -102,6 +103,8 @@ fun App(
         )
     }
     val subscriptionFetcher = remember(application) { application.subscriptionFetcher }
+    val appUpdateCheckCoordinator = remember(application) { application.appUpdateCheckCoordinator }
+    val appUpdateDownloadCoordinator = remember(application) { application.appUpdateDownloadCoordinator }
     val qrScanner = remember(qrCodeScanner) { qrCodeScanner }
     val proxyServerImportFileUseCase = remember(appContext, resourceFilePicker) {
         ProxyServerImportFileUseCase(
@@ -136,12 +139,17 @@ fun App(
         resourceFileUpdateCoordinator,
         appBackupUseCase,
         subscriptionFetcher,
+        appUpdateCheckCoordinator,
+        appUpdateDownloadCoordinator,
         qrScanner,
         proxyServerImportFileUseCase,
         proxyLatencyTester,
         proxyServiceUseCase,
         tipNotifier,
         logFileCreator,
+        requestVpnPermission,
+        requestWifiSsidPermission,
+        photoFilePicker,
     ) {
         AppServices(
             appScope = appScope,
@@ -152,6 +160,8 @@ fun App(
             resourceFileUpdateCoordinator = resourceFileUpdateCoordinator,
             appBackupUseCase = appBackupUseCase,
             subscriptionFetcher = subscriptionFetcher,
+            appUpdateCheckCoordinator = appUpdateCheckCoordinator,
+            appUpdateDownloadCoordinator = appUpdateDownloadCoordinator,
             qrScanner = qrScanner,
             proxyServerImportFileUseCase = proxyServerImportFileUseCase,
             proxyLatencyTester = proxyLatencyTester,
@@ -162,6 +172,7 @@ fun App(
             accessLogRepository = AndroidAccessLogRepository,
             logcatRepository = AndroidLogcatRepository,
             requestVpnPermission = requestVpnPermission,
+            requestWifiSsidPermission = requestWifiSsidPermission,
             photoFilePicker = photoFilePicker,
         )
     }

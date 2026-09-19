@@ -79,6 +79,16 @@ private val buildHevTunAssetTasks = ProjectConfig.SUPPORTED_ANDROID_ABIS.flatMap
     }
 }
 
+// On Windows, concurrent ndk-build invocations can lose generated dependency
+// paths while each ABI stages the same recursive source tree. Keep the native
+// artifacts sequential; each invocation still compiles with a bounded worker
+// pool internally.
+buildHevTunAssetTasks.zipWithNext().forEach { (previous, next) ->
+    next.configure {
+        mustRunAfter(previous)
+    }
+}
+
 val buildHevTun = tasks.register("buildHevTun") {
     group = "build"
     description = "Build hev-socks5-tunnel JNI libraries and CLI executables for Android."

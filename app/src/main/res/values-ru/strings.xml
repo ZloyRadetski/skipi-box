@@ -455,6 +455,10 @@
     <string name="option_theme_light">Светлая (Monet)</string>
     <string name="option_theme_dark">Тёмная (Monet)</string>
     <string name="option_amoled">AMOLED</string>
+    <string name="option_theme_aurora">Аврора</string>
+    <string name="option_theme_sakura">Сакура</string>
+    <string name="option_theme_forest">Лес</string>
+    <string name="option_theme_sunset">Закат</string>
     <string name="option_english">English</string>
     <string name="option_russian">Русский</string>
     <string name="option_chinese">简体中文</string>
@@ -862,6 +866,7 @@
     <string name="subscription_provider_support">Поддержка</string>
     <string name="subscription_provider_website">Сайт</string>
     <string name="settings_color_mode_summary">Выберите: следовать системной теме или использовать светлую, тёмную либо AMOLED с истинным чёрным.</string>
+    <string name="settings_theme_preset_summary">Эта палитра задаёт собственные цвета. Пользовательские цвета интерфейса могут её переопределить.</string>
     <string name="settings_theme_color_summary">Выберите основной цвет кнопок, выделений и индикаторов.</string>
     <string name="settings_language_summary">Выберите язык интерфейса SKIPI.</string>
     <string name="subscription_ping_mode_summary">Пинг проверяет TCP-соединение, а HTTP — запрос к настроенному URL.</string>
@@ -1108,11 +1113,12 @@
     <string name="settings_updates_title">Обновления</string>
     <string name="settings_auto_check_updates_title">Проверка обновлений</string>
     <string name="settings_auto_check_updates_summary">Периодически проверять наличие новых версий SKIPI на GitHub</string>
-    <string name="settings_auto_install_night_title">Автообновление ночью</string>
-    <string name="settings_auto_install_night_summary">Автоматически скачивать и устанавливать обновления ночью по Wi-Fi при зарядке</string>
+    <string name="settings_auto_install_night_title">Автоскачивание по Wi-Fi</string>
+    <string name="settings_auto_install_night_summary">Скачивать обновления по безлимитному Wi-Fi во время зарядки. Перед установкой Android всегда запросит подтверждение.</string>
     <string name="settings_check_updates_now_action">Проверить обновления сейчас</string>
     <string name="app_update_checking">Проверка наличия обновлений…</string>
     <string name="app_update_already_latest">У вас установлена последняя версия SKIPI</string>
+    <string name="app_update_check_failed">Не удалось проверить обновления. Текущее уведомление об обновлении сохранено.</string>
 
     <string name="settings_network_automation_title">Автоматизация сетей и On-Demand</string>
     <string name="settings_network_automation_summary">Автосмена сервера по сетям и On-Demand VPN</string>
@@ -1133,6 +1139,9 @@
     <string name="network_automation_ssid_label">Имя сети (SSID)</string>
     <string name="network_automation_ssid_placeholder">Введите SSID (например, Home_5G)</string>
     <string name="network_automation_use_current_wifi">Вставить текущий Wi-Fi</string>
+    <string name="network_automation_wifi_permission_summary">Чтобы подставить и распознавать имя конкретной сети Wi-Fi, Android требует разрешение на местоположение. SKIPI использует его только для имени Wi-Fi, а не для GPS-отслеживания.</string>
+    <string name="network_automation_wifi_permission_denied">Для чтения имени текущей сети Wi-Fi нужно разрешение на местоположение</string>
+    <string name="network_automation_wifi_permission_launcher_missing">Не удалось запросить разрешение на имя сети Wi-Fi</string>
     <string name="network_automation_server_label">Целевой сервер</string>
     <string name="network_automation_ssid_exists_error">Правило для этого SSID уже существует</string>
     <string name="network_automation_type_exists_error">Правило для этого типа сети уже существует</string>
@@ -1358,7 +1367,7 @@
     <string name="settings_background_dim">Степень затемнения</string>
     <!-- Уведомления об обновлении приложения -->
     <string name="app_update_notification_channel_name">Обновления приложения</string>
-    <string name="app_update_notification_channel_description">Показывает прогресс загрузки приложения</string>
+    <string name="app_update_notification_channel_description">Показывает доступные обновления и ход загрузки</string>
     <string name="app_update_downloading_notification_title">Загрузка SKIPI v%1$s</string>
     <string name="app_update_ready_notification_title">Обновление SKIPI готово к установке</string>
     <string name="app_update_ready_notification_text">Нажмите, чтобы завершить обновление</string>
@@ -1410,4 +1419,18 @@
     <string name="proxy_editor_olcrtc_video_tile_module">Размер модуля тайла</string>
     <string name="proxy_editor_olcrtc_video_tile_rs">Избыточность Рида-Соломона (RS)</string>
     <string name="proxy_editor_olcrtc_custom_payload">Дополнительный payload</string>
+    <!-- Расширенный виджет на рабочем столе -->
+    <string name="widget_compact_label">Переключатель туннеля</string>
+    <string name="widget_control_label">Панель туннеля</string>
+    <string name="widget_control_description">Управление VPN-туннелем, конфигурацией и сервером</string>
+    <string name="widget_config_label">КОНФИГ</string>
+    <string name="widget_server_label">СЕРВЕР</string>
+    <string name="widget_previous_config">Предыдущий конфиг</string>
+    <string name="widget_next_config">Следующий конфиг</string>
+    <string name="widget_previous_server">Предыдущий сервер</string>
+    <string name="widget_next_server">Следующий сервер</string>
+    <string name="widget_speed_idle">Ожидание трафика</string>
+    <string name="widget_config_changed">Конфиг: %1$s</string>
+    <string name="widget_server_changed">Сервер: %1$s</string>
+    <string name="widget_no_config">Нет конфигов</string>
 </resources>

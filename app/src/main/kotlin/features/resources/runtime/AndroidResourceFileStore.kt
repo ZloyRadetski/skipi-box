@@ -126,16 +126,30 @@ internal class AndroidResourceFileStore(
     }
 
     private fun restoreBundledAsset(kind: ResourceFileKind, assetPath: String) {
-        val inputStream = runCatching { appContext.assets.open(assetPath) }
-            .getOrElse {
-                // Fallback to root asset path if provider subfolder is unavailable
-                appContext.assets.open(kind.fileName)
+        val (rawStream, resolvedPath) = openBundledAssetStream(assetPath, kind.fileName)
+        rawStream.use { rawInput ->
+            openDecompressedStream(rawInput, resolvedPath).use { decompressedInput ->
+                dataDir.mkdirs()
+                writeAtomically(file(kind)) { output -> decompressedInput.copyTo(output) }
             }
-        inputStream.use { input ->
-            dataDir.mkdirs()
-            writeAtomically(file(kind)) { output -> input.copyTo(output) }
         }
         kind.applyPermissions(file(kind))
+    }
+
+    private fun openBundledAssetStream(assetPath: String, fallbackFileName: String): Pair<java.io.InputStream, String> {
+        val candidates = listOf(
+            "$assetPath.xz",
+            assetPath,
+            "$fallbackFileName.xz",
+            fallbackFileName,
+        )
+        for (candidate in candidates) {
+            val stream = runCatching { appContext.assets.open(candidate) }.getOrNull()
+            if (stream != null) {
+                return stream to candidate
+            }
+        }
+        throw FileNotFoundException("Bundled asset unavailable: $assetPath (fallback: $fallbackFileName)")
     }
 
     fun stageBundledXrayCoreCandidate(): File {

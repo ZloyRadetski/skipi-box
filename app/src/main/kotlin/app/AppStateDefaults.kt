@@ -10,8 +10,7 @@ import features.subscription.DefaultSubscriptionUserAgent
 const val DefaultRouteOutboundTag = "proxy"
 const val MinTrafficStatsNotificationRefreshIntervalSeconds = 1
 const val MaxTrafficStatsNotificationRefreshIntervalSeconds = 10
-const val DefaultTrafficStatsNotificationRefreshIntervalSeconds =
-    MinTrafficStatsNotificationRefreshIntervalSeconds
+const val DefaultTrafficStatsNotificationRefreshIntervalSeconds = 2
 
 fun generateRandomProxyCredential(prefix: String = "skipi_"): String {
     val chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -22,7 +21,7 @@ fun generateRandomProxyCredential(prefix: String = "skipi_"): String {
 val DefaultSubscriptionGroups = listOf(
     SubscriptionGroupState(
         id = DefaultSubscriptionGroupId,
-        name = "默认",
+        name = "Default",
         url = "",
         userAgent = DefaultSubscriptionUserAgent,
         updateInterval = "",
@@ -31,54 +30,4 @@ val DefaultSubscriptionGroups = listOf(
     ),
 )
 
-val DefaultRouteRules = listOf(
-    RouteRule(
-        id = 1,
-        remarks = "ad_blocker",
-        outboundTag = "block",
-        domain = listOf("geosite:category-ads-all"),
-        port = "",
-        protocol = "",
-        network = "",
-        enabled = false,
-    ),
-    RouteRule(
-        id = 2,
-        remarks = "block_udp_443",
-        outboundTag = "block",
-        port = "443",
-        protocol = "",
-        network = "udp",
-        enabled = true,
-    ),
-    RouteRule(
-        id = 3,
-        remarks = "non-china_site",
-        outboundTag = DefaultRouteOutboundTag,
-        domain = listOf("geosite:google", "geosite:geolocation-!cn"),
-        port = "",
-        protocol = "",
-        network = "",
-        enabled = true,
-    ),
-    RouteRule(
-        id = 4,
-        remarks = "china_site",
-        outboundTag = "direct",
-        domain = listOf("geosite:cn", "geosite:private"),
-        port = "",
-        protocol = "",
-        network = "",
-        enabled = true,
-    ),
-    RouteRule(
-        id = 5,
-        remarks = "china_ip",
-        outboundTag = "direct",
-        ip = listOf("geoip:cn", "geoip:private"),
-        port = "",
-        protocol = "",
-        network = "",
-        enabled = true,
-    ),
-)
+val DefaultRouteRules: List<RouteRule> = emptyList()

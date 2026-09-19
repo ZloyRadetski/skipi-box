@@ -22,11 +22,22 @@ sealed interface NetworkAutomationDecision {
 
 object NetworkAutomationEvaluator {
 
-    fun getPhysicalNetworkIdentifier(context: Context, capabilities: NetworkCapabilities? = null): String {
-        val physicalCaps = getActivePhysicalCapabilities(context, capabilities) ?: return "DISCONNECTED"
+    internal const val DisconnectedNetworkIdentifier = "DISCONNECTED"
+
+    /**
+     * Do not read the SSID merely to identify a Wi-Fi transport. SSID is
+     * location-sensitive on Android and is only needed for an explicit
+     * SPECIFIC_WIFI rule with the runtime permission already granted.
+     */
+    fun getPhysicalNetworkIdentifier(
+        context: Context,
+        capabilities: NetworkCapabilities? = null,
+        includeWifiSsid: Boolean = false,
+    ): String {
+        val physicalCaps = getActivePhysicalCapabilities(context, capabilities) ?: return DisconnectedNetworkIdentifier
         return when {
             physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
-                val ssid = getCurrentWifiSsid(context, physicalCaps)
+                val ssid = if (includeWifiSsid) getCurrentWifiSsid(context, physicalCaps) else null
                 if (!ssid.isNullOrBlank()) "WIFI:$ssid" else "WIFI:ANY"
             }
             physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
@@ -38,18 +49,14 @@ object NetworkAutomationEvaluator {
     @Suppress("DEPRECATION")
     fun getActivePhysicalCapabilities(context: Context, capabilities: NetworkCapabilities? = null): NetworkCapabilities? {
         val appContext = context.applicationContext
-        val cm = appContext.getSystemService(ConnectivityManager::class.java) ?: return capabilities
+        val cm = appContext.getSystemService(ConnectivityManager::class.java)
+            ?: return capabilities?.takeIf { it.isPhysicalInternetNetwork() }
 
-        // 1. If activeNetwork is directly a physical network (not VPN), use it
+        // 1. If activeNetwork is directly a physical Internet network, use it.
         val active = cm.activeNetwork
         val activeCaps = active?.let { cm.getNetworkCapabilities(it) }
-        if (activeCaps != null && !activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-            if (activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                activeCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-            ) {
-                return activeCaps
-            }
+        if (activeCaps?.isPhysicalInternetNetwork() == true) {
+            return activeCaps
         }
 
         // 2. If VPN is active, inspect physical networks.
@@ -61,7 +68,7 @@ object NetworkAutomationEvaluator {
 
         for (network in networks) {
             val caps = cm.getNetworkCapabilities(network) ?: continue
-            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) continue
+            if (!caps.isPhysicalInternetNetwork()) continue
             if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 wifiCaps = caps
                 break // Found active Wi-Fi, take priority
@@ -78,17 +85,8 @@ object NetworkAutomationEvaluator {
         if (ethernetCaps != null) return ethernetCaps
         if (cellularCaps != null) return cellularCaps
 
-        // 3. Fallback to passed capabilities only if physical
-        if (capabilities != null && !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
-            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-            ) {
-                return capabilities
-            }
-        }
-
-        return null
+        // 3. Fallback only when the callback itself describes a physical Internet network.
+        return capabilities?.takeIf { it.isPhysicalInternetNetwork() }
     }
 
     @Suppress("DEPRECATION")
@@ -111,7 +109,7 @@ object NetworkAutomationEvaluator {
             val active = cm.activeNetwork
             if (active != null) {
                 val caps = cm.getNetworkCapabilities(active)
-                if (caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                if (caps?.isPhysicalInternetNetwork() == true && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         val transportInfo = caps.transportInfo
                         if (transportInfo is WifiInfo) {
@@ -130,7 +128,7 @@ object NetworkAutomationEvaluator {
             val networks = runCatching { cm.allNetworks }.getOrNull() ?: emptyArray()
             for (net in networks) {
                 val caps = cm.getNetworkCapabilities(net) ?: continue
-                if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                if (caps.isPhysicalInternetNetwork() && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         val transportInfo = caps.transportInfo
                         if (transportInfo is WifiInfo) {
@@ -157,7 +155,12 @@ object NetworkAutomationEvaluator {
         return if (!cleaned.isNullOrBlank() && cleaned != "<unknown ssid>" && cleaned != "0x") cleaned else null
     }
 
-    fun evaluate(context: Context, state: AppState, capabilities: NetworkCapabilities? = null): NetworkAutomationDecision {
+    fun evaluate(
+        context: Context,
+        state: AppState,
+        capabilities: NetworkCapabilities? = null,
+        includeWifiSsid: Boolean = false,
+    ): NetworkAutomationDecision {
         if (!state.enableNetworkAutomation && !state.enableOnDemandVpn) {
             return NetworkAutomationDecision.NoChange
         }
@@ -172,7 +175,7 @@ object NetworkAutomationEvaluator {
 
         val isWifi = physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
         val isCellular = physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-        val currentSsid = if (isWifi) getCurrentWifiSsid(context, physicalCaps) else null
+        val currentSsid = if (isWifi && includeWifiSsid) getCurrentWifiSsid(context, physicalCaps) else null
 
         val matchedRule = findMatchingRule(
             enabledRules = enabledRules,
@@ -182,6 +185,10 @@ object NetworkAutomationEvaluator {
         )
 
         return makeDecision(matchedRule, state)
+    }
+
+    fun requiresWifiSsid(rules: List<NetworkAutomationRule>): Boolean {
+        return rules.any { rule -> rule.enabled && rule.type == NetworkRuleType.SPECIFIC_WIFI }
     }
 
     fun findMatchingRule(
@@ -237,4 +244,28 @@ object NetworkAutomationEvaluator {
             }
         }
     }
+}
+
+/**
+ * Identifies a physical transport that may be considered by a network rule.
+ * Availability itself is tracked by [NetworkAutomationMonitor] from callback
+ * lifecycle events, rather than relying on VALIDATED during an in-flight
+ * Wi-Fi/LTE handover.
+ */
+internal fun isPhysicalInternetNetwork(
+    hasPhysicalTransport: Boolean,
+    hasInternetCapability: Boolean,
+    isVpn: Boolean,
+): Boolean {
+    return hasPhysicalTransport && hasInternetCapability && !isVpn
+}
+
+internal fun NetworkCapabilities.isPhysicalInternetNetwork(): Boolean {
+    return isPhysicalInternetNetwork(
+        hasPhysicalTransport = hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET),
+        hasInternetCapability = hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET),
+        isVpn = hasTransport(NetworkCapabilities.TRANSPORT_VPN),
+    )
 }

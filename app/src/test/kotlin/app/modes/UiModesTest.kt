@@ -4,6 +4,9 @@
 package app.modes
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UiModesTest {
@@ -35,6 +38,26 @@ class UiModesTest {
     fun testNormalizeColorModeKeepsAmoledMode() {
         assertEquals(ColorModeAmoled, normalizeColorMode(ColorModeAmoled))
         assertEquals(ColorModeSystem, normalizeColorMode(-1))
+    }
+
+    @Test
+    fun testNamedColorThemesKeepTheirModeAndContrastPreference() {
+        assertEquals(ColorModeAurora, normalizeColorMode(ColorModeAurora))
+        assertEquals(ColorModeSakura, normalizeColorMode(ColorModeSakura))
+        assertEquals(ColorModeForest, normalizeColorMode(ColorModeForest))
+        assertEquals(ColorModeSunset, normalizeColorMode(ColorModeSunset))
+
+        assertTrue(isNamedColorTheme(ColorModeAurora))
+        assertTrue(isNamedColorTheme(ColorModeSakura))
+        assertTrue(isNamedColorTheme(ColorModeForest))
+        assertTrue(isNamedColorTheme(ColorModeSunset))
+        assertFalse(isNamedColorTheme(ColorModeDark))
+
+        assertTrue(explicitColorModeIsDark(ColorModeAurora) == true)
+        assertFalse(explicitColorModeIsDark(ColorModeSakura) == true)
+        assertTrue(explicitColorModeIsDark(ColorModeForest) == true)
+        assertTrue(explicitColorModeIsDark(ColorModeSunset) == true)
+        assertNull(explicitColorModeIsDark(ColorModeSystem))
     }
 
     @Test

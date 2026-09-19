@@ -22,6 +22,13 @@ internal class AppUpdateCheckStore(context: Context) {
 
     fun eTag(): String? = preferences.getString(KeyETag, null)?.takeIf(String::isNotBlank)
 
+    fun isAutomaticAttemptDue(nowMillis: Long = System.currentTimeMillis()): Boolean {
+        return isAppUpdateAutomaticAttemptDue(
+            lastAttemptMillis = preferences.getLong(KeyLastAttemptMillis, 0L),
+            nowMillis = nowMillis,
+        )
+    }
+
     fun recordSuccessfulCheck(
         eTag: String?,
         nowMillis: Long = System.currentTimeMillis(),
@@ -34,9 +41,9 @@ internal class AppUpdateCheckStore(context: Context) {
         }
     }
 
-    /** A failed automatic request still counts as a check for TTL throttling. */
+    /** Records diagnostics only; a failed request must never advance the successful-check TTL. */
     fun recordAttempt(nowMillis: Long = System.currentTimeMillis()) {
-        preferences.edit { putLong(KeyLastCheckMillis, nowMillis) }
+        preferences.edit { putLong(KeyLastAttemptMillis, nowMillis) }
     }
 }
 
@@ -48,8 +55,18 @@ internal fun isAppUpdateCheckDue(
         nowMillis - lastCheckMillis >= AppUpdateCheckTtlMillis
 }
 
+internal fun isAppUpdateAutomaticAttemptDue(
+    lastAttemptMillis: Long,
+    nowMillis: Long,
+): Boolean {
+    return lastAttemptMillis <= 0L ||
+        nowMillis - lastAttemptMillis >= AppUpdateAutomaticRetryMinMillis
+}
+
 internal const val AppUpdateCheckTtlMillis = 24L * 60L * 60L * 1_000L
+internal const val AppUpdateAutomaticRetryMinMillis = 60L * 60L * 1_000L
 
 private const val PreferencesName = "app_update_check"
 private const val KeyLastCheckMillis = "last_check_millis"
+private const val KeyLastAttemptMillis = "last_attempt_millis"
 private const val KeyETag = "latest_release_etag"

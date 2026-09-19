@@ -46,6 +46,7 @@ import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 
 /** Full-screen connection speed test: ping, jitter, download and upload. */
@@ -56,12 +57,13 @@ fun SpeedTestPage(
     val languageMode = LocalAppChromeState.current.languageMode
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
+    val appContext = LocalContext.current.applicationContext
     val topAppBarScrollBehavior = MiuixScrollBehavior()
 
     // State lives in the app-scoped session so rotation keeps the test alive.
     val state = SpeedTestSession.state
 
-    fun startTest() = SpeedTestSession.start()
+    fun startTest() = SpeedTestSession.start(appContext)
     fun stopTest() = SpeedTestSession.stop()
 
     Scaffold(

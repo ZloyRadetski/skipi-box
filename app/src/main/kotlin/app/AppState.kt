@@ -203,9 +203,16 @@ data class AppState(
     val proxyAppListSelectedApps: List<String> = emptyList(),
 
     val autoCheckAppUpdates: Boolean = true,
+    /** Legacy key name retained for preference compatibility; it now means auto-download on Wi-Fi while charging. */
     val autoInstallAppUpdatesAtNight: Boolean = true,
     val availableAppUpdate: features.updater.AppUpdateInfo? = null,
     val dismissedUpdateVersion: String = "",
+    val appUpdateDownloadStatus: features.updater.AppUpdateDownloadStatus = features.updater.AppUpdateDownloadStatus.IDLE,
+    val appUpdateDownloadedBytes: Long = 0L,
+    val appUpdateTotalBytes: Long = 0L,
+    val appUpdateApkFilePath: String? = null,
+    val appUpdateDownloadError: String? = null,
+    val appUpdateDownloadIsAutomatic: Boolean = false,
 
     val autoConnectOnBoot: Boolean = false,
     val autoConnectOnAppOpen: Boolean = false,

@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.LocalAppStateStore
+import app.LocalAppServices
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
@@ -69,6 +71,7 @@ import ui.layout.pageScrollModifiers
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import features.networkautomation.engine.NetworkAutomationEvaluator
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsNetworkAutomationPage(
@@ -78,25 +81,30 @@ fun SettingsNetworkAutomationPage(
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
     val stateStore = LocalAppStateStore.current
+    val services = LocalAppServices.current
     val appState by stateStore.collectAppState()
     val updateAppState = LocalUpdateAppState.current
     val topAppBarScrollBehavior = MiuixScrollBehavior()
     val lazyListState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     var showRuleDialog by remember { mutableStateOf(false) }
     var editingRule by remember { mutableStateOf<NetworkAutomationRule?>(null) }
     val noWifiDetectedText = stringResource(R.string.network_automation_no_wifi_detected)
+    val locationPermissionDeniedText = stringResource(R.string.network_automation_wifi_permission_denied)
 
     val onRequestCurrentWifi: ((String) -> Unit) -> Unit = { onSsidReceived ->
-        val current = NetworkAutomationEvaluator.getCurrentWifiSsid(context)
-        if (!current.isNullOrBlank()) {
-            onSsidReceived(current)
-        } else {
-            Toast.makeText(
-                context,
-                noWifiDetectedText,
-                Toast.LENGTH_SHORT,
-            ).show()
+        scope.launch {
+            if (!services.requestWifiSsidPermission()) {
+                Toast.makeText(context, locationPermissionDeniedText, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val current = NetworkAutomationEvaluator.getCurrentWifiSsid(context)
+            if (!current.isNullOrBlank()) {
+                onSsidReceived(current)
+            } else {
+                Toast.makeText(context, noWifiDetectedText, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

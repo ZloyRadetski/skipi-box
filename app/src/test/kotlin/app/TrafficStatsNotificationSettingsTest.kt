@@ -8,7 +8,7 @@ import org.junit.Test
 
 class TrafficStatsNotificationSettingsTest {
     @Test
-    fun refreshInterval_defaultsToOneSecond_andVpnResetRestoresIt() {
+    fun refreshInterval_defaultsToTwoSeconds_andVpnResetRestoresIt() {
         assertEquals(
             DefaultTrafficStatsNotificationRefreshIntervalSeconds,
             AppState().trafficStatsNotificationRefreshIntervalSeconds,

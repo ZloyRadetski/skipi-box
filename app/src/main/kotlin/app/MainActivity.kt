@@ -24,6 +24,7 @@ import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.AndroidVpnPermissionRequester
+import features.networkautomation.engine.AndroidWifiSsidPermissionRequester
 import features.config.SkipiDeepLink
 import features.config.toSkipiDeepLinkOrNull
 import features.config.withImportedSkipiServer
@@ -50,6 +51,14 @@ class MainActivity : ComponentActivity() {
     private val vpnPermissionRequester = AndroidVpnPermissionRequester {
         getString(R.string.error_vpn_permission_launcher_missing)
     }
+    private val wifiSsidPermissionRequester = AndroidWifiSsidPermissionRequester(
+        hasFineLocationPermission = {
+            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        },
+        missingLauncherMessage = {
+            getString(R.string.network_automation_wifi_permission_launcher_missing)
+        },
+    )
 
     private val qrCodeScanRequester = AndroidQrCodeScanRequester(
         hasCameraPermission = {
@@ -106,6 +115,17 @@ class MainActivity : ComponentActivity() {
         vpnPermissionRequester.complete(result.resultCode == RESULT_OK)
     }
 
+    private val wifiSsidPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { grantedPermissions ->
+        val granted = grantedPermissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        wifiSsidPermissionRequester.complete(granted)
+        if (granted) {
+            (application as? SkipiApplication)?.networkAutomationMonitor?.refresh()
+        }
+    }
+
     private val qrCodePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -146,6 +166,9 @@ class MainActivity : ComponentActivity() {
         vpnPermissionRequester.registerLauncher { intent ->
             vpnPermissionLauncher.launch(intent)
         }
+        wifiSsidPermissionRequester.registerLauncher { permissions ->
+            wifiSsidPermissionLauncher.launch(permissions)
+        }
         qrCodeScanRequester.registerPermissionLauncher { permission ->
             qrCodePermissionLauncher.launch(permission)
         }
@@ -180,6 +203,8 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         vpnPermissionRequester.complete(false)
         vpnPermissionRequester.registerLauncher(null)
+        wifiSsidPermissionRequester.complete(false)
+        wifiSsidPermissionRequester.registerLauncher(null)
         qrCodeScanRequester.completeCameraPermission(false)
         qrCodeScanRequester.completeScan(null)
         qrCodeScanRequester.registerPermissionLauncher(null)
@@ -214,6 +239,7 @@ class MainActivity : ComponentActivity() {
                 photoFilePicker = photoFilePicker::pick,
                 logFileCreator = logFileCreator::create,
                 requestVpnPermission = vpnPermissionRequester::request,
+                requestWifiSsidPermission = wifiSsidPermissionRequester::request,
             )
         }
     }

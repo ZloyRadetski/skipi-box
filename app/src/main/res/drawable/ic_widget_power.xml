@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Copyright 2026, Radetski -->
+<!-- SPDX-License-Identifier: GPL-3.0 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11,2L13,2L13,12L11,12ZM6.35,4.94L7.76,6.35C6.68,7.43 6,8.93 6,10.59C6,13.9 8.69,16.59 12,16.59C15.31,16.59 18,13.9 18,10.59C18,8.93 17.32,7.43 16.24,6.35L17.65,4.94C19.1,6.39 20,8.39 20,10.59C20,15 16.41,18.59 12,18.59C7.59,18.59 4,15 4,10.59C4,8.39 4.9,6.39 6.35,4.94Z" />
+</vector>

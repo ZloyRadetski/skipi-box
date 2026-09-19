@@ -25,7 +25,7 @@ internal class AppUpdateScheduleGateway(
     private val workManager = WorkManager.getInstance(context.applicationContext)
     private val checkStore = AppUpdateCheckStore(context)
 
-    fun schedulePeriodicCheck(enabled: Boolean, autoInstallAtNight: Boolean) {
+    fun schedulePeriodicCheck(enabled: Boolean) {
         if (!enabled) {
             workManager.cancelUniqueWork(AppUpdatePeriodicWorkName)
             workManager.cancelUniqueWork(AppUpdateAutomaticWorkName)
@@ -38,7 +38,7 @@ internal class AppUpdateScheduleGateway(
             flexTimeInterval = 2,
             flexTimeIntervalUnit = TimeUnit.HOURS,
         )
-            .setConstraints(checkConstraints(autoInstallAtNight))
+            .setConstraints(checkConstraints())
             .setInputData(workDataOf(AppUpdateForceCheckInputKey to false))
             .build()
 
@@ -50,10 +50,10 @@ internal class AppUpdateScheduleGateway(
     }
 
     /** Queues an initial automatic check only when the persisted 24-hour TTL has expired. */
-    fun enqueueAutomaticCheckIfDue(autoInstallAtNight: Boolean) {
-        if (!checkStore.isDue()) return
+    fun enqueueAutomaticCheckIfDue() {
+        if (!checkStore.isDue() || !checkStore.isAutomaticAttemptDue()) return
         val request = OneTimeWorkRequestBuilder<AppUpdateWorker>()
-            .setConstraints(checkConstraints(autoInstallAtNight))
+            .setConstraints(checkConstraints())
             .setInputData(workDataOf(AppUpdateForceCheckInputKey to false))
             .build()
         workManager.enqueueUniqueWork(
@@ -80,14 +80,9 @@ internal class AppUpdateScheduleGateway(
         )
     }
 
-    private fun checkConstraints(autoInstallAtNight: Boolean): Constraints {
+    private fun checkConstraints(): Constraints {
         return Constraints.Builder()
-            .setRequiredNetworkType(if (autoInstallAtNight) NetworkType.UNMETERED else NetworkType.CONNECTED)
-            .apply {
-                if (autoInstallAtNight) {
-                    setRequiresCharging(true)
-                }
-            }
+            .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
     }
 }

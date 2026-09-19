@@ -46,6 +46,12 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
     internal val appUpdateScheduleGateway: features.updater.runtime.AppUpdateScheduleGateway by lazy {
         features.updater.runtime.AppUpdateScheduleGateway(applicationContext)
     }
+    internal val appUpdateCheckCoordinator: features.updater.runtime.AppUpdateCheckCoordinator by lazy {
+        features.updater.runtime.AppUpdateCheckCoordinator(applicationContext, stateStore)
+    }
+    internal val appUpdateDownloadCoordinator: features.updater.runtime.AppUpdateDownloadCoordinator by lazy {
+        features.updater.runtime.AppUpdateDownloadCoordinator(applicationContext, stateStore)
+    }
     internal val networkAutomationMonitor: features.networkautomation.engine.NetworkAutomationMonitor by lazy {
         features.networkautomation.engine.NetworkAutomationMonitor(applicationContext, stateStore, appScope)
     }
@@ -70,6 +76,8 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
         AndroidLogcatRepository.initialize(applicationContext, retentionDays)
         AndroidCoreLogRepository.initialize(applicationContext, retentionDays)
         AndroidAccessLogRepository.initialize(applicationContext, retentionDays)
+        features.updater.AppUpdateNotifier.createChannel(applicationContext)
+        appUpdateDownloadCoordinator.restorePendingDownload()
         networkAutomationMonitor.start()
         proxyWidgetRuntime.start()
         appScope.launch {
@@ -138,20 +146,31 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                 remoteVersionCode = cachedUpdate.versionCode,
             )
         ) {
-            stateStore.update { it.copy(availableAppUpdate = null) }
+            stateStore.update {
+                it.copy(
+                    availableAppUpdate = null,
+                    dismissedUpdateVersion = "",
+                    appUpdateDownloadStatus = features.updater.AppUpdateDownloadStatus.IDLE,
+                    appUpdateDownloadedBytes = 0L,
+                    appUpdateTotalBytes = 0L,
+                    appUpdateApkFilePath = null,
+                    appUpdateDownloadError = null,
+                    appUpdateDownloadIsAutomatic = false,
+                )
+            }
         }
         appScope.launch {
             stateStore.state
-                .map { Pair(it.autoCheckAppUpdates, it.autoInstallAppUpdatesAtNight) }
+                .map { it.autoCheckAppUpdates }
                 .distinctUntilChanged()
-                .collect { (autoCheck, autoInstall) ->
-                    appUpdateScheduleGateway.schedulePeriodicCheck(autoCheck, autoInstall)
+                .collect { autoCheck ->
+                    appUpdateScheduleGateway.schedulePeriodicCheck(autoCheck)
                     if (autoCheck) {
                         // Application may be created by a tile, receiver or
                         // widget. Queue at most one TTL-gated WorkManager job;
                         // never perform a network request on every process
                         // start.
-                        appUpdateScheduleGateway.enqueueAutomaticCheckIfDue(autoInstall)
+                        appUpdateScheduleGateway.enqueueAutomaticCheckIfDue()
                     }
                 }
         }

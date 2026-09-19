@@ -60,11 +60,21 @@ import app.collectAppState
 import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
+import app.modes.ColorModeAmoled
+import app.modes.ColorModeAurora
+import app.modes.ColorModeDark
+import app.modes.ColorModeForest
+import app.modes.ColorModeLight
+import app.modes.ColorModeSakura
+import app.modes.ColorModeSunset
+import app.modes.ColorModeSystem
 import app.modes.ConnectionDisplayModeClassic
 import app.modes.FontSizeModeExtraLarge
 import app.modes.FontSizeModeStepPercent
 import app.modes.FontSizeModeTiny
+import app.modes.isNamedColorTheme
 import app.modes.normalizeBackgroundStyle
+import app.modes.normalizeColorMode
 import app.modes.normalizeFontSizeMode
 import ui.background.clearCustomBackgroundPhoto
 import ui.background.customBackgroundPhotoExists
@@ -157,14 +167,19 @@ fun SettingsAppearancePage(
     val listPadding = pageListPadding(contentPadding)
 
     val colorModeOptions = listOf(
-        stringResource(R.string.option_follow_system),
-        stringResource(R.string.option_light),
-        stringResource(R.string.option_dark),
-        stringResource(R.string.option_theme_system),
-        stringResource(R.string.option_theme_light),
-        stringResource(R.string.option_theme_dark),
-        stringResource(R.string.option_amoled),
+        ColorModeSystem to stringResource(R.string.option_follow_system),
+        ColorModeLight to stringResource(R.string.option_light),
+        ColorModeDark to stringResource(R.string.option_dark),
+        ColorModeAmoled to stringResource(R.string.option_amoled),
+        ColorModeAurora to stringResource(R.string.option_theme_aurora),
+        ColorModeSakura to stringResource(R.string.option_theme_sakura),
+        ColorModeForest to stringResource(R.string.option_theme_forest),
+        ColorModeSunset to stringResource(R.string.option_theme_sunset),
     )
+    val selectedColorModeIndex = colorModeOptions.indexOfFirst { (mode) ->
+        normalizeColorMode(mode) == normalizeColorMode(appState.colorMode)
+    }.coerceAtLeast(0)
+    val isNamedThemeSelected = isNamedColorTheme(appState.colorMode)
     val keyColorOptions = listOf(
         stringResource(R.string.theme_color_default),
         stringResource(R.string.theme_color_blue),
@@ -268,9 +283,18 @@ fun SettingsAppearancePage(
                     SettingsSectionCard {
                         AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_color_mode),
-                            items = colorModeOptions,
-                            selectedIndex = appState.colorMode,
-                            onSelectedIndexChange = { index -> updateAppState { it.copy(colorMode = index) } },
+                            summary = if (isNamedThemeSelected) {
+                                stringResource(R.string.settings_theme_preset_summary)
+                            } else {
+                                stringResource(R.string.settings_color_mode_summary)
+                            },
+                            items = colorModeOptions.map { (_, label) -> label },
+                            selectedIndex = selectedColorModeIndex,
+                            onSelectedIndexChange = { index ->
+                                colorModeOptions.getOrNull(index)?.first?.let { mode ->
+                                    updateAppState { it.copy(colorMode = mode) }
+                                }
+                            },
                         )
                         AppOverlayDropdownPreference(
                             title = stringResource(R.string.settings_font_family),
@@ -301,14 +325,20 @@ fun SettingsAppearancePage(
                             summary = stringResource(appIconDescriptorForMode(appState.appIcon).titleRes),
                             onClick = { showAppIconBottomSheet = true },
                         )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_enable_material_you),
-                            summary = stringResource(R.string.settings_enable_material_you_summary),
-                            checked = appState.enableMaterialYou,
-                            onCheckedChange = { enabled -> updateAppState { it.copy(enableMaterialYou = enabled) } },
-                        )
                         AnimatedVisibility(
-                            visible = appState.enableMaterialYou,
+                            visible = !isNamedThemeSelected,
+                            enter = fadeIn() + expandVertically(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            SwitchPreference(
+                                title = stringResource(R.string.settings_enable_material_you),
+                                summary = stringResource(R.string.settings_enable_material_you_summary),
+                                checked = appState.enableMaterialYou,
+                                onCheckedChange = { enabled -> updateAppState { it.copy(enableMaterialYou = enabled) } },
+                            )
+                        }
+                        AnimatedVisibility(
+                            visible = appState.enableMaterialYou && !isNamedThemeSelected,
                             enter = fadeIn() + expandVertically(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {
@@ -341,7 +371,7 @@ fun SettingsAppearancePage(
                             }
                         }
                         AnimatedVisibility(
-                            visible = !appState.enableMaterialYou,
+                            visible = !appState.enableMaterialYou && !isNamedThemeSelected,
                             enter = fadeIn() + expandVertically(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {

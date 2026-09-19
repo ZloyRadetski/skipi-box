@@ -9,9 +9,10 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
+import java.io.IOException
+import java.net.Authenticator
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
-import java.net.Authenticator
 import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URL
@@ -65,7 +66,7 @@ object TunnelNetworks {
         }
     }
 
-    /** The device's active VPN network, or null when no tunnel is up. */
+    /** The device's active VPN network, or null when no tunnel is up or socket cannot be bound. */
     fun locateVpnNetwork(context: Context?): Network? {
         val connectivity = context?.getSystemService(ConnectivityManager::class.java) ?: return null
         // allNetworks is deprecated in favor of network callbacks, but a VPN
@@ -73,7 +74,18 @@ object TunnelNetworks {
         @Suppress("DEPRECATION")
         return connectivity.allNetworks.firstOrNull { network ->
             connectivity.getNetworkCapabilities(network)
-                ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+                ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true && canBindSocket(network)
+        }
+    }
+
+    internal fun canBindSocket(network: Network): Boolean {
+        return try {
+            java.net.Socket().use { socket ->
+                network.bindSocket(socket)
+            }
+            true
+        } catch (_: Throwable) {
+            false
         }
     }
 
@@ -84,13 +96,7 @@ object TunnelNetworks {
     fun openHttpConnection(context: Context?, url: URL): HttpURLConnection {
         val runtimeOptions = LocalProxyRuntime.current()
         if (runtimeOptions != null) {
-            val listenHost = if (runtimeOptions.listenAddress == NetworkDefaults.IPV4_ANY_ADDRESS) {
-                LocalProxyLoopbackAddress
-            } else {
-                runtimeOptions.listenAddress
-            }
-            val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress(listenHost, runtimeOptions.port))
-            return url.openConnection(proxy) as HttpURLConnection
+            return openLocalProxyHttpConnection(url, runtimeOptions)
         }
 
         val vpnNetwork = locateVpnNetwork(context)
@@ -100,6 +106,41 @@ object TunnelNetworks {
         }
 
         return url.openConnection() as HttpURLConnection
+    }
+
+    /**
+     * Opens an HTTP connection only through an active SKIPI tunnel. Unlike
+     * [openHttpConnection], this intentionally never falls back to the default
+     * direct network path.
+     */
+    fun openTunnelHttpConnection(context: Context?, url: URL): HttpURLConnection {
+        LocalProxyRuntime.current()?.let { runtimeOptions ->
+            return openLocalProxyHttpConnection(url, runtimeOptions)
+        }
+
+        val vpnNetwork = locateVpnNetwork(context)
+            ?: throw IOException("No active VPN tunnel is available")
+        return try {
+            vpnNetwork.openConnection(url) as? HttpURLConnection
+                ?: throw IOException("Active VPN tunnel did not open an HTTP connection")
+        } catch (error: IOException) {
+            throw error
+        } catch (error: Throwable) {
+            throw IOException("Failed to open HTTP connection through active VPN tunnel", error)
+        }
+    }
+
+    private fun openLocalProxyHttpConnection(
+        url: URL,
+        runtimeOptions: engine.proxy.LocalProxyOptions,
+    ): HttpURLConnection {
+        val listenHost = if (runtimeOptions.listenAddress == NetworkDefaults.IPV4_ANY_ADDRESS) {
+            LocalProxyLoopbackAddress
+        } else {
+            runtimeOptions.listenAddress
+        }
+        val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress(listenHost, runtimeOptions.port))
+        return url.openConnection(proxy) as HttpURLConnection
     }
 }
 

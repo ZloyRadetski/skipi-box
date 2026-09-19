@@ -63,9 +63,9 @@ class CoreTrafficStatsSamplerTest {
     }
 
     @Test
-    fun notification_request_controls_sampling_but_never_slows_a_visible_consumer() {
+    fun notification_request_never_increases_screen_off_polling_and_never_slows_a_visible_consumer() {
         assertEquals(
-            1_000L,
+            CoreTrafficStatsScreenOffPollIntervalMillis,
             coreTrafficStatsPollIntervalMillis(
                 isScreenInteractive = false,
                 hasMeaningfulTraffic = false,
@@ -74,7 +74,7 @@ class CoreTrafficStatsSamplerTest {
             ),
         )
         assertEquals(
-            10_000L,
+            CoreTrafficStatsScreenOffPollIntervalMillis,
             coreTrafficStatsPollIntervalMillis(
                 isScreenInteractive = false,
                 hasMeaningfulTraffic = false,
@@ -89,6 +89,15 @@ class CoreTrafficStatsSamplerTest {
                 hasMeaningfulTraffic = true,
                 requestedRefreshIntervalMillis = 10_000L,
                 hasDefaultFrequencyConsumer = true,
+            ),
+        )
+        assertEquals(
+            1_000L,
+            coreTrafficStatsPollIntervalMillis(
+                isScreenInteractive = true,
+                hasMeaningfulTraffic = false,
+                requestedRefreshIntervalMillis = 1_000L,
+                hasDefaultFrequencyConsumer = false,
             ),
         )
     }

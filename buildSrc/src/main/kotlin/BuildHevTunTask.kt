@@ -52,15 +52,13 @@ abstract class BuildHevTunTask : DefaultTask() {
     @TaskAction
     fun build() {
         val finalOutput = outputFile.get().asFile
-        if (finalOutput.exists() && finalOutput.length() > 0) {
-            return
-        }
         val artifact = HevTunArtifact.fromName(artifact.get())
         val abi = androidAbi.get()
         val ndkBuild = findNdkBuild(findNdkDir())
         val sourceDir = prepareBuildSource(sourceDirectory.get().asFile)
         val outputDir = finalOutput.parentFile
         val ndkLibsOutDir = temporaryDir.resolve("libs")
+        val ndkOutDir = temporaryDir.resolve("obj")
         val projectDir = temporaryDir.resolve("ndk-project")
         val jniDir = projectDir.resolve("jni")
         val appBuildScript = jniDir.resolve("Android.mk")
@@ -71,6 +69,9 @@ abstract class BuildHevTunTask : DefaultTask() {
         if (ndkLibsOutDir.exists()) {
             ndkLibsOutDir.deleteRecursively()
         }
+        if (ndkOutDir.exists()) {
+            ndkOutDir.deleteRecursively()
+        }
         jniDir.mkdirs()
         writeGeneratedAndroidMk(appBuildScript, sourceDir)
         outputDir.mkdirs()
@@ -80,14 +81,14 @@ abstract class BuildHevTunTask : DefaultTask() {
             workingDir = projectDir
             commandLine(
                 ndkBuild.absolutePath,
-                "-j${Runtime.getRuntime().availableProcessors()}",
+                "-j${Runtime.getRuntime().availableProcessors().coerceIn(1, MaxNativeBuildWorkers)}",
                 "NDK_PROJECT_PATH=${projectDir.absolutePath}",
                 "APP_BUILD_SCRIPT=${appBuildScript.absolutePath}",
                 "APP_ABI=$abi",
                 "APP_MODULES=${artifact.moduleName}",
                 "APP_PLATFORM=android-${minSdk.get()}",
                 "NDK_LIBS_OUT=${ndkLibsOutDir.absolutePath}",
-                "NDK_OUT=${temporaryDir.resolve("obj").absolutePath}",
+                "NDK_OUT=${ndkOutDir.absolutePath}",
                 "APP_CFLAGS=-O3 -DPKGNAME=engine/vpn/hevtun -DCLSNAME=HevTunNative",
                 "APP_LDFLAGS=-Wl,--build-id=none -Wl,--hash-style=gnu",
             )
@@ -102,6 +103,13 @@ abstract class BuildHevTunTask : DefaultTask() {
         if (!finalOutput.exists() || finalOutput.length() <= 0) {
             throw GradleException("Failed to package Hev TUN ${artifact.displayName}: ${finalOutput.absolutePath}")
         }
+    }
+
+    private companion object {
+        // Large CPU counts on Windows can make ndk-build race its generated
+        // dependency files. Eight parallel compiler jobs still rebuild HEV
+        // quickly while keeping those paths deterministic.
+        const val MaxNativeBuildWorkers = 8
     }
 
     private fun writeGeneratedAndroidMk(target: File, sourceDir: File) {

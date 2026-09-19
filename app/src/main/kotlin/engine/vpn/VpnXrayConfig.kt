@@ -459,7 +459,10 @@ internal fun buildVpnHevSocks5TunnelConfig(
         ipv4Address = tunOptions.ipv4Address.address,
         ipv6Address = tunOptions.ipv6Address.address.takeIf { enableIpv6 },
         tunnelName = "skipi0",
-        enableMultiQueue = true,
+        // Android supplies one ParcelFileDescriptor. Native multi-queue only
+        // applies when HEV creates its own TUN, so do not advertise an inert
+        // setting in the Android runtime config.
+        enableMultiQueue = false,
         enableTcpFastOpen = true,
         tcpReadWriteTimeoutMillis = tcpReadWriteTimeoutMillis.takeIf { it > 0 }
             ?: DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis,
