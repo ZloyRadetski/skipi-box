@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import platform.TunnelCapability
 import platform.TunnelConnectRequest
 import platform.TunnelPhase
+import platform.TunnelTraffic
 
 class DesktopTunnelControllerTest {
     @Test
@@ -18,15 +19,15 @@ class DesktopTunnelControllerTest {
         var running = false
         val controller = DesktopTunnelController(
             configForProfile = { Result.success("{}") },
-            startProcess = {
+            startCore = {
                 running = true
-                Result.success(DesktopXrayProcessState(isRunning = true, pid = 42L))
+                Result.success(DesktopCoreState(isRunning = true, sessionId = 42L))
             },
-            stopProcess = {
+            stopCore = {
                 running = false
-                Result.success(DesktopXrayProcessState(isRunning = false))
+                Result.success(DesktopCoreState(isRunning = false))
             },
-            processState = { DesktopXrayProcessState(isRunning = running) },
+            coreState = { DesktopCoreState(isRunning = running) },
         )
 
         assertTrue(controller.connect(TunnelConnectRequest("profile-1")).isSuccess)
@@ -37,12 +38,34 @@ class DesktopTunnelControllerTest {
     }
 
     @Test
+    fun exposes_in_process_core_counters_through_the_shared_tunnel_snapshot() = runBlocking {
+        var running = false
+        val expectedTraffic = TunnelTraffic(uploadBytes = 12L, downloadBytes = 34L)
+        val controller = DesktopTunnelController(
+            configForProfile = { Result.success("{}") },
+            startCore = {
+                running = true
+                Result.success(DesktopCoreState(isRunning = true, sessionId = 42L))
+            },
+            stopCore = {
+                running = false
+                Result.success(DesktopCoreState(isRunning = false))
+            },
+            coreState = { DesktopCoreState(isRunning = running) },
+            readCoreTraffic = { Result.success(expectedTraffic) },
+        )
+
+        assertTrue(controller.connect(TunnelConnectRequest("profile-1")).isSuccess)
+        assertEquals(expectedTraffic, controller.snapshot().traffic)
+    }
+
+    @Test
     fun reports_config_failure_in_the_shared_snapshot() = runBlocking {
         val controller = DesktopTunnelController(
             configForProfile = { Result.failure(IllegalArgumentException("Invalid profile")) },
-            startProcess = { error("must not start") },
-            stopProcess = { Result.success(DesktopXrayProcessState(isRunning = false)) },
-            processState = { DesktopXrayProcessState(isRunning = false) },
+            startCore = { error("must not start") },
+            stopCore = { Result.success(DesktopCoreState(isRunning = false)) },
+            coreState = { DesktopCoreState(isRunning = false) },
         )
 
         assertTrue(controller.connect(TunnelConnectRequest("bad")).isFailure)
@@ -57,17 +80,17 @@ class DesktopTunnelControllerTest {
         val calls = mutableListOf<String>()
         val controller = DesktopTunnelController(
             configForProfile = { Result.success("{}") },
-            startProcess = {
+            startCore = {
                 calls += "start"
                 running = true
-                Result.success(DesktopXrayProcessState(isRunning = true, pid = 42L))
+                Result.success(DesktopCoreState(isRunning = true, sessionId = 42L))
             },
-            stopProcess = {
+            stopCore = {
                 calls += "stop"
                 running = false
-                Result.success(DesktopXrayProcessState(isRunning = false))
+                Result.success(DesktopCoreState(isRunning = false))
             },
-            processState = { DesktopXrayProcessState(isRunning = running) },
+            coreState = { DesktopCoreState(isRunning = running) },
             awaitSystemProxyEndpoint = {
                 calls += "ready"
                 Result.success(Unit)
@@ -95,15 +118,15 @@ class DesktopTunnelControllerTest {
         var running = false
         val controller = DesktopTunnelController(
             configForProfile = { Result.success("{}") },
-            startProcess = {
+            startCore = {
                 running = true
-                Result.success(DesktopXrayProcessState(isRunning = true))
+                Result.success(DesktopCoreState(isRunning = true))
             },
-            stopProcess = {
+            stopCore = {
                 running = false
-                Result.success(DesktopXrayProcessState(isRunning = false))
+                Result.success(DesktopCoreState(isRunning = false))
             },
-            processState = { DesktopXrayProcessState(isRunning = running) },
+            coreState = { DesktopCoreState(isRunning = running) },
             acquireSystemProxy = { Result.failure(IllegalStateException("Registry policy denied the change")) },
         )
 
@@ -118,15 +141,15 @@ class DesktopTunnelControllerTest {
         var acquired = false
         val controller = DesktopTunnelController(
             configForProfile = { Result.success("{}") },
-            startProcess = {
+            startCore = {
                 running = true
-                Result.success(DesktopXrayProcessState(isRunning = true))
+                Result.success(DesktopCoreState(isRunning = true))
             },
-            stopProcess = {
+            stopCore = {
                 running = false
-                Result.success(DesktopXrayProcessState(isRunning = false))
+                Result.success(DesktopCoreState(isRunning = false))
             },
-            processState = { DesktopXrayProcessState(isRunning = running) },
+            coreState = { DesktopCoreState(isRunning = running) },
             awaitSystemProxyEndpoint = { Result.failure(IllegalStateException("HTTP inbound did not start")) },
             acquireSystemProxy = {
                 acquired = true
@@ -145,15 +168,15 @@ class DesktopTunnelControllerTest {
         var running = false
         val failedRestore = DesktopTunnelController(
             configForProfile = { Result.success("{}") },
-            startProcess = {
+            startCore = {
                 running = true
-                Result.success(DesktopXrayProcessState(isRunning = true))
+                Result.success(DesktopCoreState(isRunning = true))
             },
-            stopProcess = {
+            stopCore = {
                 running = false
-                Result.success(DesktopXrayProcessState(isRunning = false))
+                Result.success(DesktopCoreState(isRunning = false))
             },
-            processState = { DesktopXrayProcessState(isRunning = running) },
+            coreState = { DesktopCoreState(isRunning = running) },
             releaseSystemProxy = { Result.failure(IllegalStateException("registry access denied")) },
         )
         assertTrue(failedRestore.connect(TunnelConnectRequest("profile-1")).isSuccess)

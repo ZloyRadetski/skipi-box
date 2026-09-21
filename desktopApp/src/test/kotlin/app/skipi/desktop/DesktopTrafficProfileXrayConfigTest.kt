@@ -81,6 +81,33 @@ class DesktopTrafficProfileXrayConfigTest {
     }
 
     @Test
+    fun usesSharedDnsValidationForProfileDnsServers() {
+        val server = ProxyServer.parse(
+            "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha",
+        )
+        val library = DesktopServerLibraries.add(DesktopServerLibrary(), server)
+        val profile = DesktopStoredConfig(
+            id = 1,
+            name = "DNS validation",
+            content = """
+                [General]
+                dns-server = system, tls://dns.example:853, 1.1.1.1, https://dns.example/dns-query, 1.1.1.1
+
+                [Rule]
+                FINAL,PROXY
+            """.trimIndent() + "\n",
+        )
+
+        val root = Json.parseToJsonElement(
+            DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions()),
+        ).jsonObject
+        val dnsServers = root.getValue("dns").jsonObject.getValue("servers").jsonArray
+            .map { value -> value.jsonPrimitive.content }
+
+        assertEquals(listOf("1.1.1.1", "https://dns.example/dns-query"), dnsServers)
+    }
+
+    @Test
     fun addsHttpInboundForSystemProxyWithoutChangingSocksInbound() {
         val server = ProxyServer.parse(
             "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha",

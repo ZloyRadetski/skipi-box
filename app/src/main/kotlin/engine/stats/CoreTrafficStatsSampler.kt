@@ -22,6 +22,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import platform.CoreTrafficBytes
+import platform.CoreTrafficSnapshot
+import platform.aggregateCoreInboundTraffic
+import platform.coreTrafficStatsPollIntervalMillis
 
 /**
  * One immutable result of the only native traffic-counter read performed for a
@@ -30,7 +34,7 @@ import kotlinx.coroutines.flow.first
  */
 internal data class CoreTrafficStatsSample(
     val runtime: ProxyTrafficStatsRuntime,
-    val snapshot: CoreTrafficStatsSnapshot,
+    val snapshot: CoreTrafficSnapshot,
     val inboundDelta: XrayTrafficBytes,
     val activeOutboundTag: String?,
     val sampledAtElapsedRealtime: Long,
@@ -190,7 +194,9 @@ internal object CoreTrafficStatsSampler {
 
             if (snapshot != null) {
                 consecutiveFailures = 0
-                val inboundTotals = snapshot.inbound.aggregateInboundTraffic()
+                val inboundTotals = snapshot.inbound
+                    .aggregateCoreInboundTraffic(xrayTrafficExcludedInboundTags())
+                    .toXrayTrafficBytes()
                 val previousInbound = previousInboundTotals.aggregateInboundTraffic()
                 val inboundDelta = XrayTrafficBytes(
                     uplink = (inboundTotals.uplink - previousInbound.uplink).coerceAtLeast(0L),
@@ -198,12 +204,14 @@ internal object CoreTrafficStatsSampler {
                 )
                 hasMeaningfulTraffic =
                     inboundDelta.uplink + inboundDelta.downlink >= MinimumMeaningfulTrafficDeltaBytes
-                activeOutboundTag = snapshot.outbound.maxTrafficDeltaComparedTo(
-                    previous = previousOutboundTotals,
-                    currentActiveTag = activeOutboundTag,
-                )
-                previousInboundTotals = snapshot.inbound
-                previousOutboundTotals = snapshot.outbound
+                activeOutboundTag = snapshot.outbound
+                    .toXrayTrafficBytes()
+                    .maxTrafficDeltaComparedTo(
+                        previous = previousOutboundTotals,
+                        currentActiveTag = activeOutboundTag,
+                    )
+                previousInboundTotals = snapshot.inbound.toXrayTrafficBytes()
+                previousOutboundTotals = snapshot.outbound.toXrayTrafficBytes()
                 if (!isCurrent(token)) return
                 mutableSamples.value = CoreTrafficStatsSample(
                     runtime = activeRuntime,
@@ -282,29 +290,10 @@ internal object CoreTrafficStatsSampler {
     )
 }
 
-/**
- * Keeps immediate feedback while traffic is flowing, but never wakes the CPU
- * at a notification-selected cadence while the display is off.
- */
-internal fun coreTrafficStatsPollIntervalMillis(
-    isScreenInteractive: Boolean,
-    hasMeaningfulTraffic: Boolean,
-    requestedRefreshIntervalMillis: Long? = null,
-    hasDefaultFrequencyConsumer: Boolean = false,
-): Long {
-    val defaultInterval = when {
-        !isScreenInteractive -> CoreTrafficStatsScreenOffPollIntervalMillis
-        hasMeaningfulTraffic -> CoreTrafficStatsActivePollIntervalMillis
-        else -> CoreTrafficStatsIdlePollIntervalMillis
-    }
-    val requestedInterval = requestedRefreshIntervalMillis ?: return defaultInterval
-    return when {
-        !isScreenInteractive -> maxOf(defaultInterval, requestedInterval)
-        hasDefaultFrequencyConsumer -> minOf(defaultInterval, requestedInterval)
-        else -> requestedInterval
-    }
-}
+private fun CoreTrafficBytes.toXrayTrafficBytes(): XrayTrafficBytes = XrayTrafficBytes(
+    uplink = uplink,
+    downlink = downlink,
+)
 
-internal const val CoreTrafficStatsActivePollIntervalMillis = 2_000L
-internal const val CoreTrafficStatsIdlePollIntervalMillis = 5_000L
-internal const val CoreTrafficStatsScreenOffPollIntervalMillis = 30_000L
+private fun Map<String, CoreTrafficBytes>.toXrayTrafficBytes(): Map<String, XrayTrafficBytes> =
+    mapValues { (_, bytes) -> bytes.toXrayTrafficBytes() }

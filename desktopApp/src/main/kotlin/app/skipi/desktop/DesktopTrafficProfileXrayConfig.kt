@@ -2,6 +2,16 @@
 
 package app.skipi.desktop
 
+import engine.xray.XrayBalancerPlan
+import engine.xray.XrayProtocols
+import engine.xray.XrayRouteTarget
+import engine.xray.XrayRouteTargetKind
+import engine.xray.buildXrayBalancers
+import engine.xray.buildFreedomOutbound
+import engine.xray.buildXrayObservatory
+import engine.xray.buildSimpleOutbound
+import engine.xray.toSupportedXrayDnsServers
+import engine.xray.xrayDirectOutboundDomainStrategy
 import features.config.ShadowrocketPolicyGroup
 import features.config.ShadowrocketRule
 import features.config.analyzeShadowrocketConfig
@@ -11,6 +21,7 @@ import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.stripLeadingCountryFlag
 import features.proxy.server.model.isCompositeProxyServer
+import features.proxy.server.model.toXrayBalancerStrategy
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -79,18 +90,18 @@ object DesktopTrafficProfileXrayConfigFactory {
             }
         }
 
-        fun normalTarget(candidate: DesktopProfileServer): DesktopProfileRouteTarget {
+        fun normalTarget(candidate: DesktopProfileServer): XrayRouteTarget {
             val tag = outboundTagFor(candidate)
             addOutbound(candidate, tag)
-            return DesktopProfileRouteTarget(outboundTag = tag)
+            return XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
         }
 
         addOutbound(selected, ProfileProxyTag)
 
         val groupsByName = analysis.proxyGroups.associateBy { group -> group.name.trim().lowercase() }
-        val builtGroupTargets = mutableMapOf<String, DesktopProfileRouteTarget>()
+        val builtGroupTargets = mutableMapOf<String, XrayRouteTarget>()
         val buildingGroups = mutableSetOf<String>()
-        val balancers = mutableListOf<JsonObject>()
+        val balancers = mutableListOf<XrayBalancerPlan>()
         val observatorySelectors = mutableListOf<String>()
         var observatoryUrl: String? = null
         var observatoryInterval: String? = null
@@ -116,7 +127,7 @@ object DesktopTrafficProfileXrayConfigFactory {
             }.distinctBy(DesktopProfileServer::id)
         }
 
-        fun groupTarget(group: ShadowrocketPolicyGroup): DesktopProfileRouteTarget {
+        fun groupTarget(group: ShadowrocketPolicyGroup): XrayRouteTarget {
             val groupKey = group.name.trim().lowercase()
             builtGroupTargets[groupKey]?.let { return it }
             check(buildingGroups.add(groupKey)) { "Proxy groups form a cycle at '${group.name}'" }
@@ -136,17 +147,12 @@ object DesktopTrafficProfileXrayConfigFactory {
                             tag
                         }
                         val balancerTag = "$ProfileGroupTagPrefix$groupId"
-                        balancers += buildJsonObject {
-                            put("tag", balancerTag)
-                            putJsonArray("selector") { add(selectorPrefix) }
-                            put(
-                                "strategy",
-                                buildJsonObject {
-                                    put("type", group.type.toXrayBalancerStrategy())
-                                },
-                            )
-                            put("fallbackTag", memberTags.first())
-                        }
+                        balancers += XrayBalancerPlan(
+                            tag = balancerTag,
+                            selector = selectorPrefix,
+                            strategy = group.type.toXrayBalancerStrategy(),
+                            fallbackTag = memberTags.first(),
+                        )
                         observatorySelectors += selectorPrefix
                         if (observatoryUrl == null) {
                             observatoryUrl = group.url.trim().takeIf(String::isNotBlank)
@@ -154,7 +160,7 @@ object DesktopTrafficProfileXrayConfigFactory {
                         if (observatoryInterval == null) {
                             observatoryInterval = group.intervalSeconds?.takeIf { seconds -> seconds > 0 }?.let { seconds -> "${seconds}s" }
                         }
-                        DesktopProfileRouteTarget(balancerTag = balancerTag)
+                        XrayRouteTarget(balancerTag, XrayRouteTargetKind.Balancer)
                     }
                 }
                 builtGroupTargets[groupKey] = target
@@ -164,13 +170,13 @@ object DesktopTrafficProfileXrayConfigFactory {
             }
         }
 
-        fun policyTarget(policy: String): DesktopProfileRouteTarget {
+        fun policyTarget(policy: String): XrayRouteTarget {
             val normalized = policy.trim()
             when {
-                normalized.equals("PROXY", ignoreCase = true) -> return DesktopProfileRouteTarget(outboundTag = ProfileProxyTag)
-                normalized.equals("DIRECT", ignoreCase = true) -> return DesktopProfileRouteTarget(outboundTag = DirectTag)
+                normalized.equals("PROXY", ignoreCase = true) -> return XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+                normalized.equals("DIRECT", ignoreCase = true) -> return XrayRouteTarget(DirectTag, XrayRouteTargetKind.Outbound)
                 normalized.equals("BLOCK", ignoreCase = true) || normalized.startsWith("REJECT", ignoreCase = true) -> {
-                    return DesktopProfileRouteTarget(outboundTag = BlockTag)
+                    return XrayRouteTarget(BlockTag, XrayRouteTargetKind.Outbound)
                 }
             }
             groupsByName[normalized.lowercase()]?.let(::groupTarget)?.let { return it }
@@ -187,16 +193,15 @@ object DesktopTrafficProfileXrayConfigFactory {
                 .forEach(::add)
             val finalTarget = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
                 ?.let { rule -> policyTarget(rule.policy) }
-                ?: DesktopProfileRouteTarget(outboundTag = ProfileProxyTag)
+                ?: XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
             add(finalTarget.toFinalRoutingRule())
         }
 
         val dnsServers = analysis.general["dns-server"]
             ?.split(',')
-            ?.map(String::trim)
-            ?.filter { value -> value.isNotEmpty() && !value.equals("system", ignoreCase = true) }
-            ?.distinct()
             .orEmpty()
+            .filterNot { value -> value.trim().equals("system", ignoreCase = true) }
+            .toSupportedXrayDnsServers()
         val hosts = analysis.sections["host"].orEmpty().toDesktopXrayHosts()
         val ipv6Enabled = analysis.general["ipv6"].toConfigBooleanOrDefault(false)
         val ipv6Preferred = analysis.general["prefer-ipv6"].toConfigBooleanOrDefault(false)
@@ -278,30 +283,15 @@ object DesktopTrafficProfileXrayConfigFactory {
                 buildJsonArray {
                     proxyOutbounds.forEach(::add)
                     add(
-                        buildJsonObject {
-                            put("tag", DirectTag)
-                            put("protocol", "freedom")
-                            put(
-                                "settings",
-                                buildJsonObject {
-                                    put(
-                                        "domainStrategy",
-                                        when {
-                                            ipv6Enabled && ipv6Preferred -> "UseIPv6v4"
-                                            ipv6Enabled -> "UseIP"
-                                            else -> "UseIPv4"
-                                        },
-                                    )
-                                },
-                            )
-                        },
+                        buildFreedomOutbound(
+                            tag = DirectTag,
+                            domainStrategy = xrayDirectOutboundDomainStrategy(
+                                enableIpv6 = ipv6Enabled,
+                                enableIpv6Prefer = ipv6Preferred,
+                            ),
+                        ),
                     )
-                    add(
-                        buildJsonObject {
-                            put("tag", BlockTag)
-                            put("protocol", "blackhole")
-                        },
-                    )
+                    add(buildSimpleOutbound(BlockTag, XrayProtocols.BLACKHOLE))
                 },
             )
             put(
@@ -310,21 +300,17 @@ object DesktopTrafficProfileXrayConfigFactory {
                     put("domainStrategy", routeDomainStrategy)
                     putJsonArray("rules") { routingRules.forEach(::add) }
                     if (balancers.isNotEmpty()) {
-                        putJsonArray("balancers") { balancers.forEach(::add) }
+                        putJsonArray("balancers") { buildXrayBalancers(balancers).forEach(::add) }
                     }
                 },
             )
-            if (observatorySelectors.isNotEmpty()) {
-                put(
-                    "observatory",
-                    buildJsonObject {
-                        putJsonArray("subjectSelector") { observatorySelectors.distinct().forEach(::add) }
-                        put("probeURL", observatoryUrl ?: DefaultProbeUrl)
-                        put("probeInterval", observatoryInterval ?: DefaultProbeInterval)
-                        put("enableConcurrency", true)
-                    },
-                )
-            }
+            buildXrayObservatory(
+                selectors = observatorySelectors,
+                probeUrl = observatoryUrl,
+                probeInterval = observatoryInterval,
+                fallbackProbeUrl = DefaultProbeUrl,
+                fallbackProbeInterval = DefaultProbeInterval,
+            )?.let { observatory -> put("observatory", observatory) }
         }
         return DesktopProfileXrayJson.encodeToString(config) + "\n"
     }
@@ -339,17 +325,12 @@ private data class DesktopProfileServer(
     val isUsable: Boolean get() = server !is Custom && server !is StrategyGroup && !server.isCompositeProxyServer()
 }
 
-private data class DesktopProfileRouteTarget(
-    val outboundTag: String? = null,
-    val balancerTag: String? = null,
-) {
-    fun toFinalRoutingRule(): JsonObject = buildJsonObject {
-        put("network", "tcp,udp")
-        putTarget(this@DesktopProfileRouteTarget)
-    }
+private fun XrayRouteTarget.toFinalRoutingRule(): JsonObject = buildJsonObject {
+    put("network", "tcp,udp")
+    applyTo(this)
 }
 
-private fun ShadowrocketRule.toDesktopXrayRoutingRule(target: DesktopProfileRouteTarget): JsonObject? {
+private fun ShadowrocketRule.toDesktopXrayRoutingRule(target: XrayRouteTarget): JsonObject? {
     val cleanValue = value.trim()
     val ruleType = type.trim().uppercase()
     require(ruleType != "IP-ASN") {
@@ -392,15 +373,7 @@ private fun ShadowrocketRule.toDesktopXrayRoutingRule(target: DesktopProfileRout
         if (port.isNotBlank()) put("port", port)
         if (network.isNotBlank()) put("network", network)
         if (protocol.isNotBlank()) putJsonArray("protocol") { add(protocol) }
-        putTarget(target)
-    }
-}
-
-private fun kotlinx.serialization.json.JsonObjectBuilder.putTarget(target: DesktopProfileRouteTarget) {
-    if (target.balancerTag != null) {
-        put("balancerTag", target.balancerTag)
-    } else {
-        put("outboundTag", checkNotNull(target.outboundTag))
+        target.applyTo(this)
     }
 }
 
@@ -418,14 +391,6 @@ private fun List<String>.toDesktopXrayHosts(): Map<String, List<String>> = build
             .distinct()
         if (domain.isNotEmpty() && targets.isNotEmpty()) put(domain, targets)
     }
-}
-
-private fun String.toXrayBalancerStrategy(): String = when (trim().lowercase()) {
-    "load-balance", "random" -> "random"
-    "round-robin", "roundrobin" -> "roundRobin"
-    "least-load", "leastload" -> "leastLoad"
-    "fallback", "url-test", "leastping" -> "leastPing"
-    else -> "leastPing"
 }
 
 private fun String.toDesktopXrayDomainSetValue(): String {

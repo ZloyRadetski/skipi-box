@@ -3,49 +3,32 @@
 
 package features.proxy.server.usecase.importer
 
-import features.proxy.server.usecase.EmptyProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
-import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.ProxyServerPayloadParser
 
-private const val MaxMihomoProviderDepth = 2
-
+/** Android supplies the SnakeYAML parser and logging adapters to the shared pipeline. */
 internal suspend fun parseProxyServersFromPayloads(
     payloads: List<String>,
     context: ProxyServerImportContext,
-): ProxyServerImportResult {
-    for (payload in payloads) {
-        for (parser in ProxyServerImportParsers) {
-            val result = parser(payload, context)
-            if (result.urlCount > 0) {
-                return result
-            }
-        }
-    }
-    return EmptyProxyServerImportResult
-}
+): ProxyServerImportResult = parseProxyServerPayloads(
+    payloads = payloads,
+    context = context,
+    parsers = AndroidProxyServerImportParsers,
+)
 
 internal suspend fun parseProxyServersFromMihomoProviderText(
     text: String,
     parentContext: ProxyServerImportContext,
     providerUrl: String,
-): ProxyServerImportResult {
-    if (parentContext.providerDepth >= MaxMihomoProviderDepth) {
-        return EmptyProxyServerImportResult
-    }
-    val context = parentContext.copy(
-        source = ProxyServerImportSource.MihomoProxyProviderUrl,
-        providerDepth = parentContext.providerDepth + 1,
-        fetchedProviderUrls = parentContext.fetchedProviderUrls + providerUrl,
-    )
-    return parseProxyServersFromPayloads(
-        payloads = text.importPayloads(context.source),
-        context = context,
-    )
-}
+): ProxyServerImportResult = importProxyServersFromProviderPayload(
+    text = text,
+    parentContext = parentContext,
+    providerUrl = providerUrl,
+    parsers = AndroidProxyServerImportParsers,
+)
 
-private val ProxyServerImportParsers: List<ProxyServerPayloadParser> = listOf(
+private val AndroidProxyServerImportParsers: List<ProxyServerPayloadParser> = listOf(
     ::parseProxyServersFromJsonConfig,
     ::parseProxyServersFromMihomoYamlConfig,
     ::parseProxyServersFromWireguardConf,

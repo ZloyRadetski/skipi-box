@@ -25,6 +25,8 @@ import features.proxy.server.model.getUrlOrNull
 import features.proxy.server.model.isCompositeProxyServer
 import features.config.withImportedTrafficConfig
 import features.subscription.SubscriptionMetadata
+import features.subscription.SubscriptionServerCandidate
+import features.subscription.reconcileSubscriptionServers
 
 internal data class ResolvedEmbeddedTrafficConfig(
     val content: String,
@@ -40,14 +42,6 @@ internal data class ProxyServerListSubscriptionUpdate(
     val servers: List<ProxyServer<*>>,
     val metadata: SubscriptionMetadata = SubscriptionMetadata(),
     val resolvedConfig: ResolvedEmbeddedTrafficConfig? = null,
-)
-
-private data class CandidateIndexEntry(
-    val state: ProxyServerState,
-    val fingerprint: String,
-    val remarks: String,
-    val endpointKey: String?,
-    val index: Int,
 )
 
 internal data class SubscriptionGroupFetchIdentity(
@@ -189,91 +183,27 @@ internal fun AppState.withUpdatedSubscriptionServers(
 
     val importedServers = applicableUpdates.flatMap { update ->
         val candidates = existingDownloadedServersByGroup[update.groupId].orEmpty()
-        val candidateEntries = candidates.mapIndexed { index, candidate ->
-            CandidateIndexEntry(
-                state = candidate,
-                fingerprint = candidate.server.connectionFingerprint(),
-                remarks = candidate.server.getInfo().remarks.trim(),
-                endpointKey = candidate.server.endpointKey(),
-                index = index,
-            )
-        }
-        val byFingerprint = mutableMapOf<String, MutableList<CandidateIndexEntry>>()
-        val byEndpoint = mutableMapOf<String, MutableList<CandidateIndexEntry>>()
-        for (entry in candidateEntries) {
-            byFingerprint.getOrPut(entry.fingerprint) { mutableListOf() }.add(entry)
-            entry.endpointKey?.let { endpoint ->
-                byEndpoint.getOrPut(endpoint) { mutableListOf() }.add(entry)
-            }
-        }
+        val candidatesById = candidates.associateBy(ProxyServerState::id)
+        val reconciliation = reconcileSubscriptionServers(
+            previous = candidates.map { candidate ->
+                SubscriptionServerCandidate(id = candidate.id, server = candidate.server)
+            },
+            incoming = update.servers,
+            firstNewServerId = nextServerId,
+        )
+        nextServerId = reconciliation.nextServerId
+        oldIdToNewId.putAll(reconciliation.oldIdToNewId)
+        val group = subscriptionGroups.firstOrNull { it.id == update.groupId }
 
-        val consumedIds = mutableSetOf<Int>()
-
-        update.servers.mapIndexed { index, newServer ->
-            val newFingerprint = newServer.connectionFingerprint()
-            val newRemarks = newServer.getInfo().remarks.trim()
-            val newEndpoint = newServer.endpointKey()
-
-            // 1. Primary: match by exact canonical connection fingerprint (ignoring remarks/name)
-            val fingerprintMatches = byFingerprint[newFingerprint]?.filter { it.state.id !in consumedIds }.orEmpty()
-
-            var preservedEntry: CandidateIndexEntry? = when {
-                fingerprintMatches.isEmpty() -> null
-                fingerprintMatches.size == 1 -> fingerprintMatches.first()
-                else -> {
-                    // Among multiple candidates with identical fingerprints, pick closest remarks
-                    fingerprintMatches.firstOrNull { it.remarks == newRemarks }
-                        ?: fingerprintMatches.firstOrNull {
-                            it.remarks.contains(newRemarks, ignoreCase = true) || newRemarks.contains(it.remarks, ignoreCase = true)
-                        }
-                        ?: fingerprintMatches.first()
-                }
-            }
-
-            // 2. Secondary fallback: match by (protocol + host:port) if stream parameters slightly changed
-            if (preservedEntry == null && newEndpoint != null) {
-                val endpointMatches = byEndpoint[newEndpoint]?.filter { it.state.id !in consumedIds }.orEmpty()
-                preservedEntry = when {
-                    endpointMatches.isEmpty() -> null
-                    endpointMatches.size == 1 -> endpointMatches.first()
-                    else -> {
-                        endpointMatches.firstOrNull { it.remarks == newRemarks }
-                            ?: endpointMatches.first()
-                    }
-                }
-            }
-
-            // 3. Tertiary fallback: match by position index within group if class types match
-            if (preservedEntry == null && index < candidateEntries.size) {
-                val candidateAtSlot = candidateEntries[index]
-                if (candidateAtSlot.state.id !in consumedIds && candidateAtSlot.state.server::class == newServer::class) {
-                    preservedEntry = candidateAtSlot
-                }
-            }
-
-            val preserved = preservedEntry?.state
-            val assignedId: Int
-            if (preserved != null) {
-                consumedIds += preserved.id
-                assignedId = preserved.id
-                oldIdToNewId[preserved.id] = assignedId
-            } else {
-                assignedId = nextServerId++
-                val fallbackCandidate = candidateEntries.getOrNull(index)?.takeIf { it.state.id !in consumedIds }
-                    ?: candidateEntries.firstOrNull { it.state.id !in consumedIds }
-                if (fallbackCandidate != null) {
-                    consumedIds += fallbackCandidate.state.id
-                    oldIdToNewId[fallbackCandidate.state.id] = assignedId
-                }
-            }
-
-            val group = subscriptionGroups.firstOrNull { it.id == update.groupId }
+        reconciliation.servers.map { reconciled ->
+            val preserved = reconciled.matchedPreviousId?.let { id -> candidatesById[id] }
+            val newServer = reconciled.server
             if (newServer is Custom && group != null) {
                 newServer.overrideInboundAndDns = group.autoOverrideRules
             }
 
             ProxyServerState(
-                id = assignedId,
+                id = reconciled.id,
                 groupId = update.groupId,
                 server = newServer,
                 latency = preserved?.latency.orEmpty(),
@@ -405,13 +335,6 @@ internal fun AppState.withUpdatedSubscriptionServers(
     }
 
     return finalState
-}
-
-private fun ProxyServer<*>.endpointKey(): String? {
-    val info = getInfo()
-    val addr = info.address.trim().lowercase()
-    if (addr.isBlank() || addr == ":0" || addr == "0") return null
-    return "${info.protocol.lowercase()}|$addr"
 }
 
 internal fun List<SubscriptionGroupState>.updatableSubscriptionGroups(): List<SubscriptionGroupState> {

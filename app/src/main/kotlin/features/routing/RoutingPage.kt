@@ -38,6 +38,9 @@ import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
 import app.proxyServerOutboundTag
+import features.clipboard.ClipboardImportException
+import features.clipboard.ClipboardImportFailure
+import features.clipboard.ClipboardImportMode
 import features.proxy.server.display.displayNameById
 import features.proxy.server.display.displayNameWithGroup
 import features.proxy.server.model.isCustomProxyServer
@@ -61,9 +64,6 @@ import top.yukonga.miuix.kmp.icon.extended.Tune
 import features.routing.ui.RoutingRulesInfoBottomSheet
 import features.settings.SettingsIcons
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import ui.clipboard.ClipboardImportException
-import ui.clipboard.ClipboardImportFailure
-import ui.clipboard.ClipboardImportMode
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
 import ui.components.IconDropdownMenu

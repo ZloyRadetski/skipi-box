@@ -5,12 +5,10 @@ package engine.xray
 
 import app.AppState
 import app.effectiveLocalDnsEnabled
-import engine.network.NetworkDefaults
 import engine.vpn.VpnDefaults
 import features.proxy.server.model.ProxyServerConstants
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -62,86 +60,12 @@ internal fun buildXrayOutbounds(
     }
 }
 
-/**
- * `dialerProxy` accepts an outbound tag, not a balancer tag.  A loopback is
- * therefore used for a selected strategy group so DNS can re-enter routing and
- * use the live balancer instead of being pinned to its initial fallback.
- */
-internal fun XrayOutboundPlan.dnsDialerProxyTag(): String? {
-    return when (val proxyTarget = routeTargets[XrayTags.PROXY]) {
-        null -> balancers
-            .firstOrNull { balancer -> balancer.tag == XrayTags.PROXY }
-            ?.fallbackTag
-            ?: proxyOutbounds.firstOrNull()?.tag
-
-        else -> when (proxyTarget.kind) {
-            XrayRouteTargetKind.Balancer -> XrayTags.DNS_PROXY_LOOPBACK
-            XrayRouteTargetKind.Outbound -> proxyTarget.tag
-        }
-    }
-}
-
-internal fun buildXrayBalancers(plans: List<XrayBalancerPlan>): List<JsonObject> {
-    return plans.map { plan ->
-        buildJsonObject {
-            put("tag", plan.tag)
-            put("selector", listOf(plan.selector).toJsonStringArray())
-            put(
-                "strategy",
-                buildJsonObject {
-                    put("type", plan.strategy)
-                },
-            )
-            plan.fallbackTag?.let { fallbackTag ->
-                put("fallbackTag", fallbackTag)
-            }
-        }
-    }
-}
-
-internal fun buildXrayObservatory(
-    selectors: List<String>,
-    probeUrl: String? = null,
-    probeInterval: String? = null,
-    probeTimeout: String? = null,
-): JsonObject? {
-    if (selectors.isEmpty()) return null
-    return buildJsonObject {
-        put("subjectSelector", selectors.distinct().toJsonStringArray())
-        put("probeURL", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
-        put("probeInterval", probeInterval?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeInterval)
-        put("enableConcurrency", true)
-    }
-}
-
-internal fun buildXrayBurstObservatory(
-    selectors: List<String>,
-    probeUrl: String? = null,
-    probeInterval: String? = null,
-    probeTimeout: String? = null,
-): JsonObject? {
-    if (selectors.isEmpty()) return null
-    return buildJsonObject {
-        put("subjectSelector", selectors.distinct().toJsonStringArray())
-        put(
-            "pingConfig",
-            buildJsonObject {
-                put("destination", probeUrl?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeUrl)
-                put("interval", probeInterval?.takeIf(String::isNotBlank) ?: XrayObservatoryProbeInterval)
-                put("sampling", 1)
-                put("timeout", probeTimeout?.takeIf(String::isNotBlank) ?: "2s")
-            },
-        )
-    }
-}
-
-internal fun AppState.xrayDirectOutboundDomainStrategy(): String {
-    return when {
-        enableIpv6 && enableIpv6Prefer -> "UseIPv6v4"
-        enableIpv6 -> "UseIP"
-        else -> "UseIPv4"
-    }
-}
+/** Android adapter for the shared direct-outbound strategy selection. */
+internal fun AppState.xrayDirectOutboundDomainStrategy(): String =
+    xrayDirectOutboundDomainStrategy(
+        enableIpv6 = enableIpv6,
+        enableIpv6Prefer = enableIpv6Prefer,
+    )
 
 private fun buildProxyOutbound(appState: AppState, outboundServer: XrayProxyOutboundServer): JsonObject {
     val tag = outboundServer.tag
@@ -169,14 +93,7 @@ private fun buildProxyOutbound(appState: AppState, outboundServer: XrayProxyOutb
 }
 
 private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): JsonObject {
-    val keepAlive = appState.tunTcpKeepAliveInterval.toIntCoercedInOrDefault(
-        VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MIN..VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MAX,
-        default = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL.toInt(),
-    )
-    val userTimeout = appState.tunTcpUserTimeout.toIntCoercedInOrDefault(
-        VpnDefaults.TCP_USER_TIMEOUT_MIN..VpnDefaults.TCP_USER_TIMEOUT_MAX,
-        default = VpnDefaults.TCP_USER_TIMEOUT.toInt(),
-    )
+    val tcpSockopt = appState.xrayTcpSockopt()
     if (stringValue("protocol") == ProxyServerConstants.PROTOCOL_WIREGUARD) {
         val settings = objectValue("settings") ?: buildJsonObject {}
         return updated {
@@ -184,7 +101,7 @@ private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): Jso
                 "settings",
                 settings.updated {
                     put("domainStrategy", appState.wireguardDomainStrategy())
-                    put("keepAlive", keepAlive)
+                    put("keepAlive", tcpSockopt.tcpKeepAliveInterval)
                 },
             )
         }
@@ -192,177 +109,59 @@ private fun JsonObject.applyProxyOutboundDomainStrategy(appState: AppState): Jso
 
     return withSockopt {
         put("domainStrategy", appState.xrayDirectOutboundDomainStrategy())
-        put("tcpKeepAliveInterval", keepAlive)
-        put("tcpKeepAliveIdle", keepAlive)
-        put("tcpUserTimeout", userTimeout)
+        put("tcpKeepAliveInterval", tcpSockopt.tcpKeepAliveInterval)
+        put("tcpKeepAliveIdle", tcpSockopt.tcpKeepAliveIdle)
+        put("tcpUserTimeout", tcpSockopt.tcpUserTimeout)
     }
-}
-
-internal fun buildSimpleOutbound(tag: String, protocol: String): JsonObject {
-    return buildJsonObject {
-        put("tag", tag)
-        put("protocol", protocol)
-    }
-}
-
-/**
- * Handles all DNS query types sent by TUN/transparent clients.  The explicit
- * catch-all rule prevents Xray's implicit empty success response for records
- * such as HTTPS/SVCB, SRV and TXT.  It is chained through the selected proxy
- * so the TCP fallback never escapes through Android's underlying network.
- */
-internal fun buildXrayDnsOutbound(
-    fallback: XrayDnsTcpFallback,
-    proxyOutboundTag: String?,
-): JsonObject {
-    val outbound = buildJsonObject {
-        put("tag", XrayTags.DNS_OUT)
-        put("protocol", XrayProtocols.DNS)
-        put(
-            "settings",
-            buildJsonObject {
-                put("rewriteNetwork", "tcp")
-                put("rewriteAddress", fallback.address)
-                put("rewritePort", fallback.port)
-                put(
-                    "rules",
-                    buildJsonArray {
-                        add(
-                            buildJsonObject {
-                                put("action", "hijack")
-                                put("qType", "1,28")
-                            },
-                        )
-                        add(
-                            buildJsonObject {
-                                put("action", "direct")
-                            },
-                        )
-                    },
-                )
-            },
-        )
-    }
-    val proxyTag = proxyOutboundTag?.trim()?.takeIf(String::isNotEmpty) ?: return outbound
-    return outbound.withDialerProxyTag(proxyTag)
 }
 
 internal fun buildFreedomOutbound(
     tag: String,
     domainStrategy: String,
-    appState: AppState? = null,
-): JsonObject {
-    val base = buildJsonObject {
-        put("tag", tag)
-        put("protocol", XrayProtocols.FREEDOM)
-        put(
-            "settings",
-            buildJsonObject {
-                put("domainStrategy", domainStrategy)
-            },
-        )
-    }
-    if (appState == null) return base
-    val keepAlive = appState.tunTcpKeepAliveInterval.toIntCoercedInOrDefault(
+    appState: AppState,
+): JsonObject = buildFreedomOutbound(
+    tag = tag,
+    domainStrategy = domainStrategy,
+    tcpSockopt = appState.xrayTcpSockopt(),
+)
+
+private fun AppState.xrayTcpSockopt(): XrayTcpSockopt {
+    val keepAlive = tunTcpKeepAliveInterval.toIntCoercedInOrDefault(
         VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MIN..VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MAX,
         default = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL.toInt(),
     )
-    val userTimeout = appState.tunTcpUserTimeout.toIntCoercedInOrDefault(
+    val userTimeout = tunTcpUserTimeout.toIntCoercedInOrDefault(
         VpnDefaults.TCP_USER_TIMEOUT_MIN..VpnDefaults.TCP_USER_TIMEOUT_MAX,
         default = VpnDefaults.TCP_USER_TIMEOUT.toInt(),
     )
-    return base.withSockopt {
-        put("tcpKeepAliveInterval", keepAlive)
-        put("tcpKeepAliveIdle", keepAlive)
-        put("tcpUserTimeout", userTimeout)
-    }
-}
-
-private fun buildDefaultRouteOutbound(): JsonObject {
-    return buildJsonObject {
-        put("tag", XrayTags.DEFAULT_ROUTE_LOOPBACK)
-        put("protocol", XrayProtocols.LOOPBACK)
-        put(
-            "settings",
-            buildJsonObject {
-                put("inboundTag", XrayTags.DEFAULT_ROUTE_LOOPBACK_INBOUND)
-            },
-        )
-    }
-}
-
-private fun buildDnsProxyLoopbackOutbound(): JsonObject {
-    return buildJsonObject {
-        put("tag", XrayTags.DNS_PROXY_LOOPBACK)
-        put("protocol", XrayProtocols.LOOPBACK)
-        put(
-            "settings",
-            buildJsonObject {
-                put("inboundTag", XrayTags.DNS_PROXY_LOOPBACK_INBOUND)
-            },
-        )
-    }
+    return XrayTcpSockopt(
+        tcpKeepAliveInterval = keepAlive,
+        tcpKeepAliveIdle = keepAlive,
+        tcpUserTimeout = userTimeout,
+    )
 }
 
 private fun buildFragmentOutbound(appState: AppState): JsonObject {
-    return buildJsonObject {
-        put("tag", XrayTags.FRAGMENT)
-        put("protocol", XrayProtocols.FREEDOM)
-        put(
-            "settings",
-            buildJsonObject {
-                put("domainStrategy", appState.xrayDirectOutboundDomainStrategy())
-                put(
-                    "fragment",
-                    buildJsonObject {
-                        put("packets", appState.fragmentPackets.ifBlank { DefaultFragmentPackets })
-                        put("length", appState.fragmentLength.ifBlank { DefaultFragmentLength })
-                        put("interval", appState.fragmentInterval.ifBlank { DefaultFragmentInterval })
-                    },
-                )
-            },
-        )
-    }
+    return buildXrayFragmentOutbound(
+        XrayFragmentOutboundOptions(
+            domainStrategy = appState.xrayDirectOutboundDomainStrategy(),
+            packets = appState.fragmentPackets,
+            length = appState.fragmentLength,
+            interval = appState.fragmentInterval,
+        ),
+    )
 }
 
 private fun buildMuxConfig(appState: AppState): JsonObject {
-    return buildJsonObject {
-        put("enabled", true)
-        put("concurrency", appState.muxConcurrency.toMuxConcurrency())
-        put("xudpConcurrency", appState.muxXudpConcurrency.toMuxXudpConcurrency())
-        put("xudpProxyUDP443", appState.muxXudpProxyUdp443.toMuxUdp443Mode())
-    }
+    return buildXrayMuxConfig(
+        concurrency = appState.muxConcurrency,
+        xudpConcurrency = appState.muxXudpConcurrency,
+        xudpProxyUdp443Mode = appState.muxXudpProxyUdp443,
+    )
 }
 
-private fun JsonObject.withDialerProxyTag(tag: String): JsonObject {
-    return withSockopt {
-        put("dialerProxy", tag)
-    }
-}
-
-private fun JsonObject.withSockopt(block: JsonObjectBuilder.() -> Unit): JsonObject {
-    return updatedNestedObject("streamSettings", "sockopt", block)
-}
-
-private fun AppState.wireguardDomainStrategy(): String {
-    return when {
-        enableIpv6 && enableIpv6Prefer -> "ForceIPv6v4"
-        enableIpv6 -> "ForceIP"
-        else -> "ForceIPv4"
-    }
-}
-
-private fun String.toMuxConcurrency(): Int {
-    return toIntCoercedInOrDefault(-1..MaxMuxConcurrency, default = DefaultMuxConcurrency.toInt())
-}
-
-private fun String.toMuxXudpConcurrency(): Int {
-    return toIntCoercedInOrDefault(-1..MaxMuxXudpConcurrency, default = DefaultMuxXudpConcurrency.toInt())
-}
-
-private fun Int.toMuxUdp443Mode(): String {
-    return MuxUdp443Values.getOrElse(this) { MuxUdp443Values.first() }
-}
-
-private const val XrayObservatoryProbeUrl = NetworkDefaults.CONNECTIVITY_CHECK_URL
-private const val XrayObservatoryProbeInterval = "1m"
+private fun AppState.wireguardDomainStrategy(): String =
+    xrayWireguardDomainStrategy(
+        enableIpv6 = enableIpv6,
+        enableIpv6Prefer = enableIpv6Prefer,
+    )

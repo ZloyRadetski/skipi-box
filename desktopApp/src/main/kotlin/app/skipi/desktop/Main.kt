@@ -67,10 +67,10 @@ import java.time.Duration
 
 @OptIn(ExperimentalMaterial3Api::class)
 fun main() = application {
-    val xrayController = remember { DesktopXrayProcessController() }
+    val coreController = remember { DesktopCoreController() }
     val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
     // Closing is handled from the composable below so it can serialize with an
-    // in-flight connect/reconnect and keep Xray alive if proxy restoration fails.
+    // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
     var closeRequested by remember { mutableStateOf(false) }
     Window(
         state = WindowState(size = DpSize(1180.dp, 860.dp)),
@@ -132,15 +132,15 @@ fun main() = application {
                 val latencyTester = remember { DesktopServerLatencyTester() }
                 var latencyByServerId by remember { mutableStateOf<Map<Int, DesktopServerLatencyResult>>(emptyMap()) }
                 var testingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
-                var xrayProcessState by remember { mutableStateOf(xrayController.state()) }
-                var xrayProcessMessage by remember { mutableStateOf("") }
+                var coreState by remember { mutableStateOf(coreController.state()) }
+                var coreMessage by remember { mutableStateOf("") }
                 var pendingTunnelReconnectReason by remember { mutableStateOf<String?>(null) }
                 // The reason is user-facing text; the revision is the actual event
                 // identity, so two successive edits with identical text still restart.
                 var pendingTunnelReconnectRevision by remember { mutableStateOf(0L) }
                 var systemProxyRecoveryInProgress by remember { mutableStateOf(systemProxyManager.isSupportedHost()) }
                 var tunnelOperationInProgress by remember { mutableStateOf(false) }
-                var desiredTunnelRunning by remember { mutableStateOf(xrayProcessState.isRunning) }
+                var desiredTunnelRunning by remember { mutableStateOf(coreState.isRunning) }
                 var tunnelIntentVersion by remember { mutableStateOf(0L) }
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
 
@@ -158,11 +158,11 @@ fun main() = application {
                     withContext(Dispatchers.IO) { systemProxyManager.recover() }
                         .onSuccess { recovery ->
                             if (recovery.action != DesktopSystemProxyLeaseAction.NothingToRelease) {
-                                xrayProcessMessage = recovery.message
+                                coreMessage = recovery.message
                             }
                         }
                         .onFailure { error ->
-                            xrayProcessMessage = "Не удалось восстановить системный прокси: ${error.message.orEmpty()}"
+                            coreMessage = "Не удалось восстановить системный прокси: ${error.message.orEmpty()}"
                         }
                     systemProxyRecoveryInProgress = false
                 }
@@ -207,7 +207,7 @@ fun main() = application {
                     ?.name
                 val latestSelectedServerConfig by rememberUpdatedState(selectedServerConfig)
                 val latestDesktopSettings by rememberUpdatedState(desktopSettings)
-                val desktopTunnelController = remember(xrayController, systemProxyManager) {
+                val desktopTunnelController = remember(coreController, systemProxyManager) {
                     DesktopTunnelController(
                         configForProfile = {
                             latestSelectedServerConfig?.fold(
@@ -215,9 +215,10 @@ fun main() = application {
                                 onFailure = { error -> Result.failure(error) },
                             ) ?: Result.failure(IllegalStateException("Select a working server before connecting"))
                         },
-                        startProcess = xrayController::start,
-                        stopProcess = xrayController::stop,
-                        processState = xrayController::state,
+                        startCore = coreController::start,
+                        stopCore = coreController::stop,
+                        coreState = coreController::state,
+                        readCoreTraffic = coreController::readTunnelTraffic,
                         awaitSystemProxyEndpoint = {
                             val settings = latestDesktopSettings
                             if (!settings.useSystemProxy || !systemProxyManager.isSupportedHost()) {
@@ -225,7 +226,7 @@ fun main() = application {
                             } else {
                                 localProxyReadiness.awaitLoopbackHttpEndpoint(
                                     port = settings.localHttpProxyPort,
-                                    processState = xrayController::state,
+                                    coreState = coreController::state,
                                 )
                             }
                         },
@@ -259,19 +260,19 @@ fun main() = application {
                     ?: serverLibrary.selectedServerId?.toString()
                     ?: "selected-server"
 
-                LaunchedEffect(xrayController, desktopTunnelController) {
+                LaunchedEffect(coreController, desktopTunnelController) {
                     while (true) {
                         delay(750)
-                        val previous = xrayProcessState
-                        val current = xrayController.state()
+                        val previous = coreState
+                        val current = coreController.state()
                         if (current != previous) {
-                            xrayProcessState = current
+                            coreState = current
                             if (previous.isRunning && !current.isRunning) {
                                 val snapshot = withContext(Dispatchers.IO) { desktopTunnelController.snapshot() }
                                 desiredTunnelRunning = false
                                 val detail = snapshot.failure?.message.orEmpty()
-                                    .ifBlank { current.lastOutput.lineSequence().lastOrNull().orEmpty() }
-                                xrayProcessMessage = "Процесс Xray остановился. $detail"
+                                    .ifBlank { current.lastError }
+                                coreMessage = "SKIPI Core остановлен. $detail"
                             }
                         }
                     }
@@ -297,16 +298,16 @@ fun main() = application {
                     tunnelOperationInProgress = true
                     try {
                         val shouldRun = desiredTunnelRunning
-                        xrayProcessMessage = if (shouldRun) "$reason Переподключение Xray…" else "$reason Отключение Xray…"
+                        coreMessage = if (shouldRun) "$reason Переподключение SKIPI Core…" else "$reason Отключение SKIPI Core…"
                         withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }.onFailure { error ->
-                            xrayProcessState = xrayController.state()
+                            coreState = coreController.state()
                             if (operationIntentVersion == tunnelIntentVersion) {
-                                desiredTunnelRunning = xrayProcessState.isRunning
+                                desiredTunnelRunning = coreState.isRunning
                             }
-                            xrayProcessMessage = "Не удалось остановить Xray: ${error.message.orEmpty()}"
+                            coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
                             return@LaunchedEffect
                         }
-                        xrayProcessState = xrayController.state()
+                        coreState = coreController.state()
                         if (
                             !shouldRun ||
                             closeRequested ||
@@ -315,33 +316,33 @@ fun main() = application {
                         ) {
                             if (operationIntentVersion == tunnelIntentVersion) {
                                 desiredTunnelRunning = false
-                                xrayProcessMessage = "$reason Локальный туннель Xray остановлен."
+                                coreMessage = "$reason Локальный туннель SKIPI Core остановлен."
                             }
                             return@LaunchedEffect
                         }
                         withContext(Dispatchers.IO) {
                             desktopTunnelController.connect(TunnelConnectRequest(selectedTunnelProfileId))
                         }.onSuccess {
-                            xrayProcessState = xrayController.state()
+                            coreState = coreController.state()
                             val systemProxySuffix = if (desktopSettings.useSystemProxy) {
                                 " и системный прокси"
                             } else {
                                 ""
                             }
-                            xrayProcessMessage = "$reason Xray переподключён$systemProxySuffix, PID ${xrayProcessState.pid}."
+                            coreMessage = "$reason SKIPI Core переподключён$systemProxySuffix."
                         }.onFailure { error ->
-                            xrayProcessState = xrayController.state()
+                            coreState = coreController.state()
                             if (operationIntentVersion == tunnelIntentVersion) {
-                                desiredTunnelRunning = xrayProcessState.isRunning
+                                desiredTunnelRunning = coreState.isRunning
                             }
-                            xrayProcessMessage = "Не удалось переподключить Xray: ${error.message.orEmpty()}"
+                            coreMessage = "Не удалось переподключить SKIPI Core: ${error.message.orEmpty()}"
                         }
                     } finally {
                         tunnelOperationInProgress = false
                         if (
                             !closeRequested &&
                             operationIntentVersion != tunnelIntentVersion &&
-                            desiredTunnelRunning != xrayController.state().isRunning
+                            desiredTunnelRunning != coreController.state().isRunning
                         ) {
                             requestTunnelReconnect("Выполняю последнее действие с туннелем.")
                         } else if (
@@ -362,16 +363,16 @@ fun main() = application {
                     }
                     tunnelOperationInProgress = true
                     try {
-                        xrayProcessMessage = "Безопасное завершение SKIPI…"
+                        coreMessage = "Безопасное завершение SKIPI…"
                         withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
                             .onSuccess {
-                                xrayProcessState = xrayController.state()
+                                coreState = coreController.state()
                                 exitApplication()
                             }
                             .onFailure { error ->
-                                xrayProcessState = xrayController.state()
-                                xrayProcessMessage =
-                                    "Не удалось вернуть системный прокси; Xray оставлен запущенным. " +
+                                coreState = coreController.state()
+                                coreMessage =
+                                    "Не удалось вернуть системный прокси; SKIPI Core оставлен запущенным. " +
                                         "Повторите закрытие: ${error.message.orEmpty()}"
                                 closeRequested = false
                             }
@@ -396,18 +397,18 @@ fun main() = application {
                             serverLink = serverLink,
                             subscriptionUrl = subscriptionUrl,
                             updatingSubscription = subscriptionUpdateInProgress,
-                            running = xrayProcessState.isRunning,
+                            running = coreState.isRunning,
                             connecting = tunnelOperationInProgress && desiredTunnelRunning,
                             // Keep the connected hero actionable while a reconnect is underway:
                             // the handler records a newer user intent before it observes the
                             // operation guard, so a click on Power can still cancel/reverse it.
                             canToggleTunnel = !closeRequested && (
-                                xrayProcessState.isRunning || (
+                                coreState.isRunning || (
                                     !tunnelOperationInProgress &&
                                     selectedServerConfig?.isSuccess == true && !systemProxyRecoveryInProgress
                                     )
                                 ),
-                            tunnelMessage = xrayProcessMessage,
+                            tunnelMessage = coreMessage,
                             serverMessage = serverLibraryMessage,
                             subscriptionMessage = subscriptionMessage,
                             compactConnection = desktopSettings.compactHome,
@@ -435,63 +436,63 @@ fun main() = application {
                                 val operationIntentVersion = tunnelIntentVersion
                                 pendingTunnelReconnectReason = null
                                 if (tunnelOperationInProgress) {
-                                    xrayProcessMessage = if (desiredTunnelRunning) {
-                                        "Подключение будет выполнено после текущей операции Xray."
+                                    coreMessage = if (desiredTunnelRunning) {
+                                        "Подключение будет выполнено после текущей операции SKIPI Core."
                                     } else {
-                                        "Отключение будет выполнено после текущей операции Xray."
+                                        "Отключение будет выполнено после текущей операции SKIPI Core."
                                     }
                                 } else subscriptionScope.launch {
                                     tunnelOperationInProgress = true
                                     try {
                                         if (desiredTunnelRunning) {
-                                            if (xrayController.state().isRunning) {
-                                                xrayProcessState = xrayController.state()
-                                                xrayProcessMessage = "Туннель Xray уже подключён."
+                                            if (coreController.state().isRunning) {
+                                                coreState = coreController.state()
+                                                coreMessage = "Туннель SKIPI Core уже подключён."
                                             } else {
-                                                xrayProcessMessage = "Подключение Xray…"
+                                                coreMessage = "Подключение SKIPI Core…"
                                                 DesktopLogger.info("Tunnel", "Connecting to profile $selectedTunnelProfileId")
                                                 withContext(Dispatchers.IO) {
                                                     desktopTunnelController.connect(TunnelConnectRequest(selectedTunnelProfileId))
                                                 }.onSuccess {
-                                                    xrayProcessState = xrayController.state()
+                                                    coreState = coreController.state()
                                                     val systemProxySuffix = if (desktopSettings.useSystemProxy) {
                                                         " и системный прокси"
                                                     } else {
                                                         ""
                                                     }
-                                                    xrayProcessMessage = "Туннель Xray$systemProxySuffix запущен, PID ${xrayProcessState.pid}."
-                                                    DesktopLogger.info("Tunnel", "Connected: PID ${xrayProcessState.pid}")
+                                                    coreMessage = "Туннель SKIPI Core$systemProxySuffix запущен."
+                                                    DesktopLogger.info("Tunnel", "Connected to in-process SKIPI Core")
                                                 }.onFailure { error ->
-                                                    xrayProcessState = xrayController.state()
+                                                    coreState = coreController.state()
                                                     if (operationIntentVersion == tunnelIntentVersion) {
-                                                        desiredTunnelRunning = xrayProcessState.isRunning
+                                                        desiredTunnelRunning = coreState.isRunning
                                                     }
-                                                    xrayProcessMessage = "Не удалось запустить Xray: ${error.message.orEmpty()}"
+                                                    coreMessage = "Не удалось запустить SKIPI Core: ${error.message.orEmpty()}"
                                                     DesktopLogger.error("Tunnel", "Connection failed", error)
                                                 }
                                             }
                                         } else {
-                                            xrayProcessMessage = "Отключение Xray…"
+                                            coreMessage = "Отключение SKIPI Core…"
                                             DesktopLogger.info("Tunnel", "Disconnecting tunnel")
                                             withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
                                                 .onSuccess {
-                                                    xrayProcessState = xrayController.state()
+                                                    coreState = coreController.state()
                                                     if (operationIntentVersion == tunnelIntentVersion) {
                                                         desiredTunnelRunning = false
                                                     }
-                                                    xrayProcessMessage = if (desktopSettings.useSystemProxy) {
-                                                        "Туннель Xray и системный прокси остановлены."
+                                                    coreMessage = if (desktopSettings.useSystemProxy) {
+                                                        "Туннель SKIPI Core и системный прокси остановлены."
                                                     } else {
-                                                        "Локальный туннель Xray остановлен."
+                                                        "Локальный туннель SKIPI Core остановлен."
                                                     }
                                                     DesktopLogger.info("Tunnel", "Disconnected successfully")
                                                 }
                                                 .onFailure { error ->
-                                                    xrayProcessState = xrayController.state()
+                                                    coreState = coreController.state()
                                                     if (operationIntentVersion == tunnelIntentVersion) {
-                                                        desiredTunnelRunning = xrayProcessState.isRunning
+                                                        desiredTunnelRunning = coreState.isRunning
                                                     }
-                                                    xrayProcessMessage = "Не удалось остановить Xray: ${error.message.orEmpty()}"
+                                                    coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
                                                     DesktopLogger.error("Tunnel", "Disconnect failed", error)
                                                 }
                                         }
@@ -500,7 +501,7 @@ fun main() = application {
                                         if (
                                             !closeRequested &&
                                             operationIntentVersion != tunnelIntentVersion &&
-                                            desiredTunnelRunning != xrayController.state().isRunning
+                                            desiredTunnelRunning != coreController.state().isRunning
                                         ) {
                                             requestTunnelReconnect("Выполняю последнее действие с туннелем.")
                                         }
@@ -513,7 +514,7 @@ fun main() = application {
                                         DesktopServerLibraries.saveDefault(updated).onSuccess {
                                             serverLibrary = updated
                                             serverLibraryMessage = "Сервер выбран."
-                                            if (xrayProcessState.isRunning) {
+                                            if (coreState.isRunning) {
                                                 requestTunnelReconnect("Сервер изменён.")
                                             }
                                         }.onFailure { error ->
@@ -527,7 +528,7 @@ fun main() = application {
                                 DesktopServerLibraries.saveDefault(updated).onSuccess {
                                     serverLibrary = updated
                                     serverLibraryMessage = "Сервер удалён."
-                                    if (deletedSelectedServer && xrayProcessState.isRunning) {
+                                    if (deletedSelectedServer && coreState.isRunning) {
                                         requestTunnelReconnect("Активный сервер удалён.")
                                     }
                                 }.onFailure { error ->
@@ -540,7 +541,7 @@ fun main() = application {
                                     serverLibrary = updated
                                     serverLink = ""
                                     serverLibraryMessage = "Сервер добавлен и выбран."
-                                    if (xrayProcessState.isRunning) {
+                                    if (coreState.isRunning) {
                                         requestTunnelReconnect("Сервер добавлен и выбран.")
                                     }
                                 }.onFailure { error ->
@@ -554,7 +555,7 @@ fun main() = application {
                                     DesktopServerLibraries.saveDefault(updated).onSuccess {
                                         serverLibrary = updated
                                         serverLibraryMessage = "Сервер изменён."
-                                        if (serverLibrary.selectedServerId == serverId && xrayProcessState.isRunning) {
+                                        if (serverLibrary.selectedServerId == serverId && coreState.isRunning) {
                                             requestTunnelReconnect("Активный сервер изменён.")
                                         }
                                     }.onFailure { error ->
@@ -674,7 +675,7 @@ fun main() = application {
                                         DesktopConfigLibraries.saveDefault(committed.configLibrary).getOrThrow()
                                         configLibrary = committed.configLibrary
                                         savedSections += "конфиги"
-                                        if (xrayProcessState.isRunning && activeBefore != committed.configLibrary.selectedConfigId) {
+                                        if (coreState.isRunning && activeBefore != committed.configLibrary.selectedConfigId) {
                                             requestTunnelReconnect("Импорт изменил активный профиль.")
                                         }
                                     }
@@ -688,7 +689,7 @@ fun main() = application {
                                         IllegalStateException("$prefix: ${error.message.orEmpty()}", error),
                                     )
                                 }
-                                if (xrayProcessState.isRunning &&
+                                if (coreState.isRunning &&
                                     committed.serverLibrary.selectedServerId != selectedServerBefore
                                 ) {
                                     requestTunnelReconnect("Импорт изменил выбранный сервер.")
@@ -723,7 +724,7 @@ fun main() = application {
                                     val deviceHeaders = if (desktopSettings.sendDeviceHeaders) {
                                         DesktopDeviceIdentity.deviceHeaders(desktopSettings.installationUuid)
                                     } else emptyMap()
-                                    val useProxy = (subscription?.updateViaProxy == true) && xrayProcessState.isRunning
+                                    val useProxy = (subscription?.updateViaProxy == true) && coreState.isRunning
                                     val socksProxy = if (useProxy) {
                                         DesktopSubscriptionSocksProxy(
                                             host = desktopSettings.localProxyListenAddress,
@@ -868,7 +869,7 @@ fun main() = application {
                                                                 DesktopConfigLibraries.saveDefault(profileCommit.configs).fold(
                                                                     onSuccess = {
                                                                         configLibrary = profileCommit.configs
-                                                                        if (xrayProcessState.isRunning && activeBefore != profileCommit.configs.selectedConfigId) {
+                                                                        if (coreState.isRunning && activeBefore != profileCommit.configs.selectedConfigId) {
                                                                             requestTunnelReconnect("Профиль из подписки активирован.")
                                                                         }
                                                                         " Маршрутный профиль ${if (profileCommit.added) "добавлен" else "обновлён"}."
@@ -895,7 +896,7 @@ fun main() = application {
                                                 },
                                             ).orEmpty()
                                             subscriptionMessage += embeddedConfigMessage
-                                            if (xrayProcessState.isRunning) {
+                                            if (coreState.isRunning) {
                                                 requestTunnelReconnect("Подписка обновлена.")
                                             }
                                         }.onFailure { error ->
@@ -949,7 +950,7 @@ fun main() = application {
                                             subscriptionLibrary = updatedSubscriptions
                                             subscriptionUrl = ""
                                             subscriptionMessage = "Подписка и её серверы удалены."
-                                            if (deletedSelectedServer && xrayProcessState.isRunning) {
+                                            if (deletedSelectedServer && coreState.isRunning) {
                                                 requestTunnelReconnect("Активная подписка удалена.")
                                             }
                                         }.onFailure { error ->
@@ -971,7 +972,7 @@ fun main() = application {
                                 val activeAfter = updated.selectedConfigId
                                     ?.let { selectedId -> updated.configs.firstOrNull { profile -> profile.id == selectedId } }
                                 configLibrary = updated
-                                if (xrayProcessState.isRunning && (
+                                if (coreState.isRunning && (
                                     activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
                                     )) {
                                     requestTunnelReconnect("Активный профиль изменён.")
@@ -991,20 +992,20 @@ fun main() = application {
                                     desktopSettings.localProxyListenAddress != updated.localProxyListenAddress ||
                                     desktopSettings.coreLogLevel != updated.coreLogLevel
                                 desktopSettings = updated
-                                if (restartRequired && xrayProcessState.isRunning) {
+                                if (restartRequired && coreState.isRunning) {
                                     requestTunnelReconnect("Параметры локального прокси изменены.")
                                 }
                             },
                             contentPadding = contentPadding,
-                            isTunnelRunning = xrayProcessState.isRunning,
+                            isTunnelRunning = coreState.isRunning,
                             onClearSystemProxy = {
                                 subscriptionScope.launch {
                                     withContext(Dispatchers.IO) { systemProxyManager.forceClear() }
                                         .onSuccess {
-                                            xrayProcessMessage = "Системный прокси успешно сброшен."
+                                            coreMessage = "Системный прокси успешно сброшен."
                                         }
                                         .onFailure { error ->
-                                            xrayProcessMessage = "Не удалось сбросить системный прокси: ${error.message.orEmpty()}"
+                                            coreMessage = "Не удалось сбросить системный прокси: ${error.message.orEmpty()}"
                                         }
                                 }
                             },

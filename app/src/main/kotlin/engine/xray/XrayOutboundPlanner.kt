@@ -18,6 +18,7 @@ import features.proxy.server.model.customXrayConfigProxyServerHosts
 import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.model.isCustomProxyServer
 import features.proxy.server.model.serverHost
+import features.proxy.server.model.toXrayBalancerStrategy
 import features.config.ShadowrocketPolicyGroup
 import features.config.ShadowrocketPolicyGroupTagPrefix
 import features.config.analyzeShadowrocketConfig
@@ -110,12 +111,7 @@ private class XrayOutboundPlanner(
                 members.zip(memberTags).forEach { (member, memberTag) ->
                     addNormalOutbound(tag = memberTag, server = member)
                 }
-                val strategy = when (group.type.lowercase()) {
-                    "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
-                    "round-robin", "roundrobin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
-                    "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
-                    else -> StrategyGroupConstants.TYPE_LEAST_PING
-                }
+                val strategy = group.type.toXrayBalancerStrategy()
                 val customProbeUrl = matchingStrategy?.probeUrl?.trim()?.takeIf(String::isNotEmpty)
                     ?: group.url.trim().takeIf(String::isNotEmpty)
                     ?: appState.subscriptionPingUrl.trim().takeIf(String::isNotEmpty)
@@ -238,10 +234,7 @@ private class XrayOutboundPlanner(
                 server = member,
             )
         }
-        val balancerStrategy = when (strategyGroup.strategy) {
-            StrategyGroupConstants.TYPE_FALLBACK -> StrategyGroupConstants.TYPE_LEAST_PING
-            else -> strategyGroup.strategy
-        }
+        val balancerStrategy = strategyGroup.strategy.toXrayBalancerStrategy()
         val selectedTag = strategyGroup.selectedMemberId?.let { selectedId ->
             members.indexOfFirst { it.id == selectedId }.takeIf { it >= 0 }?.let { memberTags[it] }
         }

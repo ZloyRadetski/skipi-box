@@ -6,6 +6,9 @@ package app.skipi.desktop
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.decodePersistedProxyServer
 import features.proxy.server.model.encodePersistedProxyServer
+import features.subscription.SubscriptionServerCandidate
+import features.subscription.SubscriptionServerReconciliationPolicy
+import features.subscription.reconcileSubscriptionServers
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -105,36 +108,30 @@ object DesktopServerLibraries {
     ): DesktopServerLibrary {
         require(subscriptionId > 0) { "Subscription ID must be positive" }
         val previousGroup = library.servers.filter { stored -> stored.subscriptionId == subscriptionId }
-        val previousIdsByFingerprint = previousGroup
-            .mapNotNull { stored ->
-                stored.decode().getOrNull()?.connectionFingerprint()?.let { fingerprint -> fingerprint to stored.id }
-            }
-            .groupBy({ (fingerprint, _) -> fingerprint }, { (_, id) -> id })
-            .mapValues { (_, ids) -> ids.toMutableList() }
-            .toMutableMap()
         val remaining = library.servers.filterNot { stored -> stored.subscriptionId == subscriptionId }
-        val usedIds = remaining.mapTo(mutableSetOf(), DesktopStoredProxyServer::id)
-        var nextId = (library.servers.maxOfOrNull(DesktopStoredProxyServer::id) ?: 0) + 1
-
-        fun nextFreeId(): Int {
-            while (nextId in usedIds) nextId += 1
-            return nextId++.also(usedIds::add)
+        val reconciliation = reconcileSubscriptionServers(
+            previous = previousGroup.mapNotNull { stored ->
+                stored.decode().getOrNull()?.let { server ->
+                    SubscriptionServerCandidate(id = stored.id, server = server)
+                }
+            },
+            incoming = servers,
+            firstNewServerId = (library.servers.maxOfOrNull(DesktopStoredProxyServer::id) ?: 0) + 1,
+            occupiedIds = library.servers.mapTo(mutableSetOf(), DesktopStoredProxyServer::id),
+            policy = SubscriptionServerReconciliationPolicy(
+                deduplicateIncomingByFingerprint = true,
+                matchByEndpoint = false,
+                matchByPositionWhenSameType = false,
+                remapFirstUnmatchedCandidate = false,
+            ),
+        )
+        val replacements = reconciliation.servers.map { reconciled ->
+            DesktopStoredProxyServer(
+                id = reconciled.id,
+                serverJson = reconciled.server.encodePersistedProxyServer(),
+                subscriptionId = subscriptionId,
+            )
         }
-
-        val replacements = servers
-            .distinctBy { server -> server.connectionFingerprint() }
-            .map { server ->
-                val fingerprint = server.connectionFingerprint()
-                val retainedIds = previousIdsByFingerprint[fingerprint]
-                val retainedId = if (retainedIds.isNullOrEmpty()) null else retainedIds.removeAt(0)
-                val id = retainedId?.takeUnless { it in usedIds } ?: nextFreeId()
-                usedIds += id
-                DesktopStoredProxyServer(
-                    id = id,
-                    serverJson = server.encodePersistedProxyServer(),
-                    subscriptionId = subscriptionId,
-                )
-            }
         val combined = remaining + replacements
         val selected = library.selectedServerId
             ?.takeIf { selectedId -> combined.any { stored -> stored.id == selectedId } }

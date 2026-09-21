@@ -4,7 +4,6 @@
 package features.proxy.server.usecase.importer
 
 import features.logs.AndroidAppLogger
-import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.usecase.EmptyProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportContext
@@ -22,7 +21,7 @@ internal suspend fun parseProxyServersFromMihomoYamlConfig(
 ): ProxyServerImportResult {
     val source = context.source
     val root = runCatching {
-        newMihomoYamlParser().loadFromString(text.trimStart(ImportByteOrderMark))
+        newMihomoYamlParser().loadFromString(text.trimStart(ProxyImportByteOrderMark))
     }.onFailure { error ->
         AndroidAppLogger.warn(
             LogTag,
@@ -30,18 +29,16 @@ internal suspend fun parseProxyServersFromMihomoYamlConfig(
             error,
         )
     }.getOrNull() ?: return EmptyProxyServerImportResult
-    val configs = root.mihomoProxyConfigs()
-    val providers = root.mihomoProxyProviders()
+    val document = root.toMihomoProxyDocument()
+    val configs = document.proxyNodes
+    val providers = document.providers
     if (configs.isEmpty() && providers.isEmpty()) {
         return EmptyProxyServerImportResult
     }
 
-    var skippedCount = 0
-    val servers = configs.toMihomoProxyServers(
-        source = source,
-        startIndex = 0,
-        onSkipped = { skippedCount += 1 },
-    ).toMutableList()
+    val importedConfigs = configs.importAndroidMihomoProxyServers(source)
+    var skippedCount = importedConfigs.rejectedCount
+    val servers = importedConfigs.servers.toMutableList()
 
     val providerResults = providers.map { provider ->
         provider.importProvider(context)
@@ -65,103 +62,15 @@ internal suspend fun parseProxyServersFromMihomoYamlConfig(
     )
 }
 
-private fun List<MihomoYamlMap>.toMihomoProxyServers(
+private fun List<MihomoYamlMap>.importAndroidMihomoProxyServers(
     source: ProxyServerImportSource,
-    startIndex: Int,
-    onSkipped: () -> Unit,
-): List<ProxyServer<*>> {
-    return mapIndexedNotNull { offset, config ->
-        config.toMihomoProxyServerOrNull(
-            source = source,
-            index = startIndex + offset,
-            onSkipped = onSkipped,
-        )
-    }
-}
-
-private fun MihomoYamlMap.toMihomoProxyServerOrNull(
-    source: ProxyServerImportSource,
-    index: Int,
-    onSkipped: () -> Unit,
-): ProxyServer<*>? {
-    val type = string("type")?.lowercase().orEmpty()
-    val name = string("name").orEmpty()
-    val skipReason = when {
-        type.isBlank() -> "missing proxy type"
-        type !in SupportedMihomoProxyTypes -> "unsupported proxy type"
-        else -> null
-    }
-    if (skipReason != null) {
-        onSkipped()
+    startIndex: Int = 0,
+): MihomoProxyNodeImportResult = importMihomoProxyNodes(startIndex).also { imported ->
+    imported.failures.forEach { failure ->
         AndroidAppLogger.warn(
             LogTag,
-            skippedMessage(source, index, name, type, skipReason),
-        )
-        return null
-    }
-
-    return runCatching {
-        toMihomoProxyServer()
-    }.onFailure { error ->
-        onSkipped()
-        val reason = if (error is UnsupportedMihomoProxyException) {
-            error.message.orEmpty()
-        } else {
-            "invalid proxy config"
-        }
-        AndroidAppLogger.warn(
-            LogTag,
-            skippedMessage(source, index, name, type, reason),
-            error.takeUnless { it is UnsupportedMihomoProxyException },
-        )
-    }.getOrNull()
-}
-
-private fun MihomoYamlMap.toMihomoProxyServer(): ProxyServer<*> {
-    return when (requiredString("type").lowercase()) {
-        "http" -> toMihomoHttpProxyServer()
-        "socks", "socks5" -> toMihomoSocksProxyServer()
-        "ss", "shadowsocks" -> toMihomoShadowsocksProxyServer()
-        "vmess" -> toMihomoVMessProxyServer()
-        "vless" -> toMihomoVlessProxyServer()
-        "trojan" -> toMihomoTrojanProxyServer()
-        "hy2", "hysteria2" -> toMihomoHysteria2ProxyServer()
-        "wg", "wireguard" -> toMihomoWireguardProxyServer()
-        "amneziawg", "awg" -> toMihomoAmneziaWgProxyServer()
-        else -> unsupported("unsupported proxy type")
-    }.also { server ->
-        val issues = if (server is AmneziaWg) server.validateFull() else server.validateBasic()
-        if (issues.isNotEmpty()) {
-            unsupported("proxy validation failed: ${issues.joinToString { it.error.name }}")
-        }
-    }
-}
-
-private fun Any?.mihomoProxyConfigs(): List<MihomoYamlMap> {
-    val rootMap = asStringMap()
-    if (rootMap != null) {
-        val proxies = rootMap.list("proxies")
-        if (proxies != null) {
-            return proxies.mapNotNull { item -> item.asStringMap() }
-        }
-        if (!rootMap.string("type").isNullOrBlank()) {
-            return listOf(rootMap)
-        }
-    }
-    return asList().orEmpty().mapNotNull { item -> item.asStringMap() }
-}
-
-private fun Any?.mihomoProxyProviders(): List<MihomoProxyProvider> {
-    val providers = asStringMap()
-        ?.map("proxy-providers")
-        ?: return emptyList()
-    return providers.entries.mapNotNull { (name, rawProvider) ->
-        val provider = rawProvider.asStringMap() ?: return@mapNotNull null
-        MihomoProxyProvider(
-            name = name,
-            type = provider.string("type").orEmpty().lowercase(),
-            url = provider.string("url"),
-            payload = provider.list("payload").orEmpty().mapNotNull { item -> item.asStringMap() },
+            skippedMessage(source, failure.index, failure.name, failure.type, failure.reason),
+            failure.error?.takeUnless { it is UnsupportedMihomoProxyException },
         )
     }
 }
@@ -220,17 +129,12 @@ private suspend fun MihomoProxyProvider.importHttpProvider(
 private fun MihomoProxyProvider.importPayload(
     source: ProxyServerImportSource,
 ): MihomoProviderImportResult {
-    if (payload.isEmpty()) return MihomoProviderImportResult.Empty
-    var skippedCount = 0
-    val servers = payload.toMihomoProxyServers(
-        source = source,
-        startIndex = 0,
-        onSkipped = { skippedCount += 1 },
-    )
+    if (proxyNodes.isEmpty()) return MihomoProviderImportResult.Empty
+    val importedNodes = proxyNodes.importAndroidMihomoProxyServers(source)
     return MihomoProviderImportResult(
-        urlCount = payload.size,
-        servers = servers,
-        skippedCount = skippedCount,
+        urlCount = proxyNodes.size,
+        servers = importedNodes.servers,
+        skippedCount = importedNodes.rejectedCount,
     )
 }
 
@@ -265,30 +169,6 @@ private fun skippedMessage(
 private fun newMihomoYamlParser(): Load {
     return Load(LoadSettings.builder().build())
 }
-
-private val SupportedMihomoProxyTypes = setOf(
-    "http",
-    "socks",
-    "socks5",
-    "ss",
-    "shadowsocks",
-    "vmess",
-    "vless",
-    "trojan",
-    "hy2",
-    "hysteria2",
-    "wg",
-    "wireguard",
-    "amneziawg",
-    "awg",
-)
-
-private data class MihomoProxyProvider(
-    val name: String,
-    val type: String,
-    val url: String?,
-    val payload: List<MihomoYamlMap>,
-)
 
 private data class MihomoProviderImportResult(
     val urlCount: Int,

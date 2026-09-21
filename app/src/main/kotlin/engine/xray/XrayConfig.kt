@@ -9,7 +9,6 @@ import features.logs.AndroidAppLogger
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.OlcRtc
-import features.proxy.server.model.ProxyServer
 import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.SkipiCoreRuntime
 import engine.vpn.withStrictFullTunnelApplied
@@ -37,15 +36,6 @@ internal data class XrayConfigRequest(
      * Reusing it here avoids walking every balancer member a second time.
      */
     val outboundPlan: XrayOutboundPlan? = null,
-)
-
-internal data class XrayProxyOutboundServer(
-    val tag: String,
-    val server: ProxyServer<*>? = null,
-    /** A primary outbound extracted from a simple raw Xray/JSON server. */
-    val customOutbound: JsonObject? = null,
-    val dialerProxyTag: String? = null,
-    val allowFragment: Boolean = true,
 )
 
 internal data class BuiltXrayConfig(

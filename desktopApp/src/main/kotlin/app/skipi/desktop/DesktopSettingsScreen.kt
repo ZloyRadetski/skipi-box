@@ -92,7 +92,7 @@ private enum class DesktopSettingsDestination {
  *
  * The screen owns only its navigation and drafts. Every confirmed preference is
  * written with [DesktopSettingsLibraries], then reported to the desktop root so
- * it can rebuild active adapters (for example, Xray's local SOCKS inbound).
+ * it can rebuild active adapters (for example, SKIPI Core's local SOCKS inbound).
  */
 @Composable
 internal fun DesktopSettingsScreen(
@@ -228,7 +228,7 @@ private fun DesktopSettingsOverview(
                     iconBackground = Color(0xFF397A94),
                     title = "Системный прокси",
                     summary = if (settings.useSystemProxy) {
-                        "Системный прокси будет включаться вместе с Xray"
+                        "Системный прокси будет включаться вместе с SKIPI Core"
                     } else {
                         "Только локальный SOCKS5/HTTP — системный прокси выключен"
                     },
@@ -262,7 +262,7 @@ private fun DesktopSettingsOverview(
                 icon = Icons.Outlined.Description,
                 iconBackground = Color(0xFF8A536A),
                 title = "Диагностика",
-                summary = "Xray, журналы и каталог данных",
+                summary = "SKIPI Core, журналы и каталог данных",
                 value = settings.coreLogLevel.uppercase(),
                 onClick = { onNavigate(DesktopSettingsDestination.Diagnostics) },
             )
@@ -452,7 +452,7 @@ private fun DesktopLocalProxySettings(
         SettingsGroup(title = "ЛОГИ") {
             Box {
                 SettingsPreferenceRow(
-                    title = "Уровень журналирования Xray",
+                    title = "Уровень журналирования SKIPI Core",
                     summary = "Используется при следующем запуске локального туннеля",
                     value = logLevel.uppercase(),
                     onClick = { logLevelExpanded = true },
@@ -522,7 +522,7 @@ private fun DesktopLocalProxySettings(
             }
         }
         Text(
-            "Изменения применяются при следующем подключении Xray.",
+            "Изменения применяются при следующем подключении SKIPI Core.",
             color = SettingsMuted,
             fontSize = 13.sp,
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -726,7 +726,7 @@ private fun DesktopDiagnosticsSettings(
     contentPadding: PaddingValues,
     modifier: Modifier,
 ) {
-    var runtimeCheck by remember { mutableStateOf(DesktopXrayRuntimes.discover()) }
+    var runtimeCheck by remember { mutableStateOf(DesktopCoreRuntimes.discover()) }
     val settingsPath = remember { DesktopSettingsLibraries.defaultPath() }
     val dataDirectory = remember { settingsPath.parent }
     val runtime = runtimeCheck.getOrNull()
@@ -734,7 +734,7 @@ private fun DesktopDiagnosticsSettings(
     SettingsScreenColumn(contentPadding, modifier) {
         SettingsHeader(
             title = "Диагностика",
-            subtitle = "Xray, журналы и файлы клиента",
+            subtitle = "SKIPI Core, журналы и файлы клиента",
             onBack = onBack,
         )
 
@@ -742,23 +742,23 @@ private fun DesktopDiagnosticsSettings(
             SettingsInfoRow(
                 title = if (isTunnelRunning) "Локальный туннель запущен" else "Локальный туннель остановлен",
                 summary = if (isTunnelRunning) {
-                    "Процесс Xray работает. Изменения сетевых параметров применятся после переподключения."
+                    "SKIPI Core работает в процессе приложения. Изменения сетевых параметров применятся после переподключения."
                 } else {
-                    "Выберите сервер на главном экране и подключитесь для запуска Xray."
+                    "Выберите сервер на главном экране и подключитесь для запуска SKIPI Core."
                 },
                 accent = if (isTunnelRunning) SettingsGreen else SettingsMuted,
                 showDivider = true,
             )
             SettingsInfoRow(
-                title = if (runtime != null) "Среда Xray найдена" else "Среда Xray не найдена",
+                title = if (runtime != null) "SKIPI Core найден" else "SKIPI Core не найден",
                 summary = runtime?.directory?.toString()
                     ?: runtimeCheck.exceptionOrNull()?.message.orEmpty().ifBlank { "Проверьте ресурсы установленного приложения." },
                 accent = if (runtime != null) SettingsGreen else SettingsRed,
             )
             SettingsPreferenceRow(
                 title = "Проверить снова",
-                summary = "Повторно найти xray.exe, geoip.dat и geosite.dat",
-                onClick = { runtimeCheck = DesktopXrayRuntimes.discover() },
+                summary = "Повторно найти библиотеку SKIPI Core, geoip.dat и geosite.dat",
+                onClick = { runtimeCheck = DesktopCoreRuntimes.discover() },
                 showDivider = true,
             )
         }
@@ -925,7 +925,7 @@ private fun DesktopAboutSettings(
 
         SettingsGroup(title = "КОМПОНЕНТЫ") {
             SettingsInfoRow("skipi-core", "Общие модели прокси, подписок, конфигов и туннеля")
-            SettingsInfoRow("Xray", "Встроенный runtime для Windows", showDivider = true)
+            SettingsInfoRow("SKIPI Core", "Встроенный runtime в процессе приложения", showDivider = true)
             SettingsInfoRow("Хранилище", settingsPath.toString(), showDivider = true)
         }
 

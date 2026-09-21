@@ -28,9 +28,9 @@ import features.subscription.DefaultSubscriptionUserAgent
 import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
+import features.proxy.server.model.toStrategyGroupTypeFromShadowrocketPolicy
 import kotlinx.serialization.Serializable
 
 /**
@@ -134,123 +134,6 @@ internal fun defaultSkipiTrafficConfigRaw(name: String = ""): String {
     ).withSkipiSettingsInRawConfig().rawConfig
 }
 
-private const val SkipiPerAppModeComment = "# SKIPI-PER-APP-MODE:"
-private const val SkipiPerAppItemComment = "# SKIPI-PER-APP:"
-private const val SkipiSection = "SKIPI"
-private const val SkipiProfileName = "profile-name"
-private const val SkipiProfileUpdateUrl = "profile-update-url"
-private const val SkipiProfileUpdateLocked = "profile-update-locked"
-private const val SkipiProfileAutoUpdate = "profile-auto-update"
-private const val SkipiProfileUpdateInterval = "profile-update-interval"
-private const val SkipiPerAppMode = "per-app-mode"
-private const val SkipiPerAppPackage = "per-app-package"
-private const val SkipiSniffing = "sniffing"
-private const val SkipiSniffingRouteOnly = "sniffing-route-only"
-private const val SkipiMux = "mux"
-private const val SkipiMuxConcurrency = "mux-concurrency"
-private const val SkipiMuxXudpConcurrency = "mux-xudp-concurrency"
-private const val SkipiMuxUdp443 = "mux-udp-443"
-private const val SkipiFragment = "fragment"
-private const val SkipiFragmentPackets = "fragment-packets"
-private const val SkipiFragmentLength = "fragment-length"
-private const val SkipiFragmentInterval = "fragment-interval"
-private const val SkipiVpnLocalDns = "vpn-local-dns"
-private const val SkipiFakeDns = "fake-dns"
-private const val SkipiFakeDnsIpPool = "fake-dns-ip-pool"
-private const val SkipiFakeDnsPoolSize = "fake-dns-pool-size"
-private const val SkipiTunDns = "tun-dns"
-private const val SkipiResolveProxyServerDomain = "resolve-proxy-server-domain"
-private const val SkipiDirectDnsForProxyServerDomains = "direct-dns-fallback-proxy"
-private const val SkipiProxyDns = "proxy-dns"
-private const val SkipiDirectDns = "direct-dns"
-private const val SkipiDirectDnsDomains = "direct-dns-domains"
-private const val SkipiDnsHosts = "dns-hosts"
-private const val SkipiRouteDomainStrategy = "route-domain-strategy"
-private const val SkipiNetworkActivation = "network-activation"
-private const val SkipiNetworkTransport = "network-transport"
-private const val SkipiResourceSource = "resource-source"
-private const val SkipiResourceGeoIpUrl = "resource-geoip-url"
-private const val SkipiResourceGeoSiteUrl = "resource-geosite-url"
-private const val SkipiResourceGeoIpOnlyCnPrivateUrl = "resource-geoip-cn-private-url"
-private const val SkipiResourceDirectCidrIpv4Url = "resource-direct-cidr-ipv4-url"
-private const val SkipiResourceDirectCidrIpv6Url = "resource-direct-cidr-ipv6-url"
-private const val SkipiResourceUserAgent = "resource-user-agent"
-private const val SkipiResourceAutoUpdate = "resource-auto-update"
-private const val SkipiResourceUpdateInterval = "resource-update-interval"
-private const val SkipiResourceCustomFile = "resource-custom-file"
-
-internal data class SkipiPerAppSettings(
-    val mode: Int,
-    val selectedApps: List<String>,
-)
-
-/**
- * Compatibility writer retained for callers that update only Per-App data.
- * New profiles use normal `key = value` entries in the [SKIPI] section rather
- * than comments, so exported files remain editable raw configuration files.
- */
-internal fun String.withSkipiPerAppSettings(
-    mode: Int,
-    selectedApps: List<String>,
-): String {
-    val modeValue = when (mode) {
-        0 -> "blacklist"
-        1 -> "whitelist"
-        else -> "global"
-    }
-    val values = skipiValues().toMutableMap()
-    values[SkipiPerAppMode] = listOf(modeValue)
-    values[SkipiPerAppPackage] = selectedApps.asSequence()
-        .map(String::trim)
-        .filter(String::isNotBlank)
-        .distinct()
-        .toList()
-    return withoutLegacySkipiPerAppComments().withShadowrocketSectionLines(
-        SkipiSection,
-        values.toSectionLines(),
-    )
-}
-
-internal fun String.parseSkipiPerAppSettings(): SkipiPerAppSettings {
-    val values = skipiValues()
-    values[SkipiPerAppMode]?.lastOrNull()?.let { modeValue ->
-        val mode = when (modeValue.trim().lowercase()) {
-            "blacklist" -> 0
-            "whitelist" -> 1
-            else -> ProxyAppListModeGlobal
-        }
-        return SkipiPerAppSettings(
-            mode = mode,
-            selectedApps = values[SkipiPerAppPackage].orEmpty()
-                .map(String::trim)
-                .filter(String::isNotEmpty)
-                .distinct(),
-        )
-    }
-
-    // Read the short-lived comment format once so development profiles created
-    // before the [SKIPI] section are converted on their next save.
-    var mode = ProxyAppListModeGlobal
-    val selectedApps = mutableListOf<String>()
-    lineSequence().forEach { line ->
-        val trimmed = line.trim()
-        when {
-            trimmed.startsWith(SkipiPerAppModeComment, ignoreCase = true) -> {
-                mode = when (trimmed.substringAfter(':').trim().lowercase()) {
-                    "blacklist" -> 0
-                    "whitelist" -> 1
-                    else -> ProxyAppListModeGlobal
-                }
-            }
-
-            trimmed.startsWith(SkipiPerAppItemComment, ignoreCase = true) -> {
-                trimmed.substringAfter(':').trim().takeIf(String::isNotBlank)?.let(selectedApps::add)
-            }
-        }
-    }
-    return SkipiPerAppSettings(mode = mode, selectedApps = selectedApps.distinct())
-}
-
 /** Rewrites every SKIPI-specific setting as normal INI values in `[SKIPI]`. */
 internal fun TrafficConfigState.withSkipiSettingsInRawConfig(): TrafficConfigState {
     return copy(
@@ -272,7 +155,7 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
         val trimmed = line.trim()
         trimmed.isNotEmpty() && !trimmed.startsWith('#') && !trimmed.startsWith(';')
     }
-    val values = rawConfig.skipiValues()
+    val values = rawConfig.skipiSectionValues()
     if (values.isEmpty()) {
         val legacyPerApp = rawConfig.parseSkipiPerAppSettings()
         return copy(
@@ -288,7 +171,7 @@ internal fun TrafficConfigState.withSkipiSettingsReadFromRawConfig(): TrafficCon
         )
     }
     fun value(key: String, fallback: String): String = values[key]?.lastOrNull() ?: fallback
-    fun bool(key: String, fallback: Boolean): Boolean = value(key, fallback.toString()).toConfigBoolean(fallback)
+    fun bool(key: String, fallback: Boolean): Boolean = value(key, fallback.toString()).toSkipiConfigBoolean(fallback)
     fun int(key: String, fallback: Int): Int = value(key, fallback.toString()).toIntOrNull() ?: fallback
     val mode = when (value(SkipiPerAppMode, "global").trim().lowercase()) {
         "blacklist" -> 0
@@ -458,43 +341,6 @@ private fun TrafficConfigState.skipiSettingsSectionLines(): List<String> {
     }
 }
 
-private fun String.skipiValues(): Map<String, List<String>> {
-    return analyzeShadowrocketConfig().sections[SkipiSection.lowercase()].orEmpty()
-        .asSequence()
-        .map(String::trim)
-        .filter { line -> line.isNotEmpty() && !line.startsWith('#') && !line.startsWith(';') }
-        .mapNotNull { line ->
-            val separator = line.indexOf('=')
-            if (separator <= 0) null else {
-                line.substring(0, separator).trim().lowercase() to line.substring(separator + 1).trim()
-            }
-        }
-        .groupBy({ (key, _) -> key }, { (_, value) -> value })
-}
-
-private fun Map<String, List<String>>.toSectionLines(): List<String> {
-    return flatMap { (key, values) -> values.map { value -> "$key = $value" } }
-}
-
-private fun String.withoutLegacySkipiPerAppComments(): String {
-    return lineSequence()
-        .filterNot { line ->
-            val trimmed = line.trim()
-            trimmed.startsWith(SkipiPerAppModeComment, ignoreCase = true) ||
-                trimmed.startsWith(SkipiPerAppItemComment, ignoreCase = true)
-        }
-        .joinToString("\n")
-        .trimEnd()
-}
-
-private fun String.toConfigBoolean(fallback: Boolean): Boolean {
-    return when (trim().lowercase()) {
-        "true", "yes", "1" -> true
-        "false", "no", "0" -> false
-        else -> fallback
-    }
-}
-
 /** Xray routing domain strategy: 0 = AsIs, 1 = IPIfNonMatch, 2 = IPOnDemand. */
 internal fun Int.toRouteDomainStrategyValue(): String {
     return when (this) {
@@ -611,7 +457,7 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
             latency = existing?.latency.orEmpty(),
             server = StrategyGroup(
                 remarks = source.group.name,
-                strategy = source.group.toStrategyGroupType(),
+                strategy = source.group.type.toStrategyGroupTypeFromShadowrocketPolicy(),
                 proxyServerIds = effectiveMemberIds,
                 selectedMemberId = effectiveSelectedMemberId,
                 displayMode = source.group.displayMode,
@@ -649,15 +495,3 @@ private data class ConfigAutoBalancerSource(
     val configId: Int,
     val group: ShadowrocketPolicyGroup,
 )
-
-private fun ShadowrocketPolicyGroup.toStrategyGroupType(): String {
-    return when (type.lowercase()) {
-        "select" -> StrategyGroupConstants.TYPE_SELECT
-        "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
-        "round-robin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
-        "least-load" -> StrategyGroupConstants.TYPE_LEAST_LOAD
-        "fallback" -> StrategyGroupConstants.TYPE_FALLBACK
-        "url-test", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
-        else -> StrategyGroupConstants.TYPE_SELECT
-    }
-}

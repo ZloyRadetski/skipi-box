@@ -3,8 +3,8 @@
 
 package features.proxy.server.usecase
 
-import features.proxy.server.usecase.importer.importPayloads
 import features.proxy.server.usecase.importer.parseProxyServersFromPayloads
+import features.proxy.server.usecase.importer.toProxyServerImportPayloads
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -18,7 +18,7 @@ internal suspend fun importProxyServersFromText(
         providerUrlFetcher = providerUrlFetcher,
     )
     parseProxyServersFromPayloads(
-        payloads = text.importPayloads(source),
+        payloads = text.toProxyServerImportPayloads(source),
         context = context,
     )
 }

@@ -15,9 +15,11 @@ import data.AppSettingsPreferences
 import data.AndroidAppStateStore
 import features.config.runtime.AndroidTrafficConfigScheduleGateway
 import features.config.runtime.TrafficConfigScheduler
+import features.config.runtime.reconcileTrafficConfigStates
 import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.runtime.AndroidSubscriptionScheduleGateway
 import features.subscription.runtime.SubscriptionScheduler
+import features.subscription.runtime.reconcile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -114,7 +116,7 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                 }
                 .distinctUntilChanged()
                 .collect {
-                    trafficConfigScheduler.reconcile(stateStore.state.value.trafficConfigs)
+                    trafficConfigScheduler.reconcileTrafficConfigStates(stateStore.state.value.trafficConfigs)
                 }
         }
         // A provider routing profile only matches traffic once its geoip/geosite

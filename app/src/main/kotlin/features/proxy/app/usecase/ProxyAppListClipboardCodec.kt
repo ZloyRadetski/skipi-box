@@ -6,9 +6,9 @@ package features.proxy.app.usecase
 import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
 import app.modes.ProxyAppListModeWhitelist
-import ui.clipboard.ClipboardImportException
-import ui.clipboard.ClipboardImportFailure
-import ui.clipboard.ClipboardImportMode
+import features.clipboard.ClipboardImportException
+import features.clipboard.ClipboardImportFailure
+import features.clipboard.ClipboardImportMode
 import utils.toTrimmedNonEmptyDistinctList
 
 internal data class ProxyAppListClipboardData(

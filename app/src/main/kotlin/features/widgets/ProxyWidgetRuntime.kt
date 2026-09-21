@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import platform.CoreTrafficBytes
 
 /**
  * Keeps home screen widgets in sync while the app process is alive:
@@ -107,7 +108,7 @@ internal class ProxyWidgetRuntime(
             scope.launch(Dispatchers.IO) {
                 CoreTrafficStatsSampler.acquire(context).use {
                     var previousRuntime: ProxyTrafficStatsRuntime? = null
-                    var previousTotals = emptyMap<String, XrayTrafficBytes>()
+                    var previousTotals = emptyMap<String, CoreTrafficBytes>()
                     var previousAtElapsedRealtime = 0L
                     var sessionTotals = XrayTrafficBytes()
                     CoreTrafficStatsSampler.samples.collect { sharedSample ->
@@ -125,7 +126,7 @@ internal class ProxyWidgetRuntime(
                                 var uplinkDelta = 0L
                                 var downlinkDelta = 0L
                                 totals.forEach { (tag, bytes) ->
-                                    val before = previousTotals[tag] ?: XrayTrafficBytes()
+                                    val before = previousTotals[tag] ?: CoreTrafficBytes()
                                     uplinkDelta += (bytes.uplink - before.uplink).coerceAtLeast(0L)
                                     downlinkDelta += (bytes.downlink - before.downlink).coerceAtLeast(0L)
                                 }

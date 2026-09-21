@@ -3,19 +3,9 @@
 
 package app.skipi.desktop
 
-import features.proxy.server.model.AmneziaWg
-import features.proxy.server.model.Custom
-import features.proxy.server.model.HTTP
-import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.Shadowsocks
-import features.proxy.server.model.Socks
-import features.proxy.server.model.Trojan
-import features.proxy.server.model.VLESS
-import features.proxy.server.model.VMess
-import features.proxy.server.model.Wireguard
-import features.proxy.server.model.customXrayConfigProxyOutboundEndpoint
+import features.proxy.server.model.ProxyServerEndpoint
+import features.proxy.server.model.connectionEndpointOrNull
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -39,38 +29,11 @@ sealed interface DesktopServerLatencyResult {
     ) : DesktopServerLatencyResult
 }
 
-/** Concrete TCP endpoint extracted from a normal SKIPI proxy server. */
-data class DesktopServerTcpEndpoint(
-    val host: String,
-    val port: Int,
-)
+/** Shared endpoint model retained under the desktop API name. */
+typealias DesktopServerTcpEndpoint = ProxyServerEndpoint
 
 /** Strategy/chain/custom entries have no single endpoint and therefore cannot be TCP-probed directly. */
-fun ProxyServer<*>.desktopTcpEndpointOrNull(): DesktopServerTcpEndpoint? {
-    if (this is OlcRtc) {
-        val (host, port) = signalingEndpoint() ?: return null
-        return DesktopServerTcpEndpoint(host, port)
-    }
-    if (this is Custom) {
-        val endpoint = customXrayConfigProxyOutboundEndpoint(configJson) ?: return null
-        return DesktopServerTcpEndpoint(host = endpoint.host, port = endpoint.port)
-    }
-    val endpoint = when (this) {
-        is HTTP -> server to port
-        is Socks -> server to port
-        is Shadowsocks -> server to port
-        is VMess -> server to port
-        is VLESS -> server to port
-        is Trojan -> server to port
-        is Hysteria2 -> server to port
-        is Wireguard -> server to port
-        is AmneziaWg -> server to port
-        else -> return null
-    }
-    return endpoint.second.toIntOrNull()?.let { port ->
-        DesktopServerTcpEndpoint(host = endpoint.first, port = port)
-    }
-}
+fun ProxyServer<*>.desktopTcpEndpointOrNull(): DesktopServerTcpEndpoint? = connectionEndpointOrNull()
 
 /** Opens and closes a TCP connection. Kept injectable so UI tests never need a network. */
 fun interface DesktopTcpConnector {

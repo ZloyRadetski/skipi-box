@@ -3,7 +3,8 @@
 
 package app.skipi.desktop
 
-import java.math.BigDecimal
+import features.subscription.runtime.SubscriptionRefreshTarget
+import features.subscription.runtime.planSubscriptionRefreshes
 
 /**
  * A pure scheduling decision for desktop subscription refreshes.
@@ -32,61 +33,24 @@ object DesktopSubscriptionRefreshPlanner {
         library: DesktopSubscriptionLibrary,
         nowMillis: Long,
     ): DesktopSubscriptionRefreshPlan {
-        val dueSubscriptions = mutableListOf<DesktopStoredSubscription>()
-        var nextWakeupAtMillis: Long? = null
-
-        library.subscriptions.forEach { subscription ->
-            val intervalMillis = subscription.refreshIntervalMillisOrNull() ?: return@forEach
-            val refreshAtMillis = subscription.nextRefreshAtMillis(intervalMillis)
-            val wakeupAtMillis = refreshAtMillis.coerceAtLeast(nowMillis)
-
-            if (refreshAtMillis <= nowMillis) {
-                dueSubscriptions += subscription
-            }
-            val currentNextWakeupAtMillis = nextWakeupAtMillis
-            if (currentNextWakeupAtMillis == null || wakeupAtMillis < currentNextWakeupAtMillis) {
-                nextWakeupAtMillis = wakeupAtMillis
-            }
-        }
-
+        val subscriptionsById = library.subscriptions.associateBy(DesktopStoredSubscription::id)
+        val sharedPlan = planSubscriptionRefreshes(
+            targets = library.subscriptions.map(DesktopStoredSubscription::toSubscriptionRefreshTarget),
+            nowMillis = nowMillis,
+        )
         return DesktopSubscriptionRefreshPlan(
-            dueSubscriptions = dueSubscriptions,
-            nextWakeupAtMillis = nextWakeupAtMillis,
-            nextDelayMillis = nextWakeupAtMillis?.let { wakeup -> wakeup.delayFrom(nowMillis) },
+            dueSubscriptions = sharedPlan.dueSubscriptionIds.mapNotNull(subscriptionsById::get),
+            nextWakeupAtMillis = sharedPlan.nextWakeupAtMillis,
+            nextDelayMillis = sharedPlan.nextDelayMillis,
         )
     }
 }
 
-private fun DesktopStoredSubscription.refreshIntervalMillisOrNull(): Long? {
-    if (!enabled || url.isBlank()) return null
-
-    val normalized = updateInterval.trim()
-    if (normalized.isEmpty()) return null
-    val hours = normalized.toBigDecimalOrNull() ?: return null
-    if (hours.signum() <= 0) return null
-    if (hours < MinimumDesktopSubscriptionRefreshHours) return null
-
-    val intervalMillis = hours.multiply(DesktopSubscriptionRefreshMillisecondsPerHour)
-    if (intervalMillis > MaximumDesktopSubscriptionRefreshIntervalMillis) return null
-    return intervalMillis.toLong()
-}
-
-private fun DesktopStoredSubscription.nextRefreshAtMillis(intervalMillis: Long): Long {
-    val lastUpdatedAtMillis = metadata.lastUpdatedAtMillis
-    if (lastUpdatedAtMillis <= 0L) return Long.MIN_VALUE
-    return if (lastUpdatedAtMillis > Long.MAX_VALUE - intervalMillis) {
-        Long.MAX_VALUE
-    } else {
-        lastUpdatedAtMillis + intervalMillis
-    }
-}
-
-private fun Long.delayFrom(nowMillis: Long): Long = when {
-    this <= nowMillis -> 0L
-    nowMillis < 0L && this > Long.MAX_VALUE + nowMillis -> Long.MAX_VALUE
-    else -> this - nowMillis
-}
-
-private val MinimumDesktopSubscriptionRefreshHours = BigDecimal("0.25")
-private val DesktopSubscriptionRefreshMillisecondsPerHour = BigDecimal(60L * 60L * 1_000L)
-private val MaximumDesktopSubscriptionRefreshIntervalMillis = BigDecimal.valueOf(Long.MAX_VALUE)
+private fun DesktopStoredSubscription.toSubscriptionRefreshTarget(): SubscriptionRefreshTarget =
+    SubscriptionRefreshTarget(
+        id = id,
+        url = url,
+        enabled = enabled,
+        updateInterval = updateInterval,
+        lastUpdatedAtMillis = metadata.lastUpdatedAtMillis,
+    )

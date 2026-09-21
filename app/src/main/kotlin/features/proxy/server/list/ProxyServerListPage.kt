@@ -49,14 +49,13 @@ import ui.feedback.LocalAppHaptics
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.usecase.AndroidTunnelController
 import features.proxy.server.usecase.ProxyServerLatencyTracker
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.restartProxyServiceAfterSelection
 import features.proxy.server.usecase.runProxyServerLatencyTest
 import features.proxy.server.usecase.updatableSubscriptionGroups
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
-import app.effects.resolveActiveNetworkConfig
-import features.config.withActiveTrafficConfig
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionGroupEditorDialog
 import features.subscription.usecase.subscriptionUpdateMessage
@@ -82,6 +81,8 @@ import ui.layout.pageListPadding
 import ui.layout.pageWindowPadding
 import ui.components.DeleteConfirmationDialog
 import ui.text.formatTemplate
+import platform.TunnelConnectRequest
+import platform.TunnelPhase
 
 private const val ProxyServerEditResultKey = "proxy-server-edit-result"
 
@@ -138,6 +139,15 @@ fun ProxyServerListPage(
     val selectedServer = servers.firstOrNull { server -> server.id == selectedServerId }
     val proxyRunning = proxyListState.proxyRunning
     val context = LocalContext.current.applicationContext
+    val tunnelController = remember(context, proxyEngine, proxyServiceUseCase, stateStore, updateAppState) {
+        AndroidTunnelController.forApp(
+            context = context,
+            proxyEngine = proxyEngine,
+            proxyServiceUseCase = proxyServiceUseCase,
+            readState = { stateStore.state.value },
+            updateState = updateAppState,
+        )
+    }
     val activeTunnelSample by produceActiveTunnelRuntimeSample(context, proxyRunning)
     val activeOutboundTag = activeTunnelSample?.outboundTag
     val allGroupName = stringResource(R.string.proxy_server_list_all)
@@ -174,30 +184,33 @@ fun ProxyServerListPage(
         activeGroupLatencyJobs.clear()
         pingingGroupIds = emptySet()
         runProxyServiceOperation {
-            var currentState = stateStore.state.value
-            val resolvedState = currentState.resolveActiveNetworkConfig(context)
-            if (resolvedState.activeTrafficConfigId != currentState.activeTrafficConfigId) {
-                currentState = resolvedState
-                updateAppState { it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId) }
-            }
-            val activeServer = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId } ?: selectedServer
-            when (val result = proxyServiceUseCase.toggle(state = currentState, selectedServer = activeServer)) {
-                is ProxyServiceResult.Success -> {
-                    updateAppState { state ->
-                        state.copy(
-                            proxyRunning = result.proxyRunning,
-                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
-                        )
+            val currentState = stateStore.state.value
+            val snapshot = tunnelController.snapshot()
+            val result = when (snapshot.phase) {
+                TunnelPhase.Connected -> tunnelController.disconnect()
+                TunnelPhase.Failed -> Result.failure(
+                    IllegalStateException(snapshot.failure?.message ?: "Failed to read Android VPN state"),
+                )
+
+                else -> {
+                    val activeServer = currentState.proxyServers
+                        .firstOrNull { server -> server.id == currentState.selectedProxyServerId }
+                        ?: selectedServer
+                    if (activeServer == null) {
+                        tipNotifier.show(messages.selectServerFirst)
+                        return@runProxyServiceOperation
                     }
-                    tipNotifier.show(if (result.proxyRunning) messages.serviceStarted else messages.serviceStopped)
+                    tunnelController.connect(TunnelConnectRequest(activeServer.id.toString()))
                 }
-
-                ProxyServiceResult.MissingServer -> tipNotifier.show(messages.selectServerFirst)
-
-                is ProxyServiceResult.Failed -> {
-                    updateAppState { state -> state.copy(proxyRunning = false) }
-                    tipNotifier.showError(result.error, messages.serviceStopped)
-                }
+            }
+            result.onSuccess {
+                val currentPhase = tunnelController.snapshot().phase
+                tipNotifier.show(
+                    if (currentPhase == TunnelPhase.Connected) messages.serviceStarted else messages.serviceStopped,
+                )
+            }.onFailure { error ->
+                updateAppState { state -> state.copy(proxyRunning = false) }
+                tipNotifier.showError(error, messages.serviceStopped)
             }
         }
     }

@@ -52,6 +52,35 @@ class DesktopMihomoPayloadImporterTest {
     }
 
     @Test
+    fun usesSharedV2RayTransportMappingForDesktopYaml() {
+        val result = DesktopMihomoPayloadImporter.import(
+            """
+                proxies:
+                  - name: Shared upgrade node
+                    type: vless
+                    server: edge.example.com
+                    port: 443
+                    uuid: 8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6
+                    network: ws
+                    ws-headers:
+                      X-Trace: desktop
+                    ws-opts:
+                      path: /upgrade
+                      max-early-data: 1024
+                      v2ray-http-upgrade: true
+                      headers:
+                        Host: cdn.example.com
+            """.trimIndent(),
+        )
+
+        val server = assertIs<VLESS>(result.servers.single())
+        assertEquals("httpupgrade", server.parms.type)
+        assertEquals("/upgrade?ed=1024", server.parms.path)
+        assertEquals("cdn.example.com", server.parms.host)
+        assertEquals("{\"X-Trace\":\"desktop\"}", server.parms.headers)
+    }
+
+    @Test
     fun importsInlineAndProvidedHttpProviderPayloadsAndReportsMissingOnes() {
         val remoteUrl = "https://provider.example.com/nodes.yaml"
         val missingUrl = "https://provider.example.com/missing.yaml"

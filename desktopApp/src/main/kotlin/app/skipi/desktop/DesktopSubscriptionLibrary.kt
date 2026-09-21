@@ -4,12 +4,15 @@
 package app.skipi.desktop
 
 import features.subscription.isValidManualSubscriptionUrl
+import features.subscription.isValidSubscriptionIntervalInput
 import features.subscription.SubscriptionMetadata
+import features.subscription.ExpiryReminderUnit
+import features.subscription.SubscriptionExpiryReminder
+import features.subscription.validateSubscriptionExpiryReminders
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.math.BigDecimal
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -36,25 +39,9 @@ data class DesktopStoredSubscriptionMetadata(
     val lastUpdatedAtMillis: Long = 0L,
 )
 
-/** Serializable desktop counterpart of Android's expiry-reminder unit. */
-@Serializable
-enum class DesktopSubscriptionExpiryReminderUnit {
-    Minutes,
-    Hours,
-    Days,
-    Weeks,
-    AtExpiration,
-}
-
-/**
- * Stored provider-specific expiry reminder. A `null` reminder list means the
- * desktop provider has no custom schedule, just like Android's group state.
- */
-@Serializable
-data class DesktopSubscriptionExpiryReminder(
-    val value: Int = 1,
-    val unit: DesktopSubscriptionExpiryReminderUnit = DesktopSubscriptionExpiryReminderUnit.Days,
-)
+/** Compatibility names for desktop settings and existing JSON files. */
+typealias DesktopSubscriptionExpiryReminderUnit = ExpiryReminderUnit
+typealias DesktopSubscriptionExpiryReminder = SubscriptionExpiryReminder
 
 @Serializable
 data class DesktopStoredSubscription(
@@ -250,34 +237,15 @@ private fun normalizeDesktopSubscriptionAgeSecretKey(value: String): String {
 
 private fun normalizeDesktopSubscriptionExpiryReminders(
     reminders: List<DesktopSubscriptionExpiryReminder>?,
-): List<DesktopSubscriptionExpiryReminder>? {
-    reminders?.forEach { reminder ->
-        when (reminder.unit) {
-            DesktopSubscriptionExpiryReminderUnit.AtExpiration -> require(reminder.value == 0) {
-                "At-expiration reminder must use zero"
-            }
-
-            else -> require(reminder.value > 0) {
-                "Expiry reminder value must be positive"
-            }
-        }
-    }
-    return reminders?.toList()
-}
+): List<DesktopSubscriptionExpiryReminder>? = validateSubscriptionExpiryReminders(reminders)
 
 /** Mirrors the Android editor: blank or zero disables scheduling; a positive interval is at least 0.25 h. */
 private fun String.isValidDesktopSubscriptionUpdateInterval(): Boolean {
     if (isBlank()) return true
     if (any { character -> !character.isDigit() && character != '.' } || count { it == '.' } > 1) return false
-    val hours = runCatching { BigDecimal(this) }.getOrNull() ?: return false
-    if (hours.signum() == 0) return true
-    if (hours < MinimumDesktopSubscriptionUpdateHours) return false
-    return hours.multiply(DesktopMillisecondsPerHour) <= MaximumDesktopSubscriptionIntervalMillis
+    return isValidSubscriptionIntervalInput(this)
 }
 
-private val MinimumDesktopSubscriptionUpdateHours = BigDecimal("0.25")
-private val DesktopMillisecondsPerHour = BigDecimal(60L * 60L * 1_000L)
-private val MaximumDesktopSubscriptionIntervalMillis = BigDecimal.valueOf(Long.MAX_VALUE)
 private const val MaxDesktopSubscriptionUserAgentLength = 512
 
 private fun SubscriptionMetadata.toStoredSubscriptionMetadata(

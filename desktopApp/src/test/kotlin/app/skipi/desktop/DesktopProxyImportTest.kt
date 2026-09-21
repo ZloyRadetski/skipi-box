@@ -5,6 +5,7 @@ package app.skipi.desktop
 
 import features.proxy.server.model.Custom
 import features.proxy.server.model.VLESS
+import features.proxy.server.model.Wireguard
 import java.util.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -120,6 +121,28 @@ class DesktopProxyImportTest {
         assertEquals(true, config.updateLocked)
         assertTrue(config.content.endsWith("\n"))
         assertTrue(plan.servers.isEmpty())
+    }
+
+    @Test
+    fun importsWireguardConfThroughSharedParserBeforeShadowrocketConfHandling() {
+        val plan = DesktopProxyImportPlanner.planFile(
+            fileName = "tunnel.conf",
+            text = """
+                # Desktop tunnel
+                [Interface]
+                PrivateKey = aGVsbG8gd29ybGQgdGhpcyBpcyBhIHZhbGlkIGtleSE=
+                Address = 10.0.0.2/32
+
+                [Peer]
+                PublicKey = YW5vdGhlciB2YWxpZCBrZXkgZm9yIHRlc3Rpbmcgb2s=
+                Endpoint = 203.0.113.1:51820
+            """.trimIndent(),
+        )
+
+        val server = assertIs<Wireguard>(plan.servers.single())
+        assertEquals("Desktop tunnel", server.remarks)
+        assertEquals("203.0.113.1", server.server)
+        assertTrue(plan.diagnostics.isEmpty())
     }
 
     @Test

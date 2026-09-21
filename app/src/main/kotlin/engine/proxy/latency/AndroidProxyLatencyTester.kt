@@ -16,7 +16,6 @@ import features.resources.runtime.prepareXrayResourceFilePaths
 import features.resources.runtime.XrayResourceFileScope
 import engine.xray.prepareXrayCoreLogPaths
 import engine.network.NetworkDefaults
-import engine.network.toPortOrNull
 import engine.xray.strategyGroupMembers
 import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.model.AmneziaWg
@@ -33,7 +32,7 @@ import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
-import features.proxy.server.model.customXrayConfigProxyOutboundEndpoint
+import features.proxy.server.model.connectionEndpointOrNull
 import engine.vpn.OlcRtcReadinessTimeoutMillis
 import engine.vpn.SkipiCoreRuntime
 import engine.vpn.SkipiVpnService
@@ -354,7 +353,7 @@ internal class AndroidProxyLatencyTester(
      * OLCRTC, or an opaque custom outbound.
      */
     private suspend fun verifyTcpStartupCandidate(member: ProxyServerState): Long {
-        val endpoint = member.server.endpoint() ?: return FailedDelayMillis
+        val endpoint = member.server.connectionEndpointOrNull() ?: return FailedDelayMillis
         return withContext(Dispatchers.IO) {
             val startedAt = SystemClock.elapsedRealtime()
             val address = resolveHost(
@@ -375,7 +374,7 @@ internal class AndroidProxyLatencyTester(
         dnsCache: ConcurrentMap<String, java.net.InetAddress>?,
         failedDnsCache: ConcurrentMap<String, Boolean>?,
     ): Long {
-        val endpoint = server.server.endpoint() ?: return FailedDelayMillis
+        val endpoint = server.server.connectionEndpointOrNull() ?: return FailedDelayMillis
         val timeoutMs = appState.subscriptionPingTimeoutMillis.resolvedPingTimeoutMillis().toLong()
         val startedAt = SystemClock.elapsedRealtime()
 
@@ -477,7 +476,7 @@ internal class AndroidProxyLatencyTester(
         dnsCache: ConcurrentMap<String, java.net.InetAddress>?,
         failedDnsCache: ConcurrentMap<String, Boolean>?,
     ): Long {
-        val endpoint = server.server.endpoint()
+        val endpoint = server.server.connectionEndpointOrNull()
         if (endpoint != null && failedDnsCache?.containsKey(endpoint.host) == true) {
             return FailedDelayMillis
         }
@@ -714,11 +713,6 @@ data class ProxyServerLatencyTestResult(
     }
 }
 
-private data class ProxyServerEndpoint(
-    val host: String,
-    val port: Int,
-)
-
 /** A raw TCP connect may only warm startup fallback for a TCP transport. */
 internal fun ProxyServer<*>.supportsTcpStartupProbe(): Boolean {
     return when (this) {
@@ -761,31 +755,6 @@ private val TcpStartupTransports = setOf(
     "splithttp",
     "grpc",
 )
-
-private fun ProxyServer<*>.endpoint(): ProxyServerEndpoint? {
-    return when (this) {
-        is HTTP -> endpoint(server, port)
-        is Hysteria2 -> endpoint(server, port)
-        is Shadowsocks -> endpoint(server, port)
-        is Socks -> endpoint(server, port)
-        is Trojan -> endpoint(server, port)
-        is VLESS -> endpoint(server, port)
-        is VMess -> endpoint(server, port)
-        is Wireguard -> endpoint(server, port)
-        is AmneziaWg -> endpoint(server, port)
-        is OlcRtc -> signalingEndpoint()?.let { (host, port) -> ProxyServerEndpoint(host, port) }
-        is Custom -> customXrayConfigProxyOutboundEndpoint(configJson)
-            ?.let { endpoint -> ProxyServerEndpoint(endpoint.host, endpoint.port) }
-        else -> null
-    }
-}
-
-private fun endpoint(host: String, port: String): ProxyServerEndpoint? {
-    val parsedPort = port.toPortOrNull() ?: return null
-    return host.trim()
-        .takeIf(String::isNotEmpty)
-        ?.let { ProxyServerEndpoint(it, parsedPort) }
-}
 
 private const val LogTag = "ProxyLatencyTest"
 private const val FailedDelayMillis = -1L

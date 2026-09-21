@@ -23,6 +23,37 @@ object StrategyGroupConstants {
     )
 }
 
+/** Maps a Shadowrocket [Proxy Group] policy name to SKIPI's stored strategy. */
+fun String.toStrategyGroupTypeFromShadowrocketPolicy(): String = when (trim().lowercase()) {
+    "select" -> StrategyGroupConstants.TYPE_SELECT
+    "load-balance", "random" -> StrategyGroupConstants.TYPE_RANDOM
+    "round-robin", "roundrobin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
+    "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
+    "fallback" -> StrategyGroupConstants.TYPE_FALLBACK
+    "url-test", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
+    else -> StrategyGroupConstants.TYPE_SELECT
+}
+
+/** Writes a SKIPI strategy back to the equivalent Shadowrocket policy name. */
+fun String.toShadowrocketPolicyGroupType(): String = when (trim()) {
+    StrategyGroupConstants.TYPE_SELECT -> "select"
+    StrategyGroupConstants.TYPE_LEAST_PING -> "url-test"
+    StrategyGroupConstants.TYPE_FALLBACK -> "fallback"
+    StrategyGroupConstants.TYPE_LEAST_LOAD -> "least-load"
+    StrategyGroupConstants.TYPE_RANDOM -> "load-balance"
+    StrategyGroupConstants.TYPE_ROUND_ROBIN -> "round-robin"
+    else -> "select"
+}
+
+/** Converts either a Shadowrocket policy name or stored strategy to Xray's balancer strategy. */
+fun String.toXrayBalancerStrategy(): String = when (trim().lowercase()) {
+    "load-balance", StrategyGroupConstants.TYPE_RANDOM -> StrategyGroupConstants.TYPE_RANDOM
+    "round-robin", "roundrobin" -> StrategyGroupConstants.TYPE_ROUND_ROBIN
+    "least-load", "leastload" -> StrategyGroupConstants.TYPE_LEAST_LOAD
+    "fallback", "url-test", "leastping" -> StrategyGroupConstants.TYPE_LEAST_PING
+    else -> StrategyGroupConstants.TYPE_LEAST_PING
+}
+
 @Serializable
 data class StrategyGroup(
     var remarks: String = "",

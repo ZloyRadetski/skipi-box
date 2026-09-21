@@ -5,8 +5,6 @@ package engine.vpn
 
 import android.content.Context
 import app.R
-import engine.stats.CoreTrafficStatsSnapshot
-import engine.stats.parseCoreTrafficStatsSnapshot
 import features.logs.AndroidAppLogger
 import engine.xray.initializeAndroidXrayCoreEnvironment
 import app.skipi.core.skipicore.CoreCallbackHandler
@@ -17,6 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import platform.CoreTrafficSnapshot
+import platform.parseCoreTrafficSnapshot
 
 internal const val OlcRtcReadinessTimeoutMillis = 8_000L
 private const val OlcRtcReadinessPollIntervalMillis = 200L
@@ -289,9 +289,9 @@ internal object SkipiCoreRuntime {
     }
 
     /** Returns Xray traffic counters without creating an Xray API socket. */
-    fun queryTrafficStats(): CoreTrafficStatsSnapshot? {
+    fun queryTrafficStats(): CoreTrafficSnapshot? {
         val controller = coreController ?: return null
-        return parseCoreTrafficStatsSnapshot(controller.queryTrafficStats())
+        return parseCoreTrafficSnapshot(controller.queryTrafficStats())
     }
 
     fun forceFreeMemory() {

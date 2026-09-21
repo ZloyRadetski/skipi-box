@@ -28,7 +28,7 @@ class DesktopLocalProxyReadinessTest {
             probe.awaitLoopbackHttpEndpoint(
                 port = 10809,
                 timeout = Duration.ofSeconds(1),
-                processState = { DesktopXrayProcessState(isRunning = true) },
+                coreState = { DesktopCoreState(isRunning = true) },
             ).isSuccess,
         )
         assertEquals(2, attempts)
@@ -44,7 +44,7 @@ class DesktopLocalProxyReadinessTest {
         val result = probe.awaitLoopbackHttpEndpoint(
             port = 10809,
             timeout = Duration.ofSeconds(1),
-            processState = { DesktopXrayProcessState(isRunning = false) },
+            coreState = { DesktopCoreState(isRunning = false) },
         )
 
         assertFalse(result.isSuccess)
@@ -62,9 +62,9 @@ class DesktopLocalProxyReadinessTest {
         val result = probe.awaitLoopbackHttpEndpoint(
             port = 10809,
             timeout = Duration.ofSeconds(1),
-            processState = {
+            coreState = {
                 checks++
-                DesktopXrayProcessState(isRunning = checks == 1)
+                DesktopCoreState(isRunning = checks == 1)
             },
         )
 

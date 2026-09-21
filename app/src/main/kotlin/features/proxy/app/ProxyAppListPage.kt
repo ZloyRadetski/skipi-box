@@ -67,9 +67,9 @@ import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
-import ui.clipboard.ClipboardImportException
-import ui.clipboard.ClipboardImportFailure
-import ui.clipboard.ClipboardImportMode
+import features.clipboard.ClipboardImportException
+import features.clipboard.ClipboardImportFailure
+import features.clipboard.ClipboardImportMode
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
 import ui.components.ImportModeDialog

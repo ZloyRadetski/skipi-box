@@ -3,6 +3,7 @@
 
 package engine.stats
 
+import engine.xray.XrayTags
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -10,27 +11,15 @@ import kotlin.test.assertTrue
 
 class CoreTrafficStatsSamplerTest {
     @Test
-    fun sampling_policy_is_fast_only_for_visible_meaningful_traffic() {
-        assertEquals(
-            CoreTrafficStatsActivePollIntervalMillis,
-            coreTrafficStatsPollIntervalMillis(
-                isScreenInteractive = true,
-                hasMeaningfulTraffic = true,
-            ),
+    fun android_traffic_aggregation_still_excludes_xray_loopback_inbounds() {
+        val totals = mapOf(
+            "socks-in" to XrayTrafficBytes(uplink = 10L, downlink = 20L),
+            XrayTags.DEFAULT_ROUTE_LOOPBACK_INBOUND to XrayTrafficBytes(uplink = 999L, downlink = 999L),
         )
+
         assertEquals(
-            CoreTrafficStatsIdlePollIntervalMillis,
-            coreTrafficStatsPollIntervalMillis(
-                isScreenInteractive = true,
-                hasMeaningfulTraffic = false,
-            ),
-        )
-        assertEquals(
-            CoreTrafficStatsScreenOffPollIntervalMillis,
-            coreTrafficStatsPollIntervalMillis(
-                isScreenInteractive = false,
-                hasMeaningfulTraffic = true,
-            ),
+            XrayTrafficBytes(uplink = 10L, downlink = 20L),
+            totals.aggregateInboundTraffic(),
         )
     }
 
@@ -58,46 +47,6 @@ class CoreTrafficStatsSamplerTest {
                 nowElapsedRealtime = 10_001L,
                 activeTargetChanged = true,
                 refreshIntervalMillis = 10_000L,
-            ),
-        )
-    }
-
-    @Test
-    fun notification_request_never_increases_screen_off_polling_and_never_slows_a_visible_consumer() {
-        assertEquals(
-            CoreTrafficStatsScreenOffPollIntervalMillis,
-            coreTrafficStatsPollIntervalMillis(
-                isScreenInteractive = false,
-                hasMeaningfulTraffic = false,
-                requestedRefreshIntervalMillis = 1_000L,
-                hasDefaultFrequencyConsumer = false,
-            ),
-        )
-        assertEquals(
-            CoreTrafficStatsScreenOffPollIntervalMillis,
-            coreTrafficStatsPollIntervalMillis(
-                isScreenInteractive = false,
-                hasMeaningfulTraffic = false,
-                requestedRefreshIntervalMillis = 10_000L,
-                hasDefaultFrequencyConsumer = false,
-            ),
-        )
-        assertEquals(
-            CoreTrafficStatsActivePollIntervalMillis,
-            coreTrafficStatsPollIntervalMillis(
-                isScreenInteractive = true,
-                hasMeaningfulTraffic = true,
-                requestedRefreshIntervalMillis = 10_000L,
-                hasDefaultFrequencyConsumer = true,
-            ),
-        )
-        assertEquals(
-            1_000L,
-            coreTrafficStatsPollIntervalMillis(
-                isScreenInteractive = true,
-                hasMeaningfulTraffic = false,
-                requestedRefreshIntervalMillis = 1_000L,
-                hasDefaultFrequencyConsumer = false,
             ),
         )
     }

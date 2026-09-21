@@ -5,6 +5,7 @@ package engine.stats
 
 import android.content.Context
 import java.io.Closeable
+import platform.CoreTrafficSnapshot
 
 /**
  * Compatibility accessor for consumers that still need the current counters.
@@ -18,7 +19,7 @@ internal class CoreTrafficStatsSession(context: Context) : Closeable {
     var lastRuntime: ProxyTrafficStatsRuntime? = null
         private set
 
-    fun querySnapshot(): CoreTrafficStatsSnapshot? {
+    fun querySnapshot(): CoreTrafficSnapshot? {
         val sample = CoreTrafficStatsSampler.samples.value
             ?.takeIf { current -> current.runtime == ProxyTrafficStatsRuntimeStore.read(appContext) }
         lastRuntime = sample?.runtime

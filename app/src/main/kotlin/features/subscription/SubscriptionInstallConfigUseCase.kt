@@ -14,9 +14,7 @@ import features.subscription.runtime.AndroidSubscriptionFetcher
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
-import io.ktor.http.Url
 import ui.text.formatTemplate
-import utils.decodeUrlComponentPreservingPlus
 
 internal data class SubscriptionInstallConfig(
     val name: String,
@@ -79,48 +77,38 @@ internal fun Intent.toSubscriptionInstallConfigOrNull(): SubscriptionInstallConf
 }
 
 internal fun String.toSubscriptionInstallConfigOrNull(): SubscriptionInstallConfig? {
-    val value = trim()
-    if (value.any(Char::isWhitespace)) return null
-    val url = runCatching { Url(value) }.getOrNull() ?: return null
-    return url.toSubscriptionInstallConfigOrNull(value)
+    return parseSubscriptionInstallUriOrNull(
+        value = this,
+        policy = AndroidSubscriptionInstallUriParsingPolicy,
+    )?.toSubscriptionInstallConfig()
 }
 
 internal fun Uri.isSubscriptionInstallConfigUri(): Boolean {
-    return runCatching { Url(toString()).isSubscriptionInstallConfigUri() }
-        .getOrDefault(false)
+    return toString().isSubscriptionInstallUri()
 }
 
-private fun Url.toSubscriptionInstallConfigOrNull(rawValue: String): SubscriptionInstallConfig? {
-    toRawHttpsSubscriptionInstallConfigOrNull(rawValue)?.let { return it }
-    val source = installConfigSource() ?: return null
-    val url = parameters["url"]?.trim().orEmpty()
-    if (!isSubscriptionInstallConfigUri() || !url.isValidSubscriptionInstallUrl()) return null
-    val name = listOfNotNull(
-        parameters["name"],
-        fragment,
-        url.toSubscriptionUrlFragmentOrNull(),
-        source.defaultName,
-    )
-        .firstNotNullOfOrNull { value -> value.trim().decodeUrlComponentPreservingPlus().takeIf(String::isNotBlank) }
-        ?: return null
+private fun SubscriptionInstallUri.toSubscriptionInstallConfig(): SubscriptionInstallConfig {
     return SubscriptionInstallConfig(
         name = name,
         url = url,
-        userAgent = source.userAgent,
+        userAgent = source.androidUserAgent,
     )
 }
+private val AndroidSubscriptionInstallUriParsingPolicy = SubscriptionInstallUriParsingPolicy(
+    directUrlPolicy = SubscriptionInstallUrlPolicy.HttpsOnly,
+    embeddedUrlPolicy = SubscriptionInstallUrlPolicy.HttpsOnly,
+)
 
-private fun Url.toRawHttpsSubscriptionInstallConfigOrNull(rawValue: String): SubscriptionInstallConfig? {
-    if (!rawValue.isValidSubscriptionInstallUrl()) return null
-    val name = listOfNotNull(fragment, V2rayNgDefaultSubscriptionName)
-        .firstNotNullOfOrNull { value -> value.trim().decodeUrlComponentPreservingPlus().takeIf(String::isNotBlank) }
-        ?: return null
-    return SubscriptionInstallConfig(
-        name = name,
-        url = rawValue,
-        userAgent = DefaultSubscriptionUserAgent,
-    )
-}
+private val SubscriptionInstallSource.androidUserAgent: String
+    get() = when (this) {
+        SubscriptionInstallSource.RawHttp,
+        SubscriptionInstallSource.V2rayNg -> DefaultSubscriptionUserAgent
+
+        SubscriptionInstallSource.Clash,
+        SubscriptionInstallSource.ClashMeta -> ClashMetaSubscriptionUserAgent
+
+        SubscriptionInstallSource.FlClashX -> FlClashXSubscriptionUserAgent
+    }
 
 private fun AndroidAppStateStore.prepareSubscriptionInstallGroup(
     config: SubscriptionInstallConfig,
@@ -171,38 +159,3 @@ private fun AppState.newSubscriptionGroup(config: SubscriptionInstallConfig): Su
         enabled = true,
     )
 }
-
-private enum class InstallConfigSource(
-    val scheme: String,
-    val userAgent: String,
-    val defaultName: String? = null,
-) {
-    V2rayNg(scheme = "v2rayng", userAgent = DefaultSubscriptionUserAgent, defaultName = V2rayNgDefaultSubscriptionName),
-    Clash(scheme = "clash", userAgent = ClashMetaSubscriptionUserAgent, defaultName = ClashDefaultSubscriptionName),
-    ClashMeta(scheme = "clashmeta", userAgent = ClashMetaSubscriptionUserAgent, defaultName = ClashDefaultSubscriptionName),
-    FlClashX(
-        scheme = "flclashx",
-        userAgent = FlClashXSubscriptionUserAgent,
-        defaultName = ClashDefaultSubscriptionName,
-    ),
-}
-
-private fun Url.isSubscriptionInstallConfigUri(): Boolean {
-    return installConfigSource() != null &&
-        host.lowercase() in InstallConfigHosts
-}
-
-private fun Url.installConfigSource(): InstallConfigSource? {
-    val uriScheme = protocol.name
-    return InstallConfigSource.entries.firstOrNull { source ->
-        source.scheme.equals(uriScheme, ignoreCase = true)
-    }
-}
-
-private fun String.toSubscriptionUrlFragmentOrNull(): String? {
-    return runCatching { Url(this).fragment }.getOrNull()
-}
-
-private const val V2rayNgDefaultSubscriptionName = "import sub"
-private const val ClashDefaultSubscriptionName = "clashsub"
-private val InstallConfigHosts = setOf("install-config", "install-sub")

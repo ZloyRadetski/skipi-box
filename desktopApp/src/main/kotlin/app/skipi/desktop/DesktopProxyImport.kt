@@ -5,14 +5,12 @@ package app.skipi.desktop
 
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
-import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.formatCustomXrayConfigJson
+import features.proxy.server.usecase.importer.CustomXrayConfigImportResult
+import features.proxy.server.usecase.importer.WireguardConfParseResult
+import features.proxy.server.usecase.importer.parseCustomXrayConfigPayload
+import features.proxy.server.usecase.importer.parseWireguardConf
 import features.subscription.isValidManualSubscriptionUrl
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 
 /**
  * Pure, desktop-side planning for the ``+`` import flow.
@@ -39,6 +37,31 @@ object DesktopProxyImportPlanner {
                     ),
                 ),
             )
+        }
+
+        when (val wireguardConf = parseWireguardConf(text)) {
+            is WireguardConfParseResult.Imported -> {
+                return planWireguardConf(
+                    input = input,
+                    server = wireguardConf.server,
+                    existing = existing,
+                )
+            }
+
+            is WireguardConfParseResult.Invalid -> {
+                return DesktopProxyImportPlan(
+                    source = input.source,
+                    diagnostics = listOf(
+                        DesktopProxyImportDiagnostic(
+                            severity = DesktopProxyImportDiagnosticSeverity.Error,
+                            code = DesktopProxyImportDiagnosticCode.RejectedProxy,
+                            message = "Invalid WireGuard / AmneziaWG configuration.",
+                        ),
+                    ),
+                )
+            }
+
+            WireguardConfParseResult.NotWireguardConf -> Unit
         }
 
         val shadowrocket = text.analyzeShadowrocketConfig()
@@ -176,6 +199,35 @@ object DesktopProxyImportPlanner {
         existing: DesktopProxyImportExisting = DesktopProxyImportExisting(),
     ): DesktopProxyImportPlan = plan(DesktopProxyImportInput.File(fileName, text), existing)
 
+    private fun planWireguardConf(
+        input: DesktopProxyImportInput,
+        server: ProxyServer<*>,
+        existing: DesktopProxyImportExisting,
+    ): DesktopProxyImportPlan {
+        val deduplicated = listOf(server).withoutKnownServers(
+            existing.serverFingerprints,
+            existing.serverDuplicatePolicy,
+        )
+        val diagnostics = buildList {
+            deduplicated.duplicateCount.takeIf { it > 0 }?.let { duplicates ->
+                add(
+                    DesktopProxyImportDiagnostic(
+                        severity = DesktopProxyImportDiagnosticSeverity.Info,
+                        code = DesktopProxyImportDiagnosticCode.DuplicateServers,
+                        message = "Duplicate servers skipped: $duplicates.",
+                    ),
+                )
+            }
+        }
+        return DesktopProxyImportPlan(
+            source = input.source,
+            actions = deduplicated.values.takeIf { values -> values.isNotEmpty() }
+                ?.let { servers -> listOf(DesktopProxyImportAction.AddServers(servers)) }
+                .orEmpty(),
+            diagnostics = diagnostics,
+        )
+    }
+
     private fun planShadowrocketConfig(
         input: DesktopProxyImportInput,
         text: String,
@@ -261,54 +313,38 @@ object DesktopProxyImportPlanner {
         text: String,
         existing: DesktopProxyImportExisting,
     ): DesktopProxyImportPlan? {
-        val candidate = text.trimStart()
-        if (!candidate.startsWith('{') && !candidate.startsWith('[')) return null
-
-        val root = runCatching {
-            ProxyServer.json.parseToJsonElement(candidate)
-        }.getOrElse {
-            return DesktopProxyImportPlan(
-                source = source,
-                diagnostics = listOf(
-                    DesktopProxyImportDiagnostic(
-                        severity = DesktopProxyImportDiagnosticSeverity.Error,
-                        code = DesktopProxyImportDiagnosticCode.InvalidJson,
-                        message = "Некорректный JSON-конфиг Xray.",
+        val imported = when (val parsed = parseCustomXrayConfigPayload(text)) {
+            CustomXrayConfigImportResult.NotJson -> return null
+            CustomXrayConfigImportResult.InvalidJson -> {
+                return DesktopProxyImportPlan(
+                    source = source,
+                    diagnostics = listOf(
+                        DesktopProxyImportDiagnostic(
+                            severity = DesktopProxyImportDiagnosticSeverity.Error,
+                            code = DesktopProxyImportDiagnosticCode.InvalidJson,
+                            message = "Некорректный JSON-конфиг Xray.",
+                        ),
                     ),
-                ),
-            )
-        }
-        val configs = when (root) {
-            is JsonObject -> listOf(root)
-            is JsonArray -> root.mapNotNull { element -> element as? JsonObject }
-            else -> return null
-        }
-        if (configs.isEmpty()) {
-            return DesktopProxyImportPlan(
-                source = source,
-                diagnostics = listOf(
-                    DesktopProxyImportDiagnostic(
-                        severity = DesktopProxyImportDiagnosticSeverity.Error,
-                        code = DesktopProxyImportDiagnosticCode.InvalidConfig,
-                        message = "JSON-массив не содержит объектов конфигурации Xray.",
-                    ),
-                ),
-            )
-        }
+                )
+            }
 
-        var rejectedCount = 0
-        val parsedServers = configs.mapIndexedNotNull { index, config ->
-            runCatching {
-                Custom(
-                    remarks = config.customXrayRemarks(index),
-                    configJson = formatCustomXrayConfigJson(config),
-                ).also { server ->
-                    require(server.validateBasic().isEmpty()) { "custom Xray config is invalid" }
-                }
-            }.onFailure {
-                rejectedCount += 1
-            }.getOrNull()
+            CustomXrayConfigImportResult.NoConfigObjects -> {
+                return DesktopProxyImportPlan(
+                    source = source,
+                    diagnostics = listOf(
+                        DesktopProxyImportDiagnostic(
+                            severity = DesktopProxyImportDiagnosticSeverity.Error,
+                            code = DesktopProxyImportDiagnosticCode.InvalidConfig,
+                            message = "JSON-массив не содержит объектов конфигурации Xray.",
+                        ),
+                    ),
+                )
+            }
+
+            is CustomXrayConfigImportResult.Imported -> parsed
         }
+        val rejectedCount = imported.rejectedConfigCount
+        val parsedServers = imported.servers
         val diagnostics = mutableListOf<DesktopProxyImportDiagnostic>()
         if (rejectedCount > 0) {
             diagnostics += DesktopProxyImportDiagnostic(
@@ -533,40 +569,6 @@ private fun String.ensureTrailingLineFeed(): String = configDeduplicationKey().t
 
 private fun String.removeSuffixIgnoreCase(suffix: String): String =
     if (endsWith(suffix, ignoreCase = true)) dropLast(suffix.length) else this
-
-internal fun JsonObject.customXrayRemarks(index: Int): String =
-    string("remarks")
-        ?: string("remark")
-        ?: string("name")
-        ?: string("tag")
-        ?: "${customXrayTypePrefix()} ${index + 1}"
-
-internal fun JsonObject.customXrayTypePrefix(): String {
-    val outbounds = this["outbounds"] as? JsonArray
-    val objects = outbounds?.mapNotNull { element -> element as? JsonObject }.orEmpty()
-    val primary = objects.firstOrNull { outbound -> outbound.string("tag") == "proxy" }
-        ?: objects.firstOrNull { outbound ->
-            val tag = outbound.string("tag")
-            tag != "direct" && tag != "block" && tag != "dns-out" && tag != "fragment"
-        }
-    val rawProtocol = primary?.string("protocol")?.trim()?.lowercase()
-    val protocol = when (rawProtocol) {
-        "vless" -> "VLESS"
-        "vmess" -> "VMess"
-        "trojan" -> "Trojan"
-        "hysteria2", "hy2" -> "Hysteria2"
-        "shadowsocks", "ss" -> "Shadowsocks"
-        "wireguard" -> "WireGuard"
-        "socks" -> "SOCKS"
-        "http" -> "HTTP"
-        null, "" -> null
-        else -> rawProtocol.uppercase()
-    }
-    return if (protocol == null) "JSON" else "JSON ($protocol)"
-}
-
-internal fun JsonObject.string(name: String): String? =
-    (this[name] as? JsonPrimitive)?.contentOrNull?.takeIf(String::isNotBlank)
 
 private const val ImportByteOrderMark = "\uFEFF"
 private const val DefaultImportedConfigName = "Импортированный конфиг"

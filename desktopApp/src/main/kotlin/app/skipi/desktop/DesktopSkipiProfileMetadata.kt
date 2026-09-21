@@ -2,7 +2,12 @@
 
 package app.skipi.desktop
 
+import features.config.SkipiProfileName
+import features.config.SkipiProfileUpdateLocked
+import features.config.SkipiProfileUpdateUrl
+import features.config.SkipiSection
 import features.config.shadowrocketSectionValue
+import features.config.toSkipiConfigBoolean
 import features.config.withShadowrocketSectionValue
 
 /**
@@ -17,14 +22,12 @@ internal data class DesktopSkipiProfileMetadata(
 )
 
 internal fun String.readDesktopSkipiProfileMetadata(): DesktopSkipiProfileMetadata {
-    fun value(key: String): String? = shadowrocketSectionValue(DesktopSkipiSection, key)?.trim()?.takeIf(String::isNotBlank)
+    fun value(key: String): String? = shadowrocketSectionValue(SkipiSection, key)?.trim()?.takeIf(String::isNotBlank)
     return DesktopSkipiProfileMetadata(
         name = value(SkipiProfileName),
         sourceUrl = value(SkipiProfileUpdateUrl),
-        updateLocked = shadowrocketSectionValue(DesktopSkipiSection, SkipiProfileUpdateLocked)
-            ?.trim()
-            ?.lowercase()
-            ?.let { raw -> raw in setOf("true", "yes", "1") },
+        updateLocked = shadowrocketSectionValue(SkipiSection, SkipiProfileUpdateLocked)
+            ?.toSkipiConfigBoolean(false),
     )
 }
 
@@ -33,12 +36,7 @@ internal fun String.withDesktopSkipiProfileMetadata(
     sourceUrl: String,
     updateLocked: Boolean,
 ): String {
-    return withShadowrocketSectionValue(DesktopSkipiSection, SkipiProfileName, name.trim())
-        .withShadowrocketSectionValue(DesktopSkipiSection, SkipiProfileUpdateUrl, sourceUrl.trim())
-        .withShadowrocketSectionValue(DesktopSkipiSection, SkipiProfileUpdateLocked, updateLocked.toString())
+    return withShadowrocketSectionValue(SkipiSection, SkipiProfileName, name.trim())
+        .withShadowrocketSectionValue(SkipiSection, SkipiProfileUpdateUrl, sourceUrl.trim())
+        .withShadowrocketSectionValue(SkipiSection, SkipiProfileUpdateLocked, updateLocked.toString())
 }
-
-private const val DesktopSkipiSection = "SKIPI"
-private const val SkipiProfileName = "profile-name"
-private const val SkipiProfileUpdateUrl = "profile-update-url"
-private const val SkipiProfileUpdateLocked = "profile-update-locked"

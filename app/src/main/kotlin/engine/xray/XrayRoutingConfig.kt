@@ -5,22 +5,7 @@ package engine.xray
 
 import app.AppState
 import app.effectiveLocalDnsEnabled
-import features.routing.model.RouteRule
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import utils.toDistinctCsvValues
-import utils.toTrimmedNonEmptyDistinctList
-
-internal data class XrayRoutingPlan(
-    val domainStrategy: String,
-    val rules: JsonArray,
-    val balancers: List<JsonObject>,
-    val primaryOutboundTag: String?,
-    val unappliedRules: List<String> = emptyList(),
-)
 
 internal fun AppState.buildXrayRoutingPlan(
     routeTargets: Map<String, XrayRouteTarget>,
@@ -29,214 +14,29 @@ internal fun AppState.buildXrayRoutingPlan(
     routeDirectDns: Boolean,
     dnsHijackInboundTags: List<String>,
     dataDir: String? = null,
-): XrayRoutingPlan {
-    val domainStrategy = routeDomainStrategy.toXrayRoutingDomainStrategy()
-    val defaultTarget = defaultRouteTarget(routeTargets)
-    val (rules, unappliedRules) = routingRules(
+): XrayRoutingPlan = planXrayRouting(
+    request = XrayRoutingRequest(
+        routeDomainStrategy = routeDomainStrategy,
+        routeRules = routeRules,
+        defaultRouteOutboundTag = defaultRouteOutboundTag,
         routeTargets = routeTargets,
+        balancers = balancers,
+        enableLocalDns = effectiveLocalDnsEnabled,
         routeProxyDns = routeProxyDns,
         routeDirectDns = routeDirectDns,
         dnsHijackInboundTags = dnsHijackInboundTags,
-        defaultTarget = defaultTarget,
-        dataDir = dataDir,
-    )
-    return XrayRoutingPlan(
-        domainStrategy = domainStrategy,
-        rules = rules,
-        balancers = balancers,
-        primaryOutboundTag = when (defaultTarget?.kind) {
-            XrayRouteTargetKind.Outbound -> defaultTarget.tag
-            XrayRouteTargetKind.Balancer -> XrayTags.DEFAULT_ROUTE_LOOPBACK
-            null -> null
-        },
-        unappliedRules = unappliedRules,
-    )
-}
+    ),
+    ruleValidator = object : XrayRoutingRuleValidator {
+        override fun isDomainRuleValid(rule: String): Boolean =
+            XrayGeoRuleSanitizer.isDomainRuleValid(rule, dataDir)
 
-internal fun buildXrayRouting(plan: XrayRoutingPlan): JsonObject {
-    return buildJsonObject {
-        put("domainStrategy", plan.domainStrategy)
-        put("rules", plan.rules)
-        if (plan.balancers.isNotEmpty()) {
-            put("balancers", plan.balancers.toJsonObjectArray())
-        }
-    }
-}
+        override fun isIpRuleValid(rule: String): Boolean =
+            XrayGeoRuleSanitizer.isIpRuleValid(rule, dataDir)
 
-private fun AppState.routingRules(
-    routeTargets: Map<String, XrayRouteTarget>,
-    routeProxyDns: Boolean,
-    routeDirectDns: Boolean,
-    dnsHijackInboundTags: List<String>,
-    defaultTarget: XrayRouteTarget?,
-    dataDir: String? = null,
-): Pair<JsonArray, List<String>> {
-    val unapplied = mutableListOf<String>()
-    val usedRuleTags = mutableSetOf<String>()
-    val rulesArray = buildJsonArray {
-        defaultTarget
-            ?.takeIf { target -> target.kind == XrayRouteTargetKind.Balancer }
-            ?.let { target -> add(buildDefaultBalancerRoute(target)) }
-        if (effectiveLocalDnsEnabled) {
-            routeTargets[XrayTags.PROXY]
-                ?.takeIf { target -> target.kind == XrayRouteTargetKind.Balancer }
-                ?.let { target -> add(buildDnsProxyBalancerRoute(target)) }
-            buildXrayDnsHijackRule(dnsHijackInboundTags)?.let(::add)
-        }
-        if (routeDirectDns) {
-            routeTargets[XrayTags.DIRECT]?.let { target -> add(buildDnsUpstreamRoute(XrayTags.DIRECT_DNS, target)) }
-        }
-        if (routeProxyDns) {
-            routeTargets[XrayTags.PROXY]?.let { target -> add(buildDnsUpstreamRoute(XrayTags.PROXY_DNS, target)) }
-        }
-        routeRules
-            .filter(RouteRule::enabled)
-            .forEach { rule ->
-                val invalidDomains = rule.domain.filterNot { XrayGeoRuleSanitizer.isDomainRuleValid(it, dataDir) }
-                val invalidIps = rule.ip.filterNot { XrayGeoRuleSanitizer.isIpRuleValid(it, dataDir) }
-                unapplied.addAll(invalidDomains)
-                unapplied.addAll(invalidIps)
-                val xrayRule = rule.toXrayRule(routeTargets, dataDir, usedRuleTags)
-                if (xrayRule != null) {
-                    add(xrayRule)
-                }
-            }
-        // Xray otherwise falls back to the first outbound.  That makes a
-        // Shadowrocket FINAL choice look ignored whenever the selected card is
-        // still the first proxy outbound.  Keep FINAL as the last rule so
-        // every unmatched VPN/local-proxy connection reaches its chosen target.
-        defaultTarget?.let(::buildFinalRoute)?.let(::add)
-    }
-    return rulesArray to unapplied.distinct()
-}
+        override fun filterValidDomainRules(rules: List<String>): List<String> =
+            XrayGeoRuleSanitizer.filterValidDomainRules(rules, dataDir)
 
-private fun buildDefaultBalancerRoute(target: XrayRouteTarget): JsonObject {
-    return buildJsonObject {
-        target.applyTo(this)
-        put("inboundTag", listOf(XrayTags.DEFAULT_ROUTE_LOOPBACK_INBOUND).toJsonStringArray())
-    }
-}
-
-private fun buildDnsProxyBalancerRoute(target: XrayRouteTarget): JsonObject {
-    return buildJsonObject {
-        target.applyTo(this)
-        put("inboundTag", listOf(XrayTags.DNS_PROXY_LOOPBACK_INBOUND).toJsonStringArray())
-    }
-}
-
-private fun buildFinalRoute(target: XrayRouteTarget): JsonObject {
-    return buildJsonObject {
-        target.applyTo(this)
-        // A generated config handles TCP and UDP application traffic.  DNS
-        // inbounds have earlier, dedicated rules, and user rules remain above
-        // this fallback in their original Shadowrocket order.
-        put("network", "tcp,udp")
-    }
-}
-
-private fun AppState.defaultRouteTarget(routeTargets: Map<String, XrayRouteTarget>): XrayRouteTarget? {
-    val defaultOutboundTag = defaultRouteOutboundTag.trim().ifBlank { XrayTags.PROXY }
-    val defaultTarget = routeTargets[defaultOutboundTag]?.takeIf {
-        defaultOutboundTag !in ReservedDefaultRouteOutboundTags
-    }
-    return defaultTarget ?: routeTargets[XrayTags.PROXY]
-}
-
-internal fun buildXrayDnsHijackRule(inboundTags: List<String>): JsonObject? {
-    val tags = inboundTags.toTrimmedNonEmptyDistinctList()
-    if (tags.isEmpty()) return null
-    return buildJsonObject {
-        put("inboundTag", tags.toJsonStringArray())
-        put("network", "tcp,udp")
-        put("port", "53")
-        put("outboundTag", XrayTags.DNS_OUT)
-    }
-}
-
-private fun buildDnsUpstreamRoute(
-    inboundTag: String,
-    target: XrayRouteTarget,
-): JsonObject {
-    return buildJsonObject {
-        target.applyTo(this)
-        put("inboundTag", listOf(inboundTag).toJsonStringArray())
-    }
-}
-
-private fun RouteRule.toXrayRule(
-    routeTargets: Map<String, XrayRouteTarget>,
-    dataDir: String? = null,
-    usedRuleTags: MutableSet<String>? = null,
-): JsonObject? {
-    val targetOutboundTag = outboundTag.trim().ifBlank { XrayTags.PROXY }
-    val target = routeTargets[targetOutboundTag] ?: return null
-    val sanitizedDomains = XrayGeoRuleSanitizer.filterValidDomainRules(domain.toTrimmedNonEmptyDistinctList(), dataDir)
-    val sanitizedIps = XrayGeoRuleSanitizer.filterValidIpRules(ip.toTrimmedNonEmptyDistinctList(), dataDir)
-    val sanitizedProcess = process.toTrimmedNonEmptyDistinctList()
-    val sanitizedPort = port.trim()
-    val sanitizedNetwork = network.trim()
-    val sanitizedProtocol = protocol.toDistinctCsvValues()
-
-    val hasConditions = sanitizedDomains.isNotEmpty() ||
-        sanitizedIps.isNotEmpty() ||
-        sanitizedProcess.isNotEmpty() ||
-        sanitizedPort.isNotEmpty() ||
-        sanitizedNetwork.isNotEmpty() ||
-        sanitizedProtocol.isNotEmpty()
-
-    if (!hasConditions) return null
-
-    val resolvedTag = resolveUniqueRuleTag(remarks, id, usedRuleTags)
-
-    val rule = buildJsonObject {
-        target.applyTo(this)
-        putJsonStringArrayIfNotEmpty("domain", sanitizedDomains)
-        putJsonStringArrayIfNotEmpty("ip", sanitizedIps)
-        putJsonStringArrayIfNotEmpty("process", sanitizedProcess)
-        putIfNotBlank("port", sanitizedPort)
-        putIfNotBlank("network", sanitizedNetwork)
-        putJsonStringArrayIfNotEmpty("protocol", sanitizedProtocol)
-        putIfNotBlank("ruleTag", resolvedTag)
-    }
-    return rule
-}
-
-internal fun resolveUniqueRuleTag(
-    remarks: String,
-    ruleId: Int,
-    usedTags: MutableSet<String>?,
-): String? {
-    val trimmed = remarks.trim()
-    if (trimmed.isEmpty()) return null
-    if (usedTags == null) return trimmed
-    if (usedTags.add(trimmed)) {
-        return trimmed
-    }
-    val withId = if (ruleId > 0) "$trimmed #$ruleId" else null
-    if (withId != null && usedTags.add(withId)) {
-        return withId
-    }
-    var counter = 2
-    while (true) {
-        val candidate = "$trimmed #$counter"
-        if (usedTags.add(candidate)) {
-            return candidate
-        }
-        counter++
-    }
-}
-
-internal fun Int.toXrayRoutingDomainStrategy(): String {
-    return when (this) {
-        0 -> "AsIs"
-        2 -> "IPOnDemand"
-        else -> "IPIfNonMatch"
-    }
-}
-
-private val ReservedDefaultRouteOutboundTags = setOf(
-    XrayTags.DNS_OUT,
-    XrayTags.FRAGMENT,
-    XrayTags.DEFAULT_ROUTE_LOOPBACK,
-    XrayTags.DNS_PROXY_LOOPBACK,
+        override fun filterValidIpRules(rules: List<String>): List<String> =
+            XrayGeoRuleSanitizer.filterValidIpRules(rules, dataDir)
+    },
 )

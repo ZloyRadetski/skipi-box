@@ -4,10 +4,11 @@
 package app
 
 import features.routing.model.RouteRule
+import features.routing.model.DefaultRouteOutboundTag as SharedDefaultRouteOutboundTag
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.DefaultSubscriptionUserAgent
 
-const val DefaultRouteOutboundTag = "proxy"
+const val DefaultRouteOutboundTag = SharedDefaultRouteOutboundTag
 const val MinTrafficStatsNotificationRefreshIntervalSeconds = 1
 const val MaxTrafficStatsNotificationRefreshIntervalSeconds = 10
 const val DefaultTrafficStatsNotificationRefreshIntervalSeconds = 2
