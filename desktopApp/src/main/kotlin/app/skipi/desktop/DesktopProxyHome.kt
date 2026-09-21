@@ -38,6 +38,16 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import app.skipi.ui.components.DeleteConfirmationDialog
+import app.skipi.ui.home.dialogs.SkipiAddSourceDialog
+import app.skipi.ui.home.dialogs.SkipiAddSourceMode
+import app.skipi.ui.home.dialogs.SkipiImportDialog
+import app.skipi.ui.home.dialogs.SkipiSubscriptionEditData
+import app.skipi.ui.home.dialogs.SkipiSubscriptionEditDialog
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.common_delete
+import app.skipi.ui.resources.subscription_delete
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -93,16 +103,9 @@ private val HomeBorder = Color(0xFF3C3E45)
 private val HomeText = Color(0xFFF4F4F6)
 private val HomeMuted = Color(0xFFA2A5AF)
 private val HomeGreen = Color(0xFF58D27A)
-private val HomeRed = Color(0xFFFF5B62)
-
-private enum class AddMode { Server, Subscription }
-
+private val HomeRed = Color(0xFFFF5252)
 /**
  * Desktop adaptation of Android's ProxyServerListPage.
- *
- * It deliberately keeps the Android composition (header, hero connection card,
- * group selector, optional subscription summary and server cards) and only
- * widens the content column for a desktop window.
  */
 @Composable
 internal fun DesktopProxyHome(
@@ -146,7 +149,7 @@ internal fun DesktopProxyHome(
     var selectedGroupId by remember { mutableStateOf<String?>(null) }
     var addDialogVisible by remember { mutableStateOf(false) }
     var importDialogVisible by remember { mutableStateOf(false) }
-    var addMode by remember { mutableStateOf(AddMode.Server) }
+    var addMode by remember { mutableStateOf(SkipiAddSourceMode.Server) }
     var searchVisible by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var localMessage by remember { mutableStateOf("") }
@@ -222,13 +225,13 @@ internal fun DesktopProxyHome(
                 onAddServer = {
                     editingServerId = null
                     onServerLinkChange("")
-                    addMode = AddMode.Server
+                    addMode = SkipiAddSourceMode.Server
                     addDialogVisible = true
                 },
                 onAddSubscription = {
                     editingServerId = null
                     onSubscriptionUrlChange("")
-                    addMode = AddMode.Subscription
+                    addMode = SkipiAddSourceMode.Subscription
                     addDialogVisible = true
                 },
                 onImport = { importDialogVisible = true },
@@ -316,7 +319,7 @@ internal fun DesktopProxyHome(
                     onAdd = {
                         editingServerId = null
                         onServerLinkChange("")
-                        addMode = AddMode.Server
+                        addMode = SkipiAddSourceMode.Server
                         addDialogVisible = true
                     },
                 )
@@ -344,7 +347,7 @@ internal fun DesktopProxyHome(
                             onEdit = {
                                 editingServerId = stored.id
                                 server.getCopyTextOrNull()?.let(onServerLinkChange)
-                                addMode = AddMode.Server
+                                addMode = SkipiAddSourceMode.Server
                                 addDialogVisible = true
                             },
                             onDelete = {
@@ -403,17 +406,54 @@ internal fun DesktopProxyHome(
         }
     }
 
+    fun importFromClipboard() {
+        readDesktopClipboardText().onSuccess { text ->
+            val install = text.trim().toDesktopSubscriptionInstallUriOrNull()
+            if (install != null) {
+                onPrepareSubscription(install).fold(
+                    onSuccess = {
+                        onSubscriptionUrlChange(install.url)
+                        onUpdateSubscription()
+                        localMessage = "Подписка «${install.name}» добавлена."
+                    },
+                    onFailure = { error ->
+                        localMessage = error.message ?: "Не удалось сохранить подписку."
+                    },
+                )
+            } else {
+                onImport(DesktopProxyImportInput.Clipboard(text)).fold(
+                    onSuccess = { summary -> localMessage = summary },
+                    onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
+                )
+            }
+        }.onFailure { error ->
+            localMessage = error.message ?: "Не удалось прочитать буфер обмена."
+        }
+    }
+
+    fun importFromFile() {
+        chooseDesktopImportFile().onSuccess { file ->
+            if (file != null) {
+                onImport(DesktopProxyImportInput.File(file.name, file.content)).fold(
+                    onSuccess = { summary -> localMessage = summary },
+                    onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
+                )
+            }
+        }.onFailure { error ->
+            localMessage = error.message ?: "Не удалось прочитать файл."
+        }
+    }
+
     if (addDialogVisible) {
-        AddProxyDialog(
+        SkipiAddSourceDialog(
+            show = addDialogVisible,
             mode = addMode,
             serverLink = serverLink,
             subscriptionUrl = subscriptionUrl,
-            subscriptionUpdate = subscriptionUpdate,
-            subscriptionMessage = subscriptionMessage,
-            editingServer = editingServerId != null,
-            updatingSubscription = updatingSubscription,
+            isEditingServer = editingServerId != null,
+            isSubmitting = updatingSubscription,
             onModeChange = { mode ->
-                if (mode != AddMode.Server) editingServerId = null
+                if (mode != SkipiAddSourceMode.Server) editingServerId = null
                 addMode = mode
             },
             onServerLinkChange = onServerLinkChange,
@@ -423,27 +463,84 @@ internal fun DesktopProxyHome(
                 editingServerId = null
                 addDialogVisible = false
             },
-            onUpdateSubscription = onUpdateSubscription,
-            onPrepareSubscription = onPrepareSubscription,
+            onSaveSubscription = { url ->
+                val uri = DesktopSubscriptionInstallUri.parseOrNull(url)
+                if (uri != null) {
+                    onPrepareSubscription(uri).fold(
+                        onSuccess = {
+                            onUpdateSubscription()
+                            addDialogVisible = false
+                        },
+                        onFailure = { error ->
+                            localMessage = error.message ?: "Не удалось подготовить подписку."
+                        },
+                    )
+                }
+            },
+            onClipboardImport = ::importFromClipboard,
+            onFileImport = ::importFromFile,
             onDismiss = { addDialogVisible = false },
         )
     }
 
+    var importText by remember { mutableStateOf("") }
+    var replaceExisting by remember { mutableStateOf(false) }
+
     if (importDialogVisible) {
-        ImportProxyDialog(
-            onImport = onImport,
-            onPrepareSubscription = onPrepareSubscription,
-            onSubscriptionUrlChange = onSubscriptionUrlChange,
-            onUpdateSubscription = onUpdateSubscription,
+        SkipiImportDialog(
+            show = importDialogVisible,
+            importText = importText,
+            replaceExisting = replaceExisting,
+            onImportTextChange = { importText = it },
+            onReplaceExistingChange = { replaceExisting = it },
+            onClipboardImport = ::importFromClipboard,
+            onFileImport = ::importFromFile,
+            onConfirmImport = {
+                onImport(DesktopProxyImportInput.Text(importText)).fold(
+                    onSuccess = { summary ->
+                        localMessage = summary
+                        importDialogVisible = false
+                        importText = ""
+                    },
+                    onFailure = { error ->
+                        localMessage = error.message ?: "Ошибка импорта."
+                    },
+                )
+            },
             onDismiss = { importDialogVisible = false },
         )
     }
 
     editingSubscriptionProvider?.let { subscription ->
-        SubscriptionProviderEditDialog(
-            subscription = subscription,
-            onSave = onUpdateSubscriptionProvider,
-            onRequestDelete = {
+        SkipiSubscriptionEditDialog(
+            show = true,
+            initialData = SkipiSubscriptionEditData(
+                name = subscription.name,
+                url = subscription.url,
+                userAgent = subscription.userAgent,
+                updateInterval = subscription.updateInterval,
+                ageSecretKey = subscription.ageSecretKey,
+                updateViaProxy = subscription.updateViaProxy,
+                autoOverrideRules = subscription.autoOverrideRules,
+                enabled = subscription.enabled,
+            ),
+            onSave = { draft ->
+                onUpdateSubscriptionProvider(
+                    subscription.id,
+                    subscription.toProviderEdit().copy(
+                        name = draft.name,
+                        url = draft.url,
+                        userAgent = draft.userAgent,
+                        updateInterval = draft.updateInterval,
+                        ageSecretKey = draft.ageSecretKey,
+                        updateViaProxy = draft.updateViaProxy,
+                        autoOverrideRules = draft.autoOverrideRules,
+                        enabled = draft.enabled,
+                    ),
+                )
+                editingSubscriptionProvider = null
+            },
+            onDelete = {
                 editingSubscriptionProvider = null
                 pendingSubscriptionDeletion = subscription.id
             },
@@ -452,32 +549,26 @@ internal fun DesktopProxyHome(
     }
 
     pendingServerDeletion?.let { serverId ->
-        AlertDialog(
+        DeleteConfirmationDialog(
+            show = true,
+            title = stringResource(Res.string.common_delete),
             onDismissRequest = { pendingServerDeletion = null },
-            title = { Text("Удалить сервер?") },
-            text = { Text("Сервер будет удалён только из локальной библиотеки SKIPI.") },
-            confirmButton = {
-                Button(onClick = {
-                    onDeleteServer(serverId)
-                    pendingServerDeletion = null
-                }) { Text("Удалить") }
+            onConfirm = {
+                onDeleteServer(serverId)
+                pendingServerDeletion = null
             },
-            dismissButton = { TextButton(onClick = { pendingServerDeletion = null }) { Text("Отмена") } },
         )
     }
 
     pendingSubscriptionDeletion?.let { subscriptionId ->
-        AlertDialog(
+        DeleteConfirmationDialog(
+            show = true,
+            title = stringResource(Res.string.subscription_delete),
             onDismissRequest = { pendingSubscriptionDeletion = null },
-            title = { Text("Удалить подписку?") },
-            text = { Text("Ссылка подписки будет удалена из локального каталога SKIPI.") },
-            confirmButton = {
-                Button(onClick = {
-                    onDeleteSubscription(subscriptionId)
-                    pendingSubscriptionDeletion = null
-                }) { Text("Удалить") }
+            onConfirm = {
+                onDeleteSubscription(subscriptionId)
+                pendingSubscriptionDeletion = null
             },
-            dismissButton = { TextButton(onClick = { pendingSubscriptionDeletion = null }) { Text("Отмена") } },
         )
     }
 }
@@ -841,165 +932,6 @@ private fun SubscriptionSummaryCard(
     }
 }
 
-@Composable
-private fun SubscriptionProviderEditDialog(
-    subscription: DesktopStoredSubscription,
-    onSave: (Int, DesktopSubscriptionProviderEdit) -> Result<Unit>,
-    onRequestDelete: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var draft by remember(subscription.id) { mutableStateOf(subscription.toProviderEdit()) }
-    var error by remember(subscription.id) { mutableStateOf("") }
-    var customRemindersEnabled by remember(subscription.id) {
-        mutableStateOf(draft.customExpiryReminders != null)
-    }
-    var customRemindersText by remember(subscription.id) {
-        mutableStateOf(formatDesktopSubscriptionExpiryReminders(draft.customExpiryReminders))
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Параметры подписки") },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OutlinedTextField(
-                    value = draft.name,
-                    onValueChange = { value -> draft = draft.copy(name = value) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Название") },
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = draft.url,
-                    onValueChange = { value -> draft = draft.copy(url = value) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("HTTP/HTTPS ссылка") },
-                    singleLine = true,
-                )
-                if (draft.url.trim().startsWith("http://", ignoreCase = true)) {
-                    Text("Незащищённая HTTP-ссылка может раскрыть данные подписки.", color = HomeRed, fontSize = 13.sp)
-                }
-                SubscriptionProviderSwitch(
-                    label = "Подписка включена",
-                    description = "Отключённая группа остаётся в списке, но не участвует в выборе и автообновлении.",
-                    checked = draft.enabled,
-                    onCheckedChange = { checked -> draft = draft.copy(enabled = checked) },
-                )
-                SubscriptionProviderSwitch(
-                    label = "Автоматическое переопределение правил",
-                    description = "Разрешить подписке применять собственные правила маршрутизации.",
-                    checked = draft.autoOverrideRules,
-                    onCheckedChange = { checked -> draft = draft.copy(autoOverrideRules = checked) },
-                )
-                if (draft.url.isNotBlank()) {
-                    HorizontalDivider()
-                    Text("Обновление", color = HomeText, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    OutlinedTextField(
-                        value = draft.ageSecretKey,
-                        onValueChange = { value -> draft = draft.copy(ageSecretKey = value) },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Ключ Age (если подписка зашифрована)") },
-                        singleLine = true,
-                    )
-                    OutlinedTextField(
-                        value = draft.userAgent,
-                        onValueChange = { value -> draft = draft.copy(userAgent = value) },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("User-Agent (пусто — из настроек)") },
-                        supportingText = { Text("Если пусто, используется значение из общих настроек подписок.") },
-                        singleLine = true,
-                    )
-                    SubscriptionProviderSwitch(
-                        label = "Обновлять через прокси",
-                        description = "Использовать локальный SOCKS-прокси SKIPI при загрузке подписки (при активном подключении).",
-                        checked = draft.updateViaProxy,
-                        onCheckedChange = { checked -> draft = draft.copy(updateViaProxy = checked) },
-                    )
-                    OutlinedTextField(
-                        value = draft.updateInterval,
-                        onValueChange = { value -> draft = draft.copy(updateInterval = value) },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Автообновление, часы (пусто или 0 — выкл.)") },
-                        supportingText = { Text("Минимум 0,25 часа.") },
-                        singleLine = true,
-                    )
-                    HorizontalDivider()
-                    Text("Напоминания об окончании", color = HomeText, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    SubscriptionProviderSwitch(
-                        label = "Уведомлять об окончании",
-                        description = "Показывать напоминания об истечении срока подписки.",
-                        checked = draft.notifyOnExpiry,
-                        onCheckedChange = { checked -> draft = draft.copy(notifyOnExpiry = checked) },
-                    )
-                    SubscriptionProviderSwitch(
-                        label = "Пользовательские напоминания",
-                        description = "Задайте несколько значений через запятую: 3:дни, 12:часы, 0:истечение.",
-                        checked = customRemindersEnabled,
-                        onCheckedChange = { enabled -> customRemindersEnabled = enabled },
-                    )
-                    if (customRemindersEnabled) {
-                        OutlinedTextField(
-                            value = customRemindersText,
-                            onValueChange = { value -> customRemindersText = value },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Напоминания") },
-                            supportingText = { Text("Единицы: минуты, часы, дни, недели, истечение.") },
-                            minLines = 2,
-                        )
-                    }
-                }
-                TextButton(onClick = onRequestDelete) { Text("Удалить подписку", color = HomeRed) }
-                if (error.isNotBlank()) Text(error, color = HomeRed, fontSize = 13.sp)
-            }
-        },
-        confirmButton = {
-            Button(onClick = {
-                val edited = runCatching {
-                    draft.copy(
-                        customExpiryReminders = if (customRemindersEnabled) {
-                            parseDesktopSubscriptionExpiryReminders(customRemindersText)
-                        } else {
-                            null
-                        },
-                    )
-                }
-                edited.fold(
-                    onSuccess = { value -> onSave(subscription.id, value) },
-                    onFailure = { failure -> Result.failure(failure) },
-                ).fold(
-                    onSuccess = { onDismiss() },
-                    onFailure = { failure -> error = failure.message.orEmpty().ifBlank { "Не удалось сохранить подписку." } },
-                )
-            }) { Text("Сохранить") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } },
-    )
-}
-
-@Composable
-private fun SubscriptionProviderSwitch(
-    label: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
-            onCheckedChange(!checked)
-        }.padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(label, color = HomeText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(description, color = HomeMuted, fontSize = 12.sp)
-        }
-        Spacer(Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
 
 @Composable
 private fun ServerCard(
@@ -1131,216 +1063,6 @@ private fun EmptyServerList(hasSearch: Boolean, onAdd: () -> Unit) {
             }
         }
     }
-}
-
-@Composable
-private fun AddProxyDialog(
-    mode: AddMode,
-    serverLink: String,
-    subscriptionUrl: String,
-    subscriptionUpdate: DesktopSubscriptionUpdate?,
-    subscriptionMessage: String,
-    editingServer: Boolean,
-    updatingSubscription: Boolean,
-    onModeChange: (AddMode) -> Unit,
-    onServerLinkChange: (String) -> Unit,
-    onSubscriptionUrlChange: (String) -> Unit,
-    onSaveServer: (ProxyServer<*>) -> Unit,
-    onUpdateSubscription: () -> Unit,
-    onPrepareSubscription: (DesktopSubscriptionInstallUri) -> Result<Unit>,
-    onDismiss: () -> Unit,
-) {
-    val parsedServer = remember(serverLink) {
-        serverLink.trim().takeIf(String::isNotEmpty)?.let { runCatching { ProxyServer.parse(it) } }
-    }
-    val subscriptionUrlValid = remember(subscriptionUrl) { subscriptionUrl.isValidManualSubscriptionUrl() }
-    var subscriptionPreparationError by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                when {
-                    mode == AddMode.Subscription -> "Добавить подписку"
-                    editingServer -> "Изменить сервер"
-                    else -> "Добавить сервер"
-                },
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { onModeChange(AddMode.Server) }) { Text("Сервер") }
-                    TextButton(onClick = { onModeChange(AddMode.Subscription) }) { Text("Подписка") }
-                }
-                HorizontalDivider()
-                if (mode == AddMode.Server) {
-                    OutlinedTextField(
-                        value = serverLink,
-                        onValueChange = onServerLinkChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("vless://, vmess://, ss:// …") },
-                        minLines = 3,
-                    )
-                    when {
-                        parsedServer == null -> Text("Вставьте ссылку сервера.", color = HomeMuted)
-                        parsedServer.isFailure -> Text("Ссылка не поддерживается: ${parsedServer.exceptionOrNull()?.message.orEmpty()}", color = HomeRed)
-                        else -> {
-                            val info = parsedServer.getOrThrow().getInfo()
-                            Text("${info.remarks}\n${info.protocol} · ${info.address}", color = HomeMuted)
-                        }
-                    }
-                } else {
-                    OutlinedTextField(
-                        value = subscriptionUrl,
-                        onValueChange = onSubscriptionUrlChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("HTTP/HTTPS ссылка подписки") },
-                        singleLine = true,
-                        enabled = !updatingSubscription,
-                    )
-                    if (subscriptionUrl.isNotBlank() && !subscriptionUrlValid) {
-                        Text("Укажите корректную HTTP/HTTPS ссылку.", color = HomeRed)
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = {
-                            val install = subscriptionUrl.toDesktopSubscriptionInstallUriOrNull()
-                            if (install == null) {
-                                subscriptionPreparationError = "Не удалось подготовить ссылку подписки."
-                            } else {
-                                onPrepareSubscription(install).fold(
-                                    onSuccess = {
-                                        subscriptionPreparationError = ""
-                                        onUpdateSubscription()
-                                    },
-                                    onFailure = { error ->
-                                        subscriptionPreparationError = error.message.orEmpty()
-                                            .ifBlank { "Не удалось сохранить подписку." }
-                                    },
-                                )
-                            }
-                        }, enabled = subscriptionUrlValid && !updatingSubscription) {
-                            Text(if (updatingSubscription) "Загрузка…" else "Загрузить и применить")
-                        }
-                    }
-                    if (subscriptionPreparationError.isNotBlank()) Text(subscriptionPreparationError, color = HomeRed)
-                    if (subscriptionMessage.isNotBlank()) Text(subscriptionMessage, color = HomeMuted)
-                    subscriptionUpdate?.let { update ->
-                        Text("Найдено серверов: ${update.importResult.servers.size}", color = HomeGreen)
-                        Text(
-                            if (update.importResult.servers.isNotEmpty()) {
-                                "Серверы этой подписки применяются автоматически без дубликатов."
-                            } else {
-                                "В подписке не найдено поддерживаемых серверов."
-                            },
-                            color = HomeMuted,
-                            fontSize = 13.sp,
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            if (mode == AddMode.Server) {
-                Button(
-                    onClick = { parsedServer?.getOrNull()?.let(onSaveServer) },
-                    enabled = parsedServer?.isSuccess == true,
-                ) { Text(if (editingServer) "Сохранить" else "Добавить") }
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Закрыть") } },
-    )
-}
-
-/**
- * Desktop counterpart of Android's clipboard/file import entries. Parsing and
- * commits are owned by the caller; this dialog only collects local data.
- * There is deliberately no second preview/confirmation step.
- */
-@Composable
-private fun ImportProxyDialog(
-    onImport: (DesktopProxyImportInput) -> Result<String>,
-    onPrepareSubscription: (DesktopSubscriptionInstallUri) -> Result<Unit>,
-    onSubscriptionUrlChange: (String) -> Unit,
-    onUpdateSubscription: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var text by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf("") }
-
-    fun import(input: DesktopProxyImportInput) {
-        val install = input.text.trim().toDesktopSubscriptionInstallUriOrNull()
-        if (install != null) {
-            onPrepareSubscription(install).fold(
-                onSuccess = {
-                    onSubscriptionUrlChange(install.url)
-                    onUpdateSubscription()
-                    message = "Подписка «${install.name}» добавлена и обновляется."
-                },
-                onFailure = { error ->
-                    message = "Не удалось добавить подписку: ${error.message.orEmpty()}"
-                },
-            )
-        } else {
-            onImport(input).fold(
-                onSuccess = { summary -> message = summary },
-                onFailure = { error -> message = "Не удалось импортировать: ${error.message.orEmpty()}" },
-            )
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Импортировать прокси") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    "Вставьте ссылки серверов, Base64, Mihomo YAML, JSON/Xray или конфиг .conf.",
-                    color = HomeMuted,
-                    fontSize = 13.sp,
-                )
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { value -> text = value },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Данные для импорта") },
-                    minLines = 5,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = {
-                        readDesktopClipboardText().fold(
-                            onSuccess = { clipboardText ->
-                                text = clipboardText
-                                import(DesktopProxyImportInput.Clipboard(clipboardText))
-                            },
-                            onFailure = { error ->
-                                message = "Не удалось прочитать буфер обмена: ${error.message.orEmpty()}"
-                            },
-                        )
-                    }) { Text("Из буфера") }
-                    TextButton(onClick = {
-                        chooseDesktopImportFile().fold(
-                            onSuccess = { file ->
-                                if (file == null) return@fold
-                                text = file.content
-                                import(DesktopProxyImportInput.File(file.name, file.content))
-                            },
-                            onFailure = { error ->
-                                message = "Не удалось прочитать файл: ${error.message.orEmpty()}"
-                            },
-                        )
-                    }) { Text("Выбрать файл") }
-                }
-                if (message.isNotBlank()) Text(message, color = HomeMuted, fontSize = 13.sp)
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { import(DesktopProxyImportInput.Text(text)) },
-                enabled = text.isNotBlank(),
-            ) { Text("Импортировать") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Закрыть") } },
-    )
 }
 
 private data class DesktopImportFile(val name: String, val content: String)
