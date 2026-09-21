@@ -24,7 +24,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -52,10 +51,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +71,19 @@ import app.collectAppState
 import app.modes.ProxyServerListSortDefault
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
+import app.skipi.ui.home.SkipiProxyServerCompactListCard
+import app.skipi.ui.home.SkipiProxyServerCompactListCardColors
+import app.skipi.ui.home.SkipiProxyServerCompactListCardState
+import app.skipi.ui.home.SkipiProxyGroupPicker
+import app.skipi.ui.home.SkipiProxyGroupPickerAction
+import app.skipi.ui.home.SkipiProxyGroupPickerColors
+import app.skipi.ui.home.SkipiProxyGroupPickerItem
+import app.skipi.ui.home.SkipiProxyHomeSearchField
+import app.skipi.ui.home.SkipiProxyProtocolChip
+import app.skipi.ui.home.SkipiProxyServerExpandedListCard
+import app.skipi.ui.home.SkipiProxyServerExpandedListCardColors
+import app.skipi.ui.home.SkipiProxyServerExpandedListCardState
+import app.skipi.ui.home.SkipiProxyTransportChip
 import features.proxy.server.display.ProtocolColorUtils
 import ui.StatusColorDefaults
 import ui.keyColorFor
@@ -85,17 +97,14 @@ import top.yukonga.miuix.kmp.basic.FloatingToolbar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Pause
 import top.yukonga.miuix.kmp.icon.extended.Play
@@ -116,9 +125,7 @@ private val ProxyServerListFloatingToolbarButtonSize = 52.dp
 private val ProxyServerListFloatingToolbarVerticalPadding = 8.dp
 private val ProxyServerListFloatingToolbarBottomSpacing = 16.dp
 private val ProxyServerListFloatingToolbarContentGap = 12.dp
-private val ProxyServerListGroupSelectorRadius = 16.dp
 private val ProxyServerListCompactCardHeight = 66.dp
-private val ProxyServerListCompactCardPadding = 8.dp
 internal val ProxyServerListFloatingToolbarReservedBottomPadding =
     ProxyServerListFloatingToolbarButtonSize +
         ProxyServerListFloatingToolbarVerticalPadding +
@@ -126,8 +133,9 @@ internal val ProxyServerListFloatingToolbarReservedBottomPadding =
         ProxyServerListFloatingToolbarBottomSpacing +
         ProxyServerListFloatingToolbarContentGap
 
+/** Android haptic/reorder adapter around the shared group-picker surface. */
 @Composable
-internal fun ProxyServerListGroupSelector(
+internal fun SharedProxyServerListGroupSelector(
     groups: List<ProxyServerListGroupTabUi>,
     selectedGroupId: Int,
     onGroupSelected: (Int) -> Unit,
@@ -135,214 +143,82 @@ internal fun ProxyServerListGroupSelector(
     modifier: Modifier = Modifier,
 ) {
     if (groups.isEmpty()) return
-    val selectedGroup = groups.firstOrNull { group -> group.id == selectedGroupId } ?: groups.first()
-    var showGroupPicker by remember { mutableStateOf(false) }
-    var reorderGroupId by remember { mutableStateOf<Int?>(null) }
     val hapticFeedback = LocalHapticFeedback.current
-
-    val chevronRotation by animateFloatAsState(
-        targetValue = if (showGroupPicker) 180f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "groupSelectorChevron",
-    )
-
-    val cardScale by animateFloatAsState(
-        targetValue = if (showGroupPicker) 0.985f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium,
-        ),
-        label = "groupSelectorScale",
-    )
-
-    val cardBorderColor by animateColorAsState(
-        targetValue = if (showGroupPicker) {
-            MiuixTheme.colorScheme.primary.copy(alpha = 0.5f)
-        } else {
-            MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f)
-        },
-        animationSpec = tween(durationMillis = 200),
-        label = "groupSelectorBorder",
-    )
-
-    val cardBgColor by animateColorAsState(
-        targetValue = if (showGroupPicker) {
-            AppTheme.colors.surfaceVariant.copy(alpha = 0.5f)
-        } else {
-            AppTheme.colors.surface
-        },
-        animationSpec = tween(durationMillis = 200),
-        label = "groupSelectorBg",
-    )
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    scaleX = cardScale
-                    scaleY = cardScale
-                }
-                .clip(RoundedCornerShape(ProxyServerListGroupSelectorRadius))
-                .background(cardBgColor)
-                .border(
-                    width = 1.dp,
-                    color = cardBorderColor,
-                    shape = RoundedCornerShape(ProxyServerListGroupSelectorRadius),
-                )
-                .combinedClickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
-                        showGroupPicker = !showGroupPicker
-                    },
-                    onLongClick = {
-                        if (selectedGroup.id > features.subscription.DefaultSubscriptionGroupId) {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            reorderGroupId = selectedGroup.id
-                        }
-                    },
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = selectedGroup.name,
-                    fontSize = 15.sp,
-                    fontWeight = themedFontWeight(FontWeight.SemiBold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = stringResource(
-                        R.string.proxy_editor_strategy_group_servers_count,
-                        selectedGroup.serverCount,
-                    ),
-                    fontSize = 12.sp,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-            Icon(
-                imageVector = MiuixIcons.ExpandMore,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(20.dp)
-                    .graphicsLayer { rotationZ = chevronRotation },
-                tint = if (showGroupPicker) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-        }
-
-        AppCascadingListPopup(
-            show = showGroupPicker,
-            entries = listOf(
-                DropdownEntry(
-                    items = groups.map { group ->
-                        DropdownItem(
-                            text = "${group.name} В· ${stringResource(R.string.proxy_editor_strategy_group_servers_count, group.serverCount)}",
-                            selected = group.id == selectedGroupId,
-                            onClick = {
-                                showGroupPicker = false
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
-                                onGroupSelected(group.id)
-                            },
-                        )
-                    },
-                ),
-            ),
-            popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-            alignment = PopupPositionProvider.Align.Start,
-            onDismissRequest = { showGroupPicker = false },
+    val moveLeftText = stringResource(R.string.subscription_move_left)
+    val moveRightText = stringResource(R.string.subscription_move_right)
+    val pickerItems = groups.map { group ->
+        val serverCountText = stringResource(
+            R.string.proxy_editor_strategy_group_servers_count,
+            group.serverCount,
         )
-        reorderGroupId?.let { groupId ->
-            val reorderableIds = groups
-                .map { group -> group.id }
-                .filter { id -> id > features.subscription.DefaultSubscriptionGroupId }
-            val currentIndex = reorderableIds.indexOf(groupId)
-            val actions = buildList {
+        SkipiProxyGroupPickerItem(
+            id = group.id.toString(),
+            title = group.name,
+            subtitle = serverCountText,
+            pickerText = "${group.name} · $serverCountText",
+        )
+    }
+    val contextActionsByGroupId = remember(groups, moveLeftText, moveRightText) {
+        val reorderableIds = groups
+            .map { group -> group.id }
+            .filter { id -> id > features.subscription.DefaultSubscriptionGroupId }
+        groups.associate { group ->
+            val currentIndex = reorderableIds.indexOf(group.id)
+            group.id.toString() to buildList {
                 if (currentIndex > 0) {
-                    add(
-                        DropdownItem(
-                            text = stringResource(R.string.subscription_move_left),
-                            onClick = {
-                                reorderGroupId = null
-                                onGroupMove(groupId, -1)
-                            },
-                        ),
-                    )
+                    add(SkipiProxyGroupPickerAction(id = "move_left", title = moveLeftText))
                 }
                 if (currentIndex >= 0 && currentIndex < reorderableIds.lastIndex) {
-                    add(
-                        DropdownItem(
-                            text = stringResource(R.string.subscription_move_right),
-                            onClick = {
-                                reorderGroupId = null
-                                onGroupMove(groupId, 1)
-                            },
-                        ),
-                    )
+                    add(SkipiProxyGroupPickerAction(id = "move_right", title = moveRightText))
                 }
-            }
-            if (actions.isNotEmpty()) {
-                AppCascadingListPopup(
-                    show = true,
-                    entries = listOf(DropdownEntry(items = actions)),
-                    popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
-                    alignment = PopupPositionProvider.Align.TopEnd,
-                    onDismissRequest = { reorderGroupId = null },
-                )
-            } else {
-                reorderGroupId = null
             }
         }
     }
-}
 
-@Composable
-internal fun ProxyServerListAddMenu(
-    onAction: (ProxyServerListAddAction) -> Unit,
-) {
-    IconDropdownMenu(
-        imageVector = MiuixIcons.Add,
-        contentDescription = stringResource(R.string.proxy_server_list_add),
-        entries = proxyServerListAddMenuEntries(),
-        onAction = onAction,
+    SkipiProxyGroupPicker(
+        groups = pickerItems,
+        selectedGroupId = selectedGroupId.toString(),
+        colors = SkipiProxyGroupPickerColors(
+            surface = AppTheme.colors.surface,
+            raisedSurface = AppTheme.colors.surfaceVariant,
+            border = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+            accent = MiuixTheme.colorScheme.primary,
+            text = MiuixTheme.colorScheme.onSurface,
+            mutedText = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        ),
+        onGroupSelected = selectGroup@{ groupIdText ->
+            val groupId = groupIdText.toIntOrNull() ?: return@selectGroup
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+            onGroupSelected(groupId)
+        },
+        modifier = modifier,
+        onPickerToggled = {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+        },
+        onSelectedGroupLongClick = {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+        },
+        contextActions = { groupId -> contextActionsByGroupId[groupId].orEmpty() },
+        onContextAction = contextAction@{ groupIdText, actionId ->
+            val groupId = groupIdText.toIntOrNull() ?: return@contextAction
+            val offset = when (actionId) {
+                "move_left" -> -1
+                "move_right" -> 1
+                else -> return@contextAction
+            }
+            onGroupMove(groupId, offset)
+        },
     )
 }
-
-@Composable
-internal fun ProxyServerListToolsMenu(
-    sort: Int,
-    onAction: (ProxyServerListToolAction) -> Unit,
-) {
-    IconDropdownMenu(
-        imageVector = MiuixIcons.More,
-        contentDescription = stringResource(R.string.proxy_server_list_more),
-        entries = proxyServerListToolMenuEntries(sort = sort),
-        onAction = onAction,
-    )
-}
-
 @Composable
 internal fun ProxyServerListSearchBar(
     searchValue: String,
     onSearchValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    InputField(
-        query = searchValue,
-        onQueryChange = onSearchValueChange,
-        onSearch = {},
-        expanded = false,
-        onExpandedChange = {},
+    SkipiProxyHomeSearchField(
+        value = searchValue,
+        onValueChange = onSearchValueChange,
         label = stringResource(R.string.proxy_server_list_search_label),
         modifier = modifier,
     )
@@ -433,22 +309,99 @@ private fun ProxyServerListExpandedItemCard(
         label = "proxyServerDragShadowAlpha",
     )
     val shadowColor = AppTheme.colors.onSurface.copy(alpha = 0.20f)
-    val selectedShape = RoundedCornerShape(if (isStrategyGroup) 14.dp else 16.dp)
-    val cardInsideMargin = if (isStrategyGroup) PaddingValues(horizontal = 12.dp, vertical = 9.dp) else PaddingValues(14.dp)
-    val cardBottomPadding = if (isStrategyGroup) 6.dp else 10.dp
-    val badgeSize = if (isStrategyGroup) 28.dp else 34.dp
-    val badgeRadius = if (isStrategyGroup) 7.dp else 8.dp
-    val titleFontSize = if (isStrategyGroup) 15.sp else 16.sp
-    val middleSpacerHeight = if (isStrategyGroup) 6.dp else 12.dp
     val actionButtonSize = if (isStrategyGroup) 32.dp else 40.dp
     val actionIconSize = if (isStrategyGroup) 19.dp else 24.dp
+    val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
+    val effectiveFlag = remember(isStrategyGroup, activeMemberFlag, selfFlag) {
+        if (isStrategyGroup) activeMemberFlag ?: selfFlag ?: "\u26A1" else selfFlag
+    }
+    val cleanTitle = remember(displayText.title, selfFlag) {
+        if (selfFlag != null) CountryFlagUtils.stripLeadingCountryFlag(displayText.title) else displayText.title
+    }
+    val darkTheme = isInDarkTheme()
+    val appState by LocalAppStateStore.current.collectAppState()
+    val protocolColor = ProtocolColorUtils.resolveProtocolColor(displayText.protocol, appState, darkTheme)
+    val transportTextColor = if (selected) {
+        AppTheme.colors.onSurface.copy(alpha = 0.85f)
+    } else if (darkTheme) {
+        Color(0xFFB0BEC5)
+    } else {
+        Color(0xFF546E7A)
+    }
+    val transportContainerColor = if (selected) {
+        AppTheme.colors.onSurface.copy(alpha = 0.12f)
+    } else if (darkTheme) {
+        Color(0xFF37474F).copy(alpha = 0.5f)
+    } else {
+        Color(0xFFECEFF1)
+    }
+    val latencyColor = if (latencyText.isNotEmpty() && latencyText != ProxyServerLatencyTesting) {
+        proxyServerLatencyColor(latencyText)
+    } else {
+        Color.Transparent
+    }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(bottom = cardBottomPadding)
-            .zIndex(if (isDragging) 1f else 0f)
+    SkipiProxyServerExpandedListCard(
+        state = SkipiProxyServerExpandedListCardState(
+            flag = effectiveFlag,
+            title = cleanTitle,
+            summary = displayText.summary,
+            protocol = displayText.protocol,
+            protocolColor = protocolColor,
+            transport = displayText.transport,
+            transportTextColor = transportTextColor,
+            transportContainerColor = transportContainerColor,
+            selected = selected,
+            groupName = groupName,
+            latencyText = latencyText.takeIf(String::isNotBlank),
+            latencyTesting = latencyText == ProxyServerLatencyTesting,
+            latencyColor = latencyColor,
+            progressColor = MiuixTheme.colorScheme.primary,
+            isStrategyGroup = isStrategyGroup,
+            isDragging = isDragging,
+        ),
+        colors = SkipiProxyServerExpandedListCardColors(
+            surface = AppTheme.colors.surface,
+            selectedSurface = AppTheme.colors.accent,
+            selectedBorder = AppTheme.colors.onSurface.copy(alpha = 0.16f),
+        ),
+        fallbackBadgePainter = painterResource(R.drawable.ic_globe),
+        titleFontWeight = themedFontWeight(FontWeight.SemiBold),
+        latencyFontWeight = themedFontWeight(FontWeight.Medium),
+        onSelect = onSelect,
+        actions = {
+            IconDropdownMenu(
+                imageVector = MiuixIcons.Copy,
+                contentDescription = stringResource(R.string.common_share),
+                entries = proxyServerListCopyMenuEntries(copyActions),
+                onAction = onCopyAction,
+                modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
+            )
+            IconButton(
+                modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
+                onClick = onEdit,
+            ) {
+                Icon(
+                    modifier = if (isStrategyGroup) Modifier.size(actionIconSize) else Modifier,
+                    imageVector = MiuixIcons.Edit,
+                    contentDescription = stringResource(R.string.common_edit),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+            IconButton(
+                modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
+                onClick = onDelete,
+            ) {
+                Icon(
+                    modifier = if (isStrategyGroup) Modifier.size(actionIconSize) else Modifier,
+                    imageVector = MiuixIcons.Delete,
+                    contentDescription = stringResource(R.string.common_delete),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+        },
+        modifier = modifier,
+        dragVisualModifier = Modifier
             .graphicsLayer {
                 scaleX = animatedScale
                 scaleY = animatedScale
@@ -456,153 +409,9 @@ private fun ProxyServerListExpandedItemCard(
             .draggedCardShadow(
                 alpha = animatedShadowAlpha,
                 color = shadowColor,
-            )
-            .clip(selectedShape)
-            .border(
-                width = if (selected) 1.dp else 0.dp,
-                color = if (selected) AppTheme.colors.onSurface.copy(alpha = 0.16f) else Color.Transparent,
-                shape = selectedShape,
-            )
-            .then(dragModifier),
-        colors = CardDefaults.defaultColors(
-            color = if (selected) {
-                AppTheme.colors.accent
-            } else {
-                AppTheme.colors.surface
-            },
-        ),
-        insideMargin = cardInsideMargin,
-        onClick = onSelect,
-    ) {
-        val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
-        val effectiveFlag = remember(isStrategyGroup, activeMemberFlag, selfFlag) {
-            if (isStrategyGroup) {
-                activeMemberFlag ?: selfFlag ?: "\u26A1"
-            } else {
-                selfFlag
-            }
-        }
-        val cleanTitle = remember(displayText.title, selfFlag) {
-            if (selfFlag != null) CountryFlagUtils.stripLeadingCountryFlag(displayText.title) else displayText.title
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CountryFlagBadge(
-                    flag = effectiveFlag,
-                    size = badgeSize,
-                    shapeRadius = badgeRadius,
-                )
-                Spacer(Modifier.width(if (isStrategyGroup) 10.dp else 12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = cleanTitle,
-                        fontSize = titleFontSize,
-                        fontWeight = themedFontWeight(FontWeight.SemiBold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = displayText.summary,
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            if (groupName != null) {
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = groupName,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        Spacer(Modifier.height(middleSpacerHeight))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ProtocolChip(
-                    text = displayText.protocol,
-                    compact = isStrategyGroup,
-                    selected = selected,
-                )
-                if (!displayText.transport.isNullOrBlank()) {
-                    Spacer(Modifier.width(6.dp))
-                    TransportChip(
-                        text = displayText.transport,
-                        compact = isStrategyGroup,
-                        selected = selected,
-                    )
-                }
-                if (latencyText == ProxyServerLatencyTesting) {
-                    Spacer(Modifier.width(8.dp))
-                    InfiniteProgressIndicator(
-                        color = MiuixTheme.colorScheme.primary,
-                        size = if (isStrategyGroup) 12.dp else 14.dp,
-                        strokeWidth = 2.dp,
-                    )
-                } else if (latencyText.isNotEmpty()) {
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = latencyText,
-                        fontSize = if (isStrategyGroup) 13.sp else 14.sp,
-                        fontWeight = themedFontWeight(FontWeight.Medium),
-                        color = proxyServerLatencyColor(latencyText),
-                    )
-                }
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconDropdownMenu(
-                    imageVector = MiuixIcons.Copy,
-                    contentDescription = stringResource(R.string.common_share),
-                    entries = proxyServerListCopyMenuEntries(copyActions),
-                    onAction = onCopyAction,
-                    modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
-                )
-                IconButton(
-                    modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
-                    onClick = onEdit,
-                ) {
-                    Icon(
-                        modifier = if (isStrategyGroup) Modifier.size(actionIconSize) else Modifier,
-                        imageVector = MiuixIcons.Edit,
-                        contentDescription = stringResource(R.string.common_edit),
-                        tint = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-                IconButton(
-                    modifier = if (isStrategyGroup) Modifier.size(actionButtonSize) else Modifier,
-                    onClick = onDelete,
-                ) {
-                    Icon(
-                        modifier = if (isStrategyGroup) Modifier.size(actionIconSize) else Modifier,
-                        imageVector = MiuixIcons.Delete,
-                        contentDescription = stringResource(R.string.common_delete),
-                        tint = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-    }
+            ),
+        dragModifier = dragModifier,
+    )
 }
 
 @Composable
@@ -636,14 +445,92 @@ private fun ProxyServerListCompactItemCard(
         label = "proxyServerCompactDragShadowAlpha",
     )
     val shadowColor = AppTheme.colors.onSurface.copy(alpha = 0.20f)
-    val selectedShape = RoundedCornerShape(13.dp)
-    val compactCardHeight = if (isStrategyGroup) 58.dp else ProxyServerListCompactCardHeight
+    val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
+    val effectiveFlag = remember(isStrategyGroup, activeMemberFlag, selfFlag) {
+        if (isStrategyGroup) activeMemberFlag ?: selfFlag ?: "\u26A1" else selfFlag
+    }
+    val cleanTitle = remember(displayText.title, selfFlag) {
+        if (selfFlag != null) CountryFlagUtils.stripLeadingCountryFlag(displayText.title) else displayText.title
+    }
+    val darkTheme = isInDarkTheme()
+    val appState by LocalAppStateStore.current.collectAppState()
+    val protocolColor = ProtocolColorUtils.resolveProtocolColor(displayText.protocol, appState, darkTheme)
+    val transportTextColor = if (selected) {
+        AppTheme.colors.onSurface.copy(alpha = 0.85f)
+    } else if (darkTheme) {
+        Color(0xFFB0BEC5)
+    } else {
+        Color(0xFF546E7A)
+    }
+    val transportContainerColor = if (selected) {
+        AppTheme.colors.onSurface.copy(alpha = 0.12f)
+    } else if (darkTheme) {
+        Color(0xFF37474F).copy(alpha = 0.5f)
+    } else {
+        Color(0xFFECEFF1)
+    }
+    val latencyColor = if (latencyText.isNotEmpty() && latencyText != ProxyServerLatencyTesting) {
+        proxyServerLatencyColor(latencyText)
+    } else {
+        Color.Transparent
+    }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(compactCardHeight)
-            .zIndex(if (isDragging) 1f else 0f)
+    SkipiProxyServerCompactListCard(
+        state = SkipiProxyServerCompactListCardState(
+            flag = effectiveFlag,
+            title = cleanTitle,
+            summary = displayText.summary,
+            protocol = displayText.protocol,
+            protocolColor = protocolColor,
+            transport = displayText.transport,
+            transportTextColor = transportTextColor,
+            transportContainerColor = transportContainerColor,
+            selected = selected,
+            inSubscriptionGroup = inSubscriptionGroup,
+            latencyText = latencyText.takeIf(String::isNotBlank),
+            latencyTesting = latencyText == ProxyServerLatencyTesting,
+            latencyColor = latencyColor,
+            progressColor = MiuixTheme.colorScheme.primary,
+            isStrategyGroup = isStrategyGroup,
+            isDragging = isDragging,
+        ),
+        colors = SkipiProxyServerCompactListCardColors(
+            surface = AppTheme.colors.surface,
+            selectedSurface = AppTheme.colors.accent,
+            selectedBorder = AppTheme.colors.onSurface.copy(alpha = 0.16f),
+        ),
+        fallbackBadgePainter = painterResource(R.drawable.ic_globe),
+        titleFontWeight = themedFontWeight(FontWeight.SemiBold),
+        latencyFontWeight = themedFontWeight(FontWeight.Medium),
+        onSelect = onSelect,
+        onLongPress = { offset ->
+            actionMenuOffset = IntOffset(
+                x = offset.x.roundToInt(),
+                y = offset.y.roundToInt(),
+            )
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            showActionMenu = true
+        },
+        overlay = {
+            if (showActionMenu) {
+                Box(
+                    modifier = Modifier
+                        .offset { actionMenuOffset }
+                        .size(1.dp),
+                ) {
+                    ProxyServerListCardActionMenu(
+                        show = true,
+                        copyActions = copyActions,
+                        onCopyAction = onCopyAction,
+                        onEdit = onEdit,
+                        onDelete = onDelete,
+                        onDismissRequest = { showActionMenu = false },
+                    )
+                }
+            }
+        },
+        modifier = modifier,
+        dragVisualModifier = Modifier
             .graphicsLayer {
                 scaleX = animatedScale
                 scaleY = animatedScale
@@ -651,145 +538,9 @@ private fun ProxyServerListCompactItemCard(
             .draggedCardShadow(
                 alpha = animatedShadowAlpha,
                 color = shadowColor,
-            )
-            .clip(selectedShape)
-            .border(
-                width = if (selected) 1.dp else 0.dp,
-                color = if (selected) AppTheme.colors.onSurface.copy(alpha = 0.16f) else Color.Transparent,
-                shape = selectedShape,
-            )
-            .then(dragModifier),
-    ) {
-        Card(
-            modifier = Modifier
-                .matchParentSize()
-                .pointerInput(onSelect) {
-                    detectTapGestures(
-                        onTap = { onSelect() },
-                        onLongPress = { offset ->
-                            actionMenuOffset = IntOffset(
-                                x = offset.x.roundToInt(),
-                                y = offset.y.roundToInt(),
-                            )
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            showActionMenu = true
-                        },
-                    )
-                },
-            colors = CardDefaults.defaultColors(
-                color = if (selected) {
-                    AppTheme.colors.accent
-                } else if (inSubscriptionGroup) {
-                    Color.Transparent
-                } else {
-                    AppTheme.colors.surface
-                },
             ),
-            insideMargin = PaddingValues(ProxyServerListCompactCardPadding),
-        ) {
-            val selfFlag = remember(displayText.title) { CountryFlagUtils.extractLeadingCountryFlag(displayText.title) }
-            val effectiveFlag = remember(isStrategyGroup, activeMemberFlag, selfFlag) {
-                if (isStrategyGroup) {
-                    activeMemberFlag ?: selfFlag ?: "\u26A1"
-                } else {
-                    selfFlag
-                }
-            }
-            val cleanTitle = remember(displayText.title, selfFlag) {
-                if (selfFlag != null) CountryFlagUtils.stripLeadingCountryFlag(displayText.title) else displayText.title
-            }
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CountryFlagBadge(
-                    flag = effectiveFlag,
-                    size = 32.dp,
-                    shapeRadius = 8.dp,
-                )
-                Spacer(Modifier.width(8.dp))
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = cleanTitle,
-                        fontSize = 15.sp,
-                        lineHeight = 18.sp,
-                        fontWeight = themedFontWeight(FontWeight.SemiBold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ProtocolChip(
-                            text = displayText.protocol,
-                            modifier = Modifier.weight(1f, fill = false),
-                            compact = true,
-                            selected = selected,
-                        )
-                        if (!displayText.transport.isNullOrBlank()) {
-                            Spacer(Modifier.width(5.dp))
-                            TransportChip(
-                                text = displayText.transport,
-                                modifier = Modifier.weight(1f, fill = false),
-                                compact = true,
-                                selected = selected,
-                            )
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = displayText.summary,
-                            modifier = Modifier.weight(1f),
-                            fontSize = 12.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (latencyText == ProxyServerLatencyTesting) {
-                            Spacer(Modifier.width(8.dp))
-                            InfiniteProgressIndicator(
-                                color = MiuixTheme.colorScheme.primary,
-                                size = 12.dp,
-                                strokeWidth = 1.8.dp,
-                            )
-                        } else if (latencyText.isNotEmpty()) {
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = latencyText,
-                                fontSize = 12.sp,
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = proxyServerLatencyColor(latencyText),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        if (showActionMenu) {
-            Box(
-                modifier = Modifier
-                    .offset { actionMenuOffset }
-                    .size(1.dp),
-            ) {
-                ProxyServerListCardActionMenu(
-                    show = true,
-                    copyActions = copyActions,
-                    onCopyAction = onCopyAction,
-                    onEdit = onEdit,
-                    onDelete = onDelete,
-                    onDismissRequest = { showActionMenu = false },
-                )
-            }
-        }
-    }
+        dragModifier = dragModifier,
+    )
 }
 
 @Composable
@@ -1066,24 +817,14 @@ private fun ProtocolChip(
     val darkTheme = isInDarkTheme()
     val appState by LocalAppStateStore.current.collectAppState()
     val chipColor = ProtocolColorUtils.resolveProtocolColor(text, appState, darkTheme)
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(
-                chipColor.copy(alpha = if (selected) 0.22f else 0.12f),
-            )
-            .padding(horizontal = 7.dp, vertical = 3.dp),
-    ) {
-        Text(
-            text = text,
-            fontSize = if (compact) 10.sp else 11.sp,
-            fontWeight = themedFontWeight(FontWeight.SemiBold),
-            color = chipColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    SkipiProxyProtocolChip(
+        text = text,
+        chipColor = chipColor,
+        modifier = modifier,
+        compact = compact,
+        selected = selected,
+        fontWeight = themedFontWeight(FontWeight.SemiBold),
+    )
 }
 
 @Composable
@@ -1099,131 +840,19 @@ private fun TransportChip(
     } else {
         if (darkTheme) Color(0xFFB0BEC5) else Color(0xFF546E7A)
     }
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(
-                if (selected) AppTheme.colors.onSurface.copy(alpha = 0.12f)
-                else if (darkTheme) Color(0xFF37474F).copy(alpha = 0.5f)
-                else Color(0xFFECEFF1),
-            )
-            .padding(horizontal = 7.dp, vertical = 3.dp),
-    ) {
-        Text(
-            text = text,
-            fontSize = if (compact) 10.sp else 11.sp,
-            fontWeight = themedFontWeight(FontWeight.Medium),
-            color = chipColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+    val containerColor = if (selected) {
+        AppTheme.colors.onSurface.copy(alpha = 0.12f)
+    } else if (darkTheme) {
+        Color(0xFF37474F).copy(alpha = 0.5f)
+    } else {
+        Color(0xFFECEFF1)
     }
+    SkipiProxyTransportChip(
+        text = text,
+        textColor = chipColor,
+        containerColor = containerColor,
+        modifier = modifier,
+        compact = compact,
+        fontWeight = themedFontWeight(FontWeight.Medium),
+    )
 }
-
-@Composable
-private fun proxyServerListAddMenuEntries() = listOf(
-    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_scan_qr_code), ProxyServerListAddAction.ScanQrCode),
-    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_import_clipboard), ProxyServerListAddAction.Clipboard),
-    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_import_file), ProxyServerListAddAction.File),
-    IconDropdownMenuEntry(
-        key = "manual_input",
-        title = stringResource(R.string.proxy_server_list_manual_input),
-        children = proxyServerListManualInputMenuEntries(),
-    ),
-    proxyServerListAddMenuEntry(
-        stringResource(R.string.proxy_server_list_add_strategy_group),
-        ProxyServerListAddAction.StrategyGroup,
-    ),
-    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_add_chain_proxy), ProxyServerListAddAction.ChainProxy),
-    proxyServerListAddMenuEntry(stringResource(R.string.proxy_server_list_add_custom), ProxyServerListAddAction.Custom),
-)
-
-@Composable
-private fun proxyServerListManualInputMenuEntries() = listOf(
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_http), ProxyServerListAddAction.HTTP),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_vmess), ProxyServerListAddAction.VMess),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_vless), ProxyServerListAddAction.VLESS),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_trojan), ProxyServerListAddAction.Trojan),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_shadowsocks), ProxyServerListAddAction.Shadowsocks),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_socks), ProxyServerListAddAction.Socks),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_hysteria2), ProxyServerListAddAction.Hysteria2),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_wireguard), ProxyServerListAddAction.Wireguard),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_amnezia_wg), ProxyServerListAddAction.AmneziaWg),
-    ProxyServerListMenuEntry(stringResource(R.string.proxy_server_list_add_olcrtc), ProxyServerListAddAction.OlcRtc),
-).map { entry ->
-    proxyServerListAddMenuEntry(entry.title, entry.action)
-}
-
-private fun proxyServerListAddMenuEntry(
-    title: String,
-    action: ProxyServerListAddAction,
-) = IconDropdownMenuEntry(
-    key = action,
-    title = title,
-    action = action,
-)
-
-@Composable
-private fun proxyServerListToolMenuEntries(
-    sort: Int,
-): List<IconDropdownMenuEntry<ProxyServerListToolAction>> = listOf(
-    proxyServerListToolMenuEntry(
-        stringResource(R.string.proxy_server_list_restart_service),
-        ProxyServerListToolAction.RestartService,
-    ),
-    proxyServerListToolMenuEntry(
-        stringResource(R.string.proxy_server_list_update_subscriptions),
-        ProxyServerListToolAction.UpdateSubscriptions,
-    ),
-    IconDropdownMenuEntry(
-        key = "sort",
-        title = stringResource(R.string.proxy_server_list_option_sort),
-        children = listOf(
-            proxyServerListToolMenuEntry(
-                title = stringResource(R.string.proxy_server_list_option_sort_default),
-                action = ProxyServerListToolAction.SetSortDefault,
-                selected = sort == ProxyServerListSortDefault,
-            ),
-            proxyServerListToolMenuEntry(
-                title = stringResource(R.string.proxy_server_list_option_sort_name),
-                action = ProxyServerListToolAction.SetSortName,
-                selected = sort == ProxyServerListSortName,
-            ),
-            proxyServerListToolMenuEntry(
-                title = stringResource(R.string.proxy_server_list_option_sort_latency),
-                action = ProxyServerListToolAction.SetSortLatency,
-                selected = sort == ProxyServerListSortLatency,
-            ),
-        ),
-    ),
-    IconDropdownMenuEntry(
-        key = "delete_proxy_servers",
-        title = stringResource(R.string.proxy_server_list_delete_proxy_servers),
-        children = listOf(
-            proxyServerListToolMenuEntry(
-                stringResource(R.string.proxy_server_list_delete_duplicates),
-                ProxyServerListToolAction.DeleteDuplicateServers,
-            ),
-            proxyServerListToolMenuEntry(
-                stringResource(R.string.proxy_server_list_delete_invalid),
-                ProxyServerListToolAction.DeleteInvalidServers,
-            ),
-            proxyServerListToolMenuEntry(
-                stringResource(R.string.proxy_server_list_delete_all),
-                ProxyServerListToolAction.DeleteAllServers,
-            ),
-        ),
-    ),
-)
-
-private fun proxyServerListToolMenuEntry(
-    title: String,
-    action: ProxyServerListToolAction,
-    selected: Boolean = false,
-) = IconDropdownMenuEntry(
-    key = action,
-    title = title,
-    action = action,
-    selected = selected,
-)

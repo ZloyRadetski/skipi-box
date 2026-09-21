@@ -3,12 +3,6 @@
 
 package features.proxy.server.list
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.pager.rememberPagerState
@@ -22,6 +16,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -49,6 +44,9 @@ import ui.feedback.LocalAppHaptics
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.presentation.ProxyHomePresentationAction
+import features.proxy.server.presentation.ProxyHomePresentationState
+import features.proxy.server.presentation.reduce
 import features.proxy.server.usecase.AndroidTunnelController
 import features.proxy.server.usecase.ProxyServerLatencyTracker
 import features.proxy.server.usecase.ProxyServiceResult
@@ -69,10 +67,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import ui.AppTheme
@@ -80,11 +75,26 @@ import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageWindowPadding
 import ui.components.DeleteConfirmationDialog
+import app.skipi.ui.home.SkipiProxyHomeScaffold
+import app.skipi.ui.home.SkipiProxyHomeScaffoldState
 import ui.text.formatTemplate
 import platform.TunnelConnectRequest
 import platform.TunnelPhase
 
 private const val ProxyServerEditResultKey = "proxy-server-edit-result"
+
+private val ProxyHomePresentationStateSaver = Saver<ProxyHomePresentationState, List<Any?>>(
+    save = { state ->
+        listOf(state.selectedGroupId, state.searchQuery, state.searchVisible)
+    },
+    restore = { values ->
+        ProxyHomePresentationState(
+            selectedGroupId = values.getOrNull(0) as? String,
+            searchQuery = values.getOrNull(1) as? String ?: "",
+            searchVisible = values.getOrNull(2) as? Boolean ?: false,
+        )
+    },
+)
 
 @Composable
 fun ProxyServerListPage(
@@ -111,7 +121,6 @@ fun ProxyServerListPage(
     val serviceRestartMutex = remember { Mutex() }
     val allSubscriptionsUpdateMutex = remember { Mutex() }
 
-    var searchValue by rememberSaveable { mutableStateOf("") }
     // Derive the initial selectedGroupId from the persisted selectedProxyServerId
     // so the tab starts on the correct group after process death. rememberSaveable
     // cannot survive process kill, so we compute the initial value from proxyListState
@@ -123,7 +132,21 @@ fun ProxyServerListPage(
             ?.groupId
             ?: DefaultSubscriptionGroupId
     }
-    var selectedGroupId by rememberSaveable { mutableIntStateOf(initialSelectedGroupId) }
+    var homePresentation by rememberSaveable(stateSaver = ProxyHomePresentationStateSaver) {
+        mutableStateOf(
+            ProxyHomePresentationState(
+                selectedGroupId = initialSelectedGroupId.toString(),
+            ),
+        )
+    }
+    val selectedGroupId = homePresentation.selectedGroupId
+        ?.toIntOrNull()
+        ?: initialSelectedGroupId
+    val searchValue = homePresentation.searchQuery
+
+    fun updateHomePresentation(action: ProxyHomePresentationAction) {
+        homePresentation = homePresentation.reduce(action)
+    }
     var serviceOperationInProgress by rememberSaveable { mutableStateOf(false) }
     var pendingProxyServerDeletion by remember { mutableStateOf<ProxyServerState?>(null) }
     var editingSubscriptionGroupId by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -541,7 +564,9 @@ fun ProxyServerListPage(
         messages = messages,
         updateAppState = updateAppState,
         tipNotifier = tipNotifier,
-        onSelectedGroupIdChange = { selectedGroupId = it },
+        onSelectedGroupIdChange = { groupId ->
+            updateHomePresentation(ProxyHomePresentationAction.SelectGroup(groupId.toString()))
+        },
     )
 
     val groupState = proxyServerListGroups(
@@ -588,7 +613,9 @@ fun ProxyServerListPage(
             .collect { page ->
                 groupState.groupTabs.getOrNull(page)?.let { group ->
                     if (selectedGroupId != group.id) {
-                        selectedGroupId = group.id
+                        updateHomePresentation(
+                            ProxyHomePresentationAction.SelectGroup(group.id.toString()),
+                        )
                     }
                 }
             }
@@ -653,80 +680,15 @@ fun ProxyServerListPage(
 
     val pinConnectionPanel = proxyListState.pinConnectionPanelOnHome
 
-    val movingPageHeader: @Composable (Modifier) -> Unit = { modifier ->
-        Column(modifier = modifier.fillMaxWidth()) {
-            connectionPanel(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 6.dp),
-            )
-            AnimatedVisibility(
-                visible = groupState.showGroupTabs,
-                enter = fadeIn() + expandVertically(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                ProxyServerListGroupSelector(
-                    groups = groupState.groupTabs,
-                    selectedGroupId = groupState.selectedTabId,
-                    onGroupSelected = { groupId ->
-                        if (selectedGroupId != groupId) {
-                            haptics.groupSwitched()
-                        }
-                        selectedGroupId = groupId
-                    },
-                    onGroupMove = { groupId, offset ->
-                        updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                )
-            }
-            AnimatedVisibility(
-                visible = proxyListState.showServerSearch,
-                enter = fadeIn() + expandVertically(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    ProxyServerListSearchBar(
-                        searchValue = searchValue,
-                        onSearchValueChange = { searchValue = it },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .pageWindowPadding(padding),
-    ) {
-        ProxyServerListTopBar(
-            searchValue = searchValue,
-            onSearchValueChange = { searchValue = it },
+    SkipiProxyHomeScaffold(
+        state = SkipiProxyHomeScaffoldState(
+            pinConnectionPanel = pinConnectionPanel,
+            showGroupSelector = groupState.showGroupTabs,
+            showSearch = proxyListState.showServerSearch,
+        ),
+        header = {
+            ProxyServerListTopBar(
             groupState = groupState,
-            pinnedConnectionPanel = if (pinConnectionPanel) {
-                {
-                    val bottomPadding = if (groupState.showGroupTabs || proxyListState.showServerSearch) 6.dp else 0.dp
-                    connectionPanel(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = bottomPadding),
-                    )
-                }
-            } else {
-                null
-            },
-            showPinnedGroupSelector = pinConnectionPanel,
-            showSearchBar = pinConnectionPanel,
             selectedServer = selectedServer,
             proxyListState = proxyListState,
             stateStore = stateStore,
@@ -744,33 +706,54 @@ fun ProxyServerListPage(
             resultKey = ProxyServerEditResultKey,
             serviceOperationInProgress = serviceOperationInProgress,
             runProxyServiceOperation = ::runProxyServiceOperation,
-            onSelectedGroupIdChange = {
-                if (selectedGroupId != it) {
-                    haptics.groupSwitched()
-                }
-                selectedGroupId = it
-            },
-            onMoveSubscriptionGroup = { groupId, offset ->
-                updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
-            },
             onTestProxyServerLatency = ::testProxyServerLatency,
             onCancelProxyServerLatency = ::cancelAllLatencyTests,
         )
-
-        features.updater.ui.AppUpdateBanner()
-
-        features.routing.ui.UnappliedRulesWarningNotification(
-            unappliedRules = proxyListState.unappliedRoutingRules,
-            onDismiss = {
-                updateAppState { state -> state.copy(unappliedRoutingRules = emptyList()) }
-            },
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-        ) {
+        },
+        connectionPanel = { contentModifier ->
+            connectionPanel(contentModifier)
+        },
+        groupSelector = { contentModifier ->
+            SharedProxyServerListGroupSelector(
+                groups = groupState.groupTabs,
+                selectedGroupId = groupState.selectedTabId,
+                onGroupSelected = { groupId ->
+                    if (selectedGroupId != groupId) {
+                        haptics.groupSwitched()
+                    }
+                    updateHomePresentation(
+                        ProxyHomePresentationAction.SelectGroup(groupId.toString()),
+                    )
+                },
+                onGroupMove = { groupId, offset ->
+                    updateAppState { state -> state.withMovedSubscriptionGroup(groupId, offset) }
+                },
+                modifier = contentModifier,
+            )
+        },
+        search = { contentModifier ->
+            ProxyServerListSearchBar(
+                searchValue = searchValue,
+                onSearchValueChange = { value ->
+                    updateHomePresentation(ProxyHomePresentationAction.ChangeSearchQuery(value))
+                },
+                modifier = contentModifier,
+            )
+        },
+        modifier = Modifier
+            .fillMaxSize()
+            .pageWindowPadding(padding),
+        pinnedContentModifier = Modifier.padding(horizontal = 12.dp),
+        notifications = {
+            features.updater.ui.AppUpdateBanner()
+            features.routing.ui.UnappliedRulesWarningNotification(
+                unappliedRules = proxyListState.unappliedRoutingRules,
+                onDismiss = {
+                    updateAppState { state -> state.copy(unappliedRoutingRules = emptyList()) }
+                },
+            )
+        },
+    ) { movingPageHeader ->
             ProxyServerListPager(
                 groupPagerState = groupPagerState,
                 scrollToTopRequest = scrollToTopRequest,
@@ -809,10 +792,9 @@ fun ProxyServerListPage(
                 activeOutboundTag = activeOutboundTag,
                 activeTrafficConfigId = proxyListState.activeTrafficConfigId,
                 userScrollEnabled = proxyListState.enableSubscriptionSwipe,
-                pageHeader = if (pinConnectionPanel) null else movingPageHeader,
+                pageHeader = movingPageHeader,
             )
             floatingToolbar?.invoke(this)
-        }
     }
 
     pendingProxyServerDeletion?.let { server ->
@@ -860,7 +842,9 @@ fun ProxyServerListPage(
         onDelete = { group ->
             deleteSubscriptionGroup(group)
             if (selectedGroupId == group.id) {
-                selectedGroupId = DefaultSubscriptionGroupId
+                updateHomePresentation(
+                    ProxyHomePresentationAction.SelectGroup(DefaultSubscriptionGroupId.toString()),
+                )
             }
         },
         onInvalidUrl = {

@@ -45,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import app.skipi.ui.navigation.SkipiMainDestination
+import app.skipi.ui.navigation.SkipiNavigationBar
+import app.skipi.ui.navigation.SkipiNavigationItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -96,7 +99,7 @@ fun main() = application {
                 var subscriptionLibrary by remember {
                     mutableStateOf(DesktopSubscriptionLibraries.loadDefault().getOrElse { DesktopSubscriptionLibrary() })
                 }
-                var currentSection by remember { mutableStateOf(DesktopSection.Proxy) }
+                var currentSection by remember { mutableStateOf(SkipiMainDestination.Proxy) }
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
                 }
@@ -390,7 +393,7 @@ fun main() = application {
                     },
                 ) { contentPadding ->
                     when (currentSection) {
-                        DesktopSection.Proxy -> DesktopProxyHome(
+                        SkipiMainDestination.Proxy -> DesktopProxyHome(
                             serverLibrary = serverLibrary,
                             subscriptionLibrary = subscriptionLibrary,
                             subscriptionUpdate = subscriptionUpdate,
@@ -964,7 +967,7 @@ fun main() = application {
                             contentPadding = contentPadding,
                         )
 
-                        DesktopSection.Configs -> DesktopConfigsScreen(
+                        SkipiMainDestination.Configs -> DesktopConfigsScreen(
                             configLibrary = configLibrary,
                             onConfigLibraryChange = { updated ->
                                 val activeBefore = configLibrary.selectedConfigId
@@ -983,7 +986,7 @@ fun main() = application {
                             contentPadding = contentPadding,
                         )
 
-                        DesktopSection.Settings -> DesktopSettingsScreen(
+                        SkipiMainDestination.Settings -> DesktopSettingsScreen(
                             settings = desktopSettings,
                             onSettingsChange = { updated ->
                                 val restartRequired = desktopSettings.localProxyPort != updated.localProxyPort ||
@@ -1020,60 +1023,16 @@ fun main() = application {
 
 @Composable
 private fun DesktopBottomNavigation(
-    selected: DesktopSection,
-    onSelect: (DesktopSection) -> Unit,
+    selected: SkipiMainDestination,
+    onSelect: (SkipiMainDestination) -> Unit,
 ) {
-    Box(
-        modifier = Modifier.fillMaxWidth().background(SkipiBackground).padding(horizontal = 28.dp, vertical = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().widthIn(max = 980.dp).height(82.dp),
-            color = SkipiCard,
-            shape = RoundedCornerShape(38.dp),
-            border = BorderStroke(1.dp, Color(0xFF35373E)),
-            shadowElevation = 10.dp,
-        ) {
-            Row(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-                DesktopSection.entries.forEach { section ->
-                    val isSelected = section == selected
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(30.dp))
-                            .background(if (isSelected) Color(0xFF747474) else Color.Transparent)
-                            .clickable { onSelect(section) },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Icon(
-                            section.icon(),
-                            contentDescription = null,
-                            tint = if (isSelected) Color(0xFFF4F4F6) else SkipiMuted,
-                        )
-                        Text(
-                            section.title,
-                            color = if (isSelected) Color(0xFFF4F4F6) else SkipiMuted,
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-private enum class DesktopSection(val title: String) {
-    Proxy("Прокси"),
-    Configs("Конфиги"),
-    Settings("Настройки");
-
-    fun icon() = when (this) {
-        Proxy -> Icons.AutoMirrored.Outlined.List
-        Configs -> Icons.Outlined.Tune
-        Settings -> Icons.Outlined.Hexagon
-    }
+    SkipiNavigationBar(
+        selectedDestination = selected,
+        onSelect = onSelect,
+        backgroundColor = SkipiBackground,
+        inactiveContentColor = SkipiMuted,
+        containerColor = SkipiCard,
+    )
 }
 
 private val SkipiBackground: Color

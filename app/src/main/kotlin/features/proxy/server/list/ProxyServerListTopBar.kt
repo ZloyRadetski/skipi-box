@@ -7,80 +7,38 @@ import android.os.SystemClock
 import ui.text.themedFontWeight
 import java.util.Locale
 import app.effects.resolveActiveNetworkConfig
+import app.skipi.ui.home.SkipiConnectionHeroPhase
+import app.skipi.ui.home.SkipiProxyHeroClassicCard
+import app.skipi.ui.home.SkipiProxyHeroColors
+import app.skipi.ui.home.SkipiProxyHeroCompactCard
+import app.skipi.ui.home.SkipiProxyHeroLatency
+import app.skipi.ui.home.SkipiProxyHeroState
+import app.skipi.ui.home.SkipiProxyHeroTypography
+import app.skipi.ui.home.SkipiProxyHomeHeader
+import app.skipi.ui.home.SkipiProxyHomeHeaderAction
+import app.skipi.ui.home.SkipiProxyHomeHeaderColors
+import app.skipi.ui.home.SkipiProxyHomeHeaderLabels
+import app.skipi.ui.home.SkipiProxyHomeHeaderState
 import features.config.withActiveTrafficConfig
 import features.networkautomation.engine.NetworkAutomationDecision
 import features.networkautomation.engine.NetworkAutomationEvaluator
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.EaseInOut
-import androidx.compose.animation.core.EaseOutQuad
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.AppState
 import app.activeTunnelTargetDisplayName
 import app.proxyServerIdFromOutboundTag
@@ -97,15 +55,8 @@ import app.collectAppState
 import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.model.StrategyGroup
 import kotlinx.coroutines.delay
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import ui.KeyColors
 import ui.StatusColorDefaults
-import ui.anim.rememberInfinitePulse
 import ui.isInDarkTheme
 import ui.keyColorFor
 import ui.resolveSystemAccentColor
@@ -141,21 +92,14 @@ import features.settings.currentTunnelMemoryPssKb
 import features.settings.formatTunnelMemory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
-import ui.icons.AnimatedHourglassIcon
-import ui.icons.StaticHourglass
 import ui.clipboard.getPlainText
 import ui.components.DeleteConfirmationDialog
 import ui.feedback.AndroidToastTipNotifier
@@ -165,12 +109,7 @@ import ui.text.formatTemplate
 
 @Composable
 internal fun ProxyServerListTopBar(
-    searchValue: String,
-    onSearchValueChange: (String) -> Unit,
     groupState: ProxyServerListGroups,
-    pinnedConnectionPanel: (@Composable () -> Unit)? = null,
-    showPinnedGroupSelector: Boolean = true,
-    showSearchBar: Boolean = true,
     selectedServer: ProxyServerState?,
     proxyListState: ProxyServerListState,
     stateStore: AndroidAppStateStore,
@@ -188,8 +127,6 @@ internal fun ProxyServerListTopBar(
     resultKey: String,
     serviceOperationInProgress: Boolean,
     runProxyServiceOperation: (suspend () -> Unit) -> Unit,
-    onSelectedGroupIdChange: (Int) -> Unit,
-    onMoveSubscriptionGroup: (groupId: Int, offset: Int) -> Unit,
     onTestProxyServerLatency: (List<ProxyServerState>, ProxyServerLatencyTestMode, String, Boolean, (() -> Unit)?) -> Unit,
     onCancelProxyServerLatency: () -> Unit,
 ) {
@@ -250,122 +187,187 @@ internal fun ProxyServerListTopBar(
         groupState.currentFilteredServers.any { it.isTestingLatency }
     }
     val hapticFeedback = LocalHapticFeedback.current
+    fun headerAddAction(
+        action: ProxyServerListAddAction,
+        title: String,
+    ) = SkipiProxyHomeHeaderAction(
+        id = action.name,
+        title = title,
+    )
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .height(48.dp)
-                .padding(start = 12.dp, end = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MiuixTheme.textStyles.headline1.copy(
-                    fontWeight = themedFontWeight(FontWeight.Bold),
+    fun headerToolAction(
+        action: ProxyServerListToolAction,
+        title: String,
+        selected: Boolean = false,
+    ) = SkipiProxyHomeHeaderAction(
+        id = action.name,
+        title = title,
+        selected = selected,
+    )
+
+    val addActions = listOf(
+        headerAddAction(
+            ProxyServerListAddAction.ScanQrCode,
+            stringResource(R.string.proxy_server_list_scan_qr_code),
+        ),
+        headerAddAction(
+            ProxyServerListAddAction.Clipboard,
+            stringResource(R.string.proxy_server_list_import_clipboard),
+        ),
+        headerAddAction(
+            ProxyServerListAddAction.File,
+            stringResource(R.string.proxy_server_list_import_file),
+        ),
+        SkipiProxyHomeHeaderAction(
+            id = "manual_input",
+            title = stringResource(R.string.proxy_server_list_manual_input),
+            children = listOf(
+                headerAddAction(ProxyServerListAddAction.HTTP, stringResource(R.string.proxy_server_list_add_http)),
+                headerAddAction(ProxyServerListAddAction.VMess, stringResource(R.string.proxy_server_list_add_vmess)),
+                headerAddAction(ProxyServerListAddAction.VLESS, stringResource(R.string.proxy_server_list_add_vless)),
+                headerAddAction(ProxyServerListAddAction.Trojan, stringResource(R.string.proxy_server_list_add_trojan)),
+                headerAddAction(
+                    ProxyServerListAddAction.Shadowsocks,
+                    stringResource(R.string.proxy_server_list_add_shadowsocks),
                 ),
-                color = MiuixTheme.colorScheme.onBackground,
-            )
-            Spacer(Modifier.weight(1f))
-            IconButton(
-                onClick = {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+                headerAddAction(ProxyServerListAddAction.Socks, stringResource(R.string.proxy_server_list_add_socks)),
+                headerAddAction(
+                    ProxyServerListAddAction.Hysteria2,
+                    stringResource(R.string.proxy_server_list_add_hysteria2),
+                ),
+                headerAddAction(
+                    ProxyServerListAddAction.Wireguard,
+                    stringResource(R.string.proxy_server_list_add_wireguard),
+                ),
+                headerAddAction(
+                    ProxyServerListAddAction.AmneziaWg,
+                    stringResource(R.string.proxy_server_list_add_amnezia_wg),
+                ),
+                headerAddAction(ProxyServerListAddAction.OlcRtc, stringResource(R.string.proxy_server_list_add_olcrtc)),
+            ),
+        ),
+        headerAddAction(
+            ProxyServerListAddAction.StrategyGroup,
+            stringResource(R.string.proxy_server_list_add_strategy_group),
+        ),
+        headerAddAction(
+            ProxyServerListAddAction.ChainProxy,
+            stringResource(R.string.proxy_server_list_add_chain_proxy),
+        ),
+        headerAddAction(
+            ProxyServerListAddAction.Custom,
+            stringResource(R.string.proxy_server_list_add_custom),
+        ),
+    )
+    val toolActions = listOf(
+        headerToolAction(
+            ProxyServerListToolAction.RestartService,
+            stringResource(R.string.proxy_server_list_restart_service),
+        ),
+        headerToolAction(
+            ProxyServerListToolAction.UpdateSubscriptions,
+            stringResource(R.string.proxy_server_list_update_subscriptions),
+        ),
+        SkipiProxyHomeHeaderAction(
+            id = "sort",
+            title = stringResource(R.string.proxy_server_list_option_sort),
+            children = listOf(
+                headerToolAction(
+                    ProxyServerListToolAction.SetSortDefault,
+                    stringResource(R.string.proxy_server_list_option_sort_default),
+                    selected = proxyListState.proxyServerListSort == ProxyServerListSortDefault,
+                ),
+                headerToolAction(
+                    ProxyServerListToolAction.SetSortName,
+                    stringResource(R.string.proxy_server_list_option_sort_name),
+                    selected = proxyListState.proxyServerListSort == ProxyServerListSortName,
+                ),
+                headerToolAction(
+                    ProxyServerListToolAction.SetSortLatency,
+                    stringResource(R.string.proxy_server_list_option_sort_latency),
+                    selected = proxyListState.proxyServerListSort == ProxyServerListSortLatency,
+                ),
+            ),
+        ),
+        SkipiProxyHomeHeaderAction(
+            id = "delete_proxy_servers",
+            title = stringResource(R.string.proxy_server_list_delete_proxy_servers),
+            children = listOf(
+                headerToolAction(
+                    ProxyServerListToolAction.DeleteDuplicateServers,
+                    stringResource(R.string.proxy_server_list_delete_duplicates),
+                ),
+                headerToolAction(
+                    ProxyServerListToolAction.DeleteInvalidServers,
+                    stringResource(R.string.proxy_server_list_delete_invalid),
+                ),
+                headerToolAction(
+                    ProxyServerListToolAction.DeleteAllServers,
+                    stringResource(R.string.proxy_server_list_delete_all),
+                ),
+            ),
+        ),
+    )
+
+    SkipiProxyHomeHeader(
+            state = SkipiProxyHomeHeaderState(
+                title = stringResource(R.string.app_name),
+                latencyTesting = isPinging,
+            ),
+            labels = SkipiProxyHomeHeaderLabels(
+                latencyActionDescription = stringResource(
                     if (isPinging) {
-                        onCancelProxyServerLatency()
+                        R.string.proxy_server_list_ping_in_progress
                     } else {
-                        val pingMode = if (proxyListState.subscriptionPingMode == SubscriptionPingModeHttp) {
-                            ProxyServerLatencyTestMode.RealConnection
-                        } else {
-                            ProxyServerLatencyTestMode.TcpConnect
-                        }
-                        val doneTemplate = if (pingMode == ProxyServerLatencyTestMode.RealConnection) {
-                            messages.realConnectionDoneTemplate
-                        } else {
-                            messages.latencyDoneTemplate
-                        }
-                        onTestProxyServerLatency(
-                            groupState.currentFilteredServers,
-                            pingMode,
-                            doneTemplate,
-                            false,
-                            null,
-                        )
-                    }
-                },
-            ) {
+                        R.string.proxy_server_list_ping_check
+                    },
+                ),
+                addActionDescription = stringResource(R.string.proxy_server_list_add),
+                moreActionDescription = stringResource(R.string.proxy_server_list_more),
+            ),
+            colors = SkipiProxyHomeHeaderColors(
+                text = MiuixTheme.colorScheme.onBackground,
+                mutedText = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                accent = MiuixTheme.colorScheme.primary,
+            ),
+            addActions = addActions,
+            toolActions = toolActions,
+            onTestLatency = {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
                 if (isPinging) {
-                    val pingingDescription = stringResource(R.string.proxy_server_list_ping_in_progress)
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .semantics { contentDescription = pingingDescription },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        AnimatedHourglassIcon(
-                            color = MiuixTheme.colorScheme.primary,
-                            isPinging = true,
-                            size = 20.dp,
-                        )
-                    }
+                    onCancelProxyServerLatency()
                 } else {
-                    StaticHourglass(
-                        modifier = Modifier.size(24.dp),
-                        color = MiuixTheme.colorScheme.onBackground,
-                        size = 20.dp,
+                    val pingMode = if (proxyListState.subscriptionPingMode == SubscriptionPingModeHttp) {
+                        ProxyServerLatencyTestMode.RealConnection
+                    } else {
+                        ProxyServerLatencyTestMode.TcpConnect
+                    }
+                    val doneTemplate = if (pingMode == ProxyServerLatencyTestMode.RealConnection) {
+                        messages.realConnectionDoneTemplate
+                    } else {
+                        messages.latencyDoneTemplate
+                    }
+                    onTestProxyServerLatency(
+                        groupState.currentFilteredServers,
+                        pingMode,
+                        doneTemplate,
+                        false,
+                        null,
                     )
                 }
-            }
-            ProxyServerListAddMenu(onAction = ::handleAddAction)
-            ProxyServerListToolsMenu(
-                sort = proxyListState.proxyServerListSort,
-                onAction = ::requestToolAction,
-            )
-        }
-
-        pinnedConnectionPanel?.invoke()
-
-        AnimatedVisibility(
-            visible = showPinnedGroupSelector && groupState.showGroupTabs,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
-            val bottomPadding = if (showSearchBar && proxyListState.showServerSearch) 6.dp else 0.dp
-            ProxyServerListGroupSelector(
-                groups = groupState.groupTabs,
-                selectedGroupId = groupState.selectedTabId,
-                onGroupSelected = onSelectedGroupIdChange,
-                onGroupMove = onMoveSubscriptionGroup,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = bottomPadding),
-            )
-        }
-
-        AnimatedVisibility(
-            visible = showSearchBar && proxyListState.showServerSearch,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut(),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = 0.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ProxyServerListSearchBar(
-                    searchValue = searchValue,
-                    onSearchValueChange = onSearchValueChange,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-    }
+            },
+            onAddAction = { actionId ->
+                ProxyServerListAddAction.entries
+                    .firstOrNull { action -> action.name == actionId }
+                    ?.let(::handleAddAction)
+            },
+            onToolAction = { actionId ->
+                ProxyServerListToolAction.entries
+                    .firstOrNull { action -> action.name == actionId }
+                    ?.let(::requestToolAction)
+            },
+            modifier = Modifier.statusBarsPadding(),
+    )
 
     pendingDeletionAction?.let { action ->
         DeleteConfirmationDialog(
@@ -377,62 +379,6 @@ internal fun ProxyServerListTopBar(
                 executeToolAction(action)
             },
         )
-    }
-}
-
-@Composable
-private fun PowerIcon(
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
-    Canvas(modifier = modifier) {
-        val strokeWidth = size.minDimension * 0.12f
-        val radius = (size.minDimension - strokeWidth) / 2f
-        val center = Offset(size.width / 2f, size.height / 2f)
-
-        // Standard IEC Power Standby symbol: open arc at the top
-        drawArc(
-            color = color,
-            startAngle = -55f,
-            sweepAngle = 290f,
-            useCenter = false,
-            topLeft = Offset(center.x - radius, center.y - radius),
-            size = Size(radius * 2f, radius * 2f),
-            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-        )
-
-        // Vertical power bar through the top opening
-        drawLine(
-            color = color,
-            start = Offset(center.x, center.y - radius * 1.05f),
-            end = Offset(center.x, center.y - radius * 0.05f),
-            strokeWidth = strokeWidth,
-            cap = StrokeCap.Round,
-        )
-    }
-}
-
-@Composable
-private fun SignalBarsIcon(
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
-    Canvas(modifier = modifier) {
-        val barCount = 3
-        val spacing = size.width * 0.18f
-        val totalSpacing = spacing * (barCount - 1)
-        val barWidth = (size.width - totalSpacing) / barCount
-        for (i in 0 until barCount) {
-            val barHeight = size.height * (0.35f + 0.32f * i)
-            val left = i * (barWidth + spacing)
-            val top = size.height - barHeight
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(left, top),
-                size = Size(barWidth, barHeight),
-                cornerRadius = CornerRadius(barWidth / 2f, barWidth / 2f),
-            )
-        }
     }
 }
 
@@ -485,34 +431,106 @@ internal fun ProxyHeroConnectionCard(
         if (selfFlag != null) CountryFlagUtils.stripLeadingCountryFlag(activeName) else activeName
     }
 
-    if (connectionDisplayMode == ConnectionDisplayModeClassic) {
-        ProxyHeroConnectionCardClassic(
-            appState = appState,
-            proxyRunning = proxyRunning,
-            serviceOperationInProgress = serviceOperationInProgress,
-            showTunnelMemoryOnHome = showTunnelMemoryOnHome,
-            memoryKb = memoryKb,
-            effectiveFlag = effectiveFlag,
-            cleanTitle = cleanTitle,
-            directName = directName,
-            activeServerState = activeServerState,
-            selectedServer = selectedServer,
-            sample = sample,
-            onToggleProxy = onToggleProxy,
+    val isClassic = connectionDisplayMode == ConnectionDisplayModeClassic
+    val phase = when {
+        proxyRunning -> SkipiConnectionHeroPhase.Connected
+        serviceOperationInProgress -> SkipiConnectionHeroPhase.Connecting
+        else -> SkipiConnectionHeroPhase.Disconnected
+    }
+    val latencyText = remember(selectedServer) { resolveConnectionLatency(selectedServer) }
+    val latency = when {
+        latencyText == ProxyServerLatencyTesting -> SkipiProxyHeroLatency(
+            text = stringResource(R.string.proxy_server_list_ping_in_progress),
+            color = MiuixTheme.colorScheme.primary,
+            testing = true,
+        )
+
+        isClassic -> SkipiProxyHeroLatency(
+            text = latencyText ?: "-- ms",
+            color = latencyText?.let { proxyServerLatencyColor(it) }
+                ?: AppTheme.colors.onSurfaceVariant.copy(alpha = 0.5f),
+        )
+
+        else -> latencyText?.let {
+            SkipiProxyHeroLatency(
+                text = it,
+                color = proxyServerLatencyColor(it),
+            )
+        }
+    }
+    val memoryText = if (showTunnelMemoryOnHome && memoryKb > 0L) {
+        stringResource(R.string.connection_metric_ram_format, formatTunnelMemory(memoryKb))
+    } else {
+        null
+    }
+    val title = when (phase) {
+        SkipiConnectionHeroPhase.Connected -> stringResource(
+            if (isClassic) R.string.connection_status_connected else R.string.proxy_active_server_status_connected,
+        )
+
+        SkipiConnectionHeroPhase.Connecting -> stringResource(R.string.connection_status_connecting)
+        SkipiConnectionHeroPhase.Disconnected -> stringResource(
+            if (isClassic) R.string.connection_status_disconnected else R.string.proxy_active_server_status_stopped,
+        )
+    }
+    val subtitle = if (isClassic) {
+        val showActiveServer = phase != SkipiConnectionHeroPhase.Disconnected &&
+            cleanTitle.isNotBlank() && cleanTitle != directName
+        if (showActiveServer) {
+            cleanTitle
+        } else {
+            when (phase) {
+                SkipiConnectionHeroPhase.Connected -> stringResource(R.string.connection_status_secured)
+                SkipiConnectionHeroPhase.Connecting -> stringResource(R.string.connection_status_connecting)
+                SkipiConnectionHeroPhase.Disconnected -> stringResource(R.string.connection_status_tap_to_connect)
+            }
+        }
+    } else if (phase == SkipiConnectionHeroPhase.Connected) {
+        cleanTitle
+    } else {
+        cleanTitle.ifBlank { stringResource(R.string.proxy_active_server_select_to_connect) }
+    }
+    val colors = SkipiProxyHeroColors(
+        surface = AppTheme.colors.surface,
+        raisedSurface = AppTheme.colors.surfaceVariant,
+        border = AppTheme.colors.onSurface.copy(alpha = 0.12f),
+        accent = AppTheme.colors.accent,
+        text = if (isClassic) AppTheme.colors.onSurface else MiuixTheme.colorScheme.onSurface,
+        mutedText = if (isClassic) AppTheme.colors.onSurfaceVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        connectedStatus = appState.customStatusRunningColor?.let(::Color)
+            ?: StatusColorDefaults.statusRunning(isInDarkTheme()),
+    )
+    val typography = SkipiProxyHeroTypography(
+        title = themedFontWeight(FontWeight.Bold),
+        emphasis = themedFontWeight(FontWeight.SemiBold),
+        body = themedFontWeight(FontWeight.Medium),
+    )
+    val state = SkipiProxyHeroState(
+        phase = phase,
+        title = title,
+        subtitle = subtitle,
+        flag = effectiveFlag,
+        sessionDurationText = if (isClassic && proxyRunning) rememberProxyHeroSessionDuration(proxyRunning) else null,
+        latency = latency,
+        memoryText = memoryText,
+    )
+
+    if (isClassic) {
+        SkipiProxyHeroClassicCard(
+            state = state,
+            colors = colors,
+            typography = typography,
+            connectContentDescription = stringResource(R.string.connection_status_tap_to_connect),
+            disconnectContentDescription = stringResource(R.string.connection_status_connected),
+            onToggle = onToggleProxy,
             modifier = modifier,
         )
     } else {
-        ProxyHeroConnectionCardCompact(
-            appState = appState,
-            proxyRunning = proxyRunning,
-            serviceOperationInProgress = serviceOperationInProgress,
-            showTunnelMemoryOnHome = showTunnelMemoryOnHome,
-            memoryKb = memoryKb,
-            effectiveFlag = effectiveFlag,
-            cleanTitle = cleanTitle,
-            activeServerState = activeServerState,
-            selectedServer = selectedServer,
-            sample = sample,
+        SkipiProxyHeroCompactCard(
+            state = state,
+            colors = colors,
+            typography = typography,
+            fallbackBadgePainter = painterResource(R.drawable.ic_globe),
             modifier = modifier,
         )
     }
@@ -531,113 +549,7 @@ private fun resolveConnectionLatency(
 }
 
 @Composable
-private fun PowerButtonWaves(accentTone: Color) {
-    val infiniteTransition = rememberInfiniteTransition(label = "power_pulse_waves")
-
-    val pulse1Progress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = EaseOutQuad),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "pulse_1",
-    )
-
-    val pulse2Progress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, delayMillis = 1200, easing = EaseOutQuad),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "pulse_2",
-    )
-
-    Box(modifier = Modifier.size(86.dp), contentAlignment = Alignment.Center) {
-        // Wave 1
-        Box(
-            modifier = Modifier
-                .size(86.dp)
-                .graphicsLayer {
-                    val scale = 1.0f + 0.35f * pulse1Progress
-                    val alpha = (1.0f - pulse1Progress) * 0.40f
-                    scaleX = scale
-                    scaleY = scale
-                    this.alpha = alpha
-                }
-                .clip(CircleShape)
-                .background(accentTone),
-        )
-
-        // Wave 2
-        Box(
-            modifier = Modifier
-                .size(86.dp)
-                .graphicsLayer {
-                    val scale = 1.0f + 0.35f * pulse2Progress
-                    val alpha = (1.0f - pulse2Progress) * 0.40f
-                    scaleX = scale
-                    scaleY = scale
-                    this.alpha = alpha
-                }
-                .clip(CircleShape)
-                .background(accentTone),
-        )
-    }
-}
-
-@Composable
-private fun ConnectingSpinner(accentTone: Color) {
-    val connectingRotation = rememberInfiniteTransition(label = "connecting_spinner").animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "connecting_rot",
-    )
-
-    Box(
-        modifier = Modifier
-            .size(92.dp)
-            .graphicsLayer { rotationZ = connectingRotation.value }
-            .drawBehind {
-                drawArc(
-                    brush = Brush.sweepGradient(
-                        listOf(
-                            accentTone.copy(alpha = 0.0f),
-                            accentTone.copy(alpha = 0.35f),
-                            accentTone,
-                        )
-                    ),
-                    startAngle = 0f,
-                    sweepAngle = 280f,
-                    useCenter = false,
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
-                )
-            },
-    )
-}
-
-@Composable
-private fun ProxyHeroConnectionCardClassic(
-    appState: AppState,
-    proxyRunning: Boolean,
-    showTunnelMemoryOnHome: Boolean,
-    memoryKb: Long,
-    effectiveFlag: String?,
-    cleanTitle: String,
-    directName: String,
-    activeServerState: ProxyServerState?,
-    selectedServer: ProxyServerState?,
-    sample: ActiveTunnelRuntimeSample?,
-    onToggleProxy: () -> Unit,
-    modifier: Modifier = Modifier,
-    serviceOperationInProgress: Boolean = false,
-) {
-    val isConnecting = serviceOperationInProgress && !proxyRunning
+private fun rememberProxyHeroSessionDuration(proxyRunning: Boolean): String {
     val sessionDuration by produceState(initialValue = "00:00:00", proxyRunning) {
         if (!proxyRunning) {
             value = "--:--:--"
@@ -650,579 +562,10 @@ private fun ProxyHeroConnectionCardClassic(
             val minutes = (elapsedSeconds % 3600) / 60
             val seconds = elapsedSeconds % 60
             value = String.format(Locale.ROOT, "%02d:%02d:%02d", hours, minutes, seconds)
-            delay(1000)
+            delay(1_000)
         }
     }
-
-    val heroShape = RoundedCornerShape(24.dp)
-    val accentTone = AppTheme.colors.accent
-
-    val cardBgColor = AppTheme.colors.surface
-    val cardBorderColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else if (isConnecting) accentTone.copy(alpha = 0.45f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
-        animationSpec = tween(350),
-        label = "classic_card_border",
-    )
-
-    val buttonBgColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone else if (isConnecting) accentTone.copy(alpha = 0.22f) else AppTheme.colors.surfaceVariant,
-        animationSpec = tween(300),
-        label = "classic_btn_bg",
-    )
-    val buttonBorderColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.45f) else if (isConnecting) accentTone else AppTheme.colors.onSurface.copy(alpha = 0.18f),
-        animationSpec = tween(300),
-        label = "classic_btn_border",
-    )
-    val isAccentBright = remember(accentTone) {
-        accentTone.luminance() > 0.65f
-    }
-    val powerIconTint by animateColorAsState(
-        targetValue = if (proxyRunning) {
-            if (isAccentBright) Color(0xFF1B1B1F) else Color.White
-        } else if (isConnecting) {
-            accentTone
-        } else {
-            AppTheme.colors.onSurface.copy(alpha = 0.5f)
-        },
-        animationSpec = tween(300),
-        label = "classic_icon_tint",
-    )
-
-    val buttonInteractionSource = remember { MutableInteractionSource() }
-    val isPressed by buttonInteractionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.88f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "classic_btn_press_scale",
-    )
-
-    val buttonScale by animateFloatAsState(
-        targetValue = if (proxyRunning) 1.0f else if (isConnecting) 0.98f else 0.96f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "classic_btn_scale",
-    )
-
-    val breathScale by rememberInfinitePulse(
-        enabled = proxyRunning,
-        initialValue = 1f,
-        targetValue = 1.035f,
-        durationMillis = 1600,
-    )
-
-    Card(
-        modifier = modifier
-            .clip(heroShape)
-            .border(
-                width = 1.dp,
-                color = cardBorderColor,
-                shape = heroShape,
-            ),
-        colors = CardDefaults.defaultColors(
-            color = cardBgColor,
-        ),
-        insideMargin = PaddingValues(horizontal = 18.dp, vertical = 18.dp),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Top Row: Big Power Button + Header & Server Name
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Large Circular Power Button with Multi-wave Aura.
-                // Wave and spinner animations are composed only while they are
-                // visible, so idle screens drive zero animation frames.
-                Box(
-                    modifier = Modifier.size(96.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (proxyRunning) {
-                        PowerButtonWaves(accentTone = accentTone)
-                    }
-
-                    if (isConnecting) {
-                        ConnectingSpinner(accentTone = accentTone)
-                    }
-
-                    val effectiveScale = buttonScale * breathScale * pressScale
-                    Box(
-                        modifier = Modifier
-                            .size(86.dp)
-                            .graphicsLayer {
-                                scaleX = effectiveScale
-                                scaleY = effectiveScale
-                            }
-                            .clip(CircleShape)
-                            .background(buttonBgColor)
-                            .border(
-                                width = if (proxyRunning) 3.dp else 2.dp,
-                                color = buttonBorderColor,
-                                shape = CircleShape,
-                            )
-                            .clickable(
-                                interactionSource = buttonInteractionSource,
-                                indication = null,
-                                onClick = onToggleProxy,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        PowerIcon(
-                            color = powerIconTint,
-                            modifier = Modifier.size(42.dp),
-                        )
-                    }
-                }
-
-                Spacer(Modifier.width(16.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    AnimatedContent(
-                        targetState = when {
-                            proxyRunning -> 2
-                            isConnecting -> 1
-                            else -> 0
-                        },
-                        transitionSpec = {
-                            (fadeIn(animationSpec = tween(260)) + slideInVertically(animationSpec = tween(260)) { height -> height / 3 })
-                                .togetherWith(fadeOut(animationSpec = tween(160)) + slideOutVertically(animationSpec = tween(160)) { height -> -height / 3 })
-                        },
-                        label = "classic_status_title",
-                    ) { statusState ->
-                        Text(
-                            text = when (statusState) {
-                                2 -> stringResource(R.string.connection_status_connected)
-                                1 -> stringResource(R.string.connection_status_connecting)
-                                else -> stringResource(R.string.connection_status_disconnected)
-                            },
-                            fontSize = 22.sp,
-                            fontWeight = themedFontWeight(FontWeight.Bold),
-                            color = AppTheme.colors.onSurface,
-                        )
-                    }
-
-                    Spacer(Modifier.height(4.dp))
-
-                    AnimatedContent(
-                        targetState = (proxyRunning || isConnecting) && cleanTitle.isNotBlank() && cleanTitle != directName,
-                        transitionSpec = {
-                            (fadeIn(animationSpec = tween(260)) + expandVertically(animationSpec = tween(260)))
-                                .togetherWith(fadeOut(animationSpec = tween(160)) + shrinkVertically(animationSpec = tween(160)))
-                        },
-                        label = "classic_server_title",
-                    ) { showActiveServer ->
-                        if (showActiveServer) {
-                            Text(
-                                text = cleanTitle,
-                                fontSize = 15.sp,
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = AppTheme.colors.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                lineHeight = 19.sp,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        } else {
-                            Text(
-                                text = when {
-                                    proxyRunning -> stringResource(R.string.connection_status_secured)
-                                    isConnecting -> stringResource(R.string.connection_status_connecting)
-                                    else -> stringResource(R.string.connection_status_tap_to_connect)
-                                },
-                                fontSize = 14.sp,
-                                color = AppTheme.colors.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                lineHeight = 18.sp,
-                            )
-                        }
-                    }
-                }
-            }
-
-            AnimatedVisibility(
-                visible = proxyRunning,
-                enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
-                exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
-            ) {
-                Column {
-                    Spacer(Modifier.height(14.dp))
-
-                    val isMemoryVisible = showTunnelMemoryOnHome && memoryKb > 0L
-                    val latencyText = remember(selectedServer) {
-                        resolveConnectionLatency(selectedServer)
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(accentTone),
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = sessionDuration,
-                            fontSize = 13.sp,
-                            fontWeight = themedFontWeight(FontWeight.Medium),
-                            color = AppTheme.colors.onSurfaceVariant,
-                        )
-
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "|",
-                            fontSize = 12.sp,
-                            color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
-                        )
-                        Spacer(Modifier.width(8.dp))
-
-                        if (latencyText == ProxyServerLatencyTesting) {
-                            AnimatedHourglassIcon(
-                                color = MiuixTheme.colorScheme.primary,
-                                isPinging = true,
-                                size = 13.dp,
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = stringResource(R.string.proxy_server_list_ping_in_progress),
-                                fontSize = 13.sp,
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = MiuixTheme.colorScheme.primary,
-                            )
-                        } else {
-                            val latencyDisplay = latencyText ?: "-- ms"
-                            val latencyColor = if (latencyText != null) {
-                                proxyServerLatencyColor(latencyText)
-                            } else {
-                                AppTheme.colors.onSurfaceVariant.copy(alpha = 0.5f)
-                            }
-                            SignalBarsIcon(
-                                color = latencyColor,
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = latencyDisplay,
-                                fontSize = 13.sp,
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = latencyColor,
-                            )
-                        }
-
-                        if (isMemoryVisible) {
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = "|",
-                                fontSize = 12.sp,
-                                color = AppTheme.colors.onSurfaceVariant.copy(alpha = 0.35f),
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.connection_metric_ram_format, formatTunnelMemory(memoryKb)),
-                                fontSize = 13.sp,
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = AppTheme.colors.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProxyHeroConnectionCardCompact(
-    appState: AppState,
-    proxyRunning: Boolean,
-    showTunnelMemoryOnHome: Boolean,
-    memoryKb: Long,
-    effectiveFlag: String?,
-    cleanTitle: String,
-    activeServerState: ProxyServerState? = null,
-    selectedServer: ProxyServerState? = null,
-    sample: ActiveTunnelRuntimeSample? = null,
-    modifier: Modifier = Modifier,
-    serviceOperationInProgress: Boolean = false,
-) {
-    val isConnecting = serviceOperationInProgress && !proxyRunning
-    val heroShape = RoundedCornerShape(18.dp)
-    val accentTone = AppTheme.colors.accent
-
-    val compactCardBgColor by animateColorAsState(
-        targetValue = if (proxyRunning) AppTheme.colors.accent else AppTheme.colors.surface,
-        animationSpec = tween(350),
-        label = "compact_card_bg",
-    )
-    val compactCardBorderColor by animateColorAsState(
-        targetValue = if (proxyRunning) accentTone.copy(alpha = 0.35f) else if (isConnecting) accentTone.copy(alpha = 0.45f) else AppTheme.colors.onSurface.copy(alpha = 0.12f),
-        animationSpec = tween(350),
-        label = "compact_card_border",
-    )
-
-    val dotScale by animateFloatAsState(
-        targetValue = if (proxyRunning || isConnecting) 1.0f else 0.8f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "compact_dot_scale",
-    )
-
-    val latencyText = remember(selectedServer) {
-        resolveConnectionLatency(selectedServer)
-    }
-
-    val connectingDotScale by rememberInfinitePulse(
-        enabled = isConnecting,
-        initialValue = 0.7f,
-        targetValue = 1.35f,
-        durationMillis = 800,
-    )
-
-    Card(
-        modifier = modifier
-            .clip(heroShape)
-            .border(
-                width = 1.dp,
-                color = compactCardBorderColor,
-                shape = heroShape,
-            ),
-        colors = CardDefaults.defaultColors(
-            color = compactCardBgColor,
-        ),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-    ) {
-        AnimatedContent(
-            targetState = proxyRunning,
-            transitionSpec = {
-                (fadeIn(animationSpec = tween(280)) + expandVertically(animationSpec = tween(280)))
-                    .togetherWith(fadeOut(animationSpec = tween(180)) + shrinkVertically(animationSpec = tween(180)))
-            },
-            label = "compact_card_content",
-        ) { isRunning ->
-            if (isRunning) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        val statusConnectedColor = appState.customStatusRunningColor?.let { Color(it) }
-                            ?: StatusColorDefaults.statusRunning(isInDarkTheme())
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .graphicsLayer {
-                                        scaleX = dotScale
-                                        scaleY = dotScale
-                                    }
-                                    .clip(CircleShape)
-                                    .background(statusConnectedColor),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = stringResource(R.string.proxy_active_server_status_connected),
-                                fontSize = 12.sp,
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = statusConnectedColor,
-                            )
-                        }
-                        if (showTunnelMemoryOnHome && memoryKb > 0L) {
-                            Text(
-                                text = stringResource(R.string.connection_metric_ram_format, formatTunnelMemory(memoryKb)),
-                                fontSize = 12.sp,
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        CountryFlagBadge(
-                            flag = effectiveFlag,
-                            size = 36.dp,
-                            shapeRadius = 8.dp,
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        Text(
-                            text = cleanTitle,
-                            fontSize = 16.sp,
-                            fontWeight = themedFontWeight(FontWeight.SemiBold),
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        if (!latencyText.isNullOrBlank()) {
-                            if (latencyText == ProxyServerLatencyTesting) {
-                                val testColor = MiuixTheme.colorScheme.primary
-                                Spacer(Modifier.width(8.dp))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(testColor.copy(alpha = 0.12f))
-                                        .padding(horizontal = 6.dp, vertical = 3.dp),
-                                ) {
-                                    AnimatedHourglassIcon(
-                                        color = testColor,
-                                        isPinging = true,
-                                        size = 12.dp,
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.proxy_server_list_ping_in_progress),
-                                        fontSize = 12.sp,
-                                        fontWeight = themedFontWeight(FontWeight.Medium),
-                                        color = testColor,
-                                    )
-                                }
-                            } else {
-                                val latencyColor = proxyServerLatencyColor(latencyText)
-                                Spacer(Modifier.width(8.dp))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(latencyColor.copy(alpha = 0.12f))
-                                        .padding(horizontal = 6.dp, vertical = 3.dp),
-                                ) {
-                                    SignalBarsIcon(
-                                        color = latencyColor,
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = latencyText,
-                                        fontSize = 12.sp,
-                                        fontWeight = themedFontWeight(FontWeight.Medium),
-                                        color = latencyColor,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CountryFlagBadge(
-                        flag = effectiveFlag,
-                        size = 36.dp,
-                        shapeRadius = 8.dp,
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .graphicsLayer {
-                                        if (isConnecting) {
-                                            scaleX = connectingDotScale
-                                            scaleY = connectingDotScale
-                                        }
-                                    }
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isConnecting) accentTone else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.5f),
-                                    ),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = if (isConnecting) {
-                                    stringResource(R.string.connection_status_connecting)
-                                } else {
-                                    stringResource(R.string.proxy_active_server_status_stopped)
-                                },
-                                fontSize = 15.sp,
-                                fontWeight = themedFontWeight(FontWeight.SemiBold),
-                                color = if (isConnecting) accentTone else MiuixTheme.colorScheme.onSurface,
-                            )
-                        }
-                        Text(
-                            text = cleanTitle.ifBlank { stringResource(R.string.proxy_active_server_select_to_connect) },
-                            fontSize = 12.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    if (!latencyText.isNullOrBlank()) {
-                        if (latencyText == ProxyServerLatencyTesting) {
-                            val testColor = MiuixTheme.colorScheme.primary
-                            Spacer(Modifier.width(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(testColor.copy(alpha = 0.12f))
-                                    .padding(horizontal = 6.dp, vertical = 3.dp),
-                            ) {
-                                AnimatedHourglassIcon(
-                                    color = testColor,
-                                    isPinging = true,
-                                    size = 12.dp,
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = stringResource(R.string.proxy_server_list_ping_in_progress),
-                                    fontSize = 12.sp,
-                                    fontWeight = themedFontWeight(FontWeight.Medium),
-                                    color = testColor,
-                                )
-                            }
-                        } else {
-                            val latencyColor = proxyServerLatencyColor(latencyText)
-                            Spacer(Modifier.width(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(latencyColor.copy(alpha = 0.12f))
-                                    .padding(horizontal = 6.dp, vertical = 3.dp),
-                            ) {
-                                SignalBarsIcon(
-                                    color = latencyColor,
-                                    modifier = Modifier.size(12.dp),
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = latencyText,
-                                    fontSize = 12.sp,
-                                    fontWeight = themedFontWeight(FontWeight.Medium),
-                                    color = latencyColor,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    return sessionDuration
 }
 
 private val ProxyServerListToolAction.isDeletion: Boolean

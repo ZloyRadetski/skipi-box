@@ -3,119 +3,30 @@
 
 package features.proxy.server.list
 
-import app.ProxyServerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import app.R
-import features.proxy.server.model.ChainProxy
-import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.StrategyGroupConstants
 import androidx.compose.ui.res.stringResource
-import features.proxy.server.model.getTransportDisplay
-import ui.text.formatTemplate
+import app.ProxyServerState
+import app.R
+import features.proxy.server.presentation.ProxyServerPresentationFormatter
+import features.proxy.server.presentation.ProxyServerPresentationLabels
+import features.proxy.server.presentation.ProxyServerPresentationNode
+import features.proxy.server.presentation.ProxyServerPresentationText
 
-internal data class ProxyServerListItemDisplayText(
-    val title: String,
-    val summary: String,
-    val protocol: String,
-    val transport: String? = null,
-)
+/** Android adapter for the portable proxy-card presentation contract. */
+internal typealias ProxyServerListItemDisplayText = ProxyServerPresentationText
 
 internal class ProxyServerListItemTextFormatter(
-    private val groupNames: Map<Int, String>,
-    private val unknownGroupName: String,
-    private val allGroupsName: String,
-    private val selectName: String,
-    private val leastPingName: String,
-    private val leastLoadName: String,
-    private val randomName: String,
-    private val roundRobinName: String,
-    private val strategyGroupSummaryTemplate: String,
-    private val strategyGroupSummaryWithFilterTemplate: String,
-    private val chainProxySummaryTemplate: String,
+    private val delegate: ProxyServerPresentationFormatter,
 ) {
     fun displayOf(
         serverState: ProxyServerState,
         servers: List<ProxyServerState>,
     ): ProxyServerListItemDisplayText {
-        val info = serverState.server.getInfo()
-        return ProxyServerListItemDisplayText(
-            title = info.remarks.ifBlank { info.protocol },
-            summary = summaryOf(serverState, servers),
-            protocol = info.protocol,
-            transport = serverState.server.getTransportDisplay(),
+        return delegate.displayOf(
+            serverNode = serverState.toPresentationNode(),
+            servers = servers.map(ProxyServerState::toPresentationNode),
         )
-    }
-
-    private fun summaryOf(
-        serverState: ProxyServerState,
-        servers: List<ProxyServerState>,
-    ): String {
-        return when (val proxyServer = serverState.server) {
-            is StrategyGroup -> {
-                if (proxyServer.strategy == StrategyGroupConstants.TYPE_SELECT) {
-                    val serverById = servers.associateBy { it.id }
-                    val activeMember = proxyServer.selectedMemberId?.let { serverById[it] }
-                        ?: proxyServer.proxyServerIds.firstNotNullOfOrNull { serverById[it] }
-                    val memberCount = if (proxyServer.proxyServerIds.isNotEmpty()) {
-                        proxyServer.proxyServerIds.size
-                    } else {
-                        servers.count { s -> s.groupId == proxyServer.subscriptionGroupId || proxyServer.subscriptionGroupId == null }
-                    }
-                    if (activeMember != null) {
-                        val activeName = activeMember.server.getInfo().remarks.ifBlank { activeMember.server.getInfo().protocol }
-                        "$selectName: $activeName ($memberCount)"
-                    } else {
-                        "$selectName ($memberCount)"
-                    }
-                } else {
-                    proxyServer.strategyGroupSummary()
-                }
-            }
-            is ChainProxy -> proxyServer.chainProxySummary(servers)
-            else -> proxyServer.getInfo().address
-        }
-    }
-
-    private fun ChainProxy.chainProxySummary(servers: List<ProxyServerState>): String {
-        val serverById = servers.associateBy { server -> server.id }
-        val memberNames = proxyServerIds.mapNotNull { memberId ->
-            serverById[memberId]?.server?.getInfo()?.let { info ->
-                info.remarks.ifBlank { info.protocol }
-            }
-        }
-        return memberNames
-            .takeIf { names -> names.isNotEmpty() }
-            ?.joinToString(" -> ")
-            ?: chainProxySummaryTemplate.formatTemplate("count" to proxyServerIds.size)
-    }
-
-    private fun StrategyGroup.strategyGroupSummary(): String {
-        val template = if (filter.isBlank()) {
-            strategyGroupSummaryTemplate
-        } else {
-            strategyGroupSummaryWithFilterTemplate
-        }
-        return template.formatTemplate(
-            "strategy" to strategyDisplayName(),
-            "group" to sourceGroupName(),
-            "filter" to filter,
-        )
-    }
-
-    private fun StrategyGroup.strategyDisplayName(): String {
-        return when (strategy) {
-            StrategyGroupConstants.TYPE_SELECT -> selectName
-            StrategyGroupConstants.TYPE_LEAST_PING -> leastPingName
-            StrategyGroupConstants.TYPE_LEAST_LOAD -> leastLoadName
-            StrategyGroupConstants.TYPE_RANDOM -> randomName
-            StrategyGroupConstants.TYPE_ROUND_ROBIN -> roundRobinName
-            else -> strategy
-        }
-    }
-
-    private fun StrategyGroup.sourceGroupName(): String {
-        return subscriptionGroupId?.let { groupId -> groupNames[groupId] ?: unknownGroupName } ?: allGroupsName
     }
 }
 
@@ -124,42 +35,33 @@ internal fun rememberProxyServerListItemTextFormatter(
     groupNames: Map<Int, String>,
     unknownGroupName: String,
 ): ProxyServerListItemTextFormatter {
-    val allGroupsName = stringResource(R.string.proxy_editor_strategy_group_all_groups)
-    val selectName = stringResource(R.string.proxy_editor_strategy_group_select)
-    val leastPingName = stringResource(R.string.proxy_editor_strategy_group_least_ping)
-    val leastLoadName = stringResource(R.string.proxy_editor_strategy_group_least_load)
-    val randomName = stringResource(R.string.proxy_editor_strategy_group_random)
-    val roundRobinName = stringResource(R.string.proxy_editor_strategy_group_round_robin)
-    val strategyGroupSummaryTemplate = stringResource(R.string.proxy_server_list_strategy_group_summary)
-    val strategyGroupSummaryWithFilterTemplate =
-        stringResource(R.string.proxy_server_list_strategy_group_summary_with_filter)
-    val chainProxySummaryTemplate = stringResource(R.string.proxy_server_list_chain_proxy_summary)
-
-    return remember(
-        groupNames,
-        unknownGroupName,
-        allGroupsName,
-        selectName,
-        leastPingName,
-        leastLoadName,
-        randomName,
-        roundRobinName,
-        strategyGroupSummaryTemplate,
-        strategyGroupSummaryWithFilterTemplate,
-        chainProxySummaryTemplate,
-    ) {
+    val labels = ProxyServerPresentationLabels(
+        unknownGroupName = unknownGroupName,
+        allGroupsName = stringResource(R.string.proxy_editor_strategy_group_all_groups),
+        selectName = stringResource(R.string.proxy_editor_strategy_group_select),
+        leastPingName = stringResource(R.string.proxy_editor_strategy_group_least_ping),
+        leastLoadName = stringResource(R.string.proxy_editor_strategy_group_least_load),
+        randomName = stringResource(R.string.proxy_editor_strategy_group_random),
+        roundRobinName = stringResource(R.string.proxy_editor_strategy_group_round_robin),
+        strategyGroupSummaryTemplate = stringResource(R.string.proxy_server_list_strategy_group_summary),
+        strategyGroupSummaryWithFilterTemplate =
+            stringResource(R.string.proxy_server_list_strategy_group_summary_with_filter),
+        chainProxySummaryTemplate = stringResource(R.string.proxy_server_list_chain_proxy_summary),
+    )
+    return remember(groupNames, labels) {
         ProxyServerListItemTextFormatter(
-            groupNames = groupNames,
-            unknownGroupName = unknownGroupName,
-            allGroupsName = allGroupsName,
-            selectName = selectName,
-            leastPingName = leastPingName,
-            leastLoadName = leastLoadName,
-            randomName = randomName,
-            roundRobinName = roundRobinName,
-            strategyGroupSummaryTemplate = strategyGroupSummaryTemplate,
-            strategyGroupSummaryWithFilterTemplate = strategyGroupSummaryWithFilterTemplate,
-            chainProxySummaryTemplate = chainProxySummaryTemplate,
+            delegate = ProxyServerPresentationFormatter(
+                groupNames = groupNames,
+                labels = labels,
+            ),
         )
     }
+}
+
+private fun ProxyServerState.toPresentationNode(): ProxyServerPresentationNode {
+    return ProxyServerPresentationNode(
+        id = id,
+        groupId = groupId,
+        server = server,
+    )
 }

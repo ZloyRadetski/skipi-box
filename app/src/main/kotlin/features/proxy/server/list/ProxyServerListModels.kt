@@ -41,11 +41,6 @@ internal enum class ProxyServerListCopyAction {
     FullJson,
 }
 
-internal data class ProxyServerListMenuEntry(
-    val title: String,
-    val action: ProxyServerListAddAction,
-)
-
 internal data class ProxyServerListGroupTabUi(
     val id: Int,
     val name: String,
