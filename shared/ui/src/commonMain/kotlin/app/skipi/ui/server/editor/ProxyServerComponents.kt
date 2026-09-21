@@ -1,7 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
+package app.skipi.ui.server.editor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -30,18 +30,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.LocalAppStateStore
-import app.R
-import app.collectAppState
+import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.components.AppSlider
+import app.skipi.ui.resources.*
+import app.skipi.ui.text.formatTemplate
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.theme.LocalAppColors
+import engine.network.NetworkDefaults
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.StrategyGroupDisplayMode
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -53,43 +57,34 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.AppTheme
-import ui.components.AppOverlayDropdownPreference
-import ui.components.AppSlider
-import ui.text.formatTemplate
-import ui.text.themedFontWeight
 import kotlin.math.roundToInt
 
-internal fun CharSequence.isDigitsOnly(): Boolean {
+fun CharSequence.isDigitsOnly(): Boolean {
     if (isEmpty()) return true
     return all { char -> char.isDigit() }
 }
 
-internal data class ProxyServerEditorGroupOption(
+data class ProxyServerEditorGroupOption(
     val id: Int?,
     val label: String,
 )
 
-internal data class ProxyServerEditorMemberOption(
+data class ProxyServerEditorMemberOption(
     val id: Int,
     val label: String,
 )
 
-internal fun LazyListScope.strategyGroupProxyServer(
+fun LazyListScope.strategyGroupProxyServer(
     strategyGroupEdit: StrategyGroup,
     groupOptions: List<ProxyServerEditorGroupOption>,
     selectedMemberCount: Int,
     onOpenMembers: (() -> Unit)?,
+    defaultProbeUrl: String = NetworkDefaults.CONNECTIVITY_CHECK_URL,
 ) {
     item(key = "properties") {
         val focusManager = LocalFocusManager.current
-        val appState by LocalAppStateStore.current.collectAppState()
-        val defaultProbeUrl = remember(appState.subscriptionPingUrl) {
-            appState.subscriptionPingUrl.ifBlank { engine.network.NetworkDefaults.CONNECTIVITY_CHECK_URL }
-        }
         val strategyValues = remember {
             listOf(
                 StrategyGroupConstants.TYPE_SELECT,
@@ -101,15 +96,15 @@ internal fun LazyListScope.strategyGroupProxyServer(
             )
         }
         val strategyLabels = listOf(
-            stringResource(R.string.proxy_editor_strategy_group_select),
-            stringResource(R.string.proxy_editor_strategy_group_least_ping),
-            stringResource(R.string.proxy_editor_strategy_group_fallback),
-            stringResource(R.string.proxy_editor_strategy_group_least_load),
-            stringResource(R.string.proxy_editor_strategy_group_random),
-            stringResource(R.string.proxy_editor_strategy_group_round_robin),
+            stringResource(Res.string.proxy_editor_strategy_group_select),
+            stringResource(Res.string.proxy_editor_strategy_group_least_ping),
+            stringResource(Res.string.proxy_editor_strategy_group_fallback),
+            stringResource(Res.string.proxy_editor_strategy_group_least_load),
+            stringResource(Res.string.proxy_editor_strategy_group_random),
+            stringResource(Res.string.proxy_editor_strategy_group_round_robin),
         )
         val effectiveGroupOptions = groupOptions.ifEmpty {
-            listOf(ProxyServerEditorGroupOption(null, stringResource(R.string.proxy_editor_strategy_group_all_groups)))
+            listOf(ProxyServerEditorGroupOption(null, stringResource(Res.string.proxy_editor_strategy_group_all_groups)))
         }
         var currentStrategy by remember(strategyGroupEdit.strategy) {
             mutableStateOf(strategyGroupEdit.strategy)
@@ -131,9 +126,9 @@ internal fun LazyListScope.strategyGroupProxyServer(
             StrategyGroupDisplayMode.NEVER,
         )
         val displayModeLabels = listOf(
-            stringResource(R.string.proxy_group_display_mode_always),
-            stringResource(R.string.proxy_group_display_mode_active_config),
-            stringResource(R.string.proxy_group_display_mode_never),
+            stringResource(Res.string.proxy_group_display_mode_always),
+            stringResource(Res.string.proxy_group_display_mode_active_config),
+            stringResource(Res.string.proxy_group_display_mode_never),
         )
         val displayModeIndex = remember(strategyGroupEdit.displayMode) {
             mutableIntStateOf(displayModeValues.indexOf(strategyGroupEdit.displayMode).coerceAtLeast(0))
@@ -202,9 +197,9 @@ internal fun LazyListScope.strategyGroupProxyServer(
             )
         }
 
-        SmallTitle(text = stringResource(R.string.proxy_editor_properties))
+        SmallTitle(text = stringResource(Res.string.proxy_editor_properties))
         TextField(
-            label = stringResource(R.string.proxy_editor_remarks),
+            label = stringResource(Res.string.proxy_editor_remarks),
             state = remarksState,
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -220,10 +215,10 @@ internal fun LazyListScope.strategyGroupProxyServer(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
-            colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
+            colors = CardDefaults.defaultColors(color = LocalAppColors.current.surface),
         ) {
             AppOverlayDropdownPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_type),
+                title = stringResource(Res.string.proxy_editor_strategy_group_type),
                 items = strategyLabels,
                 selectedIndex = strategyIndex.intValue,
                 onSelectedIndexChange = { index ->
@@ -235,7 +230,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
             )
             if (isConfigGroup) {
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_group_display_mode_title),
+                    title = stringResource(Res.string.proxy_group_display_mode_title),
                     items = displayModeLabels,
                     selectedIndex = displayModeIndex.intValue,
                     onSelectedIndexChange = { index ->
@@ -247,8 +242,8 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 )
             } else {
                 SwitchPreference(
-                    title = stringResource(R.string.proxy_editor_strategy_group_show_on_home),
-                    summary = stringResource(R.string.proxy_editor_strategy_group_show_on_home_summary),
+                    title = stringResource(Res.string.proxy_editor_strategy_group_show_on_home),
+                    summary = stringResource(Res.string.proxy_editor_strategy_group_show_on_home_summary),
                     checked = showInAutoBalancerListState.value,
                     onCheckedChange = { showInList ->
                         showInAutoBalancerListState.value = showInList
@@ -259,22 +254,21 @@ internal fun LazyListScope.strategyGroupProxyServer(
             }
         }
 
-        SmallTitle(text = stringResource(R.string.proxy_editor_strategy_group_select_servers))
+        SmallTitle(text = stringResource(Res.string.proxy_editor_strategy_group_select_servers))
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
+            colors = CardDefaults.defaultColors(color = LocalAppColors.current.surface),
         ) {
             ArrowPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_select_servers),
+                title = stringResource(Res.string.proxy_editor_strategy_group_select_servers),
                 summary = if (selectedMemberCount > 0) {
                     stringResource(
-                        R.string.proxy_editor_strategy_group_selected_servers_summary,
-                        selectedMemberCount,
-                    )
+                        Res.string.proxy_editor_strategy_group_selected_servers_summary,
+                    ).formatTemplate("count" to selectedMemberCount.toString())
                 } else {
-                    stringResource(R.string.proxy_editor_strategy_group_select_servers_summary)
+                    stringResource(Res.string.proxy_editor_strategy_group_select_servers_summary)
                 },
                 onClick = {
                     strategyGroupEdit.remarks = remarksState.text.toString()
@@ -290,7 +284,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 },
             )
             AppOverlayDropdownPreference(
-                title = stringResource(R.string.proxy_editor_strategy_group_source_group),
+                title = stringResource(Res.string.proxy_editor_strategy_group_source_group),
                 items = effectiveGroupOptions.map { option -> option.label },
                 selectedIndex = groupIndex.intValue,
                 onSelectedIndexChange = { index ->
@@ -300,7 +294,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
             )
         }
         TextField(
-            label = stringResource(R.string.proxy_editor_strategy_group_filter),
+            label = stringResource(Res.string.proxy_editor_strategy_group_filter),
             state = filterState,
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -314,15 +308,15 @@ internal fun LazyListScope.strategyGroupProxyServer(
         )
 
         if (currentStrategy != StrategyGroupConstants.TYPE_SELECT) {
-            SmallTitle(text = stringResource(R.string.proxy_editor_strategy_group_health_check))
+            SmallTitle(text = stringResource(Res.string.proxy_editor_strategy_group_health_check))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
-                colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
+                colors = CardDefaults.defaultColors(color = LocalAppColors.current.surface),
             ) {
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_strategy_group_probe_interval),
+                    title = stringResource(Res.string.proxy_editor_strategy_group_probe_interval),
                     items = probeIntervalLabels,
                     selectedIndex = probeIntervalIndex.intValue,
                     onSelectedIndexChange = { index ->
@@ -342,14 +336,14 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.proxy_editor_strategy_group_probe_timeout),
+                                text = stringResource(Res.string.proxy_editor_strategy_group_probe_timeout),
                                 fontSize = 16.sp,
                                 fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = MiuixTheme.colorScheme.onSurface,
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = stringResource(R.string.proxy_editor_strategy_group_probe_timeout_summary),
+                                text = stringResource(Res.string.proxy_editor_strategy_group_probe_timeout_summary),
                                 fontSize = 12.sp,
                                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             )
@@ -361,7 +355,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                                 .padding(horizontal = 12.dp, vertical = 4.dp),
                         ) {
                             Text(
-                                text = "${probeTimeoutSliderValue.roundToInt()} ${stringResource(R.string.unit_seconds_short)}",
+                                text = "${probeTimeoutSliderValue.roundToInt()} ${stringResource(Res.string.unit_seconds_short)}",
                                 fontSize = 14.sp,
                                 fontWeight = themedFontWeight(FontWeight.Bold),
                                 color = MiuixTheme.colorScheme.primary,
@@ -393,19 +387,19 @@ internal fun LazyListScope.strategyGroupProxyServer(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
-                            text = "1 ${stringResource(R.string.unit_seconds_short)}",
+                            text = "1 ${stringResource(Res.string.unit_seconds_short)}",
                             fontSize = 12.sp,
                             color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         )
                         Text(
-                            text = "30 ${stringResource(R.string.unit_seconds_short)}",
+                            text = "30 ${stringResource(Res.string.unit_seconds_short)}",
                             fontSize = 12.sp,
                             color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         )
                     }
                 }
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_strategy_group_tolerance),
+                    title = stringResource(Res.string.proxy_editor_strategy_group_tolerance),
                     items = toleranceLabels,
                     selectedIndex = toleranceIndex.intValue,
                     onSelectedIndexChange = { index ->
@@ -414,8 +408,8 @@ internal fun LazyListScope.strategyGroupProxyServer(
                     },
                 )
                 SwitchPreference(
-                    title = stringResource(R.string.proxy_editor_strategy_group_burst_probe),
-                    summary = stringResource(R.string.proxy_editor_strategy_group_burst_probe_summary),
+                    title = stringResource(Res.string.proxy_editor_strategy_group_burst_probe),
+                    summary = stringResource(Res.string.proxy_editor_strategy_group_burst_probe_summary),
                     checked = burstProbeState.value,
                     onCheckedChange = { checked ->
                         burstProbeState.value = checked
@@ -424,7 +418,7 @@ internal fun LazyListScope.strategyGroupProxyServer(
                 )
             }
             TextField(
-                label = stringResource(R.string.proxy_editor_strategy_group_probe_url),
+                label = stringResource(Res.string.proxy_editor_strategy_group_probe_url),
                 state = probeUrlState,
                 lineLimits = TextFieldLineLimits.SingleLine,
                 inputTransformation = InputTransformation {
@@ -439,7 +433,8 @@ internal fun LazyListScope.strategyGroupProxyServer(
         }
     }
 }
-internal fun LazyListScope.chainProxyServer(
+
+fun LazyListScope.chainProxyServer(
     chainProxyEdit: ChainProxy,
     memberOptions: List<ProxyServerEditorMemberOption>,
 ) {
@@ -450,7 +445,7 @@ internal fun LazyListScope.chainProxyServer(
         }
         val unselectedMember = ProxyServerEditorMemberOption(
             id = 0,
-            label = stringResource(R.string.proxy_editor_chain_member_unselected),
+            label = stringResource(Res.string.proxy_editor_chain_member_unselected),
         )
         val effectiveMemberOptions = listOf(unselectedMember) + memberOptions
 
@@ -463,9 +458,9 @@ internal fun LazyListScope.chainProxyServer(
         LaunchedEffect(chainRemarksState.text) {
             chainProxyEdit.remarks = chainRemarksState.text.toString()
         }
-        SmallTitle(text = stringResource(R.string.proxy_editor_properties))
+        SmallTitle(text = stringResource(Res.string.proxy_editor_properties))
         TextField(
-            label = stringResource(R.string.proxy_editor_remarks),
+            label = stringResource(Res.string.proxy_editor_remarks),
             state = chainRemarksState,
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -477,7 +472,7 @@ internal fun LazyListScope.chainProxyServer(
             onKeyboardAction = { focusManager.clearFocus() },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
-        SmallTitle(text = stringResource(R.string.proxy_editor_chain_members))
+        SmallTitle(text = stringResource(Res.string.proxy_editor_chain_members))
         members.forEachIndexed { index, memberId ->
             val selectedIndex = effectiveMemberOptions
                 .indexOfFirst { option -> option.id == memberId }
@@ -488,8 +483,8 @@ internal fun LazyListScope.chainProxyServer(
                     .padding(bottom = 12.dp),
             ) {
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_chain_member)
-                        .formatTemplate("index" to index + 1),
+                    title = stringResource(Res.string.proxy_editor_chain_member)
+                        .formatTemplate("index" to (index + 1).toString()),
                     items = effectiveMemberOptions.map { option -> option.label },
                     selectedIndex = selectedIndex,
                     modifier = Modifier.weight(1f),
@@ -507,7 +502,7 @@ internal fun LazyListScope.chainProxyServer(
                 ) {
                     Icon(
                         imageVector = MiuixIcons.Delete,
-                        contentDescription = stringResource(R.string.common_delete),
+                        contentDescription = stringResource(Res.string.common_delete),
                     )
                 }
             }
@@ -519,7 +514,7 @@ internal fun LazyListScope.chainProxyServer(
             contentAlignment = Alignment.Center,
         ) {
             TextButton(
-                text = stringResource(R.string.proxy_editor_chain_add_member),
+                text = stringResource(Res.string.proxy_editor_chain_add_member),
                 onClick = {
                     updateMembers(members + unselectedMember.id)
                 },

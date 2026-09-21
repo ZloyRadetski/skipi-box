@@ -1,7 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
+package app.skipi.ui.server.editor
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
@@ -13,19 +13,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.R
+import app.skipi.ui.resources.*
 import features.proxy.server.model.Wireguard
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextField
 
-
-internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
+fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
     item(key = "properties") {
         val focusManager = LocalFocusManager.current
-        SmallTitle(text = stringResource(R.string.proxy_editor_properties))
+        SmallTitle(text = stringResource(Res.string.proxy_editor_properties))
         TextField(
-            label = stringResource(R.string.proxy_editor_remarks),
+            label = stringResource(Res.string.proxy_editor_remarks),
             state = rememberTextFieldState(initialText = wgEdit.remarks),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -36,7 +35,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_server),
+            label = stringResource(Res.string.proxy_editor_server),
             state = rememberTextFieldState(initialText = wgEdit.server),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -47,7 +46,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_port),
+            label = stringResource(Res.string.proxy_editor_port),
             state = rememberTextFieldState(initialText = wgEdit.port),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -84,7 +83,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_preshared_key_optional),
+            label = stringResource(Res.string.proxy_editor_preshared_key_optional),
             state = rememberTextFieldState(initialText = wgEdit.preSharedKey),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -95,7 +94,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_reserved_optional),
+            label = stringResource(Res.string.proxy_editor_reserved_optional),
             state = rememberTextFieldState(initialText = wgEdit.reserved),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -106,7 +105,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_local_address_optional),
+            label = stringResource(Res.string.proxy_editor_local_address_optional),
             state = rememberTextFieldState(initialText = wgEdit.address),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -117,7 +116,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_mtu_optional),
+            label = stringResource(Res.string.proxy_editor_mtu_optional),
             state = rememberTextFieldState(initialText = wgEdit.mtu),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -132,7 +131,7 @@ internal fun LazyListScope.wireguardProxyServer(wgEdit: Wireguard) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_final_mask),
+            label = stringResource(Res.string.proxy_editor_final_mask),
             state = rememberTextFieldState(initialText = wgEdit.finalMask),
             lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 5, maxHeightInLines = 20),
             inputTransformation = InputTransformation {

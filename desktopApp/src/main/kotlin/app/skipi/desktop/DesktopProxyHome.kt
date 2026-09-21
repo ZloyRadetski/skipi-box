@@ -44,6 +44,7 @@ import app.skipi.ui.home.dialogs.SkipiAddSourceMode
 import app.skipi.ui.home.dialogs.SkipiImportDialog
 import app.skipi.ui.home.dialogs.SkipiSubscriptionEditData
 import app.skipi.ui.home.dialogs.SkipiSubscriptionEditDialog
+import app.skipi.ui.server.editor.SkipiProxyServerEditorDialog
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.subscription_delete
@@ -157,6 +158,7 @@ internal fun DesktopProxyHome(
     var pendingSubscriptionDeletion by remember { mutableStateOf<Int?>(null) }
     var editingServerId by remember { mutableStateOf<Int?>(null) }
     var editingSubscriptionProvider by remember { mutableStateOf<DesktopStoredSubscription?>(null) }
+    var editingServerModel by remember { mutableStateOf<Pair<Int, ProxyServer<*>>?>(null) }
 
     val decodedServers = remember(serverLibrary) {
         serverLibrary.servers.map { stored -> stored to stored.decode().getOrNull() }
@@ -345,10 +347,7 @@ internal fun DesktopProxyHome(
                                 }
                             },
                             onEdit = {
-                                editingServerId = stored.id
-                                server.getCopyTextOrNull()?.let(onServerLinkChange)
-                                addMode = SkipiAddSourceMode.Server
-                                addDialogVisible = true
+                                editingServerModel = stored.id to server
                             },
                             onDelete = {
                                 if (confirmDeletion) pendingServerDeletion = stored.id
@@ -545,6 +544,18 @@ internal fun DesktopProxyHome(
                 pendingSubscriptionDeletion = subscription.id
             },
             onDismiss = { editingSubscriptionProvider = null },
+        )
+    }
+
+    editingServerModel?.let { (serverId, server) ->
+        SkipiProxyServerEditorDialog(
+            show = true,
+            server = server,
+            onSave = { updatedServer ->
+                onUpdateServer(serverId, updatedServer)
+                editingServerModel = null
+            },
+            onDismiss = { editingServerModel = null },
         )
     }
 
@@ -1013,7 +1024,7 @@ private fun ServerCard(
                 IconButton(onClick = onCopy, enabled = server.getCopyTextOrNull() != null) {
                     Icon(Icons.Outlined.ContentCopy, "Копировать", tint = HomeText)
                 }
-                IconButton(onClick = onEdit, enabled = server.getCopyTextOrNull() != null) {
+                IconButton(onClick = onEdit) {
                     Icon(Icons.Outlined.Edit, "Изменить", tint = HomeText)
                 }
                 IconButton(onClick = onDelete) {

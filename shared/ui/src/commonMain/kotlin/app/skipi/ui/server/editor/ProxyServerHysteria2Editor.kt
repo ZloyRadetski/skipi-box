@@ -1,10 +1,9 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
+package app.skipi.ui.server.editor
 
 import androidx.compose.animation.AnimatedVisibility
-import ui.components.AppOverlayDropdownPreference
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -21,15 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.R
+import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.resources.*
 import features.proxy.server.model.Hysteria2
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 
-
-internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
+fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
     item(key = "properties") {
         val focusManager = LocalFocusManager.current
         val securityOptions = remember { listOf("none", "tls") }
@@ -38,9 +36,9 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
                 if (securityOptions.indexOf(hy2Edit.security) > -1) securityOptions.indexOf(hy2Edit.security) else 0
             )
         }
-        SmallTitle(text = stringResource(R.string.proxy_editor_properties))
+        SmallTitle(text = stringResource(Res.string.proxy_editor_properties))
         TextField(
-            label = stringResource(R.string.proxy_editor_remarks),
+            label = stringResource(Res.string.proxy_editor_remarks),
             state = rememberTextFieldState(initialText = hy2Edit.remarks),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -53,7 +51,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_server),
+            label = stringResource(Res.string.proxy_editor_server),
             state = rememberTextFieldState(initialText = hy2Edit.server),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -66,7 +64,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_port),
+            label = stringResource(Res.string.proxy_editor_port),
             state = rememberTextFieldState(initialText = hy2Edit.port),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -83,7 +81,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_auth),
+            label = stringResource(Res.string.proxy_editor_auth),
             state = rememberTextFieldState(initialText = hy2Edit.auth),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -96,7 +94,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_obfs_password),
+            label = stringResource(Res.string.proxy_editor_obfs_password),
             state = rememberTextFieldState(initialText = hy2Edit.obfsPassword),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -111,7 +109,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_mport),
+            label = stringResource(Res.string.proxy_editor_mport),
             state = rememberTextFieldState(initialText = hy2Edit.mport),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -124,7 +122,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_mport_hop_interval),
+            label = stringResource(Res.string.proxy_editor_mport_hop_interval),
             state = rememberTextFieldState(initialText = hy2Edit.mportHopInt),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -141,7 +139,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_down_bandwidth),
+            label = stringResource(Res.string.proxy_editor_down_bandwidth),
             state = rememberTextFieldState(initialText = hy2Edit.down),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -154,7 +152,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
-            label = stringResource(R.string.proxy_editor_up_bandwidth),
+            label = stringResource(Res.string.proxy_editor_up_bandwidth),
             state = rememberTextFieldState(initialText = hy2Edit.up),
             lineLimits = TextFieldLineLimits.SingleLine,
             inputTransformation = InputTransformation {
@@ -167,7 +165,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         AppOverlayDropdownPreference(
-            title = stringResource(R.string.proxy_editor_security),
+            title = stringResource(Res.string.proxy_editor_security),
             items = securityOptions,
             modifier = Modifier
                 .padding(horizontal = 12.dp)
@@ -185,7 +183,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
             exit = ExitTransition.None,
         ) {
             Column {
-                SmallTitle(text = stringResource(R.string.proxy_editor_tls_settings))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_tls_settings))
                 TextField(
                     label = "SNI",
                     state = rememberTextFieldState(initialText = hy2Edit.sni),
@@ -200,7 +198,7 @@ internal fun LazyListScope.hysteria2ProxyServer(hy2Edit: Hysteria2) {
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
                 TextField(
-                    label = stringResource(R.string.proxy_editor_certificate_fingerprint),
+                    label = stringResource(Res.string.proxy_editor_certificate_fingerprint),
                     state = rememberTextFieldState(initialText = hy2Edit.pinSHA256),
                     lineLimits = TextFieldLineLimits.SingleLine,
                     inputTransformation = InputTransformation {

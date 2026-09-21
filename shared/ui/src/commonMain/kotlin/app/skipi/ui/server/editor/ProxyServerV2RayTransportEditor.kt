@@ -1,10 +1,9 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
+package app.skipi.ui.server.editor
 
 import androidx.compose.animation.AnimatedVisibility
-import ui.components.AppOverlayDropdownPreference
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -19,10 +18,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import app.R
+import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.resources.*
 import features.proxy.server.model.V2RayParameters
 import features.proxy.server.model.V2RayTransportGrpc
 import features.proxy.server.model.V2RayTransportHttpUpgrade
@@ -32,12 +31,11 @@ import features.proxy.server.model.V2RayTransportRaw
 import features.proxy.server.model.V2RayTransportWebSocket
 import features.proxy.server.model.V2RayTransportXhttp
 import features.proxy.server.model.v2RayTransportOptionIndex
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 
-
-internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
+fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
     item(key = "transport") {
         val focusManager = LocalFocusManager.current
         val typeOptions = remember {
@@ -60,9 +58,9 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
         }
         val selectedTransportType = typeOptions.getOrElse(type.intValue) { typeOptions.first() }.value
 
-        SmallTitle(text = stringResource(R.string.proxy_editor_transport))
+        SmallTitle(text = stringResource(Res.string.proxy_editor_transport))
         AppOverlayDropdownPreference(
-            title = stringResource(R.string.proxy_editor_transport_type),
+            title = stringResource(Res.string.proxy_editor_transport_type),
             items = typeLabels,
             selectedIndex = type.intValue,
             modifier = Modifier.padding(bottom = 12.dp),
@@ -86,9 +84,9 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                         if (headerTypeOptions.indexOf(params.headerType) > -1) headerTypeOptions.indexOf(params.headerType) else 0
                     )
                 }
-                SmallTitle(text = stringResource(R.string.proxy_editor_transport_raw))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_transport_raw))
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_header_type),
+                    title = stringResource(Res.string.proxy_editor_header_type),
                     items = headerTypeOptions,
                     selectedIndex = headerType.intValue,
                     modifier = Modifier.padding(bottom = 12.dp),
@@ -126,9 +124,9 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                         kcpHeaderTypeOptions.indexOf(params.headerType).coerceAtLeast(0)
                     )
                 }
-                SmallTitle(text = stringResource(R.string.proxy_editor_transport_kcp))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_transport_kcp))
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_header_type),
+                    title = stringResource(Res.string.proxy_editor_header_type),
                     items = kcpHeaderTypeOptions,
                     selectedIndex = kcpHeaderType.intValue,
                     modifier = Modifier.padding(bottom = 12.dp),
@@ -139,7 +137,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                 )
                 if (kcpHeaderType.intValue == kcpHeaderTypeOptions.indexOf("dns")) {
                     TextField(
-                        label = stringResource(R.string.proxy_editor_mkcp_host),
+                        label = stringResource(Res.string.proxy_editor_mkcp_host),
                         state = rememberTextFieldState(initialText = params.host ?: ""),
                         lineLimits = TextFieldLineLimits.SingleLine,
                         inputTransformation = InputTransformation {
@@ -151,7 +149,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     )
                 }
                 TextField(
-                    label = stringResource(R.string.proxy_editor_mkcp_seed),
+                    label = stringResource(Res.string.proxy_editor_mkcp_seed),
                     state = rememberTextFieldState(initialText = params.seed ?: ""),
                     lineLimits = TextFieldLineLimits.SingleLine,
                     inputTransformation = InputTransformation {
@@ -162,7 +160,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
                 TextField(
-                    label = stringResource(R.string.proxy_editor_mkcp_mtu),
+                    label = stringResource(Res.string.proxy_editor_mkcp_mtu),
                     state = rememberTextFieldState(initialText = params.mtu ?: ""),
                     lineLimits = TextFieldLineLimits.SingleLine,
                     inputTransformation = InputTransformation {
@@ -177,7 +175,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
                 TextField(
-                    label = stringResource(R.string.proxy_editor_mkcp_tti),
+                    label = stringResource(Res.string.proxy_editor_mkcp_tti),
                     state = rememberTextFieldState(initialText = params.tti ?: ""),
                     lineLimits = TextFieldLineLimits.SingleLine,
                     inputTransformation = InputTransformation {
@@ -200,7 +198,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             exit = ExitTransition.None,
         ) {
             Column {
-                SmallTitle(text = stringResource(R.string.proxy_editor_transport_ws))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_transport_ws))
                 TextField(
                     label = "ws host",
                     state = rememberTextFieldState(initialText = params.host ?: ""),
@@ -232,7 +230,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             exit = ExitTransition.None,
         ) {
             Column {
-                SmallTitle(text = stringResource(R.string.proxy_editor_transport_httpupgrade))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_transport_httpupgrade))
                 TextField(
                     label = "httpupgrade host",
                     state = rememberTextFieldState(initialText = params.host ?: ""),
@@ -272,9 +270,9 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                         if (modeOptions.indexOf(params.mode) > -1) modeOptions.indexOf(params.mode) else 0
                     )
                 }
-                SmallTitle(text = stringResource(R.string.proxy_editor_transport_xhttp))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_transport_xhttp))
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_xhttp_mode),
+                    title = stringResource(Res.string.proxy_editor_xhttp_mode),
                     items = modeOptions,
                     selectedIndex = mode.intValue,
                     modifier = Modifier.padding(bottom = 12.dp),
@@ -306,7 +304,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
                 TextField(
-                    label = stringResource(R.string.proxy_editor_xhttp_extra),
+                    label = stringResource(Res.string.proxy_editor_xhttp_extra),
                     state = rememberTextFieldState(initialText = params.extra ?: ""),
                     lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 5, maxHeightInLines = 20),
                     inputTransformation = InputTransformation {
@@ -333,9 +331,9 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                         if (modeOptions.indexOf(params.mode) > -1) modeOptions.indexOf(params.mode) else 0
                     )
                 }
-                SmallTitle(text = stringResource(R.string.proxy_editor_transport_grpc))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_transport_grpc))
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_grpc_mode),
+                    title = stringResource(Res.string.proxy_editor_grpc_mode),
                     items = modeOptions,
                     selectedIndex = mode.intValue,
                     modifier = Modifier.padding(bottom = 12.dp),
@@ -369,7 +367,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             }
         }
         TextField(
-            label = stringResource(R.string.proxy_editor_final_mask),
+            label = stringResource(Res.string.proxy_editor_final_mask),
             state = rememberTextFieldState(initialText = params.fm ?: ""),
             lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 5, maxHeightInLines = 20),
             inputTransformation = InputTransformation {
@@ -417,7 +415,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             )
         }
         AppOverlayDropdownPreference(
-            title = stringResource(R.string.proxy_editor_security),
+            title = stringResource(Res.string.proxy_editor_security),
             items = securityOptions,
             modifier = Modifier.padding(bottom = 12.dp),
             selectedIndex = security.intValue,
@@ -433,7 +431,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             exit = ExitTransition.None,
         ) {
             Column {
-                SmallTitle(text = stringResource(R.string.proxy_editor_tls_settings))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_tls_settings))
                 TextField(
                     label = "SNI",
                     state = rememberTextFieldState(initialText = params.sni ?: ""),
@@ -446,7 +444,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_tls_fingerprint),
+                    title = stringResource(Res.string.proxy_editor_tls_fingerprint),
                     items = fingerprintOptions,
                     selectedIndex = fingerprint.intValue,
                     modifier = Modifier.padding(bottom = 12.dp),
@@ -477,7 +475,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
                 TextField(
-                    label = stringResource(R.string.proxy_editor_certificate_fingerprint),
+                    label = stringResource(Res.string.proxy_editor_certificate_fingerprint),
                     state = rememberTextFieldState(initialText = params.pcs ?: ""),
                     lineLimits = TextFieldLineLimits.SingleLine,
                     inputTransformation = InputTransformation {
@@ -507,7 +505,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
             exit = ExitTransition.None,
         ) {
             Column {
-                SmallTitle(text = stringResource(R.string.proxy_editor_reality_settings))
+                SmallTitle(text = stringResource(Res.string.proxy_editor_reality_settings))
                 TextField(
                     label = "SNI",
                     state = rememberTextFieldState(initialText = params.sni ?: ""),
@@ -520,7 +518,7 @@ internal fun LazyListScope.v2rayServerTransport(params: V2RayParameters) {
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 )
                 AppOverlayDropdownPreference(
-                    title = stringResource(R.string.proxy_editor_tls_fingerprint),
+                    title = stringResource(Res.string.proxy_editor_tls_fingerprint),
                     items = fingerprintOptions,
                     selectedIndex = fingerprint.intValue,
                     modifier = Modifier.padding(bottom = 12.dp),
