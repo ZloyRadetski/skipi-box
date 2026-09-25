@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +31,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import app.skipi.ui.theme.SkipiTheme
 
 data class SkipiProxyServerExpandedListCardState(
     val flag: String?,
@@ -78,22 +78,21 @@ fun SkipiProxyServerExpandedListCard(
     dragVisualModifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier,
 ) {
-    val selectedShape = RoundedCornerShape(if (state.isStrategyGroup) 14.dp else 16.dp)
+    val selectedShape = if (state.isStrategyGroup) SkipiTheme.shapes.small else SkipiTheme.shapes.medium
     val cardInsideMargin = if (state.isStrategyGroup) {
-        PaddingValues(horizontal = 12.dp, vertical = 9.dp)
+        PaddingValues(horizontal = SkipiTheme.spacing.medium, vertical = SkipiTheme.spacing.small)
     } else {
-        PaddingValues(14.dp)
+        PaddingValues(SkipiTheme.spacing.medium)
     }
-    val cardBottomPadding = if (state.isStrategyGroup) 6.dp else 10.dp
+    val cardBottomPadding = if (state.isStrategyGroup) SkipiTheme.spacing.small else SkipiTheme.spacing.medium
     val badgeSize = if (state.isStrategyGroup) 28.dp else 34.dp
     val badgeRadius = if (state.isStrategyGroup) 7.dp else 8.dp
-    val titleFontSize = if (state.isStrategyGroup) 15.sp else 16.sp
-    val middleSpacerHeight = if (state.isStrategyGroup) 6.dp else 12.dp
+    val middleSpacerHeight = if (state.isStrategyGroup) SkipiTheme.spacing.small else SkipiTheme.spacing.medium
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp)
+            .padding(horizontal = SkipiTheme.spacing.medium)
             .padding(bottom = cardBottomPadding)
             .zIndex(if (state.isDragging) 1f else 0f)
             .then(dragVisualModifier)
@@ -127,11 +126,11 @@ fun SkipiProxyServerExpandedListCard(
                     size = badgeSize,
                     shapeRadius = badgeRadius,
                 )
-                Spacer(Modifier.width(if (state.isStrategyGroup) 10.dp else 12.dp))
+                Spacer(Modifier.width(if (state.isStrategyGroup) SkipiTheme.spacing.small else SkipiTheme.spacing.medium))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = state.title,
-                        fontSize = titleFontSize,
+                        style = if (state.isStrategyGroup) SkipiTheme.typography.titleSmall else SkipiTheme.typography.titleMedium,
                         fontWeight = titleFontWeight,
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -147,7 +146,7 @@ fun SkipiProxyServerExpandedListCard(
                 }
             }
             state.groupName?.let { groupName ->
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(SkipiTheme.spacing.medium))
                 Text(
                     text = groupName,
                     style = MiuixTheme.textStyles.body2,
@@ -172,7 +171,7 @@ fun SkipiProxyServerExpandedListCard(
                     fontWeight = titleFontWeight,
                 )
                 state.transport?.takeIf(String::isNotBlank)?.let { transport ->
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(SkipiTheme.spacing.extraSmall))
                     SkipiProxyTransportChip(
                         text = transport,
                         textColor = state.transportTextColor,
@@ -183,7 +182,7 @@ fun SkipiProxyServerExpandedListCard(
                 }
                 when {
                     state.latencyTesting -> {
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(SkipiTheme.spacing.small))
                         InfiniteProgressIndicator(
                             color = state.progressColor,
                             size = if (state.isStrategyGroup) 12.dp else 14.dp,

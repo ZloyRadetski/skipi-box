@@ -23,7 +23,6 @@ import androidx.compose.material.icons.outlined.Hexagon
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -84,7 +83,7 @@ fun main() = application {
             mutableStateOf(DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
         }
         CompositionLocalProvider(LocalDesktopThemeMode provides desktopSettings.themeMode) {
-            MaterialTheme(colorScheme = desktopColorScheme(desktopSettings.themeMode)) {
+            DesktopAppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = DesktopContentBackground) {
                 val subscriptionScope = rememberCoroutineScope()
                 val subscriptionFetcher = remember { DesktopSubscriptionFetcher() }
@@ -1029,16 +1028,11 @@ private fun DesktopBottomNavigation(
     SkipiNavigationBar(
         selectedDestination = selected,
         onSelect = onSelect,
-        backgroundColor = SkipiBackground,
-        inactiveContentColor = SkipiMuted,
-        containerColor = SkipiCard,
     )
 }
 
 private val SkipiBackground: Color
     @Composable get() = DesktopContentBackground
-private val SkipiCard = Color(0xFF202126)
-private val SkipiMuted = Color(0xFF9A9DA8)
 private const val MaxHomeLatencyChecks = 24
 private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
 private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L

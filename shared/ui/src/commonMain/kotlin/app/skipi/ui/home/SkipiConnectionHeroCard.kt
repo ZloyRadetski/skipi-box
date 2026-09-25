@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material3.Card
@@ -32,7 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.theme.SkipiTheme
 
 enum class SkipiConnectionHeroPhase {
     Disconnected,
@@ -84,15 +84,15 @@ fun SkipiConnectionHeroCard(
         SkipiConnectionHeroPhase.Connecting -> colors.connecting
         SkipiConnectionHeroPhase.Disconnected -> colors.mutedText
     }
-    val horizontalPadding = if (compact) 20.dp else 26.dp
-    val verticalPadding = if (compact) 16.dp else 24.dp
+    val horizontalPadding = if (compact) SkipiTheme.spacing.medium else SkipiTheme.spacing.large
+    val verticalPadding = if (compact) SkipiTheme.spacing.medium else SkipiTheme.spacing.large
     val buttonOuterSize = if (compact) 78.dp else 96.dp
     val buttonSize = if (compact) 70.dp else 86.dp
     val iconSize = if (compact) 40.dp else 48.dp
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = SkipiTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         border = BorderStroke(
             1.dp,
@@ -132,18 +132,18 @@ fun SkipiConnectionHeroCard(
                     )
                 }
             }
-            Spacer(Modifier.width(if (compact) 14.dp else 20.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Spacer(Modifier.width(if (compact) 14.dp else SkipiTheme.spacing.medium))
+            Column(verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.extraSmall)) {
                 Text(
                     text = state.title,
                     color = colors.text,
-                    fontSize = if (compact) 25.sp else 30.sp,
-                    fontWeight = FontWeight.Black,
+                    style = if (compact) SkipiTheme.typography.displayMedium else SkipiTheme.typography.displayLarge,
+                    fontWeight = themedFontWeight(FontWeight.Black),
                 )
                 Text(
                     text = state.subtitle,
                     color = colors.mutedText,
-                    fontSize = if (compact) 16.sp else 18.sp,
+                    style = if (compact) SkipiTheme.typography.bodyLarge else SkipiTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -151,7 +151,7 @@ fun SkipiConnectionHeroCard(
                     Text(
                         text = profileText,
                         color = colors.mutedText,
-                        fontSize = if (compact) 12.sp else 13.sp,
+                        style = if (compact) SkipiTheme.typography.bodySmall else SkipiTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

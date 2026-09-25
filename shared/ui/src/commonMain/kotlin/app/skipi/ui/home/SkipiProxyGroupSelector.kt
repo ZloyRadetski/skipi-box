@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Surface
@@ -25,7 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.theme.SkipiTheme
 
 data class SkipiProxyGroupItem(
     val id: String,
@@ -59,48 +59,51 @@ fun SkipiProxyGroupSelector(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = SkipiTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         border = BorderStroke(1.dp, colors.border),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth().padding(
+                horizontal = SkipiTheme.spacing.large,
+                vertical = SkipiTheme.spacing.medium,
+            ),
+            verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
         ) {
-            Text(title, color = colors.text, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = colors.text, style = SkipiTheme.typography.titleLarge, fontWeight = themedFontWeight(FontWeight.Bold))
             if (groups.isEmpty()) {
-                Text(emptyText, color = colors.mutedText, fontSize = 14.sp)
+                Text(emptyText, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium)
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
                 ) {
                     groups.forEach { group ->
                         val selected = group.id == selectedGroupId
                         Surface(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(13.dp))
+                                .clip(SkipiTheme.shapes.small)
                                 .clickable { onSelect(group.id) },
                             color = if (selected) colors.selectedSurface else colors.raisedSurface,
-                            shape = RoundedCornerShape(13.dp),
+                            shape = SkipiTheme.shapes.small,
                             border = BorderStroke(
                                 1.dp,
                                 if (selected) colors.selectedBorder else Color.Transparent,
                             ),
                         ) {
-                            Column(modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp)) {
+                            Column(modifier = Modifier.padding(horizontal = SkipiTheme.spacing.medium, vertical = SkipiTheme.spacing.small)) {
                                 Text(
                                     text = if (group.enabled) group.title else disabledTitle(group.title),
                                     color = if (group.enabled) colors.text else colors.mutedText,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    style = SkipiTheme.typography.bodyMedium,
+                                    fontWeight = themedFontWeight(FontWeight.SemiBold),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
                                     text = serverCountText(group.serverCount),
                                     color = colors.mutedText,
-                                    fontSize = 12.sp,
+                                    style = SkipiTheme.typography.bodySmall,
                                 )
                             }
                         }

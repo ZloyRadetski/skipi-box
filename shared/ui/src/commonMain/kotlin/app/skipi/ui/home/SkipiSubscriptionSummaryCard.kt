@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.MoreVert
@@ -42,6 +41,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.skipi.ui.resources.Res
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.common_edit
 import app.skipi.ui.resources.common_refresh
 import app.skipi.ui.resources.proxy_server_list_latency_test
@@ -114,35 +115,38 @@ fun SkipiSubscriptionSummaryCard(
     var expanded by remember(state.id) { mutableStateOf(true) }
     Card(
         modifier = modifier.fillMaxWidth().clickable { expanded = !expanded },
-        shape = RoundedCornerShape(24.dp),
+        shape = SkipiTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         border = BorderStroke(1.dp, colors.border),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(
+                horizontal = SkipiTheme.spacing.large,
+                vertical = SkipiTheme.spacing.medium,
+            ),
+            verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
         ) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(42.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(SkipiTheme.shapes.small)
                         .background(colors.raisedSurface),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("⌜⌟", color = colors.text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                    Text("⌜⌟", color = colors.text, fontSize = 21.sp, fontWeight = themedFontWeight(FontWeight.Bold))
                 }
-                Spacer(Modifier.width(14.dp))
+                Spacer(Modifier.width(SkipiTheme.spacing.small))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = state.title,
                         color = colors.text,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = SkipiTheme.typography.titleLarge,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(state.serverCountText, color = colors.mutedText, fontSize = 14.sp)
+                    Text(state.serverCountText, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium)
                 }
                 Switch(
                     checked = state.enabled,
@@ -165,12 +169,12 @@ fun SkipiSubscriptionSummaryCard(
             Text(
                 text = state.statusText,
                 color = if (state.enabled) colors.enabled else colors.mutedText,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
+                style = SkipiTheme.typography.labelMedium,
+                fontWeight = themedFontWeight(FontWeight.SemiBold),
             )
             if (expanded) {
                 state.trafficText?.let { trafficText ->
-                    Text(trafficText, color = colors.mutedText, fontSize = 14.sp)
+                    Text(trafficText, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium)
                 }
                 state.trafficProgress?.let { progress ->
                     LinearProgressIndicator(
@@ -181,15 +185,15 @@ fun SkipiSubscriptionSummaryCard(
                     )
                 }
                 state.expiryText?.let { expiryText ->
-                    Text(expiryText, color = colors.mutedText, fontSize = 14.sp)
+                    Text(expiryText, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium)
                 }
                 state.description?.let { description ->
-                    Text(description, color = colors.mutedText, fontSize = 14.sp)
+                    Text(description, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium)
                 }
                 state.announcementText?.let { announcementText ->
                     val onAnnouncement = actions.onAnnouncement
                     if (onAnnouncement == null) {
-                        Text(announcementText, color = colors.mutedText, fontSize = 14.sp)
+                        Text(announcementText, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium)
                     } else {
                         TextButton(onClick = onAnnouncement) { Text(announcementText) }
                     }
@@ -207,7 +211,7 @@ fun SkipiSubscriptionSummaryCard(
                     }
                 }
                 state.updatedText?.let { updatedText ->
-                    Text(updatedText, color = colors.mutedText, fontSize = 13.sp)
+                    Text(updatedText, color = colors.mutedText, style = SkipiTheme.typography.bodySmall)
                 }
             }
         }

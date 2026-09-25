@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Card
@@ -37,7 +36,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.theme.SkipiTheme
 
 data class SkipiProxyGroupPickerItem(
     val id: String,
@@ -131,26 +131,29 @@ fun SkipiProxyGroupPicker(
                         }
                     },
                 ),
-            shape = RoundedCornerShape(16.dp),
+            shape = SkipiTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = cardSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, cardBorder),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(
+                    horizontal = SkipiTheme.spacing.medium,
+                    vertical = SkipiTheme.spacing.small,
+                ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = selectedGroup.title,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        style = SkipiTheme.typography.titleSmall,
+                        fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = colors.text,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = selectedGroup.subtitle,
-                        fontSize = 12.sp,
+                        style = SkipiTheme.typography.bodySmall,
                         color = colors.mutedText,
                     )
                 }

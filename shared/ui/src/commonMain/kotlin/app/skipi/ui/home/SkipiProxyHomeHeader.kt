@@ -13,10 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.HourglassEmpty
-import androidx.compose.material.icons.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -36,7 +36,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.theme.SkipiTheme
 
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_more
@@ -107,8 +108,8 @@ fun SkipiProxyHomeHeader(
         Text(
             text = state.title,
             color = colors.text,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Black,
+            style = SkipiTheme.typography.headlineLarge,
+            fontWeight = themedFontWeight(FontWeight.Black),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -221,7 +222,7 @@ private fun SkipiProxyHomeHeaderMenu(
                 },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                     )
@@ -242,7 +243,7 @@ private fun SkipiProxyHomeHeaderMenu(
                 trailingIcon = {
                     when {
                         action.children.isNotEmpty() -> Icon(
-                            imageVector = Icons.Outlined.KeyboardArrowRight,
+                            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )

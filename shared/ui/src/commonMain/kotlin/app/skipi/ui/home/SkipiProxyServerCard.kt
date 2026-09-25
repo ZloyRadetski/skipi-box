@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
@@ -34,8 +33,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.skipi.ui.resources.Res
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.common_copy
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.common_edit
@@ -117,40 +117,40 @@ fun SkipiProxyServerCard(
     Card(
         onClick = actions.onSelect,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = SkipiTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (state.selected) colors.selectedSurface else colors.surface,
         ),
         border = BorderStroke(1.dp, if (state.selected) colors.selectedBorder else Color.Transparent),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(SkipiTheme.spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
         ) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(46.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(SkipiTheme.shapes.small)
                         .background(colors.raisedSurface),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(state.iconText, fontSize = 24.sp)
+                    Text(state.iconText, style = SkipiTheme.typography.headlineSmall)
                 }
-                Spacer(Modifier.width(14.dp))
+                Spacer(Modifier.width(SkipiTheme.spacing.small))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = state.title,
                         color = colors.text,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = SkipiTheme.typography.titleLarge,
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = state.address,
                         color = colors.mutedText,
-                        fontSize = 14.sp,
+                        style = SkipiTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -159,16 +159,20 @@ fun SkipiProxyServerCard(
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 SkipiProtocolChip(text = state.protocol, selected = state.selected, colors = colors)
                 state.transport?.takeIf(String::isNotBlank)?.let { transport ->
-                    Spacer(Modifier.width(7.dp))
+                    Spacer(Modifier.width(SkipiTheme.spacing.extraSmall))
                     SkipiTransportChip(text = transport, selected = state.selected, colors = colors)
                 }
                 state.latency?.let { latency ->
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(SkipiTheme.spacing.small))
                     Text(
                         text = latency.text,
                         color = if (latency.kind == SkipiProxyServerLatencyKind.Success) colors.success else colors.error,
-                        fontSize = if (latency.kind == SkipiProxyServerLatencyKind.Success) 15.sp else 14.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = if (latency.kind == SkipiProxyServerLatencyKind.Success) {
+                            SkipiTheme.typography.labelLarge
+                        } else {
+                            SkipiTheme.typography.labelMedium
+                        },
+                        fontWeight = themedFontWeight(FontWeight.Bold),
                     )
                 }
                 Spacer(Modifier.weight(1f))
@@ -203,13 +207,13 @@ private fun SkipiProtocolChip(
     }
     Surface(
         color = chipColor.copy(alpha = if (selected) 0.85f else 0.45f),
-        shape = RoundedCornerShape(8.dp),
+        shape = SkipiTheme.shapes.extraSmall,
     ) {
         Text(
             text = text.uppercase(),
             color = colors.text,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
+            style = SkipiTheme.typography.labelMedium,
+            fontWeight = themedFontWeight(FontWeight.SemiBold),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
         )
     }
@@ -223,13 +227,13 @@ private fun SkipiTransportChip(
 ) {
     Surface(
         color = Color(0xFF40505A).copy(alpha = if (selected) 0.88f else 0.56f),
-        shape = RoundedCornerShape(8.dp),
+        shape = SkipiTheme.shapes.extraSmall,
     ) {
         Text(
             text = text,
             color = colors.text,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
+            style = SkipiTheme.typography.labelMedium,
+            fontWeight = themedFontWeight(FontWeight.Medium),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
         )
     }

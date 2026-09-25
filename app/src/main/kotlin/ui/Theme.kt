@@ -31,7 +31,7 @@ import app.modes.FontWeightModeDefault
 import app.modes.explicitColorModeIsDark
 import app.modes.normalizeColorMode
 import app.modes.resolveFontSizeScale
-import ui.text.ThemedTypography
+import app.skipi.ui.theme.ProvideSkipiTheme
 import ui.text.resolveFontFamily
 import ui.text.resolveFontWeight
 import androidx.compose.ui.platform.LocalDensity
@@ -40,46 +40,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.runtime.Immutable
-import top.yukonga.miuix.kmp.theme.Colors
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemeController
-import top.yukonga.miuix.kmp.theme.TextStyles
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 val LocalBackgroundStyle = compositionLocalOf { BackgroundStyleClassic }
-val LocalPopupTextStyles = compositionLocalOf<TextStyles?> { null }
-val LocalPopupColors = compositionLocalOf<Colors?> { null }
 
-@Immutable
-data class AppColors(
-    val background: Color,
-    val onBackground: Color,
-    val accent: Color,
-    val onAccent: Color,
-    val surface: Color,
-    val onSurface: Color,
-    val surfaceVariant: Color,
-    val onSurfaceVariant: Color,
-    val isDark: Boolean,
-)
+/** Compatibility aliases for Android-only callers while the source of truth lives in shared UI. */
+typealias AppColors = app.skipi.ui.theme.AppColors
 
-val DefaultAppAccentColor = Color(0xFF4B6078)
+val DefaultAppAccentColor: Color
+    get() = app.skipi.ui.theme.DefaultAppAccentColor
 
-val LocalAppColors = compositionLocalOf {
-    AppColors(
-        background = Color(0xFFF5F6F8),
-        onBackground = Color(0xFF1B1C1E),
-        accent = DefaultAppAccentColor,
-        onAccent = Color(0xFFFFFFFF),
-        surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF1B1C1E),
-        surfaceVariant = Color(0xFFE8EAEE),
-        onSurfaceVariant = Color(0xFF6B7280),
-        isDark = false,
-    )
-}
+val LocalAppColors = app.skipi.ui.theme.LocalAppColors
+val LocalPopupTextStyles = app.skipi.ui.theme.LocalPopupTextStyles
+val LocalPopupColors = app.skipi.ui.theme.LocalPopupColors
 
 object AppTheme {
     val colors: AppColors
@@ -252,15 +229,10 @@ fun AppTheme(
 
     val resolvedFontFamily = remember(fontFamilyMode) { resolveFontFamily(fontFamilyMode) }
     val resolvedFontWeight = remember(fontWeightMode) { resolveFontWeight(fontWeightMode) }
-    // Publish the weight shift globally so that explicitly requested weights
-    // (see ui.text.themedFontWeight) follow the user's preference everywhere,
-    // including miuix window compositions where app locals do not reach.
-    SideEffect {
-        ThemedTypography.updateWeightShift(resolvedFontWeight?.weight?.minus(FontWeight.Normal.weight) ?: 0)
-    }
+    val fontWeightShift = resolvedFontWeight?.weight?.minus(FontWeight.Normal.weight) ?: 0
     val baseMiuixTextStyles = MiuixTheme.textStyles
-    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight, fontScaleFactor, appColors.onSurface) {
-        val styled = baseMiuixTextStyles.copy(
+    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight, appColors.onSurface) {
+        baseMiuixTextStyles.copy(
             main = baseMiuixTextStyles.main.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
             headline1 = baseMiuixTextStyles.headline1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
             headline2 = baseMiuixTextStyles.headline2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
@@ -274,22 +246,24 @@ fun AppTheme(
             footnote2 = baseMiuixTextStyles.footnote2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
             button = baseMiuixTextStyles.button.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
         )
+    }
+    val popupMiuixTextStyles = remember(miuixTextStyles, fontScaleFactor) {
         if (fontScaleFactor == 1.0f) {
-            styled
+            miuixTextStyles
         } else {
-            styled.copy(
-                main = styled.main.scaleFontSize(fontScaleFactor),
-                headline1 = styled.headline1.scaleFontSize(fontScaleFactor),
-                headline2 = styled.headline2.scaleFontSize(fontScaleFactor),
-                title1 = styled.title1.scaleFontSize(fontScaleFactor),
-                title2 = styled.title2.scaleFontSize(fontScaleFactor),
-                title3 = styled.title3.scaleFontSize(fontScaleFactor),
-                title4 = styled.title4.scaleFontSize(fontScaleFactor),
-                body1 = styled.body1.scaleFontSize(fontScaleFactor),
-                body2 = styled.body2.scaleFontSize(fontScaleFactor),
-                footnote1 = styled.footnote1.scaleFontSize(fontScaleFactor),
-                footnote2 = styled.footnote2.scaleFontSize(fontScaleFactor),
-                button = styled.button.scaleFontSize(fontScaleFactor),
+            miuixTextStyles.copy(
+                main = miuixTextStyles.main.scaleFontSize(fontScaleFactor),
+                headline1 = miuixTextStyles.headline1.scaleFontSize(fontScaleFactor),
+                headline2 = miuixTextStyles.headline2.scaleFontSize(fontScaleFactor),
+                title1 = miuixTextStyles.title1.scaleFontSize(fontScaleFactor),
+                title2 = miuixTextStyles.title2.scaleFontSize(fontScaleFactor),
+                title3 = miuixTextStyles.title3.scaleFontSize(fontScaleFactor),
+                title4 = miuixTextStyles.title4.scaleFontSize(fontScaleFactor),
+                body1 = miuixTextStyles.body1.scaleFontSize(fontScaleFactor),
+                body2 = miuixTextStyles.body2.scaleFontSize(fontScaleFactor),
+                footnote1 = miuixTextStyles.footnote1.scaleFontSize(fontScaleFactor),
+                footnote2 = miuixTextStyles.footnote2.scaleFontSize(fontScaleFactor),
+                button = miuixTextStyles.button.scaleFontSize(fontScaleFactor),
             )
         }
     }
@@ -305,15 +279,15 @@ fun AppTheme(
     CompositionLocalProvider(
         LocalColorMode provides colorMode,
         LocalResolvedDarkTheme provides resolvedDark,
-        LocalAppColors provides appColors,
         LocalBackgroundStyle provides backgroundStyle,
         LocalDensity provides scaledDensity,
-        LocalPopupTextStyles provides miuixTextStyles,
-        LocalPopupColors provides miuixColors,
     ) {
-        MiuixTheme(
-            colors = miuixColors,
-            textStyles = miuixTextStyles,
+        ProvideSkipiTheme(
+            colors = appColors,
+            miuixColors = miuixColors,
+            miuixTextStyles = miuixTextStyles,
+            popupMiuixTextStyles = popupMiuixTextStyles,
+            fontWeightShift = fontWeightShift,
         ) {
             SystemBarAppearance(
                 statusBarDark = resolvedDark,

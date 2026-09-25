@@ -122,7 +122,9 @@ fun SkipiAddSourceDialog(
                 ) {
                     Text(
                         text = stringResource(Res.string.proxy_server_list_add),
-                        fontWeight = if (serverSelected) themedFontWeight(FontWeight.SemiBold) else FontWeight.Normal,
+                        fontWeight = themedFontWeight(
+                            if (serverSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        ),
                     )
                 }
 
@@ -144,7 +146,9 @@ fun SkipiAddSourceDialog(
                 ) {
                     Text(
                         text = stringResource(Res.string.subscription_add),
-                        fontWeight = if (subSelected) themedFontWeight(FontWeight.SemiBold) else FontWeight.Normal,
+                        fontWeight = themedFontWeight(
+                            if (subSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        ),
                     )
                 }
             }

@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.skipi.ui.text.themedFontWeight
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -377,7 +378,9 @@ fun SkipiExpressiveNavigationBar(
                             Text(
                                 text = item.label,
                                 color = itemColor,
-                                fontWeight = if (activeFraction > 0.5f) FontWeight.SemiBold else FontWeight.Medium,
+                                fontWeight = themedFontWeight(
+                                    if (activeFraction > 0.5f) FontWeight.SemiBold else FontWeight.Medium,
+                                ),
                                 fontSize = dimensions.textSize,
                                 maxLines = 1,
                                 letterSpacing = 0.25.sp,

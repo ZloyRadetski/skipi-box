@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +36,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import app.skipi.ui.theme.SkipiTheme
 
 data class SkipiProxyServerCompactListCardState(
     val flag: String?,
@@ -83,7 +83,7 @@ fun SkipiProxyServerCompactListCard(
     dragVisualModifier: Modifier = Modifier,
     dragModifier: Modifier = Modifier,
 ) {
-    val selectedShape = RoundedCornerShape(13.dp)
+    val selectedShape = SkipiTheme.shapes.small
     val compactCardHeight = if (state.isStrategyGroup) 58.dp else 66.dp
 
     Box(
@@ -116,7 +116,7 @@ fun SkipiProxyServerCompactListCard(
                     else -> colors.surface
                 },
             ),
-            insideMargin = PaddingValues(8.dp),
+                insideMargin = PaddingValues(SkipiTheme.spacing.small),
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -130,15 +130,14 @@ fun SkipiProxyServerCompactListCard(
                     size = 32.dp,
                     shapeRadius = 8.dp,
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(SkipiTheme.spacing.small))
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         text = state.title,
-                        fontSize = 15.sp,
-                        lineHeight = 18.sp,
+                        style = SkipiTheme.typography.titleSmall,
                         fontWeight = titleFontWeight,
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -147,7 +146,7 @@ fun SkipiProxyServerCompactListCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 2.dp),
+                            .padding(top = SkipiTheme.spacing.extraSmall),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         SkipiProxyProtocolChip(
@@ -159,7 +158,7 @@ fun SkipiProxyServerCompactListCard(
                             fontWeight = titleFontWeight,
                         )
                         state.transport?.takeIf(String::isNotBlank)?.let { transport ->
-                            Spacer(Modifier.width(5.dp))
+                            Spacer(Modifier.width(SkipiTheme.spacing.extraSmall))
                             SkipiProxyTransportChip(
                                 text = transport,
                                 textColor = state.transportTextColor,
@@ -169,18 +168,18 @@ fun SkipiProxyServerCompactListCard(
                                 fontWeight = latencyFontWeight,
                             )
                         }
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(SkipiTheme.spacing.small))
                         Text(
                             text = state.summary,
                             modifier = Modifier.weight(1f),
-                            fontSize = 12.sp,
+                            style = SkipiTheme.typography.bodySmall,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         when {
                             state.latencyTesting -> {
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(SkipiTheme.spacing.small))
                                 InfiniteProgressIndicator(
                                     color = state.progressColor,
                                     size = 12.dp,
@@ -189,10 +188,10 @@ fun SkipiProxyServerCompactListCard(
                             }
 
                             !state.latencyText.isNullOrBlank() -> {
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(SkipiTheme.spacing.small))
                                 Text(
                                     text = state.latencyText,
-                                    fontSize = 12.sp,
+                                    style = SkipiTheme.typography.labelSmall,
                                     fontWeight = latencyFontWeight,
                                     color = state.latencyColor,
                                     maxLines = 1,

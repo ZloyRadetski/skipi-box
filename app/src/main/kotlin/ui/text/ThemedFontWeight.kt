@@ -4,25 +4,20 @@
 package ui.text
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.font.FontWeight
+import app.skipi.ui.text.ThemedTypography as SharedThemedTypography
+import app.skipi.ui.text.themedFontWeight as sharedThemedFontWeight
 
 /**
- * Global holder for the font weight shift configured by the user's font weight
- * setting. Kept outside composition locals because miuix window components
- * (dialogs, dropdown popups) re-create compositions where app-provided locals
- * do not reach; a snapshot state read works everywhere.
+ * Compatibility facade for Android-only callers. The state itself belongs to
+ * shared UI so that Android and shared-window compositions cannot drift.
  */
 object ThemedTypography {
-    var weightShift by mutableIntStateOf(0)
-        private set
+    val weightShift: Int
+        get() = SharedThemedTypography.weightShift
 
     fun updateWeightShift(newShift: Int) {
-        if (weightShift != newShift) {
-            weightShift = newShift
-        }
+        SharedThemedTypography.updateWeightShift(newShift)
     }
 }
 
@@ -32,11 +27,4 @@ object ThemedTypography {
  * their relative difference while still following the global setting.
  */
 @Composable
-fun themedFontWeight(requested: FontWeight): FontWeight {
-    val shift = ThemedTypography.weightShift
-    return if (shift == 0) {
-        requested
-    } else {
-        FontWeight((requested.weight + shift).coerceIn(100, 900))
-    }
-}
+fun themedFontWeight(requested: FontWeight): FontWeight = sharedThemedFontWeight(requested)

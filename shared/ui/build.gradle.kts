@@ -13,6 +13,9 @@ kotlin {
         namespace = "com.radetski.skipi.shared.ui"
         compileSdk = ProjectConfig.TARGET_SDK
         minSdk = ProjectConfig.MIN_SDK
+        androidResources {
+            enable = true
+        }
         withHostTest {}
     }
     jvm("desktop")
@@ -20,6 +23,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":shared:core"))
+            api(project(":shared:app"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
@@ -40,4 +44,3 @@ compose.resources {
     publicResClass = true
     packageOfResClass = "app.skipi.ui.resources"
 }
-
