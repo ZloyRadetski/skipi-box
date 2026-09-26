@@ -27,6 +27,10 @@ import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_add
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_save
+import app.skipi.ui.resources.home_add_source_hint
+import app.skipi.ui.resources.home_add_source_placeholder
+import app.skipi.ui.resources.home_invalid_server
+import app.skipi.ui.resources.home_proxy_server
 import app.skipi.ui.resources.proxy_server_list_add
 import app.skipi.ui.resources.proxy_server_list_import_clipboard
 import app.skipi.ui.resources.proxy_server_list_import_file
@@ -157,21 +161,21 @@ fun SkipiAddSourceDialog(
                 TextField(
                     value = serverLink,
                     onValueChange = onServerLinkChange,
-                    label = "vless://, vmess://, hysteria2://, trojan://, ss:// …",
+                    label = stringResource(Res.string.home_add_source_placeholder),
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 when {
                     parsedServer == null -> {
                         Text(
-                            text = "Paste a server share link above.",
+                            text = stringResource(Res.string.home_add_source_hint),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             fontSize = 13.sp,
                         )
                     }
                     parsedServer.isFailure -> {
                         Text(
-                            text = parsedServer.exceptionOrNull()?.message ?: "Invalid server configuration",
+                            text = parsedServer.exceptionOrNull()?.message ?: stringResource(Res.string.home_invalid_server),
                             color = MiuixTheme.colorScheme.error,
                             fontSize = 13.sp,
                         )
@@ -186,7 +190,7 @@ fun SkipiAddSourceDialog(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = info.remarks.ifBlank { "Proxy Server" },
+                                    text = info.remarks.ifBlank { stringResource(Res.string.home_proxy_server) },
                                     fontWeight = themedFontWeight(FontWeight.SemiBold),
                                     color = MiuixTheme.colorScheme.onSurface,
                                 )

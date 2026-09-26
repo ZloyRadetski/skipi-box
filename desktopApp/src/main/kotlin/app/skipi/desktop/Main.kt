@@ -102,6 +102,17 @@ fun main() = application {
                 var serverLibrary by remember {
                     mutableStateOf(DesktopServerLibraries.loadDefault().getOrElse { DesktopServerLibrary() })
                 }
+                val proxyServerRepository = remember {
+                    DesktopProxyServerRepository(
+                        initialLibrary = serverLibrary,
+                        readLibrary = { serverLibrary },
+                        saveLibrary = DesktopServerLibraries::saveDefault,
+                        publishLibrary = { serverLibrary = it },
+                    )
+                }
+                LaunchedEffect(serverLibrary) {
+                    proxyServerRepository.refresh(serverLibrary)
+                }
                 LaunchedEffect(
                     subscriptionLibrary,
                     subscriptionUpdateInProgress,
@@ -511,9 +522,11 @@ fun main() = application {
                                 }
                             },
                             onSelectServer = { serverId ->
-                                runCatching { DesktopServerLibraries.select(serverLibrary, serverId) }
+                                runCatching {
+                                    proxyServerRepository.selectAndCommit(serverId)
+                                }
                                     .onSuccess { updated ->
-                                        DesktopServerLibraries.saveDefault(updated).onSuccess {
+                                        proxyServerRepository.persistIfChanged(updated).onSuccess {
                                             serverLibrary = updated
                                             serverLibraryMessage = "Сервер выбран."
                                             if (coreState.isRunning) {

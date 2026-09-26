@@ -5,7 +5,6 @@ package app.skipi.ui.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,8 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.unit.dp
 import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.theme.SkipiTheme
@@ -42,6 +43,8 @@ data class SkipiProxyGroupSelectorColors(
     val selectedBorder: Color,
     val text: Color,
     val mutedText: Color,
+    val selectedText: Color = text,
+    val selectedMutedText: Color = mutedText,
 )
 
 /** Common horizontally-scrollable proxy-group selector for the shared Home UI. */
@@ -51,8 +54,8 @@ fun SkipiProxyGroupSelector(
     selectedGroupId: String?,
     title: String,
     emptyText: String,
-    disabledTitle: (String) -> String,
-    serverCountText: (Int) -> String,
+    disabledTitle: @Composable (String) -> String,
+    serverCountText: @Composable (Int) -> String,
     colors: SkipiProxyGroupSelectorColors,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -83,7 +86,11 @@ fun SkipiProxyGroupSelector(
                         Surface(
                             modifier = Modifier
                                 .clip(SkipiTheme.shapes.small)
-                                .clickable { onSelect(group.id) },
+                                .selectable(
+                                    selected = selected,
+                                    role = Role.RadioButton,
+                                    onClick = { onSelect(group.id) },
+                                ),
                             color = if (selected) colors.selectedSurface else colors.raisedSurface,
                             shape = SkipiTheme.shapes.small,
                             border = BorderStroke(
@@ -94,7 +101,7 @@ fun SkipiProxyGroupSelector(
                             Column(modifier = Modifier.padding(horizontal = SkipiTheme.spacing.medium, vertical = SkipiTheme.spacing.small)) {
                                 Text(
                                     text = if (group.enabled) group.title else disabledTitle(group.title),
-                                    color = if (group.enabled) colors.text else colors.mutedText,
+                                    color = if (!group.enabled) colors.mutedText else if (selected) colors.selectedText else colors.text,
                                     style = SkipiTheme.typography.bodyMedium,
                                     fontWeight = themedFontWeight(FontWeight.SemiBold),
                                     maxLines = 1,
@@ -102,7 +109,7 @@ fun SkipiProxyGroupSelector(
                                 )
                                 Text(
                                     text = serverCountText(group.serverCount),
-                                    color = colors.mutedText,
+                                    color = if (selected) colors.selectedMutedText else colors.mutedText,
                                     style = SkipiTheme.typography.bodySmall,
                                 )
                             }

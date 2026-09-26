@@ -17,7 +17,8 @@ import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
 @Serializable
-enum class DesktopThemeMode { Dark, Amoled }
+/** Enum names are persisted in settings.json; keep existing values stable. */
+enum class DesktopThemeMode { Dark, Amoled, Light, Aurora, Sakura, Forest, Sunset }
 
 /** Portable desktop equivalents of the Android settings that affect SKIPI's desktop adapters. */
 @Serializable

@@ -21,9 +21,18 @@ interface SettingsRepository {
 interface ProxyServerRepository {
     val servers: StateFlow<List<ProxyServerRecord>>
 
+    /** Persist the active server selection using the host's existing settings format. */
+    suspend fun select(serverId: Int)
+
     suspend fun upsert(server: ProxyServerRecord)
 
     suspend fun remove(serverId: Int)
+}
+
+/** Validates a Home selection against the current catalogue before persisting it. */
+suspend fun ProxyServerRepository.selectExisting(serverId: Int) {
+    require(servers.value.any { it.id == serverId }) { "Unknown proxy server ID: $serverId" }
+    select(serverId)
 }
 
 /** Storage-independent subscription catalog and refresh boundary. */

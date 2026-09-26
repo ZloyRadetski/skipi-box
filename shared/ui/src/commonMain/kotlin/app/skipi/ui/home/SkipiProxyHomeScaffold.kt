@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import app.skipi.ui.theme.SkipiTheme
 import androidx.compose.ui.unit.dp
 
 /** Describes which Home controls stay fixed above the platform-specific list. */
@@ -95,16 +96,16 @@ private fun SkipiProxyHomeContentHeader(
     modifier: Modifier,
 ) {
     val connectionBottomPadding = when {
-        scrolling -> 6.dp
-        state.showGroupSelector || state.showSearch -> 6.dp
+        scrolling -> SkipiTheme.spacing.sectionGap
+        state.showGroupSelector || state.showSearch -> SkipiTheme.spacing.sectionGap
         else -> 0.dp
     }
     val groupBottomPadding = when {
-        scrolling -> 6.dp
-        state.showSearch -> 6.dp
+        scrolling -> SkipiTheme.spacing.sectionGap
+        state.showSearch -> SkipiTheme.spacing.sectionGap
         else -> 0.dp
     }
-    val searchBottomPadding = if (scrolling) 6.dp else 0.dp
+    val searchBottomPadding = if (scrolling) SkipiTheme.spacing.sectionGap else 0.dp
 
     Column(modifier = modifier.fillMaxWidth()) {
         connectionPanel(

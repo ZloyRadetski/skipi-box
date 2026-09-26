@@ -21,7 +21,6 @@ import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
-import features.proxy.server.model.getUrlOrNull
 import features.proxy.server.model.isCompositeProxyServer
 import features.config.withImportedTrafficConfig
 import features.subscription.SubscriptionMetadata
@@ -347,22 +346,11 @@ internal fun List<ProxyServerState>.deleteDuplicateServersInGroup(
     currentGroupServerIds: Set<Int>,
     selectedProxyServerId: Int,
 ): ProxyServerListDuplicateDeleteResult {
-    val keptServerIdsByUrl = mutableMapOf<String, Int>()
-    val duplicateServerIds = mutableSetOf<Int>()
-    forEach { server ->
-        val url = runCatching { server.server.getUrlOrNull() }.getOrNull()
-        if (server.id in currentGroupServerIds && url != null) {
-            val keptServerId = keptServerIdsByUrl[url]
-            if (keptServerId == null) {
-                keptServerIdsByUrl[url] = server.id
-            } else if (server.id == selectedProxyServerId) {
-                duplicateServerIds += keptServerId
-                keptServerIdsByUrl[url] = server.id
-            } else {
-                duplicateServerIds += server.id
-            }
-        }
-    }
+    val duplicateServerIds = ProxyServerGroupCleanup.duplicateServerIds(
+        servers = map { server -> ProxyServerGroupCleanupRecord(server.id, server.server) },
+        currentGroupServerIds = currentGroupServerIds,
+        selectedServerId = selectedProxyServerId,
+    )
 
     return ProxyServerListDuplicateDeleteResult(
         servers = if (duplicateServerIds.isEmpty()) {
@@ -377,11 +365,10 @@ internal fun List<ProxyServerState>.deleteDuplicateServersInGroup(
 internal fun List<ProxyServerState>.deleteInvalidServersInGroup(
     currentGroupServerIds: Set<Int>,
 ): ProxyServerListInvalidDeleteResult {
-    val invalidServerIds = asSequence()
-        .filter { server -> server.id in currentGroupServerIds }
-        .filter { server -> server.server.validateFull().isNotEmpty() }
-        .map { server -> server.id }
-        .toSet()
+    val invalidServerIds = ProxyServerGroupCleanup.invalidServerIds(
+        servers = map { server -> ProxyServerGroupCleanupRecord(server.id, server.server) },
+        currentGroupServerIds = currentGroupServerIds,
+    )
 
     return ProxyServerListInvalidDeleteResult(
         servers = if (invalidServerIds.isEmpty()) {

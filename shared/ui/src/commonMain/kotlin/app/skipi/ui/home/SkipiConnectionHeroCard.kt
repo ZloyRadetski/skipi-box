@@ -28,6 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -117,16 +120,19 @@ fun SkipiConnectionHeroCard(
                         .clip(CircleShape)
                         .background(colors.raisedSurface)
                         .border(3.dp, statusColor, CircleShape)
-                        .clickable(enabled = state.toggleEnabled, onClick = onToggle),
+                        .semantics {
+                            contentDescription = if (state.phase == SkipiConnectionHeroPhase.Connected) {
+                                disconnectContentDescription
+                            } else {
+                                connectContentDescription
+                            }
+                        }
+                        .clickable(enabled = state.toggleEnabled, role = Role.Button, onClick = onToggle),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.PowerSettingsNew,
-                        contentDescription = if (state.phase == SkipiConnectionHeroPhase.Connected) {
-                            disconnectContentDescription
-                        } else {
-                            connectContentDescription
-                        },
+                        contentDescription = null,
                         tint = iconTint,
                         modifier = Modifier.size(iconSize),
                     )

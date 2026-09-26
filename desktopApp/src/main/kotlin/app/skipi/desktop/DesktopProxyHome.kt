@@ -12,12 +12,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import app.skipi.app.home.ProxyConnectionPhase
 import app.skipi.app.home.ProxyGroupSummary
-import app.skipi.app.home.ProxyHomeCapabilities
+import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyHomeUiState
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
+import app.skipi.ui.home.ProxyHomeCapabilities
+import app.skipi.ui.home.ProxyHomeScreen
 import app.skipi.ui.components.DeleteConfirmationDialog
-import app.skipi.ui.home.ProxyHomeScreenContent
 import app.skipi.ui.home.dialogs.SkipiAddSourceDialog
 import app.skipi.ui.home.dialogs.SkipiAddSourceMode
 import app.skipi.ui.home.dialogs.SkipiImportDialog
@@ -41,6 +42,8 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import platform.TunnelPhase
+import platform.TunnelSnapshot
 
 /**
  * Desktop adaptation of ProxyServerListPage using the shared adaptive ProxyHomeScreenContent.
@@ -164,7 +167,8 @@ internal fun DesktopProxyHome(
                 description = sub.metadata.description.takeIf(String::isNotBlank),
                 announcement = sub.metadata.announce.takeIf(String::isNotBlank),
                 announcementUrl = sub.metadata.announceUrl.takeIf(String::isNotBlank),
-                supportUrl = sub.metadata.supportUrl.ifBlank { sub.metadata.supportEmail.takeIf(String::isNotBlank)?.let { "mailto:$it" } }.takeIf(String::isNotBlank),
+                supportUrl = sub.metadata.supportUrl?.takeIf { it.isNotBlank() }
+                    ?: sub.metadata.supportEmail.takeIf { it.isNotBlank() }?.let { "mailto:$it" },
                 siteUrl = sub.metadata.profileWebPageUrl.takeIf(String::isNotBlank),
                 lastUpdatedAtMillis = sub.metadata.lastUpdatedAtMillis.takeIf { it > 0 },
             )
@@ -204,7 +208,13 @@ internal fun DesktopProxyHome(
     } ?: false
 
     val homeUiState = ProxyHomeUiState(
-        connectionPhase = connectionPhase,
+        tunnelSnapshot = TunnelSnapshot(
+            phase = when (connectionPhase) {
+                ProxyConnectionPhase.Connected -> TunnelPhase.Connected
+                ProxyConnectionPhase.Connecting -> TunnelPhase.Connecting
+                ProxyConnectionPhase.Disconnected -> TunnelPhase.Disconnected
+            },
+        ),
         selectedServerTitle = selectedTitle,
         activeProfileName = activeProfileName,
         canToggleTunnel = canToggleTunnel,
@@ -218,6 +228,8 @@ internal fun DesktopProxyHome(
         statusMessage = combinedStatusMessage,
         isStatusError = isStatusError,
     )
+    val homeStore = remember { ProxyHomeStore() }
+    homeStore.updateState { homeUiState }
 
     val capabilities = remember(
         serverLibrary,
@@ -337,9 +349,8 @@ internal fun DesktopProxyHome(
         )
     }
 
-    ProxyHomeScreenContent(
-        state = homeUiState,
-        onAction = { /* state handled in capabilities */ },
+    ProxyHomeScreen(
+        store = homeStore,
         capabilities = capabilities,
         contentPadding = contentPadding,
     )

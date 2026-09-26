@@ -3,6 +3,7 @@ package app.skipi.desktop
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class DesktopConfigLibraryTest {
     @Test fun stores_selects_and_removes_configs() {
@@ -16,6 +17,10 @@ class DesktopConfigLibraryTest {
         )
         val second = DesktopConfigLibraries.put(first, "Work", "[Rule]")
         DesktopConfigLibraries.save(path, second).getOrThrow()
+        val persistedJson = Files.readString(path)
+        assertTrue(persistedJson.contains("\"selectedConfigId\""))
+        assertTrue(persistedJson.contains("\"configs\""))
+        assertTrue(persistedJson.contains("\"lastUpdatedAtMillis\""))
         val restored = DesktopConfigLibraries.load(path).getOrThrow()
         assertEquals(2, restored.configs.size)
         assertEquals("Default", DesktopConfigLibraries.select(restored, 1).configs.first().name)

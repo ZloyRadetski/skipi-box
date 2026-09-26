@@ -20,6 +20,9 @@ import app.skipi.ui.components.AppWindowDialog
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_merge_import
+import app.skipi.ui.resources.home_import_hint
+import app.skipi.ui.resources.home_import_placeholder
+import app.skipi.ui.resources.home_import_replace_configuration
 import app.skipi.ui.resources.proxy_server_list_import_clipboard
 import app.skipi.ui.resources.proxy_server_list_import_file
 import org.jetbrains.compose.resources.stringResource
@@ -57,7 +60,7 @@ fun SkipiImportDialog(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                text = "Paste YAML (Clash), JSON (Xray), Base64, or URI list below:",
+                text = stringResource(Res.string.home_import_hint),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 fontSize = 13.sp,
             )
@@ -65,7 +68,7 @@ fun SkipiImportDialog(
             TextField(
                 value = importText,
                 onValueChange = onImportTextChange,
-                label = "proxies: [...] / vless://...",
+                label = stringResource(Res.string.home_import_placeholder),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 120.dp, max = 280.dp),
@@ -78,7 +81,7 @@ fun SkipiImportDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "Replace existing configuration",
+                    text = stringResource(Res.string.home_import_replace_configuration),
                     fontSize = 14.sp,
                     color = MiuixTheme.colorScheme.onSurface,
                 )

@@ -36,6 +36,8 @@ data class SkipiColorScheme(
     val onTertiary: Color = onPrimary,
     val tertiaryContainer: Color = primaryContainer,
     val onTertiaryContainer: Color = onPrimaryContainer,
+    val surfaceContainerLow: Color = surface,
+    val surfaceContainerLowest: Color = background,
     val surfaceDim: Color = background,
     val surfaceBright: Color = surface,
     val surfaceContainer: Color = surfaceVariant,
@@ -91,6 +93,10 @@ data class SkipiSpacing(
     val large: Dp = 24.dp,
     val extraLarge: Dp = 32.dp,
     val huge: Dp = 48.dp,
+    val screenHorizontal: Dp = medium,
+    val screenVertical: Dp = medium,
+    val contentMaxWidth: Dp = 980.dp,
+    val sectionGap: Dp = small,
 ) {
     companion object
 }
@@ -129,6 +135,10 @@ fun SkipiSpacing.Companion.forWindowClass(windowClass: SkipiWindowClass): SkipiS
         large = 16.dp,
         extraLarge = 24.dp,
         huge = 32.dp,
+        screenHorizontal = 16.dp,
+        screenVertical = 12.dp,
+        contentMaxWidth = 640.dp,
+        sectionGap = 6.dp,
     )
     SkipiWindowClass.Medium -> SkipiSpacing()
     SkipiWindowClass.Expanded -> SkipiSpacing(
@@ -138,7 +148,64 @@ fun SkipiSpacing.Companion.forWindowClass(windowClass: SkipiWindowClass): SkipiS
         large = 24.dp,
         extraLarge = 32.dp,
         huge = 48.dp,
+        screenHorizontal = 32.dp,
+        screenVertical = 24.dp,
+        contentMaxWidth = 980.dp,
+        sectionGap = 10.dp,
     )
+}
+
+/** Common control and hero sizing. Android favors comfortable touch targets;
+ * desktop keeps controls compact while retaining the same visual language. */
+@Immutable
+data class SkipiHomeMetrics(
+    val toolbarHeight: Dp,
+    val heroButtonOuter: Dp,
+    val heroButton: Dp,
+    val heroIcon: Dp,
+    val listRowMinHeight: Dp,
+) {
+    companion object
+}
+
+val LocalSkipiHomeMetrics = staticCompositionLocalOf {
+    SkipiHomeMetrics(
+        toolbarHeight = 56.dp,
+        heroButtonOuter = 96.dp,
+        heroButton = 72.dp,
+        heroIcon = 40.dp,
+        listRowMinHeight = 64.dp,
+    )
+}
+
+fun SkipiHomeMetrics.Companion.forProfile(
+    windowClass: SkipiWindowClass,
+    visualProfile: SkipiVisualProfile,
+): SkipiHomeMetrics {
+    val desktop = visualProfile is SkipiVisualProfile.Desktop
+    return when {
+        windowClass == SkipiWindowClass.Compact -> SkipiHomeMetrics(
+            toolbarHeight = 56.dp,
+            heroButtonOuter = 88.dp,
+            heroButton = 72.dp,
+            heroIcon = 40.dp,
+            listRowMinHeight = 64.dp,
+        )
+        desktop -> SkipiHomeMetrics(
+            toolbarHeight = 48.dp,
+            heroButtonOuter = 80.dp,
+            heroButton = 64.dp,
+            heroIcon = 36.dp,
+            listRowMinHeight = 52.dp,
+        )
+        else -> SkipiHomeMetrics(
+            toolbarHeight = 56.dp,
+            heroButtonOuter = 96.dp,
+            heroButton = 78.dp,
+            heroIcon = 44.dp,
+            listRowMinHeight = 64.dp,
+        )
+    }
 }
 
 sealed class SkipiVisualProfile {

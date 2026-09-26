@@ -59,6 +59,7 @@ plugins {
 
 dependencies {
     implementation(project(":shared:core"))
+    implementation(project(":shared:app"))
     implementation(project(":shared:ui"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)

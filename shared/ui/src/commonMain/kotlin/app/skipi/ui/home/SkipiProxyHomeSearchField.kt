@@ -4,7 +4,6 @@
 package app.skipi.ui.home
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
@@ -12,7 +11,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import app.skipi.ui.theme.SkipiTheme
 
 /** Shared Home search field; hosts own the query state and localized label. */
 @Composable
@@ -31,6 +30,6 @@ fun SkipiProxyHomeSearchField(
         singleLine = true,
         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
         label = { Text(label) },
-        shape = RoundedCornerShape(16.dp),
+        shape = SkipiTheme.shapes.medium,
     )
 }

@@ -397,7 +397,6 @@ private fun SubscriptionProxyServerList(
                                 itemTextFormatter = itemTextFormatter,
                                 groupState = groupState,
                                 stateStore = stateStore,
-                                updateAppState = updateAppState,
                                 navigator = navigator,
                                 clipboard = clipboard,
                                 context = context,
@@ -640,7 +639,6 @@ private fun ProxyServerLazyGrid(
                             itemTextFormatter = itemTextFormatter,
                             groupState = groupState,
                             stateStore = stateStore,
-                            updateAppState = updateAppState,
                             navigator = navigator,
                             clipboard = clipboard,
                             context = context,
@@ -715,7 +713,6 @@ private fun ProxyServerListItem(
     itemTextFormatter: ProxyServerListItemTextFormatter,
     groupState: ProxyServerListGroups,
     stateStore: AndroidAppStateStore,
-    updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
     clipboard: Clipboard,
     context: android.content.Context,
@@ -795,12 +792,12 @@ private fun ProxyServerListItem(
         activeMemberFlag = activeMemberFlag,
         onSelect = {
             onSelectedServerIdChange(server.id)
-            updateAppState { state ->
-                if (state.selectedProxyServerId == server.id) {
-                    state
-                } else {
-                    state.copy(selectedProxyServerId = server.id)
-                }
+            scope.launch {
+                runCatching { stateStore.proxyServerRepository.select(server.id) }
+                    .onFailure { error ->
+                        onSelectedServerIdChange(stateStore.currentState.selectedProxyServerId)
+                        tipNotifier.show(error.message ?: "Could not select proxy server.")
+                    }
             }
             val strategyGroup = server.server as? StrategyGroup
             if (strategyGroup?.strategy == StrategyGroupConstants.TYPE_SELECT) {

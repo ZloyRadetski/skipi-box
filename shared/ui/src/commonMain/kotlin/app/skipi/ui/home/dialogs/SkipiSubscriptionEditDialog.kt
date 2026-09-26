@@ -26,6 +26,9 @@ import app.skipi.ui.components.AppWindowDialog
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_save
+import app.skipi.ui.resources.home_subscription_auto_update_toggle_hint
+import app.skipi.ui.resources.home_subscription_enabled_toggle
+import app.skipi.ui.resources.home_subscription_insecure_http
 import app.skipi.ui.resources.subscription_age_secret_key
 import app.skipi.ui.resources.subscription_auto_override_rules
 import app.skipi.ui.resources.subscription_auto_override_rules_summary
@@ -100,7 +103,7 @@ fun SkipiSubscriptionEditDialog(
 
             if (draft.url.trim().startsWith("http://", ignoreCase = true)) {
                 Text(
-                    text = "Insecure HTTP URL may expose subscription credentials.",
+                    text = stringResource(Res.string.home_subscription_insecure_http),
                     color = MiuixTheme.colorScheme.error,
                     fontSize = 12.sp,
                 )
@@ -123,12 +126,12 @@ fun SkipiSubscriptionEditDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Subscription enabled",
+                                text = stringResource(Res.string.home_subscription_enabled_toggle),
                                 fontWeight = themedFontWeight(FontWeight.Medium),
                                 color = MiuixTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = "Disable to keep servers in list but skip auto-update",
+                                text = stringResource(Res.string.home_subscription_auto_update_toggle_hint),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 fontSize = 12.sp,
                             )

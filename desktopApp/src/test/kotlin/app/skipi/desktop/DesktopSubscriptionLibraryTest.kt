@@ -278,8 +278,18 @@ class DesktopSubscriptionLibraryTest {
         assertEquals(edited.customExpiryReminders, refreshed.customExpiryReminders)
 
         val path = Files.createTempDirectory("skipi-subscriptions").resolve("subscriptions.json")
-        DesktopSubscriptionLibraries.save(path, DesktopSubscriptionLibrary(listOf(refreshed))).getOrThrow()
-        assertEquals(refreshed, DesktopSubscriptionLibraries.load(path).getOrThrow().subscriptions.single())
+        val persistenceRecord = refreshed.copy(
+            updateViaProxy = true,
+            autoOverrideRules = false,
+            notifyOnExpiry = false,
+        )
+        DesktopSubscriptionLibraries.save(path, DesktopSubscriptionLibrary(listOf(persistenceRecord))).getOrThrow()
+        val persistedJson = Files.readString(path)
+        assertTrue(persistedJson.contains("\"subscriptions\""))
+        assertTrue(persistedJson.contains("\"ageSecretKey\""))
+        assertTrue(persistedJson.contains("\"updateViaProxy\""))
+        assertTrue(persistedJson.contains("\"customExpiryReminders\""))
+        assertEquals(persistenceRecord, DesktopSubscriptionLibraries.load(path).getOrThrow().subscriptions.single())
     }
 
     @Test fun rejects_invalid_advanced_provider_options_without_mutating_library() {

@@ -33,10 +33,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.skipi.app.home.ProxyConnectionPhase
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeStore
@@ -44,6 +42,45 @@ import app.skipi.app.home.ProxyHomeUiState
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.theme.SkipiWindowClass
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.home_action_add_server
+import app.skipi.ui.resources.home_action_add_subscription
+import app.skipi.ui.resources.home_action_hide_search
+import app.skipi.ui.resources.home_action_import
+import app.skipi.ui.resources.home_action_refresh_subscription
+import app.skipi.ui.resources.home_action_refreshing
+import app.skipi.ui.resources.home_action_search
+import app.skipi.ui.resources.home_connection_choose_server
+import app.skipi.ui.resources.home_connection_connect
+import app.skipi.ui.resources.home_connection_connected
+import app.skipi.ui.resources.home_connection_connecting
+import app.skipi.ui.resources.home_connection_disconnect
+import app.skipi.ui.resources.home_connection_disconnected
+import app.skipi.ui.resources.home_connection_preparing
+import app.skipi.ui.resources.home_connection_profile
+import app.skipi.ui.resources.home_connection_tap_to_connect
+import app.skipi.ui.resources.home_empty_add_server
+import app.skipi.ui.resources.home_empty_hint
+import app.skipi.ui.resources.home_empty_search
+import app.skipi.ui.resources.home_empty_servers
+import app.skipi.ui.resources.home_error
+import app.skipi.ui.resources.home_group_disabled
+import app.skipi.ui.resources.home_group_empty
+import app.skipi.ui.resources.home_group_title
+import app.skipi.ui.resources.home_latency_milliseconds
+import app.skipi.ui.resources.home_search_servers
+import app.skipi.ui.resources.home_server_count
+import app.skipi.ui.resources.home_status_error_description
+import app.skipi.ui.resources.home_subscription_auto_update
+import app.skipi.ui.resources.home_subscription_days_left
+import app.skipi.ui.resources.home_subscription_disabled
+import app.skipi.ui.resources.home_subscription_enabled
+import app.skipi.ui.resources.home_subscription_support
+import app.skipi.ui.resources.home_subscription_traffic
+import app.skipi.ui.resources.home_subscription_unnamed
+import app.skipi.ui.resources.home_subscription_updated
+import app.skipi.ui.resources.home_subscription_website
+import org.jetbrains.compose.resources.stringResource
 
 data class ProxyHomeCapabilities(
     val onToggleTunnel: () -> Unit = {},
@@ -100,6 +137,10 @@ fun ProxyHomeScreenContent(
 ) {
     val isCompact = SkipiTheme.windowClass == SkipiWindowClass.Compact
     val maxWidth = if (isCompact) Modifier.fillMaxWidth() else Modifier.widthIn(max = 980.dp)
+    val refreshSubscriptionTitle = stringResource(Res.string.home_action_refresh_subscription)
+    val refreshingSubscriptionTitle = stringResource(Res.string.home_action_refreshing)
+    val searchActionTitle = stringResource(Res.string.home_action_search)
+    val hideSearchActionTitle = stringResource(Res.string.home_action_hide_search)
 
     Box(
         modifier = modifier
@@ -129,9 +170,9 @@ fun ProxyHomeScreenContent(
                     accent = SkipiTheme.colors.accent,
                 ),
                 addActions = listOf(
-                    SkipiProxyHomeHeaderAction(id = "add_server", title = "Добавить сервер"),
-                    SkipiProxyHomeHeaderAction(id = "add_subscription", title = "Добавить подписку"),
-                    SkipiProxyHomeHeaderAction(id = "import", title = "Импортировать"),
+                    SkipiProxyHomeHeaderAction(id = "add_server", title = stringResource(Res.string.home_action_add_server)),
+                    SkipiProxyHomeHeaderAction(id = "add_subscription", title = stringResource(Res.string.home_action_add_subscription)),
+                    SkipiProxyHomeHeaderAction(id = "import", title = stringResource(Res.string.home_action_import)),
                 ),
                 toolActions = buildList {
                     val currentSub = state.subscription
@@ -139,7 +180,7 @@ fun ProxyHomeScreenContent(
                         add(
                             SkipiProxyHomeHeaderAction(
                                 id = "refresh_subscription",
-                                title = if (currentSub.refreshing) "Обновление…" else "Обновить подписку",
+                                title = if (currentSub.refreshing) refreshingSubscriptionTitle else refreshSubscriptionTitle,
                                 enabled = !currentSub.refreshing,
                             ),
                         )
@@ -147,7 +188,7 @@ fun ProxyHomeScreenContent(
                     add(
                         SkipiProxyHomeHeaderAction(
                             id = "search",
-                            title = if (state.isSearchVisible) "Скрыть поиск" else "Поиск",
+                            title = if (state.isSearchVisible) hideSearchActionTitle else searchActionTitle,
                         ),
                     )
                 },
@@ -194,17 +235,17 @@ fun ProxyHomeScreenContent(
                             ProxyConnectionPhase.Disconnected -> SkipiConnectionHeroPhase.Disconnected
                         },
                         title = when (state.connectionPhase) {
-                            ProxyConnectionPhase.Connected -> "Подключено"
-                            ProxyConnectionPhase.Connecting -> "Подключение…"
-                            ProxyConnectionPhase.Disconnected -> "Отключено"
+                            ProxyConnectionPhase.Connected -> stringResource(Res.string.home_connection_connected)
+                            ProxyConnectionPhase.Connecting -> stringResource(Res.string.home_connection_connecting)
+                            ProxyConnectionPhase.Disconnected -> stringResource(Res.string.home_connection_disconnected)
                         },
                         subtitle = when {
-                            state.connectionPhase == ProxyConnectionPhase.Connected -> state.selectedServerTitle.ifBlank { "Подключено" }
-                            state.connectionPhase == ProxyConnectionPhase.Connecting -> state.selectedServerTitle.ifBlank { "Подготовка туннеля…" }
-                            state.selectedServerTitle.isNotBlank() -> "Нажмите для подключения"
-                            else -> "Сначала выберите сервер"
+                            state.connectionPhase == ProxyConnectionPhase.Connected -> state.selectedServerTitle.ifBlank { stringResource(Res.string.home_connection_connected) }
+                            state.connectionPhase == ProxyConnectionPhase.Connecting -> state.selectedServerTitle.ifBlank { stringResource(Res.string.home_connection_preparing) }
+                            state.selectedServerTitle.isNotBlank() -> stringResource(Res.string.home_connection_tap_to_connect)
+                            else -> stringResource(Res.string.home_connection_choose_server)
                         },
-                        profileText = state.activeProfileName?.let { "Профиль: $it" },
+                        profileText = state.activeProfileName?.let { stringResource(Res.string.home_connection_profile, it) },
                         toggleEnabled = state.canToggleTunnel,
                     ),
                     colors = SkipiConnectionHeroColors(
@@ -213,13 +254,13 @@ fun ProxyHomeScreenContent(
                         border = SkipiTheme.colors.surfaceVariant,
                         text = SkipiTheme.colors.onSurface,
                         mutedText = SkipiTheme.colors.onSurfaceVariant,
-                        connected = Color(0xFF58D27A),
-                        connecting = Color(0xFFE5A93C),
+                        connected = SkipiTheme.colorScheme.success,
+                        connecting = SkipiTheme.colorScheme.warning,
                         disconnected = SkipiTheme.colors.surfaceVariant,
                     ),
                     compact = isCompact,
-                    connectContentDescription = "Подключить",
-                    disconnectContentDescription = "Отключить",
+                    connectContentDescription = stringResource(Res.string.home_connection_connect),
+                    disconnectContentDescription = stringResource(Res.string.home_connection_disconnect),
                     onToggle = {
                         onAction(ProxyHomeAction.ToggleTunnel)
                         capabilities.onToggleTunnel()
@@ -237,18 +278,20 @@ fun ProxyHomeScreenContent(
                             )
                         },
                         selectedGroupId = state.selectedGroupId,
-                        title = "Группы прокси",
-                        emptyText = "Добавьте сервер или подписку",
-                        disabledTitle = { "$it (откл.)" },
-                        serverCountText = { "Серверов: $it" },
+                        title = stringResource(Res.string.home_group_title),
+                        emptyText = stringResource(Res.string.home_group_empty),
+                        disabledTitle = { groupTitle -> stringResource(Res.string.home_group_disabled, groupTitle) },
+                        serverCountText = { count -> stringResource(Res.string.home_server_count, count) },
                         colors = SkipiProxyGroupSelectorColors(
                             surface = SkipiTheme.colors.surface,
                             raisedSurface = SkipiTheme.colors.surfaceVariant,
-                            selectedSurface = Color(0xFF737373),
+                            selectedSurface = SkipiTheme.colorScheme.primaryContainer,
                             border = SkipiTheme.colors.surfaceVariant,
-                            selectedBorder = Color(0xFFA4A4A4),
+                            selectedBorder = SkipiTheme.colorScheme.outline,
                             text = SkipiTheme.colors.onSurface,
                             mutedText = SkipiTheme.colors.onSurfaceVariant,
+                            selectedText = SkipiTheme.colorScheme.onPrimaryContainer,
+                            selectedMutedText = SkipiTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.72f),
                         ),
                         onSelect = { groupId ->
                             onAction(ProxyHomeAction.SelectGroup(groupId))
@@ -264,7 +307,7 @@ fun ProxyHomeScreenContent(
                             onAction(ProxyHomeAction.SetSearchQuery(query))
                             capabilities.onSearchQueryChange(query)
                         },
-                        label = "Поиск серверов",
+                        label = stringResource(Res.string.home_search_servers),
                     )
                 }
 
@@ -278,28 +321,32 @@ fun ProxyHomeScreenContent(
                     SkipiSubscriptionSummaryCard(
                         state = SkipiSubscriptionSummaryState(
                             id = subscription.id,
-                            title = subscription.title.ifBlank { "Подписка" },
-                            serverCountText = "Серверов: ${subscription.serverCount}",
+                            title = subscription.title.ifBlank { stringResource(Res.string.home_subscription_unnamed) },
+                            serverCountText = stringResource(Res.string.home_server_count, subscription.serverCount),
                             canPing = subscription.serverCount > 0,
                             enabled = subscription.enabled,
                             refreshing = subscription.refreshing,
                             statusText = buildString {
-                                append(if (subscription.enabled) "Включена" else "Отключена")
+                                append(stringResource(if (subscription.enabled) Res.string.home_subscription_enabled else Res.string.home_subscription_disabled))
                                 subscription.updateIntervalHours?.trim()?.takeIf(String::isNotBlank)?.let { interval ->
-                                    append(" · Автообновление: $interval ч.")
+                                    append(stringResource(Res.string.home_subscription_auto_update, interval))
                                 }
                             },
-                            trafficText = "Трафик: ${formatSummaryBytes(usedBytes)} / ${totalTraffic?.let(::formatSummaryBytes) ?: "∞"}",
+                            trafficText = stringResource(
+                                Res.string.home_subscription_traffic,
+                                formatSummaryBytes(usedBytes),
+                                totalTraffic?.let(::formatSummaryBytes) ?: "∞",
+                            ),
                             trafficProgress = progress,
                             expiryText = subscription.expireAtSeconds?.takeIf { it > 0 }?.let { expireAt ->
                                 val days = ((expireAt * 1_000L - System.currentTimeMillis()) / 86_400_000L).coerceAtLeast(0)
-                                "Осталось $days дн."
+                                stringResource(Res.string.home_subscription_days_left, days)
                             },
                             description = subscription.description,
                             announcementText = subscription.announcement,
-                            supportLabel = if (subscription.supportUrl != null) "Поддержка" else null,
-                            siteLabel = if (subscription.siteUrl != null) "Сайт" else null,
-                            updatedText = subscription.lastUpdatedAtMillis?.takeIf { it > 0 }?.let { "Обновлено" },
+                            supportLabel = if (subscription.supportUrl != null) stringResource(Res.string.home_subscription_support) else null,
+                            siteLabel = if (subscription.siteUrl != null) stringResource(Res.string.home_subscription_website) else null,
+                            updatedText = subscription.lastUpdatedAtMillis?.takeIf { it > 0 }?.let { stringResource(Res.string.home_subscription_updated) },
                         ),
                         actions = SkipiSubscriptionSummaryActions(
                             onRefresh = {
@@ -322,7 +369,7 @@ fun ProxyHomeScreenContent(
                             border = SkipiTheme.colors.surfaceVariant,
                             text = SkipiTheme.colors.onSurface,
                             mutedText = SkipiTheme.colors.onSurfaceVariant,
-                            enabled = Color(0xFF58D27A),
+                            enabled = SkipiTheme.colorScheme.success,
                         ),
                     )
                 }
@@ -370,6 +417,7 @@ private fun ServerListItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val latencyMs = server.latencyMs
     SkipiProxyServerCard(
         state = SkipiProxyServerCardState(
             iconText = server.flag ?: "⚡",
@@ -379,12 +427,12 @@ private fun ServerListItem(
             transport = server.transport,
             selected = server.selected,
             latency = when {
-                server.latencyMs != null -> SkipiProxyServerLatency(
-                    text = "${server.latencyMs} ms",
+                latencyMs != null -> SkipiProxyServerLatency(
+                    text = stringResource(Res.string.home_latency_milliseconds, latencyMs),
                     kind = SkipiProxyServerLatencyKind.Success,
                 )
                 server.latencyError -> SkipiProxyServerLatency(
-                    text = "Ошибка",
+                    text = stringResource(Res.string.home_error),
                     kind = SkipiProxyServerLatencyKind.Error,
                 )
                 else -> null
@@ -404,12 +452,14 @@ private fun ServerListItem(
         colors = SkipiProxyServerCardColors(
             surface = SkipiTheme.colors.surface,
             raisedSurface = SkipiTheme.colors.surfaceVariant,
-            selectedSurface = Color(0xFF737373),
-            selectedBorder = Color(0xFF9A9A9A),
+            selectedSurface = SkipiTheme.colorScheme.primaryContainer,
+            selectedBorder = SkipiTheme.colorScheme.outline,
             text = SkipiTheme.colors.onSurface,
             mutedText = SkipiTheme.colors.onSurfaceVariant,
-            success = Color(0xFF58D27A),
-            error = Color(0xFFFF5252),
+            success = SkipiTheme.colorScheme.success,
+            error = SkipiTheme.colorScheme.error,
+            selectedText = SkipiTheme.colorScheme.onPrimaryContainer,
+            selectedMutedText = SkipiTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.72f),
         ),
     )
 }
@@ -433,19 +483,19 @@ private fun EmptyServerListCard(
             verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.medium),
         ) {
             Text(
-                text = if (hasSearch) "Ничего не найдено" else "Пока нет серверов",
+                text = stringResource(if (hasSearch) Res.string.home_empty_search else Res.string.home_empty_servers),
                 color = SkipiTheme.colors.onSurface,
                 style = SkipiTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
             if (!hasSearch) {
                 Text(
-                    text = "Добавьте ссылку сервера или подписку",
+                    text = stringResource(Res.string.home_empty_hint),
                     color = SkipiTheme.colors.onSurfaceVariant,
                     style = SkipiTheme.typography.bodyMedium,
                 )
                 Button(onClick = onAdd) {
-                    Text("Добавить сервер")
+                    Text(stringResource(Res.string.home_empty_add_server))
                 }
             }
         }
@@ -460,28 +510,27 @@ private fun StatusBanner(
     if (isError) {
         Surface(
             shape = SkipiTheme.shapes.medium,
-            color = Color(0xFF331515),
-            border = BorderStroke(1.dp, Color(0xFF8B2626)),
+            color = SkipiTheme.colorScheme.errorContainer,
+            border = BorderStroke(1.dp, SkipiTheme.colorScheme.error.copy(alpha = 0.6f)),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 2.dp),
+                .padding(horizontal = SkipiTheme.spacing.extraSmall, vertical = SkipiTheme.spacing.extraSmall),
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                modifier = Modifier.padding(horizontal = SkipiTheme.spacing.medium, vertical = SkipiTheme.spacing.small),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
             ) {
                 Icon(
                     imageVector = Icons.Outlined.ErrorOutline,
-                    contentDescription = "Ошибка",
-                    tint = Color(0xFFFF8B8B),
+                    contentDescription = stringResource(Res.string.home_status_error_description),
+                    tint = SkipiTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
                     text = message,
-                    color = Color(0xFFFF8B8B),
-                    fontSize = 13.sp,
-                    lineHeight = 17.sp,
+                    color = SkipiTheme.colorScheme.onErrorContainer,
+                    style = SkipiTheme.typography.bodyMedium,
                 )
             }
         }
@@ -489,7 +538,7 @@ private fun StatusBanner(
         Text(
             text = message,
             color = SkipiTheme.colors.onSurfaceVariant,
-            fontSize = 13.sp,
+            style = SkipiTheme.typography.bodyMedium,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
         )
     }

@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -98,6 +100,8 @@ data class SkipiProxyServerCardColors(
     val mutedText: Color,
     val success: Color,
     val error: Color,
+    val selectedText: Color = text,
+    val selectedMutedText: Color = mutedText,
 )
 
 /**
@@ -116,7 +120,7 @@ fun SkipiProxyServerCard(
 ) {
     Card(
         onClick = actions.onSelect,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().semantics { selected = state.selected },
         shape = SkipiTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (state.selected) colors.selectedSurface else colors.surface,
@@ -141,7 +145,7 @@ fun SkipiProxyServerCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = state.title,
-                        color = colors.text,
+                        color = if (state.selected) colors.selectedText else colors.text,
                         style = SkipiTheme.typography.titleLarge,
                         fontWeight = themedFontWeight(FontWeight.Bold),
                         maxLines = 1,
@@ -149,7 +153,7 @@ fun SkipiProxyServerCard(
                     )
                     Text(
                         text = state.address,
-                        color = colors.mutedText,
+                        color = if (state.selected) colors.selectedMutedText else colors.mutedText,
                         style = SkipiTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

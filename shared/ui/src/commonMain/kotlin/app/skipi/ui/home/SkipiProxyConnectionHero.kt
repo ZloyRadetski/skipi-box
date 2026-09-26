@@ -59,6 +59,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.connection_status_tap_to_connect
 import app.skipi.ui.resources.proxy_traffic_stats_notification_disconnect
+import app.skipi.ui.theme.SkipiTheme
 import org.jetbrains.compose.resources.stringResource
 
 data class SkipiProxyHeroLatency(
@@ -113,12 +114,13 @@ fun SkipiProxyHeroClassicCard(
 ) {
     val connected = state.phase == SkipiConnectionHeroPhase.Connected
     val connecting = state.phase == SkipiConnectionHeroPhase.Connecting
-    val heroShape = RoundedCornerShape(if (compact) 20.dp else 24.dp)
-    val cardPadding = if (compact) 14.dp else 18.dp
-    val outerButtonSize = if (compact) 82.dp else 96.dp
-    val buttonSize = if (compact) 72.dp else 86.dp
-    val spinnerSize = if (compact) 78.dp else 92.dp
-    val buttonIconSize = if (compact) 36.dp else 42.dp
+    val metrics = SkipiTheme.homeMetrics
+    val heroShape = SkipiTheme.shapes.large
+    val cardPadding = if (compact) SkipiTheme.spacing.medium else SkipiTheme.spacing.large
+    val outerButtonSize = metrics.heroButtonOuter
+    val buttonSize = metrics.heroButton
+    val spinnerSize = metrics.heroButtonOuter
+    val buttonIconSize = metrics.heroIcon
     val cardBorder by animateColorAsState(
         targetValue = when {
             connected -> colors.accent.copy(alpha = 0.35f)
@@ -257,12 +259,12 @@ fun SkipiProxyHeroClassicCard(
                     ) { title ->
                         Text(
                             text = title,
-                            fontSize = if (compact) 20.sp else 22.sp,
+                            fontSize = if (compact) SkipiTheme.typography.titleLarge.fontSize else SkipiTheme.typography.headlineSmall.fontSize,
                             fontWeight = typography.title,
                             color = colors.text,
                         )
                     }
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(SkipiTheme.spacing.extraSmall))
                     AnimatedContent(
                         targetState = state.subtitle,
                         transitionSpec = {
@@ -273,12 +275,12 @@ fun SkipiProxyHeroClassicCard(
                     ) { subtitle ->
                         Text(
                             text = subtitle,
-                            fontSize = if (compact) 14.sp else 15.sp,
+                            fontSize = SkipiTheme.typography.bodyMedium.fontSize,
                             fontWeight = typography.body,
                             color = colors.mutedText,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            lineHeight = 19.sp,
+                            lineHeight = SkipiTheme.typography.bodyMedium.lineHeight,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -286,7 +288,7 @@ fun SkipiProxyHeroClassicCard(
                         Spacer(Modifier.height(2.dp))
                         Text(
                             text = profileText,
-                            fontSize = 12.sp,
+                            fontSize = SkipiTheme.typography.bodySmall.fontSize,
                             fontWeight = typography.body,
                             color = colors.mutedText,
                             maxLines = 1,

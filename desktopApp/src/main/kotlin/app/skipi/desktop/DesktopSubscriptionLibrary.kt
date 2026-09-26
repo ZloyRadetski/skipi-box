@@ -3,100 +3,36 @@
 
 package app.skipi.desktop
 
-import features.subscription.isValidManualSubscriptionUrl
-import features.subscription.isValidSubscriptionIntervalInput
-import features.subscription.SubscriptionMetadata
-import features.subscription.ExpiryReminderUnit
+import features.subscription.StoredSubscription
+import features.subscription.StoredSubscriptionMetadata
 import features.subscription.SubscriptionExpiryReminder
-import features.subscription.validateSubscriptionExpiryReminders
-import kotlinx.serialization.Serializable
+import features.subscription.SubscriptionMetadata
+import features.subscription.SubscriptionProviderEdit
+import features.subscription.SubscriptionProviderLibraries
+import features.subscription.SubscriptionProviderLibrary
+import features.subscription.toProviderEdit as toSharedProviderEdit
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.charset.StandardCharsets
+import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
-@Serializable
-data class DesktopStoredSubscriptionMetadata(
-    val description: String = "",
-    val announce: String = "",
-    val supportUrl: String = "",
-    val supportEmail: String = "",
-    val profileWebPageUrl: String = "",
-    val announceUrl: String = "",
-    val trafficUploadBytes: Long = -1L,
-    val trafficDownloadBytes: Long = -1L,
-    val trafficTotalBytes: Long = -1L,
-    val trafficExpireAtSeconds: Long = -1L,
-    val profileUpdateIntervalHours: String = "",
-    val embeddedConfigPayload: String = "",
-    val embeddedConfigActivate: Boolean = false,
-    val embeddedConfigIsUrl: Boolean = false,
-    val lastUpdatedAtMillis: Long = 0L,
-)
-
-/** Compatibility names for desktop settings and existing JSON files. */
-typealias DesktopSubscriptionExpiryReminderUnit = ExpiryReminderUnit
+/** Compatibility aliases preserve Desktop call sites and persisted JSON field names. */
+typealias DesktopStoredSubscriptionMetadata = StoredSubscriptionMetadata
+typealias DesktopStoredSubscription = StoredSubscription
+typealias DesktopSubscriptionLibrary = SubscriptionProviderLibrary
+typealias DesktopSubscriptionProviderEdit = SubscriptionProviderEdit
+typealias DesktopSubscriptionExpiryReminderUnit = features.subscription.ExpiryReminderUnit
 typealias DesktopSubscriptionExpiryReminder = SubscriptionExpiryReminder
 
-@Serializable
-data class DesktopStoredSubscription(
-    val id: Int,
-    val url: String,
-    val userAgent: String = "",
-    val name: String = "",
-    val metadata: DesktopStoredSubscriptionMetadata = DesktopStoredSubscriptionMetadata(),
-    /** Matches Android's group switch; disabled providers stay stored for a reversible edit. */
-    val enabled: Boolean = true,
-    /** Android-compatible automatic refresh interval, in hours. An empty value disables scheduling. */
-    val updateInterval: String = "",
-    /** Persisted Android-compatible provider option; fetching support is owned outside this catalog. */
-    val ageSecretKey: String = "",
-    val updateViaProxy: Boolean = false,
-    val autoOverrideRules: Boolean = true,
-    val notifyOnExpiry: Boolean = true,
-    val customExpiryReminders: List<DesktopSubscriptionExpiryReminder>? = null,
-)
-
-@Serializable
-data class DesktopSubscriptionLibrary(val subscriptions: List<DesktopStoredSubscription> = emptyList())
-
-/**
- * The editable provider fields. Keeping this separate from [DesktopStoredSubscription]
- * prevents an editor from accidentally replacing the stable id or fetched metadata.
- */
-data class DesktopSubscriptionProviderEdit(
-    val name: String,
-    val url: String,
-    val userAgent: String,
-    val enabled: Boolean,
-    val updateInterval: String,
-    val ageSecretKey: String,
-    val updateViaProxy: Boolean,
-    val autoOverrideRules: Boolean,
-    val notifyOnExpiry: Boolean,
-    val customExpiryReminders: List<DesktopSubscriptionExpiryReminder>?,
-)
-
 fun DesktopStoredSubscription.toProviderEdit(): DesktopSubscriptionProviderEdit =
-    DesktopSubscriptionProviderEdit(
-        name = name,
-        url = url,
-        userAgent = userAgent,
-        enabled = enabled,
-        updateInterval = updateInterval,
-        ageSecretKey = ageSecretKey,
-        updateViaProxy = updateViaProxy,
-        autoOverrideRules = autoOverrideRules,
-        notifyOnExpiry = notifyOnExpiry,
-        customExpiryReminders = customExpiryReminders,
-    )
+    toSharedProviderEdit()
 
-/** User-owned subscription catalog, independent of the imported server cache. */
+/** Desktop filesystem/JSON adapter; provider operations and validation live in shared core. */
 object DesktopSubscriptionLibraries {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
 
@@ -111,7 +47,7 @@ object DesktopSubscriptionLibraries {
     fun load(path: Path): Result<DesktopSubscriptionLibrary> = runCatching {
         if (!Files.exists(path)) DesktopSubscriptionLibrary()
         else Files.readString(path, StandardCharsets.UTF_8).takeIf(String::isNotBlank)
-            ?.let(json::decodeFromString) ?: DesktopSubscriptionLibrary()
+            ?.let { json.decodeFromString<SubscriptionProviderLibrary>(it) } ?: DesktopSubscriptionLibrary()
     }
 
     fun save(path: Path, library: DesktopSubscriptionLibrary): Result<Unit> = runCatching {
@@ -131,140 +67,21 @@ object DesktopSubscriptionLibraries {
         userAgent: String = "",
         name: String = "",
         metadata: SubscriptionMetadata? = null,
-    ): DesktopSubscriptionLibrary {
-        val normalizedUrl = url.trim()
-        require(normalizedUrl.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        val existing = library.subscriptions.firstOrNull { it.url == normalizedUrl }
-        val normalizedName = name.trim().takeIf(String::isNotBlank)
-            ?: metadata?.profileTitle?.trim()?.takeIf(String::isNotBlank)
-            ?: existing?.name.orEmpty()
-        val stored = DesktopStoredSubscription(
-            id = existing?.id ?: (library.subscriptions.maxOfOrNull { it.id } ?: 0) + 1,
-            url = normalizedUrl,
-            userAgent = userAgent.trim().ifBlank { existing?.userAgent.orEmpty() },
-            name = normalizedName,
-            metadata = metadata?.toStoredSubscriptionMetadata(existing?.metadata ?: DesktopStoredSubscriptionMetadata())
-                ?: existing?.metadata
-                ?: DesktopStoredSubscriptionMetadata(),
-            enabled = existing?.enabled ?: true,
-            updateInterval = existing?.updateInterval.orEmpty(),
-            ageSecretKey = existing?.ageSecretKey.orEmpty(),
-            updateViaProxy = existing?.updateViaProxy ?: false,
-            autoOverrideRules = existing?.autoOverrideRules ?: true,
-            notifyOnExpiry = existing?.notifyOnExpiry ?: true,
-            customExpiryReminders = existing?.customExpiryReminders,
-        )
-        return library.copy(subscriptions = library.subscriptions.filterNot { it.id == stored.id } + stored)
-    }
+    ): DesktopSubscriptionLibrary = SubscriptionProviderLibraries.addOrReplace(
+        library = library,
+        url = url,
+        userAgent = userAgent,
+        name = name,
+        metadata = metadata,
+        nowMillis = System.currentTimeMillis(),
+    )
 
-    /**
-     * Replaces only user-editable provider properties. It intentionally keeps
-     * imported server membership, subscription metadata, id, and the refresh
-     * timestamp intact so editing a provider cannot erase a successfully
-     * imported subscription.
-     */
     fun updateProvider(
         library: DesktopSubscriptionLibrary,
         subscriptionId: Int,
         edit: DesktopSubscriptionProviderEdit,
-    ): DesktopSubscriptionLibrary {
-        val matching = library.subscriptions.filter { it.id == subscriptionId }
-        require(matching.size == 1) {
-            if (matching.isEmpty()) "Unknown subscription ID: $subscriptionId"
-            else "Ambiguous subscription ID: $subscriptionId"
-        }
-        val current = matching.single()
-        val normalizedUrl = edit.url.trim()
-        require(normalizedUrl.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        require(normalizedUrl.none { it == '\r' || it == '\n' || it == '\u0000' }) {
-            "Invalid subscription URL"
-        }
-        require(
-            library.subscriptions.none { stored ->
-                stored.id != subscriptionId && stored.url == normalizedUrl
-            },
-        ) { "A subscription with this URL already exists" }
-
-        val normalizedUserAgent = edit.userAgent.trim()
-        require(normalizedUserAgent.none { it == '\r' || it == '\n' || it == '\u0000' }) {
-            "Invalid subscription user agent"
-        }
-        require(normalizedUserAgent.length <= MaxDesktopSubscriptionUserAgentLength) {
-            "Subscription user agent is too long"
-        }
-
-        val normalizedInterval = normalizeDesktopSubscriptionUpdateInterval(edit.updateInterval)
-        val normalizedAgeSecretKey = normalizeDesktopSubscriptionAgeSecretKey(edit.ageSecretKey)
-        val normalizedCustomExpiryReminders = normalizeDesktopSubscriptionExpiryReminders(edit.customExpiryReminders)
-        val updated = current.copy(
-            name = edit.name.trim(),
-            url = normalizedUrl,
-            userAgent = normalizedUserAgent,
-            enabled = edit.enabled,
-            updateInterval = normalizedInterval,
-            ageSecretKey = normalizedAgeSecretKey,
-            updateViaProxy = edit.updateViaProxy,
-            autoOverrideRules = edit.autoOverrideRules,
-            notifyOnExpiry = edit.notifyOnExpiry,
-            customExpiryReminders = normalizedCustomExpiryReminders,
-        )
-        return library.copy(
-            subscriptions = library.subscriptions.map { stored ->
-                if (stored.id == subscriptionId) updated else stored
-            },
-        )
-    }
+    ): DesktopSubscriptionLibrary = SubscriptionProviderLibraries.updateProvider(library, subscriptionId, edit)
 
     fun remove(library: DesktopSubscriptionLibrary, subscriptionId: Int): DesktopSubscriptionLibrary =
-        library.copy(subscriptions = library.subscriptions.filterNot { it.id == subscriptionId })
+        SubscriptionProviderLibraries.remove(library, subscriptionId)
 }
-
-private fun normalizeDesktopSubscriptionUpdateInterval(value: String): String {
-    val normalized = value.trim()
-    require(normalized.isValidDesktopSubscriptionUpdateInterval()) {
-        "Invalid subscription update interval"
-    }
-    return normalized
-}
-
-private fun normalizeDesktopSubscriptionAgeSecretKey(value: String): String {
-    val normalized = value.trim()
-    require(normalized.none { it == '\r' || it == '\n' || it == '\u0000' }) {
-        "Invalid subscription age secret key"
-    }
-    return normalized
-}
-
-private fun normalizeDesktopSubscriptionExpiryReminders(
-    reminders: List<DesktopSubscriptionExpiryReminder>?,
-): List<DesktopSubscriptionExpiryReminder>? = validateSubscriptionExpiryReminders(reminders)
-
-/** Mirrors the Android editor: blank or zero disables scheduling; a positive interval is at least 0.25 h. */
-private fun String.isValidDesktopSubscriptionUpdateInterval(): Boolean {
-    if (isBlank()) return true
-    if (any { character -> !character.isDigit() && character != '.' } || count { it == '.' } > 1) return false
-    return isValidSubscriptionIntervalInput(this)
-}
-
-private const val MaxDesktopSubscriptionUserAgentLength = 512
-
-private fun SubscriptionMetadata.toStoredSubscriptionMetadata(
-    previous: DesktopStoredSubscriptionMetadata,
-): DesktopStoredSubscriptionMetadata =
-    DesktopStoredSubscriptionMetadata(
-        description = this.profileDescription ?: previous.description,
-        announce = this.announce ?: previous.announce,
-        supportUrl = this.supportUrl ?: previous.supportUrl,
-        supportEmail = this.supportEmail ?: previous.supportEmail,
-        profileWebPageUrl = this.profileWebPageUrl ?: previous.profileWebPageUrl,
-        announceUrl = this.announceUrl ?: previous.announceUrl,
-        trafficUploadBytes = if (this.userInfoReceived) this.trafficUploadBytes else previous.trafficUploadBytes,
-        trafficDownloadBytes = if (this.userInfoReceived) this.trafficDownloadBytes else previous.trafficDownloadBytes,
-        trafficTotalBytes = if (this.userInfoReceived) this.trafficTotalBytes else previous.trafficTotalBytes,
-        trafficExpireAtSeconds = if (this.userInfoReceived) this.trafficExpireAtSeconds else previous.trafficExpireAtSeconds,
-        profileUpdateIntervalHours = this.profileUpdateIntervalHours ?: previous.profileUpdateIntervalHours,
-        embeddedConfigPayload = this.embeddedConfig?.payload ?: previous.embeddedConfigPayload,
-        embeddedConfigActivate = this.embeddedConfig?.activate ?: previous.embeddedConfigActivate,
-        embeddedConfigIsUrl = this.embeddedConfig?.isUrl ?: previous.embeddedConfigIsUrl,
-        lastUpdatedAtMillis = System.currentTimeMillis(),
-    )

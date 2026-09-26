@@ -84,7 +84,10 @@ fun SkipiProxyServerCompactListCard(
     dragModifier: Modifier = Modifier,
 ) {
     val selectedShape = SkipiTheme.shapes.small
-    val compactCardHeight = if (state.isStrategyGroup) 58.dp else 66.dp
+    val compactCardHeight = maxOf(
+        if (state.isStrategyGroup) 58.dp else 66.dp,
+        SkipiTheme.homeMetrics.listRowMinHeight,
+    )
 
     Box(
         modifier = modifier

@@ -54,6 +54,7 @@ data class PersistedSettings(
 data class ProxyServerRecord(
     val id: Int,
     val server: ProxyServer<*>,
+    /** Null means the host's default/manual group; adapters map it to their existing format. */
     val sourceSubscriptionId: Int? = null,
     val enabled: Boolean = true,
 ) {

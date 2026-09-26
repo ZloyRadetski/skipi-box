@@ -1245,6 +1245,11 @@ private fun SettingsStatusMessage(message: String) {
 private fun DesktopThemeMode.displayName(): String = when (this) {
     DesktopThemeMode.Dark -> "Темная"
     DesktopThemeMode.Amoled -> "AMOLED"
+    DesktopThemeMode.Light -> "Светлая"
+    DesktopThemeMode.Aurora -> "Aurora"
+    DesktopThemeMode.Sakura -> "Sakura"
+    DesktopThemeMode.Forest -> "Forest"
+    DesktopThemeMode.Sunset -> "Sunset"
 }
 
 private fun copyToClipboard(value: String): Result<Unit> = runCatching {

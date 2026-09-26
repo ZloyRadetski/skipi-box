@@ -67,41 +67,24 @@ fun ProvideSkipiTheme(
     val materialColorScheme = remember(colors, miuixColors) {
         colors.toMaterialColorScheme()
     }
-    val materialTypography = remember(miuixTextStyles) {
-        miuixTextStyles.toMaterialTypography()
+    val materialTypography = remember(miuixTextStyles, fontWeightShift) {
+        Typography().withHostFont(miuixTextStyles.main.fontFamily, fontWeightShift)
     }
 
     SideEffect {
         ThemedTypography.updateWeightShift(fontWeightShift)
     }
 
-    val skipiTypography = remember(miuixTextStyles) {
-        SkipiTypography(
-            displayLarge = miuixTextStyles.headline1,
-            displayMedium = miuixTextStyles.headline2,
-            displaySmall = miuixTextStyles.title1,
-            headlineLarge = miuixTextStyles.headline1,
-            headlineMedium = miuixTextStyles.headline2,
-            headlineSmall = miuixTextStyles.title1,
-            titleLarge = miuixTextStyles.title1,
-            titleMedium = miuixTextStyles.title2,
-            titleSmall = miuixTextStyles.title3,
-            bodyLarge = miuixTextStyles.body1,
-            bodyMedium = miuixTextStyles.body2,
-            bodySmall = miuixTextStyles.footnote1,
-            labelLarge = miuixTextStyles.button,
-            labelMedium = miuixTextStyles.footnote1,
-            labelSmall = miuixTextStyles.footnote2,
-        )
-    }
+    val skipiTypography = remember(materialTypography) { materialTypography.toSkipiTypography() }
     val skipiColorScheme = remember(colors) { colors.toSkipiColorScheme() }
 
     CompositionLocalProvider(
         LocalAppColors provides colors,
         LocalSkipiColorScheme provides skipiColorScheme,
         LocalSkipiTypography provides skipiTypography,
-        LocalSkipiShapes provides SkipiShapesDefaults,
+        LocalSkipiShapes provides shapesFor(visualProfile),
         LocalSkipiSpacing provides SkipiSpacing.forWindowClass(SkipiWindowClass.Medium),
+        LocalSkipiHomeMetrics provides SkipiHomeMetrics.forProfile(SkipiWindowClass.Medium, visualProfile),
         LocalSkipiElevation provides SkipiElevation(),
         LocalSkipiMotion provides SkipiMotion(),
         LocalSkipiVisualProfile provides visualProfile,
@@ -114,7 +97,7 @@ fun ProvideSkipiTheme(
         MaterialTheme(
             colorScheme = materialColorScheme,
             typography = materialTypography,
-            shapes = MaterialShapes,
+            shapes = materialShapes(visualProfile),
         ) {
             MiuixTheme(
                 colors = miuixColors,
@@ -127,6 +110,8 @@ fun ProvideSkipiTheme(
                     CompositionLocalProvider(
                         LocalSkipiWindowClass provides windowClass,
                         LocalSkipiSpacing provides SkipiSpacing.forWindowClass(windowClass),
+                        LocalSkipiShapes provides shapesFor(visualProfile),
+                        LocalSkipiHomeMetrics provides SkipiHomeMetrics.forProfile(windowClass, visualProfile),
                     ) {
                         content()
                     }
@@ -173,6 +158,12 @@ private fun AppColors.toSkipiColorScheme() = SkipiColorScheme(
     onErrorContainer = onErrorContainer,
     outline = outline,
     isDark = isDark,
+    tertiary = accent,
+    onTertiary = onAccent,
+    tertiaryContainer = primaryContainer,
+    onTertiaryContainer = onPrimaryContainer,
+    surfaceContainerLow = surface,
+    surfaceContainerLowest = background,
     surfaceContainer = surfaceContainer,
     surfaceContainerHigh = surfaceContainerHigh,
     disabledContainer = disabledContainer,
@@ -197,6 +188,8 @@ private fun AppColors.toMaterialColorScheme() = if (isDark) {
         onSecondaryContainer = onSecondaryContainer,
         tertiary = accent,
         onTertiary = onAccent,
+        tertiaryContainer = primaryContainer,
+        onTertiaryContainer = onPrimaryContainer,
         background = background,
         onBackground = onBackground,
         surface = surface,
@@ -221,6 +214,8 @@ private fun AppColors.toMaterialColorScheme() = if (isDark) {
         onSecondaryContainer = onSecondaryContainer,
         tertiary = accent,
         onTertiary = onAccent,
+        tertiaryContainer = primaryContainer,
+        onTertiaryContainer = onPrimaryContainer,
         background = background,
         onBackground = onBackground,
         surface = surface,
@@ -237,36 +232,71 @@ private fun AppColors.toMaterialColorScheme() = if (isDark) {
 
 
 
-private val MaterialShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp)
+private fun shapesFor(profile: SkipiVisualProfile): SkipiShapes {
+    val desktop = profile is SkipiVisualProfile.Desktop
+    return SkipiShapes(
+        extraSmall = RoundedCornerShape(if (desktop) 6.dp else 10.dp),
+        small = RoundedCornerShape(if (desktop) 10.dp else 16.dp),
+        medium = RoundedCornerShape(if (desktop) 14.dp else 20.dp),
+        large = RoundedCornerShape(if (desktop) 18.dp else 26.dp),
+        extraLarge = RoundedCornerShape(if (desktop) 24.dp else 32.dp),
+    )
+}
+
+private fun materialShapes(profile: SkipiVisualProfile) = Shapes(
+    extraSmall = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 6.dp else 10.dp),
+    small = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 10.dp else 16.dp),
+    medium = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 14.dp else 20.dp),
+    large = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 18.dp else 26.dp),
+    extraLarge = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 24.dp else 32.dp),
 )
 
-private val SkipiShapesDefaults = SkipiShapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp)
+private fun Typography.withHostFont(
+    fontFamily: androidx.compose.ui.text.font.FontFamily?,
+    fontWeightShift: Int,
+) = copy(
+    displayLarge = displayLarge.withHostFont(fontFamily, fontWeightShift),
+    displayMedium = displayMedium.withHostFont(fontFamily, fontWeightShift),
+    displaySmall = displaySmall.withHostFont(fontFamily, fontWeightShift),
+    headlineLarge = headlineLarge.withHostFont(fontFamily, fontWeightShift),
+    headlineMedium = headlineMedium.withHostFont(fontFamily, fontWeightShift),
+    headlineSmall = headlineSmall.withHostFont(fontFamily, fontWeightShift),
+    titleLarge = titleLarge.withHostFont(fontFamily, fontWeightShift),
+    titleMedium = titleMedium.withHostFont(fontFamily, fontWeightShift),
+    titleSmall = titleSmall.withHostFont(fontFamily, fontWeightShift),
+    bodyLarge = bodyLarge.withHostFont(fontFamily, fontWeightShift),
+    bodyMedium = bodyMedium.withHostFont(fontFamily, fontWeightShift),
+    bodySmall = bodySmall.withHostFont(fontFamily, fontWeightShift),
+    labelLarge = labelLarge.withHostFont(fontFamily, fontWeightShift),
+    labelMedium = labelMedium.withHostFont(fontFamily, fontWeightShift),
+    labelSmall = labelSmall.withHostFont(fontFamily, fontWeightShift),
 )
 
-private fun TextStyles.toMaterialTypography() = Typography(
-    displayLarge = headline1,
-    displayMedium = headline2,
-    displaySmall = title1,
-    headlineLarge = headline1,
-    headlineMedium = headline2,
-    headlineSmall = title1,
-    titleLarge = title1,
-    titleMedium = title2,
-    titleSmall = title3,
-    bodyLarge = body1,
-    bodyMedium = body2,
-    bodySmall = footnote1,
-    labelLarge = button,
-    labelMedium = footnote1,
-    labelSmall = footnote2,
+private fun androidx.compose.ui.text.TextStyle.withHostFont(
+    fontFamily: androidx.compose.ui.text.font.FontFamily?,
+    fontWeightShift: Int,
+) = copy(
+    fontFamily = fontFamily,
+    fontWeight = androidx.compose.ui.text.font.FontWeight(
+        ((fontWeight?.weight ?: androidx.compose.ui.text.font.FontWeight.Normal.weight) + fontWeightShift)
+            .coerceIn(100, 900),
+    ),
+)
+
+private fun Typography.toSkipiTypography() = SkipiTypography(
+    displayLarge = displayLarge,
+    displayMedium = displayMedium,
+    displaySmall = displaySmall,
+    headlineLarge = headlineLarge,
+    headlineMedium = headlineMedium,
+    headlineSmall = headlineSmall,
+    titleLarge = titleLarge,
+    titleMedium = titleMedium,
+    titleSmall = titleSmall,
+    bodyLarge = bodyLarge,
+    bodyMedium = bodyMedium,
+    bodySmall = bodySmall,
+    labelLarge = labelLarge,
+    labelMedium = labelMedium,
+    labelSmall = labelSmall,
 )

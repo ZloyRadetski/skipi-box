@@ -100,4 +100,8 @@ object SkipiTheme {
     val visualProfile: SkipiVisualProfile
         @Composable
         get() = LocalSkipiVisualProfile.current
+
+    val homeMetrics: SkipiHomeMetrics
+        @Composable
+        get() = LocalSkipiHomeMetrics.current
 }

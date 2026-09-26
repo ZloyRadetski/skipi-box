@@ -101,15 +101,15 @@ fun SkipiProxyHomeHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(54.dp)
-            .padding(start = 12.dp, end = 6.dp),
+            .height(SkipiTheme.homeMetrics.toolbarHeight)
+            .padding(horizontal = SkipiTheme.spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = state.title,
             color = colors.text,
-            style = SkipiTheme.typography.headlineLarge,
-            fontWeight = themedFontWeight(FontWeight.Black),
+            style = SkipiTheme.typography.titleLarge,
+            fontWeight = themedFontWeight(FontWeight.SemiBold),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

@@ -36,6 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +48,8 @@ import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.common_edit
 import app.skipi.ui.resources.common_refresh
+import app.skipi.ui.resources.home_details_collapsed
+import app.skipi.ui.resources.home_details_expanded
 import app.skipi.ui.resources.proxy_server_list_latency_test
 import org.jetbrains.compose.resources.stringResource
 
@@ -80,6 +85,8 @@ data class SkipiSubscriptionSummaryLabels(
     val refreshContentDescription: String,
     val pingContentDescription: String,
     val editContentDescription: String,
+    val detailsExpandedDescription: String,
+    val detailsCollapsedDescription: String,
 )
 
 @Composable
@@ -87,6 +94,8 @@ fun defaultSkipiSubscriptionSummaryLabels(): SkipiSubscriptionSummaryLabels = Sk
     refreshContentDescription = stringResource(Res.string.common_refresh),
     pingContentDescription = stringResource(Res.string.proxy_server_list_latency_test),
     editContentDescription = stringResource(Res.string.common_edit),
+    detailsExpandedDescription = stringResource(Res.string.home_details_expanded),
+    detailsCollapsedDescription = stringResource(Res.string.home_details_collapsed),
 )
 
 data class SkipiSubscriptionSummaryColors(
@@ -114,7 +123,12 @@ fun SkipiSubscriptionSummaryCard(
 ) {
     var expanded by remember(state.id) { mutableStateOf(true) }
     Card(
-        modifier = modifier.fillMaxWidth().clickable { expanded = !expanded },
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics {
+                stateDescription = if (expanded) labels.detailsExpandedDescription else labels.detailsCollapsedDescription
+            }
+            .clickable(role = Role.Button) { expanded = !expanded },
         shape = SkipiTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         border = BorderStroke(1.dp, colors.border),

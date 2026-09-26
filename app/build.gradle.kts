@@ -113,6 +113,7 @@ tasks.named("preBuild") {
 
 dependencies {
     implementation(project(":shared:core"))
+    implementation(project(":shared:app"))
     implementation(project(":shared:ui"))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)

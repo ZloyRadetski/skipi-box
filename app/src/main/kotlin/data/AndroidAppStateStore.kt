@@ -7,6 +7,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import app.AppState
+import data.repository.AndroidProxyServerRepository
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,9 @@ class AndroidAppStateStore private constructor(
 
     val context: Context get() = appContext
     val state: StateFlow<AppState> = mutableState.asStateFlow()
+    val proxyServerRepository: AndroidProxyServerRepository by lazy {
+        AndroidProxyServerRepository(this, scope)
+    }
 
     /** Non-reactive one-shot snapshot for decisions that must not trigger recomposition. */
     val currentState: AppState get() = mutableState.value
