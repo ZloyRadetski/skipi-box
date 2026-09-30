@@ -14,7 +14,7 @@ import org.gradle.process.ExecOperations
 import java.io.File
 import javax.inject.Inject
 
-/** Builds the in-process Windows SKIPI Core library from the sibling checkout. */
+/** Builds the in-process SKIPI Core library from the sibling checkout. */
 abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
     @get:Inject
     abstract val execOperations: ExecOperations
@@ -40,7 +40,7 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
 
     init {
         group = "build"
-        description = "Builds the in-process Windows SKIPI Core DLL from ../skipi-core."
+        description = "Builds the in-process SKIPI Core library from ../skipi-core."
     }
 
     @TaskAction
@@ -52,14 +52,17 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
         val destination = outputLibrary.get().asFile
         destination.parentFile.mkdirs()
 
-        val cc = File(cCompiler.get()).absoluteFile
+        val cc = resolveCompiler(cCompiler.get())
         require(cc.isFile) {
             "A GCC-compatible C compiler is required for Desktop SKIPI Core: ${cc.path}. " +
-                "Install MSYS2 UCRT64 GCC or pass -PskipiCoreDesktopCc=<path-to-gcc>."
+                if (isWindows()) "Install MSYS2 UCRT64 GCC or pass -PskipiCoreDesktopCc=<path-to-gcc>."
+                else "Install GCC (e.g. build-essential or gcc) or pass -PskipiCoreDesktopCc=<path-to-gcc>."
         }
-        val cxx = File(cxxCompiler.get()).absoluteFile
+        val cxx = resolveCompiler(cxxCompiler.get())
         require(cxx.isFile) {
-            "A GCC-compatible C++ compiler is required for Desktop SKIPI Core: ${cxx.path}."
+            "A GCC-compatible C++ compiler is required for Desktop SKIPI Core: ${cxx.path}. " +
+                if (isWindows()) "Install MSYS2 UCRT64 G++ or pass -PskipiCoreDesktopCxx=<path-to-g++>."
+                else "Install G++ (e.g. build-essential or g++) or pass -PskipiCoreDesktopCxx=<path-to-g++>."
         }
 
         execOperations.exec {
@@ -84,4 +87,23 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
             "SKIPI Core build completed without producing ${destination.path}."
         }
     }
+
+    private fun resolveCompiler(configured: String): File {
+        val direct = File(configured)
+        if (direct.isFile) return direct.absoluteFile
+        val pathDirs = System.getenv("PATH").orEmpty().split(File.pathSeparatorChar)
+        for (dir in pathDirs) {
+            if (dir.isBlank()) continue
+            val candidate = File(dir, configured)
+            if (candidate.isFile) return candidate.absoluteFile
+            if (isWindows() && !configured.endsWith(".exe", ignoreCase = true)) {
+                val exeCandidate = File(dir, "$configured.exe")
+                if (exeCandidate.isFile) return exeCandidate.absoluteFile
+            }
+        }
+        return direct.absoluteFile
+    }
+
+    private fun isWindows(): Boolean =
+        System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
 }

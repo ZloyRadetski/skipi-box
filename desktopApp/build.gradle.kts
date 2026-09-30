@@ -3,11 +3,46 @@
 
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.gradle.api.tasks.testing.Test
+import java.io.File
 
 val skipiCoreSourceDirectory = rootProject.file("../skipi-core")
-val defaultDesktopCoreCompilerDirectory = rootProject.file("C:/msys64/ucrt64/bin")
-val defaultDesktopCoreCompiler = defaultDesktopCoreCompilerDirectory.resolve("gcc.exe")
-val defaultDesktopCoreCxxCompiler = defaultDesktopCoreCompilerDirectory.resolve("g++.exe")
+val isWindowsHost = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
+val desktopCoreLibraryName = if (isWindowsHost) "skipicore.dll" else "libskipicore.so"
+
+fun findDefaultDesktopCompiler(binaryName: String): String {
+    val isWindows = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
+    if (isWindows) {
+        val exe = if (binaryName.endsWith(".exe", ignoreCase = true)) binaryName else "$binaryName.exe"
+        val candidates = listOf(
+            File("C:/msys64/ucrt64/bin", exe),
+            File("C:/msys64/mingw64/bin", exe),
+        )
+        candidates.firstOrNull { it.isFile }?.let { return it.absolutePath }
+        val pathDirs = System.getenv("PATH").orEmpty().split(File.pathSeparatorChar)
+        for (dir in pathDirs) {
+            if (dir.isBlank()) continue
+            val candidate = File(dir, exe)
+            if (candidate.isFile) return candidate.absolutePath
+        }
+        return File("C:/msys64/ucrt64/bin", exe).absolutePath
+    } else {
+        val pathDirs = System.getenv("PATH").orEmpty().split(File.pathSeparatorChar)
+        for (dir in pathDirs) {
+            if (dir.isBlank()) continue
+            val candidate = File(dir, binaryName)
+            if (candidate.isFile && candidate.canExecute()) return candidate.absolutePath
+        }
+        val candidates = listOf(
+            File("/usr/bin", binaryName),
+            File("/usr/local/bin", binaryName),
+        )
+        candidates.firstOrNull { it.isFile && it.canExecute() }?.let { return it.absolutePath }
+        return File("/usr/bin", binaryName).absolutePath
+    }
+}
+
+val defaultDesktopCoreCompiler = findDefaultDesktopCompiler("gcc")
+val defaultDesktopCoreCxxCompiler = findDefaultDesktopCompiler("g++")
 val explicitDesktopCoreLibrary = providers.gradleProperty("skipiCoreDesktopLibrary")
 
 val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCore") {
@@ -20,19 +55,19 @@ val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCo
     goExecutable.set(providers.gradleProperty("skipiCoreDesktopGo").orElse("go"))
     cCompiler.set(
         providers.gradleProperty("skipiCoreDesktopCc")
-            .orElse(defaultDesktopCoreCompiler.absolutePath),
+            .orElse(defaultDesktopCoreCompiler),
     )
     cxxCompiler.set(
         providers.gradleProperty("skipiCoreDesktopCxx")
-            .orElse(defaultDesktopCoreCxxCompiler.absolutePath),
+            .orElse(defaultDesktopCoreCxxCompiler),
     )
-    outputLibrary.set(skipiCoreSourceDirectory.resolve("dist/skipicore.dll"))
+    outputLibrary.set(skipiCoreSourceDirectory.resolve("dist/$desktopCoreLibraryName"))
     onlyIf { !explicitDesktopCoreLibrary.isPresent }
 }
 
 // Compose packages app resources from <root>/common and platform-specific
 // subdirectories. Keep the Core runtime in common so the same task layout can
-// later stage the Linux shared library without changing the packaging contract.
+// stage both the Windows DLL and the Linux shared library.
 val desktopCoreResourcesRoot = layout.buildDirectory.dir("generated/skipi-core-resources")
 val desktopCoreRuntime = desktopCoreResourcesRoot.map { root -> root.dir("common") }
 
@@ -44,7 +79,7 @@ val prepareDesktopCoreRuntime = tasks.register<PrepareDesktopCoreRuntimeTask>("p
         ),
     )
     coreLicensePath.set(rootProject.file("../skipi-core/LICENSE").absolutePath)
-    outputLibraryName.set("skipicore.dll")
+    outputLibraryName.set(desktopCoreLibraryName)
     xrayVersion.set(ProjectConfig.XRAY_CORE_VERSION)
     expectedGeoArchiveSha256.set("244deaba2098c2964e49bba90df3707777e5f5f428a82d2f29604015f24beec2")
     outputDirectory.set(desktopCoreRuntime)
