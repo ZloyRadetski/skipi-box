@@ -3,7 +3,11 @@
 import com.android.build.api.variant.HasHostTestsBuilder
 import com.android.build.api.variant.HostTestBuilder
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.tasks.testing.Test
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
 
 plugins {
     alias(libs.plugins.android.application)
@@ -15,6 +19,7 @@ plugins {
 val generatedSrcDir: Provider<Directory> = layout.buildDirectory.dir("generated/projectInfo")
 val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val androidTestJavaHome = providers.gradleProperty("skipiAndroidTestJavaHome").orNull
 
 android {
     namespace = "app"
@@ -103,8 +108,11 @@ android {
     testOptions {
         unitTests {
             isReturnDefaultValues = true
+            isIncludeAndroidResources = true
         }
     }
+
+    sourceSets["debug"].assets.srcDir("$projectDir/schemas")
 }
 
 tasks.named("preBuild") {
@@ -145,6 +153,9 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("androidx.room:room-testing:2.8.4")
+    testImplementation("androidx.test:core:1.7.0")
+    testImplementation("org.robolectric:robolectric:4.16.1")
 }
 
 ksp {
@@ -181,6 +192,26 @@ tasks.matching { it.name.startsWith("ksp") }.configureEach {
     dependsOn(generateProjectInfo)
 }
 
+// Keep Robolectric on its supported runtime without changing Desktop test JVMs.
+val androidTestJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(21))
+}
+val explicitAndroidTestJavaHome = androidTestJavaHome
+    ?: providers.environmentVariable("JAVA21_HOME").orNull
+    ?: providers.environmentVariable("JDK21_HOME").orNull
+
+tasks.withType<Test>().configureEach {
+    if (name.contains("UnitTest")) {
+        if (explicitAndroidTestJavaHome != null) {
+            val binary = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) "java.exe" else "java"
+            val javaExecutable = File(explicitAndroidTestJavaHome, "bin/$binary")
+            require(javaExecutable.isFile) { "Android test Java executable does not exist: $javaExecutable" }
+            executable = javaExecutable.absolutePath
+        } else {
+            javaLauncher.set(androidTestJavaLauncher)
+        }
+    }
+}
 
 val aboutLibrariesJsonFile = layout.projectDirectory.file("src/main/assets/aboutlibraries.json")
 

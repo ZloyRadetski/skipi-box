@@ -1,0 +1,52 @@
+{
+  "format": "skipi-backup",
+  "version": 1,
+  "createdAtMillis": 1720000000000,
+  "appVersionName": "1.8.0",
+  "appVersionCode": 10800,
+  "futureRootField": "discard me",
+  "data": {
+    "settings": {
+      "selectedProxyServerId": 52,
+      "proxyServerListLayout": 3,
+      "futureSettingsField": 17
+    },
+    "subscriptionGroups": [
+      {
+        "id": 42,
+        "name": "Work subscription",
+        "url": "https://example.com/subscription",
+        "userAgent": "Fixture client",
+        "updateInterval": "24",
+        "enabled": true,
+        "builtIn": true,
+        "profileTitle": "Work profile",
+        "trafficTotalBytes": 1048576,
+        "futureGroupField": true
+      }
+    ],
+    "proxyServers": [
+      {
+        "id": 52,
+        "groupId": 42,
+        "protocol": "http",
+        "payload": {
+          "remarks": "Fixture endpoint",
+          "server": "proxy.example.com",
+          "port": "8080",
+          "futureProtocolField": "ignored by the HTTP model"
+        }
+      }
+    ],
+    "trafficConfigs": [
+      {
+        "id": 6,
+        "name": "Mobile profile",
+        "rawConfig": "[General]\ndns-server = system"
+      }
+    ],
+    "activeTrafficConfigId": 6,
+    "proxyAppListSelectedApps": ["com.example.browser"],
+    "futureDataField": [1, 2, 3]
+  }
+}
