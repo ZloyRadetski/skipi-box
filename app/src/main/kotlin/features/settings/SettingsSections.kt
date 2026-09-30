@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import app.R
-import app.modes.ConnectionDisplayModeClassic
 import androidx.compose.ui.res.stringResource
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -70,68 +69,6 @@ internal fun SettingsThemeSection(
             items = languageOptions,
             selectedIndex = languageMode,
             onSelectedIndexChange = onLanguageModeChange,
-        )
-    }
-}
-
-@Composable
-internal fun SettingsSubscriptionsSection(
-    enableAllProxyGroup: Boolean,
-    showServerSearch: Boolean,
-    connectionDisplayModeOptions: List<String>,
-    connectionDisplayMode: Int,
-    classicShowFloatingPowerButton: Boolean,
-    enableDeletionConfirmation: Boolean,
-    fetchTimeoutOptions: List<String>,
-    fetchTimeoutIndex: Int,
-    onEnableAllProxyGroupChange: (Boolean) -> Unit,
-    onShowServerSearchChange: (Boolean) -> Unit,
-    onConnectionDisplayModeChange: (Int) -> Unit,
-    onClassicShowFloatingPowerButtonChange: (Boolean) -> Unit,
-    onEnableDeletionConfirmationChange: (Boolean) -> Unit,
-    onFetchTimeoutChange: (Int) -> Unit,
-) {
-    SmallTitle(text = stringResource(R.string.settings_general))
-    SettingsSectionCard {
-        AppOverlayDropdownPreference(
-            title = stringResource(R.string.settings_connection_display_mode),
-            summary = stringResource(R.string.settings_connection_display_mode_summary),
-            items = connectionDisplayModeOptions,
-            selectedIndex = connectionDisplayMode,
-            onSelectedIndexChange = onConnectionDisplayModeChange,
-        )
-        AnimatedVisibility(visible = connectionDisplayMode == ConnectionDisplayModeClassic) {
-            SwitchPreference(
-                title = stringResource(R.string.settings_classic_show_floating_power_button),
-                summary = stringResource(R.string.settings_classic_show_floating_power_button_summary),
-                checked = classicShowFloatingPowerButton,
-                onCheckedChange = onClassicShowFloatingPowerButtonChange,
-            )
-        }
-        SwitchPreference(
-            title = stringResource(R.string.settings_enable_all_proxy_group),
-            summary = stringResource(R.string.settings_enable_all_proxy_group_summary),
-            checked = enableAllProxyGroup,
-            onCheckedChange = onEnableAllProxyGroupChange,
-        )
-        SwitchPreference(
-            title = stringResource(R.string.settings_show_server_search),
-            summary = stringResource(R.string.settings_show_server_search_summary),
-            checked = showServerSearch,
-            onCheckedChange = onShowServerSearchChange,
-        )
-        SwitchPreference(
-            title = stringResource(R.string.settings_deletion_confirmation),
-            summary = stringResource(R.string.settings_deletion_confirmation_summary),
-            checked = enableDeletionConfirmation,
-            onCheckedChange = onEnableDeletionConfirmationChange,
-        )
-        AppOverlayDropdownPreference(
-            title = stringResource(R.string.settings_subscription_fetch_timeout),
-            summary = stringResource(R.string.settings_subscription_fetch_timeout_summary),
-            items = fetchTimeoutOptions,
-            selectedIndex = fetchTimeoutIndex,
-            onSelectedIndexChange = onFetchTimeoutChange,
         )
     }
 }

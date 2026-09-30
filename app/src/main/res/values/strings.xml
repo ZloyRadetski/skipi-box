@@ -55,6 +55,7 @@
     <string name="deletion_confirmation_delete_proxy_server">Delete proxy server</string>
     <string name="deletion_confirmation_delete_route">Delete route</string>
     <string name="deletion_confirmation_delete_subscription_group">Delete subscription group</string>
+    <string name="deletion_confirmation_delete_group">Delete group</string>
     <string name="deletion_confirmation_delete_resource_file">Delete resource file</string>
     <string name="deletion_confirmation_delete_config">Delete configuration</string>
     <string name="common_empty">Nothing here yet</string>
@@ -137,6 +138,11 @@
     <string name="settings_connection_display_mode_classic">Classic</string>
     <string name="settings_pin_connection_panel">Pin connection panel</string>
     <string name="settings_pin_connection_panel_summary">Keep the connection panel and subscription selector fixed at the top when scrolling</string>
+    <string name="settings_proxy_server_list_columns">Server list columns</string>
+    <string name="settings_proxy_server_list_columns_summary">Number of columns for proxy servers on the home screen</string>
+    <string name="settings_proxy_server_list_columns_single">1 column</string>
+    <string name="settings_proxy_server_list_columns_double">2 columns</string>
+    <string name="settings_proxy_server_list_columns_triple">3 columns</string>
     <string name="settings_enable_subscription_swipe">Swipe to switch subscription</string>
     <string name="settings_enable_subscription_swipe_summary">Allow switching subscriptions by swiping left and right</string>
     <string name="settings_font_family">Interface font</string>
@@ -794,6 +800,9 @@
     <string name="subscription_edit">Edit subscription</string>
     <string name="subscription_delete">Delete subscription</string>
     <string name="subscription_add">Add subscription</string>
+    <string name="group_edit">Edit group</string>
+    <string name="group_delete">Delete group</string>
+    <string name="group_add">Add group</string>
     <string name="subscription_default_group">Manual servers</string>
     <string name="subscription_unnamed_group">Unnamed group</string>
     <string name="subscription_group_name">Group name</string>

@@ -5,6 +5,8 @@ package app
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -34,6 +36,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -494,21 +498,30 @@ private fun CompactScreenLayout(
     padding: PaddingValues,
     mainPagerState: SkipiMainPagerState,
 ) {
+    var floatingNavigationHeightPx by remember { mutableIntStateOf(0) }
+    val floatingNavigationBottomInset = with(LocalDensity.current) { floatingNavigationHeightPx.toDp() }
     Scaffold(
         containerColor = Color.Transparent,
         modifier = Modifier
             .fillMaxSize(),
         bottomBar = {
-            ExpressiveFloatingNavigationBar(
-                navigationItems = navigationItems,
-                mainPagerState = mainPagerState,
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onSizeChanged { size -> floatingNavigationHeightPx = size.height },
+            ) {
+                ExpressiveFloatingNavigationBar(
+                    navigationItems = navigationItems,
+                    mainPagerState = mainPagerState,
+                )
+            }
         },
     ) { innerPadding ->
         AppPager(
             padding = innerPadding,
             pagerState = mainPagerState.pagerState,
             modifier = Modifier.pageWindowPadding(padding),
+            floatingNavigationBottomInset = floatingNavigationBottomInset,
         )
     }
 }
@@ -545,6 +558,7 @@ fun AppPager(
     padding: PaddingValues,
     pagerState: PagerState,
     modifier: Modifier = Modifier,
+    floatingNavigationBottomInset: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
     val languageMode = LocalAppChromeState.current.languageMode
     SkipiMainPager(
@@ -557,6 +571,7 @@ fun AppPager(
             when (destination) {
                 SkipiMainDestination.Proxy -> ProxyServerListPage(
                     padding = padding,
+                    floatingNavigationBottomInset = floatingNavigationBottomInset,
                 )
 
                 SkipiMainDestination.Configs -> TrafficConfigPage(padding = padding)

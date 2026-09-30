@@ -154,6 +154,11 @@
     <string name="settings_connection_display_mode_classic">Классический</string>
     <string name="settings_pin_connection_panel">Закрепить панель подключения</string>
     <string name="settings_pin_connection_panel_summary">Фиксировать панель подключения и выбор подписки при скролле</string>
+    <string name="settings_proxy_server_list_columns">Колонки списка серверов</string>
+    <string name="settings_proxy_server_list_columns_summary">Количество колонок прокси-серверов на главном экране</string>
+    <string name="settings_proxy_server_list_columns_single">1 колонка</string>
+    <string name="settings_proxy_server_list_columns_double">2 колонки</string>
+    <string name="settings_proxy_server_list_columns_triple">3 колонки</string>
     <string name="settings_enable_subscription_swipe">Свайп для смены подписки</string>
     <string name="settings_enable_subscription_swipe_summary">Разрешить переключение подписок свайпом влево и вправо</string>
     <string name="settings_font_family">Шрифт интерфейса</string>
@@ -775,6 +780,9 @@
     <string name="subscription_edit">Редактировать подписку</string>
     <string name="subscription_delete">Удалить подписку</string>
     <string name="subscription_add">Добавить подписку</string>
+    <string name="group_edit">Редактировать группу</string>
+    <string name="group_delete">Удалить группу</string>
+    <string name="group_add">Добавить группу</string>
     <string name="subscription_default_group">Ручные серверы</string>
     <string name="proxy_server_list_auto_balancers">Группы прокси</string>
     <string name="subscription_unnamed_group">Безымянная группа</string>
@@ -804,6 +812,7 @@
     <string name="deletion_confirmation_delete_proxy_server">Удалить прокси-сервер</string>
     <string name="deletion_confirmation_delete_route">Удалить правило маршрутизации</string>
     <string name="deletion_confirmation_delete_subscription_group">Удалить группу подписки</string>
+    <string name="deletion_confirmation_delete_group">Удалить группу</string>
     <string name="deletion_confirmation_delete_resource_file">Удалить файл ресурсов</string>
     <string name="deletion_confirmation_delete_config">Удалить конфигурацию</string>
     <string name="common_update">Обновить</string>

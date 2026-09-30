@@ -54,6 +54,7 @@
     <string name="deletion_confirmation_delete_proxy_server">删除代理服务器</string>
     <string name="deletion_confirmation_delete_route">删除路线</string>
     <string name="deletion_confirmation_delete_subscription_group">删除订阅组</string>
+    <string name="deletion_confirmation_delete_group">删除分组</string>
     <string name="deletion_confirmation_delete_resource_file">删除资源文件</string>
     <string name="deletion_confirmation_delete_config">删除配置</string>
     <string name="common_empty">这里还什么都没有</string>
@@ -129,6 +130,11 @@
     <string name="settings_connection_display_mode_summary">在主屏幕上选择紧凑型和经典连接小部件</string>
     <string name="settings_connection_display_mode_compact">袖珍的</string>
     <string name="settings_connection_display_mode_classic">经典的</string>
+    <string name="settings_proxy_server_list_columns">服务器列表列数</string>
+    <string name="settings_proxy_server_list_columns_summary">主屏幕上代理服务器的列数</string>
+    <string name="settings_proxy_server_list_columns_single">1 列</string>
+    <string name="settings_proxy_server_list_columns_double">2 列</string>
+    <string name="settings_proxy_server_list_columns_triple">3 列</string>
     <string name="settings_bottom_bar_size">底部导航栏大小</string>
     <string name="settings_bottom_bar_size_summary">调整底部浮动栏的高度、图标和文本大小</string>
     <string name="settings_bottom_bar_size_small">小</string>
@@ -731,6 +737,9 @@
     <string name="subscription_edit">编辑订阅</string>
     <string name="subscription_delete">删除订阅</string>
     <string name="subscription_add">添加订阅</string>
+    <string name="group_edit">编辑分组</string>
+    <string name="group_delete">删除分组</string>
+    <string name="group_add">添加分组</string>
     <string name="subscription_default_group">手动服务器</string>
     <string name="subscription_unnamed_group">未命名组</string>
     <string name="subscription_group_name">团体名称</string>

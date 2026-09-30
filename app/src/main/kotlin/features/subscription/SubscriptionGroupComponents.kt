@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.subscription
@@ -79,6 +79,7 @@ internal fun SubscriptionGroupEditorDialog(
     show: Boolean,
     group: SubscriptionGroupState?,
     nextGroupId: Int,
+    isManualGroup: Boolean = false,
     onDismissRequest: () -> Unit,
     onDismissFinished: () -> Unit,
     onSave: (SubscriptionGroupState, isNew: Boolean) -> Unit,
@@ -87,6 +88,7 @@ internal fun SubscriptionGroupEditorDialog(
 ) {
     val isEditing = group != null
     val builtIn = group?.builtIn == true
+    val isManual = isManualGroup || builtIn || (group != null && group.url.isBlank())
     val newGroupName = stringResource(R.string.subscription_new_group)
     val defaultGroupName = stringResource(R.string.subscription_default_group)
     val unnamedGroupName = stringResource(R.string.subscription_unnamed_group)
@@ -191,9 +193,14 @@ internal fun SubscriptionGroupEditorDialog(
         onDismissRequest()
     }
 
+    val dialogTitle = when {
+        isEditing -> if (isManual) stringResource(R.string.group_edit) else stringResource(R.string.subscription_edit)
+        else -> if (isManual) stringResource(R.string.group_add) else stringResource(R.string.subscription_add)
+    }
+
     AppWindowDialog(
         show = show,
-        title = if (isEditing) stringResource(R.string.subscription_edit) else stringResource(R.string.subscription_add),
+        title = dialogTitle,
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
     ) {
@@ -358,7 +365,7 @@ internal fun SubscriptionGroupEditorDialog(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = stringResource(R.string.subscription_delete),
+                                text = if (isManual) stringResource(R.string.group_delete) else stringResource(R.string.subscription_delete),
                                 color = MiuixTheme.colorScheme.error,
                                 style = MiuixTheme.textStyles.body1.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
                             )
@@ -388,7 +395,11 @@ internal fun SubscriptionGroupEditorDialog(
     if (showDeleteConfirmation && group != null && onDelete != null) {
         DeleteConfirmationDialog(
             show = true,
-            title = stringResource(R.string.deletion_confirmation_delete_subscription_group),
+            title = if (isManual) {
+                stringResource(R.string.deletion_confirmation_delete_group)
+            } else {
+                stringResource(R.string.deletion_confirmation_delete_subscription_group)
+            },
             onDismissRequest = { showDeleteConfirmation = false },
             onConfirm = {
                 showDeleteConfirmation = false

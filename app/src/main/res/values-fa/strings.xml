@@ -54,6 +54,7 @@
     <string name="deletion_confirmation_delete_proxy_server">سرور پروکسی را حذف کنید</string>
     <string name="deletion_confirmation_delete_route">حذف مسیر</string>
     <string name="deletion_confirmation_delete_subscription_group">حذف گروه اشتراک</string>
+    <string name="deletion_confirmation_delete_group">حذف گروه</string>
     <string name="deletion_confirmation_delete_resource_file">حذف فایل منبع</string>
     <string name="deletion_confirmation_delete_config">پیکربندی را حذف کنید</string>
     <string name="common_empty">اینجا هنوز چیزی نیست</string>
@@ -129,6 +130,11 @@
     <string name="settings_connection_display_mode_summary">بین ویجت اتصال فشرده و کلاسیک در صفحه اصلی انتخاب کنید</string>
     <string name="settings_connection_display_mode_compact">فشرده</string>
     <string name="settings_connection_display_mode_classic">کلاسیک</string>
+    <string name="settings_proxy_server_list_columns">ستون‌های لیست سرورها</string>
+    <string name="settings_proxy_server_list_columns_summary">تعداد ستون‌های سرورهای پروکسی در صفحه اصلی</string>
+    <string name="settings_proxy_server_list_columns_single">۱ ستون</string>
+    <string name="settings_proxy_server_list_columns_double">۲ ستون</string>
+    <string name="settings_proxy_server_list_columns_triple">۳ ستون</string>
     <string name="settings_bottom_bar_size">اندازه نوار پایین</string>
     <string name="settings_bottom_bar_size_summary">تنظیم ارتفاع، آیکون‌ها و اندازه متن نوار شناور پایین</string>
     <string name="settings_bottom_bar_size_small">کوچک</string>
@@ -709,6 +715,9 @@
     <string name="subscription_edit">ویرایش اشتراک</string>
     <string name="subscription_delete">حذف اشتراک</string>
     <string name="subscription_add">اشتراک اضافه کنید</string>
+    <string name="group_edit">ویرایش گروه</string>
+    <string name="group_delete">حذف گروه</string>
+    <string name="group_add">افزودن گروه</string>
     <string name="subscription_default_group">سرورهای دستی</string>
     <string name="subscription_unnamed_group">گروه بی نام</string>
     <string name="subscription_group_name">نام گروه</string>

@@ -61,6 +61,11 @@ import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
 import app.modes.ColorModeAmoled
+import app.modes.ConnectionDisplayModeClassic
+import app.modes.ConnectionDisplayModeCompact
+import app.modes.ProxyServerListLayoutDouble
+import app.modes.ProxyServerListLayoutMultiple
+import app.modes.ProxyServerListLayoutSingle
 import app.modes.ColorModeAurora
 import app.modes.ColorModeDark
 import app.modes.ColorModeForest
@@ -68,7 +73,6 @@ import app.modes.ColorModeLight
 import app.modes.ColorModeSakura
 import app.modes.ColorModeSunset
 import app.modes.ColorModeSystem
-import app.modes.ConnectionDisplayModeClassic
 import app.modes.FontSizeModeExtraLarge
 import app.modes.FontSizeModeStepPercent
 import app.modes.FontSizeModeTiny
@@ -201,11 +205,6 @@ fun SettingsAppearancePage(
         }
     }
 
-    val connectionDisplayModeOptions = listOf(
-        stringResource(R.string.settings_connection_display_mode_compact),
-        stringResource(R.string.settings_connection_display_mode_classic),
-    )
-
     val backgroundStyleOptions = listOf(
         stringResource(R.string.settings_background_style_classic),
         stringResource(R.string.settings_background_style_photo),
@@ -220,6 +219,25 @@ fun SettingsAppearancePage(
         stringResource(R.string.settings_bottom_bar_size_medium),
         stringResource(R.string.settings_bottom_bar_size_large),
     )
+
+    val connectionDisplayModeOptions = listOf(
+        stringResource(R.string.settings_connection_display_mode_compact),
+        stringResource(R.string.settings_connection_display_mode_classic),
+    )
+
+    val proxyServerListLayoutOptions = listOf(
+        stringResource(R.string.settings_proxy_server_list_columns_single),
+        stringResource(R.string.settings_proxy_server_list_columns_double),
+        stringResource(R.string.settings_proxy_server_list_columns_triple),
+    )
+
+    val proxyServerListLayoutModes = remember {
+        listOf(
+            ProxyServerListLayoutSingle,
+            ProxyServerListLayoutDouble,
+            ProxyServerListLayoutMultiple,
+        )
+    }
 
     val fontFamilyOptions = listOf(
         stringResource(R.string.settings_font_family_default),
@@ -675,12 +693,17 @@ fun SettingsAppearancePage(
                             title = stringResource(R.string.settings_connection_display_mode),
                             summary = stringResource(R.string.settings_connection_display_mode_summary),
                             items = connectionDisplayModeOptions,
-                            selectedIndex = appState.connectionDisplayMode,
-                            onSelectedIndexChange = { mode ->
+                            selectedIndex = if (appState.connectionDisplayMode == ConnectionDisplayModeCompact) 0 else 1,
+                            onSelectedIndexChange = { index ->
+                                val mode = if (index == 0) ConnectionDisplayModeCompact else ConnectionDisplayModeClassic
                                 updateAppState { it.copy(connectionDisplayMode = mode) }
                             },
                         )
-                        AnimatedVisibility(visible = appState.connectionDisplayMode == ConnectionDisplayModeClassic) {
+                        AnimatedVisibility(
+                            visible = appState.connectionDisplayMode == ConnectionDisplayModeClassic,
+                            enter = fadeIn() + expandVertically(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
                             SwitchPreference(
                                 title = stringResource(R.string.settings_classic_show_floating_power_button),
                                 summary = stringResource(R.string.settings_classic_show_floating_power_button_summary),
@@ -696,6 +719,16 @@ fun SettingsAppearancePage(
                             checked = appState.pinConnectionPanelOnHome,
                             onCheckedChange = { enabled ->
                                 updateAppState { it.copy(pinConnectionPanelOnHome = enabled) }
+                            },
+                        )
+                        AppOverlayDropdownPreference(
+                            title = stringResource(R.string.settings_proxy_server_list_columns),
+                            summary = stringResource(R.string.settings_proxy_server_list_columns_summary),
+                            items = proxyServerListLayoutOptions,
+                            selectedIndex = proxyServerListLayoutModes.indexOf(appState.proxyServerListLayout).coerceAtLeast(0),
+                            onSelectedIndexChange = { index ->
+                                val layout = proxyServerListLayoutModes.getOrElse(index) { ProxyServerListLayoutSingle }
+                                updateAppState { it.copy(proxyServerListLayout = layout) }
                             },
                         )
                         SwitchPreference(

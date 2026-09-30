@@ -568,7 +568,7 @@ private fun rememberProxyHeroSessionDuration(proxyRunning: Boolean): String {
     return sessionDuration
 }
 
-private val ProxyServerListToolAction.isDeletion: Boolean
+internal val ProxyServerListToolAction.isDeletion: Boolean
     get() = when (this) {
         ProxyServerListToolAction.DeleteDuplicateServers,
         ProxyServerListToolAction.DeleteInvalidServers,
@@ -578,7 +578,7 @@ private val ProxyServerListToolAction.isDeletion: Boolean
         else -> false
     }
 
-private val ProxyServerListToolAction.deletionConfirmationTitleResId: Int
+internal val ProxyServerListToolAction.deletionConfirmationTitleResId: Int
     get() = when (this) {
         ProxyServerListToolAction.DeleteDuplicateServers -> R.string.proxy_server_list_delete_duplicates
         ProxyServerListToolAction.DeleteInvalidServers -> R.string.proxy_server_list_delete_invalid
@@ -586,7 +586,7 @@ private val ProxyServerListToolAction.deletionConfirmationTitleResId: Int
         else -> error("Deletion confirmation is only available for deletion actions")
     }
 
-private fun handleProxyServerListAddAction(
+internal fun handleProxyServerListAddAction(
     action: ProxyServerListAddAction,
     groupState: ProxyServerListGroups,
     proxyListState: ProxyServerListState,
@@ -798,7 +798,7 @@ private suspend fun importProxyServers(
     )
 }
 
-private fun handleProxyServerListToolAction(
+internal fun handleProxyServerListToolAction(
     action: ProxyServerListToolAction,
     groupState: ProxyServerListGroups,
     selectedServer: ProxyServerState?,
