@@ -1,6 +1,8 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.multiplatform)
@@ -11,6 +13,9 @@ kotlin {
         namespace = "com.radetski.skipi.shared.app"
         compileSdk = ProjectConfig.TARGET_SDK
         minSdk = ProjectConfig.MIN_SDK
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_21)
+        }
         withHostTest {}
     }
     jvm("desktop")

@@ -43,7 +43,7 @@ class ProxyServerGroupingTest {
     }
 
     @Test
-    fun selectedAllTabKeepsItsIdOnlyWhenAllTabIsAvailable() {
+    fun selectedAllTabKeepsAllIdAndResolvesBackingGroupToFirstVisibleGroup() {
         val request = request(
             groups = listOf(manualGroup(), group(2, "Subscription", enabled = true)),
             servers = listOf(server(1, groupId = 1, remarks = "Manual"), server(2, groupId = 2, remarks = "Sub")),
@@ -56,10 +56,10 @@ class ProxyServerGroupingTest {
 
         assertTrue(withAll.isAllGroupsSelected)
         assertEquals(0, withAll.selectedTabId)
-        assertEquals(1, withAll.selectedGroupId)
+        assertEquals(2, withAll.selectedGroupId)
         assertEquals(listOf(1, 2), withAll.currentGroupServerIds)
         assertFalse(withoutAll.isAllGroupsSelected)
-        assertEquals(1, withoutAll.selectedTabId)
+        assertEquals(2, withoutAll.selectedTabId)
     }
 
     @Test
@@ -100,7 +100,7 @@ class ProxyServerGroupingTest {
             request(groups = emptyList(), servers = emptyList(), selectedGroupId = 99),
         )
 
-        assertEquals(1, visible.selectedGroupId)
+        assertEquals(2, visible.selectedGroupId)
         assertEquals(1, manualFallback.selectedGroupId)
         assertEquals(1, manualFallback.selectedTabId)
         assertNull(noManualGroup.selectedGroupId)
