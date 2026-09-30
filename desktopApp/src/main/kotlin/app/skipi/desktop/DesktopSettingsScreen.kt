@@ -46,6 +46,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.awt.Desktop
 import java.awt.Toolkit
@@ -106,12 +109,23 @@ internal fun DesktopSettingsScreen(
     var destination by remember { mutableStateOf(DesktopSettingsDestination.Overview) }
     var message by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val saveMutex = remember { Mutex() }
+    var currentSettings by remember(settings) { mutableStateOf(settings) }
+
+    LaunchedEffect(settings) {
+        currentSettings = settings
+    }
 
     fun persist(next: DesktopAppSettings, successMessage: String) {
+        currentSettings = next
+        onSettingsChange(next)
         scope.launch {
-            val result = withContext(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(next) }
+            val result = withContext(Dispatchers.IO) {
+                saveMutex.withLock {
+                    DesktopSettingsLibraries.saveDefault(next)
+                }
+            }
             result.onSuccess {
-                onSettingsChange(next)
                 message = successMessage
             }.onFailure { error ->
                 message = "Не удалось сохранить настройки: ${error.message.orEmpty()}"
@@ -121,7 +135,7 @@ internal fun DesktopSettingsScreen(
 
     when (destination) {
         DesktopSettingsDestination.Overview -> DesktopSettingsOverview(
-            settings = settings,
+            settings = currentSettings,
             message = message,
             onNavigate = { destination = it },
             contentPadding = contentPadding,
@@ -129,7 +143,7 @@ internal fun DesktopSettingsScreen(
         )
 
         DesktopSettingsDestination.Appearance -> DesktopAppearanceSettings(
-            settings = settings,
+            settings = currentSettings,
             message = message,
             onBack = { destination = DesktopSettingsDestination.Overview },
             onPersist = ::persist,
@@ -138,7 +152,7 @@ internal fun DesktopSettingsScreen(
         )
 
         DesktopSettingsDestination.LocalProxy -> DesktopLocalProxySettings(
-            settings = settings,
+            settings = currentSettings,
             message = message,
             onBack = { destination = DesktopSettingsDestination.Overview },
             onPersist = ::persist,
@@ -148,7 +162,7 @@ internal fun DesktopSettingsScreen(
         )
 
         DesktopSettingsDestination.Subscriptions -> DesktopSubscriptionSettings(
-            settings = settings,
+            settings = currentSettings,
             message = message,
             onBack = { destination = DesktopSettingsDestination.Overview },
             onPersist = ::persist,
@@ -164,7 +178,7 @@ internal fun DesktopSettingsScreen(
         )
 
         DesktopSettingsDestination.Diagnostics -> DesktopDiagnosticsSettings(
-            settings = settings,
+            settings = currentSettings,
             isTunnelRunning = isTunnelRunning,
             message = message,
             onBack = { destination = DesktopSettingsDestination.Overview },
@@ -292,6 +306,11 @@ private fun DesktopAppearanceSettings(
     contentPadding: PaddingValues,
     modifier: Modifier,
 ) {
+    var draftSettings by remember(settings) { mutableStateOf(settings) }
+    LaunchedEffect(settings) {
+        draftSettings = settings
+    }
+
     SettingsScreenColumn(contentPadding, modifier) {
         SettingsHeader(
             title = "Оформление",
@@ -303,23 +322,128 @@ private fun DesktopAppearanceSettings(
             SettingsDropdownPreference(
                 title = "Режим цвета",
                 summary = "Сохраняется для всего Desktop-клиента",
-                value = settings.themeMode.displayName(),
+                value = draftSettings.themeMode.displayName(),
                 options = DesktopThemeMode.entries.map { it to it.displayName() },
                 onSelected = { mode ->
-                    onPersist(settings.copy(themeMode = mode), "Режим цвета сохранён.")
+                    onPersist(
+                        draftSettings.copy(themeMode = mode).also { draftSettings = it },
+                        "Режим цвета сохранён.",
+                    )
                 },
             )
         }
 
         SettingsGroup(title = "ГЛАВНЫЙ ЭКРАН") {
-            SettingsSwitchPreference(
-                title = "Компактное подключение",
-                summary = "Компактная карточка состояния вместо классической",
-                checked = settings.compactHome,
-                onCheckedChange = {
-                    onPersist(settings.copy(compactHome = it), "Режим главного экрана сохранён.")
+            SettingsDropdownPreference(
+                title = "Блок подключения",
+                summary = "Классическая карточка со статусом или компактная строка управления",
+                value = if (draftSettings.compactHome) "Компактный" else "Классический",
+                options = listOf(
+                    false to "Классический",
+                    true to "Компактный",
+                ),
+                onSelected = { compact ->
+                    onPersist(
+                        draftSettings.copy(compactHome = compact).also { draftSettings = it },
+                        "Режим блока подключения сохранён.",
+                    )
                 },
                 showDivider = true,
+            )
+            if (!draftSettings.compactHome) {
+                SettingsSwitchPreference(
+                    title = "Плавающая кнопка питания",
+                    summary = "Отображать кнопку включения на главном экране в классическом режиме",
+                    checked = draftSettings.classicShowFloatingPowerButton,
+                    onCheckedChange = { checked ->
+                        onPersist(
+                            draftSettings.copy(classicShowFloatingPowerButton = checked).also { draftSettings = it },
+                            "Плавающая кнопка питания сохранена.",
+                        )
+                    },
+                    showDivider = true,
+                )
+            }
+            SettingsSwitchPreference(
+                title = "Закрепить блок подключения",
+                summary = "Фиксировать панель подключения и выбор подписки при прокрутке",
+                checked = draftSettings.pinConnectionPanelOnHome,
+                onCheckedChange = { checked ->
+                    onPersist(
+                        draftSettings.copy(pinConnectionPanelOnHome = checked).also { draftSettings = it },
+                        "Закрепление блока подключения сохранено.",
+                    )
+                },
+                showDivider = true,
+            )
+            SettingsDropdownPreference(
+                title = "Колонки списка серверов",
+                summary = "Число колонок серверов на главном экране. На узком экране или телефоне может использоваться 1 колонка, настройка сохраняет выбранное значение.",
+                value = when (draftSettings.proxyServerListColumns) {
+                    2 -> "2 колонки"
+                    3 -> "3 колонки"
+                    else -> "1 колонка"
+                },
+                options = listOf(
+                    1 to "1 колонка",
+                    2 to "2 колонки",
+                    3 to "3 колонки",
+                ),
+                onSelected = { columns ->
+                    onPersist(
+                        draftSettings.copy(proxyServerListColumns = columns).also { draftSettings = it },
+                        "Количество колонок сохранено.",
+                    )
+                },
+                showDivider = true,
+            )
+            SettingsSwitchPreference(
+                title = "Включить группу «Все»",
+                summary = "Показывать общую группу «Все», когда активно несколько групп",
+                checked = draftSettings.enableAllProxyGroup,
+                onCheckedChange = { checked ->
+                    onPersist(
+                        draftSettings.copy(enableAllProxyGroup = checked).also { draftSettings = it },
+                        "Отображение группы «Все» сохранено.",
+                    )
+                },
+                showDivider = true,
+            )
+            SettingsSwitchPreference(
+                title = "Поиск серверов",
+                summary = "Отображать строку поиска на главном экране",
+                checked = draftSettings.showServerSearch,
+                onCheckedChange = { checked ->
+                    onPersist(
+                        draftSettings.copy(showServerSearch = checked).also { draftSettings = it },
+                        "Настройка поиска серверов сохранена.",
+                    )
+                },
+                showDivider = true,
+            )
+            SettingsSwitchPreference(
+                title = "Свайп для смены подписки",
+                summary = "Переключение групп жестом свайпа; поддержка мыши и трекпада зависит от главного экрана",
+                checked = draftSettings.enableSubscriptionSwipe,
+                onCheckedChange = { checked ->
+                    onPersist(
+                        draftSettings.copy(enableSubscriptionSwipe = checked).also { draftSettings = it },
+                        "Свайп между группами сохранён.",
+                    )
+                },
+                showDivider = true,
+            )
+            SettingsSwitchPreference(
+                title = "Память туннеля",
+                summary = "Показывать использование оперативной памяти ядром при активном подключении",
+                checked = draftSettings.showTunnelMemory,
+                onCheckedChange = { checked ->
+                    onPersist(
+                        draftSettings.copy(showTunnelMemory = checked).also { draftSettings = it },
+                        "Отображение памяти туннеля сохранено.",
+                    )
+                },
+                showDivider = false,
             )
         }
 
@@ -327,9 +451,12 @@ private fun DesktopAppearanceSettings(
             SettingsSwitchPreference(
                 title = "Подтверждать удаление",
                 summary = "Спрашивать перед удалением сервера, подписки или конфига",
-                checked = settings.confirmDeletion,
+                checked = draftSettings.confirmDeletion,
                 onCheckedChange = {
-                    onPersist(settings.copy(confirmDeletion = it), "Настройка удаления сохранена.")
+                    onPersist(
+                        draftSettings.copy(confirmDeletion = it).also { draftSettings = it },
+                        "Настройка удаления сохранена.",
+                    )
                 },
             )
         }
@@ -1171,6 +1298,7 @@ private fun <T> SettingsDropdownPreference(
     value: String,
     options: List<Pair<T, String>>,
     onSelected: (T) -> Unit,
+    showDivider: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
@@ -1179,6 +1307,7 @@ private fun <T> SettingsDropdownPreference(
             summary = summary,
             value = value,
             onClick = { expanded = true },
+            showDivider = showDivider,
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { (item, label) ->

@@ -1,0 +1,16 @@
+{
+  "selectedServerId": 4,
+  "servers": [
+    {
+      "id": 12,
+      "serverJson": "{\"protocol\":\"vless\",\"payload\":{\"remarks\":\"Legacy subscribed\",\"id\":\"8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6\",\"server\":\"edge.example\",\"port\":\"443\",\"encryption\":\"none\",\"flow\":\"\",\"parms\":{\"type\":\"ws\",\"security\":\"tls\",\"path\":\"/legacy\",\"host\":\"cdn.example\",\"legacyTransportField\":true},\"futurePayloadField\":true}}",
+      "subscriptionId": 3,
+      "futureRecordField": true
+    },
+    {
+      "id": 4,
+      "serverJson": "{\"protocol\":\"vless\",\"payload\":{\"remarks\":\"Manual legacy\",\"id\":\"8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6\",\"server\":\"manual.example\",\"port\":\"8443\",\"encryption\":\"none\",\"flow\":\"\"}}"
+    }
+  ],
+  "futureLibraryField": "ignored by this version"
+}

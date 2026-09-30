@@ -141,6 +141,39 @@ class DesktopProxyGroupsTest {
         assertEquals(emptyList(), empty.filter(query = "anything").serverIds)
     }
 
+    @Test
+    fun honors_enable_all_proxy_group_option_and_supports_blank_manual_groups() {
+        val serverLib = DesktopServerLibrary(
+            servers = listOf(
+                storedServer(1, "Node 1"),
+                storedServer(2, "Node 2", subscriptionId = 5),
+            ),
+        )
+        val subLib = DesktopSubscriptionLibrary(
+            subscriptions = listOf(
+                DesktopStoredSubscription(id = 5, url = "", name = "Manual Folder"),
+            ),
+        )
+
+        val disabledAll = DesktopProxyGroups.create(
+            serverLibrary = serverLib,
+            subscriptionLibrary = subLib,
+            enableAllProxyGroup = false,
+        )
+        assertNull(disabledAll.group(DesktopProxyGroupIds.All))
+        val manualGroup = disabledAll.group(DesktopProxyGroupIds.subscription(5))
+        assertEquals(DesktopProxyGroupKind.Manual, manualGroup?.kind)
+        assertEquals("Manual Folder", manualGroup?.title)
+        assertEquals(listOf(2), manualGroup?.serverIds)
+
+        val enabledAll = DesktopProxyGroups.create(
+            serverLibrary = serverLib,
+            subscriptionLibrary = subLib,
+            enableAllProxyGroup = true,
+        )
+        assertEquals(listOf(1, 2), enabledAll.group(DesktopProxyGroupIds.All)?.serverIds)
+    }
+
     private fun storedServer(id: Int, remarks: String, subscriptionId: Int? = null): DesktopStoredProxyServer =
         DesktopStoredProxyServer(
             id = id,

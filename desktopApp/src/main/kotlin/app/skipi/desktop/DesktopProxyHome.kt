@@ -3,20 +3,42 @@
 
 package app.skipi.desktop
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import app.skipi.app.home.ProxyHomeConnectionMode
+import app.skipi.app.home.ProxyHomeDisplayOptions
+import app.skipi.app.home.ProxyHomeGroupKind
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import app.skipi.app.home.ProxyConnectionPhase
+import app.skipi.app.home.ProxyHomeActionId
+import app.skipi.app.home.ProxyHomeCopyFormat
+import app.skipi.app.home.ProxyHomeEffect
+import app.skipi.app.home.ProxyHomeEffectHandler
+import app.skipi.app.home.ProxyHomeImportSource
+import app.skipi.app.home.ProxyHomeInput
+import app.skipi.app.home.ProxyHomePresentation
+import app.skipi.app.home.ProxyHomeServerKind
+import app.skipi.app.home.ProxyHomeServerTool
+import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeStore
-import app.skipi.app.home.ProxyHomeUiState
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
-import app.skipi.ui.home.ProxyHomeCapabilities
 import app.skipi.ui.home.ProxyHomeScreen
 import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.home.dialogs.SkipiAddSourceDialog
@@ -25,12 +47,30 @@ import app.skipi.ui.home.dialogs.SkipiImportDialog
 import app.skipi.ui.home.dialogs.SkipiSubscriptionEditData
 import app.skipi.ui.home.dialogs.SkipiSubscriptionEditDialog
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.common_add
+import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_delete
+import app.skipi.ui.resources.common_save
+import app.skipi.ui.resources.configs_name
+import app.skipi.ui.resources.common_unknown_group
+import app.skipi.ui.resources.proxy_editor_strategy_group_all_groups
+import app.skipi.ui.resources.proxy_editor_strategy_group_least_load
+import app.skipi.ui.resources.proxy_editor_strategy_group_least_ping
+import app.skipi.ui.resources.proxy_editor_strategy_group_random
+import app.skipi.ui.resources.proxy_editor_strategy_group_round_robin
+import app.skipi.ui.resources.proxy_editor_strategy_group_select
+import app.skipi.ui.resources.proxy_server_list_chain_proxy_summary
+import app.skipi.ui.resources.proxy_server_list_strategy_group_summary
+import app.skipi.ui.resources.proxy_server_list_strategy_group_summary_with_filter
 import app.skipi.ui.resources.subscription_delete
 import app.skipi.ui.server.editor.SkipiProxyServerEditorDialog
 import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.getCopyTextOrNull
 import features.proxy.server.model.getTransportDisplay
+import features.proxy.server.model.encodePersistedProxyServer
+import features.proxy.server.model.getUrlOrNull
+import features.proxy.server.presentation.ProxyServerPresentationFormatter
+import features.proxy.server.presentation.ProxyServerPresentationLabels
+import features.proxy.server.presentation.ProxyServerPresentationNode
 import org.jetbrains.compose.resources.stringResource
 import java.awt.Desktop
 import java.awt.FileDialog
@@ -62,12 +102,12 @@ internal fun DesktopProxyHome(
     tunnelMessage: String,
     serverMessage: String,
     subscriptionMessage: String,
-    compactConnection: Boolean,
     confirmDeletion: Boolean,
     activeProfileName: String?,
     activeTrafficConfigId: Int?,
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     testingServerIds: Set<Int>,
+    pingingSubscriptionIds: Set<Int>,
     onServerLinkChange: (String) -> Unit,
     onSubscriptionUrlChange: (String) -> Unit,
     onToggleTunnel: () -> Unit,
@@ -76,6 +116,7 @@ internal fun DesktopProxyHome(
     onAddServer: (ProxyServer<*>) -> Unit,
     onUpdateServer: (Int, ProxyServer<*>) -> Unit,
     onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit,
+    onPingSubscriptionServers: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
     onUpdateSubscription: () -> Unit,
     scheduledSubscriptionId: Int?,
     onScheduledSubscriptionConsumed: () -> Unit,
@@ -84,118 +125,45 @@ internal fun DesktopProxyHome(
     onUpdateSubscriptionProvider: (Int, DesktopSubscriptionProviderEdit) -> Result<Unit>,
     onDeleteSubscription: (Int) -> Unit,
     contentPadding: PaddingValues,
+    desktopSettings: DesktopAppSettings = DesktopAppSettings(),
+    onAddManualGroup: (String) -> Result<Unit> = { Result.success(Unit) },
+    onMoveGroup: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    onMoveServer: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
 ) {
-    var selectedGroupId by remember { mutableStateOf<String?>(null) }
     var addDialogVisible by remember { mutableStateOf(false) }
     var importDialogVisible by remember { mutableStateOf(false) }
     var addMode by remember { mutableStateOf(SkipiAddSourceMode.Server) }
-    var searchVisible by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
     var localMessage by remember { mutableStateOf("") }
     var pendingServerDeletion by remember { mutableStateOf<Int?>(null) }
     var pendingSubscriptionDeletion by remember { mutableStateOf<Int?>(null) }
     var editingServerId by remember { mutableStateOf<Int?>(null) }
     var editingSubscriptionProvider by remember { mutableStateOf<DesktopStoredSubscription?>(null) }
+    var editSubscriptionError by remember { mutableStateOf<String?>(null) }
+    var editingGroupDraft by remember { mutableStateOf<DesktopGroupDialogDraft?>(null) }
+    var editingGroupError by remember { mutableStateOf<String?>(null) }
     var editingServerModel by remember { mutableStateOf<Pair<Int, ProxyServer<*>>?>(null) }
 
     val decodedServers = remember(serverLibrary) {
         serverLibrary.servers.map { stored -> stored to stored.decode().getOrNull() }
     }
-    val selectedServer = decodedServers.firstOrNull { (stored, _) -> stored.id == serverLibrary.selectedServerId }?.second
-    val selectedTitle = selectedServer?.getInfo()?.remarks.orEmpty().ifBlank { "Выберите сервер" }
-    val groupCatalog = remember(serverLibrary, subscriptionLibrary, activeTrafficConfigId) {
+    val groupCatalog = remember(serverLibrary, subscriptionLibrary, activeTrafficConfigId, desktopSettings.enableAllProxyGroup) {
         DesktopProxyGroups.create(
             serverLibrary,
             subscriptionLibrary,
-            DesktopProxyGroupOptions(activeTrafficConfigId = activeTrafficConfigId),
+            DesktopProxyGroupOptions(
+                activeTrafficConfigId = activeTrafficConfigId,
+                enableAllProxyGroup = desktopSettings.enableAllProxyGroup,
+            ),
         )
     }
-    val activeGroup = groupCatalog.group(selectedGroupId) ?: groupCatalog.select().group
-    val activeGroupId = activeGroup?.id
-    val activeSubscription = activeGroup
-        ?.takeIf { group -> group.kind == DesktopProxyGroupKind.Subscription }
-        ?.id
-        ?.removePrefix("subscription:")
-        ?.toIntOrNull()
-        ?.let { subscriptionId -> subscriptionLibrary.subscriptions.firstOrNull { it.id == subscriptionId } }
-    val visibleServerIds = groupCatalog.filter(activeGroupId, searchQuery).serverIds.toSet()
-    val groupedServers = decodedServers.filter { (stored, _) -> stored.id in activeGroup?.serverIds.orEmpty() }
-    val visibleServers = decodedServers.filter { (stored, _) -> stored.id in visibleServerIds }
-    val visibleTestServers = visibleServers.mapNotNull { (stored, server) ->
-        server?.takeIf { candidate -> candidate.desktopTcpEndpointOrNull() != null }?.let { stored.id to it }
-    }
-
     LaunchedEffect(scheduledSubscriptionId, updatingSubscription) {
         val subscriptionId = scheduledSubscriptionId ?: return@LaunchedEffect
         val subscription = subscriptionLibrary.subscriptions.firstOrNull { it.id == subscriptionId }
-        if (subscription != null && !updatingSubscription) {
+        if (subscription != null && subscription.url.isNotBlank() && !updatingSubscription) {
             onSubscriptionUrlChange(subscription.url)
             onUpdateSubscription()
         }
         onScheduledSubscriptionConsumed()
-    }
-
-    val connectionPhase = when {
-        running -> ProxyConnectionPhase.Connected
-        connecting -> ProxyConnectionPhase.Connecting
-        else -> ProxyConnectionPhase.Disconnected
-    }
-
-    val proxyGroups = remember(groupCatalog.groups) {
-        groupCatalog.groups.map { group ->
-            ProxyGroupSummary(
-                id = group.id,
-                title = group.title,
-                serverCount = group.serverCount,
-                enabled = group.enabled,
-            )
-        }
-    }
-
-    val subscriptionSummary = remember(activeSubscription, groupedServers.size, updatingSubscription) {
-        activeSubscription?.let { sub ->
-            ProxySubscriptionSummary(
-                id = sub.id.toString(),
-                title = sub.name,
-                serverCount = groupedServers.size,
-                enabled = sub.enabled,
-                refreshing = updatingSubscription,
-                updateIntervalHours = sub.updateInterval,
-                usedBytes = sub.metadata.trafficUploadBytes.coerceAtLeast(0) + sub.metadata.trafficDownloadBytes.coerceAtLeast(0),
-                totalBytes = sub.metadata.trafficTotalBytes.takeIf { it >= 0 },
-                expireAtSeconds = sub.metadata.trafficExpireAtSeconds.takeIf { it > 0 },
-                description = sub.metadata.description.takeIf(String::isNotBlank),
-                announcement = sub.metadata.announce.takeIf(String::isNotBlank),
-                announcementUrl = sub.metadata.announceUrl.takeIf(String::isNotBlank),
-                supportUrl = sub.metadata.supportUrl?.takeIf { it.isNotBlank() }
-                    ?: sub.metadata.supportEmail.takeIf { it.isNotBlank() }?.let { "mailto:$it" },
-                siteUrl = sub.metadata.profileWebPageUrl.takeIf(String::isNotBlank),
-                lastUpdatedAtMillis = sub.metadata.lastUpdatedAtMillis.takeIf { it > 0 },
-            )
-        }
-    }
-
-    val proxyServers = remember(visibleServers, serverLibrary.selectedServerId, latencyByServerId, testingServerIds) {
-        visibleServers.mapNotNull { (stored, server) ->
-            server?.let { s ->
-                val latencyResult = latencyByServerId[stored.id]
-                val info = s.getInfo()
-                val (flag, title) = splitFlagAndTitle(info.remarks)
-                ProxyServerSummary(
-                    id = stored.id.toString(),
-                    title = title,
-                    address = info.address,
-                    protocol = info.protocol,
-                    transport = s.getTransportDisplay(),
-                    flag = flag,
-                    selected = stored.id == serverLibrary.selectedServerId,
-                    latencyMs = (latencyResult as? DesktopServerLatencyResult.Success)?.milliseconds?.toLong(),
-                    latencyTesting = stored.id in testingServerIds,
-                    latencyError = latencyResult is DesktopServerLatencyResult.Error || latencyResult is DesktopServerLatencyResult.Timeout,
-                    canTest = s.desktopTcpEndpointOrNull() != null,
-                )
-            }
-        }
     }
 
     val combinedStatusMessage = listOf(tunnelMessage, subscriptionMessage, serverMessage, localMessage)
@@ -207,155 +175,239 @@ internal fun DesktopProxyHome(
             msg.contains("rejected", ignoreCase = true)
     } ?: false
 
-    val homeUiState = ProxyHomeUiState(
-        tunnelSnapshot = TunnelSnapshot(
-            phase = when (connectionPhase) {
-                ProxyConnectionPhase.Connected -> TunnelPhase.Connected
-                ProxyConnectionPhase.Connecting -> TunnelPhase.Connecting
-                ProxyConnectionPhase.Disconnected -> TunnelPhase.Disconnected
-            },
-        ),
+    val selectedServer = decodedServers.firstOrNull { (stored, _) -> stored.id == serverLibrary.selectedServerId }?.second
+    val selectedTitle = selectedServer?.getInfo()?.remarks.orEmpty().ifBlank { "Выберите сервер" }
+    var sortMode by remember { mutableStateOf(ProxyHomeSortMode.Default) }
+
+    val unknownGroupName = stringResource(Res.string.common_unknown_group)
+    val presentationLabels = ProxyServerPresentationLabels(
+        unknownGroupName = unknownGroupName,
+        allGroupsName = stringResource(Res.string.proxy_editor_strategy_group_all_groups),
+        selectName = stringResource(Res.string.proxy_editor_strategy_group_select),
+        leastPingName = stringResource(Res.string.proxy_editor_strategy_group_least_ping),
+        leastLoadName = stringResource(Res.string.proxy_editor_strategy_group_least_load),
+        randomName = stringResource(Res.string.proxy_editor_strategy_group_random),
+        roundRobinName = stringResource(Res.string.proxy_editor_strategy_group_round_robin),
+        strategyGroupSummaryTemplate = stringResource(Res.string.proxy_server_list_strategy_group_summary),
+        strategyGroupSummaryWithFilterTemplate = stringResource(Res.string.proxy_server_list_strategy_group_summary_with_filter),
+        chainProxySummaryTemplate = stringResource(Res.string.proxy_server_list_chain_proxy_summary),
+    )
+    val presentationGroupNames = remember(subscriptionLibrary.subscriptions, unknownGroupName) {
+        subscriptionLibrary.subscriptions.associate { subscription ->
+            subscription.id to subscription.name.ifBlank { unknownGroupName }
+        }
+    }
+    val presentationFormatter = remember(presentationGroupNames, presentationLabels) {
+        ProxyServerPresentationFormatter(presentationGroupNames, presentationLabels)
+    }
+    val presentationNodes = remember(decodedServers) {
+        decodedServers.mapNotNull { (stored, server) ->
+            server?.let { current ->
+                ProxyServerPresentationNode(
+                    id = stored.id,
+                    groupId = stored.subscriptionId,
+                    server = current,
+                )
+            }
+        }
+    }
+
+    val proxyGroups = remember(groupCatalog.groups, subscriptionLibrary, updatingSubscription, subscriptionUrl, pingingSubscriptionIds) {
+        groupCatalog.groups.map { group ->
+            val subscription = group.id.removePrefix("subscription:").toIntOrNull()
+                ?.let { id -> subscriptionLibrary.subscriptions.firstOrNull { it.id == id } }
+            val isPersistedGroup = subscription != null
+            val mappedKind = when (group.kind) {
+                DesktopProxyGroupKind.All -> ProxyHomeGroupKind.All
+                DesktopProxyGroupKind.Manual -> ProxyHomeGroupKind.Manual
+                DesktopProxyGroupKind.Subscription -> ProxyHomeGroupKind.Subscription
+                DesktopProxyGroupKind.AutoBalancer -> ProxyHomeGroupKind.AutoBalancer
+            }
+            ProxyGroupSummary(
+                id = group.id,
+                title = group.title,
+                serverCount = group.serverCount,
+                enabled = group.enabled,
+                serverIds = group.serverIds.map(Int::toString).toSet(),
+                canEdit = isPersistedGroup,
+                canDelete = isPersistedGroup,
+                canMove = isPersistedGroup,
+                kind = mappedKind,
+                subscription = if (subscription != null && subscription.url.isNotBlank()) {
+                    ProxySubscriptionSummary(
+                        id = subscription.id.toString(),
+                        title = subscription.name,
+                        serverCount = group.serverCount,
+                        enabled = subscription.enabled,
+                        refreshing = updatingSubscription && subscriptionUrl == subscription.url,
+                        pinging = subscription.id in pingingSubscriptionIds,
+                        updateIntervalHours = subscription.updateInterval,
+                        usedBytes = desktopSubscriptionUsedBytes(
+                            subscription.metadata.trafficUploadBytes,
+                            subscription.metadata.trafficDownloadBytes,
+                        ),
+                        totalBytes = subscription.metadata.trafficTotalBytes.takeIf { it >= 0 },
+                        expireAtSeconds = subscription.metadata.trafficExpireAtSeconds.takeIf { it > 0 },
+                        description = subscription.metadata.description.takeIf(String::isNotBlank),
+                        announcement = subscription.metadata.announce.takeIf(String::isNotBlank),
+                        announcementUrl = subscription.metadata.announceUrl.takeIf(String::isNotBlank),
+                        supportUrl = subscription.metadata.supportUrl.takeIf(String::isNotBlank)
+                            ?: subscription.metadata.supportEmail.takeIf(String::isNotBlank)?.let { "mailto:$it" },
+                        siteUrl = subscription.metadata.profileWebPageUrl.takeIf(String::isNotBlank),
+                        lastUpdatedAtMillis = subscription.metadata.lastUpdatedAtMillis.takeIf { it > 0 },
+                    )
+                } else null,
+            )
+        }
+    }
+
+    val allProxyServers = remember(
+        decodedServers,
+        groupCatalog,
+        serverLibrary.selectedServerId,
+        latencyByServerId,
+        testingServerIds,
+        presentationFormatter,
+        presentationNodes,
+    ) {
+        decodedServers.mapNotNull { (stored, server) ->
+            server?.let { current ->
+                val info = current.getInfo()
+                val (flag, title) = splitFlagAndTitle(info.remarks)
+                val groupId = groupCatalog.groups.firstOrNull { group ->
+                    group.kind != DesktopProxyGroupKind.All && stored.id in group.serverIds
+                }?.id
+                val latencyResult = latencyByServerId[stored.id]
+                ProxyServerSummary(
+                    id = stored.id.toString(),
+                    title = title,
+                    address = presentationNodes.firstOrNull { node -> node.id == stored.id }
+                        ?.let { node -> presentationFormatter.displayOf(node, presentationNodes).summary }
+                        ?: info.address,
+                    protocol = info.protocol,
+                    transport = current.getTransportDisplay(),
+                    flag = flag,
+                    selected = stored.id == serverLibrary.selectedServerId,
+                    latencyMs = (latencyResult as? DesktopServerLatencyResult.Success)?.milliseconds,
+                    latencyTesting = stored.id in testingServerIds,
+                    latencyError = latencyResult is DesktopServerLatencyResult.Error || latencyResult is DesktopServerLatencyResult.Timeout,
+                    canTest = current.desktopTcpEndpointOrNull() != null,
+                    availableCopyFormats = buildSet {
+                        add(ProxyHomeCopyFormat.FullJson)
+                        if (current.getUrlOrNull() != null) add(ProxyHomeCopyFormat.Url)
+                    },
+                    groupId = groupId,
+                    searchText = listOf(info.remarks, info.address, info.protocol).joinToString(" "),
+                    sortKey = info.remarks.ifBlank { title },
+                )
+            }
+        }
+    }
+
+    val availableActions = buildSet {
+        addAll(
+            setOf(
+                ProxyHomeActionId.SelectServer,
+                ProxyHomeActionId.AddServer,
+                ProxyHomeActionId.AddSubscription,
+                ProxyHomeActionId.ImportServers,
+                ProxyHomeActionId.SetSort,
+            ),
+        )
+        if (canToggleTunnel) add(ProxyHomeActionId.ToggleTunnel)
+        if (allProxyServers.isNotEmpty()) {
+            add(ProxyHomeActionId.EditServer)
+            add(ProxyHomeActionId.DeleteServer)
+            add(ProxyHomeActionId.CopyServer)
+        }
+        if (allProxyServers.any(ProxyServerSummary::canTest)) {
+            add(ProxyHomeActionId.TestServer)
+            add(ProxyHomeActionId.TestVisibleServers)
+            add(ProxyHomeActionId.TestGroup)
+        }
+        val pingableSubscription = subscriptionLibrary.subscriptions.any { subscription ->
+            subscription.url.isNotBlank() &&
+            groupCatalog.group(DesktopProxyGroupIds.subscription(subscription.id))
+                ?.serverIds
+                ?.any { serverId ->
+                    allProxyServers.firstOrNull { it.id == serverId.toString() }?.canTest == true
+                } == true
+        }
+        if (pingableSubscription && pingingSubscriptionIds.isEmpty()) add(ProxyHomeActionId.PingSubscription)
+        val hasRealSubscriptions = subscriptionLibrary.subscriptions.any { it.url.isNotBlank() }
+        if (hasRealSubscriptions && !updatingSubscription) {
+            add(ProxyHomeActionId.RefreshSubscription)
+        }
+        if (subscriptionLibrary.subscriptions.isNotEmpty() && !updatingSubscription) {
+            add(ProxyHomeActionId.ToggleSubscriptionEnabled)
+        }
+        if (subscriptionLibrary.subscriptions.isNotEmpty()) {
+            add(ProxyHomeActionId.EditSubscription)
+        }
+        add(ProxyHomeActionId.EditGroup)
+        if (subscriptionLibrary.subscriptions.isNotEmpty()) {
+            add(ProxyHomeActionId.DeleteGroup)
+        }
+        if (subscriptionLibrary.subscriptions.size > 1) {
+            add(ProxyHomeActionId.MoveGroup)
+        }
+        if (sortMode == ProxyHomeSortMode.Default && allProxyServers.size > 1) {
+            add(ProxyHomeActionId.MoveServer)
+        }
+        if (Desktop.isDesktopSupported()) add(ProxyHomeActionId.OpenExternalLink)
+    }
+
+    val homeInput = ProxyHomeInput(
+        tunnelSnapshot = desktopProxyHomeTunnelSnapshot(running = running, connecting = connecting),
+        selectedServerId = serverLibrary.selectedServerId?.toString(),
         selectedServerTitle = selectedTitle,
         activeProfileName = activeProfileName,
         canToggleTunnel = canToggleTunnel,
+        tunnelBusy = connecting,
         groups = proxyGroups,
-        selectedGroupId = activeGroupId,
-        subscription = subscriptionSummary,
-        servers = proxyServers,
-        searchQuery = searchQuery,
-        isSearchVisible = searchVisible,
+        servers = allProxyServers,
         isTestingLatency = testingServerIds.isNotEmpty(),
         statusMessage = combinedStatusMessage,
         isStatusError = isStatusError,
+        sortMode = sortMode,
+        searchEnabled = desktopSettings.showServerSearch,
+        subscriptionSwipeEnabled = desktopSettings.enableSubscriptionSwipe,
+        displayOptions = ProxyHomeDisplayOptions(
+            connectionMode = if (desktopSettings.compactHome) ProxyHomeConnectionMode.Compact else ProxyHomeConnectionMode.Classic,
+            pinConnectionPanel = desktopSettings.pinConnectionPanelOnHome,
+            classicFloatingPowerButton = desktopSettings.classicShowFloatingPowerButton,
+            requestedColumns = desktopSettings.proxyServerListColumns,
+            showAllGroup = desktopSettings.enableAllProxyGroup,
+            showTunnelMemory = desktopSettings.showTunnelMemory,
+        ),
+        availableActions = availableActions,
+        availableImportSources = setOf(
+            ProxyHomeImportSource.ManualInput,
+            ProxyHomeImportSource.Clipboard,
+            ProxyHomeImportSource.File,
+        ),
+        availableCopyFormats = setOf(ProxyHomeCopyFormat.Url, ProxyHomeCopyFormat.FullJson),
+        availableServerKinds = setOf(ProxyHomeServerKind.Custom),
+        availableServerTools = emptySet(),
     )
-    val homeStore = remember { ProxyHomeStore() }
-    homeStore.updateState { homeUiState }
 
-    val capabilities = remember(
-        serverLibrary,
-        visibleServers,
-        visibleTestServers,
-        groupedServers,
-        activeSubscription,
-        searchQuery,
-        searchVisible,
-        canToggleTunnel,
-        confirmDeletion,
-    ) {
-        ProxyHomeCapabilities(
-            onToggleTunnel = onToggleTunnel,
-            onSelectServer = { serverIdStr ->
-                serverIdStr.toIntOrNull()?.let(onSelectServer)
+    val scope = rememberCoroutineScope()
+    val effectContextState = remember { mutableStateOf<DesktopProxyHomeEffectContext?>(null) }
+    val homeStore = remember {
+        ProxyHomeStore(
+            initialInput = homeInput,
+            initialPresentation = ProxyHomePresentation(selectedGroupId = groupCatalog.defaultGroupId),
+            scope = scope,
+            effectHandler = ProxyHomeEffectHandler { effect ->
+                effectContextState.value?.handle(effect)
+                    ?: Result.failure(IllegalStateException("Главный экран Desktop ещё не готов к этому действию."))
             },
-            onTestServerLatency = { serverIdStr ->
-                serverIdStr.toIntOrNull()?.let { id ->
-                    visibleServers.firstOrNull { it.first.id == id }?.second?.let { server ->
-                        onMeasureServers(listOf(id to server))
-                    }
-                }
-            },
-            onTestGroupLatency = { _ ->
-                onMeasureServers(
-                    groupedServers.mapNotNull { (stored, server) -> server?.let { stored.id to it } },
-                )
-            },
-            onTestAllLatency = {
-                if (visibleTestServers.isNotEmpty()) {
-                    onMeasureServers(visibleTestServers)
-                } else {
-                    localMessage = "В текущей группе нет серверов для проверки."
-                }
-            },
-            onAddServer = {
-                editingServerId = null
-                onServerLinkChange("")
-                addMode = SkipiAddSourceMode.Server
-                addDialogVisible = true
-            },
-            onAddSubscription = {
-                editingServerId = null
-                onSubscriptionUrlChange("")
-                addMode = SkipiAddSourceMode.Subscription
-                addDialogVisible = true
-            },
-            onImport = { importDialogVisible = true },
-            onEditServer = { serverIdStr ->
-                serverIdStr.toIntOrNull()?.let { id ->
-                    visibleServers.firstOrNull { it.first.id == id }?.let { (stored, server) ->
-                        if (server != null) {
-                            editingServerModel = stored.id to server
-                        }
-                    }
-                }
-            },
-            onDeleteServer = { serverIdStr ->
-                serverIdStr.toIntOrNull()?.let { id ->
-                    if (confirmDeletion) pendingServerDeletion = id else onDeleteServer(id)
-                }
-            },
-            onCopyServerLink = { serverIdStr ->
-                serverIdStr.toIntOrNull()?.let { id ->
-                    visibleServers.firstOrNull { it.first.id == id }?.second?.getCopyTextOrNull()?.let { copyText ->
-                        runCatching {
-                            Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(copyText), null)
-                        }.onSuccess {
-                            localMessage = "Ссылка сервера скопирована."
-                        }.onFailure { error ->
-                            localMessage = "Не удалось скопировать ссылку: ${error.message.orEmpty()}"
-                        }
-                    }
-                }
-            },
-            onSelectGroup = { groupId -> selectedGroupId = groupId },
-            onRefreshSubscription = { _ ->
-                activeSubscription?.let { subscription ->
-                    onSubscriptionUrlChange(subscription.url)
-                    onUpdateSubscription()
-                }
-            },
-            onEditSubscription = { _ ->
-                editingSubscriptionProvider = activeSubscription
-            },
-            onToggleSubscriptionEnabled = { _ ->
-                activeSubscription?.let { subscription ->
-                    onUpdateSubscriptionProvider(
-                        subscription.id,
-                        subscription.toProviderEdit().copy(enabled = !subscription.enabled),
-                    ).onFailure { error ->
-                        localMessage = error.message.orEmpty().ifBlank { "Не удалось изменить состояние подписки." }
-                    }
-                }
-            },
-            onOpenAnnouncement = { url: String ->
-                openExternalLink(url).fold(
-                    onSuccess = { localMessage = "Открыто объявление подписки." },
-                    onFailure = { error -> localMessage = "Не удалось открыть объявление: ${error.message.orEmpty()}" },
-                )
-            },
-            onOpenSupport = { url: String ->
-                openExternalLink(url).fold(
-                    onSuccess = { localMessage = "Открыта поддержка подписки." },
-                    onFailure = { error -> localMessage = "Не удалось открыть поддержку: ${error.message.orEmpty()}" },
-                )
-            },
-            onOpenSite = { url: String ->
-                openExternalLink(url).fold(
-                    onSuccess = { localMessage = "Открыт сайт подписки." },
-                    onFailure = { error -> localMessage = "Не удалось открыть сайт: ${error.message.orEmpty()}" },
-                )
-            },
-            onSearchQueryChange = { searchQuery = it },
-            onToggleSearchVisible = { searchVisible = !searchVisible },
         )
     }
-
-    ProxyHomeScreen(
-        store = homeStore,
-        capabilities = capabilities,
-        contentPadding = contentPadding,
-    )
-
-    fun importFromClipboard() {
+    LaunchedEffect(homeInput) {
+        homeStore.updateInput(homeInput)
+    }
+    val importFromClipboard: () -> Unit = {
         readDesktopClipboardText().onSuccess { text ->
             val install = text.trim().toDesktopSubscriptionInstallUriOrNull()
             if (install != null) {
@@ -365,9 +417,7 @@ internal fun DesktopProxyHome(
                         onUpdateSubscription()
                         localMessage = "Подписка «${install.name}» добавлена."
                     },
-                    onFailure = { error ->
-                        localMessage = error.message ?: "Не удалось сохранить подписку."
-                    },
+                    onFailure = { error -> localMessage = error.message ?: "Не удалось сохранить подписку." },
                 )
             } else {
                 onImport(DesktopProxyImportInput.Clipboard(text)).fold(
@@ -375,12 +425,9 @@ internal fun DesktopProxyHome(
                     onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
                 )
             }
-        }.onFailure { error ->
-            localMessage = error.message ?: "Не удалось прочитать буфер обмена."
-        }
+        }.onFailure { error -> localMessage = error.message ?: "Не удалось прочитать буфер обмена." }
     }
-
-    fun importFromFile() {
+    val importFromFile: () -> Unit = {
         chooseDesktopImportFile().onSuccess { file ->
             if (file != null) {
                 onImport(DesktopProxyImportInput.File(file.name, file.content)).fold(
@@ -388,10 +435,71 @@ internal fun DesktopProxyHome(
                     onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
                 )
             }
-        }.onFailure { error ->
-            localMessage = error.message ?: "Не удалось прочитать файл."
-        }
+        }.onFailure { error -> localMessage = error.message ?: "Не удалось прочитать файл." }
     }
+
+    val effectContext = DesktopProxyHomeEffectContext(
+        decodedServers = decodedServers,
+        groupCatalog = groupCatalog,
+        subscriptions = subscriptionLibrary.subscriptions,
+        pingingSubscriptionIds = pingingSubscriptionIds,
+        updatingSubscription = updatingSubscription,
+        confirmDeletion = confirmDeletion,
+        onToggleTunnel = onToggleTunnel,
+        onSelectServer = onSelectServer,
+        onDeleteServer = onDeleteServer,
+        onMeasureServers = onMeasureServers,
+        onPingSubscription = onPingSubscriptionServers,
+        onSubscriptionUrlChange = onSubscriptionUrlChange,
+        onUpdateSubscription = onUpdateSubscription,
+        onUpdateSubscriptionProvider = onUpdateSubscriptionProvider,
+        onOpenAdd = { mode ->
+            editingServerId = null
+            if (mode == SkipiAddSourceMode.Server) onServerLinkChange("") else onSubscriptionUrlChange("")
+            addMode = mode
+            addDialogVisible = true
+        },
+        onOpenImportDialog = { importDialogVisible = true },
+        onImportFromClipboard = importFromClipboard,
+        onImportFromFile = importFromFile,
+        onEditServer = { id ->
+            decodedServers.firstOrNull { it.first.id == id }?.let { (stored, server) ->
+                if (server != null) editingServerModel = stored.id to server
+            }
+        },
+        onDeleteServerConfirm = { id -> pendingServerDeletion = id },
+        onEditSubscription = { subscription ->
+            editSubscriptionError = null
+            editingSubscriptionProvider = subscription
+        },
+        onSetSortMode = { sortMode = it },
+        onSetLocalMessage = { localMessage = it },
+        sortMode = sortMode,
+        onOpenEditGroup = { groupId ->
+            editingGroupError = null
+            if (groupId == null) {
+                editingGroupDraft = DesktopGroupDialogDraft(subscriptionId = null, name = "")
+            } else {
+                val subId = groupId.removePrefix("subscription:").toIntOrNull()
+                val sub = subId?.let { id -> subscriptionLibrary.subscriptions.firstOrNull { it.id == id } }
+                if (sub != null) {
+                    editingGroupDraft = DesktopGroupDialogDraft(subscriptionId = sub.id, name = sub.name)
+                }
+            }
+        },
+        onDeleteSubscriptionConfirm = { id -> pendingSubscriptionDeletion = id },
+        onDeleteSubscription = onDeleteSubscription,
+        onMoveGroup = onMoveGroup,
+        onMoveServer = onMoveServer,
+    )
+    SideEffect {
+        effectContextState.value = effectContext
+    }
+
+    ProxyHomeScreen(
+        store = homeStore,
+        contentPadding = contentPadding,
+    )
 
     if (addDialogVisible) {
         SkipiAddSourceDialog(
@@ -426,24 +534,23 @@ internal fun DesktopProxyHome(
                     )
                 }
             },
-            onClipboardImport = ::importFromClipboard,
-            onFileImport = ::importFromFile,
+            onClipboardImport = importFromClipboard,
+            onFileImport = importFromFile,
             onDismiss = { addDialogVisible = false },
         )
     }
 
     var importText by remember { mutableStateOf("") }
-    var replaceExisting by remember { mutableStateOf(false) }
-
     if (importDialogVisible) {
         SkipiImportDialog(
             show = importDialogVisible,
             importText = importText,
-            replaceExisting = replaceExisting,
+            replaceExisting = false,
+            showReplaceConfiguration = false,
             onImportTextChange = { importText = it },
-            onReplaceExistingChange = { replaceExisting = it },
-            onClipboardImport = ::importFromClipboard,
-            onFileImport = ::importFromFile,
+            onReplaceExistingChange = {},
+            onClipboardImport = importFromClipboard,
+            onFileImport = importFromFile,
             onConfirmImport = {
                 onImport(DesktopProxyImportInput.Text(importText)).fold(
                     onSuccess = { summary ->
@@ -463,6 +570,8 @@ internal fun DesktopProxyHome(
     editingSubscriptionProvider?.let { subscription ->
         SkipiSubscriptionEditDialog(
             show = true,
+            errorMessage = editSubscriptionError,
+            onDraftChanged = { editSubscriptionError = null },
             initialData = SkipiSubscriptionEditData(
                 name = subscription.name,
                 url = subscription.url,
@@ -474,7 +583,8 @@ internal fun DesktopProxyHome(
                 enabled = subscription.enabled,
             ),
             onSave = { draft ->
-                onUpdateSubscriptionProvider(
+                editSubscriptionError = null
+                val result = onUpdateSubscriptionProvider(
                     subscription.id,
                     subscription.toProviderEdit().copy(
                         name = draft.name,
@@ -487,13 +597,26 @@ internal fun DesktopProxyHome(
                         enabled = draft.enabled,
                     ),
                 )
-                editingSubscriptionProvider = null
+                result.fold(
+                    onSuccess = {
+                        editSubscriptionError = null
+                        editingSubscriptionProvider = null
+                    },
+                    onFailure = { failure ->
+                        editSubscriptionError = failure.message?.takeIf(String::isNotBlank)
+                            ?: "Не удалось сохранить параметры подписки."
+                    },
+                )
             },
             onDelete = {
+                editSubscriptionError = null
                 editingSubscriptionProvider = null
                 pendingSubscriptionDeletion = subscription.id
             },
-            onDismiss = { editingSubscriptionProvider = null },
+            onDismiss = {
+                editSubscriptionError = null
+                editingSubscriptionProvider = null
+            },
         )
     }
 
@@ -532,7 +655,105 @@ internal fun DesktopProxyHome(
             },
         )
     }
+
+    editingGroupDraft?.let { draft ->
+        var nameText by remember(draft) { mutableStateOf(draft.name) }
+        val isNew = draft.subscriptionId == null
+        val titleText = if (isNew) "Новая группа" else "Редактировать группу"
+        val confirmText = if (isNew) stringResource(Res.string.common_add) else stringResource(Res.string.common_save)
+        AlertDialog(
+            onDismissRequest = {
+                editingGroupDraft = null
+                editingGroupError = null
+            },
+            title = {
+                Text(titleText)
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = nameText,
+                        onValueChange = {
+                            nameText = it
+                            editingGroupError = null
+                        },
+                        label = { Text(stringResource(Res.string.configs_name)) },
+                        singleLine = true,
+                        isError = editingGroupError != null,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    editingGroupError?.let { err ->
+                        Text(
+                            text = err,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val trimmed = nameText.trim()
+                        if (trimmed.isBlank()) {
+                            editingGroupError = "Имя группы не может быть пустым."
+                            return@TextButton
+                        }
+                        if (isNew) {
+                            onAddManualGroup(trimmed).fold(
+                                onSuccess = {
+                                    editingGroupDraft = null
+                                    editingGroupError = null
+                                },
+                                onFailure = { err ->
+                                    editingGroupError = err.message ?: "Не удалось создать группу."
+                                },
+                            )
+                        } else {
+                            val sub = subscriptionLibrary.subscriptions.firstOrNull { it.id == draft.subscriptionId }
+                            if (sub != null) {
+                                onUpdateSubscriptionProvider(
+                                    sub.id,
+                                    sub.toProviderEdit().copy(name = trimmed),
+                                ).fold(
+                                    onSuccess = {
+                                        editingGroupDraft = null
+                                        editingGroupError = null
+                                    },
+                                    onFailure = { err ->
+                                        editingGroupError = err.message ?: "Не удалось сохранить изменения группы."
+                                    },
+                                )
+                            } else {
+                                editingGroupError = "Группа не найдена."
+                            }
+                        }
+                    },
+                    enabled = nameText.isNotBlank(),
+                ) {
+                    Text(confirmText)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        editingGroupDraft = null
+                        editingGroupError = null
+                    },
+                ) {
+                    Text(stringResource(Res.string.common_cancel))
+                }
+            },
+        )
+    }
 }
+
+internal data class DesktopGroupDialogDraft(
+    val subscriptionId: Int?,
+    val name: String,
+)
 
 private data class DesktopImportFile(val name: String, val content: String)
 
@@ -571,6 +792,240 @@ private fun splitFlagAndTitle(value: String): Pair<String?, String> {
 private fun openExternalLink(value: String): Result<Unit> = runCatching {
     check(Desktop.isDesktopSupported()) { "Открытие ссылки не поддерживается системой." }
     Desktop.getDesktop().browse(requireSafeDesktopExternalUri(value))
+}
+
+internal fun desktopProxyHomeTunnelSnapshot(running: Boolean, connecting: Boolean): TunnelSnapshot = TunnelSnapshot(
+    phase = when {
+        running -> TunnelPhase.Connected
+        connecting -> TunnelPhase.Connecting
+        else -> TunnelPhase.Disconnected
+    },
+)
+
+internal fun desktopSubscriptionUsedBytes(uploadBytes: Long, downloadBytes: Long): Long {
+    val upload = uploadBytes.coerceAtLeast(0)
+    val download = downloadBytes.coerceAtLeast(0)
+    return if (Long.MAX_VALUE - upload < download) Long.MAX_VALUE else upload + download
+}
+
+internal class DesktopProxyHomeEffectContext(
+    val decodedServers: List<Pair<DesktopStoredProxyServer, ProxyServer<*>?>> = emptyList(),
+    val groupCatalog: DesktopProxyGroupCatalog = DesktopProxyGroups.create(
+        DesktopServerLibrary(),
+        DesktopSubscriptionLibrary(),
+    ),
+    val subscriptions: List<DesktopStoredSubscription> = emptyList(),
+    val pingingSubscriptionIds: Set<Int> = emptySet(),
+    val updatingSubscription: Boolean = false,
+    val confirmDeletion: Boolean = false,
+    val sortMode: ProxyHomeSortMode = ProxyHomeSortMode.Default,
+    val onToggleTunnel: () -> Unit = {},
+    val onSelectServer: (Int) -> Unit = {},
+    val onDeleteServer: (Int) -> Unit = {},
+    val onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit = {},
+    val onPingSubscription: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
+    val onSubscriptionUrlChange: (String) -> Unit = {},
+    val onUpdateSubscription: () -> Unit = {},
+    val onUpdateSubscriptionProvider: (Int, DesktopSubscriptionProviderEdit) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    val onOpenAdd: (SkipiAddSourceMode) -> Unit = {},
+    val onOpenImportDialog: () -> Unit = {},
+    val onImportFromClipboard: () -> Unit = {},
+    val onImportFromFile: () -> Unit = {},
+    val onEditServer: (Int) -> Unit = {},
+    val onDeleteServerConfirm: (Int) -> Unit = {},
+    val onEditSubscription: (DesktopStoredSubscription) -> Unit = {},
+    val onSetSortMode: (ProxyHomeSortMode) -> Unit = {},
+    val onSetLocalMessage: (String) -> Unit = {},
+    val onOpenEditGroup: (String?) -> Unit = {},
+    val onDeleteSubscriptionConfirm: (Int) -> Unit = {},
+    val onDeleteSubscription: (Int) -> Unit = {},
+    val onMoveGroup: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    val onMoveServer: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+) {
+    fun handle(effect: ProxyHomeEffect): Result<Unit> = when (effect) {
+        ProxyHomeEffect.ToggleTunnel -> invoke(onToggleTunnel)
+        is ProxyHomeEffect.SelectServer -> effect.serverId.toIntOrNull()?.let { id ->
+            invoke { onSelectServer(id) }
+        } ?: unsupported("Некорректный идентификатор сервера.")
+        is ProxyHomeEffect.TestServer -> testServers(listOf(effect.serverId))
+        is ProxyHomeEffect.TestVisibleServers -> testServers(effect.serverIds)
+        is ProxyHomeEffect.TestGroup -> groupCatalog.group(effect.groupId)?.let { group ->
+            testServers(group.serverIds.map(Int::toString))
+        } ?: unsupported("Группа серверов не найдена.")
+        is ProxyHomeEffect.PingSubscription -> effect.id.toIntOrNull()?.let { id ->
+            if (pingingSubscriptionIds.isNotEmpty()) {
+                unsupported("Дождитесь завершения текущей проверки подписки.")
+            } else {
+                val groupId = DesktopProxyGroupIds.subscription(id)
+                groupCatalog.group(groupId)?.let { group -> pingSubscription(id, group.serverIds.map(Int::toString)) }
+                    ?: unsupported("Группа подписки не найдена.")
+            }
+        } ?: unsupported("Некорректный идентификатор подписки.")
+        ProxyHomeEffect.CancelLatencyTests -> unsupported("Отмена TCP-проверок не поддерживается в Desktop.")
+        is ProxyHomeEffect.RefreshSubscription -> findSubscription(effect.id)?.let { subscription ->
+            if (subscription.url.isBlank()) unsupported("Ручные группы не имеют URL для обновления.")
+            else if (updatingSubscription) unsupported("Дождитесь завершения текущего обновления подписки.")
+            else invoke {
+                onSubscriptionUrlChange(subscription.url)
+                onUpdateSubscription()
+            }
+        } ?: unsupported("Подписка не найдена.")
+        ProxyHomeEffect.RefreshAllSubscriptions -> unsupported("Массовое обновление подписок не поддерживается в Desktop.")
+        is ProxyHomeEffect.ToggleSubscriptionEnabled -> findSubscription(effect.id)?.let { subscription ->
+            if (updatingSubscription) unsupported("Дождитесь завершения текущего обновления подписки.") else {
+                onUpdateSubscriptionProvider(
+                    subscription.id,
+                    subscription.toProviderEdit().copy(enabled = !subscription.enabled),
+                )
+            }
+        } ?: unsupported("Подписка не найдена.")
+        is ProxyHomeEffect.AddServer -> invoke { onOpenAdd(SkipiAddSourceMode.Server) }
+        ProxyHomeEffect.AddSubscription -> invoke { onOpenAdd(SkipiAddSourceMode.Subscription) }
+        is ProxyHomeEffect.ImportServers -> when (effect.source) {
+            ProxyHomeImportSource.ManualInput -> invoke(onOpenImportDialog)
+            ProxyHomeImportSource.QrCode -> unsupported("Импорт по QR-коду не поддерживается в Desktop.")
+            ProxyHomeImportSource.Clipboard -> invoke(onImportFromClipboard)
+            ProxyHomeImportSource.File -> invoke(onImportFromFile)
+        }
+        is ProxyHomeEffect.EditServer -> effect.id.toIntOrNull()?.let { id ->
+            if (decodedServers.any { it.first.id == id && it.second != null }) invoke { onEditServer(id) }
+            else unsupported("Сервер не найден.")
+        } ?: unsupported("Некорректный идентификатор сервера.")
+        is ProxyHomeEffect.DeleteServer -> effect.id.toIntOrNull()?.let { id ->
+            if (decodedServers.any { it.first.id == id }) {
+                invoke { if (confirmDeletion) onDeleteServerConfirm(id) else onDeleteServer(id) }
+            } else unsupported("Сервер не найден.")
+        } ?: unsupported("Некорректный идентификатор сервера.")
+        is ProxyHomeEffect.ShowServerQr -> unsupported("Показ QR-кода сервера не поддерживается в Desktop.")
+        is ProxyHomeEffect.CopyServer -> effect.id.toIntOrNull()?.let { id ->
+            copyServer(id, effect.format)
+        } ?: unsupported("Некорректный идентификатор сервера.")
+        is ProxyHomeEffect.EditSubscription -> findSubscription(effect.id)?.let { subscription ->
+            invoke { onEditSubscription(subscription) }
+        } ?: unsupported("Подписка не найдена.")
+        is ProxyHomeEffect.EditGroup -> {
+            val groupId = effect.groupId
+            if (groupId == null) {
+                invoke { onOpenEditGroup(null) }
+            } else {
+                val subscriptionId = groupId.removePrefix("subscription:").toIntOrNull()
+                if (subscriptionId == null) {
+                    unsupported("Встроенные группы нельзя редактировать.")
+                } else if (subscriptions.none { it.id == subscriptionId }) {
+                    unsupported("Группа не найдена.")
+                } else {
+                    invoke { onOpenEditGroup(groupId) }
+                }
+            }
+        }
+        is ProxyHomeEffect.DeleteGroup -> {
+            val subscriptionId = effect.groupId.removePrefix("subscription:").toIntOrNull()
+            if (subscriptionId == null) {
+                unsupported("Встроенные группы нельзя удалять.")
+            } else if (subscriptions.none { it.id == subscriptionId }) {
+                unsupported("Группа не найдена.")
+            } else {
+                invoke {
+                    if (confirmDeletion) onDeleteSubscriptionConfirm(subscriptionId)
+                    else onDeleteSubscription(subscriptionId)
+                }
+            }
+        }
+        is ProxyHomeEffect.MoveGroup -> {
+            val subscriptionId = effect.groupId.removePrefix("subscription:").toIntOrNull()
+            if (subscriptionId == null) {
+                unsupported("Встроенные группы нельзя перемещать.")
+            } else {
+                val index = subscriptions.indexOfFirst { it.id == subscriptionId }
+                val targetIndex = index + effect.offset
+                if (index == -1 || targetIndex !in subscriptions.indices || effect.offset == 0) {
+                    unsupported("Невозможно переместить группу за пределы списка.")
+                } else {
+                    onMoveGroup(subscriptionId, effect.offset)
+                }
+            }
+        }
+        is ProxyHomeEffect.MoveServer -> {
+            if (sortMode != ProxyHomeSortMode.Default) {
+                unsupported("Изменение порядка серверов возможно только в стандартной сортировке.")
+            } else {
+                effect.serverId.toIntOrNull()?.let { id ->
+                    val stored = decodedServers.firstOrNull { it.first.id == id }?.first
+                    if (stored == null) {
+                        unsupported("Сервер не найден.")
+                    } else {
+                        val groupServers = decodedServers.map { it.first }.filter { it.subscriptionId == stored.subscriptionId }
+                        val fromIndex = groupServers.indexOfFirst { it.id == id }
+                        val toIndex = fromIndex + effect.offset
+                        if (fromIndex == -1 || toIndex !in groupServers.indices || effect.offset == 0) {
+                            unsupported("Невозможно переместить сервер за пределы группы.")
+                        } else {
+                            onMoveServer(id, effect.offset)
+                        }
+                    }
+                } ?: unsupported("Некорректный идентификатор сервера.")
+            }
+        }
+        is ProxyHomeEffect.OpenStrategyMemberPicker -> unsupported("Выбор участника стратегии не поддерживается в Desktop.")
+        is ProxyHomeEffect.SelectStrategyMember -> unsupported("Выбор участника стратегии не поддерживается в Desktop.")
+        is ProxyHomeEffect.SetSort -> invoke { onSetSortMode(effect.mode) }
+        is ProxyHomeEffect.RunServerTool -> runServerTool(effect.tool)
+        is ProxyHomeEffect.OpenExternalLink -> openExternalLink(effect.url)
+    }
+
+    private fun testServers(serverIds: Iterable<String>): Result<Unit> {
+        val targets = subscriptionTestTargets(serverIds)
+        if (targets.isEmpty()) {
+            onSetLocalMessage("В текущей группе нет серверов для TCP-проверки.")
+            return Result.success(Unit)
+        }
+        return invoke { onMeasureServers(targets) }
+    }
+
+    private fun pingSubscription(subscriptionId: Int, serverIds: Iterable<String>): Result<Unit> {
+        val targets = subscriptionTestTargets(serverIds)
+        if (targets.isEmpty()) {
+            onSetLocalMessage("В текущей группе нет серверов для TCP-проверки.")
+            return Result.success(Unit)
+        }
+        return invoke { onPingSubscription(subscriptionId, targets) }
+    }
+
+    private fun subscriptionTestTargets(serverIds: Iterable<String>): List<Pair<Int, ProxyServer<*>>> =
+        serverIds.distinct().mapNotNull { id ->
+            val serverId = id.toIntOrNull() ?: return@mapNotNull null
+            val server = decodedServers.firstOrNull { it.first.id == serverId }?.second
+            server?.takeIf { it.desktopTcpEndpointOrNull() != null }?.let { serverId to it }
+        }
+
+    private fun copyServer(serverId: Int, format: ProxyHomeCopyFormat): Result<Unit> {
+        val server = decodedServers.firstOrNull { it.first.id == serverId }?.second
+            ?: return unsupported("Сервер не найден.")
+        val copyText = when (format) {
+            ProxyHomeCopyFormat.Url -> server.getUrlOrNull()
+            ProxyHomeCopyFormat.FullJson -> server.encodePersistedProxyServer()
+            ProxyHomeCopyFormat.QrCode -> null
+        } ?: return unsupported("Для этого сервера нельзя сформировать выбранный формат.")
+        return runCatching {
+            Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(copyText), null)
+            onSetLocalMessage("Данные сервера скопированы.")
+        }
+    }
+
+    private fun findSubscription(id: String): DesktopStoredSubscription? =
+        id.toIntOrNull()?.let { subscriptionId -> subscriptions.firstOrNull { it.id == subscriptionId } }
+
+    private fun runServerTool(tool: ProxyHomeServerTool): Result<Unit> = when (tool) {
+        ProxyHomeServerTool.UpdateSubscriptions -> unsupported("Общее обновление подписок не поддерживается в Desktop.")
+        ProxyHomeServerTool.RestartService,
+        ProxyHomeServerTool.DeleteDuplicateServers,
+        ProxyHomeServerTool.DeleteInvalidServers,
+        ProxyHomeServerTool.DeleteAllServers -> unsupported("Эта операция не поддерживается в Desktop.")
+    }
+
+    private fun invoke(action: () -> Unit): Result<Unit> = runCatching(action)
+
+    private fun unsupported(message: String): Result<Unit> = Result.failure(IllegalStateException(message))
 }
 
 /**

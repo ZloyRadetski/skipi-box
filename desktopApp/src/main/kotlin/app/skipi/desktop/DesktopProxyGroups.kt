@@ -36,6 +36,7 @@ object DesktopProxyGroups {
         serverLibrary: DesktopServerLibrary,
         subscriptionLibrary: DesktopSubscriptionLibrary,
         options: DesktopProxyGroupOptions = DesktopProxyGroupOptions(),
+        enableAllProxyGroup: Boolean = options.enableAllProxyGroup,
     ): DesktopProxyGroupCatalog = createProxyGroupCatalog(
         servers = serverLibrary.servers
             .distinctBy(DesktopStoredProxyServer::id)
@@ -54,6 +55,40 @@ object DesktopProxyGroups {
                 enabled = stored.enabled,
             )
         },
-        options = options,
+        options = options.copy(enableAllProxyGroup = enableAllProxyGroup),
     )
+}
+
+internal fun <T> List<T>.reorderItem(fromIndex: Int, offset: Int): List<T>? {
+    if (fromIndex !in indices) return null
+    val toIndex = fromIndex + offset
+    if (toIndex !in indices || fromIndex == toIndex) return null
+    val mutable = toMutableList()
+    val item = mutable.removeAt(fromIndex)
+    mutable.add(toIndex, item)
+    return mutable
+}
+
+internal fun reorderServerInLibrary(
+    servers: List<DesktopStoredProxyServer>,
+    serverId: Int,
+    offset: Int,
+): List<DesktopStoredProxyServer>? {
+    val target = servers.firstOrNull { it.id == serverId } ?: return null
+    val groupServers = servers.filter { it.subscriptionId == target.subscriptionId }
+    val fromPeerIndex = groupServers.indexOfFirst { it.id == serverId }
+    if (fromPeerIndex == -1) return null
+    val toPeerIndex = fromPeerIndex + offset
+    if (toPeerIndex !in groupServers.indices || fromPeerIndex == toPeerIndex) return null
+
+    val targetPeer = groupServers[toPeerIndex]
+    val fromGlobalIndex = servers.indexOfFirst { it.id == serverId }
+    val toGlobalIndex = servers.indexOfFirst { it.id == targetPeer.id }
+    if (fromGlobalIndex == -1 || toGlobalIndex == -1) return null
+
+    val result = servers.toMutableList()
+    val temp = result[fromGlobalIndex]
+    result[fromGlobalIndex] = result[toGlobalIndex]
+    result[toGlobalIndex] = temp
+    return result
 }

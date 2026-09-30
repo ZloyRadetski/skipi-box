@@ -127,10 +127,10 @@ internal object DesktopSubscriptionRefreshCommitter {
         }
         when (decideEmbeddedProfileRefresh(
             baseline = baselineProfile?.let {
-                EmbeddedProfileRefreshSnapshot(it.sourceUrl, it.updateLocked)
+                EmbeddedProfileRefreshSnapshot(it)
             },
             latest = latestProfile?.let {
-                EmbeddedProfileRefreshSnapshot(it.sourceUrl, it.updateLocked)
+                EmbeddedProfileRefreshSnapshot(it)
             },
         )) {
             EmbeddedProfileRefreshDecision.CONFLICT -> return DesktopSubscriptionRefreshProfileCommit.Conflict

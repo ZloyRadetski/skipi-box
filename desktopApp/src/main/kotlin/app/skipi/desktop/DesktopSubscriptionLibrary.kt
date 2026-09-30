@@ -76,6 +76,11 @@ object DesktopSubscriptionLibraries {
         nowMillis = System.currentTimeMillis(),
     )
 
+    fun addManualGroup(
+        library: DesktopSubscriptionLibrary,
+        name: String,
+    ): DesktopSubscriptionLibrary = SubscriptionProviderLibraries.addManualGroup(library, name)
+
     fun updateProvider(
         library: DesktopSubscriptionLibrary,
         subscriptionId: Int,

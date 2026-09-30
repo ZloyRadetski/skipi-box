@@ -1,0 +1,20 @@
+{
+  "selectedConfigId": 41,
+  "configs": [
+    {
+      "id": 30,
+      "name": "Legacy default",
+      "content": "[General]\nskipi-show-on-home = true",
+      "futureConfigField": "ignored"
+    },
+    {
+      "id": 41,
+      "name": "Work",
+      "content": "[Proxy]\nDIRECT = direct",
+      "sourceUrl": "https://example.com/work.conf",
+      "updateLocked": true,
+      "lastUpdatedAtMillis": 1700000000123
+    }
+  ],
+  "futureLibraryField": true
+}

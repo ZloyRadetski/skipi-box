@@ -1,0 +1,14 @@
+{
+  "localProxyPort": 23456,
+  "localHttpProxyPort": 23457,
+  "useWindowsSystemProxy": false,
+  "useSystemProxy": false,
+  "localProxyListenAddress": "0.0.0.0",
+  "coreLogLevel": " INFO ",
+  "subscriptionUserAgent": " Legacy desktop agent ",
+  "subscriptionFetchTimeoutSeconds": 45,
+  "themeMode": "Amoled",
+  "compactHome": true,
+  "showTunnelMemory": false,
+  "futureDesktopField": "ignored by this version"
+}

@@ -1,0 +1,43 @@
+{
+  "subscriptions": [
+    {
+      "id": 9,
+      "url": "https://example.com/legacy",
+      "userAgent": "Legacy agent",
+      "name": "Legacy provider",
+      "metadata": {
+        "description": "Fetched before newer metadata fields existed",
+        "trafficUploadBytes": 100,
+        "trafficDownloadBytes": 250,
+        "trafficTotalBytes": 1000
+      },
+      "futureProviderField": true
+    },
+    {
+      "id": 4,
+      "url": "https://example.net/current",
+      "userAgent": "Current agent",
+      "name": "Current provider",
+      "metadata": {
+        "announce": "Maintenance window",
+        "supportUrl": "https://example.net/help",
+        "trafficExpireAtSeconds": 1900000000,
+        "embeddedConfigPayload": "[General]",
+        "embeddedConfigActivate": true,
+        "lastUpdatedAtMillis": 1700000000456
+      },
+      "enabled": false,
+      "updateInterval": "0.25",
+      "ageSecretKey": "AGE-SECRET-KEY-1EXAMPLE",
+      "updateViaProxy": true,
+      "autoOverrideRules": false,
+      "notifyOnExpiry": false,
+      "customExpiryReminders": [
+        { "value": 12, "unit": "Hours" },
+        { "value": 0, "unit": "AtExpiration" }
+      ],
+      "futureProviderField": "ignored"
+    }
+  ],
+  "futureLibraryField": "ignored"
+}

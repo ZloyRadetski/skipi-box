@@ -35,6 +35,12 @@ data class DesktopAppSettings(
     val themeMode: DesktopThemeMode = DesktopThemeMode.Dark,
     val compactHome: Boolean = false,
     val showTunnelMemory: Boolean = true,
+    val pinConnectionPanelOnHome: Boolean = false,
+    val classicShowFloatingPowerButton: Boolean = false,
+    val enableAllProxyGroup: Boolean = false,
+    val showServerSearch: Boolean = false,
+    val enableSubscriptionSwipe: Boolean = true,
+    val proxyServerListColumns: Int = 1,
     val confirmDeletion: Boolean = true,
     val sendDeviceHeaders: Boolean = true,
     val installationUuid: String = "",
@@ -98,6 +104,7 @@ internal fun DesktopAppSettings.normalized(
         require(coreLogLevel.trim().lowercase() in DesktopCoreLogLevels) {
             "Xray log level must be one of: ${DesktopCoreLogLevels.joinToString()}"
         }
+        require(proxyServerListColumns in 1..3) { "Proxy server list columns must be in 1..3" }
     }
     val normalizedSocksPort = localProxyPort.takeIf { it in 1..65_535 } ?: DefaultLocalSocksPort
     val fallbackHttpProxyPort = DefaultLocalHttpProxyPort
@@ -118,6 +125,7 @@ internal fun DesktopAppSettings.normalized(
         coreLogLevel = coreLogLevel.trim().lowercase().takeIf { it in DesktopCoreLogLevels } ?: "warning",
         subscriptionUserAgent = subscriptionUserAgent.trim().ifBlank { DefaultDesktopSubscriptionUserAgent },
         subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(10, 120),
+        proxyServerListColumns = proxyServerListColumns.coerceIn(1, 3),
         sendDeviceHeaders = sendDeviceHeaders,
         installationUuid = installationUuid.trim(),
     )

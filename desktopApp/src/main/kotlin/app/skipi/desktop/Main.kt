@@ -124,10 +124,12 @@ fun main() = application {
                         return@LaunchedEffect
                     }
                     val refreshPlan = DesktopSubscriptionRefreshPlanner.plan(
-                        library = subscriptionLibrary,
+                        library = subscriptionLibrary.copy(
+                            subscriptions = subscriptionLibrary.subscriptions.filter { it.url.isNotBlank() },
+                        ),
                         nowMillis = System.currentTimeMillis(),
                     )
-                    val dueSubscription = refreshPlan.dueSubscriptions.firstOrNull()
+                    val dueSubscription = refreshPlan.dueSubscriptions.firstOrNull { it.url.isNotBlank() }
                     if (dueSubscription != null) {
                         scheduledSubscriptionId = dueSubscription.id
                         return@LaunchedEffect
@@ -145,6 +147,7 @@ fun main() = application {
                 val latencyTester = remember { DesktopServerLatencyTester() }
                 var latencyByServerId by remember { mutableStateOf<Map<Int, DesktopServerLatencyResult>>(emptyMap()) }
                 var testingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+                var pingingSubscriptionIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 var coreState by remember { mutableStateOf(coreController.state()) }
                 var coreMessage by remember { mutableStateOf("") }
                 var pendingTunnelReconnectReason by remember { mutableStateOf<String?>(null) }
@@ -394,6 +397,58 @@ fun main() = application {
                     }
                 }
 
+                fun startDesktopHomeLatencyTest(
+                    targets: List<Pair<Int, features.proxy.server.model.ProxyServer<*>>>,
+                    subscriptionId: Int? = null,
+                ) {
+                    if (subscriptionId != null && pingingSubscriptionIds.isNotEmpty()) return
+                    val eligible = targets
+                        .distinctBy { (serverId, _) -> serverId }
+                        .filter { (serverId, server) ->
+                            serverId !in testingServerIds && server.desktopTcpEndpointOrNull() != null
+                        }
+                        .take(MaxHomeLatencyChecks)
+                    if (eligible.isEmpty()) {
+                        serverLibraryMessage = "Нет доступных серверов для TCP-проверки."
+                        return
+                    }
+                    if (subscriptionId != null) pingingSubscriptionIds = pingingSubscriptionIds + subscriptionId
+                    subscriptionScope.launch {
+                        val testedIds = eligible.map { (serverId, _) -> serverId }.toSet()
+                        testingServerIds = testingServerIds + testedIds
+                        try {
+                            val results = withContext(Dispatchers.IO) {
+                                eligible.map { (serverId, server) ->
+                                    async {
+                                        val result = server.desktopTcpEndpointOrNull()
+                                            ?.let { endpoint ->
+                                                latencyTester.measure(
+                                                    host = endpoint.host,
+                                                    port = endpoint.port,
+                                                    timeout = Duration.ofSeconds(2),
+                                                )
+                                            }
+                                            ?: DesktopServerLatencyResult.Error("No direct server endpoint")
+                                        serverId to result
+                                    }
+                                }.awaitAll()
+                            }
+                            latencyByServerId = latencyByServerId + results.toMap()
+                            val success = results.count { (_, result) -> result is DesktopServerLatencyResult.Success }
+                            val timeout = results.count { (_, result) -> result == DesktopServerLatencyResult.Timeout }
+                            val failed = results.size - success - timeout
+                            val skipped = (targets.size - eligible.size).coerceAtLeast(0)
+                            serverLibraryMessage = "TCP-проверка: $success доступны, $timeout тайм-аут, $failed ошибок." +
+                                if (skipped > 0) " Проверены первые $MaxHomeLatencyChecks доступных серверов." else ""
+                        } finally {
+                            testingServerIds = testingServerIds - testedIds
+                            if (subscriptionId != null) {
+                                pingingSubscriptionIds = pingingSubscriptionIds - subscriptionId
+                            }
+                        }
+                    }
+                }
+
                 Scaffold(
                     bottomBar = {
                         DesktopBottomNavigation(
@@ -424,12 +479,12 @@ fun main() = application {
                             tunnelMessage = coreMessage,
                             serverMessage = serverLibraryMessage,
                             subscriptionMessage = subscriptionMessage,
-                            compactConnection = desktopSettings.compactHome,
                             confirmDeletion = desktopSettings.confirmDeletion,
                             activeProfileName = activeProfileName,
                             activeTrafficConfigId = configLibrary.selectedConfigId,
                             latencyByServerId = latencyByServerId,
                             testingServerIds = testingServerIds,
+                            pingingSubscriptionIds = pingingSubscriptionIds,
                             onServerLinkChange = { serverLink = it },
                             onSubscriptionUrlChange = { url ->
                                 if (subscriptionUpdateInProgress) {
@@ -580,48 +635,9 @@ fun main() = application {
                                     serverLibraryMessage = "Не удалось изменить сервер: ${error.message.orEmpty()}"
                                 }
                             },
-                            onMeasureServers = { targets ->
-                                val eligible = targets
-                                    .distinctBy { (serverId, _) -> serverId }
-                                    .filter { (serverId, server) ->
-                                        serverId !in testingServerIds && server.desktopTcpEndpointOrNull() != null
-                                    }
-                                    .take(MaxHomeLatencyChecks)
-                                if (eligible.isEmpty()) {
-                                    serverLibraryMessage = "Нет доступных серверов для TCP-проверки."
-                                } else {
-                                    subscriptionScope.launch {
-                                        val testedIds = eligible.map { (serverId, _) -> serverId }.toSet()
-                                        testingServerIds = testingServerIds + testedIds
-                                        try {
-                                            val results = withContext(Dispatchers.IO) {
-                                                eligible.map { (serverId, server) ->
-                                                    async {
-                                                        val result = server.desktopTcpEndpointOrNull()
-                                                            ?.let { endpoint ->
-                                                                latencyTester.measure(
-                                                                    host = endpoint.host,
-                                                                    port = endpoint.port,
-                                                                    timeout = Duration.ofSeconds(2),
-                                                                )
-                                                            }
-                                                            ?: DesktopServerLatencyResult.Error("No direct server endpoint")
-                                                        serverId to result
-                                                    }
-                                                }.awaitAll()
-                                            }
-                                            latencyByServerId = latencyByServerId + results.toMap()
-                                            val success = results.count { (_, result) -> result is DesktopServerLatencyResult.Success }
-                                            val timeout = results.count { (_, result) -> result == DesktopServerLatencyResult.Timeout }
-                                            val failed = results.size - success - timeout
-                                            val skipped = (targets.size - eligible.size).coerceAtLeast(0)
-                                            serverLibraryMessage = "TCP-проверка: $success доступны, $timeout тайм-аут, $failed ошибок." +
-                                                if (skipped > 0) " Проверены первые $MaxHomeLatencyChecks доступных серверов." else ""
-                                        } finally {
-                                            testingServerIds = testingServerIds - testedIds
-                                        }
-                                    }
-                                }
+                            onMeasureServers = { targets -> startDesktopHomeLatencyTest(targets) },
+                            onPingSubscriptionServers = { subscriptionId, targets ->
+                                startDesktopHomeLatencyTest(targets, subscriptionId)
                             },
                             onPrepareSubscription = { install ->
                                 if (subscriptionUpdateInProgress) {
@@ -977,6 +993,41 @@ fun main() = application {
                                 }
                             },
                             contentPadding = contentPadding,
+                            desktopSettings = desktopSettings,
+                            onAddManualGroup = { name ->
+                                runCatching {
+                                    require(name.isNotBlank()) { "Имя группы не должно быть пустым." }
+                                    val updated = DesktopSubscriptionLibraries.addManualGroup(subscriptionLibrary, name.trim())
+                                    DesktopSubscriptionLibraries.saveDefault(updated).getOrThrow()
+                                    subscriptionLibrary = updated
+                                    subscriptionMessage = "Группа «${name.trim()}» добавлена."
+                                }.onFailure { error ->
+                                    subscriptionMessage = "Не удалось добавить группу: ${error.message.orEmpty()}"
+                                }
+                            },
+                            onMoveGroup = { subscriptionId, offset ->
+                                runCatching {
+                                    val currentList = subscriptionLibrary.subscriptions
+                                    val fromIndex = currentList.indexOfFirst { it.id == subscriptionId }
+                                    require(fromIndex != -1) { "Неизвестный идентификатор подписки: $subscriptionId" }
+                                    val toIndex = fromIndex + offset
+                                    require(toIndex in currentList.indices) { "Невозможно переместить группу за пределы списка." }
+                                    val updatedList = currentList.reorderItem(fromIndex, offset)
+                                        ?: error("Невозможно переместить группу.")
+                                    val updatedLibrary = subscriptionLibrary.copy(subscriptions = updatedList)
+                                    DesktopSubscriptionLibraries.saveDefault(updatedLibrary).getOrThrow()
+                                    subscriptionLibrary = updatedLibrary
+                                }
+                            },
+                            onMoveServer = { serverId, offset ->
+                                runCatching {
+                                    val updatedServers = reorderServerInLibrary(serverLibrary.servers, serverId, offset)
+                                        ?: error("Невозможно переместить сервер за пределы группы.")
+                                    val updatedLibrary = serverLibrary.copy(servers = updatedServers)
+                                    DesktopServerLibraries.saveDefault(updatedLibrary).getOrThrow()
+                                    serverLibrary = updatedLibrary
+                                }
+                            },
                         )
 
                         SkipiMainDestination.Configs -> DesktopConfigsScreen(
@@ -1118,4 +1169,3 @@ internal fun buildDesktopCustomXrayConfig(
     }
     return formatCustomXrayConfigJson(cleanConfig)
 }
-

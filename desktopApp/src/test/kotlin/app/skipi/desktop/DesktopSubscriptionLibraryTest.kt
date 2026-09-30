@@ -327,4 +327,72 @@ class DesktopSubscriptionLibraryTest {
         }
         assertEquals(subscription, library.subscriptions.single())
     }
+
+    @Test
+    fun persists_manual_groups_alongside_real_subscriptions_and_supports_isolated_edits() {
+        val directory = Files.createTempDirectory("skipi-subscriptions-manual-")
+        try {
+            val path = directory.resolve("subscriptions.json")
+            val initial = DesktopSubscriptionLibraries.addOrReplace(
+                library = DesktopSubscriptionLibrary(),
+                url = "https://example.com/real-sub",
+                userAgent = "DesktopAgent",
+                name = "Real Subscription",
+            )
+            val withGroup1 = DesktopSubscriptionLibraries.addManualGroup(initial, "Manual Group Alpha")
+            val withGroup2 = DesktopSubscriptionLibraries.addManualGroup(withGroup1, "Manual Group Beta")
+
+            DesktopSubscriptionLibraries.save(path, withGroup2).getOrThrow()
+            val loaded = DesktopSubscriptionLibraries.load(path).getOrThrow()
+
+            assertEquals(3, loaded.subscriptions.size)
+            val realSub = loaded.subscriptions[0]
+            val groupAlpha = loaded.subscriptions[1]
+            val groupBeta = loaded.subscriptions[2]
+
+            assertTrue(realSub.id > 0)
+            assertTrue(groupAlpha.id > 0)
+            assertTrue(groupBeta.id > 0)
+            assertEquals(3, setOf(realSub.id, groupAlpha.id, groupBeta.id).size)
+
+            assertEquals("Real Subscription", realSub.name)
+            assertEquals("https://example.com/real-sub", realSub.url)
+            assertEquals("DesktopAgent", realSub.userAgent)
+            assertEquals("Manual Group Alpha", groupAlpha.name)
+            assertEquals("", groupAlpha.url)
+            assertEquals("Manual Group Beta", groupBeta.name)
+            assertEquals("", groupBeta.url)
+            assertEquals(initial.subscriptions.single(), realSub)
+
+            val edited = DesktopSubscriptionLibraries.updateProvider(
+                library = loaded,
+                subscriptionId = groupAlpha.id,
+                edit = groupAlpha.toProviderEdit().copy(
+                    name = "Renamed Alpha",
+                    enabled = false,
+                ),
+            )
+            DesktopSubscriptionLibraries.save(path, edited).getOrThrow()
+            val reloaded = DesktopSubscriptionLibraries.load(path).getOrThrow()
+
+            assertEquals(3, reloaded.subscriptions.size)
+            assertEquals(realSub, reloaded.subscriptions[0])
+
+            val editedAlpha = reloaded.subscriptions[1]
+            assertEquals(groupAlpha.id, editedAlpha.id)
+            assertEquals("Renamed Alpha", editedAlpha.name)
+            assertEquals("", editedAlpha.url)
+            assertFalse(editedAlpha.enabled)
+
+            val intactBeta = reloaded.subscriptions[2]
+            assertEquals(groupBeta, intactBeta)
+            assertEquals("Manual Group Beta", intactBeta.name)
+            assertEquals("", intactBeta.url)
+            assertTrue(intactBeta.enabled)
+        } finally {
+            Files.walk(directory).use { paths ->
+                paths.sorted(java.util.Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+            }
+        }
+    }
 }
