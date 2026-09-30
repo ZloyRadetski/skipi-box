@@ -1,5 +1,6 @@
 package features.subscription.runtime
 
+import features.config.ConfigProfile
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -16,18 +17,28 @@ class SubscriptionRefreshReconciliationTest {
             EmbeddedProfileRefreshDecision.APPLY,
             decideEmbeddedProfileRefresh(null, null),
         )
+        val baseline = EmbeddedProfileRefreshSnapshot(
+            ConfigProfile(
+                id = 1,
+                name = "Routing",
+                content = "[Rule]\nFINAL,PROXY\n",
+                sourceUrl = "url",
+                updateLocked = false,
+                lastUpdatedAtMillis = 1,
+            ),
+        )
         assertEquals(
             EmbeddedProfileRefreshDecision.CONFLICT,
             decideEmbeddedProfileRefresh(
-                EmbeddedProfileRefreshSnapshot("url", false),
-                EmbeddedProfileRefreshSnapshot("url", true),
+                baseline,
+                baseline.copy(profile = baseline.profile.copy(content = "[Rule]\nFINAL,DIRECT\n")),
             ),
         )
         assertEquals(
             EmbeddedProfileRefreshDecision.LOCKED,
             decideEmbeddedProfileRefresh(
-                EmbeddedProfileRefreshSnapshot("url", true),
-                EmbeddedProfileRefreshSnapshot("url", true),
+                baseline.copy(profile = baseline.profile.copy(updateLocked = true)),
+                baseline.copy(profile = baseline.profile.copy(updateLocked = true)),
             ),
         )
     }

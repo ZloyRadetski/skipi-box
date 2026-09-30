@@ -80,4 +80,177 @@ class SubscriptionProviderLibraryTest {
 
         assertEquals(listOf(2), SubscriptionProviderLibraries.remove(library, 1).subscriptions.map { it.id })
     }
+
+    @Test
+    fun addManualGroupAssignsSequentialIdsPreservesOrderAndLeavesExistingEntriesIntact() {
+        val existing = StoredSubscription(
+            id = 5,
+            url = "https://example.com/sub",
+            userAgent = "Agent",
+            name = "Existing",
+            metadata = StoredSubscriptionMetadata(description = "Meta"),
+            enabled = false,
+        )
+        val initialLibrary = SubscriptionProviderLibrary(listOf(existing))
+
+        val library1 = SubscriptionProviderLibraries.addManualGroup(initialLibrary, "  Manual Group 1  ")
+        val library2 = SubscriptionProviderLibraries.addManualGroup(library1, "Manual Group 2")
+        val library3 = SubscriptionProviderLibraries.addManualGroup(library2, "Manual Group 2")
+
+        assertEquals(4, library3.subscriptions.size)
+        assertEquals(listOf(5, 6, 7, 8), library3.subscriptions.map { it.id })
+        assertEquals(existing, library3.subscriptions[0])
+
+        val firstGroup = library3.subscriptions[1]
+        assertEquals(6, firstGroup.id)
+        assertEquals("", firstGroup.url)
+        assertEquals("Manual Group 1", firstGroup.name)
+        assertTrue(firstGroup.enabled)
+        assertEquals("", firstGroup.userAgent)
+        assertEquals(StoredSubscriptionMetadata(), firstGroup.metadata)
+        assertEquals("", firstGroup.updateInterval)
+        assertEquals("", firstGroup.ageSecretKey)
+        assertFalse(firstGroup.updateViaProxy)
+        assertTrue(firstGroup.autoOverrideRules)
+        assertTrue(firstGroup.notifyOnExpiry)
+
+        val secondGroup = library3.subscriptions[2]
+        assertEquals(7, secondGroup.id)
+        assertEquals("", secondGroup.url)
+        assertEquals("Manual Group 2", secondGroup.name)
+
+        val thirdGroup = library3.subscriptions[3]
+        assertEquals(8, thirdGroup.id)
+        assertEquals("", thirdGroup.url)
+        assertEquals("Manual Group 2", thirdGroup.name)
+    }
+
+    @Test
+    fun addManualGroupGeneratesIdOneForEmptyLibrary() {
+        val result = SubscriptionProviderLibraries.addManualGroup(SubscriptionProviderLibrary(), "Custom Group")
+        val created = result.subscriptions.single()
+        assertEquals(1, created.id)
+        assertEquals("Custom Group", created.name)
+        assertEquals("", created.url)
+        assertTrue(created.enabled)
+    }
+
+    @Test
+    fun addManualGroupFindsFreePositiveIdWhenMaxIntIsPresent() {
+        val sub1 = StoredSubscription(id = 1, url = "https://example.com/one")
+        val subMax = StoredSubscription(id = Int.MAX_VALUE, url = "https://example.com/max")
+        val library = SubscriptionProviderLibrary(listOf(sub1, subMax))
+
+        val result = SubscriptionProviderLibraries.addManualGroup(library, "Overflow Safe Group")
+        val newGroup = result.subscriptions.last()
+
+        assertEquals(2, newGroup.id)
+        assertEquals("Overflow Safe Group", newGroup.name)
+        assertEquals("", newGroup.url)
+        assertTrue(newGroup.id > 0)
+        assertEquals(3, result.subscriptions.size)
+    }
+
+    @Test
+    fun addManualGroupRejectsBlankOrEmptyName() {
+        val library = SubscriptionProviderLibrary()
+        assertFailsWith<IllegalArgumentException> {
+            SubscriptionProviderLibraries.addManualGroup(library, "")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            SubscriptionProviderLibraries.addManualGroup(library, "   ")
+        }
+        assertFailsWith<IllegalArgumentException> {
+            SubscriptionProviderLibraries.addManualGroup(library, "\t\n  \r")
+        }
+    }
+
+    @Test
+    fun updateProviderAllowsEmptyUrlAndMultipleGroupsWithEmptyUrl() {
+        val sub1 = StoredSubscription(id = 1, url = "https://example.com/one", name = "Sub 1")
+        val sub2 = StoredSubscription(id = 2, url = "https://example.com/two", name = "Sub 2")
+        val library = SubscriptionProviderLibrary(listOf(sub1, sub2))
+
+        val updated1 = SubscriptionProviderLibraries.updateProvider(
+            library,
+            sub1.id,
+            sub1.toProviderEdit().copy(url = "   ", name = "Converted to Manual 1"),
+        )
+        val updated2 = SubscriptionProviderLibraries.updateProvider(
+            updated1,
+            sub2.id,
+            sub2.toProviderEdit().copy(url = "", name = "Converted to Manual 2"),
+        )
+
+        assertEquals("", updated2.subscriptions[0].url)
+        assertEquals("Converted to Manual 1", updated2.subscriptions[0].name)
+        assertEquals("", updated2.subscriptions[1].url)
+        assertEquals("Converted to Manual 2", updated2.subscriptions[1].name)
+    }
+
+    @Test
+    fun updateProviderRejectsInvalidNonEmptyUrlAndDuplicateNonEmptyUrl() {
+        val first = StoredSubscription(id = 1, url = "https://example.com/one")
+        val second = StoredSubscription(id = 2, url = "https://example.com/two")
+        val library = SubscriptionProviderLibrary(listOf(first, second))
+
+        assertFailsWith<IllegalArgumentException> {
+            SubscriptionProviderLibraries.updateProvider(
+                library,
+                first.id,
+                first.toProviderEdit().copy(url = "not_a_valid_url"),
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            SubscriptionProviderLibraries.updateProvider(
+                library,
+                first.id,
+                first.toProviderEdit().copy(url = "https://example.com/two"),
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            SubscriptionProviderLibraries.updateProvider(
+                library,
+                first.id,
+                first.toProviderEdit().copy(url = "https://example.com/bad\nurl"),
+            )
+        }
+    }
+
+    @Test
+    fun addOrReplaceStillRejectsEmptyOrBlankUrl() {
+        val library = SubscriptionProviderLibrary()
+        assertFailsWith<IllegalArgumentException> {
+            SubscriptionProviderLibraries.addOrReplace(library, "", nowMillis = 100L)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            SubscriptionProviderLibraries.addOrReplace(library, "   ", nowMillis = 100L)
+        }
+    }
+
+    @Test
+    fun updateProviderRetainsMetadataWhenEditingToEmptyUrl() {
+        val originalMetadata = StoredSubscriptionMetadata(
+            description = "Some description",
+            trafficTotalBytes = 1024L,
+            lastUpdatedAtMillis = 500L,
+        )
+        val sub = StoredSubscription(
+            id = 10,
+            url = "https://example.com/sub",
+            name = "Sub",
+            metadata = originalMetadata,
+        )
+        val library = SubscriptionProviderLibrary(listOf(sub))
+        val updated = SubscriptionProviderLibraries.updateProvider(
+            library,
+            sub.id,
+            sub.toProviderEdit().copy(url = "", name = "Now Manual"),
+        ).subscriptions.single()
+
+        assertEquals(10, updated.id)
+        assertEquals("", updated.url)
+        assertEquals("Now Manual", updated.name)
+        assertEquals(originalMetadata, updated.metadata)
+    }
 }

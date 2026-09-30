@@ -51,6 +51,63 @@ class ProxyServerPresentationTest {
     }
 
     @Test
+    fun selectStrategyDoesNotPresentTheFirstConfiguredMemberAsActive() {
+        val member = ProxyServerPresentationNode(
+            id = 7,
+            groupId = 5,
+            server = Custom(remarks = "🇫🇮 Helsinki"),
+        )
+        val strategy = ProxyServerPresentationNode(
+            id = 8,
+            groupId = 5,
+            server = StrategyGroup(
+                remarks = "Fast route",
+                strategy = StrategyGroupConstants.TYPE_SELECT,
+                proxyServerIds = listOf(7),
+            ),
+        )
+
+        val text = ProxyServerPresentationFormatter(emptyMap(), labels)
+            .displayOf(strategy, listOf(member, strategy))
+
+        assertEquals("Select (1)", text.summary)
+    }
+
+    @Test
+    fun automaticStrategyIncludesLocalizedSourceAndFilterAndChainUsesMemberNames() {
+        val helsinki = ProxyServerPresentationNode(
+            id = 7,
+            groupId = 5,
+            server = Custom(remarks = "🇫🇮 Helsinki"),
+        )
+        val london = ProxyServerPresentationNode(
+            id = 9,
+            groupId = 6,
+            server = Custom(remarks = "London"),
+        )
+        val strategy = ProxyServerPresentationNode(
+            id = 8,
+            groupId = 5,
+            server = StrategyGroup(
+                remarks = "Fast route",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                subscriptionGroupId = 6,
+                filter = "tag:fast",
+            ),
+        )
+        val chain = ProxyServerPresentationNode(
+            id = 10,
+            groupId = 5,
+            server = ChainProxy(remarks = "Chain", proxyServerIds = listOf(7, 9)),
+        )
+        val formatter = ProxyServerPresentationFormatter(mapOf(6 to "Work"), labels)
+        val servers = listOf(helsinki, london, strategy, chain)
+
+        assertEquals("Least ping · Work · Filter: tag:fast", formatter.displayOf(strategy, servers).summary)
+        assertEquals("🇫🇮 Helsinki -> London", formatter.displayOf(chain, servers).summary)
+    }
+
+    @Test
     fun chainFallsBackToTheLocalizedCountWhenMembersAreUnavailable() {
         val chain = ProxyServerPresentationNode(
             id = 1,

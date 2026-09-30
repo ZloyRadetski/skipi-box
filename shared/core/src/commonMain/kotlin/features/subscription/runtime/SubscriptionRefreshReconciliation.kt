@@ -3,6 +3,8 @@
 
 package features.subscription.runtime
 
+import features.config.ConfigProfile
+
 /**
  * Platform-neutral optimistic-concurrency decisions used by refresh committers.
  * The values are deliberately generic: persistence adapters can keep their
@@ -15,10 +17,7 @@ fun <T> subscriptionServerGroupWasChanged(
     latest: List<T>,
 ): Boolean = baseline != latest
 
-data class EmbeddedProfileRefreshSnapshot(
-    val sourceUrl: String,
-    val updateLocked: Boolean,
-)
+data class EmbeddedProfileRefreshSnapshot(val profile: ConfigProfile)
 
 enum class EmbeddedProfileRefreshDecision {
     APPLY,
@@ -30,7 +29,7 @@ fun decideEmbeddedProfileRefresh(
     baseline: EmbeddedProfileRefreshSnapshot?,
     latest: EmbeddedProfileRefreshSnapshot?,
 ): EmbeddedProfileRefreshDecision = when {
-    latest != baseline -> EmbeddedProfileRefreshDecision.CONFLICT
-    latest?.updateLocked == true -> EmbeddedProfileRefreshDecision.LOCKED
+    latest?.profile != baseline?.profile -> EmbeddedProfileRefreshDecision.CONFLICT
+    latest?.profile?.updateLocked == true -> EmbeddedProfileRefreshDecision.LOCKED
     else -> EmbeddedProfileRefreshDecision.APPLY
 }

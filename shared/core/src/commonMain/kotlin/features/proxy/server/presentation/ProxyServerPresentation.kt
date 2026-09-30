@@ -14,7 +14,8 @@ import features.proxy.server.model.stripLeadingCountryFlag
 /** A host-neutral proxy record used to build Home list text. */
 data class ProxyServerPresentationNode(
     val id: Int,
-    val groupId: Int,
+    /** Desktop stores ungrouped/manual servers with no subscription id. */
+    val groupId: Int?,
     val server: ProxyServer<*>,
 )
 
@@ -93,8 +94,9 @@ class ProxyServerPresentationFormatter(
     private fun StrategyGroup.strategyGroupSummary(servers: List<ProxyServerPresentationNode>): String {
         if (strategy == StrategyGroupConstants.TYPE_SELECT) {
             val serverById = servers.associateBy(ProxyServerPresentationNode::id)
+            // A configured member is not necessarily the member currently selected at runtime.
+            // Only display a member label when the model carries an actual selection.
             val activeMember = selectedMemberId?.let(serverById::get)
-                ?: proxyServerIds.firstNotNullOfOrNull(serverById::get)
             val memberCount = if (proxyServerIds.isNotEmpty()) {
                 proxyServerIds.size
             } else {

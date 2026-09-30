@@ -19,8 +19,8 @@ class TrafficConfigRuntimePlannerTest {
                     prefer-ipv6 = false
 
                     [SKIPI]
-                    proxy-dns = true
-                    dns-hosts = true
+                    proxy-dns = https://profile-proxy/dns-query
+                    dns-hosts = profile.example:192.0.2.3
 
                     [Host]
                     proxy.example = server:203.0.113.7
@@ -50,7 +50,7 @@ class TrafficConfigRuntimePlannerTest {
         assertEquals(listOf("https://profile-proxy/dns-query"), plan.proxyDns)
         assertEquals(listOf("9.9.9.9", "1.1.1.1"), plan.directDns)
         assertEquals(listOf("geosite:profile-direct"), plan.directDnsDomains)
-        assertEquals(listOf("proxy.example:203.0.113.7"), plan.dnsHosts)
+        assertEquals(listOf("profile.example:192.0.2.3"), plan.dnsHosts)
         assertEquals(true, plan.enableIpv6)
         assertEquals(false, plan.enableIpv6Prefer)
         assertEquals(XrayTags.PROXY, plan.defaultRouteOutboundTag)

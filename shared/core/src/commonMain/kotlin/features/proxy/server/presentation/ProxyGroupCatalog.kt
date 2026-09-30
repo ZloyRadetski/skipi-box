@@ -119,7 +119,7 @@ fun createProxyGroupCatalog(
             add(
                 ProxyGroup(
                     id = ProxyGroupIds.subscription(subscription.id),
-                    kind = ProxyGroupKind.Subscription,
+                    kind = if (subscription.url.isBlank()) ProxyGroupKind.Manual else ProxyGroupKind.Subscription,
                     title = subscription.name.trim().ifBlank { subscription.url },
                     serverIds = bySubscription[subscription.id].orEmpty().map(ProxyGroupServer::id),
                     enabled = subscriptionEnabled(subscription.id),

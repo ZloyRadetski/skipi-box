@@ -104,6 +104,22 @@ object SubscriptionProviderLibraries {
         return library.copy(subscriptions = library.subscriptions.filterNot { it.id == stored.id } + stored)
     }
 
+    fun addManualGroup(
+        library: SubscriptionProviderLibrary,
+        name: String,
+    ): SubscriptionProviderLibrary {
+        val normalizedName = name.trim()
+        require(normalizedName.isNotEmpty()) { "Manual group name must not be blank" }
+        val nextId = allocatePositiveSubscriptionId(library)
+        val stored = StoredSubscription(
+            id = nextId,
+            url = "",
+            name = normalizedName,
+            enabled = true,
+        )
+        return library.copy(subscriptions = library.subscriptions + stored)
+    }
+
     /** Updates only editor-owned properties and retains ID, fetched metadata, and imported cache membership. */
     fun updateProvider(
         library: SubscriptionProviderLibrary,
@@ -117,12 +133,14 @@ object SubscriptionProviderLibraries {
         }
         val current = matching.single()
         val normalizedUrl = edit.url.trim()
-        require(normalizedUrl.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        require(normalizedUrl.none { it == '\r' || it == '\n' || it == '\u0000' }) {
-            "Invalid subscription URL"
-        }
-        require(library.subscriptions.none { it.id != subscriptionId && it.url == normalizedUrl }) {
-            "A subscription with this URL already exists"
+        if (normalizedUrl.isNotEmpty()) {
+            require(normalizedUrl.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
+            require(normalizedUrl.none { it == '\r' || it == '\n' || it == '\u0000' }) {
+                "Invalid subscription URL"
+            }
+            require(library.subscriptions.none { it.id != subscriptionId && it.url == normalizedUrl }) {
+                "A subscription with this URL already exists"
+            }
         }
 
         val normalizedUserAgent = edit.userAgent.trim()
@@ -192,3 +210,17 @@ private fun SubscriptionMetadata.toStoredSubscriptionMetadata(
 )
 
 private const val MaxSubscriptionUserAgentLength = 512
+
+private fun allocatePositiveSubscriptionId(library: SubscriptionProviderLibrary): Int {
+    val maxId = library.subscriptions.maxOfOrNull { it.id } ?: 0
+    if (maxId in 0 until Int.MAX_VALUE) {
+        return maxId + 1
+    }
+    val existingIds = library.subscriptions.mapTo(HashSet(library.subscriptions.size)) { it.id }
+    for (candidate in 1..Int.MAX_VALUE) {
+        if (candidate !in existingIds) {
+            return candidate
+        }
+    }
+    error("No available positive subscription IDs")
+}
