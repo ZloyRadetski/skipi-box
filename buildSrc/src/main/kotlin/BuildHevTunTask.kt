@@ -44,9 +44,13 @@ abstract class BuildHevTunTask : DefaultTask() {
     @get:Input
     abstract val artifact: Property<String>
 
+    @get:Input
+    abstract val runtimeSourcePatchVersion: Property<String>
+
     init {
         group = "build"
         description = "Build hev-socks5-tunnel JNI library and CLI executable for Android."
+        runtimeSourcePatchVersion.convention(RuntimeSourcePatchVersion)
     }
 
     @TaskAction
@@ -106,6 +110,10 @@ abstract class BuildHevTunTask : DefaultTask() {
     }
 
     private companion object {
+        // Bump this value whenever applyRuntimeSourcePatches changes so cached
+        // native outputs cannot survive a runtime overlay edit.
+        const val RuntimeSourcePatchVersion = "runtime-readiness-v1"
+
         // Large CPU counts on Windows can make ndk-build race its generated
         // dependency files. Eight parallel compiler jobs still rebuild HEV
         // quickly while keeping those paths deterministic.
@@ -155,7 +163,215 @@ abstract class BuildHevTunTask : DefaultTask() {
         }
         sourceDir.copyRecursively(patchedSourceDir, overwrite = true)
         replaceSymlinkPlaceholderFiles(patchedSourceDir)
+        applyRuntimeSourcePatches(patchedSourceDir)
         return patchedSourceDir
+    }
+
+    private fun applyRuntimeSourcePatches(sourceDir: File) {
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-main.h",
+            """#endif
+
+/**
+ * hev_socks5_tunnel_main:""",
+            """#endif
+
+typedef void (*HevSocks5TunnelReadyCallback) (void);
+
+/**
+ * hev_socks5_tunnel_set_ready_callback:
+ * @callback: callback invoked after tunnel initialization succeeds
+ *
+ * Set an optional callback to be invoked after the tunnel, gateway, worker
+ * tasks, and mapped DNS have initialized successfully.
+ */
+void hev_socks5_tunnel_set_ready_callback (HevSocks5TunnelReadyCallback callback);
+
+/**
+ * hev_socks5_tunnel_main:""",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-main.c",
+            """#include "hev-main.h"
+
+static int
+hev_socks5_tunnel_main_inner""",
+            """#include "hev-main.h"
+
+static HevSocks5TunnelReadyCallback ready_callback;
+
+void
+hev_socks5_tunnel_set_ready_callback (HevSocks5TunnelReadyCallback callback)
+{
+    ready_callback = callback;
+}
+
+static int
+hev_socks5_tunnel_main_inner""",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-main.c",
+            "    res = hev_socks5_tunnel_init (tun_fd);\n" +
+                "    if (res < 0)\n" +
+                "        goto free_task_sys;\n\n" +
+                "    hev_socks5_tunnel_run ();",
+            "    res = hev_socks5_tunnel_init (tun_fd);\n" +
+                "    if (res < 0)\n" +
+                "        goto free_task_sys;\n\n" +
+                "    if (ready_callback)\n" +
+                "        ready_callback ();\n\n" +
+                "    hev_socks5_tunnel_run ();",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-jni.c",
+            "static atomic_int is_running;",
+            "static atomic_int is_running;\nstatic atomic_int is_ready;",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-jni.c",
+            "static jboolean native_is_running (JNIEnv *env, jobject thiz);",
+            "static jboolean native_is_running (JNIEnv *env, jobject thiz);\n" +
+                "static jboolean native_is_ready (JNIEnv *env, jobject thiz);",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-jni.c",
+            "{ \"TProxyIsRunning\", \"()Z\", (void *)native_is_running },",
+            "{ \"TProxyIsRunning\", \"()Z\", (void *)native_is_running },\n" +
+                "    { \"TProxyIsReady\", \"()Z\", (void *)native_is_ready },",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-jni.c",
+            """static void
+detach_current_thread (void *env)
+{
+    (*java_vm)->DetachCurrentThread (java_vm);
+}
+""",
+            """static void
+detach_current_thread (void *env)
+{
+    (*java_vm)->DetachCurrentThread (java_vm);
+}
+
+static void
+mark_tunnel_ready (void)
+{
+    atomic_store_explicit (&is_ready, 1, memory_order_release);
+}
+""",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-jni.c",
+            "    hev_socks5_tunnel_main (tdata->path, tdata->fd);",
+            "    hev_socks5_tunnel_set_ready_callback (mark_tunnel_ready);\n" +
+                "    hev_socks5_tunnel_main (tdata->path, tdata->fd);\n" +
+                "    hev_socks5_tunnel_set_ready_callback (NULL);",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-jni.c",
+            "    atomic_store_explicit (&is_running, 1, memory_order_release);",
+            "    atomic_store_explicit (&is_ready, 0, memory_order_release);\n" +
+                "    atomic_store_explicit (&is_running, 1, memory_order_release);",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-jni.c",
+            "    if (atomic_load_explicit (&is_running, memory_order_acquire))\n" +
+                "        hev_socks5_tunnel_quit ();\n" +
+                "    res = pthread_join (work_thread, NULL);",
+            "    atomic_store_explicit (&is_ready, 0, memory_order_release);\n" +
+                "    if (atomic_load_explicit (&is_running, memory_order_acquire))\n" +
+                "        hev_socks5_tunnel_quit ();\n" +
+                "    res = pthread_join (work_thread, NULL);",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-jni.c",
+            "static jlongArray\nnative_get_stats (JNIEnv *env, jobject thiz)",
+            """static jboolean
+native_is_ready (JNIEnv *env, jobject thiz)
+{
+    int ready = atomic_load_explicit (&is_ready, memory_order_acquire);
+    int running = atomic_load_explicit (&is_running, memory_order_acquire);
+
+    return ready && running ? JNI_TRUE : JNI_FALSE;
+}
+
+static jlongArray
+native_get_stats (JNIEnv *env, jobject thiz)""",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/hev-socks5-session.c",
+            "LOG_D (\"%p socks5 client auth %s:%s\", self, srv->user, srv->pass);",
+            "LOG_D (\"%p socks5 client auth\", self);",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/core/src/hev-socks5-server.c",
+            "    if (!user) {\n" +
+                "        name[nlen] = '\\0';\n" +
+                "        LOG_I (\"%p socks5 server auth user: %s\", self, name);\n" +
+                "        return -1;\n" +
+                "    }",
+            "    if (!user) {\n" +
+                "        LOG_I (\"%p socks5 server authentication failed\", self);\n" +
+                "        return -1;\n" +
+                "    }",
+        )
+        applySourceReplacement(
+            sourceDir,
+            "src/core/src/hev-socks5-server.c",
+            "    if (res < 0) {\n" +
+                "        name[nlen] = '\\0';\n" +
+                "        pass[plen] = '\\0';\n" +
+                "        LOG_I (\"%p socks5 server auth user: %s pass: %s\", self, name, pass);\n" +
+                "        return -1;\n" +
+                "    }",
+            "    if (res < 0) {\n" +
+                "        LOG_I (\"%p socks5 server authentication failed\", self);\n" +
+                "        return -1;\n" +
+                "    }",
+        )
+    }
+
+    private fun applySourceReplacement(sourceDir: File, relativePath: String, expected: String, replacement: String) {
+        val file = sourceDir.resolve(relativePath)
+        if (!file.isFile) {
+            throw GradleException("Cannot apply Hev TUN patch; source file is missing: ${file.absolutePath}")
+        }
+
+        val source = file.readText()
+        if (source.countOccurrences(replacement) == 1) return
+
+        val expectedCount = source.countOccurrences(expected)
+        if (expectedCount != 1) {
+            throw GradleException(
+                "Cannot apply Hev TUN patch to $relativePath: expected one source block, found $expectedCount",
+            )
+        }
+        file.writeText(source.replace(expected, replacement))
+    }
+
+    private fun String.countOccurrences(value: String): Int {
+        require(value.isNotEmpty())
+        var count = 0
+        var offset = 0
+        while (true) {
+            val found = indexOf(value, offset)
+            if (found < 0) return count
+            count += 1
+            offset = found + value.length
+        }
     }
 
     private fun replaceSymlinkPlaceholderFiles(sourceDir: File) {

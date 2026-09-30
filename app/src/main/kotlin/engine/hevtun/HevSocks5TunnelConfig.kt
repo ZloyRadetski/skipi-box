@@ -32,6 +32,10 @@ internal data class HevSocks5TunnelConfig(
 )
 
 internal fun HevSocks5TunnelConfig.writeConfigFile() {
+    File(configPath).parentFile?.mkdirs()
+    if (logPath.isNotBlank()) {
+        File(logPath).parentFile?.mkdirs()
+    }
     writeAtomically(File(configPath)) { output ->
         output.write(buildHevSocks5TunnelConfigYaml().toByteArray(Charsets.UTF_8))
     }

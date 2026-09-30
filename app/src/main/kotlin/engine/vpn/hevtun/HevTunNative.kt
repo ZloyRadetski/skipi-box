@@ -5,17 +5,24 @@ package engine.vpn.hevtun
 
 import androidx.annotation.Keep
 
+internal const val HevTunNativeLibraryName = "hev-socks5-tunnel"
+
+internal fun loadHevTunNativeLibrary(loadLibrary: (String) -> Unit) {
+    loadLibrary(HevTunNativeLibraryName)
+}
+
 internal interface HevTunNativeGateway {
     fun startService(configPath: String, fd: Int): Boolean
     fun stopService(): Boolean
     fun isRunning(): Boolean
     fun isReady(): Boolean
+    fun getStats(): LongArray = longArrayOf(0, 0, 0, 0)
 }
 
 @Keep
 internal object HevTunNative : HevTunNativeGateway {
     init {
-        System.loadLibrary("hev-socks5-tunnel")
+        loadHevTunNativeLibrary { libraryName -> System.loadLibrary(libraryName) }
     }
 
     @JvmStatic
@@ -53,5 +60,9 @@ internal object HevTunNative : HevTunNativeGateway {
 
     override fun isReady(): Boolean {
         return TProxyIsReady()
+    }
+
+    override fun getStats(): LongArray {
+        return TProxyGetStats()
     }
 }
