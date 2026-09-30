@@ -1389,6 +1389,9 @@
     <!-- Home section titles -->
     <string name="home_section_subscription">Subscription</string>
     <string name="home_section_servers">Servers</string>
+    <string name="home_action_unavailable">This action is unavailable.</string>
+    <string name="home_action_variant_unavailable">This option is unavailable.</string>
+    <string name="home_operation_failed">The operation failed.</string>
 
     <!-- Amnezia WG editor -->
     <string name="proxy_editor_amnezia_obfuscation">Obfuscation (AmneziaWG)</string>
@@ -1444,4 +1447,3 @@
     <string name="widget_server_changed">Server: %1$s</string>
     <string name="widget_no_config">No configurations</string>
 </resources>
-

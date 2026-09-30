@@ -73,7 +73,7 @@ data class SkipiProxyServerCompactListCardColors(
 fun SkipiProxyServerCompactListCard(
     state: SkipiProxyServerCompactListCardState,
     colors: SkipiProxyServerCompactListCardColors,
-    fallbackBadgePainter: Painter,
+    fallbackBadgePainter: Painter? = null,
     titleFontWeight: FontWeight,
     latencyFontWeight: FontWeight,
     onSelect: () -> Unit,
@@ -84,10 +84,14 @@ fun SkipiProxyServerCompactListCard(
     dragModifier: Modifier = Modifier,
 ) {
     val selectedShape = SkipiTheme.shapes.small
-    val compactCardHeight = maxOf(
-        if (state.isStrategyGroup) 58.dp else 66.dp,
-        SkipiTheme.homeMetrics.listRowMinHeight,
-    )
+    val compactCardHeight = if (state.inSubscriptionGroup) {
+        if (state.isStrategyGroup) 58.dp else 66.dp
+    } else {
+        maxOf(
+            if (state.isStrategyGroup) 58.dp else 66.dp,
+            SkipiTheme.homeMetrics.listRowMinHeight,
+        )
+    }
 
     Box(
         modifier = modifier
@@ -119,7 +123,7 @@ fun SkipiProxyServerCompactListCard(
                     else -> colors.surface
                 },
             ),
-                insideMargin = PaddingValues(SkipiTheme.spacing.small),
+                insideMargin = PaddingValues(if (state.inSubscriptionGroup) 8.dp else SkipiTheme.spacing.small),
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -141,6 +145,7 @@ fun SkipiProxyServerCompactListCard(
                     Text(
                         text = state.title,
                         style = SkipiTheme.typography.titleSmall,
+                        fontSize = if (state.inSubscriptionGroup) 15.sp else SkipiTheme.typography.titleSmall.fontSize,
                         fontWeight = titleFontWeight,
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -149,7 +154,7 @@ fun SkipiProxyServerCompactListCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = SkipiTheme.spacing.extraSmall),
+                            .padding(top = if (state.inSubscriptionGroup) 2.dp else SkipiTheme.spacing.extraSmall),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         SkipiProxyProtocolChip(
@@ -176,6 +181,7 @@ fun SkipiProxyServerCompactListCard(
                             text = state.summary,
                             modifier = Modifier.weight(1f),
                             style = SkipiTheme.typography.bodySmall,
+                            fontSize = if (state.inSubscriptionGroup) 12.sp else SkipiTheme.typography.bodySmall.fontSize,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -195,6 +201,7 @@ fun SkipiProxyServerCompactListCard(
                                 Text(
                                     text = state.latencyText,
                                     style = SkipiTheme.typography.labelSmall,
+                                    fontSize = if (state.inSubscriptionGroup) 12.sp else SkipiTheme.typography.labelSmall.fontSize,
                                     fontWeight = latencyFontWeight,
                                     color = state.latencyColor,
                                     maxLines = 1,

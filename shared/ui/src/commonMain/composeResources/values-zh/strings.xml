@@ -1319,6 +1319,9 @@
     <!-- 首页分节标题 -->
     <string name="home_section_subscription">订阅</string>
     <string name="home_section_servers">节点</string>
+    <string name="home_action_unavailable">此操作不可用。</string>
+    <string name="home_action_variant_unavailable">此选项不可用。</string>
+    <string name="home_operation_failed">操作失败。</string>
 
     <string name="settings_pin_connection_panel">固定连接面板</string>
     <string name="settings_pin_connection_panel_summary">滚动服务器列表时固定连接面板和订阅选择器</string>

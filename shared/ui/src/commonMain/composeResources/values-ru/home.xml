@@ -6,6 +6,14 @@
     <string name="home_action_refreshing">Обновление…</string>
     <string name="home_action_search">Поиск</string>
     <string name="home_action_hide_search">Скрыть поиск</string>
+    <string name="home_move_up">Переместить вверх</string>
+    <string name="home_move_down">Переместить вниз</string>
+    <string name="home_add_group">Добавить группу прокси</string>
+    <string name="home_edit_group">Редактировать группу прокси</string>
+    <string name="home_delete_group">Удалить группу прокси</string>
+    <string name="home_runtime_outbound_metric">Память: %1$s</string>
+    <string name="home_show_qr_code">Показать QR-код</string>
+    <string name="home_cancel_latency_tests">Отменить проверку задержки</string>
     <string name="home_connection_connected">Подключено</string>
     <string name="home_connection_connecting">Подключение…</string>
     <string name="home_connection_disconnected">Отключено</string>
@@ -28,7 +36,7 @@
     <string name="home_subscription_days_left">Осталось дней: %1$d</string>
     <string name="home_subscription_support">Поддержка</string>
     <string name="home_subscription_website">Сайт</string>
-    <string name="home_subscription_updated">Обновлено</string>
+    <string name="home_subscription_updated">Обновлено: %1$s</string>
     <string name="home_latency_milliseconds">%1$d мс</string>
     <string name="home_error">Ошибка</string>
     <string name="home_empty_search">Ничего не найдено</string>
@@ -48,4 +56,12 @@
     <string name="home_subscription_auto_update_toggle_hint">Если отключить, серверы останутся в списке, но не будут обновляться автоматически</string>
     <string name="home_details_expanded">Подробности раскрыты</string>
     <string name="home_details_collapsed">Подробности свернуты</string>
+    <string name="home_server_detail_title">Данные сервера</string>
+    <string name="home_server_detail_hint">Выберите сервер, чтобы посмотреть сведения о подключении.</string>
+    <string name="home_server_address">Адрес</string>
+    <string name="home_server_protocol">Протокол</string>
+    <string name="home_server_transport">Транспорт</string>
+    <string name="home_server_latency">Задержка</string>
+    <string name="home_server_test_latency">Проверить задержку</string>
+    <string name="home_server_testing_latency">Проверка задержки…</string>
 </resources>

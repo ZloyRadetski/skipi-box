@@ -19,6 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,10 +74,17 @@ fun SkipiSubscriptionEditDialog(
     onSave: (SkipiSubscriptionEditData) -> Unit,
     onDelete: (() -> Unit)? = null,
     onDismiss: () -> Unit,
+    errorMessage: String? = null,
+    onDraftChanged: () -> Unit = {},
 ) {
     if (!show) return
 
     var draft by remember(initialData) { mutableStateOf(initialData) }
+
+    fun updateDraft(transform: (SkipiSubscriptionEditData) -> SkipiSubscriptionEditData) {
+        draft = transform(draft)
+        onDraftChanged()
+    }
 
     AppWindowDialog(
         show = show,
@@ -89,14 +99,14 @@ fun SkipiSubscriptionEditDialog(
         ) {
             TextField(
                 value = draft.name,
-                onValueChange = { draft = draft.copy(name = it) },
+                onValueChange = { value -> updateDraft { it.copy(name = value) } },
                 label = stringResource(Res.string.subscription_group_name),
                 modifier = Modifier.fillMaxWidth(),
             )
 
             TextField(
                 value = draft.url,
-                onValueChange = { draft = draft.copy(url = it) },
+                onValueChange = { value -> updateDraft { it.copy(url = value) } },
                 label = stringResource(Res.string.subscription_url),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -138,7 +148,7 @@ fun SkipiSubscriptionEditDialog(
                         }
                         Switch(
                             checked = draft.enabled,
-                            onCheckedChange = { draft = draft.copy(enabled = it) },
+                            onCheckedChange = { value -> updateDraft { it.copy(enabled = value) } },
                         )
                     }
 
@@ -163,7 +173,7 @@ fun SkipiSubscriptionEditDialog(
                         }
                         Switch(
                             checked = draft.autoOverrideRules,
-                            onCheckedChange = { draft = draft.copy(autoOverrideRules = it) },
+                            onCheckedChange = { value -> updateDraft { it.copy(autoOverrideRules = value) } },
                         )
                     }
 
@@ -188,7 +198,7 @@ fun SkipiSubscriptionEditDialog(
                         }
                         Switch(
                             checked = draft.updateViaProxy,
-                            onCheckedChange = { draft = draft.copy(updateViaProxy = it) },
+                            onCheckedChange = { value -> updateDraft { it.copy(updateViaProxy = value) } },
                         )
                     }
                 }
@@ -197,16 +207,26 @@ fun SkipiSubscriptionEditDialog(
             if (draft.url.isNotBlank()) {
                 TextField(
                     value = draft.userAgent,
-                    onValueChange = { draft = draft.copy(userAgent = it) },
+                    onValueChange = { value -> updateDraft { it.copy(userAgent = value) } },
                     label = stringResource(Res.string.subscription_user_agent),
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 TextField(
                     value = draft.ageSecretKey,
-                    onValueChange = { draft = draft.copy(ageSecretKey = it) },
+                    onValueChange = { value -> updateDraft { it.copy(ageSecretKey = value) } },
                     label = stringResource(Res.string.subscription_age_secret_key),
                     modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            errorMessage?.takeIf(String::isNotBlank)?.let { message ->
+                Text(
+                    text = message,
+                    color = MiuixTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
 

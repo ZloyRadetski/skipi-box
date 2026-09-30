@@ -257,6 +257,20 @@ fun SkipiProxyHeroAnimatedHourglassIcon(
     }
 }
 
+/** Shared static hourglass used when no latency measurement is in progress. */
+@Composable
+fun SkipiProxyHeroStaticHourglassIcon(
+    modifier: Modifier = Modifier,
+    color: Color,
+    size: Dp = 20.dp,
+) {
+    Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.size(size)) {
+            drawSkipiProxyHeroHourglass(sandProgress = 0f, tint = color)
+        }
+    }
+}
+
 private fun DrawScope.drawSkipiProxyHeroHourglass(
     sandProgress: Float,
     tint: Color,

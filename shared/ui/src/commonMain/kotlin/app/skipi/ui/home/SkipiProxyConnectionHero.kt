@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
@@ -89,6 +90,7 @@ data class SkipiProxyHeroColors(
     val text: Color,
     val mutedText: Color,
     val connectedStatus: Color,
+    val onAccent: Color = Color.White,
 )
 
 data class SkipiProxyHeroTypography(
@@ -358,7 +360,7 @@ fun SkipiProxyHeroClassicCard(
     }
 }
 
-/** Compact connection hero, suitable where tunnel power is controlled separately. */
+/** Compact connection hero, suitable where tunnel power is controlled separately or inline. */
 @Composable
 fun SkipiProxyHeroCompactCard(
     state: SkipiProxyHeroState,
@@ -366,12 +368,15 @@ fun SkipiProxyHeroCompactCard(
     typography: SkipiProxyHeroTypography,
     fallbackBadgePainter: Painter?,
     modifier: Modifier = Modifier,
+    onToggle: (() -> Unit)? = null,
+    connectContentDescription: String = stringResource(Res.string.connection_status_tap_to_connect),
+    disconnectContentDescription: String = stringResource(Res.string.proxy_traffic_stats_notification_disconnect),
 ) {
     val connected = state.phase == SkipiConnectionHeroPhase.Connected
     val connecting = state.phase == SkipiConnectionHeroPhase.Connecting
     val heroShape = RoundedCornerShape(18.dp)
     val background by animateColorAsState(
-        targetValue = if (connected) colors.accent else colors.surface,
+        targetValue = skipiProxyHeroCompactBackground(colors.surface, colors.accent, connected),
         animationSpec = tween(350),
         label = "skipiProxyHeroCompactBackground",
     )
@@ -467,6 +472,18 @@ fun SkipiProxyHeroCompactCard(
                             Spacer(Modifier.width(8.dp))
                             SkipiProxyHeroLatencyChip(latency, typography.body)
                         }
+                        if (onToggle != null) {
+                            Spacer(Modifier.width(10.dp))
+                            SkipiProxyHeroCompactPowerButton(
+                                connected = true,
+                                connecting = connecting,
+                                enabled = state.toggleEnabled,
+                                colors = colors,
+                                onToggle = onToggle,
+                                connectContentDescription = connectContentDescription,
+                                disconnectContentDescription = disconnectContentDescription,
+                            )
+                        }
                     }
                 }
             } else {
@@ -509,8 +526,112 @@ fun SkipiProxyHeroCompactCard(
                         Spacer(Modifier.width(8.dp))
                         SkipiProxyHeroLatencyChip(latency, typography.body)
                     }
+                    if (onToggle != null) {
+                        Spacer(Modifier.width(10.dp))
+                        SkipiProxyHeroCompactPowerButton(
+                            connected = false,
+                            connecting = connecting,
+                            enabled = state.toggleEnabled,
+                            colors = colors,
+                            onToggle = onToggle,
+                            connectContentDescription = connectContentDescription,
+                            disconnectContentDescription = disconnectContentDescription,
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+internal fun skipiProxyHeroCompactBackground(
+    surface: Color,
+    accent: Color,
+    connected: Boolean,
+): Color = if (connected) lerp(surface, accent, 0.08f) else surface
+
+@Composable
+private fun SkipiProxyHeroCompactPowerButton(
+    connected: Boolean,
+    connecting: Boolean,
+    enabled: Boolean,
+    colors: SkipiProxyHeroColors,
+    onToggle: () -> Unit,
+    connectContentDescription: String,
+    disconnectContentDescription: String,
+    modifier: Modifier = Modifier,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.88f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "skipiProxyHeroCompactPowerPressScale",
+    )
+    val buttonBackground by animateColorAsState(
+        targetValue = when {
+            connected -> colors.accent
+            connecting -> colors.accent.copy(alpha = 0.15f)
+            else -> colors.raisedSurface
+        },
+        animationSpec = tween(300),
+        label = "skipiProxyHeroCompactPowerBg",
+    )
+    val buttonBorder by animateColorAsState(
+        targetValue = when {
+            connected -> colors.accent.copy(alpha = 0.45f)
+            connecting -> colors.accent
+            else -> colors.border
+        },
+        animationSpec = tween(300),
+        label = "skipiProxyHeroCompactPowerBorder",
+    )
+    val iconTint by animateColorAsState(
+        targetValue = when {
+            connected -> colors.onAccent
+            connecting -> colors.accent
+            enabled -> colors.accent
+            else -> colors.mutedText.copy(alpha = 0.5f)
+        },
+        animationSpec = tween(250),
+        label = "skipiProxyHeroCompactPowerIconTint",
+    )
+
+    Box(
+        modifier = modifier
+            .size(36.dp)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
+            .clip(CircleShape)
+            .background(buttonBackground)
+            .border(1.5.dp, buttonBorder, CircleShape)
+            .semantics {
+                contentDescription = if (connected) disconnectContentDescription else connectContentDescription
+                role = Role.Button
+            }
+            .clickable(
+                enabled = enabled,
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onToggle,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (connecting) {
+            SkipiProxyHeroConnectingSpinner(
+                accent = if (connected) colors.onAccent else colors.accent,
+                size = 20.dp,
+            )
+        } else {
+            SkipiProxyHeroPowerIcon(
+                color = iconTint,
+                modifier = Modifier.size(16.dp),
+            )
         }
     }
 }

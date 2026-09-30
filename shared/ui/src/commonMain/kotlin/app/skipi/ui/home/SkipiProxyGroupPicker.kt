@@ -16,11 +16,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -33,9 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.theme.SkipiTheme
 
@@ -126,19 +131,20 @@ fun SkipiProxyGroupPicker(
                     },
                     onLongClick = {
                         if (contextActions(selectedGroup.id).isNotEmpty()) {
+                            expanded = false
                             onSelectedGroupLongClick?.invoke(selectedGroup.id)
                             contextGroupId = selectedGroup.id
                         }
                     },
                 ),
-            shape = SkipiTheme.shapes.medium,
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = cardSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, cardBorder),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(
-                    horizontal = SkipiTheme.spacing.medium,
-                    vertical = SkipiTheme.spacing.small,
+                    horizontal = 16.dp,
+                    vertical = 12.dp,
                 ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -146,6 +152,7 @@ fun SkipiProxyGroupPicker(
                     Text(
                         text = selectedGroup.title,
                         style = SkipiTheme.typography.titleSmall,
+                        fontSize = 15.sp,
                         fontWeight = themedFontWeight(FontWeight.SemiBold),
                         color = colors.text,
                         maxLines = 1,
@@ -154,7 +161,10 @@ fun SkipiProxyGroupPicker(
                     Text(
                         text = selectedGroup.subtitle,
                         style = SkipiTheme.typography.bodySmall,
+                        fontSize = 12.sp,
                         color = colors.mutedText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 Icon(
@@ -165,19 +175,49 @@ fun SkipiProxyGroupPicker(
                 )
             }
         }
-        DropdownMenu(
+        SkipiHomeDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            surface = colors.raisedSurface,
+            text = colors.text,
+            outline = colors.border,
         ) {
             groups.forEach { group ->
+                val isSelected = group.id == selectedGroup.id
                 DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = group.pickerText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    modifier = Modifier.semantics {
+                        contentDescription = group.pickerText
+                        selected = isSelected
                     },
+                    text = {
+                        Column {
+                            Text(
+                                text = group.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = group.subtitle,
+                                style = SkipiTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = colors.mutedText,
+                            )
+                        }
+                    },
+                    trailingIcon = if (isSelected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Outlined.Check,
+                                contentDescription = null,
+                                tint = colors.accent,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                    colors = skipiHomeDropdownItemColors(colors.text, colors.mutedText),
                     onClick = {
                         expanded = false
                         onGroupSelected(group.id)
@@ -188,13 +228,17 @@ fun SkipiProxyGroupPicker(
         val selectedContextGroupId = contextGroupId
         if (selectedContextGroupId != null) {
             val actions = contextActions(selectedContextGroupId)
-            DropdownMenu(
+            SkipiHomeDropdownMenu(
                 expanded = actions.isNotEmpty(),
                 onDismissRequest = { contextGroupId = null },
+                surface = colors.raisedSurface,
+                text = colors.text,
+                outline = colors.border,
             ) {
                 actions.forEach { action ->
                     DropdownMenuItem(
                         text = { Text(action.title) },
+                        colors = skipiHomeDropdownItemColors(colors.text, colors.mutedText),
                         onClick = {
                             contextGroupId = null
                             onContextAction(selectedContextGroupId, action.id)

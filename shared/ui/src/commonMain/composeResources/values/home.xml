@@ -6,6 +6,14 @@
     <string name="home_action_refreshing">Refreshing…</string>
     <string name="home_action_search">Search</string>
     <string name="home_action_hide_search">Hide search</string>
+    <string name="home_move_up">Move up</string>
+    <string name="home_move_down">Move down</string>
+    <string name="home_add_group">Add proxy group</string>
+    <string name="home_edit_group">Edit proxy group</string>
+    <string name="home_delete_group">Delete proxy group</string>
+    <string name="home_runtime_outbound_metric">Memory: %1$s</string>
+    <string name="home_show_qr_code">Show QR code</string>
+    <string name="home_cancel_latency_tests">Cancel latency tests</string>
     <string name="home_connection_connected">Connected</string>
     <string name="home_connection_connecting">Connecting…</string>
     <string name="home_connection_disconnected">Disconnected</string>
@@ -28,7 +36,7 @@
     <string name="home_subscription_days_left">%1$d days left</string>
     <string name="home_subscription_support">Support</string>
     <string name="home_subscription_website">Website</string>
-    <string name="home_subscription_updated">Updated</string>
+    <string name="home_subscription_updated">Updated: %1$s</string>
     <string name="home_latency_milliseconds">%1$d ms</string>
     <string name="home_error">Error</string>
     <string name="home_empty_search">Nothing found</string>
@@ -48,4 +56,12 @@
     <string name="home_subscription_auto_update_toggle_hint">Disable to keep servers in the list but skip automatic updates</string>
     <string name="home_details_expanded">Details expanded</string>
     <string name="home_details_collapsed">Details collapsed</string>
+    <string name="home_server_detail_title">Server details</string>
+    <string name="home_server_detail_hint">Select a server to view its connection details.</string>
+    <string name="home_server_address">Address</string>
+    <string name="home_server_protocol">Protocol</string>
+    <string name="home_server_transport">Transport</string>
+    <string name="home_server_latency">Latency</string>
+    <string name="home_server_test_latency">Test latency</string>
+    <string name="home_server_testing_latency">Testing latency…</string>
 </resources>

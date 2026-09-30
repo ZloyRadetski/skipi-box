@@ -6,6 +6,12 @@
     <string name="home_action_refreshing">در حال به‌روزرسانی…</string>
     <string name="home_action_search">جستجو</string>
     <string name="home_action_hide_search">پنهان کردن جستجو</string>
+    <string name="home_move_up">انتقال به بالا</string>
+    <string name="home_move_down">انتقال به پایین</string>
+    <string name="home_add_group">افزودن گروه پروکسی</string>
+    <string name="home_runtime_outbound_metric">حافظه: %1$s</string>
+    <string name="home_show_qr_code">نمایش کد QR</string>
+    <string name="home_cancel_latency_tests">لغو آزمون تأخیر</string>
     <string name="home_connection_connected">متصل</string>
     <string name="home_connection_connecting">در حال اتصال…</string>
     <string name="home_connection_disconnected">قطع‌شده</string>
@@ -28,7 +34,7 @@
     <string name="home_subscription_days_left">%1$d روز باقی مانده</string>
     <string name="home_subscription_support">پشتیبانی</string>
     <string name="home_subscription_website">وب‌سایت</string>
-    <string name="home_subscription_updated">به‌روزرسانی شد</string>
+    <string name="home_subscription_updated">به‌روزرسانی: %1$s</string>
     <string name="home_latency_milliseconds">%1$d میلی‌ثانیه</string>
     <string name="home_error">خطا</string>
     <string name="home_empty_search">موردی پیدا نشد</string>
@@ -48,4 +54,12 @@
     <string name="home_subscription_auto_update_toggle_hint">با غیرفعال کردن، سرورها در فهرست می‌مانند اما خودکار به‌روزرسانی نمی‌شوند</string>
     <string name="home_details_expanded">جزئیات باز است</string>
     <string name="home_details_collapsed">جزئیات بسته است</string>
+    <string name="home_server_detail_title">جزئیات سرور</string>
+    <string name="home_server_detail_hint">برای دیدن جزئیات اتصال، یک سرور انتخاب کنید.</string>
+    <string name="home_server_address">نشانی</string>
+    <string name="home_server_protocol">پروتکل</string>
+    <string name="home_server_transport">انتقال</string>
+    <string name="home_server_latency">تأخیر</string>
+    <string name="home_server_test_latency">آزمایش تأخیر</string>
+    <string name="home_server_testing_latency">در حال آزمایش تأخیر…</string>
 </resources>

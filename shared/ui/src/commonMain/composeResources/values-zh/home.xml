@@ -6,6 +6,12 @@
     <string name="home_action_refreshing">正在刷新…</string>
     <string name="home_action_search">搜索</string>
     <string name="home_action_hide_search">隐藏搜索</string>
+    <string name="home_move_up">上移</string>
+    <string name="home_move_down">下移</string>
+    <string name="home_add_group">添加代理组</string>
+    <string name="home_runtime_outbound_metric">内存：%1$s</string>
+    <string name="home_show_qr_code">显示二维码</string>
+    <string name="home_cancel_latency_tests">取消延迟测试</string>
     <string name="home_connection_connected">已连接</string>
     <string name="home_connection_connecting">正在连接…</string>
     <string name="home_connection_disconnected">已断开</string>
@@ -28,7 +34,7 @@
     <string name="home_subscription_days_left">剩余 %1$d 天</string>
     <string name="home_subscription_support">支持</string>
     <string name="home_subscription_website">网站</string>
-    <string name="home_subscription_updated">已更新</string>
+    <string name="home_subscription_updated">已更新：%1$s</string>
     <string name="home_latency_milliseconds">%1$d 毫秒</string>
     <string name="home_error">错误</string>
     <string name="home_empty_search">未找到内容</string>
@@ -48,4 +54,12 @@
     <string name="home_subscription_auto_update_toggle_hint">停用后服务器仍保留在列表中，但不会自动更新</string>
     <string name="home_details_expanded">详情已展开</string>
     <string name="home_details_collapsed">详情已收起</string>
+    <string name="home_server_detail_title">服务器详情</string>
+    <string name="home_server_detail_hint">选择服务器以查看连接详情。</string>
+    <string name="home_server_address">地址</string>
+    <string name="home_server_protocol">协议</string>
+    <string name="home_server_transport">传输</string>
+    <string name="home_server_latency">延迟</string>
+    <string name="home_server_test_latency">测试延迟</string>
+    <string name="home_server_testing_latency">正在测试延迟…</string>
 </resources>

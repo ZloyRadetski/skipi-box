@@ -38,6 +38,7 @@ fun SkipiImportDialog(
     show: Boolean,
     importText: String,
     replaceExisting: Boolean,
+    showReplaceConfiguration: Boolean = true,
     isSubmitting: Boolean = false,
     onImportTextChange: (String) -> Unit,
     onReplaceExistingChange: (Boolean) -> Unit,
@@ -75,21 +76,23 @@ fun SkipiImportDialog(
                 enabled = !isSubmitting,
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = stringResource(Res.string.home_import_replace_configuration),
-                    fontSize = 14.sp,
-                    color = MiuixTheme.colorScheme.onSurface,
-                )
-                Switch(
-                    checked = replaceExisting,
-                    onCheckedChange = onReplaceExistingChange,
-                    enabled = !isSubmitting,
-                )
+            if (showReplaceConfiguration) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.home_import_replace_configuration),
+                        fontSize = 14.sp,
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                    Switch(
+                        checked = replaceExisting,
+                        onCheckedChange = onReplaceExistingChange,
+                        enabled = !isSubmitting,
+                    )
+                }
             }
 
             if (onClipboardImport != null || onFileImport != null) {

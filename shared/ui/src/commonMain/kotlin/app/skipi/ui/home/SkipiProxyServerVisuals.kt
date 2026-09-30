@@ -26,9 +26,9 @@ import top.yukonga.miuix.kmp.basic.Text
 @Composable
 fun SkipiProxyServerFlagBadge(
     flag: String?,
-    fallbackPainter: Painter,
-    containerColor: Color,
-    fallbackTint: Color,
+    fallbackPainter: Painter? = null,
+    containerColor: Color = Color.White.copy(alpha = 0.07f),
+    fallbackTint: Color = Color.White.copy(alpha = 0.65f),
     modifier: Modifier = Modifier,
     size: Dp = 32.dp,
     shapeRadius: Dp = 8.dp,
@@ -47,12 +47,18 @@ fun SkipiProxyServerFlagBadge(
                 fontSize = (size.value * 0.58f).sp,
                 lineHeight = (size.value * 0.58f).sp,
             )
-        } else {
+        } else if (fallbackPainter != null) {
             Icon(
                 painter = fallbackPainter,
                 contentDescription = null,
                 tint = fallbackTint,
                 modifier = Modifier.size(size * 0.62f),
+            )
+        } else {
+            Text(
+                text = "⚡",
+                fontSize = (size.value * 0.58f).sp,
+                lineHeight = (size.value * 0.58f).sp,
             )
         }
     }

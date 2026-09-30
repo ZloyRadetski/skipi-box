@@ -69,7 +69,7 @@ data class SkipiProxyServerExpandedListCardColors(
 fun SkipiProxyServerExpandedListCard(
     state: SkipiProxyServerExpandedListCardState,
     colors: SkipiProxyServerExpandedListCardColors,
-    fallbackBadgePainter: Painter,
+    fallbackBadgePainter: Painter? = null,
     titleFontWeight: FontWeight,
     latencyFontWeight: FontWeight,
     onSelect: () -> Unit,

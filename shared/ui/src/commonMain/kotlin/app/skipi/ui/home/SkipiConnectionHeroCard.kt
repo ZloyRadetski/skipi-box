@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -139,13 +140,26 @@ fun SkipiConnectionHeroCard(
                 }
             }
             Spacer(Modifier.width(if (compact) 14.dp else SkipiTheme.spacing.medium))
-            Column(verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.extraSmall)) {
-                Text(
-                    text = state.title,
-                    color = colors.text,
-                    style = if (compact) SkipiTheme.typography.displayMedium else SkipiTheme.typography.displayLarge,
-                    fontWeight = themedFontWeight(FontWeight.Black),
-                )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.extraSmall),
+            ) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val titleStyle = when (proxyHomeHeroStatusScale(maxWidth.value)) {
+                        ProxyHomeHeroStatusScale.Compact -> SkipiTheme.typography.headlineSmall
+                        ProxyHomeHeroStatusScale.Emphasized -> SkipiTheme.typography.displaySmall
+                        ProxyHomeHeroStatusScale.Large -> SkipiTheme.typography.displayLarge
+                    }
+                    Text(
+                        text = state.title,
+                        color = colors.text,
+                        style = titleStyle,
+                        fontWeight = themedFontWeight(FontWeight.Black),
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Text(
                     text = state.subtitle,
                     color = colors.mutedText,

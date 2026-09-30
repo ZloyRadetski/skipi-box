@@ -3,8 +3,17 @@
 
 package app.skipi.ui.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,10 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +65,7 @@ data class SkipiProxyHomeHeaderState(
     val title: String,
     val latencyTesting: Boolean = false,
     val latencyEnabled: Boolean = true,
+    val latencyActionDescription: String? = null,
 )
 
 data class SkipiProxyHomeHeaderLabels(
@@ -97,6 +105,7 @@ fun SkipiProxyHomeHeader(
 ) {
     var addMenuExpanded by remember { mutableStateOf(false) }
     var toolsMenuExpanded by remember { mutableStateOf(false) }
+    val latencyDescription = state.latencyActionDescription ?: labels.latencyActionDescription
 
     Row(
         modifier = modifier
@@ -126,7 +135,7 @@ fun SkipiProxyHomeHeader(
                     Box(
                         modifier = Modifier
                             .size(25.dp)
-                            .semantics { contentDescription = labels.latencyActionDescription },
+                            .semantics { contentDescription = latencyDescription },
                         contentAlignment = Alignment.Center,
                     ) {
                         SkipiProxyHeroAnimatedHourglassIcon(
@@ -135,11 +144,12 @@ fun SkipiProxyHomeHeader(
                         )
                     }
                 } else {
-                    Icon(
-                        imageVector = Icons.Outlined.HourglassEmpty,
-                        contentDescription = labels.latencyActionDescription,
-                        tint = colors.text,
-                        modifier = Modifier.size(25.dp),
+                    SkipiProxyHeroStaticHourglassIcon(
+                        modifier = Modifier
+                            .size(25.dp)
+                            .semantics { contentDescription = latencyDescription },
+                        color = colors.text,
+                        size = 20.dp,
                     )
                 }
             }
@@ -202,70 +212,94 @@ private fun SkipiProxyHomeHeaderMenu(
     var navigationStack by remember(actions) {
         mutableStateOf(emptyList<SkipiProxyHomeHeaderAction>())
     }
-    val currentActions = navigationStack.lastOrNull()?.children ?: actions
 
-    DropdownMenu(
+    SkipiHomeDropdownMenu(
         expanded = expanded,
         onDismissRequest = {
             navigationStack = emptyList()
             onDismissRequest()
         },
     ) {
-        if (navigationStack.isNotEmpty()) {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = navigationStack.last().title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+        AnimatedContent(
+            targetState = navigationStack,
+            transitionSpec = {
+                val direction = if (targetState.size > initialState.size) 1 else -1
+                (fadeIn(tween(durationMillis = 180)) + slideInHorizontally(
+                    animationSpec = tween(durationMillis = 220),
+                    initialOffsetX = { width -> direction * width / 7 },
+                )).togetherWith(
+                    fadeOut(tween(durationMillis = 120)) + slideOutHorizontally(
+                        animationSpec = tween(durationMillis = 180),
+                        targetOffsetX = { width -> -direction * width / 7 },
+                    ),
+                ).using(
+                    SizeTransform(clip = false) { _, _ -> tween(durationMillis = 220) },
+                )
+            },
+            label = "home_header_menu_navigation",
+        ) { menuStack ->
+            Column {
+                if (menuStack.isNotEmpty()) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = menuStack.last().title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                        colors = skipiHomeDropdownItemColors(),
+                        onClick = { navigationStack = navigationStack.dropLast(1) },
                     )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                },
-                onClick = { navigationStack = navigationStack.dropLast(1) },
-            )
-        }
-        currentActions.forEach { action ->
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = action.title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                enabled = action.enabled,
-                trailingIcon = {
-                    when {
-                        action.children.isNotEmpty() -> Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
+                }
+                val visibleActions = menuStack.lastOrNull()?.children ?: actions
+                visibleActions.forEach { action ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = action.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        enabled = action.enabled,
+                        trailingIcon = {
+                            when {
+                                action.children.isNotEmpty() -> Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
 
-                        action.selected -> Icon(
-                            imageVector = Icons.Outlined.Check,
-                            contentDescription = null,
-                            tint = accent,
-                            modifier = Modifier.size(18.dp),
-                        )
+                                action.selected -> Icon(
+                                    imageVector = Icons.Outlined.Check,
+                                    contentDescription = null,
+                                    tint = accent,
+                                    modifier = Modifier.size(18.dp),
+                                )
 
-                        else -> Unit
-                    }
-                },
-                onClick = {
-                    if (action.children.isNotEmpty()) {
-                        navigationStack = navigationStack + action
-                    } else {
-                        onAction(action.id)
-                    }
-                },
-            )
+                                else -> Unit
+                            }
+                        },
+                        colors = skipiHomeDropdownItemColors(),
+                        onClick = {
+                            if (action.children.isNotEmpty()) {
+                                navigationStack = navigationStack + action
+                            } else {
+                                navigationStack = emptyList()
+                                onAction(action.id)
+                            }
+                        },
+                    )
+                }
+            }
         }
     }
 }

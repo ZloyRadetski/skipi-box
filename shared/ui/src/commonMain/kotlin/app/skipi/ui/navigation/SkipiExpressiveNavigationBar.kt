@@ -139,14 +139,13 @@ fun SkipiExpressiveNavigationBar(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(
                 horizontal = dimensions.outerHorizontalPadding,
                 vertical = dimensions.outerVerticalPadding,
-            )
-            .then(modifier),
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Box(

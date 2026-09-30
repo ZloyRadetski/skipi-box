@@ -19,18 +19,25 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.HourglassEmpty
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +49,7 @@ import app.skipi.ui.resources.common_copy
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.common_edit
 import app.skipi.ui.resources.proxy_server_list_latency_test
+import app.skipi.ui.resources.common_more
 import org.jetbrains.compose.resources.stringResource
 
 enum class SkipiProxyServerLatencyKind {
@@ -74,6 +82,12 @@ data class SkipiProxyServerCardActions(
     val onCopy: () -> Unit,
     val onEdit: () -> Unit,
     val onDelete: () -> Unit,
+)
+
+data class SkipiProxyServerCardMenuAction(
+    val id: String,
+    val title: String,
+    val enabled: Boolean = true,
 )
 
 data class SkipiProxyServerCardLabels(
@@ -117,7 +131,13 @@ fun SkipiProxyServerCard(
     colors: SkipiProxyServerCardColors,
     modifier: Modifier = Modifier,
     labels: SkipiProxyServerCardLabels = defaultSkipiProxyServerCardLabels(),
+    menuActions: List<SkipiProxyServerCardMenuAction> = emptyList(),
+    onMenuAction: (String) -> Unit = {},
+    showLegacyActions: Boolean = menuActions.isEmpty(),
+    showTestAction: Boolean = true,
 ) {
+    var menuExpanded by remember(state.title) { mutableStateOf(false) }
+    val menuContentDescription = stringResource(Res.string.common_more) + ": " + state.title
     Card(
         onClick = actions.onSelect,
         modifier = modifier.fillMaxWidth().semantics { selected = state.selected },
@@ -180,17 +200,48 @@ fun SkipiProxyServerCard(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = actions.onTest, enabled = !state.testingLatency && state.canTest) {
-                    Icon(Icons.Outlined.HourglassEmpty, labels.testContentDescription, tint = colors.text)
+                if (showTestAction) {
+                    IconButton(onClick = actions.onTest, enabled = !state.testingLatency && state.canTest) {
+                        Icon(Icons.Outlined.HourglassEmpty, labels.testContentDescription, tint = colors.text)
+                    }
                 }
-                IconButton(onClick = actions.onCopy, enabled = state.canCopy) {
-                    Icon(Icons.Outlined.ContentCopy, labels.copyContentDescription, tint = colors.text)
-                }
-                IconButton(onClick = actions.onEdit, enabled = state.canEdit) {
-                    Icon(Icons.Outlined.Edit, labels.editContentDescription, tint = colors.text)
-                }
-                IconButton(onClick = actions.onDelete) {
-                    Icon(Icons.Outlined.Delete, labels.deleteContentDescription, tint = colors.text)
+                if (showLegacyActions) {
+                    IconButton(onClick = actions.onCopy, enabled = state.canCopy) {
+                        Icon(Icons.Outlined.ContentCopy, labels.copyContentDescription, tint = colors.text)
+                    }
+                    IconButton(onClick = actions.onEdit, enabled = state.canEdit) {
+                        Icon(Icons.Outlined.Edit, labels.editContentDescription, tint = colors.text)
+                    }
+                    IconButton(onClick = actions.onDelete) {
+                        Icon(Icons.Outlined.Delete, labels.deleteContentDescription, tint = colors.text)
+                    }
+                } else if (menuActions.isNotEmpty()) {
+                    Box {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.semantics {
+                                contentDescription = menuContentDescription
+                            },
+                        ) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = null, tint = colors.text)
+                        }
+                        SkipiHomeDropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            menuActions.forEach { action ->
+                                DropdownMenuItem(
+                                    text = { Text(action.title) },
+                                    enabled = action.enabled,
+                                    colors = skipiHomeDropdownItemColors(),
+                                    onClick = {
+                                        menuExpanded = false
+                                        onMenuAction(action.id)
+                                    },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

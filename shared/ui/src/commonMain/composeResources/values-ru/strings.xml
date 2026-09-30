@@ -1379,6 +1379,9 @@
     <!-- Заголовки секций на главном экране -->
     <string name="home_section_subscription">Подписка</string>
     <string name="home_section_servers">Серверы</string>
+    <string name="home_action_unavailable">Это действие недоступно.</string>
+    <string name="home_action_variant_unavailable">Этот вариант недоступен.</string>
+    <string name="home_operation_failed">Не удалось выполнить операцию.</string>
 
     <!-- Редактор Amnezia WG -->
     <string name="proxy_editor_amnezia_obfuscation">Обфускация (AmneziaWG)</string>
