@@ -1,9 +1,9 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package data.backup
+package features.backup
 
-internal fun AppBackupFile.migrateAppBackup(): AppBackupFile {
+fun AppBackupFile.migrateAppBackup(): AppBackupFile {
     require(format == AppBackupFormat) {
         "Invalid backup file format"
     }

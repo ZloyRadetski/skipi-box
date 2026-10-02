@@ -4,36 +4,27 @@
 package features.about
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalUpdateAppState
 import app.ProjectInfo
 import app.R
 import app.collectAppState
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import features.settings.SettingsSectionCard
 import features.updater.AppUpdateDownloadStatus
@@ -42,46 +33,16 @@ import features.updater.runtime.AppUpdateCheckOutcome
 import features.updater.ui.AppUpdateBanner
 import features.updater.ui.AppUpdateChangelogDialog
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 import androidx.compose.foundation.layout.aspectRatio
 
-private const val SkipiProjectSourceUri = "https://github.com/ZloyRadetski/skipi-box"
 internal const val SkipiBugReportUri = "https://github.com/ZloyRadetski/skipi-box/issues/new"
 internal const val SkipiTelegramChannelUri = "https://t.me/skipi_public"
 
 @Composable
-internal fun AboutHeader(
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(top = 20.dp, bottom = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        AboutAppLogo()
-        Spacer(Modifier.height(14.dp))
-        Text(
-            text = ProjectInfo.PROJECT_NAME,
-            fontSize = MiuixTheme.textStyles.title2.fontSize,
-            color = MiuixTheme.colorScheme.onBackground,
-        )
-        Text(
-            text = "v${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-    }
-}
-
-@Composable
-private fun AboutAppLogo(
+internal fun AboutAppLogo(
     modifier: Modifier = Modifier,
 ) {
     Image(
@@ -93,74 +54,6 @@ private fun AboutAppLogo(
             .aspectRatio(2f)
             .clip(RoundedCornerShape(30.dp)),
     )
-}
-
-@Composable
-internal fun AboutRuntimeCard(
-    modifier: Modifier = Modifier,
-) {
-    val uriHandler = LocalUriHandler.current
-    val xrayVersion = remember {
-        runCatching { app.skipi.core.skipicore.Skipicore.coreVersion() }.getOrNull()?.ifBlank { null }
-            ?: ProjectInfo.XRAY_CORE_VERSION
-    }
-
-    SmallTitle(text = stringResource(R.string.about_runtime))
-    SettingsSectionCard(
-        modifier = modifier,
-        bottomPadding = 12.dp,
-    ) {
-        ArrowPreference(
-            title = "SKIPI Core",
-            summary = ProjectInfo.SKIPI_CORE_VERSION,
-            onClick = {
-                uriHandler.openUri("https://github.com/ZloyRadetski/skipi-core")
-            },
-        )
-        BasicComponent(
-            title = "Xray-core",
-            summary = xrayVersion,
-        )
-        BasicComponent(
-            title = "hev-socks5-tunnel",
-            summary = ProjectInfo.HEV_SOCKS5_TUNNEL_VERSION,
-        )
-    }
-}
-
-@Composable
-internal fun AboutLinksCard(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    val uriHandler = LocalUriHandler.current
-
-    SmallTitle(text = title)
-    SettingsSectionCard(
-        modifier = modifier,
-        bottomPadding = 12.dp,
-    ) {
-        val navigator = app.LocalNavigator.current
-        ArrowPreference(
-            title = stringResource(R.string.about_replay_onboarding),
-            summary = stringResource(R.string.about_replay_onboarding_summary),
-            onClick = { navigator.push(app.navigation.Route.Onboarding) },
-        )
-        ArrowPreference(
-            title = stringResource(R.string.about_telegram_channel),
-            summary = "@skipi_public",
-            onClick = { uriHandler.openUri(SkipiTelegramChannelUri) },
-        )
-        ArrowPreference(
-            title = stringResource(R.string.about_bug_report),
-            summary = stringResource(R.string.about_bug_report_summary),
-            onClick = { uriHandler.openUri(SkipiBugReportUri) },
-        )
-        ArrowPreference(
-            title = stringResource(R.string.about_view_skipi_source),
-            onClick = { uriHandler.openUri(SkipiProjectSourceUri) },
-        )
-    }
 }
 
 @Composable
@@ -181,7 +74,6 @@ internal fun AboutUpdatesCard(
 
     AppUpdateBanner(modifier = modifier.padding(bottom = 8.dp))
 
-    SmallTitle(text = stringResource(R.string.settings_updates_title))
     SettingsSectionCard(
         modifier = modifier,
         bottomPadding = 12.dp,

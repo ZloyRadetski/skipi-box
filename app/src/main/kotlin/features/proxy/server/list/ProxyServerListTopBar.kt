@@ -40,6 +40,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.AppState
+import app.skipi.app.model.ProxyServerRecord as SharedProxyServerRecord
+import app.skipi.app.proxy.ProxyServerRecord as CollectionProxyServerRecord
+import app.skipi.app.proxy.importProxyServerRecords
 import app.activeTunnelTargetDisplayName
 import app.proxyServerIdFromOutboundTag
 import app.ProxyServerListState
@@ -76,9 +79,7 @@ import features.proxy.server.usecase.deleteDuplicateServersInGroup
 import features.proxy.server.usecase.deleteInvalidServersInGroup
 import features.proxy.server.usecase.importProxyServersFromText
 import features.proxy.server.usecase.updatableSubscriptionGroups
-import features.proxy.server.usecase.withDeletedProxyServers
-import features.proxy.server.usecase.withImportedProxyServers
-import features.proxy.server.usecase.withUpdatedSubscriptionServers
+import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionInstallConfigUseCase
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
@@ -91,9 +92,7 @@ import features.subscription.toSubscriptionInstallConfigOrNull
 import features.settings.currentTunnelMemoryPssKb
 import features.settings.formatTunnelMemory
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -720,10 +719,10 @@ private fun importProxyServersInBackground(
                 text = text,
                 source = source,
                 groupState = groupState,
+                stateStore = stateStore,
                 subscriptionFetcher = subscriptionFetcher,
                 sendDeviceHeaders = appState.enableSubscriptionDeviceHeaders,
                 fetchTimeoutSeconds = appState.subscriptionFetchTimeoutSeconds,
-                updateAppState = updateAppState,
                 tipNotifier = tipNotifier,
                 messages = messages,
             )
@@ -763,10 +762,10 @@ private suspend fun importProxyServers(
     text: String,
     source: ProxyServerImportSource,
     groupState: ProxyServerListGroups,
+    stateStore: AndroidAppStateStore,
     subscriptionFetcher: AndroidSubscriptionFetcher,
     sendDeviceHeaders: Boolean,
     fetchTimeoutSeconds: Int,
-    updateAppState: ((AppState) -> AppState) -> Unit,
     tipNotifier: AndroidToastTipNotifier,
     messages: ProxyServerListMessages,
 ) {
@@ -789,7 +788,33 @@ private suspend fun importProxyServers(
         },
     )
     if (importResult.servers.isNotEmpty()) {
-        updateAppState { state -> state.withImportedProxyServers(importResult, targetGroupId) }
+        stateStore.proxyServerRepository.updateCatalog { catalog ->
+            importProxyServerRecords(
+                servers = catalog.servers.map { record ->
+                    CollectionProxyServerRecord(
+                        id = record.id,
+                        groupId = record.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
+                        server = record.server,
+                    )
+                },
+                imported = importResult.servers,
+                groupId = targetGroupId,
+                nextServerId = catalog.nextServerId,
+                selectedServerId = catalog.selectedServerId,
+            ).let { collection ->
+                app.skipi.app.model.ProxyServerCatalog(
+                    servers = collection.servers.map { record ->
+                        SharedProxyServerRecord(
+                            id = record.id,
+                            server = record.server,
+                            sourceSubscriptionId = record.groupId.takeIf { it != DefaultSubscriptionGroupId },
+                        )
+                    },
+                    nextServerId = collection.nextServerId,
+                    selectedServerId = collection.selectedServerId,
+                )
+            }
+        }
     }
     tipNotifier.show(
         messages.importResultTemplate.formatTemplate(
@@ -875,7 +900,7 @@ internal fun handleProxyServerListToolAction(
         ProxyServerListToolAction.DeleteDuplicateServers -> {
             deleteDuplicateServers(
                 servers = groupState.currentGroupServers,
-                updateAppState = updateAppState,
+                stateStore = stateStore,
                 tipNotifier = tipNotifier,
                 scope = scope,
                 messages = messages,
@@ -977,13 +1002,12 @@ private fun updateSubscriptionGroups(
             fetchOptions = { group -> stateStore.state.value.toSubscriptionFetchOptions(group) },
         )
         if (result.updates.isNotEmpty()) {
-            val nextState = withContext(Dispatchers.Default) {
-                stateStore.state.value.withUpdatedSubscriptionServers(
-                    updates = result.updates,
-                    updatedAtMillis = result.updatedAtMillis,
-                )
-            }
-            updateAppState { nextState }
+            applyProxySubscriptionUpdates(
+                stateStore = stateStore,
+                updates = result.updates,
+                updatedAtMillis = result.updatedAtMillis,
+                updateAppState = updateAppState,
+            )
         }
         tipNotifier.show(
             subscriptionUpdateMessage(
@@ -1074,20 +1098,16 @@ private fun deleteServersByIds(
     }
 
     fun applyDeleteAndNotify() {
-        var removedCount = 0
-        updateAppState { state ->
-            val deletedServerIds = state.proxyServers
-                .asSequence()
-                .map { server -> server.id }
-                .filter { serverId -> serverId in serverIds }
-                .toSet()
-            removedCount = deletedServerIds.size
-            state.withDeletedProxyServers(deletedServerIds)
-        }
         scope.launch {
+            stateStore.proxyServerRepository.updateCollection { current ->
+                current.filterNot { it.id in existingServerIds }
+            }
+            if (stateSnapshot.selectedProxyServerId in existingServerIds) {
+                updateAppState { state -> state.copy(proxyRunning = false) }
+            }
             tipNotifier.show(
-                if (removedCount > 0) {
-                    deletedTemplate.formatTemplate("count" to removedCount)
+                if (existingServerIds.isNotEmpty()) {
+                    deletedTemplate.formatTemplate("count" to existingServerIds.size)
                 } else {
                     emptyMessage
                 },
@@ -1116,29 +1136,25 @@ private fun deleteServersByIds(
 
 private fun deleteDuplicateServers(
     servers: List<ProxyServerState>,
-    updateAppState: ((AppState) -> AppState) -> Unit,
+    stateStore: AndroidAppStateStore,
     tipNotifier: AndroidToastTipNotifier,
     scope: CoroutineScope,
     messages: ProxyServerListMessages,
 ) {
     val currentGroupServerIds = servers.map { server -> server.id }.toSet()
-    var removedCount = 0
-    updateAppState { state ->
-        val result = state.proxyServers.deleteDuplicateServersInGroup(
-            currentGroupServerIds = currentGroupServerIds,
-            selectedProxyServerId = state.selectedProxyServerId,
-        )
-        removedCount = result.removedCount
-        if (removedCount == 0) {
-            state
-        } else {
-            state.copy(proxyServers = result.servers)
-        }
-    }
+    val preview = stateStore.currentState.proxyServers.deleteDuplicateServersInGroup(
+        currentGroupServerIds = currentGroupServerIds,
+        selectedProxyServerId = stateStore.currentState.selectedProxyServerId,
+    )
+    val retainedIds = preview.servers.mapTo(hashSetOf()) { it.id }
+    val removedIds = stateStore.currentState.proxyServers.map { it.id }.filterNot { it in retainedIds }.toSet()
     scope.launch {
+        if (removedIds.isNotEmpty()) {
+            stateStore.proxyServerRepository.updateCollection { current -> current.filterNot { it.id in removedIds } }
+        }
         tipNotifier.show(
-            if (removedCount > 0) {
-                messages.duplicatesDeletedTemplate.formatTemplate("count" to removedCount)
+            if (removedIds.isNotEmpty()) {
+                messages.duplicatesDeletedTemplate.formatTemplate("count" to removedIds.size)
             } else {
                 messages.noDuplicates
             },

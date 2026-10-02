@@ -69,6 +69,18 @@ data class ProxyHomePresentation(
     val collapsedSubscriptionGroupIds: Set<String> = emptySet(),
 )
 
+/** Reduces Home presentation actions without host or Compose dependencies. */
+fun reduceProxyHomePresentation(
+    presentation: ProxyHomePresentation,
+    action: ProxyHomeAction,
+    searchEnabled: Boolean = true,
+): ProxyHomePresentation = when (action) {
+    is ProxyHomeAction.SelectGroup -> presentation.copy(selectedGroupId = action.groupId)
+    is ProxyHomeAction.SetSearchQuery -> presentation.copy(searchQuery = action.query)
+    is ProxyHomeAction.SetSearchVisible -> presentation.copy(isSearchVisible = action.visible && searchEnabled)
+    else -> presentation
+}
+
 data class ProxyServerSummary(
     val id: String,
     val title: String,
@@ -413,9 +425,13 @@ class ProxyHomeStore(
     fun dispatch(action: ProxyHomeAction) {
         when (action) {
             is ProxyHomeAction.SelectGroup -> selectGroup(action.groupId)
-            is ProxyHomeAction.SetSearchQuery -> updatePresentation { it.copy(searchQuery = action.query) }
+            is ProxyHomeAction.SetSearchQuery -> updatePresentation { current ->
+                reduceProxyHomePresentation(current, action)
+            }
             is ProxyHomeAction.SetSearchVisible -> {
-                updatePresentation { it.copy(isSearchVisible = action.visible && input.value.searchEnabled) }
+                updatePresentation { current ->
+                    reduceProxyHomePresentation(current, action, searchEnabled = input.value.searchEnabled)
+                }
             }
             is ProxyHomeAction.ToggleSubscriptionExpanded -> toggleSubscriptionExpanded(action.groupId)
             ProxyHomeAction.DismissMessage -> dismissMessage()
@@ -429,7 +445,9 @@ class ProxyHomeStore(
             updateTransient { it.copy(rejectedAction = null) }
             return
         }
-        updatePresentation { it.copy(selectedGroupId = groupId) }
+        updatePresentation { current ->
+            reduceProxyHomePresentation(current, ProxyHomeAction.SelectGroup(groupId))
+        }
     }
 
     private fun toggleSubscriptionExpanded(groupId: String) {

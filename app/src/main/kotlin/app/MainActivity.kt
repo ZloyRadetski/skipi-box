@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,8 +28,10 @@ import engine.vpn.AndroidVpnPermissionRequester
 import features.networkautomation.engine.AndroidWifiSsidPermissionRequester
 import features.config.SkipiDeepLink
 import features.config.toSkipiDeepLinkOrNull
-import features.config.withImportedSkipiServer
 import features.config.withImportedTrafficConfig
+import features.config.withImportedSkipiServer
+import data.repository.reconcileTrafficConfigProxyGroups
+import features.config.withActiveTrafficConfigProfile
 import features.logs.AndroidLogFileCreator
 import features.proxy.server.qr.AndroidQrCodeScanRequester
 import features.proxy.server.usecase.ProxyServiceResult
@@ -42,7 +45,6 @@ import features.subscription.subscriptionInstallMessage
 import features.subscription.toSubscriptionInstallConfigOrNull
 import features.subscription.usecase.toSubscriptionFetchOptions
 import app.effects.resolveActiveNetworkConfig
-import features.config.withActiveTrafficConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ui.feedback.AndroidToastTipNotifier
@@ -228,7 +230,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun showAppContent() {
-        enableEdgeToEdge()
+        val isDarkSystemUi = applicationContext.currentSystemUiSnapshot().isDark
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                lightScrim = android.graphics.Color.TRANSPARENT,
+                darkScrim = android.graphics.Color.TRANSPARENT,
+            ) { isDarkSystemUi },
+            navigationBarStyle = SystemBarStyle.auto(
+                lightScrim = android.graphics.Color.TRANSPARENT,
+                darkScrim = android.graphics.Color.TRANSPARENT,
+            ) { isDarkSystemUi },
+        )
         WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightNavigationBars =
             !applicationContext.currentSystemUiSnapshot().isDark
         setContent {
@@ -255,7 +267,8 @@ class MainActivity : ComponentActivity() {
 
             val resolvedState = state.resolveActiveNetworkConfig(applicationContext)
             if (resolvedState.activeTrafficConfigId != state.activeTrafficConfigId) {
-                application.stateStore.update { it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId) }
+                application.stateStore.update { it.withActiveTrafficConfigProfile(resolvedState.activeTrafficConfigId) }
+                application.stateStore.reconcileTrafficConfigProxyGroups()
             }
             val selectedServer = resolvedState.proxyServers.firstOrNull { it.id == resolvedState.selectedProxyServerId }
                 ?: return@launch
@@ -340,7 +353,9 @@ class MainActivity : ComponentActivity() {
 
             is SkipiDeepLink.ManualServer -> {
                 runCatching {
-                    application.stateStore.update { state -> state.withImportedSkipiServer(link.url) }
+                    application.stateStore.proxyServerRepository.updateCatalog { catalog ->
+                        catalog.withImportedSkipiServer(link.url)
+                    }
                 }.onSuccess {
                     tipNotifier.show(getString(R.string.skipi_imported_server))
                 }.onFailure { error ->
@@ -361,6 +376,7 @@ class MainActivity : ComponentActivity() {
                         link.content
                     }
                     val sourceUrl = if (isHttpUrl) link.content else link.sourceUrl
+                    val before = application.stateStore.currentState
                     application.stateStore.update { state ->
                         state.withImportedTrafficConfig(
                             content = content,
@@ -368,6 +384,12 @@ class MainActivity : ComponentActivity() {
                             fallbackName = getString(R.string.configs_imported_name),
                             sourceUrl = sourceUrl,
                         )
+                    }
+                    val after = application.stateStore.currentState
+                    if (before.trafficConfigs != after.trafficConfigs ||
+                        before.activeTrafficConfigId != after.activeTrafficConfigId
+                    ) {
+                        application.stateStore.reconcileTrafficConfigProxyGroups()
                     }
                 }.onSuccess {
                     tipNotifier.show(

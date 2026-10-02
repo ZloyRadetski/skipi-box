@@ -3,29 +3,13 @@
 
 package features.config
 
-import androidx.compose.animation.core.animateFloatAsState
-import ui.text.themedFontWeight
-import ui.components.AppWindowDropdownPreference
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import features.routing.ui.RoutingRulesInfoBottomSheet
 import features.settings.SettingsIcons
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
@@ -38,54 +22,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
+import app.skipi.ui.config.SkipiTrafficConfigRuleEditorForm
+import app.skipi.ui.config.SkipiTrafficConfigRulesList
+import app.skipi.ui.config.TrafficConfigRuleListItem
+import app.skipi.ui.config.TrafficConfigRuleTypes
 import app.navigation.Route
 import app.navigation.RouteOutboundSelectionResult
-import sh.calvin.reorderable.ReorderableItem
-import top.yukonga.miuix.kmp.anim.folmeSpring
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
 import features.routing.ui.GeoAssetPickerDialog
-import features.routing.ui.SuggestionChipsRow
 import features.routing.usecase.RoutingSuggestionsProvider
-import ui.AppTheme
-import ui.components.draggedCardShadow
-import ui.components.longPressReorderDragHandle
-import ui.components.rememberSkipiReorderableLazyListState
-import ui.components.rememberReorderableScrollThresholdPadding
 import ui.layout.pageScrollModifiers
-
-private data class TrafficConfigRuleItem(
-    val id: Long,
-    val rule: ShadowrocketRule,
-)
 
 /** Full-screen visual editor for the [Rule] section. Rules are evaluated from top to bottom. */
 @Composable
@@ -106,7 +65,7 @@ internal fun TrafficConfigRulesPage(
     val normalRules = analysis.rules.filterNot(ShadowrocketRule::isFinal)
     val finalRule = analysis.rules.firstOrNull(ShadowrocketRule::isFinal)
 
-    val rulesList = remember { mutableStateListOf<TrafficConfigRuleItem>() }
+    val rulesList = remember { mutableStateListOf<TrafficConfigRuleListItem>() }
     var nextItemId by remember { mutableLongStateOf(1L) }
 
     LaunchedEffect(normalRules) {
@@ -116,7 +75,7 @@ internal fun TrafficConfigRulesPage(
             rulesList.clear()
             rulesList.addAll(
                 normalRules.map { rule ->
-                    TrafficConfigRuleItem(id = nextItemId++, rule = rule)
+                    TrafficConfigRuleListItem(id = nextItemId++, rule = rule)
                 },
             )
         }
@@ -128,25 +87,12 @@ internal fun TrafficConfigRulesPage(
     }
 
     val lazyListState = rememberLazyListState()
-    val listBottomPadding = padding.calculateBottomPadding()
-    val reorderableLazyListState = rememberSkipiReorderableLazyListState(
-        lazyListState = lazyListState,
-        itemCount = rulesList.size,
-        itemIndexOffset = 2,
-        scrollThresholdPadding = rememberReorderableScrollThresholdPadding(
-            bottom = listBottomPadding,
-        ),
-    ) { fromIndex, toIndex ->
+    val hapticFeedback = LocalHapticFeedback.current
+
+    fun moveRules(fromIndex: Int, toIndex: Int) {
         if (fromIndex in rulesList.indices && toIndex in rulesList.indices && fromIndex != toIndex) {
             rulesList.add(toIndex, rulesList.removeAt(fromIndex))
-            val sourceLines = localRawConfig.lines().toMutableList()
-            val lineIndices = normalRules.map { it.lineNumber - 1 }
-            rulesList.forEachIndexed { i, item ->
-                if (i in lineIndices.indices) {
-                    sourceLines[lineIndices[i]] = item.rule.raw
-                }
-            }
-            val updatedRaw = sourceLines.joinToString("\n").trimEnd() + "\n"
+            val updatedRaw = localRawConfig.withShadowrocketRulesReordered(fromIndex, toIndex)
             localRawConfig = updatedRaw
             updateAppState { state -> state.withUpdatedTrafficConfig(config.id) { it.copy(rawConfig = updatedRaw) } }
         }
@@ -170,196 +116,32 @@ internal fun TrafficConfigRulesPage(
             }
         },
     ) { listPadding, scrollBehavior ->
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .pageScrollModifiers(scrollBehavior),
+        SkipiTrafficConfigRulesList(
+            rules = rulesList,
+            finalRule = finalRule,
+            listState = lazyListState,
             contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            item(key = "order") {
-                Text(
-                    text = stringResource(R.string.configs_rules_order),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp),
-                )
-            }
-            item(key = "add") {
-                TextButton(
-                    text = stringResource(R.string.configs_rules_add),
-                    onClick = {
-                        navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId))
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                )
-            }
-            items(items = rulesList, key = { item -> item.id }) { item ->
-                ReorderableItem(
-                    state = reorderableLazyListState.reorderableState,
-                    key = item.id,
-                    enabled = rulesList.size > 1,
-                    animateItemModifier = Modifier.animateItem(
-                        fadeInSpec = null,
-                        fadeOutSpec = null,
-                        placementSpec = folmeSpring(damping = 0.9f, response = 0.38f),
-                    ),
-                ) { isDragging ->
-                    VisualRuleCard(
-                        rule = item.rule,
-                        isDragging = isDragging,
-                        dragModifier = Modifier.longPressReorderDragHandle(
-                            scope = this,
-                            enabled = rulesList.size > 1,
-                            state = reorderableLazyListState,
-                        ),
-                        onEdit = {
-                            navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, item.rule.lineNumber))
-                        },
-                        onDelete = { updateRaw(config.rawConfig.withoutShadowrocketRuleLine(item.rule.lineNumber)) },
-                    )
+            reorderBottomPadding = padding.calculateBottomPadding(),
+            modifier = Modifier.pageScrollModifiers(scrollBehavior),
+            onAdd = { navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId)) },
+            onEdit = { rule -> navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, rule.lineNumber)) },
+            onDelete = { rule -> updateRaw(config.rawConfig.withoutShadowrocketRuleLine(rule.lineNumber)) },
+            onEditFinal = {
+                if (finalRule == null) {
+                    updateRaw(config.rawConfig.withShadowrocketRuleAdded("FINAL,PROXY"))
+                } else {
+                    navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, finalRule.lineNumber))
                 }
-            }
-            item(key = "fallback") {
-                FinalRuleCard(
-                    rule = finalRule,
-                    onEdit = {
-                        if (finalRule == null) {
-                            updateRaw(config.rawConfig.withShadowrocketRuleAdded("FINAL,PROXY"))
-                        } else {
-                            navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, finalRule.lineNumber))
-                        }
-                    },
-                )
-            }
-        }
+            },
+            onMove = ::moveRules,
+            onHapticFeedback = hapticFeedback::performHapticFeedback,
+        )
     }
 
     RoutingRulesInfoBottomSheet(
         show = showInfoBottomSheet,
         onDismissRequest = { showInfoBottomSheet = false },
     )
-}
-
-@Composable
-private fun VisualRuleCard(
-    rule: ShadowrocketRule,
-    isDragging: Boolean,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier,
-    dragModifier: Modifier = Modifier,
-) {
-    val animatedScale by animateFloatAsState(
-        targetValue = if (isDragging) 1.025f else 1f,
-        animationSpec = folmeSpring(damping = 0.9f, response = 0.38f),
-        label = "visualRuleDragScale",
-    )
-    val animatedShadowAlpha by animateFloatAsState(
-        targetValue = if (isDragging) 1f else 0f,
-        animationSpec = folmeSpring(damping = 0.9f, response = 0.38f),
-        label = "visualRuleDragShadowAlpha",
-    )
-    val shadowColor = AppTheme.colors.onSurface.copy(alpha = 0.20f)
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .zIndex(if (isDragging) 1f else 0f)
-            .graphicsLayer {
-                scaleX = animatedScale
-                scaleY = animatedScale
-            }
-            .draggedCardShadow(
-                alpha = animatedShadowAlpha,
-                color = shadowColor,
-            )
-            .then(dragModifier)
-            .clickable(onClick = onEdit),
-        cornerRadius = 14.dp,
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${rule.type}, ${rule.value}",
-                    fontSize = 15.sp,
-                    fontWeight = themedFontWeight(FontWeight.Medium),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = rule.policy,
-                    fontSize = 12.sp,
-                    color = MiuixTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            IconButton(onClick = onEdit) {
-                Icon(
-                    imageVector = MiuixIcons.Edit,
-                    contentDescription = stringResource(R.string.configs_edit),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = MiuixIcons.Delete,
-                    contentDescription = stringResource(R.string.common_delete),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FinalRuleCard(
-    rule: ShadowrocketRule?,
-    onEdit: () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit),
-        cornerRadius = 14.dp,
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "FINAL",
-                    fontSize = 15.sp,
-                    fontWeight = themedFontWeight(FontWeight.Medium),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = rule?.policy ?: stringResource(R.string.configs_rules_final_missing),
-                    fontSize = 12.sp,
-                    color = if (rule != null) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-            IconButton(onClick = onEdit) {
-                Icon(
-                    imageVector = MiuixIcons.Edit,
-                    contentDescription = stringResource(R.string.configs_edit),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-        }
-    }
 }
 
 @Composable
@@ -385,7 +167,7 @@ fun TrafficConfigRuleEditorPage(
         return
     }
     val isFinal = initialRule?.isFinal == true
-    val typeOptions = remember { VisualRuleTypes }
+    val typeOptions = remember { TrafficConfigRuleTypes }
     val editorIdentity = ruleLineNumber ?: config.id * -1
     var typeIndex by rememberSaveable(editorIdentity) {
         mutableIntStateOf(typeOptions.indexOf(initialRule?.type ?: "DOMAIN-SUFFIX").coerceAtLeast(0))
@@ -461,215 +243,43 @@ fun TrafficConfigRuleEditorPage(
         },
     ) { listPadding, scrollBehavior ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .pageScrollModifiers(scrollBehavior),
+            modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                if (!isFinal) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                    ) {
-                        AppWindowDropdownPreference(
-                            title = stringResource(R.string.configs_rules_type),
-                            items = typeOptions,
-                            selectedIndex = typeIndex,
-                            onSelectedIndexChange = { typeIndex = it },
+                SkipiTrafficConfigRuleEditorForm(
+                    isFinal = isFinal,
+                    selectedType = selectedType,
+                    typeOptions = typeOptions,
+                    onTypeSelected = { typeIndex = it },
+                    value = value,
+                    valueState = valueState,
+                    onValueChange = { value = it },
+                    selectedPolicy = selectedPolicy,
+                    onPolicyClick = {
+                        navigator.navigateForResult(
+                            route = Route.RouteOutboundSelector(
+                                selectedTag = selectedPolicy,
+                                resultKey = policySelectorResultKey,
+                                trafficConfigId = trafficConfigId,
+                            ),
+                            requestKey = policySelectorResultKey,
                         )
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 4.dp, end = 4.dp, bottom = 8.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.routing_info_title),
-                            fontSize = 12.sp,
-                            color = MiuixTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable { showInfoBottomSheet = true }
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
-                    when (selectedType) {
-                        "NETWORK" -> {
-                            val networkOptions = RoutingSuggestionsProvider.ShadowrocketNetworkOptions
-                            val networkIndex = networkOptions.indexOf(value.trim().lowercase())
-                            Card(
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                                colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                            ) {
-                                AppWindowDropdownPreference(
-                                    title = stringResource(R.string.routing_network_label),
-                                    items = networkOptions,
-                                    selectedIndex = networkIndex.coerceAtLeast(0),
-                                    onSelectedIndexChange = { idx -> updateValue(networkOptions[idx]) },
-                                )
-                            }
-                            SuggestionChipsRow(
-                                chips = networkOptions,
-                                onChipClick = { updateValue(it) },
-                                selectedChip = value.trim().lowercase(),
-                                modifier = Modifier.padding(bottom = 10.dp),
-                            )
-                        }
-                        "GEOIP" -> {
-                            TextField(
-                                state = valueState,
-                                inputTransformation = { value = asCharSequence().toString().uppercase() },
-                                label = stringResource(R.string.configs_rules_value),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                            )
-                            SuggestionChipsRow(
-                                chips = geoIpSuggestions.take(15).map { it.tag },
-                                onChipClick = { updateValue(it) },
-                                actionButtonText = stringResource(R.string.routing_suggestions_geoip),
-                                onActionClick = { showGeoIpPicker = true },
-                                selectedChip = value.trim().uppercase(),
-                                modifier = Modifier.padding(bottom = 10.dp),
-                            )
-                        }
-                        "DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD" -> {
-                            TextField(
-                                state = valueState,
-                                inputTransformation = { value = asCharSequence().toString() },
-                                label = stringResource(R.string.configs_rules_value),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                            )
-                            SuggestionChipsRow(
-                                chips = geoSiteSuggestions.take(12).map { it.tag },
-                                onChipClick = { updateValue(it) },
-                                actionButtonText = stringResource(R.string.routing_suggestions_geosite),
-                                onActionClick = { showGeoSitePicker = true },
-                                selectedChip = value.trim().lowercase(),
-                                modifier = Modifier.padding(bottom = 10.dp),
-                            )
-                        }
-                        "RULE-SET" -> {
-                            TextField(
-                                state = valueState,
-                                inputTransformation = { value = asCharSequence().toString() },
-                                label = stringResource(R.string.configs_rules_value),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                            )
-                            SuggestionChipsRow(
-                                chips = RoutingSuggestionsProvider.RuleSetPresets,
-                                onChipClick = { updateValue(it) },
-                                actionButtonText = stringResource(R.string.routing_suggestions_title),
-                                onActionClick = { showRuleSetPicker = true },
-                                selectedChip = value.trim(),
-                                modifier = Modifier.padding(bottom = 10.dp),
-                            )
-                        }
-                        "DOMAIN-SET" -> {
-                            TextField(
-                                state = valueState,
-                                inputTransformation = { value = asCharSequence().toString() },
-                                label = stringResource(R.string.configs_rules_value),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                            )
-                            SuggestionChipsRow(
-                                chips = RoutingSuggestionsProvider.DomainSetPresets,
-                                onChipClick = { updateValue(it) },
-                                actionButtonText = stringResource(R.string.routing_suggestions_geosite),
-                                onActionClick = { showGeoSitePicker = true },
-                                selectedChip = value.trim(),
-                                modifier = Modifier.padding(bottom = 10.dp),
-                            )
-                        }
-                        "DST-PORT" -> {
-                            TextField(
-                                state = valueState,
-                                inputTransformation = { value = asCharSequence().toString() },
-                                label = stringResource(R.string.configs_rules_value),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                            )
-                            SuggestionChipsRow(
-                                chips = RoutingSuggestionsProvider.PortPresets,
-                                onChipClick = { updateValue(it) },
-                                selectedChip = value.trim(),
-                                modifier = Modifier.padding(bottom = 10.dp),
-                            )
-                        }
-                        "IP-CIDR" -> {
-                            TextField(
-                                state = valueState,
-                                inputTransformation = { value = asCharSequence().toString() },
-                                label = stringResource(R.string.configs_rules_value),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                            )
-                            SuggestionChipsRow(
-                                chips = RoutingSuggestionsProvider.PrivateIpPresets,
-                                onChipClick = { updateValue(it) },
-                                selectedChip = value.trim(),
-                                modifier = Modifier.padding(bottom = 10.dp),
-                            )
-                        }
-                        "USER-AGENT" -> {
-                            TextField(
-                                state = valueState,
-                                inputTransformation = { value = asCharSequence().toString() },
-                                label = stringResource(R.string.configs_rules_value),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-                            )
-                            SuggestionChipsRow(
-                                chips = RoutingSuggestionsProvider.ShadowrocketUserAgentPresets,
-                                onChipClick = { updateValue(it) },
-                                selectedChip = value.trim(),
-                                modifier = Modifier.padding(bottom = 10.dp),
-                            )
-                        }
-                        else -> {
-                            TextField(
-                                state = valueState,
-                                inputTransformation = { value = asCharSequence().toString() },
-                                label = stringResource(R.string.configs_rules_value),
-                                lineLimits = TextFieldLineLimits.SingleLine,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                            )
-                        }
-                    }
-                    if (selectedType in setOf("USER-AGENT", "URL-REGEX")) {
-                        Text(
-                            text = stringResource(R.string.configs_rules_unsupported_on_android),
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 10.dp),
-                        )
-                    }
-                }
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                ) {
-                    ArrowPreference(
-                        title = stringResource(R.string.configs_rules_policy),
-                        summary = selectedPolicy,
-                        onClick = {
-                            navigator.navigateForResult(
-                                route = Route.RouteOutboundSelector(
-                                    selectedTag = selectedPolicy,
-                                    resultKey = policySelectorResultKey,
-                                    trafficConfigId = trafficConfigId,
-                                ),
-                                requestKey = policySelectorResultKey,
-                            )
-                        },
-                    )
-                }
+                    },
+                    networkOptions = RoutingSuggestionsProvider.ShadowrocketNetworkOptions,
+                    geoSiteSuggestions = geoSiteSuggestions.map { it.tag },
+                    geoIpSuggestions = geoIpSuggestions.map { it.tag },
+                    ruleSetPresets = RoutingSuggestionsProvider.RuleSetPresets,
+                    domainSetPresets = RoutingSuggestionsProvider.DomainSetPresets,
+                    portPresets = RoutingSuggestionsProvider.PortPresets,
+                    privateIpPresets = RoutingSuggestionsProvider.PrivateIpPresets,
+                    userAgentPresets = RoutingSuggestionsProvider.ShadowrocketUserAgentPresets,
+                    onGeoSitePicker = { showGeoSitePicker = true },
+                    onGeoIpPicker = { showGeoIpPicker = true },
+                    onRuleSetPicker = { showRuleSetPicker = true },
+                    onInfoClick = { showInfoBottomSheet = true },
+                )
             }
         }
     }
@@ -706,8 +316,3 @@ fun TrafficConfigRuleEditorPage(
         onDismissRequest = { showInfoBottomSheet = false },
     )
 }
-
-private val VisualRuleTypes = listOf(
-    "DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD", "IP-CIDR", "GEOIP", "DST-PORT",
-    "NETWORK", "RULE-SET", "DOMAIN-SET", "USER-AGENT", "URL-REGEX",
-)

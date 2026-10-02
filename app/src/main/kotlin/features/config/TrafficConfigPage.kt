@@ -53,18 +53,22 @@ import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
+import app.AppState
 import app.LocalUpdateAppState
 import app.ProxyServerState
 import app.R
 import app.collectAppState
+import app.skipi.app.model.ProxyServerRecord
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.ui.config.SkipiTrafficConfigScreen
+import app.skipi.ui.config.TrafficConfigProfileItem
+import app.skipi.ui.config.TrafficConfigProxyGroupItem
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
 import features.proxy.server.editor.editableCopy
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
-import features.proxy.server.usecase.withDeletedProxyServers
-import features.proxy.server.usecase.withSavedProxyServer
 import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
@@ -140,30 +144,26 @@ fun TrafficConfigPage(
     LaunchedEffect(navigator) {
         navigator.observeResult<ProxyServerEditResult>(ConfigProxyGroupEditResultKey).collect { result ->
             navigator.clearResult(ConfigProxyGroupEditResultKey)
-            updateAppState { state ->
-                state.withSavedProxyServer(
-                    serverId = result.serverId,
-                    server = result.server,
-                    groupId = AutoBalancerGroupId,
-                ).state
-            }
+            services.sharedApplicationStore.dispatch(
+                SharedApplicationAction.UpsertProxyServer(
+                    ProxyServerRecord(
+                        id = result.serverId,
+                        server = result.server,
+                        sourceSubscriptionId = AutoBalancerGroupId,
+                    ),
+                ),
+            )
         }
     }
 
     fun createConfig() {
-        var createdId = 0
+        var createdId = appState.nextTrafficConfigId
         updateAppState { state ->
-            createdId = state.nextTrafficConfigId
-            state.copy(
-                trafficConfigs = state.trafficConfigs + TrafficConfigState(
-                    id = createdId,
-                    name = context.getString(R.string.configs_new_name, createdId),
-                    rawConfig = defaultSkipiTrafficConfigRaw(
-                        name = context.getString(R.string.configs_new_name, createdId),
-                    ),
-                ),
-                nextTrafficConfigId = createdId + 1,
-            )
+            val localizedName = context.getString(R.string.configs_new_name, state.nextTrafficConfigId)
+            state.withCreatedTrafficConfig(
+                name = localizedName,
+                rawDocument = defaultSkipiTrafficConfigRaw(name = localizedName),
+            ).also { createdId = it.profileId }.state
         }
         navigator.push(Route.TrafficConfigEditor(createdId))
     }
@@ -184,12 +184,13 @@ fun TrafficConfigPage(
                     text
                 }
                 updateAppState { state ->
-                    state.withImportedTrafficConfig(
+                    val imported = state.withImportedTrafficConfig(
                         content = content,
                         activate = false,
                         fallbackName = context.getString(R.string.configs_imported_name),
                         sourceUrl = if (isHttpUrl) text else "",
                     )
+                    imported.withProxyCatalogFrom(state)
                 }
             }.onSuccess {
                 services.tipNotifier.show(context.getString(R.string.configs_imported))
@@ -213,21 +214,15 @@ fun TrafficConfigPage(
                 require(analysis.diagnostics.none { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
                     analysis.diagnostics.first { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }.message
                 }
-                var newId = 0
+                var newId = appState.nextTrafficConfigId
                 updateAppState { state ->
-                    newId = state.nextTrafficConfigId
-                    state.copy(
-                        trafficConfigs = state.trafficConfigs + TrafficConfigState(
-                            id = newId,
-                            name = context.getString(R.string.configs_imported_name),
-                            rawConfig = normalized,
-                            sourceUrl = normalizedUrl,
-                            lastUpdatedAtMillis = System.currentTimeMillis(),
-                        ).withSkipiSettingsReadFromRawConfig().let { parsed ->
-                            parsed.copy(sourceUrl = normalizedUrl.ifBlank { parsed.sourceUrl }).withSkipiSettingsInRawConfig()
-                        },
-                        nextTrafficConfigId = newId + 1,
-                    )
+                    state.withCreatedTrafficConfig(
+                        name = context.getString(R.string.configs_imported_name),
+                        rawDocument = normalized,
+                        sourceUrl = normalizedUrl,
+                        lastUpdatedAtMillis = System.currentTimeMillis(),
+                        readSkipiSettingsFromRawDocument = true,
+                    ).also { newId = it.profileId }.state
                 }
             }.onSuccess {
                 services.tipNotifier.show(context.getString(R.string.configs_imported))
@@ -254,7 +249,7 @@ fun TrafficConfigPage(
                         analysis.diagnostics.first { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }.message
                     }
                     updateAppState { state ->
-                        state.withUpdatedTrafficConfig(config.id) { current ->
+                        state.withUpdatedTrafficConfigProfile(config.id) { current ->
                             current.copy(
                                 rawConfig = normalized,
                                 sourceUrl = url,
@@ -266,7 +261,7 @@ fun TrafficConfigPage(
                                     updateLocked = if (unlock) false else parsed.updateLocked,
                                 ).withSkipiSettingsInRawConfig()
                             }
-                        }.withConfigProxyGroupsReflected()
+                        }
                     }
                 }.onSuccess {
                     services.tipNotifier.show(context.getString(R.string.configs_updated))
@@ -329,21 +324,18 @@ fun TrafficConfigPage(
     }
 
     fun deleteProxyGroup(proxyGroup: ProxyServerState) {
-        updateAppState { state -> state.withDeletedProxyServers(setOf(proxyGroup.id)) }
+        services.sharedApplicationStore.dispatch(
+            SharedApplicationAction.RemoveProxyServer(proxyGroup.id),
+        )
     }
 
     fun duplicateConfig(config: TrafficConfigState) {
         var duplicateId = 0
         updateAppState { state ->
-            duplicateId = state.nextTrafficConfigId
-            state.copy(
-                trafficConfigs = state.trafficConfigs + config.copy(
-                    id = duplicateId,
-                    name = context.getString(R.string.configs_copy_name, config.name),
-                    lastUpdatedAtMillis = 0L,
-                ).withSkipiSettingsInRawConfig(),
-                nextTrafficConfigId = duplicateId + 1,
-            ).withConfigProxyGroupsReflected()
+            state.withDuplicatedTrafficConfigProfile(
+                source = config,
+                name = context.getString(R.string.configs_copy_name, config.name),
+            ).also { duplicateId = it.profileId }.state
         }
         navigator.push(Route.TrafficConfigEditor(duplicateId))
     }
@@ -374,15 +366,7 @@ fun TrafficConfigPage(
     }
 
     fun deleteConfig(config: TrafficConfigState) {
-        updateAppState { state ->
-            if (state.trafficConfigs.size <= 1) return@updateAppState state
-            val remaining = state.trafficConfigs.filterNot { it.id == config.id }
-            state.copy(
-                trafficConfigs = remaining,
-                activeTrafficConfigId = state.activeTrafficConfigId.takeIf { it != config.id }
-                    ?: remaining.first().id,
-            ).withConfigProxyGroupsReflected()
-        }
+        updateAppState { state -> state.withDeletedTrafficConfigProfile(config.id) }
     }
 
     val contentPadding = pageContentPaddingWithCutout(
@@ -404,157 +388,75 @@ fun TrafficConfigPage(
             .fillMaxSize()
             .statusBarsPadding(),
     ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            // Section 1: Global Proxy Groups (Auto-balancers)
-            item(key = "global_proxy_groups_section_title") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp, bottom = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SmallTitle(
-                        text = stringResource(R.string.configs_global_proxy_groups),
-                    )
-                    IconButton(onClick = ::createProxyGroup) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = stringResource(R.string.configs_global_proxy_groups_add),
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
-            items(
-                items = appState.proxyServers.filter {
-                    val serverImpl = it.server
-                    it.groupId == AutoBalancerGroupId &&
-                        serverImpl is StrategyGroup &&
-                        serverImpl.sourceTrafficConfigId == null
-                },
-                key = { it.id },
-            ) { proxyGroup ->
-                TrafficConfigGlobalProxyGroupCard(
-                    name = proxyGroup.server.getInfo().remarks.ifBlank { proxyGroup.server.getInfo().protocol },
-                    summary = proxyGroup.server.getInfo().address,
-                    onClick = {
-                        openProxyGroupEditor(
-                            server = proxyGroup.server as StrategyGroup,
-                            serverId = proxyGroup.id,
-                        )
-                    },
-                    onEdit = {
-                        openProxyGroupEditor(
-                            server = proxyGroup.server as StrategyGroup,
-                            serverId = proxyGroup.id,
-                        )
-                    },
-                    onDelete = {
-                        if (appState.enableDeletionConfirmation) {
-                            pendingAutoBalancerDeletion = proxyGroup
-                        } else {
-                            deleteProxyGroup(proxyGroup)
-                        }
-                    },
-                    onLongPress = { contextMenuAutoBalancer = proxyGroup },
-                )
-            }
-
-            // Section 2: Sourced Proxy Groups (from configs)
-            if (configProxyGroups.isNotEmpty()) {
-                item(key = "sourced_proxy_groups_section_title") {
-                    SmallTitle(
-                        text = stringResource(R.string.configs_proxy_groups_title),
-                        modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
-                    )
-                }
-                items(
-                    items = configProxyGroups,
-                    key = { item -> "config-proxy-group-${item.configId}-${item.group.lineNumber}" },
-                ) { item ->
-                    TrafficConfigSourcedProxyGroupCard(
-                        name = item.group.name,
-                        configName = item.configName,
-                        groupType = item.group.type,
-                        onClick = {
-                            navigator.push(
-                                Route.TrafficConfigSection(
-                                    trafficConfigId = item.configId,
-                                    section = TrafficConfigEditorSection.ProxyGroups,
-                                ),
-                            )
-                        },
-                    )
-                }
-            }
-
-            // Visual Separator between Proxy Groups and Config Profiles
-            item(key = "configs_separator") {
-                Spacer(Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(AppTheme.colors.onSurface.copy(alpha = 0.08f)),
-                )
-                Spacer(Modifier.height(4.dp))
-            }
-
-            // Section 3: Configuration Profiles
-            item(key = "configs_section_title") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp, bottom = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SmallTitle(
-                        text = stringResource(R.string.configs_profiles),
-                    )
-                    IconButton(onClick = { showAddMenu = true }) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = stringResource(R.string.configs_add),
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
-            items(items = appState.trafficConfigs, key = TrafficConfigState::id) { config ->
-                TrafficConfigCard(
-                    config = config,
-                    selected = config.id == appState.activeTrafficConfigId,
-                    isUpdating = config.id in updatingConfigIds,
+        SkipiTrafficConfigScreen(
+            profiles = appState.trafficConfigs.map { config ->
+                TrafficConfigProfileItem(
+                    profile = config,
+                    active = config.id == appState.activeTrafficConfigId,
+                    updating = config.id in updatingConfigIds,
                     canDelete = appState.trafficConfigs.size > 1,
-                    onSelect = {
-                        updateAppState { state -> state.withActiveTrafficConfig(config.id) }
-                    },
-                    onUiEdit = { contextMenuConfig = config },
-                    onDelete = {
-                        if (appState.enableDeletionConfirmation) {
-                            pendingConfigDeletion = config
-                        } else {
-                            deleteConfig(config)
-                        }
-                    },
-                    onUpdate = { onTriggerConfigUpdate(config) },
-                    onLongPress = { contextMenuConfig = config },
+                    hasUnsupportedSections = config.rawConfig.analyzeShadowrocketConfig().unsupportedSections.isNotEmpty(),
                 )
-            }
-        }
-        VerticalScrollBar(
-            adapter = rememberScrollBarAdapter(listState),
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .fillMaxHeight(),
-            trackPadding = contentPadding,
+            },
+            globalProxyGroups = appState.proxyServers.filter { state ->
+                state.groupId == AutoBalancerGroupId &&
+                    (state.server as? StrategyGroup)?.sourceTrafficConfigId == null
+            }.map { state ->
+                TrafficConfigProxyGroupItem(
+                    key = "global:${state.id}",
+                    name = state.server.getInfo().remarks.ifBlank { state.server.getInfo().protocol },
+                    subtitle = state.server.getInfo().address.ifBlank { "Auto-Balancer" },
+                    badge = "StrategyGroup",
+                )
+            },
+            sourcedProxyGroups = configProxyGroups.map { item ->
+                TrafficConfigProxyGroupItem(
+                    key = "source:${item.configId}:${item.group.lineNumber}",
+                    name = item.group.name,
+                    subtitle = item.configName,
+                    badge = item.group.type,
+                )
+            },
+            contentPadding = listPadding,
+            onAddConfig = { showAddMenu = true },
+            onAddGlobalProxyGroup = ::createProxyGroup,
+            onSelectProfile = { id ->
+                updateAppState { state -> state.withActiveTrafficConfigProfile(id) }
+            },
+            onEditProfile = { id -> contextMenuConfig = appState.trafficConfigs.firstOrNull { it.id == id } },
+            onDeleteProfile = { id ->
+                appState.trafficConfigs.firstOrNull { it.id == id }?.let { config ->
+                    if (appState.enableDeletionConfirmation) pendingConfigDeletion = config else deleteConfig(config)
+                }
+            },
+            onUpdateProfile = { id -> appState.trafficConfigs.firstOrNull { it.id == id }?.let { onTriggerConfigUpdate(it) } },
+            onProfileMenu = { id -> contextMenuConfig = appState.trafficConfigs.firstOrNull { it.id == id } },
+            onOpenProxyGroup = { key ->
+                if (key.startsWith("global:")) {
+                    val id = key.substringAfter(':').toIntOrNull()
+                    val state = appState.proxyServers.firstOrNull { it.id == id }
+                    (state?.server as? StrategyGroup)?.let { server -> openProxyGroupEditor(server, state.id) }
+                } else {
+                    val parts = key.split(':')
+                    val configId = parts.getOrNull(1)?.toIntOrNull()
+                    if (configId != null) navigator.push(Route.TrafficConfigSection(configId, TrafficConfigEditorSection.ProxyGroups))
+                }
+            },
+            onEditGlobalProxyGroup = { key ->
+                val id = key.substringAfter(':').toIntOrNull()
+                val state = appState.proxyServers.firstOrNull { it.id == id }
+                (state?.server as? StrategyGroup)?.let { server -> openProxyGroupEditor(server, state.id) }
+            },
+            onDeleteGlobalProxyGroup = { key ->
+                val id = key.substringAfter(':').toIntOrNull()
+                appState.proxyServers.firstOrNull { it.id == id }?.let { group ->
+                    if (appState.enableDeletionConfirmation) pendingAutoBalancerDeletion = group else deleteProxyGroup(group)
+                }
+            },
+            onGlobalProxyGroupMenu = { key ->
+                val id = key.substringAfter(':').toIntOrNull()
+                contextMenuAutoBalancer = appState.proxyServers.firstOrNull { it.id == id }
+            },
         )
     }
 
@@ -653,7 +555,7 @@ fun TrafficConfigPage(
             onDelete = { contextMenuConfig = null; pendingConfigDeletion = config },
             onEnable = {
                 contextMenuConfig = null
-                updateAppState { state -> state.withActiveTrafficConfig(config.id) }
+                updateAppState { state -> state.withActiveTrafficConfigProfile(config.id) }
                 services.appScope.launch { services.tipNotifier.show(context.getString(R.string.configs_enabled)) }
             },
         )

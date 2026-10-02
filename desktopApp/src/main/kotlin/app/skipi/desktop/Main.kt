@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -159,6 +160,77 @@ fun main() = application {
                 var desiredTunnelRunning by remember { mutableStateOf(coreState.isRunning) }
                 var tunnelIntentVersion by remember { mutableStateOf(0L) }
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
+                val desktopSharedApplication = remember {
+                    val settingsRepository = DesktopSettingsRepository(
+                        readSettings = { desktopSettings },
+                        saveSettings = DesktopSettingsLibraries::saveDefault,
+                        publishSettings = { desktopSettings = it },
+                        readServers = { serverLibrary },
+                        saveServers = DesktopServerLibraries::saveDefault,
+                        publishServers = { serverLibrary = it },
+                        readConfigs = { configLibrary },
+                        saveConfigs = DesktopConfigLibraries::saveDefault,
+                        publishConfigs = { configLibrary = it },
+                    )
+                    val subscriptionRepository = DesktopSubscriptionRepository(
+                        initialLibrary = subscriptionLibrary,
+                        readLibrary = { subscriptionLibrary },
+                        saveLibrary = DesktopSubscriptionLibraries::saveDefault,
+                        publishLibrary = { subscriptionLibrary = it },
+                        removeLinkedServers = { subscriptionId ->
+                            val updatedServers = DesktopServerLibraries.removeSubscriptionServers(
+                                serverLibrary,
+                                subscriptionId,
+                            )
+                            DesktopServerLibraries.saveDefault(updatedServers).getOrThrow()
+                            serverLibrary = updatedServers
+                        },
+                    )
+                    val trafficConfigRepository = DesktopTrafficConfigRepository(
+                        initialLibrary = configLibrary,
+                        readLibrary = { configLibrary },
+                        saveLibrary = DesktopConfigLibraries::saveDefault,
+                        publishLibrary = { configLibrary = it },
+                    )
+                    val runtimeRepository = DesktopRuntimeStateRepository {
+                        desktopRuntimeState(
+                            coreState = coreState,
+                            latencyByServerId = latencyByServerId,
+                            testingServerIds = testingServerIds,
+                            refreshingSubscriptionIds = setOfNotNull(scheduledSubscriptionId)
+                                .takeIf { subscriptionUpdateInProgress }
+                                .orEmpty(),
+                            message = coreMessage.ifBlank { subscriptionMessage },
+                            isMessageError = coreMessage.isNotBlank(),
+                        )
+                    }
+                    createDesktopSharedApplication(
+                        scope = subscriptionScope,
+                        settings = settingsRepository,
+                        proxyServers = proxyServerRepository,
+                        subscriptions = subscriptionRepository,
+                        trafficConfigs = trafficConfigRepository,
+                        runtime = runtimeRepository,
+                    )
+                }
+                LaunchedEffect(
+                    desktopSettings,
+                    serverLibrary,
+                    configLibrary,
+                    subscriptionLibrary,
+                    coreState,
+                    latencyByServerId,
+                    testingServerIds,
+                    subscriptionUpdateInProgress,
+                    scheduledSubscriptionId,
+                    coreMessage,
+                    subscriptionMessage,
+                ) {
+                    desktopSharedApplication.settings.refresh()
+                    desktopSharedApplication.subscriptions.refresh(subscriptionLibrary)
+                    desktopSharedApplication.trafficConfigs.refresh(configLibrary)
+                    desktopSharedApplication.runtime.refresh()
+                }
 
                 fun requestTunnelReconnect(reason: String) {
                     pendingTunnelReconnectReason = reason
@@ -194,7 +266,7 @@ fun main() = application {
                 val selectedServerConfig = remember(serverLibrary, configLibrary, localProxyOptions) {
                     val activeProfile = configLibrary.selectedConfigId
                         ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
-                    if (activeProfile != null) {
+                    val generated = if (activeProfile != null) {
                         runCatching {
                             DesktopTrafficProfileXrayConfigFactory.build(
                                 profile = activeProfile,
@@ -217,6 +289,7 @@ fun main() = application {
                                 }
                             }
                     }
+                    generated
                 }
                 val activeProfileName = configLibrary.selectedConfigId
                     ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }

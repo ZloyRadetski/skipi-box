@@ -7,6 +7,10 @@ import platform.TunnelCapability
 import platform.TunnelConnectRequest
 import platform.TunnelController
 import platform.TunnelFailure
+import platform.TunnelLifecycleDecision
+import platform.TunnelLifecyclePolicy
+import platform.TunnelOperationException
+import platform.TunnelOperationStage
 import platform.TunnelPhase
 import platform.TunnelSnapshot
 import platform.TunnelTraffic
@@ -37,11 +41,28 @@ class DesktopTunnelController(
     private var latestSnapshot = TunnelSnapshot()
 
     override suspend fun connect(request: TunnelConnectRequest): Result<Unit> = synchronized(this) {
-        if (coreState().isRunning) return@synchronized Result.failure(IllegalStateException("Tunnel is already running"))
-        latestSnapshot = TunnelSnapshot(phase = TunnelPhase.Connecting)
-        val result = configForProfile(request.profileId).mapCatching { config ->
+        when (val decision = TunnelLifecyclePolicy.beginConnect(latestSnapshot, request.profileId)) {
+            is TunnelLifecycleDecision.Rejected -> return@synchronized Result.failure(TunnelOperationException(decision.failure))
+            is TunnelLifecycleDecision.Accepted -> latestSnapshot = decision.snapshot
+        }
+        if (coreState().isRunning) {
+            val error = TunnelOperationException(
+                TunnelFailure("already_running", "Tunnel is already running", false, TunnelOperationStage.Start),
+            )
+            latestSnapshot = TunnelLifecyclePolicy.connectFailed(latestSnapshot, error.failure)
+            return@synchronized Result.failure(error)
+        }
+        var operationStage = TunnelOperationStage.PrepareConfiguration
+        val result = runCatching {
+            val config = request.configuration?.let { configuration ->
+                require(configuration.content.isNotBlank()) { "Tunnel configuration must not be blank" }
+                configuration.content
+            } ?: configForProfile(request.profileId).getOrThrow()
+            require(config.isNotBlank()) { "Tunnel configuration must not be blank" }
+            operationStage = TunnelOperationStage.Start
             startCore(config).getOrThrow()
             try {
+                operationStage = TunnelOperationStage.AcquireSystemProxy
                 awaitSystemProxyEndpoint().getOrThrow()
                 acquireSystemProxy().getOrThrow()
             } catch (error: Throwable) {
@@ -50,24 +71,25 @@ class DesktopTunnelController(
             }
             Unit
         }
-        latestSnapshot = result.fold(
-            onSuccess = { TunnelSnapshot(phase = TunnelPhase.Connected) },
-            onFailure = ::failedSnapshot,
+        val operationResult = result.mapFailure(operationStage)
+        latestSnapshot = operationResult.fold(
+            onSuccess = { TunnelLifecyclePolicy.connected(latestSnapshot) },
+            onFailure = { error -> TunnelLifecyclePolicy.connectFailed(latestSnapshot, failure(error, operationStage)) },
         )
-        result
+        operationResult
     }
 
     override suspend fun disconnect(): Result<Unit> = synchronized(this) {
-        latestSnapshot = TunnelSnapshot(phase = TunnelPhase.Disconnecting)
+        latestSnapshot = TunnelLifecyclePolicy.beginDisconnect(latestSnapshot)
         val result = releaseSystemProxy().mapCatching {
             if (coreState().isRunning) stopCore().getOrThrow()
             Unit
         }
         latestSnapshot = result.fold(
-            onSuccess = { TunnelSnapshot() },
-            onFailure = ::failedSnapshot,
+            onSuccess = { TunnelLifecyclePolicy.disconnected(latestSnapshot) },
+            onFailure = { error -> TunnelLifecyclePolicy.disconnectFailed(latestSnapshot, failure(error, TunnelOperationStage.Stop)) },
         )
-        result
+        result.mapFailure(TunnelOperationStage.Stop)
     }
 
     override suspend fun snapshot(): TunnelSnapshot = synchronized(this) {
@@ -82,7 +104,10 @@ class DesktopTunnelController(
                     proxyRestoreFailure,
                 )
             }
-            latestSnapshot = failedSnapshot(stopped)
+            latestSnapshot = TunnelLifecyclePolicy.connectFailed(
+                latestSnapshot,
+                failure(stopped, TunnelOperationStage.ReadStatus),
+            )
         } else if (latestSnapshot.phase == TunnelPhase.Connected) {
             // Counter reads are observational: a temporary stats error must not
             // tear down an otherwise healthy tunnel.
@@ -93,15 +118,23 @@ class DesktopTunnelController(
         latestSnapshot
     }
 
-    override fun supports(capability: TunnelCapability): Boolean =
-        capability == TunnelCapability.SystemProxy && systemProxySupported()
+    override fun capabilities(): Set<TunnelCapability> = buildSet {
+        add(TunnelCapability.PreparedConfiguration)
+        if (systemProxySupported()) add(TunnelCapability.SystemProxy)
+    }
 
-    private fun failedSnapshot(error: Throwable): TunnelSnapshot = TunnelSnapshot(
-        phase = TunnelPhase.Failed,
-        failure = TunnelFailure(
-            code = "desktop_core",
-            message = error.message ?: error::class.simpleName.orEmpty(),
-            recoverable = true,
-        ),
-    )
+    private fun failure(error: Throwable, stage: TunnelOperationStage): TunnelFailure =
+        TunnelLifecyclePolicy.failure(error, stage, code = "desktop_runtime", platformCode = "desktop_core")
 }
+
+private fun Result<Unit>.mapFailure(stage: TunnelOperationStage): Result<Unit> = fold(
+    onSuccess = { Result.success(Unit) },
+    onFailure = { error ->
+        Result.failure(
+            if (error is TunnelOperationException) error
+            else TunnelOperationException(
+                TunnelLifecyclePolicy.failure(error, stage, code = "desktop_runtime", platformCode = "desktop_core"),
+            ),
+        )
+    },
+)

@@ -3,6 +3,7 @@ package app.skipi.desktop
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopConfigLibraryTest {
@@ -61,5 +62,41 @@ class DesktopConfigLibraryTest {
         val remaining = DesktopConfigLibraries.remove(refreshed, requireNotNull(first.selectedConfigId))
         assertEquals(1, remaining.configs.size)
         assertEquals(remaining.configs.single().id, remaining.selectedConfigId)
+    }
+
+    @Test
+    fun legacyConfigsJsonKeepsIdsOrderSelectionAndOptionalFieldsAcrossRoundTrip() {
+        val path = Files.createTempDirectory("skipi-legacy-configs").resolve("configs.json")
+        val fixture = requireNotNull(javaClass.getResourceAsStream("/fixtures/desktop-legacy/configs.json"))
+        fixture.use { Files.copy(it, path) }
+
+        val loaded = DesktopConfigLibraries.load(path).getOrThrow()
+        assertEquals(41, loaded.selectedConfigId)
+        assertEquals(listOf(30, 41), loaded.configs.map { it.id })
+        assertEquals("Legacy default", loaded.configs[0].name)
+        assertEquals("https://example.com/work.conf", loaded.configs[1].sourceUrl)
+        assertTrue(loaded.configs[1].updateLocked)
+        assertEquals(1_700_000_000_123L, loaded.configs[1].lastUpdatedAtMillis)
+
+        DesktopConfigLibraries.save(path, loaded).getOrThrow()
+        val restored = DesktopConfigLibraries.load(path).getOrThrow()
+        assertEquals(loaded, restored)
+        val savedJson = Files.readString(path)
+        assertTrue(savedJson.contains("\"selectedConfigId\""))
+        assertTrue(savedJson.contains("\"configs\""))
+        assertFalse(savedJson.contains("futureConfigField"))
+    }
+
+    @Test
+    fun clearingSelectionAndRemovingSelectedConfigUseSharedLibraryOperations() {
+        val first = DesktopConfigLibraries.put(DesktopConfigLibrary(), "First", "[General]")
+        val second = DesktopConfigLibraries.put(first, "Second", "[Rule]")
+        val selected = DesktopConfigLibraries.select(second, 2)
+
+        assertEquals(2, selected.selectedConfigId)
+        assertEquals(null, DesktopConfigLibraries.select(selected, null).selectedConfigId)
+        val afterDelete = DesktopConfigLibraries.remove(selected, 2)
+        assertEquals(listOf(1), afterDelete.configs.map { it.id })
+        assertEquals(1, afterDelete.selectedConfigId)
     }
 }

@@ -14,10 +14,14 @@ import app.MainActivity
 import app.R
 import app.effects.resolveActiveNetworkConfig
 import app.modes.RunModeVpnService
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.store.SharedApplicationActionOutcome
 import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.proxy.AndroidProxyEngine
-import features.config.withActiveTrafficConfig
+import data.repository.reconcileTrafficConfigProxyGroups
+import features.config.withActiveTrafficConfigProfile
+import features.config.withConfigProxyGroupsReflected
 import features.logs.AndroidAppLogger
 import features.proxy.server.display.displayName
 import features.proxy.server.usecase.ProxyServiceResult
@@ -139,7 +143,8 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
         val rawState = stateStore.state.value.copy(proxyRunning = running)
         var state = if (!running) rawState.resolveActiveNetworkConfig(appContext) else rawState
         if (state.activeTrafficConfigId != rawState.activeTrafficConfigId) {
-            stateStore.update { it.withActiveTrafficConfig(state.activeTrafficConfigId) }
+            stateStore.update { it.withActiveTrafficConfigProfile(state.activeTrafficConfigId) }
+            stateStore.reconcileTrafficConfigProxyGroups()
         }
         if (!running && state.requiresVpnPermission(appContext)) {
             showToast(appContext, appContext.getString(R.string.quick_settings_tile_vpn_permission_required))
@@ -210,17 +215,45 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
             return
         }
 
-        val proposedState = stateBefore.withWidgetSelection(selection, targetId)
-        if (proposedState.sameWidgetSelectionAs(stateBefore)) return
-        val selectedServer = proposedState.proxyServers
-            .firstOrNull { server -> server.id == proposedState.selectedProxyServerId }
+        if (targetId == currentId) return
+        val proposedState = if (selection == WidgetSelection.Config) {
+            stateBefore.withWidgetSelection(selection, targetId)
+        } else {
+            stateBefore
+        }
+        val selectedServer = when (selection) {
+            WidgetSelection.Config -> proposedState.proxyServers
+                .firstOrNull { server -> server.id == proposedState.selectedProxyServerId }
+            WidgetSelection.Server -> proposedState.proxyServers.firstOrNull { server -> server.id == targetId }
+        }
         if (running && selectedServer == null) {
             showToast(appContext, appContext.getString(R.string.proxy_server_list_select_first))
             return
         }
 
         SkipiWidgetRenderer.renderAll(appContext, processing = true)
-        stateStore.update { currentState -> currentState.withWidgetSelection(selection, targetId) }
+        when (selection) {
+            WidgetSelection.Config -> {
+                stateStore.update { currentState -> currentState.withActiveTrafficConfigProfile(targetId) }
+                stateStore.reconcileTrafficConfigProxyGroups()
+            }
+            WidgetSelection.Server -> {
+                val result = stateStore.sharedApplicationStore.dispatchAndAwait(
+                    SharedApplicationAction.SelectProxyServer(targetId),
+                )
+                when (val outcome = result.outcome) {
+                    SharedApplicationActionOutcome.Completed -> Unit
+                    is SharedApplicationActionOutcome.Rejected -> {
+                        showToast(appContext, outcome.reason)
+                        return
+                    }
+                    is SharedApplicationActionOutcome.Failed -> {
+                        showToast(appContext, outcome.reason)
+                        return
+                    }
+                }
+            }
+        }
         val selectedState = stateStore.state.value
         if (selectedState.sameWidgetSelectionAs(stateBefore)) return
 
@@ -290,12 +323,12 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
     ): AppState {
         return when (selection) {
             WidgetSelection.Config -> {
-                if (targetId in widgetConfigIds()) withActiveTrafficConfig(targetId) else this
+                if (targetId in widgetConfigIds()) {
+                    withActiveTrafficConfigProfile(targetId).withConfigProxyGroupsReflected()
+                } else this
             }
 
-            WidgetSelection.Server -> {
-                if (targetId in widgetServerIds()) copy(selectedProxyServerId = targetId) else this
-            }
+            WidgetSelection.Server -> this
         }
     }
 

@@ -4,6 +4,7 @@
 package app
 
 import androidx.compose.runtime.Stable
+import features.config.TrafficConfigCustomResourceFile
 import features.resources.ResourceFileChocolate4UGeoIpUrl
 import features.resources.ResourceFileChocolate4UGeoSiteUrl
 import features.resources.ResourceFileDirectCidrIpv4Name
@@ -112,13 +113,8 @@ data class ResourceFileStatus(
     val updatedAtMillis: Long = 0,
 )
 
-@Stable
-@Serializable
-data class CustomResourceFileState(
-    val id: Int,
-    val name: String,
-    val url: String,
-)
+/** Android source-compatible name for the portable shared resource-file record. */
+typealias CustomResourceFileState = TrafficConfigCustomResourceFile
 
 @Stable
 data class CustomResourceFileStatus(

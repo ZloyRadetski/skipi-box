@@ -1436,4 +1436,9 @@
     <string name="widget_config_changed">Конфиг: %1$s</string>
     <string name="widget_server_changed">Сервер: %1$s</string>
     <string name="widget_no_config">Нет конфигов</string>
+    <string name="settings_proxy_server_list_columns">Колонки списка серверов</string>
+    <string name="settings_proxy_server_list_columns_summary">Количество колонок прокси-серверов на главном экране</string>
+    <string name="settings_proxy_server_list_columns_single">1 колонка</string>
+    <string name="settings_proxy_server_list_columns_double">2 колонки</string>
+    <string name="settings_proxy_server_list_columns_triple">3 колонки</string>
 </resources>

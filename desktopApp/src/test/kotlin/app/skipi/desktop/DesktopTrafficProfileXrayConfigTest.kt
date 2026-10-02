@@ -81,6 +81,73 @@ class DesktopTrafficProfileXrayConfigTest {
     }
 
     @Test
+    fun switchingProfilesKeepsRulesAndSkipiStrategyIsolatedToEachConfDocument() {
+        val server = ProxyServer.parse(
+            "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha",
+        )
+        val library = DesktopServerLibraries.select(
+            DesktopServerLibraries.add(DesktopServerLibrary(), server),
+            serverId = 1,
+        )
+        val profiles = listOf(
+            DesktopStoredConfig(
+                id = 1,
+                name = "Direct domain",
+                content = """
+                    [SKIPI]
+                    route-domain-strategy = AsIs
+
+                    [Rule]
+                    DOMAIN-SUFFIX,first.example,DIRECT
+                    FINAL,PROXY
+                """.trimIndent(),
+            ),
+            DesktopStoredConfig(
+                id = 2,
+                name = "Blocked process",
+                content = """
+                    [SKIPI]
+                    route-domain-strategy = IPOnDemand
+
+                    [Rule]
+                    PROCESS-NAME,firefox.exe,BLOCK
+                    FINAL,DIRECT
+                """.trimIndent(),
+            ),
+        )
+
+        val configs = profiles.map { profile ->
+            Json.parseToJsonElement(
+                DesktopTrafficProfileXrayConfigFactory.build(
+                    profile = profile,
+                    serverLibrary = library,
+                    options = LocalProxyXrayConfigOptions(),
+                ),
+            ).jsonObject
+        }
+        val firstRouting = configs[0].getValue("routing").jsonObject
+        val firstRules = firstRouting.getValue("rules").jsonArray.map { it.jsonObject }
+        val secondRouting = configs[1].getValue("routing").jsonObject
+        val secondRules = secondRouting.getValue("rules").jsonArray.map { it.jsonObject }
+
+        assertEquals("AsIs", firstRouting.getValue("domainStrategy").jsonPrimitive.content)
+        assertEquals("IPOnDemand", secondRouting.getValue("domainStrategy").jsonPrimitive.content)
+        assertTrue(
+            firstRules.any { rule ->
+                rule["domain"]?.jsonArray?.single()?.jsonPrimitive?.content == "domain:first.example"
+            },
+        )
+        assertFalse(firstRules.any { rule -> "process" in rule })
+        assertFalse(secondRules.any { rule -> "domain" in rule })
+        assertEquals(
+            "firefox.exe",
+            secondRules.first { "process" in it }.getValue("process").jsonArray.single().jsonPrimitive.content,
+        )
+        assertEquals("skipi-proxy", firstRules.last().getValue("outboundTag").jsonPrimitive.content)
+        assertEquals("direct", secondRules.last().getValue("outboundTag").jsonPrimitive.content)
+    }
+
+    @Test
     fun usesSharedDnsValidationForProfileDnsServers() {
         val server = ProxyServer.parse(
             "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha",

@@ -14,7 +14,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import platform.TunnelCapability
 import platform.TunnelConnectRequest
+import platform.TunnelConfiguration
 import platform.TunnelPhase
+import platform.TunnelOperationException
+import platform.TunnelOperationStage
 import platform.TunnelTraffic
 
 class AndroidTunnelControllerTest {
@@ -32,6 +35,8 @@ class AndroidTunnelControllerTest {
         assertEquals(TunnelTraffic(uploadBytes = 7L, downloadBytes = 8L), snapshot.traffic)
         assertTrue(fixture.controller.supports(TunnelCapability.Tun))
         assertFalse(fixture.controller.supports(TunnelCapability.SystemProxy))
+        assertFalse(fixture.controller.supports(TunnelCapability.PreparedConfiguration))
+        assertEquals("41", snapshot.profileId)
     }
 
     @Test
@@ -48,9 +53,29 @@ class AndroidTunnelControllerTest {
     fun rejects_a_profile_that_is_not_present_in_the_android_state() = runBlocking {
         val fixture = Fixture()
 
-        assertTrue(fixture.controller.connect(TunnelConnectRequest("404")).isFailure)
+        val failure = fixture.controller.connect(TunnelConnectRequest("404")).exceptionOrNull()
+        assertTrue(failure is TunnelOperationException)
+        assertEquals("profile_unavailable", (failure as TunnelOperationException).failure.code)
+        assertEquals("41", fixture.state.selectedProxyServerId.toString())
         assertEquals(null, fixture.startedProfileId)
         assertFalse(fixture.state.proxyRunning)
+    }
+
+    @Test
+    fun rejects_prepared_configuration_when_android_profile_adapter_does_not_support_it() = runBlocking {
+        val fixture = Fixture()
+
+        val error = fixture.controller.connect(
+            TunnelConnectRequest(
+                profileId = "41",
+                configuration = TunnelConfiguration("{}"),
+            ),
+        ).exceptionOrNull() as TunnelOperationException
+
+        assertEquals("capability_unavailable", error.failure.code)
+        assertEquals(TunnelOperationStage.PrepareConfiguration, error.failure.stage)
+        assertEquals(TunnelCapability.PreparedConfiguration.name, error.failure.platformCode)
+        assertEquals(null, fixture.startedProfileId)
     }
 
     private class Fixture(

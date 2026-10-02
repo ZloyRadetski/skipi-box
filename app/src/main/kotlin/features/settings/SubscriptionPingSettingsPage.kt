@@ -67,7 +67,7 @@ import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
-import java.net.URI
+import features.subscription.SubscriptionPingSettingsRules
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.Color
 
@@ -91,7 +91,7 @@ fun SubscriptionPingSettingsPage(
     val currentConcurrency = appState.subscriptionPingConcurrency.coerceIn(1, 32)
     var concurrencySliderValue by remember(currentConcurrency) { mutableFloatStateOf(currentConcurrency.toFloat()) }
 
-    val urlError = if (appState.subscriptionPingUrl.isSubscriptionPingUrl()) null else {
+    val urlError = if (SubscriptionPingSettingsRules.isValidHttpUrl(appState.subscriptionPingUrl)) null else {
         stringResource(R.string.subscription_ping_url_invalid)
     }
 
@@ -436,12 +436,5 @@ fun SubscriptionPingSettingsPage(
             }
         }
     }
-}
-
-private fun String.isSubscriptionPingUrl(): Boolean {
-    return runCatching {
-        val uri = URI(trim())
-        uri.scheme in setOf("http", "https") && !uri.host.isNullOrBlank()
-    }.getOrDefault(false)
 }
 

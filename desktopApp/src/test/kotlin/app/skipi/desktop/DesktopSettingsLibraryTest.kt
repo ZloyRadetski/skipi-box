@@ -11,6 +11,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import platform.DefaultLocalHttpProxyPort
 import platform.DefaultLocalSocksPort
+import features.routing.model.RouteRule
 
 class DesktopSettingsLibraryTest {
     @Test
@@ -235,6 +236,40 @@ class DesktopSettingsLibraryTest {
                 assertEquals(columns, loaded.proxyServerListColumns)
                 assertEquals(settings, loaded)
             }
+        } finally {
+            deleteTree(directory)
+        }
+    }
+
+    @Test
+    fun routingFieldsRoundTripAndOlderSettingsJsonGetsRoutingDefaults() {
+        val directory = Files.createTempDirectory("skipi-settings-routing-")
+        try {
+            val path = directory.resolve("settings.json")
+            val settings = DesktopAppSettings(
+                routeDomainStrategy = 3,
+                defaultRouteOutboundTag = "direct",
+                routeRules = listOf(
+                    RouteRule(
+                        id = 5,
+                        remarks = "local domains",
+                        outboundTag = "direct",
+                        domain = listOf("domain:example.com"),
+                        enabled = false,
+                    ),
+                ),
+                nextRouteRuleId = 11,
+            )
+
+            DesktopSettingsLibraries.save(path, settings).getOrThrow()
+            assertEquals(settings, DesktopSettingsLibraries.load(path).getOrThrow())
+
+            Files.writeString(path, """{"localProxyPort":10808,"themeMode":"Dark"}""")
+            val legacy = DesktopSettingsLibraries.load(path).getOrThrow()
+            assertEquals(0, legacy.routeDomainStrategy)
+            assertEquals("proxy", legacy.defaultRouteOutboundTag)
+            assertTrue(legacy.routeRules.isEmpty())
+            assertEquals(10, legacy.nextRouteRuleId)
         } finally {
             deleteTree(directory)
         }

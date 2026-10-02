@@ -13,11 +13,15 @@ import android.net.NetworkRequest
 import android.os.Build
 import androidx.core.content.ContextCompat
 import app.effects.resolveActiveNetworkConfig
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.store.SharedApplicationActionOutcome
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.NetworkHandoverRecoveryGate
 import engine.vpn.SkipiVpnService
-import features.config.withActiveTrafficConfig
+import data.repository.reconcileTrafficConfigProxyGroups
+import features.config.withActiveTrafficConfigProfile
+import features.config.withConfigProxyGroupsReflected
 import features.logs.AndroidAppLogger
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
@@ -284,18 +288,22 @@ class NetworkAutomationMonitor(
                                     LogTag,
                                     "Network automation: Auto-switching server to #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network $currentNetworkId",
                                 )
-                                val updatedState = state.withActiveTrafficConfig(resolvedState.activeTrafficConfigId).copy(
+                                val updatedState = state.withActiveTrafficConfigProfile(resolvedState.activeTrafficConfigId)
+                                    .withConfigProxyGroupsReflected().copy(
                                     selectedProxyServerId = targetServerId,
                                 )
                                 when (val result = withNetworkHandoverOwnership {
                                     proxyServiceUseCase.restart(updatedState, targetServer)
                                 }) {
-                                    is ProxyServiceResult.Success -> stateStore.update {
-                                        it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId).copy(
-                                            selectedProxyServerId = targetServerId,
-                                            proxyRunning = result.proxyRunning,
-                                            localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
-                                        )
+                                    is ProxyServiceResult.Success -> {
+                                        selectServerInSharedCatalog(targetServerId)
+                                        stateStore.update {
+                                            it.withActiveTrafficConfigProfile(resolvedState.activeTrafficConfigId).copy(
+                                                proxyRunning = result.proxyRunning,
+                                                localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
+                                            )
+                                        }
+                                        stateStore.reconcileTrafficConfigProxyGroups()
                                     }
                                     is ProxyServiceResult.Failed -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server", result.error)
                                     ProxyServiceResult.MissingServer -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server: server missing")
@@ -307,16 +315,20 @@ class NetworkAutomationMonitor(
                                     LogTag,
                                     "On-Demand VPN: Auto-starting VPN on server #${targetServer.id} (${targetServer.server.getInfo().remarks}) on network transition to $currentNetworkId",
                                 )
-                                val updatedState = state.withActiveTrafficConfig(resolvedState.activeTrafficConfigId).copy(
+                                val updatedState = state.withActiveTrafficConfigProfile(resolvedState.activeTrafficConfigId)
+                                    .withConfigProxyGroupsReflected().copy(
                                     selectedProxyServerId = targetServerId,
                                 )
                                 when (val result = proxyServiceUseCase.start(updatedState, targetServer)) {
-                                    is ProxyServiceResult.Success -> stateStore.update {
-                                        it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId).copy(
-                                            selectedProxyServerId = targetServerId,
-                                            proxyRunning = result.proxyRunning,
-                                            localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
-                                        )
+                                    is ProxyServiceResult.Success -> {
+                                        selectServerInSharedCatalog(targetServerId)
+                                        stateStore.update {
+                                            it.withActiveTrafficConfigProfile(resolvedState.activeTrafficConfigId).copy(
+                                                proxyRunning = result.proxyRunning,
+                                                localProxyPort = result.appState?.localProxyPort ?: it.localProxyPort,
+                                            )
+                                        }
+                                        stateStore.reconcileTrafficConfigProxyGroups()
                                     }
                                     is ProxyServiceResult.Failed -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN", result.error)
                                     ProxyServiceResult.MissingServer -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN: server missing")
@@ -347,6 +359,21 @@ class NetworkAutomationMonitor(
             operation()
         } finally {
             NetworkHandoverRecoveryGate.completeExternalVpnOperation(token)
+        }
+    }
+
+    private suspend fun selectServerInSharedCatalog(serverId: Int) {
+        val result = stateStore.sharedApplicationStore.dispatchAndAwait(
+            SharedApplicationAction.SelectProxyServer(serverId),
+        )
+        when (val outcome = result.outcome) {
+            SharedApplicationActionOutcome.Completed -> Unit
+            is SharedApplicationActionOutcome.Rejected -> {
+                AndroidAppLogger.warn(LogTag, "Network automation could not select server #$serverId: ${outcome.reason}")
+            }
+            is SharedApplicationActionOutcome.Failed -> {
+                AndroidAppLogger.warn(LogTag, "Network automation failed to select server #$serverId: ${outcome.reason}")
+            }
         }
     }
 

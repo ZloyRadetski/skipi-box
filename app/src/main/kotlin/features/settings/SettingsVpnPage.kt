@@ -1,282 +1,147 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-@file:OptIn(ExperimentalScrollBarApi::class)
-
 package features.settings
-
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import system.isIgnoringBatteryOptimizations
-import system.openAppDetailsSettings
-import system.openBatteryOptimizationSettings
-import system.requestIgnoreBatteryOptimizations
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import app.LocalAppChromeState
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
-import app.navigation.Route
 import app.R
 import app.collectAppState
+import app.navigation.Route
+import app.skipi.ui.settings.SkipiVpnSettingsScreen
+import app.skipi.ui.settings.VpnSettingsLabels
+import app.skipi.ui.settings.VpnSettingsState
 import features.settings.sheets.tunSettingsSummary
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
-import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
-import ui.AppTheme
-import ui.components.BackNavigationIcon
-import ui.layout.AdaptiveTopAppBar
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageListPadding
-import ui.layout.pageScrollModifiers
-import androidx.compose.ui.graphics.Color
+import system.isIgnoringBatteryOptimizations
+import system.openAppDetailsSettings
+import system.openBatteryOptimizationSettings
+import system.requestIgnoreBatteryOptimizations
 
 @Composable
-fun SettingsVpnPage(
-    padding: PaddingValues,
-) {
+fun SettingsVpnPage(padding: PaddingValues) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val languageMode = LocalAppChromeState.current.languageMode
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
     val stateStore = LocalAppStateStore.current
     val appState by stateStore.collectAppState()
     val updateAppState = LocalUpdateAppState.current
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
-    val lazyListState = rememberLazyListState()
     val sheetState = rememberSettingsSheetState(updateAppState)
-
-    var isIgnoringBatteryOptimizations by remember {
-        mutableStateOf(isIgnoringBatteryOptimizations(context))
-    }
+    var unrestricted by remember { mutableStateOf(isIgnoringBatteryOptimizations(context)) }
 
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations(context)
-            }
+            if (event == Lifecycle.Event.ON_RESUME) unrestricted = isIgnoringBatteryOptimizations(context)
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val tunSummary = tunSettingsSummary(
-        mtu = appState.tunMtu,
-        vpnDns = appState.tunVpnDns,
-        ipv4Cidr = appState.tunIpv4Cidr,
-        ipv6Cidr = appState.tunIpv6Cidr,
-        showVpnDns = false,
+    val labels = VpnSettingsLabels(
+        screenTitle = stringResource(R.string.settings_category_vpn),
+        vpnSectionTitle = stringResource(R.string.settings_proxy_vpn_service),
+        tunTitle = stringResource(R.string.settings_tun),
+        hevTunTitle = stringResource(R.string.configs_hevtun),
+        hevTunSummary = stringResource(R.string.configs_hevtun_summary),
+        appendHttpTitle = stringResource(R.string.configs_append_http_proxy),
+        appendHttpSummary = stringResource(R.string.configs_append_http_proxy_summary),
+        strictFullTunnelTitle = stringResource(R.string.settings_strict_full_tunnel),
+        strictFullTunnelSummary = stringResource(R.string.settings_strict_full_tunnel_summary),
+        autoConnectSectionTitle = stringResource(R.string.settings_auto_connect_title),
+        autoConnectOnOpenTitle = stringResource(R.string.settings_auto_connect_on_app_open_title),
+        autoConnectOnOpenSummary = stringResource(R.string.settings_auto_connect_on_app_open_summary),
+        autoConnectOnBootTitle = stringResource(R.string.settings_auto_connect_on_boot_title),
+        autoConnectOnBootSummary = stringResource(R.string.settings_auto_connect_on_boot_summary),
+        killSwitchSectionTitle = stringResource(R.string.settings_kill_switch),
+        killSwitchTitle = stringResource(R.string.settings_kill_switch),
+        killSwitchSummary = stringResource(R.string.settings_kill_switch_summary),
+        systemVpnSettingsTitle = stringResource(R.string.settings_system_vpn_settings),
+        systemVpnSettingsSummary = stringResource(R.string.settings_system_vpn_settings_summary),
+        stabilitySectionTitle = stringResource(R.string.settings_stability_and_background),
+        batteryOptimizationTitle = stringResource(R.string.settings_battery_optimization),
+        batteryUnrestrictedSummary = stringResource(R.string.settings_battery_optimization_unrestricted),
+        batteryRestrictedSummary = stringResource(R.string.settings_battery_optimization_restricted),
+        wakeLockTitle = stringResource(R.string.settings_wake_lock),
+        wakeLockSummary = stringResource(R.string.settings_wake_lock_summary),
+        seamlessSwitchingTitle = stringResource(R.string.settings_seamless_network_switching),
+        seamlessSwitchingSummary = stringResource(R.string.settings_seamless_network_switching_summary),
+        networkAutomationTitle = stringResource(R.string.settings_network_automation_title),
+        networkAutomationSummary = stringResource(R.string.settings_network_automation_summary),
+    )
+    val state = VpnSettingsState(
+        tunSummary = tunSettingsSummary(
+            mtu = appState.tunMtu,
+            vpnDns = appState.tunVpnDns,
+            ipv4Cidr = appState.tunIpv4Cidr,
+            ipv6Cidr = appState.tunIpv6Cidr,
+            showVpnDns = false,
+        ),
+        hevTunEnabled = appState.enableVpnHevTun,
+        appendHttpProxyEnabled = appState.enableVpnAppendHttpProxy,
+        strictFullTunnelEnabled = appState.enableStrictFullTunnel,
+        autoConnectOnAppOpen = appState.autoConnectOnAppOpen,
+        autoConnectOnBoot = appState.autoConnectOnBoot,
+        killSwitchEnabled = appState.enableKillSwitch,
+        batteryOptimizationUnrestricted = unrestricted,
+        wakeLockEnabled = appState.enableWakeLock,
+        seamlessNetworkSwitchingEnabled = appState.enableSeamlessNetworkSwitching,
     )
 
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        topBar = {
-            key(languageMode) {
-                AdaptiveTopAppBar(
-                    title = stringResource(R.string.settings_category_vpn),
-                    isWideScreen = isWideScreen,
-                    scrollBehavior = topAppBarScrollBehavior,
-                    navigationIcon = {
-                        BackNavigationIcon(
-                            onClick = { navigator.pop() },
-                        )
-                    },
-                )
-            }
-        },
-    ) { innerPadding ->
-        val innerContentPadding = pageContentPaddingWithCutout(
-            innerPadding = innerPadding,
-            outerPadding = padding,
+    Box(Modifier.fillMaxSize()) {
+        SkipiVpnSettingsScreen(
+            state = state,
+            labels = labels,
+            padding = padding,
             isWideScreen = isWideScreen,
+            onBack = navigator::pop,
+            onOpenTunSettings = { sheetState.openTunSettings(appState) },
+            onHevTunChange = { value -> updateAppState { it.copy(enableVpnHevTun = value) } },
+            onAppendHttpProxyChange = { value -> updateAppState { it.copy(enableVpnAppendHttpProxy = value) } },
+            onStrictFullTunnelChange = { value -> updateAppState { it.copy(enableStrictFullTunnel = value) } },
+            onAutoConnectOnOpenChange = { value -> updateAppState { it.copy(autoConnectOnAppOpen = value) } },
+            onAutoConnectOnBootChange = { value -> updateAppState { it.copy(autoConnectOnBoot = value) } },
+            onKillSwitchChange = { enabled ->
+                updateAppState { it.copy(enableKillSwitch = enabled) }
+                if (enabled) openSystemVpnSettings(context)
+            },
+            onBatteryOptimizationChange = { enabled ->
+                if (enabled) requestIgnoreBatteryOptimizations(context) else openBatteryOptimizationSettings(context)
+            },
+            onWakeLockChange = { value -> updateAppState { it.copy(enableWakeLock = value) } },
+            onSeamlessSwitchingChange = { value -> updateAppState { it.copy(enableSeamlessNetworkSwitching = value) } },
+            onOpenSystemVpnSettings = { openSystemVpnSettings(context) },
+            onOpenNetworkAutomation = { navigator.push(Route.SettingsNetworkAutomation) },
         )
-        val innerListPadding = pageListPadding(innerContentPadding)
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-        ) {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pageScrollModifiers(topAppBarScrollBehavior),
-                contentPadding = innerListPadding,
-            ) {
-                item(key = "vpn_tun_card") {
-                    SmallTitle(text = stringResource(R.string.settings_proxy_vpn_service))
-                    SettingsSectionCard {
-                        ArrowPreference(
-                            title = stringResource(R.string.settings_tun),
-                            summary = tunSummary,
-                            onClick = { sheetState.openTunSettings(appState) },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.configs_hevtun),
-                            summary = stringResource(R.string.configs_hevtun_summary),
-                            checked = appState.enableVpnHevTun,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableVpnHevTun = enabled) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.configs_append_http_proxy),
-                            summary = stringResource(R.string.configs_append_http_proxy_summary),
-                            checked = appState.enableVpnAppendHttpProxy,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableVpnAppendHttpProxy = enabled) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_strict_full_tunnel),
-                            summary = stringResource(R.string.settings_strict_full_tunnel_summary),
-                            checked = appState.enableStrictFullTunnel,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableStrictFullTunnel = enabled) }
-                            },
-                        )
-                    }
-                }
-
-                item(key = "vpn_auto_connect_card") {
-                    SmallTitle(text = stringResource(R.string.settings_auto_connect_title))
-                    SettingsSectionCard {
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_auto_connect_on_app_open_title),
-                            summary = stringResource(R.string.settings_auto_connect_on_app_open_summary),
-                            checked = appState.autoConnectOnAppOpen,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(autoConnectOnAppOpen = enabled) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_auto_connect_on_boot_title),
-                            summary = stringResource(R.string.settings_auto_connect_on_boot_summary),
-                            checked = appState.autoConnectOnBoot,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(autoConnectOnBoot = enabled) }
-                            },
-                        )
-                    }
-                }
-
-                item(key = "vpn_kill_switch_card") {
-                    SmallTitle(text = stringResource(R.string.settings_kill_switch))
-                    SettingsSectionCard {
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_kill_switch),
-                            summary = stringResource(R.string.settings_kill_switch_summary),
-                            checked = appState.enableKillSwitch,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableKillSwitch = enabled) }
-                                if (enabled) openSystemVpnSettings(context)
-                            },
-                        )
-                        ArrowPreference(
-                            title = stringResource(R.string.settings_system_vpn_settings),
-                            summary = stringResource(R.string.settings_system_vpn_settings_summary),
-                            onClick = { openSystemVpnSettings(context) },
-                        )
-                    }
-                }
-
-                item(key = "vpn_stability_card") {
-                    SmallTitle(text = stringResource(R.string.settings_stability_and_background))
-                    SettingsSectionCard {
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_battery_optimization),
-                            summary = stringResource(
-                                if (isIgnoringBatteryOptimizations) {
-                                    R.string.settings_battery_optimization_unrestricted
-                                } else {
-                                    R.string.settings_battery_optimization_restricted
-                                },
-                            ),
-                            checked = isIgnoringBatteryOptimizations,
-                            onCheckedChange = { enabled ->
-                                if (enabled) {
-                                    requestIgnoreBatteryOptimizations(context)
-                                } else {
-                                    openBatteryOptimizationSettings(context)
-                                }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_wake_lock),
-                            summary = stringResource(R.string.settings_wake_lock_summary),
-                            checked = appState.enableWakeLock,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableWakeLock = enabled) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(R.string.settings_seamless_network_switching),
-                            summary = stringResource(R.string.settings_seamless_network_switching_summary),
-                            checked = appState.enableSeamlessNetworkSwitching,
-                            onCheckedChange = { enabled ->
-                                updateAppState { it.copy(enableSeamlessNetworkSwitching = enabled) }
-                            },
-                        )
-                        ArrowPreference(
-                            title = stringResource(R.string.settings_network_automation_title),
-                            summary = stringResource(R.string.settings_network_automation_summary),
-                            onClick = { navigator.push(Route.SettingsNetworkAutomation) },
-                        )
-                    }
-                }
-            }
-
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(lazyListState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = innerContentPadding,
-            )
-
-            SettingsBottomSheetsHost(
-                appState = appState,
-                sheetState = sheetState,
-                updateAppState = updateAppState,
-            )
-        }
+        SettingsBottomSheetsHost(
+            appState = appState,
+            sheetState = sheetState,
+            updateAppState = updateAppState,
+        )
     }
 }
 
 private fun openSystemVpnSettings(context: Context) {
-    val intent = Intent(Settings.ACTION_VPN_SETTINGS).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    runCatching {
-        context.startActivity(intent)
-    }.onFailure {
-        openAppDetailsSettings(context)
-    }
+    val intent = Intent(Settings.ACTION_VPN_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+    runCatching { context.startActivity(intent) }
+        .onFailure { openAppDetailsSettings(context) }
 }

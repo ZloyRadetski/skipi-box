@@ -38,6 +38,9 @@ import app.LocalAppChromeState
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.R
+import app.skipi.ui.diagnostics.DnsLeakResolverUi
+import app.skipi.ui.diagnostics.SkipiDnsLeakResolverCard
+import app.skipi.ui.diagnostics.SkipiDnsLeakSummary
 import engine.network.TunnelNetworks
 import engine.proxy.LocalProxyRuntime
 import top.yukonga.miuix.kmp.basic.Card
@@ -124,48 +127,45 @@ fun DnsLeakTestPage(
         ) {
             item(key = "description") {
                 SmallTitle(text = stringResource(R.string.tools_dns_resolvers_title))
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = stringResource(R.string.tools_dns_description),
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        verdictBanner(
-                            outcome = DnsLeakTestSession.outcome,
-                            failed = DnsLeakTestSession.failed,
-                            running = DnsLeakTestSession.running,
-                            failedReason = DnsLeakTestSession.failedReason,
-                            failureKind = DnsLeakTestSession.failureKind,
-                        )
-                        DnsLeakTestSession.outcome?.exit?.let { exit ->
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                text = stringResource(
-                                    R.string.tools_dns_exit_info,
-                                    exit.ip,
-                                    exit.countryName.ifBlank { exit.countryCode },
-                                ),
-                                fontSize = 12.sp,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        TextButton(
-                            text = stringResource(
-                                if (DnsLeakTestSession.running) R.string.tools_dns_stop else R.string.tools_dns_start,
-                            ),
-                            onClick = { if (DnsLeakTestSession.running) stopTest() else startTest() },
-                        )
-                    }
+                val outcome = DnsLeakTestSession.outcome
+                val statusText = when {
+                    DnsLeakTestSession.failed -> stringResource(R.string.tools_dns_failed)
+                    DnsLeakTestSession.running -> stringResource(R.string.tools_dns_running)
+                    outcome == null -> stringResource(R.string.tools_dns_idle)
+                    outcome.verdict == DnsLeakVerdict.NoLeak -> stringResource(R.string.tools_dns_no_leak)
+                    outcome.verdict == DnsLeakVerdict.SuspectedLeak -> stringResource(R.string.tools_dns_suspected_leak)
+                    else -> stringResource(R.string.tools_dns_unknown)
                 }
+                val failureDetail = when (DnsLeakTestSession.failureKind) {
+                    DnsLeakFailureKind.NoInternet -> stringResource(R.string.tools_dns_reason_no_internet)
+                    DnsLeakFailureKind.TunnelNotPassing -> stringResource(R.string.tools_dns_reason_tunnel_not_passing)
+                    null -> DnsLeakTestSession.failedReason?.let { stringResource(R.string.tools_dns_failed_detail, it) }
+                }
+                SkipiDnsLeakSummary(
+                    description = stringResource(R.string.tools_dns_description),
+                    statusText = statusText,
+                    detailText = failureDetail,
+                    isError = DnsLeakTestSession.failed || outcome?.verdict == DnsLeakVerdict.SuspectedLeak,
+                    isRunning = DnsLeakTestSession.running,
+                    exitIp = outcome?.exit?.ip,
+                    exitCountry = outcome?.exit?.let { it.countryName.ifBlank { it.countryCode } },
+                    onStart = ::startTest,
+                    onStop = ::stopTest,
+                )
             }
             DnsLeakTestSession.outcome?.resolvers?.forEachIndexed { index, resolver ->
                 item(key = "resolver_$index") {
                     SmallTitle(text = stringResource(R.string.tools_dns_resolver_entry, index + 1))
-                    ResolverCard(resolver)
+                    SkipiDnsLeakResolverCard(
+                        DnsLeakResolverUi(
+                            server = resolver.server,
+                            isSystemServer = resolver.isSystemServer,
+                            observedIp = resolver.observedIp,
+                            clientSubnetIp = resolver.clientSubnetIp,
+                            observedCountryCode = resolver.observedCountryCode,
+                            isp = resolver.isp,
+                        ),
+                    )
                 }
             }
         }

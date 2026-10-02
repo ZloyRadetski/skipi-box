@@ -38,6 +38,10 @@ import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
 import app.proxyServerOutboundTag
+import app.skipi.app.routing.moveRouteRule
+import app.skipi.app.routing.removeRouteRule
+import app.skipi.app.routing.setRouteRuleEnabled
+import app.skipi.ui.routing.SkipiRoutingRulesList
 import features.clipboard.ClipboardImportException
 import features.clipboard.ClipboardImportFailure
 import features.clipboard.ClipboardImportMode
@@ -72,7 +76,6 @@ import ui.components.ImportModeDialog
 import ui.components.DeleteConfirmationDialog
 import ui.components.NavigationIcon
 import ui.components.longPressReorderDragHandle
-import ui.components.moveItem
 import ui.components.rememberSkipiReorderableLazyListState
 import ui.components.rememberReorderableLazyListContentPaddingWithoutTop
 import ui.components.rememberReorderableScrollThresholdPadding
@@ -158,9 +161,7 @@ fun RoutingPage(
 
     fun deleteRoute(rule: RouteRule) {
         updateAppState { state ->
-            state.copy(
-                routeRules = state.routeRules.filterNot { it.id == rule.id },
-            )
+            state.copy(routeRules = removeRouteRule(state.routeRules, rule.id))
         }
         scope.launch {
             tipNotifier.show(deletedTemplate.formatTemplate("name" to rule.remarks))
@@ -244,100 +245,21 @@ fun RoutingPage(
             outerPadding = padding,
             isWideScreen = isWideScreen,
         )
-        val listPadding = pageListPadding(contentPadding)
-        val lazyListState = rememberLazyListState()
-        val listBottomPadding = listPadding.calculateBottomPadding()
-        val lazyContentPadding = rememberReorderableLazyListContentPaddingWithoutTop(listPadding)
-        val reorderableLazyListState = rememberSkipiReorderableLazyListState(
-            lazyListState = lazyListState,
-            itemCount = routeRules.size,
-            itemIndexOffset = 2,
-            scrollThresholdPadding = rememberReorderableScrollThresholdPadding(
-                bottom = listBottomPadding,
-            ),
-        ) { fromIndex, toIndex ->
-            updateAppState { state ->
-                val current = state.routeRules
-                if (fromIndex in current.indices && toIndex in current.indices && fromIndex != toIndex) {
-                    state.copy(routeRules = current.moveItem(fromIndex, toIndex))
-                } else {
-                    state
-                }
-            }
-        }
-
-        Box {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .padding(top = listPadding.calculateTopPadding())
-                    .pageScrollModifiers(topAppBarScrollBehavior),
-                contentPadding = lazyContentPadding,
-            ) {
-                item(key = RoutingPolicyItemKey) {
-                    SmallTitle(text = stringResource(R.string.routing_domain_policy))
-                    RoutingPolicyCard(
-                        domainStrategyOptions = DomainStrategyOptions,
-                        selectedDomainStrategy = appState.routeDomainStrategy,
-                        onDomainStrategyChange = { index ->
-                            updateAppState { state -> state.copy(routeDomainStrategy = index) }
-                        },
-                    )
-                }
-                item(key = RoutingRulesTitleItemKey) {
-                    SmallTitle(text = stringResource(R.string.routing_title))
-                }
-                items(
-                    items = routeRules,
-                    key = { rule -> rule.id },
-                ) { rule ->
-                    ReorderableItem(
-                        state = reorderableLazyListState.reorderableState,
-                        key = rule.id,
-                        enabled = routeRules.size > 1,
-                        animateItemModifier = Modifier.animateItem(
-                            fadeInSpec = null,
-                            fadeOutSpec = null,
-                            placementSpec = folmeSpring(damping = 0.9f, response = 0.38f),
-                        ),
-                    ) { isDragging ->
-                        RouteRuleCard(
-                            rule = rule,
-                            outboundLabel = outboundLabels[rule.outboundTag] ?: rule.outboundTag,
-                            isDragging = isDragging,
-                            dragModifier = Modifier.longPressReorderDragHandle(
-                                scope = this,
-                                enabled = routeRules.size > 1,
-                                state = reorderableLazyListState,
-                            ),
-                            onToggle = { enabled ->
-                                updateAppState { state ->
-                                    state.copy(
-                                        routeRules = state.routeRules.map {
-                                            if (it.id == rule.id) it.copy(enabled = enabled) else it
-                                        },
-                                    )
-                                }
-                            },
-                            onEdit = {
-                                navigator.push(app.navigation.Route.RoutingRuleEditor(rule.id))
-                            },
-                            onDelete = { requestRouteDeletion(rule) },
-                        )
-                    }
-                }
-                item(key = "routing_empty") {
-                    if (routeRules.isEmpty()) {
-                        RoutingEmptyCard()
-                    }
-                }
-            }
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(lazyListState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = contentPadding,
-            )
-        }
+        SkipiRoutingRulesList(
+            rules = routeRules,
+            outboundLabels = outboundLabels,
+            domainStrategyOptions = DomainStrategyOptions,
+            selectedDomainStrategy = appState.routeDomainStrategy,
+            contentPadding = pageListPadding(contentPadding),
+            onDomainStrategyChange = { index -> updateAppState { it.copy(routeDomainStrategy = index) } },
+            onMove = { from, to -> updateAppState { state -> state.copy(routeRules = moveRouteRule(state.routeRules, from, to)) } },
+            onToggle = { rule, enabled ->
+                updateAppState { state -> state.copy(routeRules = setRouteRuleEnabled(state.routeRules, rule.id, enabled)) }
+            },
+            onEdit = { rule -> navigator.push(app.navigation.Route.RoutingRuleEditor(rule.id)) },
+            onDelete = ::requestRouteDeletion,
+            modifier = Modifier.pageScrollModifiers(topAppBarScrollBehavior),
+        )
     }
 
     pendingRouteDeletion?.let { rule ->

@@ -5,6 +5,8 @@ package features.config
 
 import app.AppState
 import app.ProxyServerState
+import app.skipi.app.model.ProxyServerCatalog
+import app.skipi.app.model.ProxyServerRecord
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
@@ -15,6 +17,74 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TrafficConfigProxyGroupPersistenceTest {
+    @Test
+    fun editorReconciliationUsesSharedCatalogAndPreservesIdsOrderAndSelection() {
+        val profile = TrafficConfigState(
+            id = 4,
+            name = "Shared groups",
+            rawConfig = """
+                [Proxy Group]
+                Stable = select, Node A, skipi-display=always
+            """.trimIndent(),
+        )
+        val manual = ProxyServerRecord(id = 8, server = VLESS(remarks = "Manual", id = "m", server = "m.example", port = "443"))
+        val node = ProxyServerRecord(id = 10, server = VLESS(remarks = "Node A", id = "a", server = "a.example", port = "443"))
+        val state = AppState(
+            activeTrafficConfigId = 4,
+            nextProxyServerId = 50,
+            selectedProxyServerId = 8,
+            proxyServers = listOf(
+                ProxyServerState(8, manual.server, groupId = 0),
+                ProxyServerState(10, node.server, groupId = 0),
+            ),
+            trafficConfigs = listOf(profile),
+        )
+        val catalog = ProxyServerCatalog(
+            servers = listOf(manual, node),
+            nextServerId = 50,
+            selectedServerId = 8,
+        )
+
+        val reconciled = state.withConfigProxyGroupsReflected(catalog)
+
+        assertEquals(listOf(8, 10, 50), reconciled.servers.map(ProxyServerRecord::id))
+        assertEquals(51, reconciled.nextServerId)
+        assertEquals(8, reconciled.selectedServerId)
+        assertEquals(listOf(8, 10), catalog.servers.map(ProxyServerRecord::id))
+    }
+
+    @Test
+    fun profileOnlyEditorOperationsDoNotChangeProxyCatalog() {
+        val proxy = ProxyServerState(3, VLESS(remarks = "Keep", id = "keep", server = "keep.example", port = "443"), groupId = 0)
+        val state = AppState(
+            activeTrafficConfigId = 1,
+            nextProxyServerId = 20,
+            selectedProxyServerId = 3,
+            proxyServers = listOf(proxy),
+            trafficConfigs = listOf(
+                TrafficConfigState(id = 1, name = "One", rawConfig = ""),
+                TrafficConfigState(id = 2, name = "Two", rawConfig = ""),
+            ),
+        )
+
+        val duplicated = state.withDuplicatedTrafficConfig(state.trafficConfigs.first(), "Copy").state
+        val selected = state.withActiveTrafficConfig(999)
+        val deleted = state.withDeletedTrafficConfig(1)
+        val updated = state.withUpdatedTrafficConfig(1) { config ->
+            config.copy(rawConfig = "[Proxy Group]\nFast = select, A, skipi-display=always")
+        }
+
+        listOf(duplicated, selected, deleted, updated).forEach { result ->
+            assertEquals(state.proxyServers, result.proxyServers)
+            assertEquals(state.nextProxyServerId, result.nextProxyServerId)
+            assertEquals(state.selectedProxyServerId, result.selectedProxyServerId)
+        }
+        assertEquals(3, duplicated.trafficConfigs.size)
+        assertEquals(1, selected.activeTrafficConfigId)
+        assertEquals(listOf(2), deleted.trafficConfigs.map { it.id })
+        assertTrue(updated.trafficConfigs.first().rawConfig.contains("Fast = select"))
+    }
+
     @Test
     fun configProxyGroup_roundTripsBalancerHealthSettings() {
         val edited = StrategyGroup(

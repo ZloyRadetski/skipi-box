@@ -9,6 +9,7 @@ import features.config.TrafficConfigState
 import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigNetworkActivation
 import features.config.TrafficConfigResourceSettings
+import features.config.androidDefaultTrafficConfigResourceSettings
 import features.logs.AndroidAppLogger
 import features.networkautomation.model.NetworkAutomationRule
 import kotlinx.serialization.Serializable
@@ -127,7 +128,7 @@ private data class PersistedTrafficConfig(
     val proxyAppListSelectedApps: List<String>,
     val androidSettings: TrafficConfigAndroidSettings = TrafficConfigAndroidSettings(),
     val networkActivation: TrafficConfigNetworkActivation = TrafficConfigNetworkActivation(),
-    val resourceSettings: TrafficConfigResourceSettings = TrafficConfigResourceSettings(),
+    val resourceSettings: TrafficConfigResourceSettings = androidDefaultTrafficConfigResourceSettings(),
 ) {
     fun toStateOrNull(): TrafficConfigState? {
         if (id <= 0 || name.isBlank() || rawConfig.isBlank()) return null

@@ -97,8 +97,9 @@ class RoomMigrationCompatibilityTest {
 
     @Test
     fun exportedVersions4Through6MigrateTo7AndKeepHomeData() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
         for (fromVersion in 4..6) {
-            val name = "migration-v${fromVersion}-to-v7.db"
+            val name = context.getDatabasePath("migration-v${fromVersion}-to-v7.db").absolutePath
             val legacy = migrationHelper.createDatabase(name, fromVersion)
             try {
                 insertHomeData(legacy)

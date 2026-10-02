@@ -21,11 +21,20 @@ import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
-import features.proxy.server.model.isCompositeProxyServer
+import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.SubscriptionServerCollectionUpdate
+import app.skipi.app.proxy.deleteProxyServerRecords
+import app.skipi.app.proxy.importProxyServerRecords
+import app.skipi.app.proxy.reconcileSubscriptionServerCollection
+import app.skipi.app.proxy.saveProxyServerRecord
+import app.skipi.app.model.ProxyServerCatalog
+import app.skipi.app.model.SubscriptionRecord
+import app.skipi.app.subscription.withRefreshedMetadata
+import data.AndroidAppStateStore
+import data.repository.reconcileTrafficConfigProxyGroups
 import features.config.withImportedTrafficConfig
 import features.subscription.SubscriptionMetadata
-import features.subscription.SubscriptionServerCandidate
-import features.subscription.reconcileSubscriptionServers
+import features.subscription.DefaultSubscriptionGroupId
 
 internal data class ResolvedEmbeddedTrafficConfig(
     val content: String,
@@ -93,22 +102,18 @@ internal fun AppState.withImportedProxyServers(
     importResult: ProxyServerImportResult,
     groupId: Int,
 ): AppState {
-    if (importResult.servers.isEmpty()) {
-        return this
-    }
-    var nextServerId = nextProxyServerId
-    val importedServers = importResult.servers.map { server ->
-        ProxyServerState(
-            id = nextServerId++,
-            groupId = groupId,
-            server = server,
-        )
-    }
-    val nextServers = importedServers + proxyServers
+    if (importResult.servers.isEmpty()) return this
+    val result = importProxyServerRecords(
+        servers = proxyServers.map { ProxyServerRecord(it.id, it.groupId, it.server, it.latency) },
+        imported = importResult.servers,
+        groupId = groupId,
+        nextServerId = nextProxyServerId,
+        selectedServerId = selectedProxyServerId,
+    )
     return copy(
-        proxyServers = nextServers,
-        nextProxyServerId = maxOf(nextProxyServerId, nextServerId),
-        selectedProxyServerId = selectedProxyServerIdOrFirstAvailable(nextServers),
+        proxyServers = result.servers.map { ProxyServerState(it.id, it.server, it.groupId, it.latency) },
+        nextProxyServerId = result.nextServerId,
+        selectedProxyServerId = result.selectedServerId,
     )
 }
 
@@ -123,34 +128,23 @@ internal fun AppState.withSavedProxyServer(
     server: ProxyServer<*>,
     groupId: Int?,
 ): ProxyServerEditApplyResult {
-    val index = proxyServers.indexOfFirst { it.id == serverId }
-    val wasExisting = index >= 0
-    var existingGroupId = groupId
-    val nextServers = if (index >= 0) {
-        proxyServers.toMutableList().also { list ->
-            val oldServer = list[index]
-            existingGroupId = oldServer.groupId
-            list[index] = oldServer.copy(server = server)
-        }
-    } else if (groupId != null) {
-        listOf(
-            ProxyServerState(
-                id = serverId,
-                groupId = groupId,
-                server = server,
-            ),
-        ) + proxyServers
-    } else {
-        proxyServers
-    }
+    val result = saveProxyServerRecord(
+        servers = proxyServers.map { ProxyServerRecord(it.id, it.groupId, it.server, it.latency) },
+        serverId = serverId,
+        server = server,
+        groupId = groupId,
+        nextServerId = nextProxyServerId,
+        selectedServerId = selectedProxyServerId,
+    )
+    val collection = result.collection
     return ProxyServerEditApplyResult(
         state = copy(
-            proxyServers = nextServers,
-            nextProxyServerId = maxOf(nextProxyServerId, serverId + 1),
-            selectedProxyServerId = selectedProxyServerIdOrFirstAvailable(nextServers),
+            proxyServers = collection.servers.map { ProxyServerState(it.id, it.server, it.groupId, it.latency) },
+            nextProxyServerId = collection.nextServerId,
+            selectedProxyServerId = collection.selectedServerId,
         ),
-        existingGroupId = existingGroupId,
-        wasExisting = wasExisting,
+        existingGroupId = result.existingGroupId,
+        wasExisting = result.wasExisting,
     )
 }
 
@@ -168,154 +162,69 @@ internal fun AppState.withUpdatedSubscriptionServers(
         return this
     }
     val applicableUpdatesByGroupId = applicableUpdates.associateBy { update -> update.groupId }
-    val updatedGroupIds = applicableUpdates.map { update -> update.groupId }.toSet()
-    var nextServerId = nextProxyServerId
-
-    // Keep IDs for equivalent downloaded endpoints using connectionFingerprint().
-    // Custom strategy groups use those IDs as references, so this prevents a subscription
-    // refresh from silently emptying a user-created balancer even if remarks / names change.
-    val existingDownloadedServersByGroup = proxyServers
-        .filter { server -> server.groupId in updatedGroupIds && !server.server.isCompositeProxyServer() }
-        .groupBy { server -> server.groupId }
-
-    val oldIdToNewId = mutableMapOf<Int, Int>()
-
-    val importedServers = applicableUpdates.flatMap { update ->
-        val candidates = existingDownloadedServersByGroup[update.groupId].orEmpty()
-        val candidatesById = candidates.associateBy(ProxyServerState::id)
-        val reconciliation = reconcileSubscriptionServers(
-            previous = candidates.map { candidate ->
-                SubscriptionServerCandidate(id = candidate.id, server = candidate.server)
-            },
-            incoming = update.servers,
-            firstNewServerId = nextServerId,
-        )
-        nextServerId = reconciliation.nextServerId
-        oldIdToNewId.putAll(reconciliation.oldIdToNewId)
-        val group = subscriptionGroups.firstOrNull { it.id == update.groupId }
-
-        reconciliation.servers.map { reconciled ->
-            val preserved = reconciled.matchedPreviousId?.let { id -> candidatesById[id] }
-            val newServer = reconciled.server
-            if (newServer is Custom && group != null) {
-                newServer.overrideInboundAndDns = group.autoOverrideRules
-            }
-
-            ProxyServerState(
-                id = reconciled.id,
+    val collection = reconcileSubscriptionServerCollection(
+        servers = proxyServers.map { server ->
+            ProxyServerRecord(server.id, server.groupId, server.server, server.latency)
+        },
+        updates = applicableUpdates.map { update ->
+            SubscriptionServerCollectionUpdate(
                 groupId = update.groupId,
-                server = newServer,
-                latency = preserved?.latency.orEmpty(),
+                servers = update.servers,
+                autoOverrideRules = subscriptionGroups.firstOrNull { it.id == update.groupId }
+                    ?.autoOverrideRules,
             )
-        }
-    }
-
-    // Preserve and sanitize composite proxy servers (strategy groups, chain proxies)
-    val existingCompositeServers = proxyServers.filter { server ->
-        server.server.isCompositeProxyServer()
-    }
-    val otherServers = proxyServers.filterNot { server ->
-        server.groupId in updatedGroupIds || server.server.isCompositeProxyServer()
-    }
-
-    val validServerIds = (importedServers.map { it.id } + otherServers.map { it.id } + existingCompositeServers.map { it.id }).toSet()
-
-    val updatedCompositeServers = existingCompositeServers.map { server ->
-        when (val composite = server.server) {
-            is StrategyGroup -> {
-                val currentIds = composite.proxyServerIds
-                if (currentIds.isNotEmpty()) {
-                    val remappedIds = currentIds.map { oldIdToNewId[it] ?: it }
-                    val filteredIds = remappedIds.filter { it in validServerIds }
-                    val finalIds = if (filteredIds.isNotEmpty()) {
-                        filteredIds
-                    } else if (importedServers.isNotEmpty()) {
-                        importedServers.take(currentIds.size).map { it.id }
-                    } else {
-                        currentIds
-                    }
-                    if (finalIds != currentIds) {
-                        composite.proxyServerIds = finalIds
-                    }
-                }
-                val selectedId = composite.selectedMemberId
-                if (selectedId != null) {
-                    val remappedSelectedId = oldIdToNewId[selectedId] ?: selectedId
-                    if (remappedSelectedId in validServerIds) {
-                        composite.selectedMemberId = remappedSelectedId
-                    } else if (composite.proxyServerIds.isNotEmpty()) {
-                        composite.selectedMemberId = composite.proxyServerIds.first()
-                    }
-                }
-                server
-            }
-            is ChainProxy -> {
-                val currentIds = composite.proxyServerIds
-                if (currentIds.isNotEmpty()) {
-                    val remappedIds = currentIds.map { oldIdToNewId[it] ?: it }
-                    val filteredIds = remappedIds.filter { it in validServerIds }
-                    if (filteredIds != currentIds) {
-                        composite.proxyServerIds = filteredIds
-                    }
-                }
-                server
-            }
-            else -> server
-        }
-    }
-
-    val nextServers = importedServers + otherServers + updatedCompositeServers
-    val selectedServerId = when {
-        nextServers.any { server -> server.id == selectedProxyServerId } -> selectedProxyServerId
-        else -> proxyServers.firstOrNull { server -> server.groupId !in updatedGroupIds }?.id
-            ?: nextServers.firstOrNull()?.id
-            ?: selectedProxyServerId
+        },
+        nextServerId = nextProxyServerId,
+        selectedServerId = selectedProxyServerId,
+    )
+    val nextServers = collection.servers.map { server ->
+        ProxyServerState(server.id, server.server, server.groupId, server.latency)
     }
 
     val stateWithUpdatedGroups = copy(
         subscriptionGroups = subscriptionGroups.map { group ->
             val update = applicableUpdatesByGroupId[group.id]
             if (update != null) {
+                val refreshed = SubscriptionRecord(
+                    id = group.id,
+                    title = group.name,
+                    url = group.url,
+                    metadata = features.subscription.SubscriptionMetadata(
+                        profileTitle = group.profileTitle,
+                        announce = group.announce,
+                        supportUrl = group.supportUrl,
+                        supportEmail = group.supportEmail,
+                        profileWebPageUrl = group.profileWebPageUrl,
+                        announceUrl = group.announceUrl,
+                        trafficUploadBytes = group.trafficUploadBytes,
+                        trafficDownloadBytes = group.trafficDownloadBytes,
+                        trafficTotalBytes = group.trafficTotalBytes,
+                        trafficExpireAtSeconds = group.trafficExpireAtSeconds,
+                        profileUpdateIntervalHours = group.updateInterval,
+                    ),
+                ).withRefreshedMetadata(update.metadata, updatedAtMillis)
                 group.copy(
-                    lastUpdatedAtMillis = updatedAtMillis,
-                    name = update.metadata.profileTitle
-                        ?.takeIf(String::isNotBlank)
-                        ?: group.name,
-                    profileTitle = update.metadata.profileTitle ?: group.profileTitle,
-                    announce = update.metadata.announce ?: group.announce,
-                    supportUrl = update.metadata.supportUrl ?: group.supportUrl,
-                    supportEmail = update.metadata.supportEmail ?: group.supportEmail,
-                    profileWebPageUrl = update.metadata.profileWebPageUrl ?: group.profileWebPageUrl,
-                    announceUrl = update.metadata.announceUrl ?: group.announceUrl,
-                    updateInterval = update.metadata.profileUpdateIntervalHours ?: group.updateInterval,
-                    trafficUploadBytes = if (update.metadata.userInfoReceived) {
-                        update.metadata.trafficUploadBytes
-                    } else {
-                        group.trafficUploadBytes
-                    },
-                    trafficDownloadBytes = if (update.metadata.userInfoReceived) {
-                        update.metadata.trafficDownloadBytes
-                    } else {
-                        group.trafficDownloadBytes
-                    },
-                    trafficTotalBytes = if (update.metadata.userInfoReceived) {
-                        update.metadata.trafficTotalBytes
-                    } else {
-                        group.trafficTotalBytes
-                    },
-                    trafficExpireAtSeconds = if (update.metadata.userInfoReceived) {
-                        update.metadata.trafficExpireAtSeconds
-                    } else {
-                        group.trafficExpireAtSeconds
-                    },
+                    lastUpdatedAtMillis = refreshed.lastUpdatedAtMillis ?: group.lastUpdatedAtMillis,
+                    name = refreshed.title,
+                    profileTitle = refreshed.metadata?.profileTitle ?: group.profileTitle,
+                    announce = refreshed.metadata?.announce ?: group.announce,
+                    supportUrl = refreshed.metadata?.supportUrl ?: group.supportUrl,
+                    supportEmail = refreshed.metadata?.supportEmail ?: group.supportEmail,
+                    profileWebPageUrl = refreshed.metadata?.profileWebPageUrl ?: group.profileWebPageUrl,
+                    announceUrl = refreshed.metadata?.announceUrl ?: group.announceUrl,
+                    updateInterval = refreshed.metadata?.profileUpdateIntervalHours ?: group.updateInterval,
+                    trafficUploadBytes = refreshed.metadata?.trafficUploadBytes ?: group.trafficUploadBytes,
+                    trafficDownloadBytes = refreshed.metadata?.trafficDownloadBytes ?: group.trafficDownloadBytes,
+                    trafficTotalBytes = refreshed.metadata?.trafficTotalBytes ?: group.trafficTotalBytes,
+                    trafficExpireAtSeconds = refreshed.metadata?.trafficExpireAtSeconds ?: group.trafficExpireAtSeconds,
                 )
             } else {
                 group
             }
         },
         proxyServers = nextServers,
-        nextProxyServerId = maxOf(nextProxyServerId, nextServerId),
-        selectedProxyServerId = selectedServerId,
+        nextProxyServerId = collection.nextServerId,
+        selectedProxyServerId = collection.selectedServerId,
     )
 
     var finalState = stateWithUpdatedGroups
@@ -334,6 +243,81 @@ internal fun AppState.withUpdatedSubscriptionServers(
     }
 
     return finalState
+}
+
+/** Shared-catalog half of subscription refresh; metadata/config state stays in the AppState adapter. */
+internal fun reconcileUpdatedSubscriptionProxyRecords(
+    servers: List<app.skipi.app.model.ProxyServerRecord>,
+    groups: List<SubscriptionGroupState>,
+    updates: List<ProxyServerListSubscriptionUpdate>,
+    nextServerId: Int,
+    selectedServerId: Int,
+): ProxyServerCatalog {
+    val applicableUpdates = updates.filter { update ->
+        groups.any { group -> group.id == update.groupId && group.subscriptionFetchIdentity() == update.sourceIdentity }
+    }
+    if (applicableUpdates.isEmpty()) return ProxyServerCatalog(servers, nextServerId, selectedServerId)
+    val collection = reconcileSubscriptionServerCollection(
+        servers = servers.map { record ->
+            ProxyServerRecord(
+                id = record.id,
+                groupId = record.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
+                server = record.server,
+            )
+        },
+        updates = applicableUpdates.map { update ->
+            SubscriptionServerCollectionUpdate(
+                groupId = update.groupId,
+                servers = update.servers,
+                autoOverrideRules = groups.firstOrNull { it.id == update.groupId }?.autoOverrideRules,
+            )
+        },
+        nextServerId = nextServerId,
+        selectedServerId = selectedServerId,
+    )
+    return ProxyServerCatalog(
+        servers = collection.servers.map { record ->
+        app.skipi.app.model.ProxyServerRecord(
+            id = record.id,
+            server = record.server,
+            sourceSubscriptionId = record.groupId.takeIf { it != DefaultSubscriptionGroupId },
+        )
+        },
+        nextServerId = collection.nextServerId,
+        selectedServerId = collection.selectedServerId,
+    )
+}
+
+internal suspend fun applyProxySubscriptionUpdates(
+    stateStore: AndroidAppStateStore,
+    updates: List<ProxyServerListSubscriptionUpdate>,
+    updatedAtMillis: Long,
+    updateAppState: ((AppState) -> AppState) -> Unit,
+) {
+    if (updates.isEmpty()) return
+    val previous = stateStore.currentState
+    stateStore.proxyServerRepository.updateCatalog { current ->
+        reconcileUpdatedSubscriptionProxyRecords(
+            servers = current.servers,
+            groups = stateStore.currentState.subscriptionGroups,
+            updates = updates,
+            nextServerId = current.nextServerId,
+            selectedServerId = current.selectedServerId,
+        )
+    }
+    updateAppState { state ->
+        state.withUpdatedSubscriptionServers(updates, updatedAtMillis).copy(
+            proxyServers = state.proxyServers,
+            nextProxyServerId = state.nextProxyServerId,
+            selectedProxyServerId = state.selectedProxyServerId,
+        )
+    }
+    val updated = stateStore.currentState
+    if (previous.trafficConfigs != updated.trafficConfigs ||
+        previous.activeTrafficConfigId != updated.activeTrafficConfigId
+    ) {
+        stateStore.reconcileTrafficConfigProxyGroups()
+    }
 }
 
 internal fun List<SubscriptionGroupState>.updatableSubscriptionGroups(): List<SubscriptionGroupState> {
@@ -383,39 +367,17 @@ internal fun List<ProxyServerState>.deleteInvalidServersInGroup(
 
 internal fun AppState.withDeletedProxyServers(deletedServerIds: Set<Int>): AppState {
     if (deletedServerIds.isEmpty()) return this
-    val nextServers = proxyServers
-        .filterNot { server -> server.id in deletedServerIds }
-        .map { state ->
-            when (val server = state.server) {
-                is StrategyGroup -> {
-                    val remaining = server.proxyServerIds.filterNot { it in deletedServerIds }
-                    if (remaining != server.proxyServerIds) {
-                        server.proxyServerIds = remaining
-                    }
-                    if (server.selectedMemberId in deletedServerIds) {
-                        server.selectedMemberId = remaining.firstOrNull()
-                    }
-                    state
-                }
-                is ChainProxy -> {
-                    val remaining = server.proxyServerIds.filterNot { it in deletedServerIds }
-                    if (remaining != server.proxyServerIds) {
-                        server.proxyServerIds = remaining
-                    }
-                    state
-                }
-                else -> state
-            }
-        }
-    val selectedServerDeleted = selectedProxyServerId in deletedServerIds
+    val result = deleteProxyServerRecords(
+        servers = proxyServers.map { ProxyServerRecord(it.id, it.groupId, it.server, it.latency) },
+        deletedServerIds = deletedServerIds,
+        nextServerId = nextProxyServerId,
+        selectedServerId = selectedProxyServerId,
+        proxyRunning = proxyRunning,
+    )
     return copy(
-        proxyServers = nextServers,
-        selectedProxyServerId = if (selectedServerDeleted) {
-            nextServers.firstOrNull()?.id ?: selectedProxyServerId
-        } else {
-            selectedProxyServerId
-        },
-        proxyRunning = proxyRunning && !selectedServerDeleted,
+        proxyServers = result.servers.map { ProxyServerState(it.id, it.server, it.groupId, it.latency) },
+        selectedProxyServerId = result.selectedServerId,
+        proxyRunning = result.proxyRunning,
     )
 }
 

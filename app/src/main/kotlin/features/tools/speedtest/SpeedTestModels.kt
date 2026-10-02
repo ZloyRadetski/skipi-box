@@ -3,6 +3,8 @@
 
 package features.tools.speedtest
 
+import features.tools.speedtest.SpeedTestMetrics
+
 /**
  * Phases of a single speed test run, executed strictly in order:
  * ping -> download -> upload -> finished.
@@ -44,12 +46,7 @@ internal object SpeedTestMath {
      * style jitter), in the same unit as the input samples.
      */
     fun jitter(roundTripTimes: List<Double>): Double {
-        if (roundTripTimes.size < 2) return 0.0
-        var sum = 0.0
-        for (index in 1 until roundTripTimes.size) {
-            sum += kotlin.math.abs(roundTripTimes[index] - roundTripTimes[index - 1])
-        }
-        return sum / (roundTripTimes.size - 1)
+        return SpeedTestMetrics.jitter(roundTripTimes)
     }
 
     /**
@@ -57,14 +54,7 @@ internal object SpeedTestMath {
      * single cold-connection outlier does not skew the reported latency.
      */
     fun median(values: List<Double>): Double? {
-        if (values.isEmpty()) return null
-        val sorted = values.sorted()
-        val middle = sorted.size / 2
-        return if (sorted.size % 2 == 1) {
-            sorted[middle]
-        } else {
-            (sorted[middle - 1] + sorted[middle]) / 2.0
-        }
+        return SpeedTestMetrics.median(values)
     }
 
     /**
@@ -79,12 +69,6 @@ internal object SpeedTestMath {
         sampleMillis: Long,
         alpha: Double = 0.25,
     ): Double {
-        if (sampleMillis <= 0) return previousEma ?: 0.0
-        val instantMbps = sampleBytes * BITS_PER_BYTE * MILLIS_PER_SECOND / sampleMillis / BITS_PER_MEGABIT
-        return if (previousEma == null) instantMbps else previousEma + alpha * (instantMbps - previousEma)
+        return SpeedTestMetrics.smoothedMbps(previousEma, sampleBytes, sampleMillis, alpha)
     }
-
-    private const val BITS_PER_BYTE = 8.0
-    private const val MILLIS_PER_SECOND = 1000.0
-    private const val BITS_PER_MEGABIT = 1_000_000.0
 }

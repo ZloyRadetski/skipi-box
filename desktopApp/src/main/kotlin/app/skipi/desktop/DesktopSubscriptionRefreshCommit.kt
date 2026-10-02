@@ -4,11 +4,9 @@
 package app.skipi.desktop
 
 import features.config.analyzeShadowrocketConfig
+import app.skipi.app.subscription.embeddedSubscriptionProfileWasChanged
+import app.skipi.app.subscription.subscriptionRefreshTargetWasChanged
 import features.subscription.SubscriptionMetadata
-import features.subscription.runtime.EmbeddedProfileRefreshSnapshot
-import features.subscription.runtime.EmbeddedProfileRefreshDecision
-import features.subscription.runtime.decideEmbeddedProfileRefresh
-import features.subscription.runtime.refreshTargetWasChanged
 import features.subscription.runtime.subscriptionServerGroupWasChanged
 import features.proxy.server.model.ProxyServer
 
@@ -57,7 +55,7 @@ internal object DesktopSubscriptionRefreshCommitter {
         val latestTarget = latestSubscriptions.subscriptions.firstOrNull { stored ->
             stored.url == normalizedUrl
         }
-        if (refreshTargetWasChanged(baseline.subscription, latestTarget)) {
+        if (subscriptionRefreshTargetWasChanged(baseline.subscription, latestTarget)) {
             return DesktopSubscriptionRefreshServerCommit.Conflict(
                 "Подписка была изменена во время загрузки.",
             )
@@ -125,17 +123,11 @@ internal object DesktopSubscriptionRefreshCommitter {
         val latestProfile = latestConfigs.configs.firstOrNull { config ->
             config.sourceUrl.equals(sourceUrl, ignoreCase = true)
         }
-        when (decideEmbeddedProfileRefresh(
-            baseline = baselineProfile?.let {
-                EmbeddedProfileRefreshSnapshot(it)
-            },
-            latest = latestProfile?.let {
-                EmbeddedProfileRefreshSnapshot(it)
-            },
-        )) {
-            EmbeddedProfileRefreshDecision.CONFLICT -> return DesktopSubscriptionRefreshProfileCommit.Conflict
-            EmbeddedProfileRefreshDecision.LOCKED -> return DesktopSubscriptionRefreshProfileCommit.Locked
-            EmbeddedProfileRefreshDecision.APPLY -> Unit
+        if (embeddedSubscriptionProfileWasChanged(baselineProfile, latestProfile)) {
+            return DesktopSubscriptionRefreshProfileCommit.Conflict
+        }
+        if (latestProfile?.updateLocked == true) {
+            return DesktopSubscriptionRefreshProfileCommit.Locked
         }
 
         val fallbackName = metadata.profileTitle

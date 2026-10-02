@@ -1407,4 +1407,9 @@
     <string name="widget_config_changed">配置：%1$s</string>
     <string name="widget_server_changed">服务器：%1$s</string>
     <string name="widget_no_config">没有配置</string>
+    <string name="settings_proxy_server_list_columns">服务器列表列数</string>
+    <string name="settings_proxy_server_list_columns_summary">主屏幕上代理服务器的列数</string>
+    <string name="settings_proxy_server_list_columns_single">1 列</string>
+    <string name="settings_proxy_server_list_columns_double">2 列</string>
+    <string name="settings_proxy_server_list_columns_triple">3 列</string>
 </resources>

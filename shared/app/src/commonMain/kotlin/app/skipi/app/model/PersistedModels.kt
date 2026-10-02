@@ -17,6 +17,40 @@ data class AppearanceSettings(
     val themeMode: ThemeMode = ThemeMode.System,
     val dynamicColors: Boolean = true,
     val amoledBlack: Boolean = false,
+    /** Stable shared key for a named theme; retained across host-specific theme enums. */
+    val themeVariant: String? = null,
+    val seedIndex: Int = 0,
+    val customMaterialYouSeed: Long? = null,
+    val customColorsEnabled: Boolean = false,
+    val customAccentColor: Long? = null,
+    val customBackgroundColor: Long? = null,
+    val customSurfaceColor: Long? = null,
+    val customSurfaceVariantColor: Long? = null,
+    val customTextColor: Long? = null,
+    val customTextSecondaryColor: Long? = null,
+    val customStatusRunningColor: Long? = null,
+    val customStatusStoppedColor: Long? = null,
+    val customPingFastColor: Long? = null,
+    val customPingMediumColor: Long? = null,
+    val customPingSlowColor: Long? = null,
+    val customCategoryIconColor: Long? = null,
+    val customProtocolVlessColor: Long? = null,
+    val customProtocolVmessColor: Long? = null,
+    val customProtocolHysteria2Color: Long? = null,
+    val customProtocolTrojanColor: Long? = null,
+    val customProtocolShadowsocksColor: Long? = null,
+    val customProtocolWireguardColor: Long? = null,
+    val customProtocolSocksColor: Long? = null,
+    val customProtocolHttpColor: Long? = null,
+    val customProtocolStrategyColor: Long? = null,
+    val customProtocolChainColor: Long? = null,
+    val customProtocolJsonColor: Long? = null,
+    val fontFamilyMode: Int? = null,
+    val fontSizeMode: Int? = null,
+    val fontWeightMode: Int? = null,
+    val backgroundStyle: Int? = null,
+    val backgroundPhotoDimPercent: Int? = null,
+    val bottomBarSize: Int? = null,
 )
 
 enum class ThemeMode {
@@ -39,8 +73,28 @@ data class TrafficSelectionSettings(
 /** Root persisted state shared by Android and Desktop storage adapters. */
 data class PersistedSettings(
     val appearance: AppearanceSettings = AppearanceSettings(),
+    val home: HomeDisplaySettings = HomeDisplaySettings(),
     val proxy: ProxySelectionSettings = ProxySelectionSettings(),
     val traffic: TrafficSelectionSettings = TrafficSelectionSettings(),
+    val application: ApplicationPreferences = ApplicationPreferences(),
+)
+
+/** User-controlled Home presentation choices shared by the Android and Desktop UIs. */
+data class HomeDisplaySettings(
+    /** Existing app values: 0 = compact, 1 = classic. Null preserves a host default. */
+    val connectionDisplayMode: Int? = null,
+    val pinConnectionPanel: Boolean = false,
+    val subscriptionSwipeEnabled: Boolean = true,
+    val showFloatingPowerButton: Boolean = false,
+    val confirmDeletion: Boolean = true,
+    val showServerSearch: Boolean = false,
+)
+
+/** Small set of portable preferences; platform-owned settings stay in host extensions. */
+data class ApplicationPreferences(
+    val languageTag: String? = null,
+    val hapticsEnabled: Boolean = true,
+    val onboardingCompleted: Boolean = false,
 )
 
 /**
@@ -86,3 +140,23 @@ data class TrafficConfigRecord(
     val perAppSettings: SkipiPerAppSettings
         get() = rawDocument.parseSkipiPerAppSettings()
 }
+
+/** Persisted routing configuration shared by platform adapters. */
+data class RoutingConfigRecord(
+    val domainStrategy: Int = 0,
+    val defaultOutboundTag: String = features.routing.model.DefaultRouteOutboundTag,
+    val rules: List<features.routing.model.RouteRule> = emptyList(),
+)
+
+/** Resource definitions only. File presence, update progress, and paths belong to runtime/adapters. */
+data class ResourceCatalogRecord(
+    val sourceId: String = "default",
+    val userAgent: String? = null,
+    val customResources: List<ResourceDefinition> = emptyList(),
+)
+
+data class ResourceDefinition(
+    val id: Int,
+    val name: String,
+    val url: String,
+)

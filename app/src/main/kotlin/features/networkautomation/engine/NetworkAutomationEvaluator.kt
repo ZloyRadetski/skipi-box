@@ -10,9 +10,12 @@ import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import app.AppState
+import features.networkautomation.policy.NetworkAutomationDecision as SharedNetworkAutomationDecision
+import features.networkautomation.policy.NetworkAutomationPolicy
+import features.networkautomation.policy.NetworkAutomationPolicyInput
+import features.networkautomation.policy.ObservedNetwork
+import features.networkautomation.policy.ObservedNetworkTransport
 import features.networkautomation.model.NetworkAutomationRule
-import features.networkautomation.model.NetworkRuleAction
-import features.networkautomation.model.NetworkRuleType
 
 sealed interface NetworkAutomationDecision {
     data class SwitchServer(val serverId: Int, val requireAlreadyRunning: Boolean = false) : NetworkAutomationDecision
@@ -40,8 +43,8 @@ object NetworkAutomationEvaluator {
                 val ssid = if (includeWifiSsid) getCurrentWifiSsid(context, physicalCaps) else null
                 if (!ssid.isNullOrBlank()) "WIFI:$ssid" else "WIFI:ANY"
             }
-            physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
             physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
+            physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
             else -> "UNKNOWN"
         }
     }
@@ -174,21 +177,27 @@ object NetworkAutomationEvaluator {
             ?: return NetworkAutomationDecision.NoChange
 
         val isWifi = physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-        val isCellular = physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
         val currentSsid = if (isWifi && includeWifiSsid) getCurrentWifiSsid(context, physicalCaps) else null
+        val transports = buildSet {
+            if (isWifi) add(ObservedNetworkTransport.WIFI)
+            if (physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) add(ObservedNetworkTransport.ETHERNET)
+            if (physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) add(ObservedNetworkTransport.CELLULAR)
+        }
 
-        val matchedRule = findMatchingRule(
-            enabledRules = enabledRules,
-            isWifi = isWifi,
-            isCellular = isCellular,
-            currentSsid = currentSsid,
+        val decision = NetworkAutomationPolicy.evaluate(
+            NetworkAutomationPolicyInput(
+                networkAutomationEnabled = state.enableNetworkAutomation,
+                onDemandVpnEnabled = state.enableOnDemandVpn,
+                rules = enabledRules,
+                network = ObservedNetwork(transports = transports, wifiSsid = currentSsid),
+                availableServerIds = state.proxyServers.mapTo(mutableSetOf()) { it.id },
+            ),
         )
-
-        return makeDecision(matchedRule, state)
+        return decision.toAndroidDecision()
     }
 
     fun requiresWifiSsid(rules: List<NetworkAutomationRule>): Boolean {
-        return rules.any { rule -> rule.enabled && rule.type == NetworkRuleType.SPECIFIC_WIFI }
+        return NetworkAutomationPolicy.requiresWifiSsid(rules)
     }
 
     fun findMatchingRule(
@@ -197,54 +206,34 @@ object NetworkAutomationEvaluator {
         isCellular: Boolean,
         currentSsid: String?,
     ): NetworkAutomationRule? {
-        return when {
-            isWifi -> {
-                val specificMatch = if (!currentSsid.isNullOrBlank()) {
-                    enabledRules.firstOrNull { rule ->
-                        rule.type == NetworkRuleType.SPECIFIC_WIFI &&
-                            rule.ssid?.trim()?.equals(currentSsid.trim(), ignoreCase = true) == true
-                    }
-                } else {
-                    null
-                }
-                specificMatch ?: enabledRules.firstOrNull { rule -> rule.type == NetworkRuleType.ANY_WIFI }
-            }
-            isCellular -> {
-                enabledRules.firstOrNull { rule -> rule.type == NetworkRuleType.CELLULAR }
-            }
-            else -> null
+        val transports = buildSet {
+            if (isWifi) add(ObservedNetworkTransport.WIFI)
+            if (isCellular) add(ObservedNetworkTransport.CELLULAR)
         }
+        return NetworkAutomationPolicy.findMatchingRule(
+            enabledRules = enabledRules,
+            network = ObservedNetwork(transports = transports, wifiSsid = currentSsid),
+        )
     }
 
     fun makeDecision(
         matchedRule: NetworkAutomationRule?,
         state: AppState,
     ): NetworkAutomationDecision {
-        if (matchedRule == null) {
-            return NetworkAutomationDecision.NoChange
-        }
-
-        return when (matchedRule.action) {
-            NetworkRuleAction.DISCONNECT_VPN -> NetworkAutomationDecision.DisconnectVpn
-            NetworkRuleAction.SWITCH_SERVER -> {
-                val targetServerId = matchedRule.targetServerId
-                if (targetServerId != null && state.proxyServers.any { it.id == targetServerId }) {
-                    NetworkAutomationDecision.SwitchServer(targetServerId, requireAlreadyRunning = false)
-                } else {
-                    NetworkAutomationDecision.NoChange
-                }
-            }
-            NetworkRuleAction.SWITCH_IF_CONNECTED -> {
-                val targetServerId = matchedRule.targetServerId
-                if (targetServerId != null && state.proxyServers.any { it.id == targetServerId }) {
-                    NetworkAutomationDecision.SwitchServer(targetServerId, requireAlreadyRunning = true)
-                } else {
-                    NetworkAutomationDecision.NoChange
-                }
-            }
-        }
+        return NetworkAutomationPolicy.makeDecision(
+            matchedRule = matchedRule,
+            availableServerIds = state.proxyServers.mapTo(mutableSetOf()) { it.id },
+        ).toAndroidDecision()
     }
 }
+
+private fun SharedNetworkAutomationDecision.toAndroidDecision(): NetworkAutomationDecision =
+    when (this) {
+        is SharedNetworkAutomationDecision.SwitchServer ->
+            NetworkAutomationDecision.SwitchServer(serverId, requireAlreadyRunning)
+        SharedNetworkAutomationDecision.DisconnectVpn -> NetworkAutomationDecision.DisconnectVpn
+        SharedNetworkAutomationDecision.NoChange -> NetworkAutomationDecision.NoChange
+    }
 
 /**
  * Identifies a physical transport that may be considered by a network rule.

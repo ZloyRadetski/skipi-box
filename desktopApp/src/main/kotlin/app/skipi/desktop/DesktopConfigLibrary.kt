@@ -3,7 +3,7 @@
 
 package app.skipi.desktop
 
-import features.config.ConfigProfileLibraries
+import app.skipi.app.config.TrafficConfigLibraryOperations
 import features.config.ConfigProfile
 import features.config.ConfigProfileLibrary
 import kotlinx.serialization.decodeFromString
@@ -37,7 +37,7 @@ object DesktopConfigLibraries {
         if (!Files.exists(path)) {
             DesktopConfigLibrary()
         } else {
-            ConfigProfileLibraries.normalize(
+            TrafficConfigLibraryOperations.normalize(
                 json.decodeFromString<ConfigProfileLibrary>(Files.readString(path, StandardCharsets.UTF_8)),
             )
         }
@@ -61,12 +61,12 @@ object DesktopConfigLibraries {
         sourceUrl: String? = null,
         updateLocked: Boolean? = null,
         lastUpdatedAtMillis: Long? = null,
-    ): DesktopConfigLibrary = ConfigProfileLibraries.put(
+    ): DesktopConfigLibrary = TrafficConfigLibraryOperations.put(
         library, name, content, sourceUrl, updateLocked, lastUpdatedAtMillis,
     )
 
-    fun select(library: DesktopConfigLibrary, id: Int): DesktopConfigLibrary =
-        ConfigProfileLibraries.select(library, id)
+    fun select(library: DesktopConfigLibrary, id: Int?): DesktopConfigLibrary =
+        TrafficConfigLibraryOperations.select(library, id)
 
     fun update(
         library: DesktopConfigLibrary,
@@ -76,10 +76,10 @@ object DesktopConfigLibraries {
         sourceUrl: String,
         updateLocked: Boolean,
         lastUpdatedAtMillis: Long,
-    ): DesktopConfigLibrary = ConfigProfileLibraries.update(
+    ): DesktopConfigLibrary = TrafficConfigLibraryOperations.update(
         library, id, name, content, sourceUrl, updateLocked, lastUpdatedAtMillis,
     )
 
     fun remove(library: DesktopConfigLibrary, id: Int): DesktopConfigLibrary =
-        ConfigProfileLibraries.remove(library, id)
+        TrafficConfigLibraryOperations.remove(library, id)
 }

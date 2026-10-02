@@ -43,6 +43,7 @@ import features.routing.model.RouteRule
 import features.config.DefaultTrafficConfigs
 import features.config.TrafficConfigState
 import features.config.ShadowrocketPolicyGroup
+import features.config.withSkipiSettingsInRawConfig
 
 data class AppState(
     val appIcon: Int = AppIconDefault,
@@ -140,7 +141,11 @@ data class AppState(
     val subscriptionExpiryReminders: List<SubscriptionExpiryReminder> = DefaultSubscriptionExpiryReminders,
     val proxyRunning: Boolean = false,
 
-    val trafficConfigs: List<TrafficConfigState> = DefaultTrafficConfigs,
+    val trafficConfigs: List<TrafficConfigState> = DefaultTrafficConfigs.map { config ->
+        config.copy(
+            resourceSettings = config.resourceSettings.copy(userAgent = DefaultSubscriptionUserAgent),
+        ).withSkipiSettingsInRawConfig()
+    },
     val nextTrafficConfigId: Int = 2,
     val activeTrafficConfigId: Int = DefaultTrafficConfigs.first().id,
     /** Transient routing aliases parsed from the active Shadowrocket [Proxy Group] section. */

@@ -95,44 +95,13 @@ data class IpInfoData(
         }
 
     /** Formats a full text summary for one-tap copying. */
-    fun toSummaryText(): String = buildString {
-        if (!ipv4.isNullOrBlank()) {
-            appendLine("IPv4: $ipv4")
-        }
-        if (!ipv6.isNullOrBlank()) {
-            appendLine("IPv6: $ipv6")
-        }
-        if (country.isNotBlank() || countryCode.isNotBlank()) {
-            val flagStr = if (flagEmoji.isNotBlank()) "$flagEmoji " else ""
-            appendLine("Country: $flagStr$country ($countryCode)")
-        }
-        if (city.isNotBlank() || region.isNotBlank()) {
-            val loc = listOf(city, region, postal).filter(String::isNotBlank).joinToString(", ")
-            appendLine("Location: $loc")
-        }
-        if (latitude != null && longitude != null) {
-            appendLine("Coordinates: $latitude, $longitude")
-        }
-        if (isp.isNotBlank() || org.isNotBlank()) {
-            appendLine("ISP: ${isp.ifBlank { org }}")
-            if (org.isNotBlank() && org != isp) {
-                appendLine("Org: $org")
-            }
-        }
-        if (asn != null) {
-            appendLine("ASN: AS$asn")
-        }
-        if (domain.isNotBlank()) {
-            appendLine("Domain: $domain")
-        }
-        if (timezoneId.isNotBlank() || timezoneUtc.isNotBlank()) {
-            appendLine("Timezone: $timezoneId (UTC $timezoneUtc)")
-        }
-        if (currentTime.isNotBlank()) {
-            appendLine("Local Time: $currentTime")
-        }
-        appendLine("Route: ${if (isVpnTunnel) "VPN Tunnel / Proxy" else "Direct Connection"}")
-    }.trimEnd()
+    fun toSummaryText(): String = IpInfoSummary.format(
+        IpInfoSummaryInput(
+            ipv4, ipv6, country, countryCode, flagEmoji, city, region, postal,
+            latitude, longitude, isp, org, asn, domain, timezoneId, timezoneUtc,
+            currentTime, isVpnTunnel,
+        ),
+    )
 }
 
 /** State for the IP Info session. */

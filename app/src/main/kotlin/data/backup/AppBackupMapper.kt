@@ -4,16 +4,20 @@
 package data.backup
 
 import app.AppState
-import app.ServiceControlSchedule
-import app.ServiceControlSettings
-import app.ServiceControlWifi
-import app.ServiceControlWifiRule
 import app.CustomResourceFileState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.modes.RunModeVpnService
 import app.modes.normalizeFontSizeMode
+import features.backup.migrateAppBackup
+import features.backup.toAppBackupRouteRule
+import features.backup.toAppBackupServiceControl
+import features.backup.toAppBackupTrafficConfig
+import features.backup.toRouteRule
+import features.backup.toServiceControlSettings
+import features.backup.toTrafficConfigState
 import features.config.TrafficConfigState
+import features.config.withAndroidDefaultUserAgent
 import features.config.withConfigProxyGroupsReflected
 import features.config.withSkipiSettingsInRawConfig
 import features.proxy.server.list.AutoBalancerGroupId
@@ -40,9 +44,12 @@ internal fun AppState.toAppBackupFile(
             settings = toBackupSettings(),
             subscriptionGroups = subscriptionGroups.map(SubscriptionGroupState::toBackup),
             proxyServers = proxyServers.map(ProxyServerState::toBackup),
-            routeRules = routeRules.map(RouteRule::toBackup),
+            routeRules = routeRules.map(RouteRule::toAppBackupRouteRule),
             proxyAppListSelectedApps = proxyAppListSelectedApps,
-            trafficConfigs = trafficConfigs.map(TrafficConfigState::toBackup),
+            trafficConfigs = trafficConfigs.map { config ->
+                config.copy(resourceSettings = config.resourceSettings.withAndroidDefaultUserAgent())
+                    .toAppBackupTrafficConfig()
+            },
             activeTrafficConfigId = activeTrafficConfigId,
         ),
     )
@@ -172,55 +179,11 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         directDnsDomains = directDnsDomains,
         enableDirectDnsForProxyServerDomains = enableDirectDnsForProxyServerDomains,
         dnsHosts = dnsHosts,
-        serviceControl = serviceControl.toBackup(),
+        serviceControl = serviceControl.toAppBackupServiceControl(),
         proxyAppListMode = proxyAppListMode,
         enableSubscriptionExpiryNotifications = enableSubscriptionExpiryNotifications,
         subscriptionExpiryReminders = subscriptionExpiryReminders,
     )
-}
-
-private fun ServiceControlSettings.toBackup(): AppBackupServiceControl {
-    return AppBackupServiceControl(
-        enabled = enabled,
-        schedule = AppBackupServiceControlSchedule(
-            enabled = schedule.enabled,
-            startCron = schedule.startCron,
-            stopCron = schedule.stopCron,
-        ),
-        wifi = AppBackupServiceControlWifi(
-            enabled = wifi.enabled,
-            connectStart = wifi.connectStart.toBackup(),
-            connectStop = wifi.connectStop.toBackup(),
-            disconnectStart = wifi.disconnectStart.toBackup(),
-            disconnectStop = wifi.disconnectStop.toBackup(),
-        ),
-    )
-}
-
-private fun ServiceControlWifiRule.toBackup(): AppBackupServiceControlWifiRule {
-    return AppBackupServiceControlWifiRule(enabled = enabled, ssids = ssids, bssids = bssids)
-}
-
-private fun AppBackupServiceControl.toState(): ServiceControlSettings {
-    return ServiceControlSettings(
-        enabled = enabled,
-        schedule = ServiceControlSchedule(
-            enabled = schedule.enabled,
-            startCron = schedule.startCron,
-            stopCron = schedule.stopCron,
-        ),
-        wifi = ServiceControlWifi(
-            enabled = wifi.enabled,
-            connectStart = wifi.connectStart.toState(),
-            connectStop = wifi.connectStop.toState(),
-            disconnectStart = wifi.disconnectStart.toState(),
-            disconnectStop = wifi.disconnectStop.toState(),
-        ),
-    )
-}
-
-private fun AppBackupServiceControlWifiRule.toState(): ServiceControlWifiRule {
-    return ServiceControlWifiRule(enabled = enabled, ssids = ssids, bssids = bssids)
 }
 
 private fun SubscriptionGroupState.toBackup(): AppBackupSubscriptionGroup {
@@ -262,63 +225,12 @@ private fun ProxyServerState.toBackup(): AppBackupProxyServer {
     )
 }
 
-private fun RouteRule.toBackup(): AppBackupRouteRule {
-    return AppBackupRouteRule(
-        id = id,
-        remarks = remarks,
-        outboundTag = outboundTag,
-        domain = domain,
-        ip = ip,
-        process = process,
-        port = port,
-        protocol = protocol,
-        network = network,
-        enabled = enabled,
-    )
-}
-
 private fun CustomResourceFileState.toBackup(): AppBackupCustomResourceFile {
     return AppBackupCustomResourceFile(
         id = id,
         name = name,
         url = url,
     )
-}
-
-private fun TrafficConfigState.toBackup(): AppBackupTrafficConfig {
-    return AppBackupTrafficConfig(
-        id = id,
-        name = name,
-        rawConfig = rawConfig,
-        sourceUrl = sourceUrl,
-        updateLocked = updateLocked,
-        lastUpdatedAtMillis = lastUpdatedAtMillis,
-        autoUpdate = autoUpdate,
-        updateInterval = updateInterval,
-        proxyAppListMode = proxyAppListMode,
-        proxyAppListSelectedApps = proxyAppListSelectedApps,
-        androidSettings = androidSettings,
-        networkActivation = networkActivation,
-        resourceSettings = resourceSettings,
-    )
-}
-
-private fun AppBackupTrafficConfig.toState(): TrafficConfigState {
-    return TrafficConfigState(
-        id = id,
-        name = name,
-        rawConfig = rawConfig,
-        sourceUrl = sourceUrl,
-        updateLocked = updateLocked,
-        lastUpdatedAtMillis = lastUpdatedAtMillis,
-        autoUpdate = autoUpdate,
-        updateInterval = updateInterval,
-        proxyAppListMode = proxyAppListMode,
-        proxyAppListSelectedApps = proxyAppListSelectedApps,
-        androidSettings = androidSettings,
-        networkActivation = networkActivation,
-        resourceSettings = resourceSettings,
-    ).withSkipiSettingsInRawConfig()
 }
 
 private fun AppBackupData.toAppState(): AppState {
@@ -342,9 +254,11 @@ private fun AppBackupData.toAppState(): AppState {
         ?: restoredProxyServers.firstOrNull()?.id
         ?: defaults.selectedProxyServerId
     val restoredCustomResourceFiles = settings.customResourceFiles.map(AppBackupCustomResourceFile::toState)
-    val restoredRouteRules = routeRules.map(AppBackupRouteRule::toState)
+    val restoredRouteRules = routeRules.map(AppBackupRouteRule::toRouteRule)
     val restoredTrafficConfigs = trafficConfigs
-        .map(AppBackupTrafficConfig::toState)
+        .map(AppBackupTrafficConfig::toTrafficConfigState)
+        .map { config -> config.copy(resourceSettings = config.resourceSettings.withAndroidDefaultUserAgent()) }
+        .map { config -> config.withSkipiSettingsInRawConfig() }
         .ifEmpty { defaults.trafficConfigs }
     val restoredActiveTrafficConfigId = activeTrafficConfigId
         .takeIf { configId -> restoredTrafficConfigs.any { config -> config.id == configId } }
@@ -407,8 +321,8 @@ private fun AppBackupData.toAppState(): AppState {
         enableDynamicLocalProxyPort = settings.enableDynamicLocalProxyPort,
         localProxyListenAllInterfaces = settings.localProxyListenAllInterfaces,
         enableLocalProxyAuth = settings.enableLocalProxyAuth,
-        localProxyUsername = settings.localProxyUsername,
-        localProxyPassword = settings.localProxyPassword,
+        localProxyUsername = settings.localProxyUsername.ifEmpty { defaults.localProxyUsername },
+        localProxyPassword = settings.localProxyPassword.ifEmpty { defaults.localProxyPassword },
         enableVpnAppendHttpProxy = settings.enableVpnAppendHttpProxy,
         enableVpnHevTun = settings.enableVpnHevTun,
         enableKillSwitch = settings.enableKillSwitch,
@@ -502,7 +416,7 @@ private fun AppBackupData.toAppState(): AppState {
         directDnsDomains = settings.directDnsDomains,
         enableDirectDnsForProxyServerDomains = settings.enableDirectDnsForProxyServerDomains,
         dnsHosts = settings.dnsHosts,
-        serviceControl = settings.serviceControl.toState(),
+        serviceControl = settings.serviceControl.toServiceControlSettings(),
         proxyAppListMode = settings.proxyAppListMode,
         proxyAppListSelectedApps = proxyAppListSelectedApps,
         enableSubscriptionExpiryNotifications = settings.enableSubscriptionExpiryNotifications,
@@ -550,21 +464,6 @@ private fun AppBackupProxyServer.toState(
             payload = payload,
         ).decodeProxyServer(),
         groupId = groupId.takeIf { it in validGroupIds } ?: fallbackGroupId,
-    )
-}
-
-private fun AppBackupRouteRule.toState(): RouteRule {
-    return RouteRule(
-        id = id,
-        remarks = remarks,
-        outboundTag = outboundTag,
-        domain = domain,
-        ip = ip,
-        process = process,
-        port = port,
-        protocol = protocol,
-        network = network,
-        enabled = enabled,
     )
 }
 

@@ -8,7 +8,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.SkipiApplication
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
-import features.proxy.server.usecase.withUpdatedSubscriptionServers
+import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
 
@@ -48,12 +48,12 @@ internal class SubscriptionWorker(
             },
         )
         if (result.updates.isNotEmpty()) {
-            stateStore.update { state ->
-                state.withUpdatedSubscriptionServers(
-                    updates = result.updates,
-                    updatedAtMillis = result.updatedAtMillis,
-                )
-            }
+            applyProxySubscriptionUpdates(
+                stateStore = stateStore,
+                updates = result.updates,
+                updatedAtMillis = result.updatedAtMillis,
+                updateAppState = { transform -> stateStore.update(transform) },
+            )
         }
         return result
     }

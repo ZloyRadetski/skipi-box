@@ -4,7 +4,12 @@
 package features.config
 
 import app.AppState
+import app.ProxyServerState
 import app.SubscriptionGroupState
+import app.skipi.app.model.ProxyServerCatalog
+import app.skipi.app.model.ProxyServerRecord
+import features.proxy.server.model.ProxyServer
+import features.proxy.server.model.VLESS
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdate
 import features.proxy.server.usecase.ResolvedEmbeddedTrafficConfig
 import features.proxy.server.usecase.subscriptionFetchIdentity
@@ -15,6 +20,60 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TrafficConfigImportUpdateTest {
+
+    @Test
+    fun deepLinkServerAdditionIsAnAtomicCatalogTransform() {
+        val existing = ProxyServerRecord(
+            id = 8,
+            server = ProxyServer.parse("vless://manual@example.org:443?security=tls&type=tcp#Existing"),
+        )
+        val catalog = ProxyServerCatalog(
+            servers = listOf(existing),
+            nextServerId = 20,
+            selectedServerId = 8,
+        )
+
+        val imported = catalog.withImportedSkipiServer(
+            "vless://imported@example.net:443?security=tls&type=tcp#Imported",
+        )
+
+        assertEquals(listOf(20, 8), imported.servers.map { it.id })
+        assertEquals(21, imported.nextServerId)
+        assertEquals(20, imported.selectedServerId)
+        assertEquals(listOf(8), catalog.servers.map(ProxyServerRecord::id))
+    }
+
+    @Test
+    fun importingProfileDoesNotWriteProxyCatalogBeforeSharedReconciliation() {
+        val existingServer = ProxyServerState(
+            id = 8,
+            server = VLESS(remarks = "Manual", id = "manual", server = "manual.example", port = "443"),
+            groupId = 0,
+        )
+        val original = AppState(
+            trafficConfigs = listOf(TrafficConfigState(id = 2, name = "Existing", rawConfig = "")),
+            activeTrafficConfigId = 2,
+            nextTrafficConfigId = 3,
+            proxyServers = listOf(existingServer),
+            nextProxyServerId = 20,
+            selectedProxyServerId = 8,
+        )
+
+        val imported = original.withImportedTrafficConfig(
+            content = """
+                [Proxy Group]
+                Visible = select, DIRECT, skipi-display=always
+            """.trimIndent(),
+            activate = true,
+            sourceUrl = "https://example.com/config.conf",
+        )
+
+        assertEquals(listOf(8), imported.proxyServers.map { it.id })
+        assertEquals(20, imported.nextProxyServerId)
+        assertEquals(8, imported.selectedProxyServerId)
+        assertEquals(2, imported.trafficConfigs.size)
+        assertEquals(imported.trafficConfigs.last().id, imported.activeTrafficConfigId)
+    }
 
     @Test
     fun repeated_import_with_source_url_updates_existing_config() {

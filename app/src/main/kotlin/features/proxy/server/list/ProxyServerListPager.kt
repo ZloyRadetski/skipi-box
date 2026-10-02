@@ -53,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.modes.ProxyServerListSortDefault
+import app.LocalAppServices
 import app.AppState
 import app.ProxyServerState
 import app.isTestingLatency
@@ -63,6 +64,8 @@ import app.navigation.Navigator
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
 import data.AndroidAppStateStore
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.store.SharedApplicationActionOutcome
 import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
@@ -134,6 +137,7 @@ internal fun ProxyServerListPager(
     pageHeader: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val context = LocalContext.current
+    val services = LocalAppServices.current
     var qrCodeDialogState by remember { mutableStateOf<ProxyServerQrCodeDialogState?>(null) }
     var allSubscriptionsRefreshing by rememberSaveable { mutableStateOf(false) }
     var updatingGroupIds by remember { mutableStateOf(emptySet<Int>()) }
@@ -480,6 +484,7 @@ private fun ProxyServerLazyGrid(
     pageHeader: (@Composable (Modifier) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val services = LocalAppServices.current
     subscriptionGroup?.let { group ->
         SubscriptionProxyServerList(
             group = group,
@@ -549,17 +554,16 @@ private fun ProxyServerLazyGrid(
         if (!reorderEnabled) return@rememberReorderableGridStateByKey
         val fromId = fromKey as? Int ?: return@rememberReorderableGridStateByKey
         val toId = toKey as? Int ?: return@rememberReorderableGridStateByKey
-        updateAppState { state ->
-            val reorderedServers = state.proxyServers.reorderVisibleServerById(
-                fromServerId = fromId,
-                toServerId = toId,
-            )
-            if (reorderedServers === state.proxyServers) {
-                state
-            } else {
-                state.copy(proxyServers = reorderedServers)
-            }
-        }
+        services.sharedApplicationStore.dispatch(
+            app.skipi.app.store.SharedApplicationAction.UpdateProxyServers { current ->
+                val fromIndex = current.indexOfFirst { it.id == fromId }
+                val toIndex = current.indexOfFirst { it.id == toId }
+                if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) current else current.toMutableList().also { items ->
+                    val moved = items.removeAt(fromIndex)
+                    items.add(toIndex, moved)
+                }
+            },
+        )
     }
 
     @Composable
@@ -793,7 +797,16 @@ private fun ProxyServerListItem(
         onSelect = {
             onSelectedServerIdChange(server.id)
             scope.launch {
-                runCatching { stateStore.proxyServerRepository.select(server.id) }
+                runCatching {
+                    val result = stateStore.sharedApplicationStore.dispatchAndAwait(
+                        SharedApplicationAction.SelectProxyServer(server.id),
+                    )
+                    when (val outcome = result.outcome) {
+                        SharedApplicationActionOutcome.Completed -> Unit
+                        is SharedApplicationActionOutcome.Rejected -> error(outcome.reason)
+                        is SharedApplicationActionOutcome.Failed -> error(outcome.reason)
+                    }
+                }
                     .onFailure { error ->
                         onSelectedServerIdChange(stateStore.currentState.selectedProxyServerId)
                         tipNotifier.show(error.message ?: "Could not select proxy server.")

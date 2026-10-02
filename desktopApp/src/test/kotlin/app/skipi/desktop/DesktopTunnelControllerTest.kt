@@ -10,6 +10,9 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import platform.TunnelCapability
 import platform.TunnelConnectRequest
+import platform.TunnelConfiguration
+import platform.TunnelOperationException
+import platform.TunnelOperationStage
 import platform.TunnelPhase
 import platform.TunnelTraffic
 
@@ -32,9 +35,45 @@ class DesktopTunnelControllerTest {
 
         assertTrue(controller.connect(TunnelConnectRequest("profile-1")).isSuccess)
         assertEquals(TunnelPhase.Connected, controller.snapshot().phase)
+        assertEquals("profile-1", controller.snapshot().profileId)
         assertTrue(controller.disconnect().isSuccess)
         assertEquals(TunnelPhase.Disconnected, controller.snapshot().phase)
         assertFalse(controller.supports(TunnelCapability.SystemProxy))
+        assertTrue(controller.supports(TunnelCapability.PreparedConfiguration))
+    }
+
+    @Test
+    fun uses_shared_prepared_configuration_without_resolving_profile_again() = runBlocking {
+        var resolvedProfile = false
+        var startedConfiguration: String? = null
+        var running = false
+        val controller = DesktopTunnelController(
+            configForProfile = {
+                resolvedProfile = true
+                Result.failure(IllegalStateException("should use provided config"))
+            },
+            startCore = { config ->
+                startedConfiguration = config
+                running = true
+                Result.success(DesktopCoreState(isRunning = true))
+            },
+            stopCore = {
+                running = false
+                Result.success(DesktopCoreState(isRunning = false))
+            },
+            coreState = { DesktopCoreState(isRunning = running) },
+        )
+
+        val result = controller.connect(
+            TunnelConnectRequest(
+                profileId = "profile-1",
+                configuration = TunnelConfiguration("{\"inbounds\":[]}"),
+            ),
+        )
+
+        assertTrue(result.isSuccess)
+        assertFalse(resolvedProfile)
+        assertEquals("{\"inbounds\":[]}", startedConfiguration)
     }
 
     @Test
@@ -68,9 +107,15 @@ class DesktopTunnelControllerTest {
             coreState = { DesktopCoreState(isRunning = false) },
         )
 
-        assertTrue(controller.connect(TunnelConnectRequest("bad")).isFailure)
+        val result = controller.connect(TunnelConnectRequest("bad"))
+        assertTrue(result.isFailure)
+        val error = result.exceptionOrNull()
+        assertTrue(error is TunnelOperationException)
+        assertEquals(TunnelOperationStage.PrepareConfiguration, (error as TunnelOperationException).failure.stage)
         val snapshot = controller.snapshot()
         assertEquals(TunnelPhase.Failed, snapshot.phase)
+        assertEquals("desktop_runtime", snapshot.failure?.code)
+        assertEquals("desktop_core", snapshot.failure?.platformCode)
         assertEquals("Invalid profile", snapshot.failure?.message)
     }
 

@@ -7,14 +7,11 @@ package features.config
 
 import androidx.compose.foundation.background
 import ui.text.themedFontWeight
-import ui.components.AppWindowDialog
-import ui.components.AppWindowDropdownPreference
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,19 +19,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.input.InputTransformation
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.byValue
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.foundation.text.input.then
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -60,12 +47,21 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
+import app.skipi.app.config.withGeneralOptions
+import app.skipi.app.config.withNetworkActivation
+import app.skipi.app.config.withProfileBasics
+import app.skipi.app.config.withDnsOptions
+import app.skipi.app.config.withTunnelOptions
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
+import app.skipi.ui.config.SkipiTrafficConfigGeneralOptions
+import app.skipi.ui.config.SkipiTrafficConfigNetworkActivation
+import app.skipi.ui.config.SkipiTrafficConfigProfileBasics
+import app.skipi.ui.config.SkipiTrafficConfigDnsEditor
+import app.skipi.ui.config.SkipiTrafficConfigTunnelEditor
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import features.subscription.sanitizeSubscriptionIntervalInput
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -73,21 +69,14 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Copy
-import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
@@ -95,21 +84,10 @@ import ui.AppTheme
 import ui.clipboard.setPlainText
 import ui.components.BackNavigationIcon
 import ui.components.NavigationIcon
-import ui.components.StringListEditor
 import ui.layout.AdaptiveTopAppBar
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import engine.network.isIpAddress
-import engine.network.isIpv4Address
-import engine.vpn.VpnDefaults
-import engine.xray.isSupportedXrayDnsServer
 
 /** The full-screen Material entry point for a single SKIPI traffic profile. */
 @Composable
@@ -131,43 +109,35 @@ fun TrafficConfigEditorPage(
     var sourceUrl by remember(config.id) { mutableStateOf(config.sourceUrl) }
     var updateLocked by remember(config.id) { mutableStateOf(config.updateLocked) }
     var autoUpdate by remember(config.id) { mutableStateOf(config.autoUpdate) }
-    var updateInterval by remember(config.id) {
-        mutableStateOf(sanitizeSubscriptionIntervalInput(config.updateInterval))
-    }
+    var updateInterval by remember(config.id) { mutableStateOf(config.updateInterval) }
     var geoAutoUpdate by remember(config.id) { mutableStateOf(config.resourceSettings.autoUpdate) }
     var geoUpdateInterval by remember(config.id) {
-        mutableStateOf(sanitizeSubscriptionIntervalInput(config.resourceSettings.updateInterval))
+        mutableStateOf(config.resourceSettings.updateInterval)
     }
 
     fun saveBasics() {
-        val trimmedName = name.trim().ifBlank { config.name }
-        val trimmedSourceUrl = sourceUrl.trim()
-        val trimmedUpdateInterval = updateInterval.trim()
-        val trimmedGeoUpdateInterval = geoUpdateInterval.trim()
-
-        val isUnchanged = trimmedName == config.name &&
-            trimmedSourceUrl == config.sourceUrl &&
-            updateLocked == config.updateLocked &&
-            autoUpdate == config.autoUpdate &&
-            trimmedUpdateInterval == sanitizeSubscriptionIntervalInput(config.updateInterval) &&
-            geoAutoUpdate == config.resourceSettings.autoUpdate &&
-            trimmedGeoUpdateInterval == sanitizeSubscriptionIntervalInput(config.resourceSettings.updateInterval)
-
-        if (isUnchanged) return
+        val updated = config.withProfileBasics(
+            name = name,
+            sourceUrl = sourceUrl,
+            updateLocked = updateLocked,
+            autoUpdate = autoUpdate,
+            updateInterval = updateInterval,
+            resourceAutoUpdate = geoAutoUpdate,
+            resourceUpdateInterval = geoUpdateInterval,
+        )
+        if (updated == config) return
 
         updateAppState { state ->
             state.withUpdatedTrafficConfig(config.id) { current ->
-                current.copy(
-                    name = trimmedName,
-                    sourceUrl = trimmedSourceUrl,
+                current.withProfileBasics(
+                    name = name,
+                    sourceUrl = sourceUrl,
                     updateLocked = updateLocked,
                     autoUpdate = autoUpdate,
-                    updateInterval = trimmedUpdateInterval,
-                    resourceSettings = current.resourceSettings.copy(
-                        autoUpdate = geoAutoUpdate,
-                        updateInterval = trimmedGeoUpdateInterval,
-                    ),
-                ).withSkipiSettingsInRawConfig()
+                    updateInterval = updateInterval,
+                    resourceAutoUpdate = geoAutoUpdate,
+                    resourceUpdateInterval = geoUpdateInterval,
+                )
             }
         }
     }
@@ -213,98 +183,23 @@ fun TrafficConfigEditorPage(
                 contentPadding = listPadding,
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                item(key = "basics_name") {
-                    ConfigPageTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = stringResource(R.string.configs_name),
-                        summary = stringResource(R.string.configs_name_summary),
+                item(key = "profile_basics") {
+                    SkipiTrafficConfigProfileBasics(
+                        name = name,
+                        onNameChange = { name = it },
+                        sourceUrl = sourceUrl,
+                        onSourceUrlChange = { sourceUrl = it },
+                        updateLocked = updateLocked,
+                        onUpdateLockedChange = { updateLocked = it },
+                        autoUpdate = autoUpdate,
+                        onAutoUpdateChange = { autoUpdate = it },
+                        updateInterval = updateInterval,
+                        onUpdateIntervalChange = { updateInterval = it },
+                        resourceAutoUpdate = geoAutoUpdate,
+                        onResourceAutoUpdateChange = { geoAutoUpdate = it },
+                        resourceUpdateInterval = geoUpdateInterval,
+                        onResourceUpdateIntervalChange = { geoUpdateInterval = it },
                     )
-                }
-                item(key = "basics_source_url") {
-                    ConfigPageTextField(
-                        value = sourceUrl,
-                        onValueChange = { sourceUrl = it },
-                        label = stringResource(R.string.configs_source_url),
-                        summary = stringResource(R.string.configs_source_url_summary),
-                    )
-                }
-                item(key = "basics_lock") {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 6.dp),
-                        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                    ) {
-                        SwitchPreference(
-                            title = stringResource(R.string.configs_lock_update),
-                            summary = stringResource(R.string.configs_lock_update_summary),
-                            checked = updateLocked,
-                            onCheckedChange = { updateLocked = it },
-                        )
-                    }
-                }
-                if (!updateLocked) {
-                    item(key = "basics_config_auto_update") {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 6.dp),
-                            colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                SwitchPreference(
-                                    title = stringResource(R.string.configs_auto_update),
-                                    summary = stringResource(R.string.configs_auto_update_summary),
-                                    checked = autoUpdate,
-                                    onCheckedChange = { autoUpdate = it },
-                                )
-                                if (autoUpdate) {
-                                    TextField(
-                                        state = rememberTextFieldState(initialText = updateInterval),
-                                        inputTransformation = InputTransformation
-                                            .byValue { _, proposed ->
-                                                sanitizeSubscriptionIntervalInput(proposed.toString())
-                                            }
-                                            .then { updateInterval = asCharSequence().toString() },
-                                        label = stringResource(R.string.configs_auto_update_interval),
-                                        lineLimits = TextFieldLineLimits.SingleLine,
-                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                item(key = "basics_geo_auto_update") {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 6.dp),
-                        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            SwitchPreference(
-                                title = stringResource(R.string.configs_geo_auto_update),
-                                summary = stringResource(R.string.configs_geo_auto_update_summary),
-                                checked = geoAutoUpdate,
-                                onCheckedChange = { geoAutoUpdate = it },
-                            )
-                            if (geoAutoUpdate) {
-                                TextField(
-                                    state = rememberTextFieldState(initialText = geoUpdateInterval),
-                                    inputTransformation = InputTransformation
-                                        .byValue { _, proposed ->
-                                            sanitizeSubscriptionIntervalInput(proposed.toString())
-                                        }
-                                        .then { geoUpdateInterval = asCharSequence().toString() },
-                                    label = stringResource(R.string.configs_geo_auto_update_interval),
-                                    lineLimits = TextFieldLineLimits.SingleLine,
-                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                                )
-                            }
-                        }
-                    }
                 }
                 item(key = "sections_title") {
                     SmallTitle(text = stringResource(R.string.configs_editor_sections))
@@ -550,11 +445,7 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
     fun save() {
         updateAppState { state ->
             state.withUpdatedTrafficConfig(config.id) { current ->
-                current.copy(
-                    rawConfig = current.rawConfig
-                        .withShadowrocketGeneralValue("ipv6", ipv6.toString())
-                        .withShadowrocketGeneralValue("prefer-ipv6", preferIpv6.toString()),
-                )
+                current.withGeneralOptions(ipv6 = ipv6, preferIpv6 = preferIpv6)
             }
         }
     }
@@ -573,24 +464,13 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                ) {
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_ipv6),
-                        summary = stringResource(R.string.configs_ipv6_summary),
-                        checked = ipv6,
-                        onCheckedChange = { ipv6 = it },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_ipv6_prefer),
-                        summary = stringResource(R.string.configs_ipv6_prefer_summary),
-                        enabled = ipv6,
-                        checked = preferIpv6,
-                        onCheckedChange = { preferIpv6 = it },
-                    )
-                }
+                SkipiTrafficConfigGeneralOptions(
+                    ipv6 = ipv6,
+                    preferIpv6 = preferIpv6,
+                    onIpv6Change = { ipv6 = it },
+                    onPreferIpv6Change = { preferIpv6 = it },
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
             }
         }
     }
@@ -604,812 +484,28 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
     var settings by remember(config.id) { mutableStateOf(config.androidSettings) }
-    var tunVpnDns by remember(config.id) { mutableStateOf(settings.tunVpnDns) }
-    var proxyDns by remember(config.id) { mutableStateOf(settings.proxyDns) }
-    var directDns by remember(config.id) { mutableStateOf(settings.directDns) }
-    var directDnsDomains by remember(config.id) { mutableStateOf(settings.directDnsDomains) }
-    var dnsHosts by remember(config.id) { mutableStateOf(settings.dnsHosts) }
-
-    var showTunDnsDialog by remember { mutableStateOf(false) }
-    var showAddProxyDnsDialog by remember { mutableStateOf(false) }
-    var editingProxyDnsIndex by remember { mutableIntStateOf(-1) }
-    var showAddDirectDnsDialog by remember { mutableStateOf(false) }
-    var editingDirectDnsIndex by remember { mutableIntStateOf(-1) }
-    var showDirectDomainsDialog by remember { mutableStateOf(false) }
-    var showDnsHostsDialog by remember { mutableStateOf(false) }
-
-    val proxyDnsPresets = listOf(
-        "https://1.1.1.1/dns-query,https://1.0.0.1/dns-query" to "Cloudflare DoH",
-        "https://8.8.8.8/dns-query,https://8.8.4.4/dns-query" to "Google DoH",
-        "https://dns.adguard-dns.com/dns-query" to "AdGuard DoH",
-        "https://dns.quad9.net/dns-query" to "Quad9 DoH",
-        "https://dns.nullsproxy.com/dns-query" to "Nulls Proxy DoH",
-        "tcp://8.8.8.8:53,tcp://8.8.4.4:53" to "Google TCP",
-        "8.8.8.8,8.8.4.4" to "Google DoU",
-        "1.1.1.1,1.0.0.1" to "Cloudflare DoU",
-        "localhost" to "System DNS (Private DNS)",
-    )
-    val proxyPresetLabels = proxyDnsPresets.map { it.second } + stringResource(R.string.configs_dns_custom)
-    val currentProxyJoined = proxyDns.joinToString(",")
-    var proxyPresetIndex by remember(config.id, currentProxyJoined) {
-        val idx = proxyDnsPresets.indexOfFirst { it.first == currentProxyJoined }
-        mutableIntStateOf(if (idx >= 0) idx else proxyDnsPresets.size)
-    }
-
-    val directDnsPresets = listOf(
-        "https://77.88.8.8/dns-query" to "Yandex DoH",
-        "https://1.1.1.1/dns-query" to "Cloudflare DoH",
-        "https://8.8.8.8/dns-query" to "Google DoH",
-        "77.88.8.8,77.88.8.1" to "Yandex DoU",
-        "1.1.1.1,8.8.8.8" to "Cloudflare + Google DoU",
-        "localhost" to "System DNS (Private DNS)",
-    )
-    val directPresetLabels = directDnsPresets.map { it.second } + stringResource(R.string.configs_dns_custom)
-    val currentDirectJoined = directDns.joinToString(",")
-    var directPresetIndex by remember(config.id, currentDirectJoined) {
-        val idx = directDnsPresets.indexOfFirst { it.first == currentDirectJoined }
-        mutableIntStateOf(if (idx >= 0) idx else directDnsPresets.size)
-    }
-
-    val proxyQuickChips = listOf(
-        "DoH (1.1.1.1)" to "https://1.1.1.1/dns-query",
-        "DoH (8.8.8.8)" to "https://8.8.8.8/dns-query",
-        "DoH (Nulls Proxy)" to "https://dns.nullsproxy.com/dns-query",
-        "TCP (8.8.8.8)" to "tcp://8.8.8.8:53",
-        "DoU (1.1.1.1)" to "1.1.1.1",
-        "DoU (8.8.8.8)" to "8.8.8.8",
-        "System DNS (Private DNS)" to "localhost",
-    )
-
-    val directQuickChips = listOf(
-        "DoH (Yandex)" to "https://77.88.8.8/dns-query",
-        "DoU (Yandex)" to "77.88.8.8",
-        "DoH (Cloudflare)" to "https://1.1.1.1/dns-query",
-        "DoU (Google)" to "8.8.8.8",
-        "System DNS (Private DNS)" to "localhost",
-    )
-
     fun save() {
-        updateAppState { state ->
-            state.withUpdatedTrafficConfig(config.id) { current ->
-                current.copy(
-                    androidSettings = settings.copy(
-                        tunVpnDns = tunVpnDns.trim().ifBlank { VpnDefaults.IPV4_DNS },
-                        proxyDns = proxyDns.map(String::trim).filter(String::isNotEmpty).distinct(),
-                        directDns = directDns.map(String::trim).filter(String::isNotEmpty).distinct(),
-                        directDnsDomains = directDnsDomains.map(String::trim).filter(String::isNotEmpty).distinct(),
-                        dnsHosts = dnsHosts.map(String::trim).filter(String::isNotEmpty).distinct(),
-                    ),
-                    rawConfig = current.rawConfig.withShadowrocketGeneralValue(
-                        "dns-server",
-                        directDns.firstOrNull()?.trim() ?: "system",
-                    ),
-                ).withSkipiSettingsInRawConfig()
-            }
-        }
+        updateAppState { state -> state.withUpdatedTrafficConfig(config.id) { it.withDnsOptions(settings) } }
     }
-
     TrafficConfigFullScreenScaffold(
-        title = stringResource(R.string.configs_dns_title),
-        padding = padding,
-        isWideScreen = isWideScreen,
-        onBack = { save(); navigator.pop() },
-        onSave = { save(); navigator.pop() },
+        title = stringResource(R.string.configs_dns_title), padding = padding, isWideScreen = isWideScreen,
+        onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
     ) { listPadding, scrollBehavior ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .pageScrollModifiers(scrollBehavior),
+            modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item(key = "master_switches_title") {
-                SmallTitle(text = stringResource(R.string.configs_dns_master_switches))
-            }
-            item(key = "master_switches_card") {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                ) {
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_local_dns),
-                        summary = stringResource(R.string.configs_local_dns_summary),
-                        checked = settings.enableVpnLocalDns,
-                        onCheckedChange = { settings = settings.copy(enableVpnLocalDns = it) },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_fake_dns),
-                        summary = stringResource(R.string.configs_fake_dns_summary),
-                        checked = settings.enableFakeDns,
-                        enabled = settings.enableVpnLocalDns,
-                        onCheckedChange = { settings = settings.copy(enableFakeDns = it) },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.settings_resolve_proxy_server_domain),
-                        summary = stringResource(R.string.settings_resolve_proxy_server_domain_summary),
-                        checked = settings.enableResolveProxyServerDomain,
-                        onCheckedChange = { settings = settings.copy(enableResolveProxyServerDomain = it) },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_dns_direct_fallback_proxy),
-                        summary = stringResource(R.string.configs_dns_direct_fallback_proxy_summary),
-                        checked = settings.enableDirectDnsForProxyServerDomains,
-                        onCheckedChange = { settings = settings.copy(enableDirectDnsForProxyServerDomains = it) },
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.configs_dns_tun_dns),
-                        summary = tunVpnDns,
-                        onClick = { showTunDnsDialog = true },
-                    )
-                }
-            }
-
-            item(key = "proxy_dns_title") {
-                SmallTitle(text = stringResource(R.string.configs_dns_proxy_section))
-            }
-            item(key = "proxy_dns_card") {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                ) {
-                    AppWindowDropdownPreference(
-                        title = stringResource(R.string.configs_dns_servers),
-                        items = proxyPresetLabels,
-                        selectedIndex = proxyPresetIndex,
-                        onSelectedIndexChange = { selection ->
-                            proxyPresetIndex = selection
-                            proxyDnsPresets.getOrNull(selection)?.let { preset ->
-                                proxyDns = preset.first.split(',').map(String::trim).filter(String::isNotEmpty)
-                            }
-                        },
-                    )
-                    DnsQuickChipsRow(
-                        chips = proxyQuickChips,
-                        onAdd = { server ->
-                            if (server !in proxyDns) {
-                                proxyDns = proxyDns + server
-                            }
-                        },
-                    )
-                    if (proxyDns.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.configs_dns_empty_servers),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        )
-                    } else {
-                        proxyDns.forEachIndexed { index, server ->
-                            DnsServerRow(
-                                server = server,
-                                onEdit = { editingProxyDnsIndex = index },
-                                onDelete = { proxyDns = proxyDns.filterIndexed { i, _ -> i != index } },
-                            )
-                        }
-                    }
-                    AddServerActionRow(
-                        title = stringResource(R.string.configs_dns_add_server),
-                        onClick = { showAddProxyDnsDialog = true },
-                    )
-                }
-            }
-
-            item(key = "direct_dns_title") {
-                SmallTitle(text = stringResource(R.string.configs_dns_direct_section))
-            }
-            item(key = "direct_dns_card") {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                ) {
-                    AppWindowDropdownPreference(
-                        title = stringResource(R.string.configs_dns_servers),
-                        items = directPresetLabels,
-                        selectedIndex = directPresetIndex,
-                        onSelectedIndexChange = { selection ->
-                            directPresetIndex = selection
-                            directDnsPresets.getOrNull(selection)?.let { preset ->
-                                directDns = preset.first.split(',').map(String::trim).filter(String::isNotEmpty)
-                            }
-                        },
-                    )
-                    DnsQuickChipsRow(
-                        chips = directQuickChips,
-                        onAdd = { server ->
-                            if (server !in directDns) {
-                                directDns = directDns + server
-                            }
-                        },
-                    )
-                    if (directDns.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.configs_dns_empty_servers),
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        )
-                    } else {
-                        directDns.forEachIndexed { index, server ->
-                            DnsServerRow(
-                                server = server,
-                                onEdit = { editingDirectDnsIndex = index },
-                                onDelete = { directDns = directDns.filterIndexed { i, _ -> i != index } },
-                            )
-                        }
-                    }
-                    AddServerActionRow(
-                        title = stringResource(R.string.configs_dns_add_server),
-                        onClick = { showAddDirectDnsDialog = true },
-                    )
-                }
-            }
-
-            item(key = "advanced_rules_title") {
-                SmallTitle(text = stringResource(R.string.configs_rules_title))
-            }
-            item(key = "advanced_rules_card") {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                ) {
-                    ArrowPreference(
-                        title = stringResource(R.string.configs_dns_direct_domains_title),
-                        summary = if (directDnsDomains.isEmpty()) {
-                            stringResource(R.string.configs_dns_direct_domains_empty)
-                        } else {
-                            "${directDnsDomains.size} \u2014 " + directDnsDomains.take(3).joinToString(", ") + if (directDnsDomains.size > 3) "\u2026" else ""
-                        },
-                        onClick = { showDirectDomainsDialog = true },
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.configs_dns_hosts_title),
-                        summary = if (dnsHosts.isEmpty()) {
-                            stringResource(R.string.configs_dns_hosts_empty)
-                        } else {
-                            "${dnsHosts.size} \u2014 " + dnsHosts.take(2).joinToString(", ") + if (dnsHosts.size > 2) "\u2026" else ""
-                        },
-                        onClick = { showDnsHostsDialog = true },
-                    )
-                }
-            }
-        }
-    }
-
-    TunDnsDialog(
-        show = showTunDnsDialog,
-        currentDns = tunVpnDns,
-        onDismissRequest = { showTunDnsDialog = false },
-        onConfirm = { tunVpnDns = it },
-    )
-
-    DnsServerDialog(
-        show = showAddProxyDnsDialog,
-        title = stringResource(R.string.configs_dns_add_server),
-        confirmButtonText = stringResource(R.string.common_add),
-        suggestions = proxyQuickChips,
-        onDismissRequest = { showAddProxyDnsDialog = false },
-        onConfirm = { server ->
-            if (server !in proxyDns) proxyDns = proxyDns + server
-        },
-    )
-
-    DnsServerDialog(
-        show = editingProxyDnsIndex in proxyDns.indices,
-        title = stringResource(R.string.configs_dns_edit_server),
-        initialValue = proxyDns.getOrElse(editingProxyDnsIndex) { "" },
-        confirmButtonText = stringResource(R.string.common_save),
-        suggestions = proxyQuickChips,
-        onDismissRequest = { editingProxyDnsIndex = -1 },
-        onConfirm = { updated ->
-            if (editingProxyDnsIndex in proxyDns.indices) {
-                proxyDns = proxyDns.toMutableList().also { it[editingProxyDnsIndex] = updated }
-            }
-        },
-    )
-
-    DnsServerDialog(
-        show = showAddDirectDnsDialog,
-        title = stringResource(R.string.configs_dns_add_server),
-        confirmButtonText = stringResource(R.string.common_add),
-        suggestions = directQuickChips,
-        onDismissRequest = { showAddDirectDnsDialog = false },
-        onConfirm = { server ->
-            if (server !in directDns) directDns = directDns + server
-        },
-    )
-
-    DnsServerDialog(
-        show = editingDirectDnsIndex in directDns.indices,
-        title = stringResource(R.string.configs_dns_edit_server),
-        initialValue = directDns.getOrElse(editingDirectDnsIndex) { "" },
-        confirmButtonText = stringResource(R.string.common_save),
-        suggestions = directQuickChips,
-        onDismissRequest = { editingDirectDnsIndex = -1 },
-        onConfirm = { updated ->
-            if (editingDirectDnsIndex in directDns.indices) {
-                directDns = directDns.toMutableList().also { it[editingDirectDnsIndex] = updated }
-            }
-        },
-    )
-
-    DirectDomainsDialog(
-        show = showDirectDomainsDialog,
-        domains = directDnsDomains,
-        onDismissRequest = { showDirectDomainsDialog = false },
-        onSave = { directDnsDomains = it },
-    )
-
-    DnsHostsDialog(
-        show = showDnsHostsDialog,
-        hosts = dnsHosts,
-        onDismissRequest = { showDnsHostsDialog = false },
-        onSave = { dnsHosts = it },
-    )
-}
-
-private fun dnsProtocolBadge(server: String): String {
-    val trimmed = server.trim().lowercase()
-    return when {
-        trimmed.equals("localhost") -> "System"
-        trimmed.startsWith("https://") ||
-            trimmed.startsWith("h2c://") ||
-            trimmed.startsWith("https+local://") ||
-            trimmed.startsWith("h2c+local://") -> "DoH"
-        trimmed.startsWith("quic+local://") -> "DoQ"
-        trimmed.startsWith("tcp://") || trimmed.startsWith("tcp+local://") -> "TCP"
-        else -> "DoU"
-    }
-}
-
-@Composable
-private fun DnsProtocolBadge(protocol: String) {
-    val (bgColor, textColor) = when (protocol) {
-        "DoH" -> Color(0xFF6750A4).copy(alpha = 0.22f) to Color(0xFFD0BCFF)
-        "DoQ" -> Color(0xFF00838F).copy(alpha = 0.22f) to Color(0xFF80DEEA)
-        "TCP" -> Color(0xFFE65100).copy(alpha = 0.22f) to Color(0xFFFFB74D)
-        else -> Color(0xFF546E7A).copy(alpha = 0.22f) to Color(0xFFCFD8DC)
-    }
-    Box(
-        modifier = Modifier
-            .background(bgColor, RoundedCornerShape(6.dp))
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-    ) {
-        Text(
-            text = protocol,
-            color = textColor,
-            fontSize = 11.sp,
-            fontWeight = themedFontWeight(FontWeight.Bold),
-        )
-    }
-}
-
-@Composable
-private fun DnsServerRow(
-    server: String,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val protocol = dnsProtocolBadge(server)
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onEdit)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        DnsProtocolBadge(protocol = protocol)
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = server,
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(
-            onClick = onEdit,
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Edit,
-                contentDescription = stringResource(R.string.configs_dns_edit_server),
-                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-        Spacer(Modifier.width(4.dp))
-        IconButton(
-            onClick = onDelete,
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Delete,
-                contentDescription = stringResource(R.string.common_delete),
-                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun DnsQuickChipsRow(
-    chips: List<Pair<String, String>>,
-    onAdd: (String) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        chips.forEach { (label, address) ->
-            Box(
-                modifier = Modifier
-                    .background(MiuixTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable { onAdd(address) }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = MiuixIcons.Add,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.primary,
-                        modifier = Modifier.size(13.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = label,
-                        style = MiuixTheme.textStyles.body2,
-                        fontSize = 12.sp,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AddServerActionRow(
-    title: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = MiuixIcons.Add,
-            contentDescription = null,
-            tint = MiuixTheme.colorScheme.primary,
-            modifier = Modifier.size(16.dp),
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = themedFontWeight(FontWeight.Medium),
-            color = MiuixTheme.colorScheme.primary,
-        )
-    }
-}
-
-@Composable
-private fun DnsServerDialog(
-    show: Boolean,
-    title: String,
-    initialValue: String = "",
-    confirmButtonText: String = stringResource(R.string.common_add),
-    suggestions: List<Pair<String, String>>,
-    onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit,
-) {
-    if (!show) return
-    val textFieldState = remember(show, initialValue) { TextFieldState(initialValue) }
-    val invalidMessage = stringResource(R.string.configs_dns_server_invalid)
-    val input = textFieldState.text.toString()
-    val error = remember(input) {
-        if (input.isBlank()) null else configDnsServerInputError(input, invalidMessage)
-    }
-
-    AppWindowDialog(
-        show = true,
-        title = title,
-        onDismissRequest = onDismissRequest,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            TextField(
-                state = textFieldState,
-                label = stringResource(R.string.configs_dns_server_address),
-                lineLimits = TextFieldLineLimits.SingleLine,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            )
-            if (error != null) {
-                Text(
-                    text = error,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                )
-            }
-            if (suggestions.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.color_picker_quick_presets),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-                )
-                DnsQuickChipsRow(
-                    chips = suggestions,
-                    onAdd = { textFieldState.setTextAndPlaceCursorAtEnd(it) },
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest,
-                )
-                Spacer(Modifier.width(8.dp))
-                TextButton(
-                    text = confirmButtonText,
-                    onClick = {
-                        val trimmed = textFieldState.text.toString().trim()
-                        if (trimmed.isNotEmpty() && configDnsServerInputError(trimmed, invalidMessage) == null) {
-                            onConfirm(trimmed)
-                            onDismissRequest()
-                        }
-                    },
+            item {
+                SkipiTrafficConfigDnsEditor(
+                    settings = settings,
+                    onSettingsChange = { settings = it },
                 )
             }
         }
     }
 }
 
-@Composable
-private fun TunDnsDialog(
-    show: Boolean,
-    currentDns: String,
-    onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit,
-) {
-    if (!show) return
-    var input by remember(currentDns) { mutableStateOf(currentDns) }
-    val invalidMessage = stringResource(R.string.settings_tun_dns_invalid)
-    val isValid = remember(input) { engine.network.isIpv4Address(input.trim()) }
-
-    AppWindowDialog(
-        show = true,
-        title = stringResource(R.string.configs_dns_tun_dns),
-        onDismissRequest = onDismissRequest,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            TextField(
-                state = rememberTextFieldState(initialText = input),
-                inputTransformation = { input = asCharSequence().toString() },
-                label = stringResource(R.string.configs_dns_tun_dns),
-                lineLimits = TextFieldLineLimits.SingleLine,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            )
-            if (!isValid && input.isNotBlank()) {
-                Text(
-                    text = invalidMessage,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                )
-            }
-            Text(
-                text = stringResource(R.string.configs_dns_tun_dns_summary),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-            )
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest,
-                )
-                Spacer(Modifier.width(8.dp))
-                TextButton(
-                    text = stringResource(R.string.common_save),
-                    onClick = {
-                        if (isValid) {
-                            onConfirm(input.trim())
-                            onDismissRequest()
-                        }
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DirectDomainsDialog(
-    show: Boolean,
-    domains: List<String>,
-    onDismissRequest: () -> Unit,
-    onSave: (List<String>) -> Unit,
-) {
-    if (!show) return
-    var list by remember(domains) { mutableStateOf(domains) }
-    val invalidMessage = stringResource(R.string.configs_dns_domain_invalid)
-
-    AppWindowDialog(
-        show = true,
-        title = stringResource(R.string.configs_dns_direct_domains_title),
-        onDismissRequest = onDismissRequest,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            StringListEditor(
-                editorKey = "direct_domains_dialog",
-                title = stringResource(R.string.configs_dns_direct_domains_title),
-                description = stringResource(R.string.configs_dns_direct_domains_summary),
-                values = list,
-                onValuesChange = { list = it },
-                emptyText = stringResource(R.string.configs_dns_direct_domains_empty),
-                validateInput = { configDnsDomainInputError(it, invalidMessage) },
-                suggestionContent = { onApplySuggestion ->
-                    DomainRuleSuggestions(onSelect = { onApplySuggestion(it, true) })
-                },
-            )
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest,
-                )
-                Spacer(Modifier.width(8.dp))
-                TextButton(
-                    text = stringResource(R.string.common_save),
-                    onClick = {
-                        onSave(list)
-                        onDismissRequest()
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DnsHostsDialog(
-    show: Boolean,
-    hosts: List<String>,
-    onDismissRequest: () -> Unit,
-    onSave: (List<String>) -> Unit,
-) {
-    if (!show) return
-    var list by remember(hosts) { mutableStateOf(hosts) }
-    val invalidMessage = stringResource(R.string.configs_dns_hosts_invalid)
-
-    AppWindowDialog(
-        show = true,
-        title = stringResource(R.string.configs_dns_hosts_title),
-        onDismissRequest = onDismissRequest,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            StringListEditor(
-                editorKey = "dns_hosts_dialog",
-                title = stringResource(R.string.configs_dns_hosts_title),
-                description = stringResource(R.string.configs_dns_hosts_summary),
-                values = list,
-                onValuesChange = { list = it },
-                emptyText = stringResource(R.string.configs_dns_hosts_empty),
-                validateInput = { configDnsHostInputError(it, invalidMessage) },
-            )
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest,
-                )
-                Spacer(Modifier.width(8.dp))
-                TextButton(
-                    text = stringResource(R.string.common_save),
-                    onClick = {
-                        onSave(list)
-                        onDismissRequest()
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DomainRuleSuggestions(onSelect: (String) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        SuggestionChip(label = "geosite:cn", onClick = { onSelect("geosite:cn") })
-        SuggestionChip(label = "geosite:category-gov-ru", onClick = { onSelect("geosite:category-gov-ru") })
-        SuggestionChip(label = "domain:ru", onClick = { onSelect("domain:ru") })
-    }
-}
-
-@Composable
-private fun SuggestionChip(label: String, onClick: () -> Unit) {
-    TextButton(
-        text = label,
-        onClick = onClick,
-        modifier = Modifier.padding(vertical = 2.dp),
-    )
-}
-
-private const val ConfigDnsHostSeparator = ':'
-
-private fun configDnsServerInputError(input: String, invalidMessage: String): String? {
-    return if (isSupportedXrayDnsServer(input)) null else invalidMessage
-}
-
-private fun configDnsDomainInputError(input: String, invalidMessage: String): String? {
-    val trimmed = input.trim()
-    if (trimmed.isEmpty() || trimmed.any(Char::isWhitespace)) return invalidMessage
-    if (trimmed.startsWith("regexp:", ignoreCase = true)) {
-        return if (trimmed.substringAfter(":").isBlank()) invalidMessage else null
-    }
-    val supportedPrefix = trimmed.substringBefore(":", missingDelimiterValue = "")
-        .lowercase()
-        .takeIf { it in setOf("domain", "full", "keyword", "geosite", "ext") }
-    if (supportedPrefix != null) {
-        return if (trimmed.substringAfter(":").isBlank()) invalidMessage else null
-    }
-    return if (trimmed.contains("://") || trimmed.contains("/")) invalidMessage else null
-}
-
-private fun configDnsHostInputError(input: String, invalidMessage: String): String? {
-    val separatorIndex = input.indexOf(ConfigDnsHostSeparator)
-    if (separatorIndex <= 0 || separatorIndex == input.lastIndex) return invalidMessage
-    val domain = input.substring(0, separatorIndex).trim()
-    val addresses = input.substring(separatorIndex + 1)
-        .split(",")
-        .map { it.trim().trim('[', ']') }
-    if (!isConfigDnsHostDomain(domain)) return invalidMessage
-    if (addresses.isEmpty() || addresses.any { it.isEmpty() || !isIpAddress(it) }) return invalidMessage
-    return null
-}
-
-private fun isConfigDnsHostDomain(domain: String): Boolean {
-    val normalized = domain.removeSuffix(".")
-    if (normalized.isEmpty() || normalized.length > 253) return false
-    if (normalized.any { it.isWhitespace() || it == '/' || it == ConfigDnsHostSeparator }) return false
-    return normalized.split(".").all { label ->
-        label.isNotEmpty() &&
-            label.length <= 63 &&
-            label.first() != '-' &&
-            label.last() != '-' &&
-            label.all { it.isLetterOrDigit() || it == '-' }
-    }
-}
 
 @Composable
 private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfigId: Int) {
@@ -1423,9 +519,7 @@ private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfig
     fun save() {
         updateAppState { state ->
             state.withUpdatedTrafficConfig(config.id) { current ->
-                current.copy(androidSettings = settings.copy(
-                    muxConcurrency = muxConcurrency.trim(),
-                ))
+                current.withTunnelOptions(settings, muxConcurrency)
             }
         }
     }
@@ -1434,55 +528,22 @@ private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfig
         onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
     ) { listPadding, scrollBehavior ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .pageScrollModifiers(scrollBehavior),
+            modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                ) {
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_sniffing),
-                        summary = stringResource(R.string.configs_sniffing_summary),
-                        checked = settings.enableSniffing,
-                        onCheckedChange = { settings = settings.copy(enableSniffing = it) },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_sniffing_route_only),
-                        summary = stringResource(R.string.configs_sniffing_route_only_summary),
-                        checked = settings.enableSniffingRouteOnly,
-                        enabled = settings.enableSniffing,
-                        onCheckedChange = { settings = settings.copy(enableSniffingRouteOnly = it) },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_mux),
-                        summary = stringResource(R.string.configs_mux_summary),
-                        checked = settings.enableMux,
-                        onCheckedChange = { settings = settings.copy(enableMux = it) },
-                    )
-                    SwitchPreference(
-                        title = stringResource(R.string.configs_fragment),
-                        summary = stringResource(R.string.configs_fragment_summary),
-                        checked = settings.enableFragment,
-                        onCheckedChange = { settings = settings.copy(enableFragment = it) },
-                    )
-                }
-                if (settings.enableMux) {
-                    ConfigPageTextField(
-                        value = muxConcurrency,
-                        onValueChange = { muxConcurrency = it },
-                        label = stringResource(R.string.configs_mux_concurrency),
-                        summary = stringResource(R.string.configs_mux_concurrency_summary),
-                    )
-                }
+                SkipiTrafficConfigTunnelEditor(
+                    settings = settings,
+                    muxConcurrency = muxConcurrency,
+                    onSettingsChange = { settings = it },
+                    onMuxConcurrencyChange = { muxConcurrency = it },
+                )
             }
         }
     }
 }
+
 
 @Composable
 private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfigId: Int) {
@@ -1495,7 +556,9 @@ private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfi
     val transportLabels = listOf(stringResource(R.string.configs_network_wifi), stringResource(R.string.configs_network_cellular))
     var transport by remember(config.id) { mutableIntStateOf(config.networkActivation.transport.coerceIn(transportLabels.indices)) }
     fun save() = updateAppState { state ->
-        state.withUpdatedTrafficConfig(config.id) { current -> current.copy(networkActivation = TrafficConfigNetworkActivation(enabled, transport)) }
+        state.withUpdatedTrafficConfig(config.id) { current ->
+            current.withNetworkActivation(enabled = enabled, transport = transport)
+        }
     }
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_network_title), padding = padding, isWideScreen = isWideScreen,
@@ -1509,18 +572,12 @@ private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfi
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-                ) {
-                    SwitchPreference(title = stringResource(R.string.configs_network_enabled), summary = stringResource(R.string.configs_network_enabled_summary), checked = enabled, onCheckedChange = { enabled = it })
-                    AppWindowDropdownPreference(
-                        title = stringResource(R.string.configs_network_transport), items = transportLabels,
-                        selectedIndex = transport, enabled = enabled, onSelectedIndexChange = { transport = it },
-                    )
-                    ConfigPageHint(stringResource(R.string.configs_network_transport_summary))
-                    Text(stringResource(R.string.configs_network_priority), style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
-                }
+                SkipiTrafficConfigNetworkActivation(
+                    enabled = enabled,
+                    transport = transport,
+                    onEnabledChange = { enabled = it },
+                    onTransportChange = { transport = it },
+                )
             }
         }
     }
@@ -1630,26 +687,6 @@ internal fun TrafficConfigFullScreenScaffold(
     }
 }
 
-@Composable
-private fun ConfigPageTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    summary: String? = null,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TextField(
-            state = rememberTextFieldState(value),
-            inputTransformation = { onValueChange(asCharSequence().toString()) },
-            label = label,
-            lineLimits = TextFieldLineLimits.SingleLine,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (summary != null) {
-            ConfigPageHint(summary)
-        }
-    }
-}
 
 @Composable
 private fun ConfigEditorSectionTitle(text: String) {
@@ -1658,16 +695,6 @@ private fun ConfigEditorSectionTitle(text: String) {
         style = MiuixTheme.textStyles.title3,
         color = MiuixTheme.colorScheme.onSurface,
         modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp),
-    )
-}
-
-@Composable
-private fun ConfigPageHint(text: String) {
-    Text(
-        text = text,
-        style = MiuixTheme.textStyles.body2,
-        color = MiuixTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
     )
 }
 

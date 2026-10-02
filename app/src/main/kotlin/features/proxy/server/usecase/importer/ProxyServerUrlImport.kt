@@ -12,17 +12,13 @@ internal suspend fun parseProxyServersFromUrls(
     text: String,
     context: ProxyServerImportContext,
 ): ProxyServerImportResult {
-    val result = importProxyServersFromUrls(text) { failure ->
+    return parseProxyUrlProxyServerPayload(text, context) { sourceContext, failure ->
         AndroidAppLogger.warn(
             ProxyServerImportLogTag,
-            failure.url.importFailureMessage(index = failure.index, source = context.source),
+            failure.url.importFailureMessage(index = failure.index, source = sourceContext.source),
             failure.error,
         )
     }
-    return ProxyServerImportResult(
-        urlCount = result.urlCount,
-        servers = result.servers,
-    )
 }
 
 private fun String.importFailureMessage(

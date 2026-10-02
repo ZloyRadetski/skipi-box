@@ -83,6 +83,8 @@ class AppBackupCompatibilityTest {
         val defaults = AppState()
 
         assertTrue(preview.restoredState.enableLocalProxyAuth)
+        assertTrue(preview.restoredState.localProxyUsername.isNotEmpty())
+        assertTrue(preview.restoredState.localProxyPassword.isNotEmpty())
         assertEquals(defaults.connectionDisplayMode, preview.restoredState.connectionDisplayMode)
         assertEquals(defaults.pinConnectionPanelOnHome, preview.restoredState.pinConnectionPanelOnHome)
         assertEquals(defaults.classicShowFloatingPowerButton, preview.restoredState.classicShowFloatingPowerButton)

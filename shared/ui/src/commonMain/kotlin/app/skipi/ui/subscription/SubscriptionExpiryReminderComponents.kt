@@ -1,0 +1,296 @@
+// Copyright 2026, Radetski
+// SPDX-License-Identifier: GPL-3.0
+
+package app.skipi.ui.subscription
+
+import androidx.compose.animation.AnimatedVisibility
+import app.skipi.ui.components.AppWindowDialog
+import app.skipi.ui.resources.*
+import app.skipi.ui.text.themedFontWeight
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import features.subscription.ExpiryReminderUnit
+import features.subscription.SubscriptionExpiryReminder
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.preference.WindowSpinnerPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
+import org.jetbrains.compose.resources.stringResource
+
+@Composable
+fun SubscriptionExpiryReminderList(
+    reminders: List<SubscriptionExpiryReminder>,
+    onRemindersChange: (List<SubscriptionExpiryReminder>) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var editingReminder by remember { mutableStateOf<Pair<Int, SubscriptionExpiryReminder>?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (reminders.isEmpty()) {
+            Text(
+                text = stringResource(Res.string.subscription_expiry_reminders_empty),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+            )
+        } else {
+            reminders.forEachIndexed { index, reminder ->
+                ReminderItemCard(
+                    reminder = reminder,
+                    onEdit = { editingReminder = index to reminder },
+                    onDelete = {
+                        val updated = reminders.toMutableList().apply { removeAt(index) }
+                        onRemindersChange(updated)
+                    },
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Button(
+            onClick = { showAddDialog = true },
+            colors = ButtonDefaults.buttonColorsPrimary(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = stringResource(Res.string.subscription_expiry_reminder_add),
+                color = MiuixTheme.colorScheme.onPrimary,
+            )
+        }
+    }
+
+    if (showAddDialog) {
+        SubscriptionExpiryReminderDialog(
+            initialReminder = SubscriptionExpiryReminder(1, ExpiryReminderUnit.Days),
+            title = stringResource(Res.string.subscription_expiry_reminder_add),
+            onDismiss = { showAddDialog = false },
+            onConfirm = { newReminder ->
+                val updated = (reminders + newReminder)
+                    .distinctBy { it.totalSeconds }
+                    .sortedByDescending { it.totalSeconds }
+                onRemindersChange(updated)
+                showAddDialog = false
+            },
+        )
+    }
+
+    editingReminder?.let { (index, reminder) ->
+        SubscriptionExpiryReminderDialog(
+            initialReminder = reminder,
+            title = stringResource(Res.string.subscription_expiry_reminder_edit),
+            onDismiss = { editingReminder = null },
+            onConfirm = { updatedReminder ->
+                val list = reminders.toMutableList()
+                list[index] = updatedReminder
+                onRemindersChange(list.distinctBy { it.totalSeconds }.sortedByDescending { it.totalSeconds })
+                editingReminder = null
+            },
+        )
+    }
+}
+
+@Composable
+private fun ReminderItemCard(
+    reminder: SubscriptionExpiryReminder,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val bg = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(bg)
+            .clickable(onClick = onEdit)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Tune,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+
+            Text(
+                text = reminder.label(),
+                style = MiuixTheme.textStyles.body2.copy(fontWeight = themedFontWeight(FontWeight.Medium)),
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+        }
+
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Close,
+                contentDescription = stringResource(Res.string.common_cancel),
+                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubscriptionExpiryReminder.label(): String = when (unit) {
+    ExpiryReminderUnit.AtExpiration -> stringResource(Res.string.subscription_expiry_reminder_format_at_expiration)
+    ExpiryReminderUnit.Minutes -> stringResource(Res.string.subscription_expiry_reminder_format_minutes, value)
+    ExpiryReminderUnit.Hours -> stringResource(Res.string.subscription_expiry_reminder_format_hours, value)
+    ExpiryReminderUnit.Days -> stringResource(Res.string.subscription_expiry_reminder_format_days, value)
+    ExpiryReminderUnit.Weeks -> stringResource(Res.string.subscription_expiry_reminder_format_weeks, value)
+}
+
+@Composable
+internal fun SubscriptionExpiryReminderDialog(
+    initialReminder: SubscriptionExpiryReminder,
+    title: String,
+    onDismiss: () -> Unit,
+    onConfirm: (SubscriptionExpiryReminder) -> Unit,
+) {
+    var valueText by remember { mutableStateOf(initialReminder.value.toString()) }
+    val units = remember {
+        listOf(
+            ExpiryReminderUnit.Days,
+            ExpiryReminderUnit.Hours,
+            ExpiryReminderUnit.Minutes,
+            ExpiryReminderUnit.Weeks,
+            ExpiryReminderUnit.AtExpiration,
+        )
+    }
+    var selectedUnitIndex by remember {
+        mutableIntStateOf(units.indexOf(initialReminder.unit).coerceAtLeast(0))
+    }
+    val selectedUnit = units[selectedUnitIndex]
+
+    val unitItems = units.map { unit ->
+        val label = when (unit) {
+            ExpiryReminderUnit.AtExpiration -> stringResource(Res.string.subscription_expiry_reminder_unit_at_expiration)
+            ExpiryReminderUnit.Minutes -> stringResource(Res.string.subscription_expiry_reminder_unit_minutes)
+            ExpiryReminderUnit.Hours -> stringResource(Res.string.subscription_expiry_reminder_unit_hours)
+            ExpiryReminderUnit.Days -> stringResource(Res.string.subscription_expiry_reminder_unit_days)
+            ExpiryReminderUnit.Weeks -> stringResource(Res.string.subscription_expiry_reminder_unit_weeks)
+        }
+        DropdownItem(text = label, summary = label)
+    }
+
+    AppWindowDialog(
+        show = true,
+        title = title,
+        onDismissRequest = onDismiss,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            WindowSpinnerPreference(
+                title = stringResource(Res.string.subscription_expiry_reminder_value_label),
+                summary = unitItems[selectedUnitIndex].summary,
+                items = unitItems,
+                selectedIndex = selectedUnitIndex,
+                onSelectedIndexChange = { index -> selectedUnitIndex = index },
+            )
+
+            AnimatedVisibility(
+                visible = selectedUnit != ExpiryReminderUnit.AtExpiration,
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                TextField(
+                    state = rememberTextFieldState(initialText = valueText),
+                    inputTransformation = InputTransformation {
+                        valueText = asCharSequence().toString().filter { it.isDigit() }.take(4)
+                    },
+                    label = stringResource(Res.string.subscription_expiry_reminder_value_label),
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                TextButton(
+                    text = stringResource(Res.string.common_cancel),
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                TextButton(
+                    text = stringResource(Res.string.common_save),
+                    onClick = {
+                        val num = if (selectedUnit == ExpiryReminderUnit.AtExpiration) 0 else valueText.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                        onConfirm(SubscriptionExpiryReminder(num, selectedUnit))
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}

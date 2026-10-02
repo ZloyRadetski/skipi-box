@@ -31,4 +31,74 @@ class SkipiPullToRefreshTest {
         assertEquals(0f, drag.indicatorOffset)
         assertEquals(SkipiPullRefreshState.Idle, skipiPullRefreshStateForOffset(drag.indicatorOffset, threshold = 72f))
     }
+
+    @Test
+    fun refreshFinishesOnlyAfterTheSingleRefreshAnimationIsReadyAndBusyStateIsFalse() {
+        assertTrue(
+            skipiShouldFinishRefresh(
+                isRefreshing = false,
+                refreshState = SkipiPullRefreshState.Refreshing,
+                cycleReady = true,
+            ),
+        )
+        assertEquals(
+            false,
+            skipiShouldFinishRefresh(
+                isRefreshing = false,
+                refreshState = SkipiPullRefreshState.Refreshing,
+                cycleReady = false,
+            ),
+        )
+        assertEquals(
+            false,
+            skipiShouldFinishRefresh(
+                isRefreshing = true,
+                refreshState = SkipiPullRefreshState.Refreshing,
+                cycleReady = true,
+            ),
+        )
+    }
+
+    @Test
+    fun pullRefreshHeaderAndContentPushReturnToZeroTogether() {
+        val baseHeightPx = 56f
+        assertEquals(
+            baseHeightPx,
+            skipiPullRefreshHeaderHeightPx(
+                refreshState = SkipiPullRefreshState.Refreshing,
+                dragOffsetPx = 72f,
+                thresholdPx = 72f,
+                baseHeightPx = baseHeightPx,
+                completionProgress = 0f,
+            ),
+        )
+        val completionHeight = skipiPullRefreshHeaderHeightPx(
+                refreshState = SkipiPullRefreshState.RefreshComplete,
+                dragOffsetPx = 72f,
+                thresholdPx = 72f,
+                baseHeightPx = baseHeightPx,
+                completionProgress = 0.6f,
+            )
+        assertTrue(kotlin.math.abs(completionHeight - baseHeightPx * 0.4f) < 0.001f)
+        assertEquals(
+            0f,
+            skipiPullRefreshHeaderHeightPx(
+                refreshState = SkipiPullRefreshState.RefreshComplete,
+                dragOffsetPx = 72f,
+                thresholdPx = 72f,
+                baseHeightPx = baseHeightPx,
+                completionProgress = 1f,
+            ),
+        )
+        assertEquals(
+            0f,
+            skipiPullRefreshHeaderHeightPx(
+                refreshState = SkipiPullRefreshState.Idle,
+                dragOffsetPx = 0f,
+                thresholdPx = 72f,
+                baseHeightPx = baseHeightPx,
+                completionProgress = 1f,
+            ),
+        )
+    }
 }

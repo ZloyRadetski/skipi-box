@@ -6,6 +6,7 @@ package features.subscription
 import android.content.Intent
 import android.net.Uri
 import app.AppState
+import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import app.SubscriptionGroupState
 import data.AndroidAppStateStore
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
@@ -39,12 +40,12 @@ internal class SubscriptionInstallConfigUseCase(
             fetchOptions = { stateStore.state.value.toSubscriptionFetchOptions(it) },
         )
         if (result.updates.isNotEmpty()) {
-            stateStore.update { state ->
-                state.withUpdatedSubscriptionServers(
-                    updates = result.updates,
-                    updatedAtMillis = result.updatedAtMillis,
-                )
-            }
+            applyProxySubscriptionUpdates(
+                stateStore = stateStore,
+                updates = result.updates,
+                updatedAtMillis = result.updatedAtMillis,
+                updateAppState = { transform -> stateStore.update(transform) },
+            )
         }
         return SubscriptionInstallResult(
             updateResult = result,

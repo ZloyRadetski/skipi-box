@@ -406,10 +406,10 @@ fun AppContent(
 
         val transitionEffects = remember {
             NavDisplayTransitionEffects(
-                enableCornerClip = true,
-                dimAmount = 0.5f,
+                enableCornerClip = false,
+                dimAmount = 0f,
                 blockInputDuringTransition = true,
-                popDirectionFollowsSwipeEdge = false,
+                popDirectionFollowsSwipeEdge = true,
             )
         }
 

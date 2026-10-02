@@ -1,39 +1,23 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-@file:OptIn(ExperimentalScrollBarApi::class)
-
 package features.about
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.LocalIsWideScreen
 import app.LocalNavigator
+import app.ProjectInfo
 import app.R
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import ui.AppTheme
-import ui.components.BackNavigationIcon
-import ui.layout.AdaptiveTopAppBar
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageListPadding
-import ui.layout.pageScrollModifiers
+import app.navigation.Route
+import app.skipi.core.skipicore.Skipicore
+import app.skipi.ui.settings.AboutRuntimeInfo
+import app.skipi.ui.settings.AboutSettingsLabels
+import app.skipi.ui.settings.SkipiAboutScreen
+
+private const val SkipiProjectSourceUri = "https://github.com/ZloyRadetski/skipi-box"
 
 @Composable
 fun AboutPage(
@@ -41,63 +25,39 @@ fun AboutPage(
 ) {
     val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
+    val uriHandler = LocalUriHandler.current
+    val runtimeInfo = AboutRuntimeInfo(
+        appName = ProjectInfo.PROJECT_NAME,
+        appVersion = "${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
+        skipiCoreVersion = ProjectInfo.SKIPI_CORE_VERSION,
+        xrayCoreVersion = runCatching { Skipicore.coreVersion() }.getOrNull()?.ifBlank { null }
+            ?: ProjectInfo.XRAY_CORE_VERSION,
+        hevTunnelVersion = ProjectInfo.HEV_SOCKS5_TUNNEL_VERSION,
+    )
 
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        topBar = {
-            AdaptiveTopAppBar(
-                title = stringResource(R.string.about_title),
-                isWideScreen = isWideScreen,
-                scrollBehavior = topAppBarScrollBehavior,
-                navigationIcon = {
-                    BackNavigationIcon(
-                        onClick = { navigator.pop() },
-                    )
-                },
-            )
-        },
-    ) { innerPadding ->
-        val lazyListState = rememberLazyListState()
-        val contentPadding = pageContentPaddingWithCutout(
-            innerPadding = innerPadding,
-            outerPadding = padding,
-            isWideScreen = isWideScreen,
-        )
-        val listPadding = pageListPadding(contentPadding)
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-        ) {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pageScrollModifiers(topAppBarScrollBehavior),
-                contentPadding = listPadding,
-            ) {
-                item(key = "about_header") {
-                    AboutHeader()
-                }
-                item(key = "about_updates") {
-                    AboutUpdatesCard()
-                }
-                item(key = "about_runtime") {
-                    AboutRuntimeCard()
-                }
-                item(key = "about_other") {
-                    AboutLinksCard(title = stringResource(R.string.about_other))
-                }
-                item {
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-            }
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(lazyListState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = contentPadding,
-            )
-        }
-    }
+    SkipiAboutScreen(
+        labels = AboutSettingsLabels(
+            screenTitle = stringResource(R.string.about_title),
+            updatesTitle = stringResource(R.string.settings_updates_title),
+            runtimeTitle = stringResource(R.string.about_runtime),
+            otherTitle = stringResource(R.string.about_other),
+            replayOnboardingTitle = stringResource(R.string.about_replay_onboarding),
+            replayOnboardingSummary = stringResource(R.string.about_replay_onboarding_summary),
+            telegramTitle = stringResource(R.string.about_telegram_channel),
+            bugReportTitle = stringResource(R.string.about_bug_report),
+            bugReportSummary = stringResource(R.string.about_bug_report_summary),
+            sourceTitle = stringResource(R.string.about_view_skipi_source),
+        ),
+        runtime = runtimeInfo,
+        padding = padding,
+        isWideScreen = isWideScreen,
+        onBack = { navigator.pop() },
+        onOpenCoreInfo = { uriHandler.openUri("https://github.com/ZloyRadetski/skipi-core") },
+        onReplayOnboarding = { navigator.push(Route.Onboarding) },
+        onOpenTelegram = { uriHandler.openUri(SkipiTelegramChannelUri) },
+        onOpenBugReport = { uriHandler.openUri(SkipiBugReportUri) },
+        onOpenSource = { uriHandler.openUri(SkipiProjectSourceUri) },
+        logo = { AboutAppLogo() },
+        updatesContent = { AboutUpdatesCard() },
+    )
 }

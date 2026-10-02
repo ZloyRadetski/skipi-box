@@ -11,7 +11,8 @@ import app.SkipiApplication
 import app.effects.resolveActiveNetworkConfig
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
-import features.config.withActiveTrafficConfig
+import data.repository.reconcileTrafficConfigProxyGroups
+import features.config.withActiveTrafficConfigProfile
 import features.logs.AndroidAppLogger
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
@@ -50,7 +51,8 @@ class BootReceiver : BroadcastReceiver() {
         application.appScope.launch(Dispatchers.IO) {
             val resolvedState = state.resolveActiveNetworkConfig(application)
             if (resolvedState.activeTrafficConfigId != state.activeTrafficConfigId) {
-                stateStore.update { it.withActiveTrafficConfig(resolvedState.activeTrafficConfigId) }
+                stateStore.update { it.withActiveTrafficConfigProfile(resolvedState.activeTrafficConfigId) }
+                stateStore.reconcileTrafficConfigProxyGroups()
             }
             val targetServer = resolvedState.proxyServers.firstOrNull { it.id == resolvedState.selectedProxyServerId }
             if (targetServer == null) {

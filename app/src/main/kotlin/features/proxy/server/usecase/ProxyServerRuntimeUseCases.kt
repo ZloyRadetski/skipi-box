@@ -180,7 +180,9 @@ internal fun runProxyServerLatencyTest(
             }
         } finally {
             withContext(NonCancellable) {
-                stateStore.update(persist = true) { state ->
+                // Latency results and the in-progress marker are host UI runtime data.
+                // Keep them in this process without creating another persisted proxy-catalog writer.
+                stateStore.update(persist = false) { state ->
                     state.copy(
                         proxyServers = state.proxyServers.map { server ->
                             if (server.latency == ProxyServerLatencyTesting) {

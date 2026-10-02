@@ -10,7 +10,8 @@ import app.ProjectInfo
 import app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
+import features.backup.decodeAppBackup as decodeSharedAppBackup
+import features.backup.encodeAppBackup as encodeSharedAppBackup
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -51,17 +52,11 @@ internal class AppBackupUseCase(
     }
 }
 
-private val AppBackupJson = Json {
-    encodeDefaults = true
-    ignoreUnknownKeys = true
-    prettyPrint = true
-}
-
 internal fun encodeAppBackup(backup: AppBackupFile): String =
-    AppBackupJson.encodeToString(backup)
+    encodeSharedAppBackup(backup)
 
 internal fun decodeAppBackup(content: String): AppBackupFile =
-    AppBackupJson.decodeFromString<AppBackupFile>(content)
+    decodeSharedAppBackup(content)
 
 private fun defaultBackupFileName(): String {
     val timestamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())

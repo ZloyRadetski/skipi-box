@@ -6,12 +6,11 @@ package features.proxy.server.usecase
 import android.content.Context
 import app.AppState
 import app.ProxyServerState
+import app.skipi.app.proxy.ProxyServerTextCopyFormat
+import app.skipi.app.proxy.ProxyServerTextCopyResult
+import app.skipi.app.proxy.copyProxyServerText
 import engine.xray.XrayExportConfigFactory
-import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.getCopyTextOrNull
-import features.proxy.server.model.getUrlOrNull
 import features.subscription.DefaultSubscriptionGroupId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,49 +30,26 @@ internal enum class ProxyServerCopyTextType {
 internal suspend fun ProxyServerState.proxyServerCopyText(
     context: Context? = null,
     appState: AppState,
-): ProxyServerCopyTextResult {
-    return when (server) {
-        is ChainProxy,
-        is StrategyGroup -> withContext(Dispatchers.IO) {
-            runCatching {
-                generatedProxyServerXrayConfig(appState, this@proxyServerCopyText).formatJsonText()
-            }.fold(
-                onSuccess = { text -> ProxyServerCopyTextResult.Success(text) },
-                onFailure = { ProxyServerCopyTextResult.InvalidConfig },
-            )
-        }
-
-        else -> runCatching { server.getCopyTextOrNull() }.fold(
-            onSuccess = { text ->
-                if (text == null) ProxyServerCopyTextResult.Unsupported else ProxyServerCopyTextResult.Success(text)
-            },
-            onFailure = { ProxyServerCopyTextResult.InvalidConfig },
-        )
+): ProxyServerCopyTextResult = copyProxyServerText(server) {
+    withContext(Dispatchers.IO) {
+        generatedProxyServerXrayConfig(appState, this@proxyServerCopyText).formatJsonText()
     }
-}
+}.toAndroidResult()
 
 internal suspend fun ProxyServerState.proxyServerCopyText(
     context: Context? = null,
     appState: AppState,
     type: ProxyServerCopyTextType,
 ): ProxyServerCopyTextResult {
-    return when (type) {
-        ProxyServerCopyTextType.Url -> runCatching { server.getUrlOrNull() }.fold(
-            onSuccess = { text ->
-                if (text == null) ProxyServerCopyTextResult.Unsupported else ProxyServerCopyTextResult.Success(text)
-            },
-            onFailure = { ProxyServerCopyTextResult.InvalidConfig },
-        )
-
-        ProxyServerCopyTextType.FullJson -> withContext(Dispatchers.IO) {
-            runCatching {
-                generatedProxyServerXrayConfig(appState, this@proxyServerCopyText).formatJsonText()
-            }.fold(
-                onSuccess = { text -> ProxyServerCopyTextResult.Success(text) },
-                onFailure = { ProxyServerCopyTextResult.InvalidConfig },
-            )
-        }
+    val format = when (type) {
+        ProxyServerCopyTextType.Url -> ProxyServerTextCopyFormat.Url
+        ProxyServerCopyTextType.FullJson -> ProxyServerTextCopyFormat.FullJson
     }
+    return copyProxyServerText(server, format) {
+        withContext(Dispatchers.IO) {
+            generatedProxyServerXrayConfig(appState, this@proxyServerCopyText).formatJsonText()
+        }
+    }.toAndroidResult()
 }
 
 internal suspend fun ProxyServer<*>.proxyServerCopyText(
@@ -106,6 +82,12 @@ private fun AppState.withCopyTargetServer(target: ProxyServerState): AppState {
             servers[index] = target
         },
     )
+}
+
+private fun ProxyServerTextCopyResult.toAndroidResult(): ProxyServerCopyTextResult = when (this) {
+    is ProxyServerTextCopyResult.Success -> ProxyServerCopyTextResult.Success(text)
+    ProxyServerTextCopyResult.Unsupported -> ProxyServerCopyTextResult.Unsupported
+    ProxyServerTextCopyResult.InvalidConfig -> ProxyServerCopyTextResult.InvalidConfig
 }
 
 private const val TemporaryCopyServerId = -1

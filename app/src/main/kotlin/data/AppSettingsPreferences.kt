@@ -77,13 +77,7 @@ internal class AppSettingsPreferences(
         val trafficConfigs = preferences.getTrafficConfigList(
             KeyTrafficConfigs,
             defaults.trafficConfigs,
-        ).ifEmpty { defaults.trafficConfigs }.map { config ->
-            config.copy(
-                resourceSettings = config.resourceSettings.copy(
-                    userAgent = normalizeSkipiUserAgent(config.resourceSettings.userAgent),
-                ),
-            )
-        }
+        ).ifEmpty { defaults.trafficConfigs }
         val nextTrafficConfigId = maxOf(
             preferences.getInt(KeyNextTrafficConfigId, defaults.nextTrafficConfigId),
             (trafficConfigs.maxOfOrNull { config -> config.id } ?: 0) + 1,

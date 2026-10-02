@@ -34,6 +34,7 @@ class DesktopProxyServerRepository(
     }
 
     override suspend fun upsert(server: ProxyServerRecord) {
+        require(server.enabled) { "Disabled proxy servers are not supported by Desktop storage" }
         val library = readLibrary()
         val replacement = DesktopStoredProxyServer(
             id = server.id,

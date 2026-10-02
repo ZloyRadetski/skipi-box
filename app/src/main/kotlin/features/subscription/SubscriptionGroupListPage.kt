@@ -13,6 +13,7 @@ import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.SubscriptionGroupState
+import app.skipi.app.store.SharedApplicationAction
 import app.collectAppState
 import features.proxy.server.model.Custom
 import androidx.compose.foundation.background
@@ -50,13 +51,12 @@ import ui.layout.pageScrollModifiers
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import data.AndroidAppStateStore
-import features.proxy.server.usecase.withUpdatedSubscriptionServers
+import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
-import kotlinx.coroutines.Dispatchers
+import app.skipi.ui.subscription.SubscriptionGroupListContent
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import androidx.compose.ui.graphics.Color
 
@@ -97,31 +97,29 @@ fun SubscriptionGroupListPage(
         } else {
             group
         }
-        updateAppState { state ->
-            val updatedServers = state.proxyServers.map { serverState ->
-                val server = serverState.server
-                if (serverState.groupId == targetGroup.id && server is Custom) {
-                    if (server.overrideInboundAndDns != targetGroup.autoOverrideRules) {
-                        serverState.copy(server = server.copy(overrideInboundAndDns = targetGroup.autoOverrideRules))
+        services.sharedApplicationStore.dispatch(
+            SharedApplicationAction.UpdateProxyServers { servers ->
+                servers.map { record ->
+                    val server = record.server
+                    if (record.sourceSubscriptionId == targetGroup.id && server is Custom) {
+                        record.copy(server = server.copy(overrideInboundAndDns = targetGroup.autoOverrideRules))
                     } else {
-                        serverState
+                        record
                     }
-                } else {
-                    serverState
                 }
-            }
+            },
+        )
+        updateAppState { state ->
             if (isNew) {
                 state.copy(
                     subscriptionGroups = state.subscriptionGroups + targetGroup,
                     nextSubscriptionGroupId = state.nextSubscriptionGroupId + 1,
-                    proxyServers = updatedServers,
                 )
             } else {
                 state.copy(
                     subscriptionGroups = state.subscriptionGroups.map {
                         if (it.id == group.id) targetGroup else it
                     },
-                    proxyServers = updatedServers,
                 )
             }
         }
@@ -144,18 +142,7 @@ fun SubscriptionGroupListPage(
 
     fun deleteGroup(group: SubscriptionGroupState) {
         if (group.builtIn) return
-        updateAppState { state ->
-            val nextServers = state.proxyServers.filterNot { it.groupId == group.id }
-            state.copy(
-                subscriptionGroups = state.subscriptionGroups.filterNot { it.id == group.id },
-                proxyServers = nextServers,
-                selectedProxyServerId = if (nextServers.any { it.id == state.selectedProxyServerId }) {
-                    state.selectedProxyServerId
-                } else {
-                    nextServers.firstOrNull()?.id ?: 0
-                },
-            )
-        }
+        services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveSubscription(group.id))
     }
 
     fun requestGroupDeletion(group: SubscriptionGroupState) {
@@ -191,81 +178,48 @@ fun SubscriptionGroupListPage(
             )
         },
     ) { innerPadding ->
-        val lazyListState = rememberLazyListState()
         val contentPadding = pageContentPaddingWithCutout(
             innerPadding = innerPadding,
             outerPadding = padding,
             isWideScreen = isWideScreen,
         )
         val listPadding = pageListPadding(contentPadding)
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-        ) {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pageScrollModifiers(
-                        topAppBarScrollBehavior,
-                    ),
-                contentPadding = listPadding,
-            ) {
-                item(key = "subscription_title") {
-                    SmallTitle(text = stringResource(R.string.subscription_group_list))
+        SubscriptionGroupListContent(
+            groups = groups.map { it.toSubscriptionGroupUiState(stringResource(R.string.subscription_default_group)) },
+            updatingGroupIds = updatingGroupIds,
+            contentPadding = listPadding,
+            modifier = Modifier.fillMaxSize(),
+            scrollModifier = Modifier.pageScrollModifiers(topAppBarScrollBehavior),
+            trackPadding = contentPadding,
+            onToggle = { edited, enabled ->
+                updateAppState { state ->
+                    state.copy(subscriptionGroups = state.subscriptionGroups.map {
+                        if (it.id == edited.id) it.copy(enabled = enabled) else it
+                    })
                 }
-                items(
-                    items = groups,
-                    key = { it.id },
-                ) { group ->
-                    val isUpdating = updatingGroupIds.contains(group.id)
-                    SubscriptionGroupCard(
+            },
+            onUpdate = { edited ->
+                val group = groups.firstOrNull { it.id == edited.id } ?: return@SubscriptionGroupListContent
+                val groupId = group.id
+                if (!updatingGroupIds.contains(groupId)) {
+                    updatingGroupIds = updatingGroupIds + groupId
+                    updateSubscriptionGroup(
                         group = group,
-                        isUpdating = isUpdating,
-                        onToggle = { enabled ->
-                            updateAppState { state ->
-                                state.copy(
-                                    subscriptionGroups = state.subscriptionGroups.map {
-                                        if (it.id == group.id) it.copy(enabled = enabled) else it
-                                    },
-                                )
-                            }
-                        },
-                        onUpdate = if (group.url.isNotBlank()) {
-                            {
-                                val groupId = group.id
-                                if (!updatingGroupIds.contains(groupId)) {
-                                    updatingGroupIds = updatingGroupIds + groupId
-                                    updateSubscriptionGroup(
-                                        group = group,
-                                        stateStore = stateStore,
-                                        services = services,
-                                        updateAppState = updateAppState,
-                                        successTemplate = subscriptionUpdateResultTemplate,
-                                        failedTemplate = subscriptionUpdateResultWithFailedTemplate,
-                                        onFinished = {
-                                            updatingGroupIds = updatingGroupIds - groupId
-                                        },
-                                    )
-                                }
-                            }
-                        } else {
-                            null
-                        },
-                        onEdit = {
-                            editingGroupId = group.id
-                            showGroupEditor = true
-                        },
-                        onDelete = { requestGroupDeletion(group) },
+                        stateStore = stateStore,
+                        services = services,
+                        updateAppState = updateAppState,
+                        successTemplate = subscriptionUpdateResultTemplate,
+                        failedTemplate = subscriptionUpdateResultWithFailedTemplate,
+                        onFinished = { updatingGroupIds = updatingGroupIds - groupId },
                     )
                 }
-            }
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(lazyListState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = contentPadding,
-            )
-        }
+            },
+            onEdit = { edited ->
+                editingGroupId = edited.id
+                showGroupEditor = true
+            },
+            onDelete = { edited -> groups.firstOrNull { it.id == edited.id }?.let(::requestGroupDeletion) },
+        )
         SubscriptionGroupEditorDialog(
             show = showGroupEditor,
             group = editingGroup,
@@ -313,13 +267,12 @@ private fun updateSubscriptionGroup(
                 fetchOptions = { updateGroup -> stateStore.state.value.toSubscriptionFetchOptions(updateGroup) },
             )
             if (result.updates.isNotEmpty()) {
-                val nextState = withContext(Dispatchers.Default) {
-                    stateStore.state.value.withUpdatedSubscriptionServers(
-                        updates = result.updates,
-                        updatedAtMillis = result.updatedAtMillis,
-                    )
-                }
-                updateAppState { nextState }
+                applyProxySubscriptionUpdates(
+                    stateStore = stateStore,
+                    updates = result.updates,
+                    updatedAtMillis = result.updatedAtMillis,
+                    updateAppState = updateAppState,
+                )
             }
             services.tipNotifier.show(
                 subscriptionUpdateMessage(

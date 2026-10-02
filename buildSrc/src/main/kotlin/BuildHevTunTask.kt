@@ -112,7 +112,7 @@ abstract class BuildHevTunTask : DefaultTask() {
     private companion object {
         // Bump this value whenever applyRuntimeSourcePatches changes so cached
         // native outputs cannot survive a runtime overlay edit.
-        const val RuntimeSourcePatchVersion = "runtime-readiness-v1"
+        const val RuntimeSourcePatchVersion = "runtime-readiness-v2"
 
         // Large CPU counts on Windows can make ndk-build race its generated
         // dependency files. Eight parallel compiler jobs still rebuild HEV
@@ -168,7 +168,9 @@ abstract class BuildHevTunTask : DefaultTask() {
     }
 
     private fun applyRuntimeSourcePatches(sourceDir: File) {
-        applySourceReplacement(
+        val hasBuiltInReadiness = hasBuiltInReadinessApi(sourceDir)
+        if (!hasBuiltInReadiness) {
+            applySourceReplacement(
             sourceDir,
             "src/hev-main.h",
             """#endif
@@ -190,8 +192,8 @@ void hev_socks5_tunnel_set_ready_callback (HevSocks5TunnelReadyCallback callback
 
 /**
  * hev_socks5_tunnel_main:""",
-        )
-        applySourceReplacement(
+            )
+            applySourceReplacement(
             sourceDir,
             "src/hev-main.c",
             """#include "hev-main.h"
@@ -210,8 +212,8 @@ hev_socks5_tunnel_set_ready_callback (HevSocks5TunnelReadyCallback callback)
 
 static int
 hev_socks5_tunnel_main_inner""",
-        )
-        applySourceReplacement(
+            )
+            applySourceReplacement(
             sourceDir,
             "src/hev-main.c",
             "    res = hev_socks5_tunnel_init (tun_fd);\n" +
@@ -224,7 +226,7 @@ hev_socks5_tunnel_main_inner""",
                 "    if (ready_callback)\n" +
                 "        ready_callback ();\n\n" +
                 "    hev_socks5_tunnel_run ();",
-        )
+            )
         applySourceReplacement(
             sourceDir,
             "src/hev-jni.c",
@@ -309,6 +311,7 @@ native_is_ready (JNIEnv *env, jobject thiz)
 static jlongArray
 native_get_stats (JNIEnv *env, jobject thiz)""",
         )
+        }
         applySourceReplacement(
             sourceDir,
             "src/hev-socks5-session.c",
@@ -344,22 +347,65 @@ native_get_stats (JNIEnv *env, jobject thiz)""",
         )
     }
 
+    private fun hasBuiltInReadinessApi(sourceDir: File): Boolean {
+        val tunnelHeader = sourceDir.resolve("src/hev-socks5-tunnel.h")
+        val jniSource = sourceDir.resolve("src/hev-jni.c")
+        if (!tunnelHeader.isFile || !jniSource.isFile) return false
+
+        val headerText = tunnelHeader.readText().normalizeLineEndings()
+        val jniText = jniSource.readText().normalizeLineEndings()
+        val readinessApiDeclared = Regex(
+            "\\bint\\s+hev_socks5_tunnel_is_ready\\s*\\(\\s*void\\s*\\)\\s*;",
+        ).containsMatchIn(headerText)
+        val readinessImplementationPresent = Regex(
+            "static\\s+jboolean\\s+native_is_ready\\s*\\([^)]*\\)\\s*\\{[^}]*" +
+                "hev_socks5_tunnel_is_ready\\s*\\(\\s*\\)",
+        ).containsMatchIn(jniText)
+
+        return readinessApiDeclared && readinessImplementationPresent
+    }
+
     private fun applySourceReplacement(sourceDir: File, relativePath: String, expected: String, replacement: String) {
         val file = sourceDir.resolve(relativePath)
         if (!file.isFile) {
             throw GradleException("Cannot apply Hev TUN patch; source file is missing: ${file.absolutePath}")
         }
 
-        val source = file.readText()
-        if (source.countOccurrences(replacement) == 1) return
+        // Patch a deterministic LF-normalized copy: the checked-out native
+        // sources may use CRLF, while the patch blocks are written with LF.
+        val source = file.readText().normalizeLineEndings()
+        val normalizedExpected = expected.normalizeLineEndings()
+        val normalizedReplacement = replacement.normalizeLineEndings()
+        val replacementCount = source.countOccurrences(normalizedReplacement)
+        val expectedCount = source.countOccurrences(normalizedExpected)
 
-        val expectedCount = source.countOccurrences(expected)
-        if (expectedCount != 1) {
+        if (replacementCount == 1) {
+            val remainingExpectedCount = source
+                .replace(normalizedReplacement, "")
+                .countOccurrences(normalizedExpected)
+            if (remainingExpectedCount != 0) {
+                throw GradleException(
+                    "Cannot apply Hev TUN patch to $relativePath: found one replacement block and " +
+                        "$remainingExpectedCount remaining source block(s)",
+                )
+            }
+            // Also persist normalization when the patch was already applied.
+            if (file.readText() != source) file.writeText(source)
+            return
+        }
+
+        if (replacementCount > 1) {
             throw GradleException(
-                "Cannot apply Hev TUN patch to $relativePath: expected one source block, found $expectedCount",
+                "Cannot apply Hev TUN patch to $relativePath: found $replacementCount replacement blocks; expected at most one",
             )
         }
-        file.writeText(source.replace(expected, replacement))
+        if (expectedCount != 1) {
+            throw GradleException(
+                "Cannot apply Hev TUN patch to $relativePath: expected one source block, found $expectedCount; " +
+                    "found $replacementCount replacement block(s)",
+            )
+        }
+        file.writeText(source.replace(normalizedExpected, normalizedReplacement))
     }
 
     private fun String.countOccurrences(value: String): Int {
@@ -373,6 +419,8 @@ native_get_stats (JNIEnv *env, jobject thiz)""",
             offset = found + value.length
         }
     }
+
+    private fun String.normalizeLineEndings(): String = replace("\r\n", "\n").replace('\r', '\n')
 
     private fun replaceSymlinkPlaceholderFiles(sourceDir: File) {
         val sourceRoot = sourceDir.canonicalFile

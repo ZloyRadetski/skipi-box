@@ -11,25 +11,25 @@ import app.modes.ConnectionDisplayModeCompact
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
 import app.skipi.app.home.ProxyGroupSummary
-import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeDisplayOptions
 import app.skipi.app.home.ProxyHomeGroupKind
 import app.skipi.app.home.ProxyHomeImportSource
 import app.skipi.app.home.ProxyHomeInput
+import app.skipi.app.home.ProxyHomeInputSnapshot
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeServerTool
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
+import app.skipi.app.home.toProxyHomeInput
 import app.activeTrafficConfig
 import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.UrlProxyServer
 import features.proxy.server.model.getTransportDisplay
 import features.subscription.DefaultSubscriptionGroupId
-import platform.TunnelPhase
 import platform.TunnelSnapshot
 
 /** Maps Android's persisted/runtime state into the platform-neutral Home input. */
@@ -91,48 +91,7 @@ internal fun AppState.toProxyHomeInput(
         )
     }
     val selectedServer = proxyServers.firstOrNull { server -> server.id == selectedServerId }
-    val canToggleTunnel = !tunnelBusy && when (tunnelSnapshot.phase) {
-        TunnelPhase.Connected -> true
-        TunnelPhase.Disconnected -> selectedServer != null
-        TunnelPhase.Connecting,
-        TunnelPhase.Disconnecting,
-        TunnelPhase.Failed -> false
-    }
-    val availableActions = buildSet {
-        if (canToggleTunnel) add(ProxyHomeActionId.ToggleTunnel)
-        add(ProxyHomeActionId.SelectServer)
-        add(ProxyHomeActionId.TestServer)
-        add(ProxyHomeActionId.TestVisibleServers)
-        add(ProxyHomeActionId.TestGroup)
-        add(ProxyHomeActionId.CancelLatencyTests)
-        if (subscriptionGroups.any { group -> group.url.isNotBlank() }) {
-            add(ProxyHomeActionId.RefreshSubscription)
-            add(ProxyHomeActionId.RefreshAllSubscriptions)
-            add(ProxyHomeActionId.PingSubscription)
-            add(ProxyHomeActionId.ToggleSubscriptionEnabled)
-            add(ProxyHomeActionId.EditSubscription)
-        }
-        add(ProxyHomeActionId.AddServer)
-        add(ProxyHomeActionId.AddSubscription)
-        add(ProxyHomeActionId.ImportServers)
-        add(ProxyHomeActionId.EditServer)
-        add(ProxyHomeActionId.DeleteServer)
-        add(ProxyHomeActionId.ShowServerQr)
-        add(ProxyHomeActionId.CopyServer)
-        add(ProxyHomeActionId.EditGroup)
-        if (groups.any(ProxyGroupSummary::canDelete)) add(ProxyHomeActionId.DeleteGroup)
-        if (groups.any(ProxyGroupSummary::canMove)) add(ProxyHomeActionId.MoveGroup)
-        if (proxyServerListSort == app.modes.ProxyServerListSortDefault) {
-            add(ProxyHomeActionId.MoveServer)
-        }
-        add(ProxyHomeActionId.OpenStrategyMemberPicker)
-        add(ProxyHomeActionId.SelectStrategyMember)
-        add(ProxyHomeActionId.SetSort)
-        add(ProxyHomeActionId.RunServerTool)
-        add(ProxyHomeActionId.OpenExternalLink)
-    }
-
-    return ProxyHomeInput(
+    return ProxyHomeInputSnapshot(
         tunnelSnapshot = tunnelSnapshot,
         selectedServerId = selectedServerId.toString().takeIf { selectedServerId > 0 },
         selectedServerTitle = selectedServer?.toProxyHomeSummary(
@@ -141,14 +100,13 @@ internal fun AppState.toProxyHomeInput(
             allServers = visibleServers,
             presentationFormatter = presentationFormatter,
         )?.title.orEmpty(),
+        hasSelectedServer = selectedServer != null,
         activeProfileName = activeTrafficConfig()?.name?.takeIf(String::isNotBlank),
-        canToggleTunnel = canToggleTunnel,
         tunnelBusy = tunnelBusy,
         groups = groups,
         servers = serverSummaries,
+        hasSubscriptions = subscriptionGroups.any { group -> group.url.isNotBlank() },
         isTestingLatency = isTestingLatency,
-        statusMessage = tunnelSnapshot.failure?.message,
-        isStatusError = tunnelSnapshot.phase == TunnelPhase.Failed,
         sortMode = when (proxyServerListSort) {
             ProxyServerListSortName -> ProxyHomeSortMode.Name
             ProxyServerListSortLatency -> ProxyHomeSortMode.Latency
@@ -173,7 +131,6 @@ internal fun AppState.toProxyHomeInput(
             latencyErrorColor = customStatusStoppedColor,
         ),
         runtimeOutboundMetric = runtimeOutboundMetric,
-        availableActions = availableActions,
         availableImportSources = setOf(
             ProxyHomeImportSource.QrCode,
             ProxyHomeImportSource.Clipboard,
@@ -208,7 +165,7 @@ internal fun AppState.toProxyHomeInput(
             ProxyHomeServerTool.DeleteInvalidServers,
             ProxyHomeServerTool.DeleteAllServers,
         ),
-    )
+    ).toProxyHomeInput()
 }
 
 private fun ProxyServerState.toProxyHomeSummary(

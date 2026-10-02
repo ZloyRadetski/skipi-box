@@ -1446,4 +1446,9 @@
     <string name="widget_config_changed">Configuration: %1$s</string>
     <string name="widget_server_changed">Server: %1$s</string>
     <string name="widget_no_config">No configurations</string>
+    <string name="settings_proxy_server_list_columns">Server list columns</string>
+    <string name="settings_proxy_server_list_columns_summary">Number of columns for proxy servers on the home screen</string>
+    <string name="settings_proxy_server_list_columns_single">1 column</string>
+    <string name="settings_proxy_server_list_columns_double">2 columns</string>
+    <string name="settings_proxy_server_list_columns_triple">3 columns</string>
 </resources>

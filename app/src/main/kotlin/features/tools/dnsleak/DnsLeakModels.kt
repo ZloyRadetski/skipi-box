@@ -58,26 +58,6 @@ internal data class DnsLeakExitInfo(
 /**
  * Why the test could not collect any data at all; picks a localized UI hint.
  */
-enum class DnsLeakFailureKind {
-    /** No tunnel was up, and nothing answered on the direct network path. */
-    NoInternet,
-
-    /** A VPN tunnel was detected, but no traffic passes through it. */
-    TunnelNotPassing,
-}
-
-/** Verdict of a completed DNS leak test. */
-enum class DnsLeakVerdict {
-    /** Every tested path exposes the same network as the HTTP exit. */
-    NoLeak,
-
-    /** At least one path resolves through a different network than the exit. */
-    SuspectedLeak,
-
-    /** Not enough data to judge. */
-    Unknown,
-}
-
 /** Pure analysis helpers over raw probe results; unit tested. */
 internal object DnsLeakAnalysis {
     private val json = Json { ignoreUnknownKeys = true }
@@ -134,17 +114,7 @@ internal object DnsLeakAnalysis {
         resolvers: List<DnsLeakResolver>,
         exit: DnsLeakExitInfo?,
     ): DnsLeakVerdict {
-        if (resolvers.isEmpty() || exit == null) return DnsLeakVerdict.Unknown
-        val comparable = resolvers.filter { it.observedCountryCode.isNotBlank() }
-        if (comparable.isEmpty()) return DnsLeakVerdict.Unknown
-        return if (comparable.any {
-                !it.observedCountryCode.equals(exit.countryCode, ignoreCase = true)
-            }
-        ) {
-            DnsLeakVerdict.SuspectedLeak
-        } else {
-            DnsLeakVerdict.NoLeak
-        }
+        return DnsLeakResultPolicy.verdict(resolvers.map { it.observedCountryCode }, exit?.countryCode)
     }
 
     /**
@@ -153,7 +123,7 @@ internal object DnsLeakAnalysis {
      * silence means the tunnel passes no traffic rather than being offline.
      */
     fun failureKind(hasVpnNetwork: Boolean): DnsLeakFailureKind {
-        return if (hasVpnNetwork) DnsLeakFailureKind.TunnelNotPassing else DnsLeakFailureKind.NoInternet
+        return DnsLeakResultPolicy.failureKind(hasVpnNetwork)
     }
 
     /** Converts a two-letter country code into its flag emoji, e.g. "DE" -> 🇩🇪. */

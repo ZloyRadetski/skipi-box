@@ -15,8 +15,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
-import utils.toIntInRangeOrNull
-import java.net.URI
+import features.subscription.SubscriptionPingSettingsRules
 
 @Composable
 internal fun SubscriptionPingSettingsBottomSheet(
@@ -28,10 +27,10 @@ internal fun SubscriptionPingSettingsBottomSheet(
     onDismissRequest: () -> Unit,
     onSave: (String, String) -> Unit,
 ) {
-    val urlError = if (url.isSubscriptionPingUrl()) null else {
+    val urlError = if (SubscriptionPingSettingsRules.isValidHttpUrl(url)) null else {
         stringResource(R.string.subscription_ping_url_invalid)
     }
-    val timeoutError = if (timeoutMillis.toIntInRangeOrNull(PingTimeoutRange) != null) null else {
+    val timeoutError = if (SubscriptionPingSettingsRules.isValidTimeoutMillis(timeoutMillis)) null else {
         stringResource(R.string.subscription_ping_timeout_invalid)
     }
     val canSave = urlError == null && timeoutError == null
@@ -80,12 +79,3 @@ internal fun SubscriptionPingSettingsBottomSheet(
         }
     }
 }
-
-private fun String.isSubscriptionPingUrl(): Boolean {
-    return runCatching {
-        val uri = URI(trim())
-        uri.scheme in setOf("http", "https") && !uri.host.isNullOrBlank()
-    }.getOrDefault(false)
-}
-
-private val PingTimeoutRange = 500..60_000

@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import features.routing.model.DefaultRouteOutboundTag
+import features.routing.model.RouteRule
 import platform.DefaultLocalHttpProxyPort
 import platform.DefaultLocalSocksPort
 import java.nio.charset.StandardCharsets
@@ -44,6 +46,45 @@ data class DesktopAppSettings(
     val confirmDeletion: Boolean = true,
     val sendDeviceHeaders: Boolean = true,
     val installationUuid: String = "",
+    // Shared appearance fields are stored as additive JSON keys so older settings.json files remain readable.
+    val seedIndex: Int = 0,
+    val customMaterialYouSeed: Long? = null,
+    val customColorsEnabled: Boolean = false,
+    val customAccentColor: Long? = null,
+    val customBackgroundColor: Long? = null,
+    val customSurfaceColor: Long? = null,
+    val customSurfaceVariantColor: Long? = null,
+    val customTextColor: Long? = null,
+    val customTextSecondaryColor: Long? = null,
+    val customStatusRunningColor: Long? = null,
+    val customStatusStoppedColor: Long? = null,
+    val customPingFastColor: Long? = null,
+    val customPingMediumColor: Long? = null,
+    val customPingSlowColor: Long? = null,
+    val customCategoryIconColor: Long? = null,
+    val customProtocolVlessColor: Long? = null,
+    val customProtocolVmessColor: Long? = null,
+    val customProtocolHysteria2Color: Long? = null,
+    val customProtocolTrojanColor: Long? = null,
+    val customProtocolShadowsocksColor: Long? = null,
+    val customProtocolWireguardColor: Long? = null,
+    val customProtocolSocksColor: Long? = null,
+    val customProtocolHttpColor: Long? = null,
+    val customProtocolStrategyColor: Long? = null,
+    val customProtocolChainColor: Long? = null,
+    val customProtocolJsonColor: Long? = null,
+    val fontFamilyMode: Int? = null,
+    val fontSizeMode: Int? = null,
+    val fontWeightMode: Int? = null,
+    val backgroundStyle: Int? = null,
+    val backgroundPhotoDimPercent: Int? = null,
+    val bottomBarSize: Int? = null,
+    val connectionDisplayMode: Int? = null,
+    /** Inactive legacy routing values retained so saving other settings preserves existing settings.json data. */
+    val routeDomainStrategy: Int = 0,
+    val defaultRouteOutboundTag: String = DefaultRouteOutboundTag,
+    val routeRules: List<RouteRule> = emptyList(),
+    val nextRouteRuleId: Int = 10,
 )
 
 object DesktopSettingsLibraries {

@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +26,12 @@ import engine.proxy.AndroidProxyEngine
 import engine.proxy.latency.AndroidProxyLatencyTester
 import features.proxy.server.usecase.ProxyServerImportFileUseCase
 import features.proxy.server.usecase.ProxyServiceUseCase
+import features.proxy.server.usecase.AndroidTunnelController
+import features.proxy.server.usecase.AndroidTunnelRuntimeRepository
+import data.repository.AndroidAppRepositories
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.store.SharedApplicationStore
+import features.config.withConfigProxyGroupsReflected
 import features.resources.ResourceFileUpdateCoordinator
 import features.resources.ResourceFileUpdateRequest
 import features.resources.ResourceFileUseCase
@@ -54,6 +61,7 @@ fun App(
     val systemUiSnapshot = appContext.currentSystemUiSnapshot()
     val application = appContext as SkipiApplication
     val appScope = application.appScope
+    val compositionScope = rememberCoroutineScope()
     val userSpaces = remember(appContext) {
         AndroidUserSpaceProvider(context = appContext)
     }
@@ -125,6 +133,48 @@ fun App(
         ProxyServiceUseCase(proxyEngine)
     }
     val stateStore = remember(application) { application.stateStore }
+    val updateAppState: ((AppState) -> AppState) -> Unit = remember(stateStore) {
+        { transform ->
+            val previous = stateStore.currentState
+            stateStore.update(transform)
+            val current = stateStore.currentState
+            if (previous.trafficConfigs != current.trafficConfigs ||
+                previous.activeTrafficConfigId != current.activeTrafficConfigId
+            ) {
+                stateStore.sharedApplicationStore.dispatch(
+                    SharedApplicationAction.UpdateProxyCatalog { catalog ->
+                        stateStore.currentState.withConfigProxyGroupsReflected(catalog)
+                    },
+                )
+            }
+        }
+    }
+    val tunnelController = remember(appContext, proxyEngine, proxyServiceUseCase, stateStore, updateAppState) {
+        AndroidTunnelController.forApp(
+            context = appContext,
+            proxyEngine = proxyEngine,
+            proxyServiceUseCase = proxyServiceUseCase,
+            readState = { stateStore.state.value },
+            updateState = updateAppState,
+        )
+    }
+    val tunnelRuntimeRepository = remember(tunnelController, stateStore, compositionScope) {
+        AndroidTunnelRuntimeRepository(
+            controller = tunnelController,
+            scope = compositionScope,
+            appState = stateStore.state,
+        )
+    }
+    val appRepositories = remember(stateStore, appScope, tunnelRuntimeRepository) {
+        AndroidAppRepositories(
+            stateStore = stateStore,
+            scope = appScope,
+            hostRuntime = tunnelRuntimeRepository,
+        )
+    }
+    val sharedApplicationStore = remember(appRepositories, appScope) {
+        SharedApplicationStore(appRepositories.contracts, appScope)
+    }
     val tipNotifier = remember(appContext) { AndroidToastTipNotifier(appContext) }
     val haptics = remember(appContext) {
         AppHapticFeedback(appContext) { stateStore.currentState.enableHaptics }
@@ -145,6 +195,10 @@ fun App(
         proxyServerImportFileUseCase,
         proxyLatencyTester,
         proxyServiceUseCase,
+        tunnelController,
+        tunnelRuntimeRepository,
+        appRepositories,
+        sharedApplicationStore,
         tipNotifier,
         logFileCreator,
         requestVpnPermission,
@@ -166,6 +220,10 @@ fun App(
             proxyServerImportFileUseCase = proxyServerImportFileUseCase,
             proxyLatencyTester = proxyLatencyTester,
             proxyServiceUseCase = proxyServiceUseCase,
+            tunnelController = tunnelController,
+            tunnelRuntimeRepository = tunnelRuntimeRepository,
+            appRepositories = appRepositories,
+            sharedApplicationStore = sharedApplicationStore,
             tipNotifier = tipNotifier,
             logFileCreator = logFileCreator,
             coreLogRepository = AndroidCoreLogRepository,
@@ -177,9 +235,6 @@ fun App(
         )
     }
     val chromeState by stateStore.collectAppChromeState()
-    val updateAppState: ((AppState) -> AppState) -> Unit = remember(stateStore) {
-        { transform -> stateStore.update(transform) }
-    }
     val keyColor = keyColorFor(chromeState.seedIndex, chromeState.customMaterialYouSeed)
     RecreateActivityOnAppLanguageChange(languageMode = chromeState.languageMode)
     ProxyStatusSynchronizer(

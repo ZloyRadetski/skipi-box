@@ -7,6 +7,8 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import app.AppState
+import app.skipi.app.store.SharedApplicationStore
+import data.repository.AndroidAppRepositories
 import data.repository.AndroidProxyServerRepository
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +48,12 @@ class AndroidAppStateStore private constructor(
     val state: StateFlow<AppState> = mutableState.asStateFlow()
     val proxyServerRepository: AndroidProxyServerRepository by lazy {
         AndroidProxyServerRepository(this, scope)
+    }
+    /** Shared contracts backed by the same existing Room and SharedPreferences state. */
+    val appRepositories: AndroidAppRepositories by lazy { AndroidAppRepositories(this, scope) }
+    /** Shared application orchestration is available to gradually migrated Android features. */
+    val sharedApplicationStore: SharedApplicationStore by lazy {
+        SharedApplicationStore(appRepositories.contracts, scope)
     }
 
     /** Non-reactive one-shot snapshot for decisions that must not trigger recomposition. */

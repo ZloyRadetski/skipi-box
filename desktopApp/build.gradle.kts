@@ -61,7 +61,8 @@ val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCo
         providers.gradleProperty("skipiCoreDesktopCxx")
             .orElse(defaultDesktopCoreCxxCompiler),
     )
-    outputLibrary.set(skipiCoreSourceDirectory.resolve("dist/$desktopCoreLibraryName"))
+    // The sibling checkout is a read-only source dependency; keep generated binaries in this repo.
+    outputLibrary.set(layout.buildDirectory.file("native/skipi-core/$desktopCoreLibraryName"))
     onlyIf { !explicitDesktopCoreLibrary.isPresent }
 }
 

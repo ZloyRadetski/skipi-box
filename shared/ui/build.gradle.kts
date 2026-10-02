@@ -37,6 +37,7 @@ kotlin {
             implementation(libs.miuix.ui)
             implementation(libs.miuix.icons)
             implementation(libs.miuix.preference)
+            implementation(libs.reorderable)
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
         }
         commonTest.dependencies {

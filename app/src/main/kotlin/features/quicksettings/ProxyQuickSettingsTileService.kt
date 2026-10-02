@@ -19,7 +19,8 @@ import app.effects.resolveActiveNetworkConfig
 import app.MainActivity
 import app.R
 import app.modes.RunModeVpnService
-import features.config.withActiveTrafficConfig
+import data.repository.reconcileTrafficConfigProxyGroups
+import features.config.withActiveTrafficConfigProfile
 import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.proxy.AndroidProxyEngine
@@ -147,7 +148,8 @@ class ProxyQuickSettingsTileService : TileService() {
         val rawState = stateStore.state.value.copy(proxyRunning = running)
         var state = if (!running) rawState.resolveActiveNetworkConfig(applicationContext) else rawState
         if (state.activeTrafficConfigId != rawState.activeTrafficConfigId) {
-            stateStore.update { it.withActiveTrafficConfig(state.activeTrafficConfigId) }
+            stateStore.update { it.withActiveTrafficConfigProfile(state.activeTrafficConfigId) }
+            stateStore.reconcileTrafficConfigProxyGroups()
         }
         if (!running && state.requiresVpnPermission()) {
             withContext(Dispatchers.Main.immediate) {

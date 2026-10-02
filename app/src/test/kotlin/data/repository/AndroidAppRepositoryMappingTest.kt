@@ -1,0 +1,283 @@
+// Copyright 2026, Radetski
+// SPDX-License-Identifier: GPL-3.0
+
+package data.repository
+
+import app.AppState
+import app.CustomResourceFileState
+import app.ProxyServerState
+import app.SubscriptionGroupState
+import app.modes.ColorModeAurora
+import app.modes.LanguageModePersian
+import app.modes.ColorModeSakura
+import app.modes.BackgroundStylePhoto
+import app.modes.ConnectionDisplayModeCompact
+import app.skipi.app.model.AppearanceSettings
+import app.skipi.app.model.PersistedSettings
+import app.skipi.app.model.ProxyServerRecord
+import app.skipi.app.model.ProxyServerCatalog
+import app.skipi.app.model.ResourceCatalogRecord
+import app.skipi.app.model.ResourceDefinition
+import app.skipi.app.model.SubscriptionRecord
+import app.skipi.app.model.ThemeMode
+import app.skipi.app.model.TrafficConfigRecord
+import features.config.TrafficConfigAndroidSettings
+import features.config.TrafficConfigResourceSettings
+import features.config.TrafficConfigState
+import features.subscription.SubscriptionExpiryReminder
+import features.subscription.DefaultSubscriptionGroupId
+import features.proxy.server.model.HTTP
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import org.junit.Test
+
+class AndroidAppRepositoryMappingTest {
+    @Test
+    fun proxyCatalogMappingRoundTripsIdsGroupsServersAndListOrder() {
+        val legacyServers = listOf(
+            ProxyServerState(
+                id = 42,
+                server = HTTP(server = "manual.example"),
+                groupId = DefaultSubscriptionGroupId,
+                latency = "12 ms",
+            ),
+            ProxyServerState(
+                id = 9,
+                server = HTTP(server = "subscription.example"),
+                groupId = 73,
+                latency = "34 ms",
+            ),
+        )
+
+        val sharedRecords = legacyServers.map { it.toRecord() }
+        val restored = sharedRecords.map { it.toAndroidState() }
+
+        assertEquals(listOf(42, 9), sharedRecords.map { it.id })
+        assertEquals(listOf(null, 73), sharedRecords.map { it.sourceSubscriptionId })
+        assertEquals(legacyServers.map { it.server }, restored.map { it.server })
+        assertEquals(listOf(42, 9), restored.map { it.id })
+        assertEquals(listOf(DefaultSubscriptionGroupId, 73), restored.map { it.groupId })
+    }
+
+    @Test
+    fun sharedCatalogWritePreservesLegacyIdsOrderLatencyAndCounters() {
+        val original = AppState(
+            proxyServers = listOf(
+                ProxyServerState(42, HTTP(server = "manual.example"), groupId = DefaultSubscriptionGroupId, latency = "12 ms"),
+                ProxyServerState(9, HTTP(server = "provider.example"), groupId = 73, latency = "34 ms"),
+            ),
+            nextProxyServerId = 88,
+            selectedProxyServerId = 9,
+        )
+        val catalog = original.toProxyServerCatalog().copy(
+            servers = listOf(original.proxyServers[1].toRecord(), original.proxyServers[0].toRecord()),
+            nextServerId = 91,
+            selectedServerId = 42,
+        )
+
+        val restored = original.withProxyServerCatalog(catalog)
+
+        assertEquals(listOf(9, 42), restored.proxyServers.map { it.id })
+        assertEquals(listOf(73, DefaultSubscriptionGroupId), restored.proxyServers.map { it.groupId })
+        assertEquals(listOf("34 ms", "12 ms"), restored.proxyServers.map { it.latency })
+        assertEquals(91, restored.nextProxyServerId)
+        assertEquals(42, restored.selectedProxyServerId)
+    }
+
+    @Test
+    fun sharedCatalogWriteRejectsDuplicateIdsWithoutChangingLegacyState() {
+        val original = AppState(
+            proxyServers = listOf(ProxyServerState(4, HTTP(server = "one.example"), groupId = DefaultSubscriptionGroupId)),
+            nextProxyServerId = 10,
+        )
+        val invalid = ProxyServerCatalog(
+            servers = listOf(original.proxyServers.single().toRecord(), original.proxyServers.single().toRecord()),
+            nextServerId = 11,
+            selectedServerId = 4,
+        )
+
+        val error = kotlin.runCatching { original.withProxyServerCatalog(invalid) }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
+        assertEquals(listOf(4), original.proxyServers.map { it.id })
+        assertEquals(10, original.nextProxyServerId)
+    }
+
+    @Test
+    fun appearancePreferencesRoundTripWithoutLosingColorsOrBackgroundSettings() {
+        val original = AppState(
+            colorMode = ColorModeSakura,
+            seedIndex = 17,
+            customMaterialYouSeed = 0x1020304050607080L,
+            enableCustomColors = true,
+            customAccentColor = 0xFF123456,
+            customBackgroundColor = 0xFF223344,
+            customSurfaceColor = 0xFF334455,
+            customSurfaceVariantColor = 0xFF445566,
+            customTextColor = 0xFF556677,
+            customTextSecondaryColor = 0xFF667788,
+            customStatusRunningColor = 0xFF778899,
+            customStatusStoppedColor = 0xFF8899AA,
+            customPingFastColor = 0xFF99AABB,
+            customPingMediumColor = 0xFFAABBCC,
+            customPingSlowColor = 0xFFBBCCDD,
+            customCategoryIconColor = 0xFFCCDDEE,
+            customProtocolVlessColor = 0xFFDDEEFF,
+            customProtocolVmessColor = 0xFF112233,
+            customProtocolHysteria2Color = 0xFF223355,
+            customProtocolTrojanColor = 0xFF334466,
+            customProtocolShadowsocksColor = 0xFF445577,
+            customProtocolWireguardColor = 0xFF556688,
+            customProtocolSocksColor = 0xFF667799,
+            customProtocolHttpColor = 0xFF7788AA,
+            customProtocolStrategyColor = 0xFF8899BB,
+            customProtocolChainColor = 0xFF99AACC,
+            customProtocolJsonColor = 0xFFAABBCC,
+            fontFamilyMode = 4,
+            fontSizeMode = 115,
+            fontWeightMode = 5,
+            backgroundStyle = BackgroundStylePhoto,
+            backgroundPhotoDimPercent = 63,
+            bottomBarSize = 2,
+            connectionDisplayMode = ConnectionDisplayModeCompact,
+            pinConnectionPanelOnHome = true,
+            enableSubscriptionSwipe = false,
+            classicShowFloatingPowerButton = true,
+            enableDeletionConfirmation = false,
+            showServerSearch = true,
+        )
+
+        val shared = original.toPersistedSettings()
+        val restored = AppState().applyPersistedSettings(shared)
+
+        assertEquals("sakura", shared.appearance.themeVariant)
+        assertEquals(original.toPersistedSettings(), restored.toPersistedSettings())
+        assertEquals(0xFF223344, shared.appearance.customBackgroundColor)
+        assertEquals(BackgroundStylePhoto, shared.appearance.backgroundStyle)
+        assertEquals(63, shared.appearance.backgroundPhotoDimPercent)
+        assertEquals(ConnectionDisplayModeCompact, shared.home.connectionDisplayMode)
+        assertTrue(shared.home.pinConnectionPanel)
+        assertFalse(shared.home.subscriptionSwipeEnabled)
+        assertTrue(shared.home.showFloatingPowerButton)
+        assertFalse(shared.home.confirmDeletion)
+        assertTrue(shared.home.showServerSearch)
+    }
+
+    @Test
+    fun persistedSettingsUpdateKeepsAndroidOnlyAppearanceAndLanguageChoices() {
+        val original = AppState(
+            colorMode = ColorModeAurora,
+            languageMode = LanguageModePersian,
+            enableMaterialYou = true,
+            enableHaptics = false,
+            hasCompletedOnboarding = true,
+        )
+
+        val updated = original.applyPersistedSettings(
+            original.toPersistedSettings().copy(
+                appearance = AppearanceSettings(themeMode = ThemeMode.Named, dynamicColors = false),
+                application = original.toPersistedSettings().application.copy(hapticsEnabled = true),
+            ),
+        )
+
+        assertEquals(ColorModeAurora, updated.colorMode)
+        assertEquals(LanguageModePersian, updated.languageMode)
+        assertFalse(updated.enableMaterialYou)
+        assertTrue(updated.enableHaptics)
+        assertTrue(updated.hasCompletedOnboarding)
+    }
+
+    @Test
+    fun subscriptionUpdatePreservesAndroidOnlyProviderOptions() {
+        val existing = SubscriptionGroupState(
+            id = 8,
+            name = "old",
+            url = "https://old.example/sub",
+            userAgent = "Android custom agent",
+            updateInterval = "12",
+            hwid = "device-key",
+            ageSecretKey = "secret",
+            updateViaProxy = true,
+            autoOverrideRules = false,
+            enabled = true,
+            builtIn = false,
+            notifyOnExpiry = false,
+            customExpiryReminders = listOf(SubscriptionExpiryReminder(3, features.subscription.ExpiryReminderUnit.Days)),
+            profileTitle = "Provider title",
+            trafficTotalBytes = 9876,
+        )
+
+        val mapped = SubscriptionRecord(id = 8, title = "renamed", url = "https://new.example/sub")
+            .toAndroidGroup(existing)
+
+        assertEquals("renamed", mapped.name)
+        assertEquals("https://new.example/sub", mapped.url)
+        assertEquals("Android custom agent", mapped.userAgent)
+        assertEquals("12", mapped.updateInterval)
+        assertEquals("device-key", mapped.hwid)
+        assertEquals("secret", mapped.ageSecretKey)
+        assertTrue(mapped.updateViaProxy)
+        assertFalse(mapped.autoOverrideRules)
+        assertFalse(mapped.notifyOnExpiry)
+        assertEquals(existing.customExpiryReminders, mapped.customExpiryReminders)
+        assertEquals("Provider title", mapped.profileTitle)
+        assertEquals(9876, mapped.trafficTotalBytes)
+    }
+
+    @Test
+    fun trafficConfigUpdateKeepsAndroidProfileSettings() {
+        val existing = TrafficConfigState(
+            id = 4,
+            name = "old",
+            rawConfig = "[General]\nloglevel = warning",
+            sourceUrl = "https://provider.example/old",
+            updateLocked = false,
+            lastUpdatedAtMillis = 1234,
+            autoUpdate = true,
+            updateInterval = "6",
+            androidSettings = TrafficConfigAndroidSettings(enableFakeDns = true),
+            resourceSettings = TrafficConfigResourceSettings(userAgent = "profile agent"),
+        )
+
+        val mapped = TrafficConfigRecord(
+            id = 4,
+            name = "renamed",
+            rawDocument = "[General]\nloglevel = error",
+            sourceUrl = "https://provider.example/new",
+            locked = true,
+        ).toAndroidTrafficConfig(existing)
+
+        assertEquals("renamed", mapped.name)
+        assertEquals("[General]\nloglevel = error", mapped.rawConfig)
+        assertEquals("https://provider.example/new", mapped.sourceUrl)
+        assertTrue(mapped.updateLocked)
+        assertEquals(1234, mapped.lastUpdatedAtMillis)
+        assertTrue(mapped.autoUpdate)
+        assertEquals("6", mapped.updateInterval)
+        assertTrue(mapped.androidSettings.enableFakeDns)
+        assertEquals("profile agent", mapped.resourceSettings.userAgent)
+    }
+
+    @Test
+    fun routingAndResourceCatalogMappingsKeepRepresentableFields() {
+        val state = AppState(
+            routeDomainStrategy = 3,
+            defaultRouteOutboundTag = "proxy",
+            resourceFileSource = 2,
+            resourceFileUserAgent = "resource agent",
+            customResourceFiles = listOf(CustomResourceFileState(5, "custom", "https://example.test/geo")),
+        )
+
+        assertEquals(3, state.toRoutingConfigRecord().domainStrategy)
+        assertEquals("proxy", state.toRoutingConfigRecord().defaultOutboundTag)
+        assertEquals(
+            ResourceCatalogRecord(
+                sourceId = "2",
+                userAgent = "resource agent",
+                customResources = listOf(ResourceDefinition(5, "custom", "https://example.test/geo")),
+            ),
+            state.toResourceCatalogRecord(),
+        )
+    }
+}

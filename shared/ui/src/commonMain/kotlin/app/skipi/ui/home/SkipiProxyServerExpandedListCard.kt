@@ -84,7 +84,11 @@ fun SkipiProxyServerExpandedListCard(
     } else {
         PaddingValues(SkipiTheme.spacing.medium)
     }
-    val cardBottomPadding = if (state.isStrategyGroup) SkipiTheme.spacing.small else SkipiTheme.spacing.medium
+    val cardBottomPadding = if (state.isStrategyGroup) {
+        SkipiTheme.spacing.extraSmall
+    } else {
+        SkipiTheme.spacing.small
+    }
     val badgeSize = if (state.isStrategyGroup) 28.dp else 34.dp
     val badgeRadius = if (state.isStrategyGroup) 7.dp else 8.dp
     val middleSpacerHeight = if (state.isStrategyGroup) SkipiTheme.spacing.small else SkipiTheme.spacing.medium
@@ -92,7 +96,6 @@ fun SkipiProxyServerExpandedListCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = SkipiTheme.spacing.medium)
             .padding(bottom = cardBottomPadding)
             .zIndex(if (state.isDragging) 1f else 0f)
             .then(dragVisualModifier)

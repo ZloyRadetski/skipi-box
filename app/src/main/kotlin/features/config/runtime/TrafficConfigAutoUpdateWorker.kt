@@ -7,12 +7,13 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.SkipiApplication
+import data.repository.reconcileTrafficConfigProxyGroups
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
 import features.config.withConfigProxyGroupsReflected
 import features.config.withSkipiSettingsInRawConfig
 import features.config.withSkipiSettingsReadFromRawConfig
-import features.config.withUpdatedTrafficConfig
+import features.config.withUpdatedTrafficConfigProfile
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.usecase.toSubscriptionFetchOptions
@@ -46,7 +47,7 @@ internal class TrafficConfigAutoUpdateWorker(
                 return@runCatching Result.retry()
             }
             application.stateStore.update { state ->
-                state.withUpdatedTrafficConfig(config.id) { current ->
+                state.withUpdatedTrafficConfigProfile(config.id) { current ->
                     current.copy(
                         rawConfig = normalized,
                         sourceUrl = url,
@@ -72,8 +73,9 @@ internal class TrafficConfigAutoUpdateWorker(
                             ),
                         ).withSkipiSettingsInRawConfig()
                     }
-                }.withConfigProxyGroupsReflected()
+                }
             }
+            application.stateStore.reconcileTrafficConfigProxyGroups()
             Result.success()
         }.getOrElse {
             Result.retry()

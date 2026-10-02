@@ -44,6 +44,8 @@ import app.LocalAppServices
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.R
+import app.skipi.ui.diagnostics.SkipiIpAddressRow
+import app.skipi.ui.diagnostics.SkipiIpInfoRow
 import engine.network.TunnelNetworks
 import engine.proxy.LocalProxyRuntime
 import kotlinx.coroutines.launch
@@ -303,9 +305,10 @@ fun IpInfoPage(
 
                                         // IPv4 Entry (if present)
                                         if (!data.ipv4.isNullOrBlank()) {
-                                            IpAddressRow(
+                                            SkipiIpAddressRow(
                                                 label = stringResource(R.string.tools_ip_info_ipv4),
                                                 ip = data.ipv4,
+                                                copyDescription = stringResource(R.string.common_copy_field, stringResource(R.string.tools_ip_info_ipv4)),
                                                 onCopy = {
                                                     scope.launch {
                                                         clipboard.setPlainText(data.ipv4)
@@ -326,9 +329,10 @@ fun IpInfoPage(
 
                                         // IPv6 Entry (if present)
                                         if (!data.ipv6.isNullOrBlank()) {
-                                            IpAddressRow(
+                                            SkipiIpAddressRow(
                                                 label = stringResource(R.string.tools_ip_info_ipv6),
                                                 ip = data.ipv6,
+                                                copyDescription = stringResource(R.string.common_copy_field, stringResource(R.string.tools_ip_info_ipv6)),
                                                 onCopy = {
                                                     scope.launch {
                                                         clipboard.setPlainText(data.ipv6)
@@ -400,7 +404,7 @@ fun IpInfoPage(
                                                         color = MiuixTheme.colorScheme.dividerLine,
                                                     )
                                                 }
-                                                InfoRow(
+                                                SkipiIpInfoRow(
                                                     label = stringResource(labelRes),
                                                     value = value,
                                                 )
@@ -428,7 +432,7 @@ fun IpInfoPage(
                                                         color = MiuixTheme.colorScheme.dividerLine,
                                                     )
                                                 }
-                                                InfoRow(
+                                                SkipiIpInfoRow(
                                                     label = stringResource(labelRes),
                                                     value = value,
                                                 )
@@ -455,7 +459,7 @@ fun IpInfoPage(
                                                         color = MiuixTheme.colorScheme.dividerLine,
                                                     )
                                                 }
-                                                InfoRow(
+                                                SkipiIpInfoRow(
                                                     label = stringResource(labelRes),
                                                     value = value,
                                                 )
@@ -502,80 +506,5 @@ fun IpInfoPage(
                 trackPadding = listPadding,
             )
         }
-    }
-}
-
-@Composable
-private fun IpAddressRow(
-    label: String,
-    ip: String,
-    onCopy: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onCopy)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                fontWeight = themedFontWeight(FontWeight.SemiBold),
-                color = MiuixTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = ip,
-                fontSize = if (ip.length > 20) 17.sp else 22.sp,
-                fontWeight = themedFontWeight(FontWeight.Bold),
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-        }
-        Spacer(Modifier.width(8.dp))
-        Box(
-            modifier = Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Copy,
-                contentDescription = stringResource(R.string.common_copy_field, label),
-                modifier = Modifier.size(16.dp),
-                tint = MiuixTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
-@Composable
-private fun InfoRow(
-    label: String,
-    value: String,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        Spacer(Modifier.width(16.dp))
-        Text(
-            text = value,
-            fontSize = 14.sp,
-            fontWeight = themedFontWeight(FontWeight.Medium),
-            color = MiuixTheme.colorScheme.onSurface,
-        )
     }
 }

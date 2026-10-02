@@ -346,8 +346,8 @@ class TrafficConfigProxyGroupIsolationTest {
         assertEquals("Config1Group", (group1.server as StrategyGroup).remarks)
         assertTrue(group1.isVisibleOnProxyServerList(state.activeTrafficConfigId))
 
-        // Switch to config 2 via withActiveTrafficConfig
-        state = state.withActiveTrafficConfig(2)
+        // The active profile is persisted separately from its runtime catalog projection.
+        state = state.withActiveTrafficConfigProfile(2).withConfigProxyGroupsReflected()
 
         assertEquals(2, state.activeTrafficConfigId)
         val generatedGroups2 = state.proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
@@ -358,7 +358,7 @@ class TrafficConfigProxyGroupIsolationTest {
         assertTrue(group2.isVisibleOnProxyServerList(state.activeTrafficConfigId))
 
         // Switch back to config 1
-        state = state.withActiveTrafficConfig(1)
+        state = state.withActiveTrafficConfigProfile(1).withConfigProxyGroupsReflected()
 
         assertEquals(1, state.activeTrafficConfigId)
         val generatedGroups1 = state.proxyServers.filter { (it.server as? StrategyGroup)?.sourceTrafficConfigId != null }
