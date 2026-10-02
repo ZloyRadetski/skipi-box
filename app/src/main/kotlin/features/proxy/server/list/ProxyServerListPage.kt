@@ -8,6 +8,11 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,12 +27,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Job
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -55,16 +60,12 @@ import ui.feedback.LocalAppHaptics
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
-import features.proxy.server.presentation.ProxyHomePresentationAction
-import features.proxy.server.presentation.ProxyHomePresentationState
-import features.proxy.server.presentation.reduce
-import features.proxy.server.usecase.AndroidTunnelController
 import features.proxy.server.usecase.ProxyServerLatencyTracker
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.restartProxyServiceAfterSelection
 import features.proxy.server.usecase.runProxyServerLatencyTest
 import features.proxy.server.usecase.updatableSubscriptionGroups
-import features.proxy.server.usecase.withUpdatedSubscriptionServers
+import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionGroupEditorDialog
 import features.subscription.usecase.subscriptionUpdateMessage
@@ -89,6 +90,9 @@ import ui.components.DeleteConfirmationDialog
 import app.skipi.ui.home.SkipiProxyHomeScaffold
 import app.skipi.ui.home.SkipiProxyHomeScaffoldState
 import app.skipi.app.home.ProxyHomeCopyFormat
+import app.skipi.app.home.ProxyHomeAction
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.home.ProxyHomeEffect
 import app.skipi.app.home.ProxyHomeEffectHandler
 import app.skipi.app.home.ProxyHomeImportSource
@@ -98,6 +102,7 @@ import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeServerTool
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeStore
+import app.skipi.app.home.reduceProxyHomePresentation
 import app.skipi.ui.home.ProxyHomeScreen
 import ui.text.formatTemplate
 import platform.TunnelConnectRequest
@@ -117,19 +122,6 @@ import ui.clipboard.setPlainText
 import java.net.URI
 
 private const val ProxyServerEditResultKey = "proxy-server-edit-result"
-
-private val ProxyHomePresentationStateSaver = Saver<ProxyHomePresentationState, List<Any?>>(
-    save = { state ->
-        listOf(state.selectedGroupId, state.searchQuery, state.searchVisible)
-    },
-    restore = { values ->
-        ProxyHomePresentationState(
-            selectedGroupId = values.getOrNull(0) as? String,
-            searchQuery = values.getOrNull(1) as? String ?: "",
-            searchVisible = values.getOrNull(2) as? Boolean ?: false,
-        )
-    },
-)
 
 @Composable
 fun ProxyServerListPage(
@@ -168,20 +160,14 @@ fun ProxyServerListPage(
             ?.groupId
             ?: DefaultSubscriptionGroupId
     }
-    var homePresentation by rememberSaveable(stateSaver = ProxyHomePresentationStateSaver) {
-        mutableStateOf(
-            ProxyHomePresentationState(
-                selectedGroupId = initialSelectedGroupId.toString(),
-            ),
-        )
-    }
+    var homePresentation by rememberProxyHomePresentation(initialSelectedGroupId)
     val selectedGroupId = homePresentation.selectedGroupId
         ?.toIntOrNull()
         ?: initialSelectedGroupId
     val searchValue = homePresentation.searchQuery
 
-    fun updateHomePresentation(action: ProxyHomePresentationAction) {
-        homePresentation = homePresentation.reduce(action)
+    fun updateHomePresentation(action: ProxyHomeAction) {
+        homePresentation = reduceProxyHomePresentation(homePresentation, action)
     }
     var serviceOperationInProgress by remember { mutableStateOf(false) }
     var pendingProxyServerDeletion by remember { mutableStateOf<ProxyServerState?>(null) }
@@ -216,15 +202,7 @@ fun ProxyServerListPage(
     val selectedServer = servers.firstOrNull { server -> server.id == selectedServerId }
     val proxyRunning = proxyListState.proxyRunning
     val context = LocalContext.current.applicationContext
-    val tunnelController = remember(context, proxyEngine, proxyServiceUseCase, stateStore, updateAppState) {
-        AndroidTunnelController.forApp(
-            context = context,
-            proxyEngine = proxyEngine,
-            proxyServiceUseCase = proxyServiceUseCase,
-            readState = { stateStore.state.value },
-            updateState = updateAppState,
-        )
-    }
+    val tunnelController = services.tunnelRuntimeRepository
     val activeTunnelSample by produceActiveTunnelRuntimeSample(context, proxyRunning)
     val activeOutboundTag = activeTunnelSample?.outboundTag
     val allGroupName = stringResource(R.string.proxy_server_list_all)
@@ -390,13 +368,12 @@ fun ProxyServerListPage(
                 },
             )
             if (result.updates.isNotEmpty()) {
-                val nextState = withContext(Dispatchers.Default) {
-                    stateStore.state.value.withUpdatedSubscriptionServers(
-                        updates = result.updates,
-                        updatedAtMillis = result.updatedAtMillis,
-                    )
-                }
-                updateAppState { nextState }
+                applyProxySubscriptionUpdates(
+                    stateStore = stateStore,
+                    updates = result.updates,
+                    updatedAtMillis = result.updatedAtMillis,
+                    updateAppState = updateAppState,
+                )
             }
             tipNotifier.show(
                 subscriptionUpdateMessage(
@@ -432,13 +409,12 @@ fun ProxyServerListPage(
                     fetchOptions = { group -> stateStore.state.value.toSubscriptionFetchOptions(group) },
                 )
                 if (result.updates.isNotEmpty()) {
-                    val nextState = withContext(Dispatchers.Default) {
-                        stateStore.state.value.withUpdatedSubscriptionServers(
-                            updates = result.updates,
-                            updatedAtMillis = result.updatedAtMillis,
-                        )
-                    }
-                    updateAppState { nextState }
+                    applyProxySubscriptionUpdates(
+                        stateStore = stateStore,
+                        updates = result.updates,
+                        updatedAtMillis = result.updatedAtMillis,
+                        updateAppState = updateAppState,
+                    )
                 }
                 tipNotifier.show(
                     subscriptionUpdateMessage(
@@ -505,32 +481,17 @@ fun ProxyServerListPage(
         val remarks = server.server.getInfo().remarks
 
         fun removeServer(stopResult: ProxyServiceResult.Success? = null): Boolean {
-            var deleted = false
-            updateAppState { state ->
-                val nextServers = state.proxyServers.filterNot { it.id == server.id }
-                if (nextServers.size == state.proxyServers.size) {
-                    stopResult?.let { result ->
-                        state.copy(
-                            proxyRunning = result.proxyRunning,
-                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
-                        )
-                    } ?: state
-                } else {
-                    deleted = true
-                    val selectedProxyServerId = if (state.selectedProxyServerId == server.id) {
-                        nextServers.firstOrNull()?.id ?: state.selectedProxyServerId
-                    } else {
-                        state.selectedProxyServerId
-                    }
+            if (stateStore.currentState.proxyServers.none { it.id == server.id }) return false
+            services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveProxyServer(server.id))
+            if (stopResult != null) {
+                updateAppState { state ->
                     state.copy(
-                        proxyServers = nextServers,
-                        selectedProxyServerId = selectedProxyServerId,
-                        proxyRunning = stopResult?.proxyRunning ?: state.proxyRunning,
-                        localProxyPort = stopResult?.appState?.localProxyPort ?: state.localProxyPort,
+                        proxyRunning = stopResult.proxyRunning,
+                        localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
                     )
                 }
             }
-            return deleted
+            return true
         }
 
         val stateSnapshot = stateStore.state.value
@@ -577,34 +538,17 @@ fun ProxyServerListPage(
         val groupName = group.name
 
         fun removeGroup(stopResult: ProxyServiceResult.Success? = null): Boolean {
-            var deleted = false
-            updateAppState { state ->
-                val nextGroups = state.subscriptionGroups.filterNot { it.id == group.id }
-                if (nextGroups.size == state.subscriptionGroups.size) {
-                    stopResult?.let { result ->
-                        state.copy(
-                            proxyRunning = result.proxyRunning,
-                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
-                        )
-                    } ?: state
-                } else {
-                    deleted = true
-                    val nextServers = state.proxyServers.filterNot { it.groupId == group.id }
-                    val selectedProxyServerId = if (nextServers.any { it.id == state.selectedProxyServerId }) {
-                        state.selectedProxyServerId
-                    } else {
-                        nextServers.firstOrNull()?.id ?: 0
-                    }
+            if (stateStore.currentState.subscriptionGroups.none { it.id == group.id && !it.builtIn }) return false
+            services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveSubscription(group.id))
+            if (stopResult != null) {
+                updateAppState { state ->
                     state.copy(
-                        subscriptionGroups = nextGroups,
-                        proxyServers = nextServers,
-                        selectedProxyServerId = selectedProxyServerId,
-                        proxyRunning = stopResult?.proxyRunning ?: state.proxyRunning,
-                        localProxyPort = stopResult?.appState?.localProxyPort ?: state.localProxyPort,
+                        proxyRunning = stopResult.proxyRunning,
+                        localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
                     )
                 }
             }
-            return deleted
+            return true
         }
 
         val stateSnapshot = stateStore.state.value
@@ -642,10 +586,10 @@ fun ProxyServerListPage(
         navigator = navigator,
         resultKey = ProxyServerEditResultKey,
         messages = messages,
-        updateAppState = updateAppState,
+        sharedApplicationStore = services.sharedApplicationStore,
         tipNotifier = tipNotifier,
         onSelectedGroupIdChange = { groupId ->
-            updateHomePresentation(ProxyHomePresentationAction.SelectGroup(groupId.toString()))
+            updateHomePresentation(ProxyHomeAction.SelectGroup(groupId.toString()))
         },
     )
 
@@ -774,7 +718,16 @@ fun ProxyServerListPage(
                         val server = stateStore.state.value.proxyServers.firstOrNull { it.id == serverId }
                             ?: return@ProxyHomeEffectHandler Result.failure(IllegalStateException("Proxy server no longer exists."))
                         if (serverId != stateStore.state.value.selectedProxyServerId) haptics.serverSelected()
-                        stateStore.proxyServerRepository.select(serverId)
+                        val selectionResult = stateStore.sharedApplicationStore.dispatchAndAwait(
+                            SharedApplicationAction.SelectProxyServer(serverId),
+                        )
+                        when (val outcome = selectionResult.outcome) {
+                            SharedApplicationActionOutcome.Completed -> Unit
+                            is SharedApplicationActionOutcome.Rejected ->
+                                return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException(outcome.reason))
+                            is SharedApplicationActionOutcome.Failed ->
+                                return@ProxyHomeEffectHandler Result.failure(IllegalStateException(outcome.reason))
+                        }
                         val strategy = server.server as? StrategyGroup
                         if (strategy?.strategy == StrategyGroupConstants.TYPE_SELECT) {
                             selectingGroupMemberForServer = server
@@ -979,7 +932,7 @@ fun ProxyServerListPage(
                             deleteSubscriptionGroup(group)
                             if (selectedGroupId == group.id) {
                                 updateHomePresentation(
-                                    ProxyHomePresentationAction.SelectGroup(DefaultSubscriptionGroupId.toString()),
+                                    ProxyHomeAction.SelectGroup(DefaultSubscriptionGroupId.toString()),
                                 )
                             }
                         }
@@ -998,21 +951,17 @@ fun ProxyServerListPage(
                         val fromIndex = orderedIds.indexOf(serverId)
                         val toId = orderedIds.getOrNull(fromIndex + effect.offset)
                             ?: return@ProxyHomeEffectHandler Result.success(Unit)
-                        updateAppState { state ->
-                            val fromBackingIndex = state.proxyServers.indexOfFirst { it.id == serverId }
-                            val toBackingIndex = state.proxyServers.indexOfFirst { it.id == toId }
-                            if (fromBackingIndex < 0 || toBackingIndex < 0) {
-                                state
-                            } else {
-                                state.copy(
-                                    proxyServers = state.proxyServers.toMutableList().also { items ->
-                                        val moved = items[fromBackingIndex]
-                                        items[fromBackingIndex] = items[toBackingIndex]
-                                        items[toBackingIndex] = moved
-                                    },
-                                )
-                            }
-                        }
+                        services.sharedApplicationStore.dispatch(
+                            SharedApplicationAction.UpdateProxyServers { current ->
+                                val fromBackingIndex = current.indexOfFirst { it.id == serverId }
+                                val toBackingIndex = current.indexOfFirst { it.id == toId }
+                                if (fromBackingIndex < 0 || toBackingIndex < 0 || fromBackingIndex == toBackingIndex) current
+                                else current.toMutableList().also { items ->
+                                    val moved = items.removeAt(fromBackingIndex)
+                                    items.add(toBackingIndex, moved)
+                                }
+                            },
+                        )
                     }
                     is ProxyHomeEffect.OpenStrategyMemberPicker -> {
                         val serverId = effect.serverId.toIntOrNull()
@@ -1034,23 +983,24 @@ fun ProxyServerListPage(
                         if (target.server !is StrategyGroup) return@ProxyHomeEffectHandler Result.failure(
                             IllegalArgumentException("This server is not a strategy group."),
                         )
-                        updateAppState { state ->
-                            state.copy(
-                                proxyServers = state.proxyServers.map { candidate ->
-                                    if (candidate.id == serverId && candidate.server is StrategyGroup) {
-                                        candidate.copy(server = candidate.server.copy(selectedMemberId = memberId))
+                        val actionResult = services.sharedApplicationStore.dispatchAndAwait(
+                            SharedApplicationAction.UpdateProxyServers { current ->
+                                current.map { candidate ->
+                                    val strategyGroup = candidate.server as? StrategyGroup
+                                    if (candidate.id == serverId && strategyGroup != null) {
+                                        candidate.copy(server = strategyGroup.copy(selectedMemberId = memberId))
                                     } else {
                                         candidate
                                     }
-                                },
-                            )
-                        }
-                        if (stateStore.state.value.proxyRunning) {
+                                }
+                            },
+                        )
+                        if (actionResult.outcome is SharedApplicationActionOutcome.Completed &&
+                            stateStore.state.value.proxyRunning
+                        ) {
                             runProxyServiceOperation {
                                 val currentState = stateStore.state.value
-                                val currentSelected = currentState.proxyServers.firstOrNull {
-                                    it.id == currentState.selectedProxyServerId
-                                }
+                                val currentSelected = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId }
                                 proxyServiceUseCase.restart(state = currentState, selectedServer = currentSelected)
                             }
                         }
@@ -1127,11 +1077,7 @@ fun ProxyServerListPage(
     val homeStore = remember(stateStore) {
         ProxyHomeStore(
             initialInput = homeInput,
-            initialPresentation = ProxyHomePresentation(
-                selectedGroupId = homePresentation.selectedGroupId,
-                searchQuery = homePresentation.searchQuery,
-                isSearchVisible = homePresentation.searchVisible,
-            ),
+            initialPresentation = homePresentation,
             scope = scope,
             effectHandler = ProxyHomeEffectHandler { effect -> androidEffectBridge.value.handle(effect) },
         )
@@ -1140,10 +1086,13 @@ fun ProxyServerListPage(
     LaunchedEffect(homeStore, homeInput) { homeStore.updateInput(homeInput) }
     val homeUiState by homeStore.uiState.collectAsState()
     LaunchedEffect(homeStore, homeUiState.selectedGroupId, homeUiState.searchQuery, homeUiState.isSearchVisible) {
-        val nextPresentation = ProxyHomePresentationState(
+        val nextPresentation = ProxyHomePresentation(
             selectedGroupId = homeUiState.selectedGroupId,
             searchQuery = homeUiState.searchQuery,
-            searchVisible = homeUiState.isSearchVisible,
+            isSearchVisible = homeUiState.isSearchVisible,
+            collapsedSubscriptionGroupIds = homeUiState.pages
+                .filterNot { page -> page.subscriptionExpanded }
+                .mapTo(linkedSetOf()) { page -> page.group.id },
         )
         if (homePresentation != nextPresentation) homePresentation = nextPresentation
     }
@@ -1152,9 +1101,20 @@ fun ProxyServerListPage(
         outerPadding = padding,
         isWideScreen = isWideScreen,
     )
+    // The nested Scaffold may provide no top padding in edge-to-edge mode.
+    val topSystemInset = WindowInsets.systemBars
+        .union(WindowInsets.displayCutout)
+        .asPaddingValues()
+        .calculateTopPadding()
+    val topToolbarPadding = maxOf(padding.calculateTopPadding(), topSystemInset).let { inset ->
+        if (isWideScreen) inset else inset.coerceAtMost(40.dp)
+    }
 
     Column(
-        modifier = Modifier.fillMaxSize().pageWindowPadding(padding),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = topToolbarPadding)
+            .pageWindowPadding(padding),
     ) {
         features.updater.ui.AppUpdateBanner()
         features.routing.ui.UnappliedRulesWarningNotification(
@@ -1165,6 +1125,8 @@ fun ProxyServerListPage(
             store = homeStore,
             modifier = Modifier.weight(1f),
             contentPadding = homeContentPadding,
+            topContentPadding = 0.dp,
+            containerColor = Color.Transparent,
             floatingNavigationBottomInset = if (isWideScreen) {
                 0.dp
             } else {
@@ -1199,7 +1161,7 @@ fun ProxyServerListPage(
                 deleteSubscriptionGroup(group)
                 if (selectedGroupId == group.id) {
                     updateHomePresentation(
-                        ProxyHomePresentationAction.SelectGroup(DefaultSubscriptionGroupId.toString()),
+                        ProxyHomeAction.SelectGroup(DefaultSubscriptionGroupId.toString()),
                     )
                 }
             },
@@ -1261,19 +1223,19 @@ fun ProxyServerListPage(
         onDismissFinished = {},
         onSave = { group, isNew ->
             val wasUrlBlank = editingSubscriptionGroup?.url.isNullOrBlank()
-            updateAppState { state ->
-                val updatedServers = state.proxyServers.map { serverState ->
-                    val server = serverState.server
-                    if (serverState.groupId == group.id && server is Custom) {
-                        if (server.overrideInboundAndDns != group.autoOverrideRules) {
-                            serverState.copy(server = server.copy(overrideInboundAndDns = group.autoOverrideRules))
+            services.sharedApplicationStore.dispatch(
+                SharedApplicationAction.UpdateProxyServers { servers ->
+                    servers.map { record ->
+                        val server = record.server
+                        if (record.sourceSubscriptionId == group.id && server is Custom) {
+                            record.copy(server = server.copy(overrideInboundAndDns = group.autoOverrideRules))
                         } else {
-                            serverState
+                            record
                         }
-                    } else {
-                        serverState
                     }
-                }
+                },
+            )
+            updateAppState { state ->
                 state.copy(
                     subscriptionGroups = if (isNew) {
                         state.subscriptionGroups.filterNot { current -> current.id == group.id } + group
@@ -1283,7 +1245,6 @@ fun ProxyServerListPage(
                         }
                     },
                     nextSubscriptionGroupId = maxOf(state.nextSubscriptionGroupId, group.id + 1),
-                    proxyServers = updatedServers,
                 )
             }
             editingSubscriptionGroupId = null
@@ -1300,7 +1261,7 @@ fun ProxyServerListPage(
             deleteSubscriptionGroup(group)
             if (selectedGroupId == group.id) {
                 updateHomePresentation(
-                    ProxyHomePresentationAction.SelectGroup(DefaultSubscriptionGroupId.toString()),
+                    ProxyHomeAction.SelectGroup(DefaultSubscriptionGroupId.toString()),
                 )
             }
         },
@@ -1314,26 +1275,25 @@ fun ProxyServerListPage(
         onDismissRequest = { selectingGroupMemberForServer = null },
         onSelectMember = { memberId ->
             val targetGroup = selectingGroupMemberForServer ?: return@SelectGroupMemberDialog
-            updateAppState { state ->
-                val updatedServers = state.proxyServers.map { serverState ->
-                    val serverImpl = serverState.server
-                    if (serverState.id == targetGroup.id && serverImpl is StrategyGroup) {
-                        val updatedStrategy = serverImpl.copy(selectedMemberId = memberId)
-                        serverState.copy(server = updatedStrategy)
-                    } else {
-                        serverState
+            scope.launch {
+                val actionResult = services.sharedApplicationStore.dispatchAndAwait(
+                    SharedApplicationAction.UpdateProxyServers { current ->
+                        current.map { record ->
+                            val strategyGroup = record.server as? StrategyGroup
+                            if (record.id == targetGroup.id && strategyGroup != null) {
+                                record.copy(server = strategyGroup.copy(selectedMemberId = memberId))
+                            } else {
+                                record
+                            }
+                        }
+                    },
+                )
+                if (actionResult.outcome is SharedApplicationActionOutcome.Completed && proxyRunning) {
+                    runProxyServiceOperation {
+                        val currentState = stateStore.state.value
+                        val currentSelected = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId }
+                        proxyServiceUseCase.restart(state = currentState, selectedServer = currentSelected)
                     }
-                }
-                state.copy(proxyServers = updatedServers)
-            }
-            if (proxyRunning) {
-                runProxyServiceOperation {
-                    val currentState = stateStore.state.value
-                    val currentSelected = currentState.proxyServers.firstOrNull { it.id == currentState.selectedProxyServerId }
-                    proxyServiceUseCase.restart(
-                        state = currentState,
-                        selectedServer = currentSelected,
-                    )
                 }
             }
         },

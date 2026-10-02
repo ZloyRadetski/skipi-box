@@ -4,8 +4,6 @@
 package app.skipi.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -61,7 +59,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
@@ -109,7 +109,6 @@ import app.skipi.ui.resources.home_connection_connecting
 import app.skipi.ui.resources.home_connection_disconnect
 import app.skipi.ui.resources.home_connection_disconnected
 import app.skipi.ui.resources.home_connection_preparing
-import app.skipi.ui.resources.home_connection_profile
 import app.skipi.ui.resources.home_connection_tap_to_connect
 import app.skipi.ui.resources.home_empty_hint
 import app.skipi.ui.resources.home_empty_search
@@ -125,7 +124,6 @@ import app.skipi.ui.resources.home_operation_failed
 import app.skipi.ui.resources.home_runtime_outbound_metric
 import app.skipi.ui.resources.proxy_server_list_latency_failed
 import app.skipi.ui.resources.home_search_servers
-import app.skipi.ui.resources.home_section_servers
 import app.skipi.ui.resources.home_server_address
 import app.skipi.ui.resources.home_server_count
 import app.skipi.ui.resources.home_server_detail_hint
@@ -205,6 +203,8 @@ fun ProxyHomeScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     floatingNavigationBottomInset: Dp = 0.dp,
+    topContentPadding: Dp? = 40.dp,
+    containerColor: Color = SkipiTheme.colors.background,
 ) {
     val state by store.uiState.collectAsState()
 
@@ -214,6 +214,8 @@ fun ProxyHomeScreen(
         modifier = modifier,
         contentPadding = contentPadding,
         floatingNavigationBottomInset = floatingNavigationBottomInset,
+        topContentPadding = topContentPadding,
+        containerColor = containerColor,
     )
 }
 
@@ -224,6 +226,8 @@ fun ProxyHomeScreenContent(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     floatingNavigationBottomInset: Dp = 0.dp,
+    topContentPadding: Dp? = 40.dp,
+    containerColor: Color = SkipiTheme.colors.background,
 ) {
     val windowClass = SkipiTheme.windowClass
     val isWide = proxyHomeLayoutMode(windowClass) == ProxyHomeLayoutMode.WideListAndDetails
@@ -396,7 +400,7 @@ fun ProxyHomeScreenContent(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(SkipiTheme.colors.background)
+            .background(containerColor)
             .padding(bottomInsetTreatment.viewportPadding),
         contentAlignment = Alignment.TopCenter,
     ) {
@@ -404,10 +408,9 @@ fun ProxyHomeScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .then(maxWidth)
-                .padding(
-                    horizontal = SkipiTheme.spacing.screenHorizontal,
-                    vertical = SkipiTheme.spacing.screenVertical,
-                ),
+                .padding(horizontal = SkipiTheme.spacing.screenHorizontal)
+                .padding(top = topContentPadding ?: 40.dp)
+                .padding(bottom = SkipiTheme.spacing.screenVertical),
         ) {
             SkipiProxyHomeHeader(
                 state = SkipiProxyHomeHeaderState(
@@ -689,19 +692,6 @@ fun ProxyHomeScreenContent(
     }
 }
 
-private fun LazyGridScope.proxyHomePullRefreshItem(
-    controller: SkipiPullToRefreshController,
-    presentation: SkipiPullRefreshPresentation,
-) {
-    item(
-        key = "pull-refresh-indicator",
-        span = { GridItemSpan(maxLineSpan) },
-        contentType = "pull-refresh",
-    ) {
-        SkipiPullRefreshHeader(controller, presentation)
-    }
-}
-
 private fun LazyGridScope.proxyHomeGroupSection(
     groupSelector: (@Composable () -> Unit)?,
 ) {
@@ -751,15 +741,30 @@ private fun PageServerGrid(
     val providerSurface = SkipiTheme.colors.surface
     val providerBorder = SkipiTheme.colors.onSurface.copy(alpha = 0.14f)
     val providerDivider = SkipiTheme.colors.onSurface.copy(alpha = 0.08f)
-    LazyVerticalGrid(
+    val pullRefreshBaseHeightPx = with(LocalDensity.current) {
+        (pullRefreshPresentation.circleSize + 32.dp).toPx()
+    }
+    Box(modifier = modifier.fillMaxSize()) {
+      LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
-        modifier = modifier.fillMaxSize().then(
-            pullRefreshController?.let { Modifier.skipiPullToRefresh(it) } ?: Modifier,
-        ),
+        modifier = Modifier.fillMaxSize()
+            .then(pullRefreshController?.let { controller ->
+                Modifier
+                    .skipiPullToRefresh(controller)
+                    .graphicsLayer {
+                        translationY = skipiPullRefreshHeaderHeightPx(
+                            refreshState = controller.refreshState,
+                            dragOffsetPx = controller.dragOffset,
+                            thresholdPx = controller.thresholdPx,
+                            baseHeightPx = pullRefreshBaseHeightPx,
+                            completionProgress = controller.refreshCompleteProgress,
+                        )
+                    }
+            } ?: Modifier),
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(0.dp),
         horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
-    ) {
+      ) {
         if (scrollingHeader != null) {
             item(key = "scrolling-header", span = { GridItemSpan(maxLineSpan) }, contentType = "header") {
                 Box(Modifier.padding(bottom = SkipiTheme.spacing.small)) {
@@ -799,9 +804,6 @@ private fun PageServerGrid(
         }
         if (subscriptionGroup && subscription != null) {
             proxyHomeGroupSection(groupSelector)
-            pullRefreshController?.let { controller ->
-                proxyHomePullRefreshItem(controller, pullRefreshPresentation)
-            }
             item(key = "subscription-${subscription.id}", span = { GridItemSpan(maxLineSpan) }, contentType = "subscription") {
                 SkipiSubscriptionServerPanelSegment(
                     segment = if (page.subscriptionExpanded) {
@@ -883,20 +885,6 @@ private fun PageServerGrid(
         } else {
             if (!subscriptionGroup) {
                 proxyHomeGroupSection(groupSelector)
-                pullRefreshController?.let { controller ->
-                    proxyHomePullRefreshItem(controller, pullRefreshPresentation)
-                }
-                item(key = "server-section-heading", span = { GridItemSpan(maxLineSpan) }, contentType = "heading") {
-                    Text(
-                        text = stringResource(Res.string.home_section_servers),
-                        color = SkipiTheme.colors.onSurface,
-                        style = SkipiTheme.typography.titleMedium,
-                        fontWeight = themedFontWeight(FontWeight.Bold),
-                        modifier = Modifier
-                            .padding(horizontal = SkipiTheme.spacing.extraSmall)
-                            .padding(top = SkipiTheme.spacing.extraSmall, bottom = SkipiTheme.spacing.small),
-                    )
-                }
             }
             if (pageServers.isEmpty()) {
                 item(key = "empty-server-list", span = { GridItemSpan(maxLineSpan) }, contentType = "empty") {
@@ -920,16 +908,23 @@ private fun PageServerGrid(
                         columns = columns,
                         onAction = onAction,
                         inSubscriptionGroup = subscriptionGroup,
-                        modifier = Modifier.padding(bottom = SkipiTheme.spacing.small).animateItem(
-                            placementSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
-                        ),
+                        modifier = Modifier
+                            .padding(bottom = SkipiTheme.spacing.extraSmall)
+                            .animateItem(placementSpec = null),
                     )
                 }
             }
         }
+      }
+      pullRefreshController?.let { controller ->
+          SkipiPullRefreshHeader(
+              controller = controller,
+              presentation = pullRefreshPresentation,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = contentPadding.calculateTopPadding()),
+          )
+      }
     }
 }
 
@@ -1042,7 +1037,6 @@ private fun HomeConnectionPanel(
         phase = heroPhase,
         title = title,
         subtitle = subtitle,
-        profileText = state.activeProfileName?.let { stringResource(Res.string.home_connection_profile, it) },
         flag = flag,
         sessionDurationText = sessionDuration,
         latency = latency,
@@ -1499,7 +1493,10 @@ private fun ServerListItem(
         )
     } else {
         val copyMenuActions = menuActions.filter { it.id.startsWith("copy:") }
-        val overflowActions = menuActions.filterNot { it.id.startsWith("copy:") || it.id == "edit" || it.id == "delete" }
+        val overflowActions = menuActions.filterNot {
+            it.id.startsWith("copy:") || it.id == "edit" ||
+                (it.id == "strategy-members" && server.isStrategyGroup)
+        }
         var copyMenuExpanded by remember(server.id) { mutableStateOf(false) }
         var overflowMenuExpanded by remember(server.id) { mutableStateOf(false) }
         SkipiProxyServerExpandedListCard(
@@ -1531,18 +1528,6 @@ private fun ServerListItem(
             onSelect = { onAction(ProxyHomeAction.SelectServer(server.id)) },
             actions = {
                 val copyContentDescription = stringResource(Res.string.common_copy)
-                val testLatencyContentDescription = stringResource(Res.string.proxy_server_list_latency_test)
-                if (canUseHomeAction(state, ProxyHomeActionId.TestServer) && server.canTest) {
-                    IconButton(
-                        onClick = { onAction(ProxyHomeAction.TestServer(server.id)) },
-                        enabled = !server.latencyTesting,
-                        modifier = Modifier.semantics {
-                            contentDescription = testLatencyContentDescription
-                        },
-                    ) {
-                        SkipiProxyHeroStaticHourglassIcon(color = SkipiTheme.colors.onSurface, size = 20.dp)
-                    }
-                }
                 if (copyMenuActions.isNotEmpty()) {
                     Box {
                         IconButton(
@@ -1574,11 +1559,6 @@ private fun ServerListItem(
                 if (menuActions.any { it.id == "edit" }) {
                     IconButton(onClick = { handleServerMenuAction("edit", server, onAction) }) {
                         Icon(Icons.Outlined.Edit, contentDescription = stringResource(Res.string.common_edit), tint = SkipiTheme.colors.onSurface)
-                    }
-                }
-                if (menuActions.any { it.id == "delete" }) {
-                    IconButton(onClick = { handleServerMenuAction("delete", server, onAction) }) {
-                        Icon(Icons.Outlined.Delete, contentDescription = stringResource(Res.string.common_delete), tint = SkipiTheme.colors.onSurface)
                     }
                 }
                 if (overflowActions.isNotEmpty()) {

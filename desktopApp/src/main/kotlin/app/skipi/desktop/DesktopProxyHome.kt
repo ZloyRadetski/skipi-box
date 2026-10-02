@@ -499,6 +499,7 @@ internal fun DesktopProxyHome(
     ProxyHomeScreen(
         store = homeStore,
         contentPadding = contentPadding,
+        topContentPadding = 40.dp,
     )
 
     if (addDialogVisible) {
