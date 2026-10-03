@@ -22,9 +22,20 @@ import app.skipi.app.runtime.AppRuntimeState
 import features.proxy.server.model.HTTP
 import features.routing.model.RouteRule
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.update
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -181,6 +192,50 @@ class SharedApplicationStoreTest {
         assertEquals(30, repositories.proxyServers.catalog.nextServerId)
         assertEquals(3, repositories.proxyServers.catalog.selectedServerId)
         assertIs<SharedApplicationActionOutcome.Completed>(store.lastActionResult.value?.outcome)
+    }
+
+    @Test
+    fun concurrent_dispatches_receive_unique_action_ids_and_clear_in_flight_actions() = runTest {
+        val repositories = FakeRepositories()
+        val actionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        try {
+            val store = SharedApplicationStore(repositories.bundle, actionScope)
+            val actionCount = 512
+            val readyCount = MutableStateFlow(0)
+            val startTogether = CompletableDeferred<Unit>()
+
+            val actionCallers = (0 until actionCount).map { index ->
+                async(Dispatchers.Default) {
+                    readyCount.update { it + 1 }
+                    startTogether.await()
+                    val action = SharedApplicationAction.UpdateRuntime { runtime ->
+                        runtime.copy(testingServerIds = setOf(index))
+                    }
+                    if (index % 2 == 0) {
+                        store.dispatch(action)
+                    } else {
+                        store.dispatchAndAwait(action).actionId
+                    }
+                }
+            }
+            withContext(Dispatchers.Default) {
+                withTimeout(5_000) {
+                    readyCount.first { ready -> ready == actionCount }
+                }
+            }
+            startTogether.complete(Unit)
+            val actionIds = actionCallers.awaitAll()
+
+            assertEquals(actionCount, actionIds.toSet().size)
+            withContext(Dispatchers.Default) {
+                withTimeout(5_000) {
+                    store.state.first { state -> state.inFlightActionIds.isEmpty() }
+                }
+            }
+            assertTrue(store.state.value.inFlightActionIds.isEmpty())
+        } finally {
+            actionScope.cancel()
+        }
     }
 
     private class FakeRepositories(includeExtensions: Boolean = true) {

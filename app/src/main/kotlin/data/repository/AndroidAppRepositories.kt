@@ -25,8 +25,6 @@ import app.skipi.app.repository.RuntimeStateRepository
 import app.skipi.app.repository.SettingsRepository
 import app.skipi.app.repository.SubscriptionRepository
 import app.skipi.app.repository.TrafficConfigRepository
-import app.skipi.app.runtime.AppRuntimeState
-import app.skipi.app.runtime.RuntimeMessage
 import app.skipi.app.proxy.ProxyServerRecord as CollectionProxyServerRecord
 import app.skipi.app.proxy.deleteProxyServerRecords
 import data.AndroidAppStateStore
@@ -40,22 +38,17 @@ import features.config.withSkipiSettingsReadFromRawConfig
 import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.SubscriptionMetadata
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import platform.TunnelFailure
-import platform.TunnelPhase
-import platform.TunnelSnapshot
 
 /** Builds shared repository contracts over Android's existing Room and SharedPreferences store. */
 class AndroidAppRepositories(
     private val stateStore: AndroidAppStateStore,
     scope: CoroutineScope,
     subscriptionRefresh: (suspend (Int) -> Result<SubscriptionRecord>)? = null,
-    hostRuntime: RuntimeStateRepository? = null,
+    hostRuntime: RuntimeStateRepository,
 ) {
     val settings: SettingsRepository = AndroidSettingsRepository(stateStore, scope)
     val proxyServers: AndroidProxyServerRepository = stateStore.proxyServerRepository
@@ -67,8 +60,8 @@ class AndroidAppRepositories(
     val trafficConfigs: TrafficConfigRepository = AndroidTrafficConfigRepository(stateStore, scope)
     val routing: RoutingRepository = AndroidRoutingRepository(stateStore, scope)
     val resources: ResourceRepository = AndroidResourceRepository(stateStore, scope)
-    /** The host injects its real lifecycle bridge before shared runtime consumers are used. */
-    val runtime: RuntimeStateRepository = hostRuntime ?: UnavailableAndroidRuntimeStateRepository
+    /** Required process-owned runtime bridge; there is no inert Android fallback. */
+    val runtime: RuntimeStateRepository = hostRuntime
 
     val contracts = AppRepositories(
         settings = settings,
@@ -271,30 +264,6 @@ private class AndroidResourceRepository(
                 ),
             )
         }
-    }
-}
-
-/** Explicit failure until the Android composition root supplies its host-owned tunnel bridge. */
-private object UnavailableAndroidRuntimeStateRepository : RuntimeStateRepository {
-    private const val unavailableMessage =
-        "Android tunnel runtime is host-owned; inject a repository backed by AndroidTunnelController."
-    private val mutableState = MutableStateFlow(
-        AppRuntimeState(
-            tunnel = TunnelSnapshot(
-                phase = TunnelPhase.Failed,
-                failure = TunnelFailure(
-                    code = "android_runtime_unavailable",
-                    message = unavailableMessage,
-                    recoverable = true,
-                ),
-            ),
-            message = RuntimeMessage(unavailableMessage),
-        ),
-    )
-    override val state: StateFlow<AppRuntimeState> = mutableState.asStateFlow()
-
-    override suspend fun update(transform: (AppRuntimeState) -> AppRuntimeState) {
-        throw UnsupportedOperationException("Android runtime state is owned by the host tunnel controller")
     }
 }
 

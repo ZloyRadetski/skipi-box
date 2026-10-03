@@ -4,11 +4,11 @@
 package features.proxy.server.usecase
 
 import app.AppState
-import app.skipi.app.runtime.AppRuntimeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -20,28 +20,31 @@ import platform.TunnelSnapshot
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class AndroidTunnelRuntimeRepositoryTest {
+class AndroidTunnelRuntimeControllerTest {
     @Test
     fun publishes_controller_snapshot_and_delegates_tunnel_operations() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         try {
             val controller = FakeTunnelController()
-            val repository = AndroidTunnelRuntimeRepository(
-                controller = controller,
+            val runtimeRepository = AndroidRuntimeStateRepository(
+                appState = MutableStateFlow(AppState(proxyRunning = false)),
                 scope = scope,
-                appState = MutableStateFlow(AppState()).also { it.value = it.value.copy(proxyRunning = false) },
+                runtimeStatusChanges = MutableSharedFlow(extraBufferCapacity = 1),
+                isRunning = { false },
+                readTraffic = { platform.TunnelTraffic() },
             )
+            val tunnelController = AndroidTunnelRuntimeController(controller, runtimeRepository)
 
-            assertEquals(TunnelPhase.Disconnected, repository.snapshot().phase)
-            assertEquals(TunnelPhase.Disconnected, repository.state.value.tunnel.phase)
+            assertEquals(TunnelPhase.Disconnected, tunnelController.snapshot().phase)
+            assertEquals(TunnelPhase.Disconnected, runtimeRepository.state.value.tunnel.phase)
 
-            assertTrue(repository.connect(TunnelConnectRequest("41")).isSuccess)
+            assertTrue(tunnelController.connect(TunnelConnectRequest("41")).isSuccess)
             assertEquals(1, controller.connectCalls)
-            assertEquals(TunnelPhase.Connected, repository.state.value.tunnel.phase)
+            assertEquals(TunnelPhase.Connected, runtimeRepository.state.value.tunnel.phase)
 
-            assertTrue(repository.disconnect().isSuccess)
+            assertTrue(tunnelController.disconnect().isSuccess)
             assertEquals(1, controller.disconnectCalls)
-            assertEquals(TunnelPhase.Disconnected, repository.state.value.tunnel.phase)
+            assertEquals(TunnelPhase.Disconnected, runtimeRepository.state.value.tunnel.phase)
         } finally {
             scope.cancel()
         }
@@ -52,11 +55,18 @@ class AndroidTunnelRuntimeRepositoryTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         try {
             val controller = FakeTunnelController(connectResult = Result.failure(IllegalStateException("VPN permission denied")))
-            val repository = AndroidTunnelRuntimeRepository(controller, scope, MutableStateFlow(AppState()))
+            val runtimeRepository = AndroidRuntimeStateRepository(
+                appState = MutableStateFlow(AppState()),
+                scope = scope,
+                runtimeStatusChanges = MutableSharedFlow(extraBufferCapacity = 1),
+                isRunning = { false },
+                readTraffic = { platform.TunnelTraffic() },
+            )
+            val tunnelController = AndroidTunnelRuntimeController(controller, runtimeRepository)
 
-            assertTrue(repository.connect(TunnelConnectRequest("41")).isFailure)
-            assertEquals(TunnelPhase.Failed, repository.state.value.tunnel.phase)
-            assertEquals("VPN permission denied", repository.state.value.tunnel.failure?.message)
+            assertTrue(tunnelController.connect(TunnelConnectRequest("41")).isFailure)
+            assertEquals(TunnelPhase.Failed, runtimeRepository.state.value.tunnel.phase)
+            assertEquals("VPN permission denied", runtimeRepository.state.value.tunnel.failure?.message)
         } finally {
             scope.cancel()
         }

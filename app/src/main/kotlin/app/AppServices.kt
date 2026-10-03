@@ -11,8 +11,6 @@ import engine.proxy.latency.AndroidProxyLatencyTester
 import features.logs.CoreLogRepository
 import features.proxy.server.usecase.ProxyServerImportFileUseCase
 import features.proxy.server.usecase.ProxyServiceUseCase
-import features.proxy.server.usecase.AndroidTunnelController
-import features.proxy.server.usecase.AndroidTunnelRuntimeRepository
 import data.repository.AndroidAppRepositories
 import app.skipi.app.store.SharedApplicationStore
 import features.resources.ResourceFileUpdateCoordinator
@@ -24,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import system.AndroidPackageProvider
 import system.AndroidUserSpaceProvider
 import ui.feedback.AndroidToastTipNotifier
+import platform.TunnelController
 
 internal data class AppServices(
     val appScope: CoroutineScope,
@@ -40,8 +39,7 @@ internal data class AppServices(
     val proxyServerImportFileUseCase: ProxyServerImportFileUseCase,
     val proxyLatencyTester: AndroidProxyLatencyTester,
     val proxyServiceUseCase: ProxyServiceUseCase,
-    val tunnelController: AndroidTunnelController,
-    val tunnelRuntimeRepository: AndroidTunnelRuntimeRepository,
+    val tunnelController: TunnelController,
     val appRepositories: AndroidAppRepositories,
     val sharedApplicationStore: SharedApplicationStore,
     val tipNotifier: AndroidToastTipNotifier,

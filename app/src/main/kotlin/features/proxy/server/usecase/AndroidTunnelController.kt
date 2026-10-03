@@ -13,15 +13,19 @@ import engine.proxy.AndroidProxyEngine
 import engine.proxy.ProxyEngineStatus
 import engine.stats.CoreTrafficStatsSampler
 import engine.stats.xrayTrafficExcludedInboundTags
+import engine.vpn.SkipiVpnService
 import features.config.withActiveTrafficConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -224,38 +228,101 @@ internal class AndroidTunnelController(
 }
 
 /** Publishes live Android tunnel snapshots through the shared runtime repository contract. */
-internal class AndroidTunnelRuntimeRepository(
-    private val controller: TunnelController,
+internal class AndroidRuntimeStateRepository(
+    appState: StateFlow<AppState>,
     scope: CoroutineScope,
-    appState: kotlinx.coroutines.flow.StateFlow<AppState>,
-) : RuntimeStateRepository, TunnelController by controller {
+    runtimeStatusChanges: Flow<Unit>,
+    private val isRunning: () -> Boolean,
+    private val readTraffic: () -> TunnelTraffic = ::sampledTunnelTraffic,
+) : RuntimeStateRepository {
+    private val appState = appState
     private val snapshotMutex = Mutex()
-    private val mutableState = MutableStateFlow(AppRuntimeState())
+    private val mutableState = MutableStateFlow(AppRuntimeState(tunnel = readSnapshot()))
     override val state: StateFlow<AppRuntimeState> = mutableState.asStateFlow()
 
     init {
-        scope.launch { refresh() }
         scope.launch {
-            appState.map { it.proxyRunning }.distinctUntilChanged().collect { refresh() }
+            val profileChanges = appState
+                .map { it.selectedProxyServerId to it.proxyRunning }
+                .distinctUntilChanged()
+                .map { Unit }
+            merge(runtimeStatusChanges, profileChanges).collect { refresh() }
         }
     }
 
-    override suspend fun connect(request: TunnelConnectRequest): Result<Unit> =
-        controller.connect(request).also { refresh() }
-
-    override suspend fun disconnect(): Result<Unit> =
-        controller.disconnect().also { refresh() }
-
-    override suspend fun snapshot(): TunnelSnapshot = refresh()
-
     override suspend fun update(transform: (AppRuntimeState) -> AppRuntimeState) {
-        mutableState.value = transform(mutableState.value)
+        mutableState.update(transform)
     }
 
-    private suspend fun refresh(): TunnelSnapshot = snapshotMutex.withLock {
-        val snapshot = controller.snapshot()
-        mutableState.value = mutableState.value.copy(tunnel = snapshot)
-        snapshot
+    fun publishSnapshot(snapshot: TunnelSnapshot) {
+        mutableState.update { it.copy(tunnel = snapshot) }
+    }
+
+    suspend fun refresh() {
+        snapshotMutex.withLock {
+            val snapshot = readSnapshot()
+            mutableState.update { it.copy(tunnel = snapshot) }
+        }
+    }
+
+    private fun readSnapshot(): TunnelSnapshot {
+        val profileId = appState.value.selectedProxyServerId.toString()
+        val running = try {
+            isRunning()
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            return failedAndroidRuntimeSnapshot(error, TunnelOperationStage.ReadStatus, profileId)
+        }
+        val traffic = if (running) {
+            try {
+                readTraffic()
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
+                return failedAndroidRuntimeSnapshot(error, TunnelOperationStage.ReadTraffic, profileId)
+            }
+        } else {
+            TunnelTraffic()
+        }
+        return TunnelSnapshot(
+            phase = if (running) TunnelPhase.Connected else TunnelPhase.Disconnected,
+            traffic = traffic,
+            profileId = profileId,
+        )
+    }
+}
+
+/** Creates the process-owned runtime view without retaining an Activity controller. */
+internal fun createAndroidRuntimeStateRepository(
+    appState: StateFlow<AppState>,
+    scope: CoroutineScope,
+): AndroidRuntimeStateRepository = AndroidRuntimeStateRepository(
+    appState = appState,
+    scope = scope,
+    runtimeStatusChanges = merge(
+        SkipiVpnService.runningState.map { Unit },
+        CoreTrafficStatsSampler.samples.map { Unit },
+    ),
+    isRunning = { SkipiVpnService.isRunning() },
+)
+
+/** Keeps Activity-backed VPN permission requests at the UI boundary. */
+internal class AndroidTunnelRuntimeController(
+    private val controller: TunnelController,
+    private val runtimeStateRepository: AndroidRuntimeStateRepository,
+) : TunnelController by controller {
+
+    override suspend fun connect(request: TunnelConnectRequest): Result<Unit> =
+        controller.connect(request).also { refreshFromController() }
+
+    override suspend fun disconnect(): Result<Unit> =
+        controller.disconnect().also { refreshFromController() }
+
+    override suspend fun snapshot(): TunnelSnapshot {
+        return controller.snapshot().also(runtimeStateRepository::publishSnapshot)
+    }
+
+    private suspend fun refreshFromController() {
+        runtimeStateRepository.publishSnapshot(controller.snapshot())
     }
 }
 
@@ -274,6 +341,16 @@ private fun operationException(error: Throwable, stage: TunnelOperationStage) =
     else TunnelOperationException(
         TunnelLifecyclePolicy.failure(error, stage, code = "android_runtime", platformCode = "android_vpn"),
     )
+
+private fun failedAndroidRuntimeSnapshot(
+    error: Throwable,
+    stage: TunnelOperationStage,
+    profileId: String,
+): TunnelSnapshot = TunnelSnapshot(
+    phase = TunnelPhase.Failed,
+    failure = TunnelLifecyclePolicy.failure(error, stage, code = "android_runtime", platformCode = "android_vpn"),
+    profileId = profileId,
+)
 
 /** Reads the sampler cache only; it never starts a second native Core poller. */
 private fun sampledTunnelTraffic(): TunnelTraffic = CoreTrafficStatsSampler.samples.value

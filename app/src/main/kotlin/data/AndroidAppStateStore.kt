@@ -10,6 +10,8 @@ import app.AppState
 import app.skipi.app.store.SharedApplicationStore
 import data.repository.AndroidAppRepositories
 import data.repository.AndroidProxyServerRepository
+import features.proxy.server.usecase.AndroidRuntimeStateRepository
+import features.proxy.server.usecase.createAndroidRuntimeStateRepository
 import features.logs.AndroidAppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,9 +51,19 @@ class AndroidAppStateStore private constructor(
     val proxyServerRepository: AndroidProxyServerRepository by lazy {
         AndroidProxyServerRepository(this, scope)
     }
-    /** Shared contracts backed by the same existing Room and SharedPreferences state. */
-    val appRepositories: AndroidAppRepositories by lazy { AndroidAppRepositories(this, scope) }
-    /** Shared application orchestration is available to gradually migrated Android features. */
+    /** Process-owned runtime contract, available before an Activity exists. */
+    internal val runtimeStateRepository: AndroidRuntimeStateRepository by lazy {
+        createAndroidRuntimeStateRepository(appState = state, scope = scope)
+    }
+    /** One set of shared contracts backed by this existing Room and SharedPreferences store. */
+    val appRepositories: AndroidAppRepositories by lazy {
+        AndroidAppRepositories(
+            stateStore = this,
+            scope = scope,
+            hostRuntime = runtimeStateRepository,
+        )
+    }
+    /** One process-owned shared application store for UI and background actions. */
     val sharedApplicationStore: SharedApplicationStore by lazy {
         SharedApplicationStore(appRepositories.contracts, scope)
     }

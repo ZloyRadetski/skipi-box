@@ -58,6 +58,9 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -842,8 +845,13 @@ class SkipiVpnService : VpnService() {
         private const val NetworkHandoverWithAutomationDebounceMillis = 1_500L
         private const val ExternalVpnOperationRetryMillis = 500L
 
-        @Volatile
-        private var running = false
+        private val mutableRunning = MutableStateFlow(false)
+        internal val runningState: StateFlow<Boolean> = mutableRunning.asStateFlow()
+        private var running: Boolean
+            get() = mutableRunning.value
+            set(value) {
+                mutableRunning.value = value
+            }
 
         private val startMutex = Mutex()
         private val stopRequestLock = Any()

@@ -202,7 +202,7 @@ fun ProxyServerListPage(
     val selectedServer = servers.firstOrNull { server -> server.id == selectedServerId }
     val proxyRunning = proxyListState.proxyRunning
     val context = LocalContext.current.applicationContext
-    val tunnelController = services.tunnelRuntimeRepository
+    val tunnelController = services.tunnelController
     val activeTunnelSample by produceActiveTunnelRuntimeSample(context, proxyRunning)
     val activeOutboundTag = activeTunnelSample?.outboundTag
     val allGroupName = stringResource(R.string.proxy_server_list_all)
@@ -718,7 +718,7 @@ fun ProxyServerListPage(
                         val server = stateStore.state.value.proxyServers.firstOrNull { it.id == serverId }
                             ?: return@ProxyHomeEffectHandler Result.failure(IllegalStateException("Proxy server no longer exists."))
                         if (serverId != stateStore.state.value.selectedProxyServerId) haptics.serverSelected()
-                        val selectionResult = stateStore.sharedApplicationStore.dispatchAndAwait(
+                        val selectionResult = services.sharedApplicationStore.dispatchAndAwait(
                             SharedApplicationAction.SelectProxyServer(serverId),
                         )
                         when (val outcome = selectionResult.outcome) {

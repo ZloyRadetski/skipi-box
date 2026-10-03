@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -94,7 +95,7 @@ class SharedApplicationStore(
     private val mutableLastActionResult = MutableStateFlow<SharedApplicationActionResult?>(null)
     val lastActionResult: StateFlow<SharedApplicationActionResult?> = mutableLastActionResult.asStateFlow()
 
-    private var nextActionId = 1L
+    private val nextActionId = MutableStateFlow(1L)
     private val actionMutex = Mutex()
 
     init {
@@ -130,7 +131,7 @@ class SharedApplicationStore(
 
     /** Enqueues an action and returns its correlation ID. Observe [lastActionResult] for completion. */
     fun dispatch(action: SharedApplicationAction): Long {
-        val actionId = nextActionId++
+        val actionId = nextActionId.getAndUpdate { it + 1 }
         mutableState.update { it.copy(inFlightActionIds = it.inFlightActionIds + actionId) }
         scope.launch { performAction(actionId, action) }
         return actionId
@@ -138,7 +139,7 @@ class SharedApplicationStore(
 
     /** Runs an action to completion and returns its result to host flows that must sequence work. */
     suspend fun dispatchAndAwait(action: SharedApplicationAction): SharedApplicationActionResult {
-        val actionId = nextActionId++
+        val actionId = nextActionId.getAndUpdate { it + 1 }
         mutableState.update { it.copy(inFlightActionIds = it.inFlightActionIds + actionId) }
         return performAction(actionId, action)
     }
