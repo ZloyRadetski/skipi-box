@@ -3,12 +3,14 @@
 
 package app.skipi.ui.home
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +50,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -772,35 +775,25 @@ private fun PageServerGrid(
                 }
             }
         }
-        val localError = state.localError
-        if (localError != null) {
-            item(key = "local-status-${localError.name}", span = { GridItemSpan(maxLineSpan) }, contentType = "status") {
-                val message = proxyHomeLocalErrorMessage(
-                    error = localError,
-                    unavailable = stringResource(Res.string.home_action_unavailable),
-                    variantUnavailable = stringResource(Res.string.home_action_variant_unavailable),
-                    operationFailed = stringResource(Res.string.home_operation_failed),
+        item(key = "home-status-notice", span = { GridItemSpan(maxLineSpan) }, contentType = "status") {
+            val currentPresentation = state.localError?.let { localError ->
+                ProxyHomeStatusPresentation(
+                    message = proxyHomeLocalErrorMessage(
+                        error = localError,
+                        unavailable = stringResource(Res.string.home_action_unavailable),
+                        variantUnavailable = stringResource(Res.string.home_action_variant_unavailable),
+                        operationFailed = stringResource(Res.string.home_operation_failed),
+                    ),
+                    isError = true,
                 )
-                Box(Modifier.padding(bottom = SkipiTheme.spacing.small)) {
-                    StatusBanner(
-                        message = message,
-                        isError = true,
-                        onDismiss = { onAction(ProxyHomeAction.DismissMessage) },
-                    )
-                }
-            }
-        } else {
-            state.statusMessage?.takeIf(String::isNotBlank)?.let { message ->
-                item(key = "status-${message.hashCode()}", span = { GridItemSpan(maxLineSpan) }, contentType = "status") {
-                    Box(Modifier.padding(bottom = SkipiTheme.spacing.small)) {
-                        StatusBanner(
-                            message = message,
-                            isError = state.isStatusError,
-                            onDismiss = { onAction(ProxyHomeAction.DismissMessage) },
-                        )
-                    }
-                }
-            }
+            } ?: state.statusMessage
+                ?.takeIf(String::isNotBlank)
+                ?.let { message -> ProxyHomeStatusPresentation(message, state.isStatusError) }
+
+            ProxyHomeStatusNotice(
+                currentPresentation = currentPresentation,
+                onDismiss = { onAction(ProxyHomeAction.DismissMessage) },
+            )
         }
         if (subscriptionGroup && subscription != null) {
             proxyHomeGroupSection(groupSelector)
@@ -1650,6 +1643,52 @@ private fun EmptyServerListCard(
         }
     }
 }
+
+@Composable
+private fun ProxyHomeStatusNotice(
+    currentPresentation: ProxyHomeStatusPresentation?,
+    onDismiss: () -> Unit,
+) {
+    var retainedPresentation by remember { mutableStateOf(currentPresentation) }
+    SideEffect {
+        if (currentPresentation != null) retainedPresentation = currentPresentation
+    }
+    val displayedPresentation = currentPresentation ?: retainedPresentation
+
+    AnimatedVisibility(
+        visible = currentPresentation != null,
+        modifier = Modifier.fillMaxWidth(),
+        enter = fadeIn(animationSpec = tween(200)) +
+            expandVertically(expandFrom = Alignment.Top, animationSpec = tween(200)),
+        exit = shrinkVertically(shrinkTowards = Alignment.Top, animationSpec = tween(180)) +
+            fadeOut(animationSpec = tween(160)),
+        label = "home_status_notice_visibility",
+    ) {
+        displayedPresentation?.let { presentation ->
+            AnimatedContent(
+                targetState = presentation,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(130)) togetherWith
+                        fadeOut(animationSpec = tween(110))
+                },
+                label = "home_status_notice_content",
+            ) { targetPresentation ->
+                Box(Modifier.fillMaxWidth().padding(bottom = SkipiTheme.spacing.small)) {
+                    StatusBanner(
+                        message = targetPresentation.message,
+                        isError = targetPresentation.isError,
+                        onDismiss = onDismiss,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class ProxyHomeStatusPresentation(
+    val message: String,
+    val isError: Boolean,
+)
 
 @Composable
 private fun StatusBanner(

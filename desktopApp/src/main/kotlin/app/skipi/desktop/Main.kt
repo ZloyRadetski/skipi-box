@@ -950,9 +950,8 @@ fun main() = application {
                                             subscriptionUrl = requestedUrl
                                             subscriptionUpdate = update
                                             subscriptionMessage = if (readyCommit.serverGroupWasReplaced) {
-                                                "Подписка и её группа серверов обновлены. Получено: " +
-                                                    "${update.importResult.servers.size}; отклонено: " +
-                                                    "${update.importResult.rejectedUrlCount}."
+                                                "Серверы обновлены: ${update.importResult.servers.size}. " +
+                                                    "Отклонено ссылок: ${update.importResult.rejectedUrlCount}."
                                             } else {
                                                 "Подписка обновлена, но её группа серверов была изменена во время загрузки и сохранена без замены."
                                             }
@@ -981,24 +980,24 @@ fun main() = application {
                                                                         " Маршрутный профиль ${if (profileCommit.added) "добавлен" else "обновлён"}."
                                                                     },
                                                                     onFailure = { error ->
-                                                                        " Серверы обновлены, но профиль из подписки не сохранён: ${error.message.orEmpty()}."
+                                                                        " Маршрутный профиль из подписки не сохранён: ${error.message.orEmpty()}."
                                                                     },
                                                                 )
                                                             }
 
                                                             DesktopSubscriptionRefreshProfileCommit.Conflict ->
-                                                                " Серверы обновлены, но профиль из подписки был изменён во время загрузки и сохранён без замены."
+                                                                " Маршрутный профиль из подписки не обновлён: профиль изменился во время загрузки."
 
                                                             DesktopSubscriptionRefreshProfileCommit.Locked ->
-                                                                " Серверы обновлены, но обновление маршрутного профиля заблокировано."
+                                                                " Маршрутный профиль из подписки не обновлён: обновление заблокировано."
 
                                                             is DesktopSubscriptionRefreshProfileCommit.Invalid ->
-                                                                " Серверы обновлены, но профиль из подписки не применён: ${profileCommit.message}."
+                                                                " Маршрутный профиль из подписки не применён: ${profileCommit.message}."
                                                         }
                                                     }
                                                 },
                                                 onFailure = { error ->
-                                                    " Серверы обновлены, но профиль из подписки не загружен: ${error.message.orEmpty()}."
+                                                    " Маршрутный профиль из подписки не загружен: ${error.message.orEmpty()}."
                                                 },
                                             ).orEmpty()
                                             subscriptionMessage += embeddedConfigMessage
