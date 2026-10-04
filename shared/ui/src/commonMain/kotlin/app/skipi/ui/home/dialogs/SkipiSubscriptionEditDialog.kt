@@ -91,6 +91,10 @@ fun SkipiSubscriptionEditDialog(
         title = stringResource(Res.string.subscription_edit),
         onDismissRequest = onDismiss,
     ) {
+        val textFieldStyle = MiuixTheme.textStyles.main.copy(
+            color = MiuixTheme.colorScheme.onSurface,
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -102,6 +106,7 @@ fun SkipiSubscriptionEditDialog(
                 onValueChange = { value -> updateDraft { it.copy(name = value) } },
                 label = stringResource(Res.string.subscription_group_name),
                 modifier = Modifier.fillMaxWidth(),
+                textStyle = textFieldStyle,
             )
 
             TextField(
@@ -109,6 +114,7 @@ fun SkipiSubscriptionEditDialog(
                 onValueChange = { value -> updateDraft { it.copy(url = value) } },
                 label = stringResource(Res.string.subscription_url),
                 modifier = Modifier.fillMaxWidth(),
+                textStyle = textFieldStyle,
             )
 
             if (draft.url.trim().startsWith("http://", ignoreCase = true)) {
@@ -210,6 +216,7 @@ fun SkipiSubscriptionEditDialog(
                     onValueChange = { value -> updateDraft { it.copy(userAgent = value) } },
                     label = stringResource(Res.string.subscription_user_agent),
                     modifier = Modifier.fillMaxWidth(),
+                    textStyle = textFieldStyle,
                 )
 
                 TextField(
@@ -217,6 +224,7 @@ fun SkipiSubscriptionEditDialog(
                     onValueChange = { value -> updateDraft { it.copy(ageSecretKey = value) } },
                     label = stringResource(Res.string.subscription_age_secret_key),
                     modifier = Modifier.fillMaxWidth(),
+                    textStyle = textFieldStyle,
                 )
             }
 

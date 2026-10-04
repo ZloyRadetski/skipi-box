@@ -17,6 +17,8 @@ import app.skipi.ui.text.ThemedTypography
 import top.yukonga.miuix.kmp.theme.Colors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.TextStyles
+import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
+import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Shapes
@@ -35,9 +37,8 @@ fun ProvideSkipiTheme(
     visualProfile: SkipiVisualProfile = SkipiVisualProfile.Android,
     content: @Composable () -> Unit,
 ) {
-    val baseMiuixColors = MiuixTheme.colorScheme
-    val miuixColors = remember(baseMiuixColors, colors) {
-        baseMiuixColors.withSkipiColors(colors)
+    val miuixColors = remember(colors) {
+        colors.toSkipiMiuixColors()
     }
 
     ProvideSkipiTheme(
@@ -121,6 +122,12 @@ fun ProvideSkipiTheme(
     }
 }
 
+internal fun miuixBaseColorsFor(isDark: Boolean): Colors =
+    if (isDark) miuixDarkColorScheme() else miuixLightColorScheme()
+
+internal fun AppColors.toSkipiMiuixColors(): Colors =
+    miuixBaseColorsFor(isDark).withSkipiColors(this)
+
 private fun Colors.withSkipiColors(appColors: AppColors) = copy(
     surface = appColors.surface,
     surfaceContainer = appColors.surface,
@@ -129,12 +136,48 @@ private fun Colors.withSkipiColors(appColors: AppColors) = copy(
     background = appColors.background,
     surfaceVariant = appColors.surfaceVariant,
     onSurface = appColors.onSurface,
+    onSurfaceSecondary = appColors.onSurfaceVariant,
     onBackground = appColors.onBackground,
     onSurfaceContainer = appColors.onSurface,
+    onSurfaceContainerVariant = appColors.onSurfaceVariant,
     onSurfaceVariantSummary = appColors.onSurfaceVariant,
+    onSurfaceVariantActions = appColors.onSurfaceVariant,
     onBackgroundVariant = appColors.onSurfaceVariant,
     primary = appColors.accent,
+    onPrimary = appColors.onAccent,
     primaryVariant = appColors.accent,
+    onPrimaryVariant = appColors.onAccent,
+    primaryContainer = appColors.primaryContainer,
+    onPrimaryContainer = appColors.onPrimaryContainer,
+    secondary = appColors.secondary,
+    onSecondary = appColors.onSecondary,
+    secondaryVariant = appColors.secondary,
+    onSecondaryVariant = appColors.onSecondary,
+    secondaryContainer = appColors.secondaryContainer,
+    onSecondaryContainer = appColors.onSecondaryContainer,
+    secondaryContainerVariant = appColors.secondaryContainer,
+    onSecondaryContainerVariant = appColors.onSecondaryContainer,
+    tertiaryContainer = appColors.primaryContainer,
+    onTertiaryContainer = appColors.onPrimaryContainer,
+    error = appColors.error,
+    onError = appColors.onError,
+    errorContainer = appColors.errorContainer,
+    onErrorContainer = appColors.onErrorContainer,
+    disabledPrimary = appColors.disabledContainer,
+    disabledOnPrimary = appColors.onDisabled,
+    disabledPrimaryButton = appColors.disabledContainer,
+    disabledOnPrimaryButton = appColors.onDisabled,
+    disabledPrimarySlider = appColors.disabledContainer,
+    disabledSecondary = appColors.disabledContainer,
+    disabledOnSecondary = appColors.onDisabled,
+    disabledSecondaryVariant = appColors.disabledContainer,
+    disabledOnSecondaryVariant = appColors.onDisabled,
+    disabledOnSurface = appColors.onDisabled,
+    outline = appColors.outline,
+    dividerLine = appColors.outline,
+    sliderKeyPoint = appColors.accent,
+    sliderKeyPointForeground = appColors.onAccent,
+    sliderBackground = appColors.surfaceVariant,
 )
 
 private fun AppColors.toSkipiColorScheme() = SkipiColorScheme(
