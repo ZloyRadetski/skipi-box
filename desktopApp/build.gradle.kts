@@ -111,6 +111,7 @@ compose.desktop {
 
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)
+            modules("java.net.http")
             targetFormats(TargetFormat.Msi)
             packageName = ProjectConfig.PROJECT_NAME
             packageVersion = ProjectConfig.VERSION_NAME
