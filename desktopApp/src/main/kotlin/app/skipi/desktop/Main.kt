@@ -46,8 +46,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import app.skipi.ui.navigation.SkipiMainDestination
-import app.skipi.ui.navigation.SkipiNavigationBar
-import app.skipi.ui.navigation.SkipiNavigationItem
+import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
+import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
+import app.skipi.ui.navigation.SkipiNavigationBarSize
+import app.skipi.ui.theme.SkipiTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -1162,9 +1164,18 @@ private fun DesktopBottomNavigation(
     selected: SkipiMainDestination,
     onSelect: (SkipiMainDestination) -> Unit,
 ) {
-    SkipiNavigationBar(
+    val colors = SkipiTheme.colors
+    SkipiExpressiveNavigationBar(
         selectedDestination = selected,
         onSelect = onSelect,
+        colors = SkipiExpressiveNavigationColors(
+            surface = colors.surface,
+            accent = colors.accent,
+            onAccent = colors.onAccent,
+            onSurfaceVariant = colors.onSurfaceVariant,
+            isDark = colors.isDark,
+        ),
+        size = SkipiNavigationBarSize.Medium,
     )
 }
 

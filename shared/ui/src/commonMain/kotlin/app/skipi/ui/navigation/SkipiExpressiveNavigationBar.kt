@@ -84,7 +84,30 @@ fun SkipiExpressiveNavigationBar(
     modifier: Modifier = Modifier,
     items: List<SkipiNavigationItem> = defaultSkipiNavigationItems(),
 ) {
-    val selectedPage = mainPagerState.selectedPage
+    SkipiExpressiveNavigationBar(
+        selectedDestination = SkipiMainDestination.fromPageIndex(mainPagerState.selectedPage),
+        onSelect = mainPagerState::animateTo,
+        colors = colors,
+        size = size,
+        modifier = modifier,
+        items = items,
+    )
+}
+
+/**
+ * Stateless expressive navigation for hosts whose selected destination is
+ * already managed by their own navigation shell.
+ */
+@Composable
+fun SkipiExpressiveNavigationBar(
+    selectedDestination: SkipiMainDestination,
+    onSelect: (SkipiMainDestination) -> Unit,
+    colors: SkipiExpressiveNavigationColors,
+    size: SkipiNavigationBarSize,
+    modifier: Modifier = Modifier,
+    items: List<SkipiNavigationItem> = defaultSkipiNavigationItems(),
+) {
+    val selectedPage = selectedDestination.pageIndex
     val haptic = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -273,7 +296,7 @@ fun SkipiExpressiveNavigationBar(
                                 val target = items.getOrNull(targetIndex)
                                 if (target != null && target.destination.pageIndex != selectedPage) {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    mainPagerState.animateTo(target.destination)
+                                    onSelect(target.destination)
                                 }
                             } else {
                                 isDragging = false
@@ -352,7 +375,7 @@ fun SkipiExpressiveNavigationBar(
                                                 if (!selected) {
                                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                 }
-                                                mainPagerState.animateTo(item.destination)
+                                                onSelect(item.destination)
                                             }
                                         }
                                     },
