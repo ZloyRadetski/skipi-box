@@ -4,6 +4,8 @@
 package app.skipi.ui.settings
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -49,6 +51,15 @@ data class AboutRuntimeInfo(
     val hevTunnelVersion: String,
 )
 
+data class AboutSettingsCapabilities(
+    val updates: Boolean = true,
+    val runtime: Boolean = true,
+    val replayOnboarding: Boolean = true,
+    val telegram: Boolean = true,
+    val bugReport: Boolean = true,
+    val source: Boolean = true,
+)
+
 /** Shared About layout. Branding assets, update flow, navigation, and external links are host-owned. */
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -65,6 +76,8 @@ fun SkipiAboutScreen(
     onOpenSource: () -> Unit,
     logo: @Composable () -> Unit,
     updatesContent: @Composable () -> Unit,
+    capabilities: AboutSettingsCapabilities = AboutSettingsCapabilities(),
+    platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
     Scaffold(
@@ -91,15 +104,17 @@ fun SkipiAboutScreen(
                         logo()
                         Spacer(Modifier.height(14.dp))
                         Text(text = runtime.appName, style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.title2)
-                        Text(text = "v${runtime.appVersion}", color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                        if (runtime.appVersion.isNotBlank()) {
+                            Text(text = "v${runtime.appVersion}", color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                        }
                         Spacer(Modifier.height(12.dp))
                     }
                 }
-                item(key = "about_updates") {
+                if (capabilities.updates) item(key = "about_updates") {
                     SmallTitle(text = labels.updatesTitle)
                     updatesContent()
                 }
-                item(key = "about_runtime") {
+                if (capabilities.runtime) item(key = "about_runtime") {
                     SmallTitle(text = labels.runtimeTitle)
                     SkipiSettingsSectionCard {
                         ArrowPreference(title = "SKIPI Core", summary = runtime.skipiCoreVersion, onClick = onOpenCoreInfo)
@@ -107,15 +122,16 @@ fun SkipiAboutScreen(
                         BasicComponent(title = "hev-socks5-tunnel", summary = runtime.hevTunnelVersion)
                     }
                 }
-                item(key = "about_other") {
+                if (capabilities.replayOnboarding || capabilities.telegram || capabilities.bugReport || capabilities.source) item(key = "about_other") {
                     SmallTitle(text = labels.otherTitle)
                     SkipiSettingsSectionCard {
-                        ArrowPreference(title = labels.replayOnboardingTitle, summary = labels.replayOnboardingSummary, onClick = onReplayOnboarding)
-                        ArrowPreference(title = labels.telegramTitle, summary = "@skipi_public", onClick = onOpenTelegram)
-                        ArrowPreference(title = labels.bugReportTitle, summary = labels.bugReportSummary, onClick = onOpenBugReport)
-                        ArrowPreference(title = labels.sourceTitle, onClick = onOpenSource)
+                        if (capabilities.replayOnboarding) ArrowPreference(title = labels.replayOnboardingTitle, summary = labels.replayOnboardingSummary, onClick = onReplayOnboarding)
+                        if (capabilities.telegram) ArrowPreference(title = labels.telegramTitle, summary = "@skipi_public", onClick = onOpenTelegram)
+                        if (capabilities.bugReport) ArrowPreference(title = labels.bugReportTitle, summary = labels.bugReportSummary, onClick = onOpenBugReport)
+                        if (capabilities.source) ArrowPreference(title = labels.sourceTitle, onClick = onOpenSource)
                     }
                 }
+                platformContent?.let { content -> item(key = "about_platform_extension") { Column(content = content) } }
                 item { Spacer(Modifier.height(12.dp)) }
             }
             VerticalScrollBar(

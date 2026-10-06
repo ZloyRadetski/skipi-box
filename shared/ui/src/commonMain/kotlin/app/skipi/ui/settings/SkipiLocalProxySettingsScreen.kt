@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -104,6 +105,14 @@ data class LocalProxySettingsLabels(
     val copyPasswordDescription: String,
 )
 
+data class LocalProxySettingsCapabilities(
+    val dynamicPort: Boolean = true,
+    val listenAllInterfaces: Boolean = true,
+    val authentication: Boolean = true,
+    val credentials: Boolean = true,
+    val lanEndpoints: Boolean = true,
+)
+
 /** Local proxy preference UI. Network discovery, clipboard, service changes and persistence stay in the host. */
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -119,6 +128,8 @@ fun SkipiLocalProxySettingsScreen(
     onAuthenticationChange: (Boolean) -> Unit,
     onGenerateCredentials: () -> Unit,
     onCopy: (text: String, label: String) -> Unit,
+    capabilities: LocalProxySettingsCapabilities = LocalProxySettingsCapabilities(),
+    platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -140,14 +151,16 @@ fun SkipiLocalProxySettingsScreen(
                 item(key = "local_proxy_network_card") {
                     SkipiSettingsSectionCard {
                         Column(Modifier.padding(vertical = 4.dp)) {
-                            SwitchPreference(
-                                title = labels.dynamicPortTitle,
-                                summary = labels.dynamicPortSummary,
-                                checked = state.dynamicPort,
-                                onCheckedChange = onDynamicPortChange,
-                            )
+                            if (capabilities.dynamicPort) {
+                                SwitchPreference(
+                                    title = labels.dynamicPortTitle,
+                                    summary = labels.dynamicPortSummary,
+                                    checked = state.dynamicPort,
+                                    onCheckedChange = onDynamicPortChange,
+                                )
+                            }
                             AnimatedVisibility(
-                                visible = !state.dynamicPort,
+                                visible = !capabilities.dynamicPort || !state.dynamicPort,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut(),
                             ) {
@@ -169,16 +182,18 @@ fun SkipiLocalProxySettingsScreen(
                                     }
                                 }
                             }
-                            SwitchPreference(
-                                title = labels.listenAllTitle,
-                                summary = labels.listenAllSummary,
-                                checked = state.listenAllInterfaces,
-                                onCheckedChange = onListenAllInterfacesChange,
-                            )
+                            if (capabilities.listenAllInterfaces) {
+                                SwitchPreference(
+                                    title = labels.listenAllTitle,
+                                    summary = labels.listenAllSummary,
+                                    checked = state.listenAllInterfaces,
+                                    onCheckedChange = onListenAllInterfacesChange,
+                                )
+                            }
                         }
                     }
                 }
-                if (state.listenAllInterfaces) {
+                if (capabilities.lanEndpoints && state.listenAllInterfaces) {
                     item(key = "local_proxy_lan_title") { SmallTitle(text = labels.lanSectionTitle) }
                     item(key = "local_proxy_lan_card") {
                         SkipiSettingsSectionCard {
@@ -205,20 +220,22 @@ fun SkipiLocalProxySettingsScreen(
                         }
                     }
                 }
-                item(key = "local_proxy_security_title") { SmallTitle(text = labels.securitySectionTitle) }
-                item(key = "local_proxy_security_card") {
-                    SkipiSettingsSectionCard {
-                        Column(Modifier.padding(vertical = 4.dp)) {
-                            SwitchPreference(
-                                title = labels.authenticationTitle,
-                                summary = labels.authenticationSummary,
-                                checked = state.authenticationEnabled,
-                                onCheckedChange = onAuthenticationChange,
-                            )
+                if (capabilities.authentication) {
+                    item(key = "local_proxy_security_title") { SmallTitle(text = labels.securitySectionTitle) }
+                    item(key = "local_proxy_security_card") {
+                        SkipiSettingsSectionCard {
+                            Column(Modifier.padding(vertical = 4.dp)) {
+                                SwitchPreference(
+                                    title = labels.authenticationTitle,
+                                    summary = labels.authenticationSummary,
+                                    checked = state.authenticationEnabled,
+                                    onCheckedChange = onAuthenticationChange,
+                                )
+                            }
                         }
                     }
                 }
-                if (state.authenticationEnabled) {
+                if (capabilities.authentication && capabilities.credentials && state.authenticationEnabled) {
                     item(key = "local_proxy_credentials_title") { SmallTitle(text = labels.credentialsSectionTitle) }
                     item(key = "local_proxy_credentials_card") {
                         SkipiSettingsSectionCard {
@@ -268,6 +285,7 @@ fun SkipiLocalProxySettingsScreen(
                         }
                     }
                 }
+                platformContent?.let { content -> item(key = "local_proxy_platform_extension") { Column(content = content) } }
             }
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(listState),

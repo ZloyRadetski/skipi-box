@@ -31,7 +31,7 @@ import app.navigation.Route
 import app.skipi.ui.settings.SkipiVpnSettingsScreen
 import app.skipi.ui.settings.VpnSettingsLabels
 import app.skipi.ui.settings.VpnSettingsState
-import features.settings.sheets.tunSettingsSummary
+import app.skipi.ui.settings.tunSettingsSummary
 import system.isIgnoringBatteryOptimizations
 import system.openAppDetailsSettings
 import system.openBatteryOptimizationSettings

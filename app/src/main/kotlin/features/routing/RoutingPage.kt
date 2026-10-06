@@ -42,6 +42,7 @@ import app.skipi.app.routing.moveRouteRule
 import app.skipi.app.routing.removeRouteRule
 import app.skipi.app.routing.setRouteRuleEnabled
 import app.skipi.ui.routing.SkipiRoutingRulesList
+import app.skipi.ui.routing.SkipiRoutingPageScaffold
 import features.clipboard.ClipboardImportException
 import features.clipboard.ClipboardImportFailure
 import features.clipboard.ClipboardImportMode
@@ -56,8 +57,6 @@ import features.routing.usecase.encodeRouteRulesForClipboard
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import top.yukonga.miuix.kmp.anim.folmeSpring
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
@@ -79,9 +78,7 @@ import ui.components.longPressReorderDragHandle
 import ui.components.rememberSkipiReorderableLazyListState
 import ui.components.rememberReorderableLazyListContentPaddingWithoutTop
 import ui.components.rememberReorderableScrollThresholdPadding
-import ui.layout.AdaptiveTopAppBar
 import ui.AppTheme
-import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import ui.text.formatTemplate
@@ -109,7 +106,6 @@ fun RoutingPage(
     val appState by LocalAppStateStore.current.collectAppState()
     val updateAppState = LocalUpdateAppState.current
     val navigator = LocalNavigator.current
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
     val tipNotifier = LocalAppServices.current.tipNotifier
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboard.current
@@ -176,16 +172,15 @@ fun RoutingPage(
         }
     }
 
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        topBar = {
-            AdaptiveTopAppBar(
-                title = stringResource(R.string.routing_title),
-                subtitle = stringResource(R.string.routing_default_outbound_subtitle)
-                    .formatTemplate("tag" to defaultOutboundLabel),
-                isWideScreen = isWideScreen,
-                scrollBehavior = topAppBarScrollBehavior,
-                actions = {
+    SkipiRoutingPageScaffold(
+        title = stringResource(R.string.routing_title),
+        subtitle = stringResource(R.string.routing_default_outbound_subtitle)
+            .formatTemplate("tag" to defaultOutboundLabel),
+        padding = padding,
+        isWideScreen = isWideScreen,
+        onBack = {},
+        showNavigationIcon = false,
+        actions = {
                     RoutingDefaultOutboundMenu(
                         outboundOptions = outboundOptions,
                         selectedTag = defaultOutboundTag,
@@ -236,15 +231,8 @@ fun RoutingPage(
                             }
                         }
                     }
-                },
-            )
         },
-    ) { innerPadding ->
-        val contentPadding = pageContentPaddingWithCutout(
-            innerPadding = innerPadding,
-            outerPadding = padding,
-            isWideScreen = isWideScreen,
-        )
+    ) { contentPadding, scrollBehavior ->
         SkipiRoutingRulesList(
             rules = routeRules,
             outboundLabels = outboundLabels,
@@ -258,7 +246,7 @@ fun RoutingPage(
             },
             onEdit = { rule -> navigator.push(app.navigation.Route.RoutingRuleEditor(rule.id)) },
             onDelete = ::requestRouteDeletion,
-            modifier = Modifier.pageScrollModifiers(topAppBarScrollBehavior),
+            modifier = Modifier.pageScrollModifiers(scrollBehavior),
         )
     }
 

@@ -127,6 +127,21 @@ class XrayOutboundPlannerBalancerTest {
     }
 
     @Test
+    fun strategyGroupMemberAdapterPreservesExplicitOrderAndSkipsCycles() {
+        val first = createServer(1, "First")
+        val second = createServer(2, "Second")
+        val nested = ProxyServerState(
+            id = 3,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(remarks = "Nested", proxyServerIds = listOf(2, 1, 3)),
+        )
+        val root = StrategyGroup(remarks = "Root", proxyServerIds = listOf(3, 1))
+        val appState = AppState(proxyServers = listOf(first, second, nested))
+
+        assertEquals(listOf(2, 1), appState.strategyGroupMembers(root).map(ProxyServerState::id))
+    }
+
+    @Test
     fun testWithConfigProxyGroupsReflectedExpandsWildcard() {
         val server1 = createServer(1, "Server 1")
         val server2 = createServer(2, "Server 2")

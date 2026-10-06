@@ -115,7 +115,7 @@ internal fun TrafficConfigRulesPage(
                 )
             }
         },
-    ) { listPadding, scrollBehavior ->
+    ) { _, listPadding, scrollBehavior ->
         SkipiTrafficConfigRulesList(
             rules = rulesList,
             finalRule = finalRule,
@@ -241,7 +241,7 @@ fun TrafficConfigRuleEditorPage(
                 )
             }
         },
-    ) { listPadding, scrollBehavior ->
+    ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,

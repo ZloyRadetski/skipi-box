@@ -90,15 +90,8 @@ private val PresetPaletteColors = listOf(
 )
 
 private fun formatHex(color: Color): String {
-    val r = (color.red * 255f).toInt().coerceIn(0, 255)
-    val g = (color.green * 255f).toInt().coerceIn(0, 255)
-    val b = (color.blue * 255f).toInt().coerceIn(0, 255)
-    return buildString {
-        append("#")
-        append(r.toString(16).padStart(2, '0').uppercase())
-        append(g.toString(16).padStart(2, '0').uppercase())
-        append(b.toString(16).padStart(2, '0').uppercase())
-    }
+    val argb = color.toArgb()
+    return "#" + (0xFFFFFF and argb).toString(16).uppercase().padStart(6, '0')
 }
 
 private fun parseHex(hex: String): Color? {

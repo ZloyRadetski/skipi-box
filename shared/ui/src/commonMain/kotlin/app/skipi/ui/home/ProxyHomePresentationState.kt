@@ -1,7 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.list
+package app.skipi.ui.home
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -10,12 +10,13 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import app.skipi.app.home.ProxyHomePresentation
 
-/** Android-only saveable bridge for the shared, platform-neutral Home presentation model. */
+/** Saves platform-neutral Home selection, search, and collapsed-subscription presentation state. */
 @Composable
-internal fun rememberProxyHomePresentation(initialSelectedGroupId: Int): MutableState<ProxyHomePresentation> =
-    rememberSaveable(stateSaver = ProxyHomePresentationSaver) {
-        mutableStateOf(ProxyHomePresentation(selectedGroupId = initialSelectedGroupId.toString()))
-    }
+fun rememberSaveableProxyHomePresentation(
+    initialPresentation: ProxyHomePresentation = ProxyHomePresentation(),
+): MutableState<ProxyHomePresentation> = rememberSaveable(stateSaver = ProxyHomePresentationSaver) {
+    mutableStateOf(initialPresentation)
+}
 
 private val ProxyHomePresentationSaver = Saver<ProxyHomePresentation, List<Any?>>(
     save = { state ->

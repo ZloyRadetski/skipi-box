@@ -48,6 +48,7 @@ import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
 import app.skipi.app.config.withGeneralOptions
+import app.skipi.app.config.isConfigEditorBoolean
 import app.skipi.app.config.withNetworkActivation
 import app.skipi.app.config.withProfileBasics
 import app.skipi.app.config.withDnsOptions
@@ -59,6 +60,7 @@ import app.skipi.ui.config.SkipiTrafficConfigNetworkActivation
 import app.skipi.ui.config.SkipiTrafficConfigProfileBasics
 import app.skipi.ui.config.SkipiTrafficConfigDnsEditor
 import app.skipi.ui.config.SkipiTrafficConfigTunnelEditor
+import app.skipi.ui.config.SkipiTrafficConfigEditorGroupCard
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -103,7 +105,6 @@ fun TrafficConfigEditorPage(
         navigator.pop()
         return
     }
-    val scrollBehavior = MiuixScrollBehavior()
     val listState = rememberLazyListState()
     var name by remember(config.id) { mutableStateOf(config.name) }
     var sourceUrl by remember(config.id) { mutableStateOf(config.sourceUrl) }
@@ -142,41 +143,12 @@ fun TrafficConfigEditorPage(
         }
     }
 
-    NavigationBackHandler(
-        state = rememberNavigationEventState(NavigationEventInfo.None),
-        onBackCompleted = {
-            saveBasics()
-            navigator.pop()
-        },
-    )
-
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        modifier = Modifier
-            .fillMaxSize(),
-        topBar = {
-            AdaptiveTopAppBar(
-                title = stringResource(R.string.configs_edit),
-                isWideScreen = isWideScreen,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = { BackNavigationIcon(onClick = { saveBasics(); navigator.pop() }) },
-            )
-        },
-    ) { innerPadding ->
-        val contentPadding = pageContentPaddingWithCutout(innerPadding, padding, isWideScreen)
-        val basePadding = pageListPadding(contentPadding)
-        val layoutDirection = LocalLayoutDirection.current
-        val listPadding = PaddingValues(
-            start = basePadding.calculateStartPadding(layoutDirection) + 12.dp,
-            top = basePadding.calculateTopPadding() + 8.dp,
-            end = basePadding.calculateEndPadding(layoutDirection) + 12.dp,
-            bottom = basePadding.calculateBottomPadding() + 12.dp,
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
-        ) {
+    TrafficConfigFullScreenScaffold(
+        title = stringResource(R.string.configs_edit),
+        padding = padding,
+        isWideScreen = isWideScreen,
+        onBack = { saveBasics(); navigator.pop() },
+    ) { contentPadding, listPadding, scrollBehavior ->
             LazyColumn(
                 state = listState,
                 modifier = Modifier.pageScrollModifiers(scrollBehavior),
@@ -270,7 +242,6 @@ fun TrafficConfigEditorPage(
                 modifier = Modifier.fillMaxHeight().align(Alignment.CenterEnd),
                 trackPadding = contentPadding,
             )
-        }
     }
 }
 
@@ -279,42 +250,7 @@ private fun ConfigEditorGroupCard(
     title: String,
     summary: String,
     onClick: () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 16.dp,
-        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-        onClick = onClick,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 17.sp,
-                    fontWeight = themedFontWeight(FontWeight.SemiBold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                )
-                Text(
-                    summary,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Icon(
-                imageVector = MiuixIcons.Edit,
-                contentDescription = null,
-                tint = AppTheme.colors.onSurfaceVariant,
-            )
-        }
-    }
-}
+) = SkipiTrafficConfigEditorGroupCard(title = title, summary = summary, onClick = onClick)
 
 /** Full-screen raw editor for the complete portable Shadowrocket + SKIPI profile. */
 @Composable
@@ -351,55 +287,25 @@ fun TrafficConfigRawEditorPage(
         return true
     }
 
-    NavigationBackHandler(
-        state = rememberNavigationEventState(NavigationEventInfo.None),
-        onBackCompleted = {
-            save()
-            navigator.pop()
-        },
-    )
-
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        modifier = Modifier
-            .fillMaxSize(),
-        topBar = {
-            AdaptiveTopAppBar(
-                title = config.name.ifBlank { stringResource(R.string.configs_raw_edit) },
-                isWideScreen = isWideScreen,
-                scrollBehavior = MiuixScrollBehavior(),
-                navigationIcon = {
-                    BackNavigationIcon(
-                        onClick = {
-                            save()
-                            navigator.pop()
-                        },
-                    )
+    TrafficConfigFullScreenScaffold(
+        title = config.name.ifBlank { stringResource(R.string.configs_raw_edit) },
+        padding = padding,
+        isWideScreen = isWideScreen,
+        onBack = { save(); navigator.pop() },
+        actions = {
+            NavigationIcon(
+                onClick = {
+                    scope.launch {
+                        clipboard.setPlainText(rawEditorState.snapshotText())
+                        services.tipNotifier.show(copiedMessage)
+                    }
                 },
-                actions = {
-                    NavigationIcon(
-                        onClick = {
-                            scope.launch {
-                                clipboard.setPlainText(rawEditorState.snapshotText())
-                                services.tipNotifier.show(copiedMessage)
-                            }
-                        },
-                        imageVector = MiuixIcons.Copy,
-                        contentDescription = stringResource(R.string.common_copy),
-                    )
-                },
+                imageVector = MiuixIcons.Copy,
+                contentDescription = stringResource(R.string.common_copy),
             )
         },
-    ) { innerPadding ->
-        val contentPadding = pageContentPaddingWithCutout(innerPadding, padding, isWideScreen)
-        val basePadding = pageListPadding(contentPadding)
-        val layoutDirection = LocalLayoutDirection.current
-        val pagePadding = PaddingValues(
-            start = basePadding.calculateStartPadding(layoutDirection) + 12.dp,
-            top = basePadding.calculateTopPadding(),
-            end = basePadding.calculateEndPadding(layoutDirection) + 12.dp,
-            bottom = basePadding.calculateBottomPadding() + 12.dp,
-        )
+        topContentInset = 0.dp,
+    ) { _, pagePadding, _ ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -455,7 +361,7 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
         isWideScreen = isWideScreen,
         onBack = { save(); navigator.pop() },
         onSave = { save(); navigator.pop() },
-    ) { listPadding, scrollBehavior ->
+    ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -490,7 +396,7 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_dns_title), padding = padding, isWideScreen = isWideScreen,
         onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
-    ) { listPadding, scrollBehavior ->
+    ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
@@ -526,7 +432,7 @@ private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfig
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_android_title), padding = padding, isWideScreen = isWideScreen,
         onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
-    ) { listPadding, scrollBehavior ->
+    ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
             contentPadding = listPadding,
@@ -563,7 +469,7 @@ private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfi
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_network_title), padding = padding, isWideScreen = isWideScreen,
         onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
-    ) { listPadding, scrollBehavior ->
+    ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -593,7 +499,7 @@ private fun TrafficConfigRoutingSectionPage(padding: PaddingValues, trafficConfi
     TrafficConfigFullScreenScaffold(
         title = stringResource(R.string.configs_rules_title), padding = padding, isWideScreen = isWideScreen,
         onBack = navigator::pop, onSave = navigator::pop,
-    ) { listPadding, scrollBehavior ->
+    ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -638,66 +544,22 @@ internal fun TrafficConfigFullScreenScaffold(
     onBack: () -> Unit,
     onSave: (() -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
-    content: @Composable (listPadding: PaddingValues, scrollBehavior: top.yukonga.miuix.kmp.basic.ScrollBehavior) -> Unit,
+    topContentInset: androidx.compose.ui.unit.Dp = 8.dp,
+    content: @Composable androidx.compose.foundation.layout.BoxScope.(contentPadding: PaddingValues, listPadding: PaddingValues, scrollBehavior: top.yukonga.miuix.kmp.basic.ScrollBehavior) -> Unit,
 ) {
-    val scrollBehavior = MiuixScrollBehavior()
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
         onBackCompleted = onBack,
     )
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        modifier = Modifier
-            .fillMaxSize(),
-        topBar = {
-            AdaptiveTopAppBar(
-                title = title,
-                isWideScreen = isWideScreen,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = { BackNavigationIcon(onClick = onBack) },
-                actions = {
-                    actions?.invoke()
-                    if (onSave != null) {
-                        NavigationIcon(
-                            onClick = onSave,
-                            imageVector = MiuixIcons.Ok,
-                            contentDescription = stringResource(R.string.common_save),
-                        )
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
-        val contentPadding = pageContentPaddingWithCutout(innerPadding, padding, isWideScreen)
-        val basePadding = pageListPadding(contentPadding)
-        val layoutDirection = LocalLayoutDirection.current
-        val listPadding = PaddingValues(
-            start = basePadding.calculateStartPadding(layoutDirection) + 12.dp,
-            top = basePadding.calculateTopPadding() + 8.dp,
-            end = basePadding.calculateEndPadding(layoutDirection) + 12.dp,
-            bottom = basePadding.calculateBottomPadding() + 12.dp,
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
-        ) {
-            content(listPadding, scrollBehavior)
-        }
-    }
-}
-
-
-@Composable
-private fun ConfigEditorSectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MiuixTheme.textStyles.title3,
-        color = MiuixTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp),
+    app.skipi.ui.config.SkipiTrafficConfigFullScreenScaffold(
+        title = title,
+        padding = padding,
+        isWideScreen = isWideScreen,
+        saveLabel = stringResource(R.string.common_save),
+        onBack = onBack,
+        onSave = onSave,
+        actions = actions,
+        topContentInset = topContentInset,
+        content = content,
     )
-}
-
-private fun String?.isConfigEditorBoolean(): Boolean {
-    return this?.trim()?.lowercase() in setOf("true", "yes", "1")
 }

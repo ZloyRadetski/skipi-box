@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Security
@@ -46,6 +47,8 @@ import app.skipi.ui.resources.settings_category_ip_info
 import app.skipi.ui.resources.settings_category_ip_info_summary
 import app.skipi.ui.resources.settings_category_local_proxy
 import app.skipi.ui.resources.settings_category_local_proxy_summary
+import app.skipi.ui.resources.settings_category_integration
+import app.skipi.ui.resources.settings_category_integration_summary
 import app.skipi.ui.resources.settings_category_logs
 import app.skipi.ui.resources.settings_category_logs_summary
 import app.skipi.ui.resources.settings_category_subscriptions
@@ -77,6 +80,7 @@ enum class SkipiSettingsDestination {
     DnsLeakTest,
     IpInfo,
     Logs,
+    Integration,
     About,
 }
 
@@ -86,6 +90,8 @@ data class SkipiSettingsHomeState(
     val localProxyPort: String,
     val coreLogLevel: String?,
     val categoryIconColor: Color,
+    val visibleDestinations: Set<SkipiSettingsDestination> =
+        SkipiSettingsDestination.entries.filter { it != SkipiSettingsDestination.Integration }.toSet(),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,6 +105,7 @@ fun SkipiSettingsHomeScreen(
     val layoutDirection = LocalLayoutDirection.current
     val listState = rememberLazyListState()
     val categoryIconColor = state.categoryIconColor
+    val visible = state.visibleDestinations
     val topBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -139,7 +146,7 @@ fun SkipiSettingsHomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
-            item(key = "section_appearance") {
+            if (SkipiSettingsDestination.Appearance in visible) item(key = "section_appearance") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_appearance))
                 SkipiSettingsCategoryGroupCard {
                     SettingsItem(
@@ -151,19 +158,19 @@ fun SkipiSettingsHomeScreen(
                     )
                 }
             }
-            item(key = "section_network") {
+            if (SkipiSettingsDestination.Vpn in visible || SkipiSettingsDestination.LocalProxy in visible) item(key = "section_network") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_network))
                 SkipiSettingsCategoryGroupCard {
-                    SettingsItem(
+                    if (SkipiSettingsDestination.Vpn in visible) SettingsItem(
                         icon = Icons.Filled.Security,
                         iconBackgroundColor = categoryIconColor,
                         title = stringResource(Res.string.settings_category_vpn),
                         summary = stringResource(Res.string.settings_category_vpn_summary),
                         value = "MTU: ${state.tunMtu}",
                         onClick = { onNavigate(SkipiSettingsDestination.Vpn) },
-                        showDivider = true,
+                        showDivider = SkipiSettingsDestination.LocalProxy in visible,
                     )
-                    SettingsItem(
+                    if (SkipiSettingsDestination.LocalProxy in visible) SettingsItem(
                         icon = Icons.Filled.Dns,
                         iconBackgroundColor = categoryIconColor,
                         title = stringResource(Res.string.settings_category_local_proxy),
@@ -173,7 +180,7 @@ fun SkipiSettingsHomeScreen(
                     )
                 }
             }
-            item(key = "section_subscriptions") {
+            if (SkipiSettingsDestination.Subscriptions in visible) item(key = "section_subscriptions") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_subscriptions))
                 SkipiSettingsCategoryGroupCard {
                     SettingsItem(
@@ -185,10 +192,10 @@ fun SkipiSettingsHomeScreen(
                     )
                 }
             }
-            item(key = "section_general") {
+            if (SkipiSettingsDestination.General in visible || SkipiSettingsDestination.BackupReset in visible) item(key = "section_general") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_general))
                 SkipiSettingsCategoryGroupCard {
-                    SettingsItem(
+                    if (SkipiSettingsDestination.General in visible) SettingsItem(
                         icon = Icons.Filled.Settings,
                         iconBackgroundColor = categoryIconColor,
                         title = stringResource(Res.string.settings_category_general),
@@ -196,7 +203,7 @@ fun SkipiSettingsHomeScreen(
                         onClick = { onNavigate(SkipiSettingsDestination.General) },
                         showDivider = true,
                     )
-                    SettingsItem(
+                    if (SkipiSettingsDestination.BackupReset in visible) SettingsItem(
                         icon = Icons.Filled.Backup,
                         iconBackgroundColor = categoryIconColor,
                         title = stringResource(Res.string.settings_category_backup_reset),
@@ -205,26 +212,26 @@ fun SkipiSettingsHomeScreen(
                     )
                 }
             }
-            item(key = "section_tools") {
+            if (SkipiSettingsDestination.SpeedTest in visible || SkipiSettingsDestination.DnsLeakTest in visible || SkipiSettingsDestination.IpInfo in visible) item(key = "section_tools") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_tools))
                 SkipiSettingsCategoryGroupCard {
-                    SettingsItem(
+                    if (SkipiSettingsDestination.SpeedTest in visible) SettingsItem(
                         icon = Icons.Filled.Bolt,
                         iconBackgroundColor = categoryIconColor,
                         title = stringResource(Res.string.settings_category_speed_test),
                         summary = stringResource(Res.string.settings_category_speed_test_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.SpeedTest) },
-                        showDivider = true,
+                        showDivider = SkipiSettingsDestination.DnsLeakTest in visible || SkipiSettingsDestination.IpInfo in visible,
                     )
-                    SettingsItem(
+                    if (SkipiSettingsDestination.DnsLeakTest in visible) SettingsItem(
                         icon = Icons.Filled.Security,
                         iconBackgroundColor = categoryIconColor,
                         title = stringResource(Res.string.settings_category_dns_leak),
                         summary = stringResource(Res.string.settings_category_dns_leak_summary),
                         onClick = { onNavigate(SkipiSettingsDestination.DnsLeakTest) },
-                        showDivider = true,
+                        showDivider = SkipiSettingsDestination.IpInfo in visible,
                     )
-                    SettingsItem(
+                    if (SkipiSettingsDestination.IpInfo in visible) SettingsItem(
                         icon = Icons.Filled.Public,
                         iconBackgroundColor = categoryIconColor,
                         title = stringResource(Res.string.settings_category_ip_info),
@@ -233,7 +240,7 @@ fun SkipiSettingsHomeScreen(
                     )
                 }
             }
-            item(key = "section_logs") {
+            if (SkipiSettingsDestination.Logs in visible) item(key = "section_logs") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_logs))
                 SkipiSettingsCategoryGroupCard {
                     SettingsItem(
@@ -246,7 +253,19 @@ fun SkipiSettingsHomeScreen(
                     )
                 }
             }
-            item(key = "section_about") {
+            if (SkipiSettingsDestination.Integration in visible) item(key = "section_integration") {
+                SettingsSectionTitle(stringResource(Res.string.settings_header_general))
+                SkipiSettingsCategoryGroupCard {
+                    SettingsItem(
+                        icon = Icons.Filled.Link,
+                        iconBackgroundColor = categoryIconColor,
+                        title = stringResource(Res.string.settings_category_integration),
+                        summary = stringResource(Res.string.settings_category_integration_summary),
+                        onClick = { onNavigate(SkipiSettingsDestination.Integration) },
+                    )
+                }
+            }
+            if (SkipiSettingsDestination.About in visible) item(key = "section_about") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_about))
                 SkipiSettingsCategoryGroupCard(bottomPadding = 0.dp) {
                     SettingsItem(

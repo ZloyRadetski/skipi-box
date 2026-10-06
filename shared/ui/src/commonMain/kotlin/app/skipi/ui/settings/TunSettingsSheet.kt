@@ -1,24 +1,26 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings.sheets
+package app.skipi.ui.settings
 
 import androidx.compose.runtime.Composable
-import ui.components.AppWindowBottomSheet
+import app.skipi.ui.components.AppWindowBottomSheet
 import androidx.compose.runtime.key
-import androidx.compose.ui.res.stringResource
-import app.R
-import engine.network.isCidrAddress
-import engine.network.isIpAddress
-import engine.vpn.VpnDefaults
+import app.skipi.app.settings.isValidTunMtu
+import app.skipi.app.settings.isValidTunVpnDns
+import app.skipi.app.settings.isValidTunIpv4Cidr
+import app.skipi.app.settings.isValidTunIpv6Cidr
+import app.skipi.app.settings.isValidTunTcpKeepAliveInterval
+import app.skipi.app.settings.isValidTunTcpUserTimeout
+import org.jetbrains.compose.resources.stringResource
+import app.skipi.ui.resources.*
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
-import ui.text.formatTemplate
-import utils.toIntInRangeOrNull
+import app.skipi.ui.text.formatTemplate
 
 
 @Composable
-internal fun tunSettingsSummary(
+fun tunSettingsSummary(
     mtu: String,
     vpnDns: String,
     ipv4Cidr: String,
@@ -26,7 +28,7 @@ internal fun tunSettingsSummary(
     showVpnDns: Boolean,
 ): String {
     val template = stringResource(
-        if (showVpnDns) R.string.settings_tun_summary else R.string.settings_tun_summary_without_dns,
+        if (showVpnDns) Res.string.settings_tun_summary else Res.string.settings_tun_summary_without_dns,
     )
     return template.formatTemplate(
         "mtu" to mtu,
@@ -37,7 +39,7 @@ internal fun tunSettingsSummary(
 }
 
 @Composable
-internal fun TunSettingsBottomSheet(
+fun TunSettingsBottomSheet(
     show: Boolean,
     mtu: String,
     vpnDns: String,
@@ -55,31 +57,31 @@ internal fun TunSettingsBottomSheet(
     onDismissRequest: () -> Unit,
     onSave: (String, String, String, String, String, String) -> Unit,
 ) {
-    val mtuError = if (isTunMtu(mtu)) null else stringResource(R.string.settings_tun_mtu_invalid)
-    val vpnDnsError = if (!showVpnDns || isTunVpnDns(vpnDns)) {
+    val mtuError = if (isValidTunMtu(mtu)) null else stringResource(Res.string.settings_tun_mtu_invalid)
+    val vpnDnsError = if (!showVpnDns || isValidTunVpnDns(vpnDns)) {
         null
     } else {
-        stringResource(R.string.settings_tun_dns_invalid)
+        stringResource(Res.string.settings_tun_dns_invalid)
     }
-    val ipv4CidrError = if (isTunIpv4Cidr(ipv4Cidr)) {
+    val ipv4CidrError = if (isValidTunIpv4Cidr(ipv4Cidr)) {
         null
     } else {
-        stringResource(R.string.settings_tun_ipv4_cidr_invalid)
+        stringResource(Res.string.settings_tun_ipv4_cidr_invalid)
     }
-    val ipv6CidrError = if (isTunIpv6Cidr(ipv6Cidr)) {
+    val ipv6CidrError = if (isValidTunIpv6Cidr(ipv6Cidr)) {
         null
     } else {
-        stringResource(R.string.settings_tun_ipv6_cidr_invalid)
+        stringResource(Res.string.settings_tun_ipv6_cidr_invalid)
     }
-    val tcpKeepAliveError = if (isTunTcpKeepAlive(tcpKeepAliveInterval)) {
+    val tcpKeepAliveError = if (isValidTunTcpKeepAliveInterval(tcpKeepAliveInterval)) {
         null
     } else {
-        stringResource(R.string.settings_tun_tcp_keep_alive_interval_invalid)
+        stringResource(Res.string.settings_tun_tcp_keep_alive_interval_invalid)
     }
-    val tcpUserTimeoutError = if (isTunTcpUserTimeout(tcpUserTimeout)) {
+    val tcpUserTimeoutError = if (isValidTunTcpUserTimeout(tcpUserTimeout)) {
         null
     } else {
-        stringResource(R.string.settings_tun_tcp_user_timeout_invalid)
+        stringResource(Res.string.settings_tun_tcp_user_timeout_invalid)
     }
     val canSave = listOf(
         mtuError,
@@ -92,16 +94,16 @@ internal fun TunSettingsBottomSheet(
 
     AppWindowBottomSheet(
         show = show,
-        title = stringResource(R.string.tun),
+        title = stringResource(Res.string.tun),
         startAction = {
             TextButton(
-                text = stringResource(R.string.common_cancel),
+                text = stringResource(Res.string.common_cancel),
                 onClick = onDismissRequest,
             )
         },
         endAction = {
             TextButton(
-                text = stringResource(R.string.common_save),
+                text = stringResource(Res.string.common_save),
                 onClick = {
                     if (canSave) {
                         onSave(
@@ -123,7 +125,7 @@ internal fun TunSettingsBottomSheet(
                 SettingsTextField(
                     value = mtu,
                     onValueChange = onMtuChange,
-                    label = stringResource(R.string.settings_tun_mtu),
+                    label = stringResource(Res.string.settings_tun_mtu),
                     errorText = mtuError,
                     keyboardOptions = fiveDigitKeyboardOptions(),
                     sanitizeInput = ::sanitizeFiveDigitInput,
@@ -132,26 +134,26 @@ internal fun TunSettingsBottomSheet(
                     SettingsTextField(
                         value = vpnDns,
                         onValueChange = onVpnDnsChange,
-                        label = stringResource(R.string.settings_tun_vpn_dns),
+                        label = stringResource(Res.string.settings_tun_vpn_dns),
                         errorText = vpnDnsError,
                     )
                 }
                 SettingsTextField(
                     value = ipv4Cidr,
                     onValueChange = onIpv4CidrChange,
-                    label = stringResource(R.string.settings_tun_ipv4_cidr),
+                    label = stringResource(Res.string.settings_tun_ipv4_cidr),
                     errorText = ipv4CidrError,
                 )
                 SettingsTextField(
                     value = ipv6Cidr,
                     onValueChange = onIpv6CidrChange,
-                    label = stringResource(R.string.settings_tun_ipv6_cidr),
+                    label = stringResource(Res.string.settings_tun_ipv6_cidr),
                     errorText = ipv6CidrError,
                 )
                 SettingsTextField(
                     value = tcpKeepAliveInterval,
                     onValueChange = onTcpKeepAliveIntervalChange,
-                    label = stringResource(R.string.settings_tun_tcp_keep_alive_interval),
+                    label = stringResource(Res.string.settings_tun_tcp_keep_alive_interval),
                     errorText = tcpKeepAliveError,
                     keyboardOptions = fiveDigitKeyboardOptions(),
                     sanitizeInput = ::sanitizeFiveDigitInput,
@@ -159,7 +161,7 @@ internal fun TunSettingsBottomSheet(
                 SettingsTextField(
                     value = tcpUserTimeout,
                     onValueChange = onTcpUserTimeoutChange,
-                    label = stringResource(R.string.settings_tun_tcp_user_timeout),
+                    label = stringResource(Res.string.settings_tun_tcp_user_timeout),
                     errorText = tcpUserTimeoutError,
                     keyboardOptions = fiveDigitKeyboardOptions(),
                     sanitizeInput = ::sanitizeFiveDigitInput,
@@ -167,33 +169,4 @@ internal fun TunSettingsBottomSheet(
             }
         }
     }
-}
-
-private fun isTunMtu(value: String): Boolean {
-    return value.toIntInRangeOrNull(VpnDefaults.MTU_MIN..VpnDefaults.MTU_MAX) != null
-}
-
-private fun isTunVpnDns(value: String): Boolean {
-    val trimmed = value.trim()
-    return trimmed.contains(".") && !trimmed.contains(":") && isIpAddress(trimmed)
-}
-
-private fun isTunIpv4Cidr(value: String): Boolean {
-    return value.contains(".") && !value.contains(":") && isCidrAddress(value)
-}
-
-private fun isTunIpv6Cidr(value: String): Boolean {
-    return value.contains(":") && isCidrAddress(value)
-}
-
-private fun isTunTcpKeepAlive(value: String): Boolean {
-    return value.toIntInRangeOrNull(
-        VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MIN..VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MAX,
-    ) != null
-}
-
-private fun isTunTcpUserTimeout(value: String): Boolean {
-    return value.toIntInRangeOrNull(
-        VpnDefaults.TCP_USER_TIMEOUT_MIN..VpnDefaults.TCP_USER_TIMEOUT_MAX,
-    ) != null
 }

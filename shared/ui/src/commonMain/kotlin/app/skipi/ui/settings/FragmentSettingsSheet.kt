@@ -1,11 +1,11 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings.sheets
+package app.skipi.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
-import ui.components.AppWindowBottomSheet
-import ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.AppWindowBottomSheet
+import app.skipi.ui.components.AppWindowDropdownPreference
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,47 +17,51 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import app.skipi.app.settings.isValidFragmentRange
+import app.skipi.app.settings.normalizeFragmentPackets
+import app.skipi.app.settings.normalizeFragmentRange
+import app.skipi.app.settings.FragmentSettingsDraft
+import app.skipi.app.settings.toSavedSettings
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
 import engine.xray.DefaultFragmentPackets
 import engine.xray.FragmentPacketsValues
 import engine.xray.MaxFragmentInputLength
-import app.R
-import androidx.compose.ui.res.stringResource
+import app.skipi.ui.resources.*
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
-import ui.text.formatTemplate
-import utils.toIntInRangeOrNull
+import app.skipi.ui.text.formatTemplate
 
 @Composable
-internal fun fragmentSettingsSummary(
+fun fragmentSettingsSummary(
     enabled: Boolean,
     packets: String,
     length: String,
     interval: String,
 ): String {
     if (!enabled) {
-        return stringResource(R.string.settings_fragment_none)
+        return stringResource(Res.string.settings_fragment_none)
     }
-    return stringResource(R.string.settings_fragment_selected).formatTemplate(
+    return stringResource(Res.string.settings_fragment_selected).formatTemplate(
         "packets" to normalizeFragmentPackets(packets),
         "length" to normalizeFragmentRange(length, DefaultFragmentLength, min = 1),
         "interval" to normalizeFragmentRange(interval, DefaultFragmentInterval, min = 0),
     )
 }
 
-internal fun sanitizeFragmentRangeInput(input: String): String {
+fun sanitizeFragmentRangeInput(input: String): String {
     return input
         .filter { char -> char.isDigit() || char == '-' }
         .take(MaxFragmentInputLength)
 }
 
 @Composable
-internal fun FragmentSettingsBottomSheet(
+fun FragmentSettingsBottomSheet(
     show: Boolean,
     enabled: Boolean,
     packets: String,
@@ -70,32 +74,28 @@ internal fun FragmentSettingsBottomSheet(
     onDismissRequest: () -> Unit,
     onSave: (Boolean, String, String, String) -> Unit,
 ) {
-    val lengthError = enabled && !isFragmentRangeValid(length, min = 1)
-    val intervalError = enabled && !isFragmentRangeValid(interval, min = 0)
+    val lengthError = enabled && !isValidFragmentRange(length, min = 1)
+    val intervalError = enabled && !isValidFragmentRange(interval, min = 0)
     val canSave = !enabled || (!lengthError && !intervalError)
     val saveSettings = {
         if (canSave) {
-            onSave(
-                enabled,
-                normalizeFragmentPackets(packets),
-                normalizeFragmentRange(length, DefaultFragmentLength, min = 1),
-                normalizeFragmentRange(interval, DefaultFragmentInterval, min = 0),
-            )
+            val saved = FragmentSettingsDraft(enabled, packets, length, interval).toSavedSettings()
+            onSave(saved.enabled, saved.packets, saved.length, saved.interval)
         }
     }
 
     AppWindowBottomSheet(
         show = show,
-        title = stringResource(R.string.settings_fragment),
+        title = stringResource(Res.string.settings_fragment),
         startAction = {
             TextButton(
-                text = stringResource(R.string.common_cancel),
+                text = stringResource(Res.string.common_cancel),
                 onClick = onDismissRequest,
             )
         },
         endAction = {
             TextButton(
-                text = stringResource(R.string.common_save),
+                text = stringResource(Res.string.common_save),
                 onClick = saveSettings,
             )
         },
@@ -103,9 +103,9 @@ internal fun FragmentSettingsBottomSheet(
     ) {
         key(show) {
             SettingsSheetContent {
-                FragmentStatusText(stringResource(R.string.settings_fragment_description))
+                FragmentStatusText(stringResource(Res.string.settings_fragment_description))
                 SwitchPreference(
-                    title = stringResource(R.string.settings_fragment_enabled),
+                    title = stringResource(Res.string.settings_fragment_enabled),
                     checked = enabled,
                     onCheckedChange = onEnabledChange,
                 )
@@ -116,7 +116,7 @@ internal fun FragmentSettingsBottomSheet(
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         AppWindowDropdownPreference(
-                            title = stringResource(R.string.settings_fragment_packets),
+                            title = stringResource(Res.string.settings_fragment_packets),
                             items = FragmentPacketsValues,
                             selectedIndex = fragmentPacketsIndex(packets),
                             modifier = Modifier.padding(bottom = 12.dp),
@@ -127,9 +127,9 @@ internal fun FragmentSettingsBottomSheet(
                         FragmentTextField(
                             value = length,
                             onValueChange = onLengthChange,
-                            label = stringResource(R.string.settings_fragment_length),
+                            label = stringResource(Res.string.settings_fragment_length),
                             errorText = if (lengthError) {
-                                stringResource(R.string.settings_fragment_length_error)
+                                stringResource(Res.string.settings_fragment_length_error)
                             } else {
                                 null
                             },
@@ -137,9 +137,9 @@ internal fun FragmentSettingsBottomSheet(
                         FragmentTextField(
                             value = interval,
                             onValueChange = onIntervalChange,
-                            label = stringResource(R.string.settings_fragment_interval),
+                            label = stringResource(Res.string.settings_fragment_interval),
                             errorText = if (intervalError) {
-                                stringResource(R.string.settings_fragment_interval_error)
+                                stringResource(Res.string.settings_fragment_interval_error)
                             } else {
                                 null
                             },
@@ -186,55 +186,7 @@ private fun FragmentStatusText(
     )
 }
 
-private fun isFragmentRangeValid(
-    value: String,
-    min: Int,
-): Boolean {
-    return parseFragmentRange(value, min) != null
-}
-
-private fun normalizeFragmentPackets(value: String): String {
-    val normalized = value.trim().lowercase()
-    return normalized.takeIf { it in FragmentPacketsValues } ?: DefaultFragmentPackets
-}
-
 private fun fragmentPacketsIndex(value: String): Int {
     val index = FragmentPacketsValues.indexOf(normalizeFragmentPackets(value))
     return index.coerceAtLeast(0)
-}
-
-private fun normalizeFragmentRange(
-    value: String,
-    fallback: String,
-    min: Int,
-): String {
-    val range = parseFragmentRange(value, min) ?: return fallback
-    return range.end?.let { end -> "${range.start}-$end" } ?: range.start.toString()
-}
-
-private data class FragmentRange(
-    val start: Int,
-    val end: Int?,
-)
-
-private fun parseFragmentRange(
-    value: String,
-    min: Int,
-): FragmentRange? {
-    val parts = value.trim().split("-")
-    if (parts.size !in 1..2 || parts.any(String::isBlank)) {
-        return null
-    }
-
-    val range = min..Int.MAX_VALUE
-    val start = parts[0].toIntInRangeOrNull(range) ?: return null
-    val end = if (parts.size == 2) parts[1].toIntInRangeOrNull(range) ?: return null else start
-    if (start > end) {
-        return null
-    }
-
-    return FragmentRange(
-        start = start,
-        end = end.takeIf { it != start },
-    )
 }

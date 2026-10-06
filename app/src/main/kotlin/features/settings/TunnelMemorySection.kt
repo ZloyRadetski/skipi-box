@@ -12,8 +12,6 @@ import app.R
 import engine.vpn.SkipiCoreRuntime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 @Serializable
 data class CoreMemoryStats(
@@ -42,22 +40,6 @@ internal fun currentCoreMemoryStats(): CoreMemoryStats? {
 }
 
 /** The VPN core runs in SKIPI's process; reads real Go/Xray memory from core or falls back to native PSS. */
-@Composable
-internal fun SettingsTunnelMemorySection(
-    showOnHome: Boolean,
-    onShowOnHomeChange: (Boolean) -> Unit,
-) {
-    SmallTitle(text = stringResource(R.string.settings_tunnel_memory))
-    SettingsSectionCard {
-        SwitchPreference(
-            title = stringResource(R.string.settings_tunnel_memory_show_on_home),
-            summary = stringResource(R.string.settings_tunnel_memory_show_on_home_summary),
-            checked = showOnHome,
-            onCheckedChange = onShowOnHomeChange,
-        )
-    }
-}
-
 internal fun Context.currentTunnelMemoryPssKb(): Long {
     val coreStats = currentCoreMemoryStats()
     if (coreStats != null && coreStats.allocBytes > 0L) {

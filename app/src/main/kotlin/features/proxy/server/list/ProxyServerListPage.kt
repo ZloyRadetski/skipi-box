@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -91,6 +90,7 @@ import app.skipi.ui.home.SkipiProxyHomeScaffold
 import app.skipi.ui.home.SkipiProxyHomeScaffoldState
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeAction
+import app.skipi.app.home.moveProxyHomeItem
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.home.ProxyHomeEffect
@@ -98,12 +98,15 @@ import app.skipi.app.home.ProxyHomeEffectHandler
 import app.skipi.app.home.ProxyHomeImportSource
 import app.skipi.app.home.ProxyHomeInput
 import app.skipi.app.home.ProxyHomePresentation
+import app.skipi.app.home.ProxyHomeQrPayload
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeServerTool
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.reduceProxyHomePresentation
 import app.skipi.ui.home.ProxyHomeScreen
+import app.skipi.ui.home.rememberSaveableProxyHomePresentation
+import app.skipi.ui.home.rememberSaveableProxyHomeDialogsState
 import ui.text.formatTemplate
 import platform.TunnelConnectRequest
 import platform.TunnelFailure
@@ -160,7 +163,9 @@ fun ProxyServerListPage(
             ?.groupId
             ?: DefaultSubscriptionGroupId
     }
-    var homePresentation by rememberProxyHomePresentation(initialSelectedGroupId)
+    var homePresentation by rememberSaveableProxyHomePresentation(
+        ProxyHomePresentation(selectedGroupId = initialSelectedGroupId.toString()),
+    )
     val selectedGroupId = homePresentation.selectedGroupId
         ?.toIntOrNull()
         ?: initialSelectedGroupId
@@ -170,14 +175,12 @@ fun ProxyServerListPage(
         homePresentation = reduceProxyHomePresentation(homePresentation, action)
     }
     var serviceOperationInProgress by remember { mutableStateOf(false) }
-    var pendingProxyServerDeletion by remember { mutableStateOf<ProxyServerState?>(null) }
-    var pendingSubscriptionGroupDeletion by remember { mutableStateOf<SubscriptionGroupState?>(null) }
-    var pendingToolDeletion by remember { mutableStateOf<ProxyServerListToolAction?>(null) }
-    var qrCodeDialogState by remember { mutableStateOf<Pair<String, String>?>(null) }
-    var editingSubscriptionGroupId by rememberSaveable { mutableStateOf<Int?>(null) }
-    var creatingSubscriptionGroup by rememberSaveable { mutableStateOf(false) }
-    var creatingManualGroup by rememberSaveable { mutableStateOf(false) }
-    var selectingGroupMemberForServer by remember { mutableStateOf<ProxyServerState?>(null) }
+    var homeDialogs by rememberSaveableProxyHomeDialogsState<
+        ProxyServerState,
+        SubscriptionGroupState,
+        ProxyServerListToolAction,
+        Int,
+    >()
     var pingingGroupIds by remember { mutableStateOf(emptySet<Int>()) }
     var refreshingSubscriptionGroupIds by remember { mutableStateOf(emptySet<Int>()) }
     var activeGlobalLatencyJob by remember { mutableStateOf<Job?>(null) }
@@ -195,7 +198,7 @@ fun ProxyServerListPage(
         return latencyRunCounter
     }
     val servers = proxyListState.proxyServers
-    val editingSubscriptionGroup = editingSubscriptionGroupId?.let { groupId ->
+    val editingSubscriptionGroup = homeDialogs.editingSubscriptionGroupId?.let { groupId ->
         proxyListState.subscriptionGroups.firstOrNull { group -> group.id == groupId }
     }
     val selectedServerId = proxyListState.selectedProxyServerId
@@ -526,7 +529,7 @@ fun ProxyServerListPage(
 
     fun requestProxyServerDeletion(server: ProxyServerState) {
         if (proxyListState.enableDeletionConfirmation) {
-            pendingProxyServerDeletion = server
+            homeDialogs = homeDialogs.copy(pendingServerDeletion = server)
         } else {
             deleteProxyServer(server)
         }
@@ -730,7 +733,7 @@ fun ProxyServerListPage(
                         }
                         val strategy = server.server as? StrategyGroup
                         if (strategy?.strategy == StrategyGroupConstants.TYPE_SELECT) {
-                            selectingGroupMemberForServer = server
+                            homeDialogs = homeDialogs.copy(selectingGroupMemberForServer = server)
                         }
                     }
                     is ProxyHomeEffect.TestServer -> latencyCoordinator.testVisibleServers(listOf(effect.serverId))
@@ -794,9 +797,9 @@ fun ProxyServerListPage(
                         )
                     }
                     ProxyHomeEffect.AddSubscription -> {
-                        editingSubscriptionGroupId = null
-                        creatingSubscriptionGroup = true
-                        creatingManualGroup = false
+                        homeDialogs = homeDialogs.copy(editingSubscriptionGroupId = null)
+                        homeDialogs = homeDialogs.copy(creatingSubscriptionGroup = true)
+                        homeDialogs = homeDialogs.copy(creatingManualGroup = false)
                     }
                     is ProxyHomeEffect.ImportServers -> {
                         val action = when (effect.source) {
@@ -884,7 +887,7 @@ fun ProxyServerListPage(
                             when (val result = server.proxyServerCopyText(appState = stateStore.state.value, type = type)) {
                                 is ProxyServerCopyTextResult.Success -> {
                                     if (format == ProxyHomeCopyFormat.QrCode) {
-                                        qrCodeDialogState = server.server.getInfo().remarks to result.text
+                                        homeDialogs = homeDialogs.copy(qrPayload = ProxyHomeQrPayload(server.server.getInfo().remarks, result.text))
                                     } else {
                                         clipboard.setPlainText(result.text)
                                         tipNotifier.show(messages.copied)
@@ -901,21 +904,21 @@ fun ProxyServerListPage(
                         if (stateStore.state.value.subscriptionGroups.none { it.id == groupId }) {
                             return@ProxyHomeEffectHandler Result.failure(IllegalStateException("Subscription no longer exists."))
                         }
-                        editingSubscriptionGroupId = groupId
+                        homeDialogs = homeDialogs.copy(editingSubscriptionGroupId = groupId)
                     }
                     is ProxyHomeEffect.EditGroup -> {
                         val requestedGroupId = effect.groupId
                         if (requestedGroupId == null) {
-                            editingSubscriptionGroupId = null
-                            creatingSubscriptionGroup = false
-                            creatingManualGroup = true
+                            homeDialogs = homeDialogs.copy(editingSubscriptionGroupId = null)
+                            homeDialogs = homeDialogs.copy(creatingSubscriptionGroup = false)
+                            homeDialogs = homeDialogs.copy(creatingManualGroup = true)
                         } else {
                             val groupId = requestedGroupId.toIntOrNull()
                                 ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid group ID."))
                             if (stateStore.state.value.subscriptionGroups.none { it.id == groupId }) {
                                 return@ProxyHomeEffectHandler Result.failure(IllegalStateException("Group no longer exists."))
                             }
-                            editingSubscriptionGroupId = groupId
+                            homeDialogs = homeDialogs.copy(editingSubscriptionGroupId = groupId)
                         }
                     }
                     is ProxyHomeEffect.DeleteGroup -> {
@@ -927,7 +930,7 @@ fun ProxyServerListPage(
                             IllegalArgumentException("Built-in groups cannot be deleted."),
                         )
                         if (proxyListState.enableDeletionConfirmation) {
-                            pendingSubscriptionGroupDeletion = group
+                            homeDialogs = homeDialogs.copy(pendingSubscriptionDeletion = group)
                         } else {
                             deleteSubscriptionGroup(group)
                             if (selectedGroupId == group.id) {
@@ -953,13 +956,12 @@ fun ProxyServerListPage(
                             ?: return@ProxyHomeEffectHandler Result.success(Unit)
                         services.sharedApplicationStore.dispatch(
                             SharedApplicationAction.UpdateProxyServers { current ->
-                                val fromBackingIndex = current.indexOfFirst { it.id == serverId }
-                                val toBackingIndex = current.indexOfFirst { it.id == toId }
-                                if (fromBackingIndex < 0 || toBackingIndex < 0 || fromBackingIndex == toBackingIndex) current
-                                else current.toMutableList().also { items ->
-                                    val moved = items.removeAt(fromBackingIndex)
-                                    items.add(toBackingIndex, moved)
-                                }
+                                moveProxyHomeItem(
+                                    items = current,
+                                    fromId = serverId,
+                                    toId = toId,
+                                    idOf = { it.id },
+                                )
                             },
                         )
                     }
@@ -971,7 +973,7 @@ fun ProxyServerListPage(
                         if (server.server !is StrategyGroup) return@ProxyHomeEffectHandler Result.failure(
                             IllegalArgumentException("This server is not a strategy group."),
                         )
-                        selectingGroupMemberForServer = server
+                        homeDialogs = homeDialogs.copy(selectingGroupMemberForServer = server)
                     }
                     is ProxyHomeEffect.SelectStrategyMember -> {
                         val serverId = effect.serverId.toIntOrNull()
@@ -1022,7 +1024,7 @@ fun ProxyServerListPage(
                             ProxyHomeServerTool.DeleteAllServers -> ProxyServerListToolAction.DeleteAllServers
                         }
                         if (action.isDeletion && proxyListState.enableDeletionConfirmation) {
-                            pendingToolDeletion = action
+                            homeDialogs = homeDialogs.copy(pendingToolDeletion = action)
                         } else {
                             handleProxyServerListToolAction(
                                 action = action,
@@ -1135,18 +1137,18 @@ fun ProxyServerListPage(
         )
     }
 
-    pendingProxyServerDeletion?.let { server ->
+    homeDialogs.pendingServerDeletion?.let { server ->
         DeleteConfirmationDialog(
             show = true,
             title = stringResource(R.string.deletion_confirmation_delete_proxy_server),
-            onDismissRequest = { pendingProxyServerDeletion = null },
+            onDismissRequest = { homeDialogs = homeDialogs.copy(pendingServerDeletion = null) },
             onConfirm = {
-                pendingProxyServerDeletion = null
+                homeDialogs = homeDialogs.copy(pendingServerDeletion = null)
                 deleteProxyServer(server)
             },
         )
     }
-    pendingSubscriptionGroupDeletion?.let { group ->
+    homeDialogs.pendingSubscriptionDeletion?.let { group ->
         val isManual = group.builtIn || group.url.isBlank()
         DeleteConfirmationDialog(
             show = true,
@@ -1155,9 +1157,9 @@ fun ProxyServerListPage(
             } else {
                 stringResource(R.string.deletion_confirmation_delete_subscription_group)
             },
-            onDismissRequest = { pendingSubscriptionGroupDeletion = null },
+            onDismissRequest = { homeDialogs = homeDialogs.copy(pendingSubscriptionDeletion = null) },
             onConfirm = {
-                pendingSubscriptionGroupDeletion = null
+                homeDialogs = homeDialogs.copy(pendingSubscriptionDeletion = null)
                 deleteSubscriptionGroup(group)
                 if (selectedGroupId == group.id) {
                     updateHomePresentation(
@@ -1167,13 +1169,13 @@ fun ProxyServerListPage(
             },
         )
     }
-    pendingToolDeletion?.let { action ->
+    homeDialogs.pendingToolDeletion?.let { action ->
         DeleteConfirmationDialog(
             show = true,
             title = stringResource(action.deletionConfirmationTitleResId),
-            onDismissRequest = { pendingToolDeletion = null },
+            onDismissRequest = { homeDialogs = homeDialogs.copy(pendingToolDeletion = null) },
             onConfirm = {
-                pendingToolDeletion = null
+                homeDialogs = homeDialogs.copy(pendingToolDeletion = null)
                 handleProxyServerListToolAction(
                     action = action,
                     groupState = groupState,
@@ -1199,16 +1201,16 @@ fun ProxyServerListPage(
             },
         )
     }
-    qrCodeDialogState?.let { (title, text) ->
+    homeDialogs.qrPayload?.let { (title, text) ->
         ProxyServerQrCodeDialog(
             title = title,
             text = text,
-            onDismissRequest = { qrCodeDialogState = null },
+            onDismissRequest = { homeDialogs = homeDialogs.copy(qrPayload = null) },
         )
     }
-    val isManualGroup = creatingManualGroup || (editingSubscriptionGroup?.let { it.builtIn || it.url.isBlank() } ?: false)
+    val isManualGroup = homeDialogs.creatingManualGroup || (editingSubscriptionGroup?.let { it.builtIn || it.url.isBlank() } ?: false)
     SubscriptionGroupEditorDialog(
-        show = creatingSubscriptionGroup || creatingManualGroup || editingSubscriptionGroup != null,
+        show = homeDialogs.creatingSubscriptionGroup || homeDialogs.creatingManualGroup || editingSubscriptionGroup != null,
         group = editingSubscriptionGroup,
         isManualGroup = isManualGroup,
         nextGroupId = maxOf(
@@ -1216,9 +1218,9 @@ fun ProxyServerListPage(
             (proxyListState.subscriptionGroups.maxOfOrNull { it.id } ?: 0) + 1,
         ),
         onDismissRequest = {
-            editingSubscriptionGroupId = null
-            creatingSubscriptionGroup = false
-            creatingManualGroup = false
+            homeDialogs = homeDialogs.copy(editingSubscriptionGroupId = null)
+            homeDialogs = homeDialogs.copy(creatingSubscriptionGroup = false)
+            homeDialogs = homeDialogs.copy(creatingManualGroup = false)
         },
         onDismissFinished = {},
         onSave = { group, isNew ->
@@ -1247,17 +1249,17 @@ fun ProxyServerListPage(
                     nextSubscriptionGroupId = maxOf(state.nextSubscriptionGroupId, group.id + 1),
                 )
             }
-            editingSubscriptionGroupId = null
-            creatingSubscriptionGroup = false
-            creatingManualGroup = false
+            homeDialogs = homeDialogs.copy(editingSubscriptionGroupId = null)
+            homeDialogs = homeDialogs.copy(creatingSubscriptionGroup = false)
+            homeDialogs = homeDialogs.copy(creatingManualGroup = false)
             if ((isNew || wasUrlBlank) && group.url.isNotBlank() && group.enabled) {
                 scope.launch { updateSubscription(group.id) }
             }
         },
         onDelete = { group ->
-            editingSubscriptionGroupId = null
-            creatingSubscriptionGroup = false
-            creatingManualGroup = false
+            homeDialogs = homeDialogs.copy(editingSubscriptionGroupId = null)
+            homeDialogs = homeDialogs.copy(creatingSubscriptionGroup = false)
+            homeDialogs = homeDialogs.copy(creatingManualGroup = false)
             deleteSubscriptionGroup(group)
             if (selectedGroupId == group.id) {
                 updateHomePresentation(
@@ -1270,11 +1272,11 @@ fun ProxyServerListPage(
         },
     )
     SelectGroupMemberDialog(
-        show = selectingGroupMemberForServer != null,
-        groupServer = selectingGroupMemberForServer,
-        onDismissRequest = { selectingGroupMemberForServer = null },
+        show = homeDialogs.selectingGroupMemberForServer != null,
+        groupServer = homeDialogs.selectingGroupMemberForServer,
+        onDismissRequest = { homeDialogs = homeDialogs.copy(selectingGroupMemberForServer = null) },
         onSelectMember = { memberId ->
-            val targetGroup = selectingGroupMemberForServer ?: return@SelectGroupMemberDialog
+            val targetGroup = homeDialogs.selectingGroupMemberForServer ?: return@SelectGroupMemberDialog
             scope.launch {
                 val actionResult = services.sharedApplicationStore.dispatchAndAwait(
                     SharedApplicationAction.UpdateProxyServers { current ->

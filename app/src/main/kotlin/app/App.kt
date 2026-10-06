@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
@@ -37,12 +38,15 @@ import features.settings.locale.ProvideAppLanguage
 import features.settings.locale.RecreateActivityOnAppLanguageChange
 import system.AndroidPackageProvider
 import system.AndroidUserSpaceProvider
+import app.skipi.ui.feedback.LocalTipNotifier
+import app.skipi.ui.feedback.TipNotifier
 import ui.AppTheme
 import ui.feedback.AndroidToastTipNotifier
 import ui.feedback.AppHapticFeedback
 import ui.feedback.ComposeAppHapticFeedback
 import ui.feedback.LocalAppHaptics
 import ui.keyColorFor
+import kotlinx.coroutines.launch
 
 @Composable
 fun App(
@@ -54,6 +58,7 @@ fun App(
     requestVpnPermission: suspend (Intent) -> Boolean,
     requestWifiSsidPermission: suspend () -> Boolean = { false },
 ) {
+    val notificationScope = rememberCoroutineScope()
     val appContext = LocalContext.current.applicationContext
     val systemUiSnapshot = appContext.currentSystemUiSnapshot()
     val application = appContext as SkipiApplication
@@ -269,6 +274,9 @@ fun App(
                 LocalAppServices provides services,
                 LocalAppHaptics provides haptics,
                 LocalHapticFeedback provides composeHaptics,
+                LocalTipNotifier provides remember(tipNotifier, notificationScope) {
+                    TipNotifier { message -> notificationScope.launch { tipNotifier.show(message) } }
+                },
             ) {
                 ui.background.AppBackground {
                     AppContent(padding = padding)

@@ -14,9 +14,7 @@ const val MaxTrafficStatsNotificationRefreshIntervalSeconds = 10
 const val DefaultTrafficStatsNotificationRefreshIntervalSeconds = 2
 
 fun generateRandomProxyCredential(prefix: String = "skipi_"): String {
-    val chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    val randomPart = (1..6).map { chars.random() }.joinToString("")
-    return "$prefix$randomPart"
+    return app.skipi.app.settings.generateRandomProxyCredential(prefix)
 }
 
 val DefaultSubscriptionGroups = listOf(

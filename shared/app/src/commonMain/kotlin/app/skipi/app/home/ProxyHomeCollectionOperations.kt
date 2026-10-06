@@ -70,3 +70,18 @@ fun <Group, Server, GroupId, ServerId> removeProxyHomeGroup(
         ?: emptySelectedServerId
     return ProxyHomeGroupRemoval(nextGroups, nextServers, nextSelectedId, removed = true)
 }
+/** Reorders one collection item by stable ID and leaves the input untouched when either ID is absent. */
+fun <Item, ItemId> moveProxyHomeItem(
+    items: List<Item>,
+    fromId: ItemId,
+    toId: ItemId,
+    idOf: (Item) -> ItemId,
+): List<Item> {
+    val fromIndex = items.indexOfFirst { item -> idOf(item) == fromId }
+    val toIndex = items.indexOfFirst { item -> idOf(item) == toId }
+    if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return items
+
+    return items.toMutableList().also { reordered ->
+        reordered.add(toIndex, reordered.removeAt(fromIndex))
+    }
+}

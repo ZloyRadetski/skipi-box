@@ -1,29 +1,23 @@
+// Copyright 2026, Radetski
+// SPDX-License-Identifier: GPL-3.0
+
 package ui
 
 import androidx.compose.ui.graphics.Color
 
-/**
- * Default fallback colors for status and ping indicators.
- * Applied when the user has not overridden these colors in appearance settings.
- */
+/** Android source compatibility facade over portable status colors. */
 object StatusColorDefaults {
-    val StatusRunningLight = Color(0xFF128A3C)
-    val StatusRunningDark = Color(0xFF6BD58A)
+    val StatusRunningLight: Color get() = app.skipi.ui.theme.StatusColorDefaults.StatusRunningLight
+    val StatusRunningDark: Color get() = app.skipi.ui.theme.StatusColorDefaults.StatusRunningDark
+    val PingFastLight: Color get() = app.skipi.ui.theme.StatusColorDefaults.PingFastLight
+    val PingFastDark: Color get() = app.skipi.ui.theme.StatusColorDefaults.PingFastDark
+    val PingMediumLight: Color get() = app.skipi.ui.theme.StatusColorDefaults.PingMediumLight
+    val PingMediumDark: Color get() = app.skipi.ui.theme.StatusColorDefaults.PingMediumDark
+    val PingSlowLight: Color get() = app.skipi.ui.theme.StatusColorDefaults.PingSlowLight
+    val PingSlowDark: Color get() = app.skipi.ui.theme.StatusColorDefaults.PingSlowDark
 
-    val PingFastLight = Color(0xFF128A3C)
-    val PingFastDark = Color(0xFF6BD58A)
-
-    val PingMediumLight = Color(0xFFD18A00)
-    val PingMediumDark = Color(0xFFFFC857)
-
-    val PingSlowLight = Color(0xFFE06400)
-    val PingSlowDark = Color(0xFFFF9B63)
-
-    fun statusRunning(isDark: Boolean): Color = if (isDark) StatusRunningDark else StatusRunningLight
-
-    fun pingFast(isDark: Boolean): Color = if (isDark) PingFastDark else PingFastLight
-
-    fun pingMedium(isDark: Boolean): Color = if (isDark) PingMediumDark else PingMediumLight
-
-    fun pingSlow(isDark: Boolean): Color = if (isDark) PingSlowDark else PingSlowLight
+    fun statusRunning(isDark: Boolean): Color = app.skipi.ui.theme.StatusColorDefaults.statusRunning(isDark)
+    fun pingFast(isDark: Boolean): Color = app.skipi.ui.theme.StatusColorDefaults.pingFast(isDark)
+    fun pingMedium(isDark: Boolean): Color = app.skipi.ui.theme.StatusColorDefaults.pingMedium(isDark)
+    fun pingSlow(isDark: Boolean): Color = app.skipi.ui.theme.StatusColorDefaults.pingSlow(isDark)
 }

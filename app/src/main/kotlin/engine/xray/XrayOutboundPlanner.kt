@@ -23,6 +23,9 @@ import features.config.ShadowrocketPolicyGroup
 import features.config.ShadowrocketPolicyGroupTagPrefix
 import features.config.analyzeShadowrocketConfig
 import features.proxy.server.display.CountryFlagUtils
+import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.resolveStrategyGroupMembers
+import app.skipi.app.proxy.resolveShadowrocketPolicyGroupMembers
 
 internal fun AppState.buildXrayOutboundPlan(selectedServer: ProxyServerState): XrayOutboundPlan {
     return XrayOutboundPlanner(this).build(selectedServer)
@@ -319,119 +322,34 @@ internal fun AppState.strategyGroupMembers(
     strategyGroup: StrategyGroup,
     visitingStrategyGroupIds: Set<Int> = emptySet(),
 ): List<ProxyServerState> {
-    if (strategyGroup.proxyServerIds.isNotEmpty()) {
-        return strategyGroup.proxyServerIds.flatMap { memberId ->
-            val member = proxyServers.firstOrNull { server -> server.id == memberId }
-            when (val server = member?.server) {
-                is StrategyGroup -> {
-                    if (member.id in visitingStrategyGroupIds) {
-                        emptyList()
-                    } else {
-                        strategyGroupMembers(server, visitingStrategyGroupIds + member.id)
-                    }
-                }
-
-                null,
-                is ChainProxy -> emptyList()
-
-                is Custom -> member.takeIf { candidate ->
-                    (candidate.server as Custom).canBeUsedInGeneratedProxyPlan()
-                }?.let(::listOf).orEmpty()
-
-                else -> listOf(member)
-            }
-        }.distinctBy(ProxyServerState::id)
+    val records = proxyServers.map { server ->
+        ProxyServerRecord(server.id, server.groupId, server.server, server.latency)
     }
-    strategyGroup.sourceTrafficConfigId?.let { configId ->
-        val sourceGroups = trafficConfigs.firstOrNull { config -> config.id == configId }
-            ?.rawConfig
-            ?.analyzeShadowrocketConfig()
-            ?.proxyGroups
-            .orEmpty()
-        val sourceGroup = sourceGroups.firstOrNull { group ->
-            group.name.equals(strategyGroup.sourcePolicyGroupName, ignoreCase = true)
-        }
-        if (sourceGroup != null) {
-            return shadowrocketPolicyGroupMembers(sourceGroup, policyGroups = sourceGroups)
-        }
-    }
-    val regex = strategyGroup.filter.takeIf(String::isNotBlank)?.let { filter ->
-        runCatching { Regex(filter) }.getOrNull()
-    }
-    if (strategyGroup.filter.isBlank() && strategyGroup.subscriptionGroupId == null) {
-        return emptyList()
-    }
-    return proxyServers
-        .asSequence()
-        .filter { server -> !server.server.isCompositeProxyServer() }
-        .filter { server ->
-            server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()
-        }
-        .filter { server ->
-            strategyGroup.subscriptionGroupId == null || server.groupId == strategyGroup.subscriptionGroupId
-        }
-        .filter { server ->
-            val filter = strategyGroup.filter
-            filter.isBlank() ||
-                regex?.containsMatchIn(server.server.getInfo().remarks) == true ||
-                (regex == null && server.server.getInfo().remarks.contains(filter))
-        }
-        .toList()
+    val resolved = resolveStrategyGroupMembers(
+        strategyGroup = strategyGroup,
+        servers = records,
+        trafficConfigContentById = trafficConfigs.associate { it.id to it.rawConfig },
+        stripLeadingFlag = CountryFlagUtils::stripLeadingCountryFlag,
+        visitingStrategyGroupIds = visitingStrategyGroupIds,
+    )
+    return resolved.mapNotNull { record -> proxyServers.firstOrNull { it.id == record.id } }
 }
 
 private fun AppState.shadowrocketPolicyGroupMembers(
     group: ShadowrocketPolicyGroup,
     policyGroups: List<ShadowrocketPolicyGroup> = shadowrocketPolicyGroups,
-    visitingGroupNames: Set<String> = emptySet(),
 ): List<ProxyServerState> {
-    if (group.name in visitingGroupNames) return emptyList()
-    val matchingStrategy = proxyServers.mapNotNull { it.server as? StrategyGroup }
-        .firstOrNull { it.sourcePolicyGroupName.equals(group.name, ignoreCase = true) }
-    if (matchingStrategy != null && matchingStrategy.proxyServerIds.isNotEmpty()) {
-        return strategyGroupMembers(matchingStrategy)
+    val records = proxyServers.map { server ->
+        ProxyServerRecord(server.id, server.groupId, server.server, server.latency)
     }
-    return group.members
-        .flatMap { rawMember ->
-            val member = rawMember.trim().removeSurrounding("\"").removeSurrounding("'").trim()
-            when {
-                member == ".*" -> proxyServers.filter { server ->
-                    !server.server.isCompositeProxyServer() &&
-                        (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan())
-                }
-
-                else -> {
-                    val matchingServers = proxyServers.filter { server ->
-                        val remarks = server.server.getInfo().remarks.trim()
-                        val cleanRemarks = CountryFlagUtils.stripLeadingCountryFlag(remarks).trim()
-                        val cleanMember = CountryFlagUtils.stripLeadingCountryFlag(member).trim()
-                        (remarks.equals(member, ignoreCase = true) ||
-                            cleanRemarks.equals(member, ignoreCase = true) ||
-                            cleanRemarks.equals(cleanMember, ignoreCase = true) ||
-                            remarks.equals(cleanMember, ignoreCase = true)) &&
-                            (server.server !is ChainProxy) &&
-                            (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan())
-                    }
-                    matchingServers.flatMap { matchingServer ->
-                        when (val proxy = matchingServer.server) {
-                            is StrategyGroup -> strategyGroupMembers(proxy, setOf(matchingServer.id))
-                            else -> matchingServer.takeUnless { it.server.isCompositeProxyServer() }?.let(::listOf).orEmpty()
-                        }
-                    }.ifEmpty {
-                        policyGroups
-                            .firstOrNull { candidate -> candidate.name.equals(member, ignoreCase = true) }
-                            ?.let { nested ->
-                                shadowrocketPolicyGroupMembers(
-                                    group = nested,
-                                    policyGroups = policyGroups,
-                                    visitingGroupNames = visitingGroupNames + group.name,
-                                )
-                            }
-                            .orEmpty()
-                    }
-                }
-            }
-        }
-        .distinctBy(ProxyServerState::id)
+    val resolved = resolveShadowrocketPolicyGroupMembers(
+        group = group,
+        policyGroups = policyGroups,
+        servers = records,
+        trafficConfigContentById = trafficConfigs.associate { it.id to it.rawConfig },
+        stripLeadingFlag = CountryFlagUtils::stripLeadingCountryFlag,
+    )
+    return resolved.mapNotNull { record -> proxyServers.firstOrNull { it.id == record.id } }
 }
 
 private fun AppState.chainProxyMembers(chainProxy: ChainProxy): List<ProxyServerState> {

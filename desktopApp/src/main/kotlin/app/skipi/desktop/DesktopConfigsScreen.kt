@@ -3,9 +3,7 @@
 
 package app.skipi.desktop
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,35 +21,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Save
-import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -64,15 +49,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import features.config.ShadowrocketConfigAnalysis
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
 import features.config.defaultShadowrocketConfig
+import app.skipi.ui.config.SkipiTrafficConfigContextMenu
+import app.skipi.ui.config.SkipiTrafficConfigProfileCard
+import app.skipi.ui.config.SkipiTrafficConfigRawEditor
+import app.skipi.ui.config.SkipiTrafficConfigRawEditorLabels
+import app.skipi.ui.config.SkipiTrafficConfigRawEditorState
+import app.skipi.ui.config.SkipiTrafficConfigUrlImportDialog
+import app.skipi.ui.config.TrafficConfigCatalogProfileItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -90,7 +80,6 @@ private val ConfigText = Color(0xFFF4F4F6)
 private val ConfigMuted = Color(0xFFA2A5AF)
 private val ConfigGreen = Color(0xFF58D27A)
 private val ConfigRed = Color(0xFFFF5B62)
-private val ConfigSelected = Color(0xFF737373)
 
 private data class DesktopConfigDraft(
     val id: Int?,
@@ -115,9 +104,22 @@ internal fun DesktopConfigsScreen(
     var editorDraft by remember { mutableStateOf<DesktopConfigDraft?>(null) }
     var showAddMenu by remember { mutableStateOf(false) }
     var importUrlDialog by remember { mutableStateOf(false) }
+    var importUrl by remember { mutableStateOf("") }
     var pendingDeletion by remember { mutableStateOf<DesktopStoredConfig?>(null) }
+    var contextMenuConfig by remember { mutableStateOf<DesktopStoredConfig?>(null) }
     var message by remember { mutableStateOf("") }
     var updatingConfigIds by remember { mutableStateOf(emptySet<Int>()) }
+
+    fun openConfigEditor(config: DesktopStoredConfig) {
+        editorDraft = DesktopConfigDraft(
+            id = config.id,
+            name = config.name,
+            content = config.content,
+            sourceUrl = config.sourceUrl,
+            updateLocked = config.updateLocked,
+            lastUpdatedAtMillis = config.lastUpdatedAtMillis,
+        )
+    }
 
     fun persist(updated: DesktopConfigLibrary, successMessage: String, afterSave: (() -> Unit)? = null): Boolean {
         return DesktopConfigLibraries.saveDefault(updated).fold(
@@ -357,7 +359,7 @@ internal fun DesktopConfigsScreen(
             } else {
                 Text("Профили", color = ConfigText, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 configLibrary.configs.forEach { config ->
-                    ConfigProfileCard(
+                    DesktopConfigProfileCard(
                         config = config,
                         selected = config.id == configLibrary.selectedConfigId,
                         updating = config.id in updatingConfigIds,
@@ -365,36 +367,8 @@ internal fun DesktopConfigsScreen(
                         onSelect = {
                             persist(DesktopConfigLibraries.select(configLibrary, config.id), "Выбран «${config.name}».")
                         },
-                        onEdit = {
-                            editorDraft = DesktopConfigDraft(
-                                id = config.id,
-                                name = config.name,
-                                content = config.content,
-                                sourceUrl = config.sourceUrl,
-                                updateLocked = config.updateLocked,
-                                lastUpdatedAtMillis = config.lastUpdatedAtMillis,
-                            )
-                        },
+                        onEdit = { openConfigEditor(config) },
                         onRefresh = { importFromUrl(config.sourceUrl, config) },
-                        onDuplicate = {
-                            editorDraft = DesktopConfigDraft(
-                                id = null,
-                                name = "${config.name} — копия",
-                                content = config.content,
-                                sourceUrl = config.sourceUrl,
-                                updateLocked = config.updateLocked,
-                                lastUpdatedAtMillis = config.lastUpdatedAtMillis,
-                            )
-                        },
-                        onExport = {
-                            DesktopProfileFiles.chooseProfileToSave()?.let { path ->
-                                DesktopProfileFiles.write(path, config.content).onSuccess {
-                                    message = "Конфиг экспортирован: ${path.fileName}"
-                                }.onFailure { error ->
-                                    message = "Не удалось экспортировать конфиг: ${error.message.orEmpty()}"
-                                }
-                            }
-                        },
                         onCopy = {
                             runCatching {
                                 Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(config.content), null)
@@ -405,6 +379,7 @@ internal fun DesktopConfigsScreen(
                             }
                         },
                         onDelete = { pendingDeletion = config },
+                        onOpenContextMenu = { contextMenuConfig = config },
                     )
                 }
             }
@@ -416,13 +391,58 @@ internal fun DesktopConfigsScreen(
         }
     }
 
-    if (importUrlDialog) {
-        DesktopConfigUrlImportDialog(
-            onImport = { url ->
+    SkipiTrafficConfigUrlImportDialog(
+        show = importUrlDialog,
+        url = importUrl,
+        onUrlChange = { importUrl = it },
+        onDismissRequest = { importUrlDialog = false },
+        onImport = { url ->
+                importUrl = ""
                 importUrlDialog = false
                 importFromUrl(url)
+        },
+    )
+    contextMenuConfig?.let { config ->
+        SkipiTrafficConfigContextMenu(
+            show = true,
+            onDismissRequest = { contextMenuConfig = null },
+            showRawEdit = true,
+            showUiEdit = false,
+            showDuplicate = true,
+            showExport = true,
+            showExportBase64 = false,
+            showDelete = true,
+            showEnable = true,
+            onUpdate = if (config.sourceUrl.isNotBlank() && !config.updateLocked && config.id !in updatingConfigIds) {
+                { contextMenuConfig = null; importFromUrl(config.sourceUrl, config) }
+            } else null,
+            onRawEdit = { contextMenuConfig = null; openConfigEditor(config) },
+            onUiEdit = { contextMenuConfig = null; openConfigEditor(config) },
+            onDuplicate = {
+                contextMenuConfig = null
+                editorDraft = DesktopConfigDraft(
+                    id = null,
+                    name = "${config.name} — копия",
+                    content = config.content,
+                    sourceUrl = config.sourceUrl,
+                    updateLocked = config.updateLocked,
+                    lastUpdatedAtMillis = config.lastUpdatedAtMillis,
+                )
             },
-            onDismiss = { importUrlDialog = false },
+            onExport = {
+                contextMenuConfig = null
+                DesktopProfileFiles.chooseProfileToSave()?.let { path ->
+                    DesktopProfileFiles.write(path, config.content).onSuccess {
+                        message = "Конфиг экспортирован: ${path.fileName}"
+                    }.onFailure { error -> message = "Не удалось экспортировать конфиг: ${error.message.orEmpty()}" }
+                }
+            },
+            onExportBase64 = { contextMenuConfig = null },
+            onDelete = { contextMenuConfig = null; pendingDeletion = config },
+            onEnable = {
+                contextMenuConfig = null
+                persist(DesktopConfigLibraries.select(configLibrary, config.id), "Выбран «${config.name}».")
+            },
         )
     }
     pendingDeletion?.let { config ->
@@ -495,7 +515,7 @@ private fun EmptyConfigsCard(onCreate: () -> Unit) {
 }
 
 @Composable
-private fun ConfigProfileCard(
+private fun DesktopConfigProfileCard(
     config: DesktopStoredConfig,
     selected: Boolean,
     updating: Boolean,
@@ -503,82 +523,45 @@ private fun ConfigProfileCard(
     onSelect: () -> Unit,
     onEdit: () -> Unit,
     onRefresh: () -> Unit,
-    onDuplicate: () -> Unit,
-    onExport: () -> Unit,
     onCopy: () -> Unit,
     onDelete: () -> Unit,
+    onOpenContextMenu: () -> Unit,
 ) {
     val analysis = remember(config.content) { config.content.analyzeShadowrocketConfig() }
-    var menuExpanded by remember { mutableStateOf(false) }
-    Card(
-        onClick = onSelect,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = if (selected) ConfigSelected else ConfigSurface),
-        border = BorderStroke(1.dp, if (selected) Color(0xFF9A9A9A) else Color.Transparent),
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(ConfigRaisedSurface),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Outlined.Description, contentDescription = null, tint = ConfigText) }
-                Spacer(Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(config.name, color = ConfigText, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        config.sourceUrl.ifBlank { "Локальный профиль" },
-                        color = ConfigMuted,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (selected) ConfigChip("Активен", accent = ConfigGreen)
+    SkipiTrafficConfigProfileCard(
+        item = TrafficConfigCatalogProfileItem(
+            id = config.id,
+            name = config.name,
+            sourceUrl = config.sourceUrl,
+            active = selected,
+            updating = updating,
+            canDelete = canDelete,
+        ),
+        onSelect = onSelect,
+        onEdit = onEdit,
+        onDelete = onDelete,
+        onUpdate = onRefresh,
+        onLongPress = { onOpenContextMenu() },
+        showUpdateAction = !config.updateLocked,
+        supportingContent = {
+            Text(
+                config.sourceUrl.ifBlank { "Локальный профиль" },
+                color = ConfigMuted,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Правила: ${analysis.rules.size} · Группы: ${analysis.proxyGroups.size}", color = ConfigMuted, fontSize = 12.sp)
+                if (config.updateLocked) Text(" · Обновление заблокировано", color = ConfigMuted, fontSize = 12.sp)
+                if (analysis.diagnostics.isNotEmpty()) Text(" · Диагностика: ${analysis.diagnostics.size}", color = ConfigRed, fontSize = 12.sp)
             }
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                ConfigChip("Правила: ${analysis.rules.size}")
-                Spacer(Modifier.width(7.dp))
-                ConfigChip("Группы: ${analysis.proxyGroups.size}")
-                if (config.updateLocked) {
-                    Spacer(Modifier.width(7.dp))
-                    ConfigChip("Обновление заблокировано")
-                }
-                if (analysis.diagnostics.isNotEmpty()) {
-                    Spacer(Modifier.width(7.dp))
-                    ConfigChip("Диагностика: ${analysis.diagnostics.size}", accent = ConfigRed)
-                }
-                Spacer(Modifier.weight(1f))
-                if (config.sourceUrl.isNotBlank()) {
-                    IconButton(onClick = onRefresh, enabled = !updating && !config.updateLocked) {
-                        Icon(
-                            if (config.updateLocked) Icons.Outlined.Lock else Icons.Outlined.Refresh,
-                            if (config.updateLocked) "Обновление заблокировано" else "Обновить конфиг",
-                            tint = ConfigText,
-                        )
-                    }
-                }
-                IconButton(onClick = onEdit) { Icon(Icons.Outlined.Edit, "Редактировать", tint = ConfigText) }
-                Box {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Outlined.MoreVert, "Ещё", tint = ConfigText)
-                    }
-                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                        DropdownMenuItem(text = { Text("Дублировать") }, onClick = { menuExpanded = false; onDuplicate() })
-                        DropdownMenuItem(text = { Text("Экспортировать .conf") }, onClick = { menuExpanded = false; onExport() })
-                        DropdownMenuItem(text = { Text("Копировать содержимое") }, onClick = { menuExpanded = false; onCopy() })
-                        DropdownMenuItem(
-                            text = { Text("Удалить") },
-                            enabled = canDelete,
-                            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = ConfigRed) },
-                            onClick = { menuExpanded = false; onDelete() },
-                        )
-                    }
-                }
-            }
-            if (updating) LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = ConfigGreen)
-        }
-    }
+        },
+        trailingActions = {
+            IconButton(onClick = onCopy) { Icon(Icons.Outlined.ContentCopy, "Копировать содержимое") }
+            IconButton(onClick = onOpenContextMenu) { Icon(Icons.Outlined.MoreVert, "Ещё") }
+        },
+    )
 }
 
 @Composable
@@ -598,33 +581,6 @@ private fun ConfigChip(text: String, accent: Color? = null) {
 }
 
 @Composable
-private fun DesktopConfigUrlImportDialog(onImport: (String) -> Unit, onDismiss: () -> Unit) {
-    var url by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Импортировать конфиг") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Введите HTTP/HTTPS ссылку на .conf-профиль.", color = ConfigMuted)
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("URL конфига") },
-                    singleLine = true,
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onImport(url) }, enabled = url.trim().startsWith("http://", true) || url.trim().startsWith("https://", true)) {
-                Text("Импортировать")
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } },
-    )
-}
-
-@Composable
 private fun DesktopConfigEditor(
     draft: DesktopConfigDraft,
     contentPadding: PaddingValues,
@@ -636,99 +592,40 @@ private fun DesktopConfigEditor(
     var updateLocked by remember(draft.id) { mutableStateOf(draft.updateLocked) }
     var content by remember(draft.id) { mutableStateOf(draft.content) }
     val analysis = remember(content) { content.analyzeShadowrocketConfig() }
-    val errors = analysis.diagnostics.filter { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }
-
-    Box(
-        modifier = Modifier.fillMaxSize().background(ConfigBackground).padding(contentPadding),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().widthIn(max = 980.dp).verticalScroll(rememberScrollState()).padding(horizontal = 28.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Назад", tint = ConfigText) }
-                Spacer(Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(if (draft.id == null) "Новый конфиг" else "Редактор конфига", color = ConfigText, fontSize = 25.sp, fontWeight = FontWeight.Black)
-                    Text("Совместимый Shadowrocket / SKIPI .conf", color = ConfigMuted, fontSize = 14.sp)
-                }
-                Button(
-                    onClick = { onSave(name, content, sourceUrl, updateLocked) },
-                    enabled = name.isNotBlank() && content.isNotBlank() && errors.isEmpty(),
-                ) {
-                    Icon(Icons.Outlined.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(7.dp))
-                    Text("Сохранить")
-                }
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = ConfigSurface),
-                border = BorderStroke(1.dp, ConfigBorder),
-            ) {
-                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Название") }, singleLine = true)
-                    OutlinedTextField(value = sourceUrl, onValueChange = { sourceUrl = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Источник URL (необязательно)") }, singleLine = true)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Блокировать обновление", color = ConfigText, fontWeight = FontWeight.SemiBold)
-                            Text("URL-профиль нельзя обновить, пока переключатель включён.", color = ConfigMuted, fontSize = 13.sp)
-                        }
-                        Switch(
-                            checked = updateLocked,
-                            onCheckedChange = { updateLocked = it },
-                        )
-                    }
-                }
-            }
-
-            ConfigAnalysisCard(analysis, errors)
-
-            OutlinedTextField(
-                value = content,
-                onValueChange = { content = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Содержимое .conf") },
-                minLines = 20,
-                textStyle = MaterialTheme.typography.bodySmall,
-            )
-            Spacer(Modifier.height(8.dp))
-        }
-    }
-}
-
-@Composable
-private fun ConfigAnalysisCard(analysis: ShadowrocketConfigAnalysis, errors: List<*>) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = ConfigSurface),
-        border = BorderStroke(1.dp, if (errors.isEmpty()) ConfigBorder else ConfigRed.copy(alpha = 0.65f)),
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    if (errors.isEmpty()) Icons.Outlined.Description else Icons.Outlined.ErrorOutline,
-                    contentDescription = null,
-                    tint = if (errors.isEmpty()) ConfigGreen else ConfigRed,
-                )
-                Spacer(Modifier.width(9.dp))
-                Text(if (errors.isEmpty()) "Конфиг разобран" else "В конфиге есть ошибки", color = ConfigText, fontWeight = FontWeight.Bold)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ConfigChip("Правила: ${analysis.rules.size}")
-                ConfigChip("Группы: ${analysis.proxyGroups.size}")
-                ConfigChip("Диагностика: ${analysis.diagnostics.size}", if (analysis.diagnostics.isEmpty()) ConfigGreen else ConfigRed)
-            }
-            analysis.diagnostics.take(4).forEach { diagnostic ->
-                Text("${diagnostic.severity}: ${diagnostic.message}", color = if (diagnostic.severity == ShadowrocketConfigDiagnosticSeverity.Error) ConfigRed else ConfigMuted, fontSize = 13.sp)
-            }
-        }
-    }
+    SkipiTrafficConfigRawEditor(
+        state = SkipiTrafficConfigRawEditorState(
+            configId = draft.id,
+            name = name,
+            sourceUrl = sourceUrl,
+            updateLocked = updateLocked,
+            content = content,
+            ruleCount = analysis.rules.size,
+            proxyGroupCount = analysis.proxyGroups.size,
+            diagnostics = analysis.diagnostics,
+        ),
+        labels = SkipiTrafficConfigRawEditorLabels(
+            newConfigTitle = "Новый конфиг",
+            editConfigTitle = "Редактор конфига",
+            subtitle = "Совместимый Shadowrocket / SKIPI .conf",
+            save = "Сохранить",
+            name = "Название",
+            sourceUrl = "Источник URL (необязательно)",
+            lockUpdates = "Блокировать обновление",
+            lockUpdatesSummary = "URL-профиль нельзя обновить, пока переключатель включён.",
+            parsedTitle = "Конфиг разобран",
+            invalidTitle = "В конфиге есть ошибки",
+            rules = "Правила",
+            proxyGroups = "Группы",
+            diagnostics = "Диагностика",
+            content = "Содержимое .conf",
+        ),
+        padding = contentPadding,
+        isWideScreen = true,
+        onNameChange = { name = it },
+        onSourceUrlChange = { sourceUrl = it },
+        onUpdateLockedChange = { updateLocked = it },
+        onContentChange = { content = it },
+        onBack = onBack,
+        onSave = { onSave(name, content, sourceUrl, updateLocked) },
+    )
 }

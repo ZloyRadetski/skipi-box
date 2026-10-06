@@ -6,6 +6,11 @@ package app.skipi.desktop
 import app.skipi.app.config.TrafficConfigLibraryOperations
 import app.skipi.app.model.ApplicationPreferences
 import app.skipi.app.model.AppearanceSettings
+import app.skipi.ui.settings.AppearanceSettingValues
+import app.skipi.ui.settings.AppearanceSettingsState
+import app.skipi.ui.settings.LocalProxySettingsState
+import app.skipi.ui.settings.SubscriptionSettingsState
+import features.subscription.SubscriptionExpiryReminder
 import app.skipi.app.model.HomeDisplaySettings
 import app.skipi.app.model.PersistedSettings
 import app.skipi.app.model.ProxySelectionSettings
@@ -347,6 +352,153 @@ private fun DesktopAppSettings.toPersistedSettings(
     application = ApplicationPreferences(),
 )
 
+internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsState = AppearanceSettingsState(
+    backgroundPhotoDimPercent = backgroundPhotoDimPercent ?: 45,
+    backgroundStyle = backgroundStyle ?: AppearanceSettingValues.BackgroundStyleClassic,
+    bottomBarSize = bottomBarSize ?: 1,
+    classicShowFloatingPowerButton = classicShowFloatingPowerButton,
+    colorMode = when (themeMode) {
+        DesktopThemeMode.Dark -> AppearanceSettingValues.ColorModeDark
+        DesktopThemeMode.Amoled -> AppearanceSettingValues.ColorModeAmoled
+        DesktopThemeMode.Light -> AppearanceSettingValues.ColorModeLight
+        DesktopThemeMode.Aurora -> AppearanceSettingValues.ColorModeAurora
+        DesktopThemeMode.Sakura -> AppearanceSettingValues.ColorModeSakura
+        DesktopThemeMode.Forest -> AppearanceSettingValues.ColorModeForest
+        DesktopThemeMode.Sunset -> AppearanceSettingValues.ColorModeSunset
+    },
+    connectionDisplayMode = connectionDisplayMode ?: if (compactHome) {
+        AppearanceSettingValues.ConnectionDisplayModeCompact
+    } else {
+        AppearanceSettingValues.ConnectionDisplayModeClassic
+    },
+    customAccentColor = customAccentColor,
+    customBackgroundColor = customBackgroundColor,
+    customCategoryIconColor = customCategoryIconColor,
+    customMaterialYouSeed = customMaterialYouSeed,
+    customPingFastColor = customPingFastColor,
+    customPingMediumColor = customPingMediumColor,
+    customPingSlowColor = customPingSlowColor,
+    customProtocolChainColor = customProtocolChainColor,
+    customProtocolHysteria2Color = customProtocolHysteria2Color,
+    customProtocolHttpColor = customProtocolHttpColor,
+    customProtocolJsonColor = customProtocolJsonColor,
+    customProtocolShadowsocksColor = customProtocolShadowsocksColor,
+    customProtocolSocksColor = customProtocolSocksColor,
+    customProtocolStrategyColor = customProtocolStrategyColor,
+    customProtocolTrojanColor = customProtocolTrojanColor,
+    customProtocolVlessColor = customProtocolVlessColor,
+    customProtocolVmessColor = customProtocolVmessColor,
+    customProtocolWireguardColor = customProtocolWireguardColor,
+    customStatusRunningColor = customStatusRunningColor,
+    customStatusStoppedColor = customStatusStoppedColor,
+    customSurfaceColor = customSurfaceColor,
+    customSurfaceVariantColor = customSurfaceVariantColor,
+    customTextColor = customTextColor,
+    customTextSecondaryColor = customTextSecondaryColor,
+    enableAllProxyGroup = enableAllProxyGroup,
+    enableCustomColors = customColorsEnabled,
+    enableMaterialYou = false,
+    enableSubscriptionSwipe = enableSubscriptionSwipe,
+    fontFamilyMode = fontFamilyMode ?: 0,
+    fontSizeMode = fontSizeMode ?: 100,
+    fontWeightMode = fontWeightMode ?: 0,
+    pinConnectionPanelOnHome = pinConnectionPanelOnHome,
+    proxyServerListLayout = proxyServerListColumns,
+    seedIndex = seedIndex,
+    showServerSearch = showServerSearch,
+    showTunnelMemoryOnHome = showTunnelMemory,
+)
+
+internal fun DesktopAppSettings.toLocalProxySettingsState(): LocalProxySettingsState {
+    val address = localProxyListenAddress.trim().ifBlank { "127.0.0.1" }
+    return LocalProxySettingsState(
+        dynamicPort = false,
+        port = localProxyPort.toString(),
+        listenAllInterfaces = address != "127.0.0.1",
+        enableHttpEndpoint = false,
+        authenticationEnabled = false,
+        username = "",
+        password = "",
+        displayIp = address,
+        socksEndpoint = "$address:$localProxyPort",
+        httpEndpoint = "$address:$localHttpProxyPort",
+        portError = null,
+    )
+}
+
+internal fun DesktopAppSettings.toSubscriptionSettingsState(): SubscriptionSettingsState = SubscriptionSettingsState(
+    fetchTimeoutSeconds = subscriptionFetchTimeoutSeconds,
+    deviceHeadersEnabled = sendDeviceHeaders,
+    deletionConfirmationEnabled = confirmDeletion,
+    expiryNotificationsEnabled = false,
+    expiryReminders = emptyList<SubscriptionExpiryReminder>(),
+    pingSummary = "",
+)
+
+internal fun DesktopAppSettings.withSubscriptionSettingsState(state: SubscriptionSettingsState): DesktopAppSettings = copy(
+    subscriptionFetchTimeoutSeconds = state.fetchTimeoutSeconds,
+    sendDeviceHeaders = state.deviceHeadersEnabled,
+    confirmDeletion = state.deletionConfirmationEnabled,
+)
+internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsState): DesktopAppSettings {
+    require(!state.enableMaterialYou) {
+        "Material You color selection is not supported by Desktop settings"
+    }
+    val nextTheme = when (AppearanceSettingValues.normalizeColorMode(state.colorMode)) {
+        AppearanceSettingValues.ColorModeLight -> DesktopThemeMode.Light
+        AppearanceSettingValues.ColorModeDark -> DesktopThemeMode.Dark
+        AppearanceSettingValues.ColorModeAmoled -> DesktopThemeMode.Amoled
+        AppearanceSettingValues.ColorModeAurora -> DesktopThemeMode.Aurora
+        AppearanceSettingValues.ColorModeSakura -> DesktopThemeMode.Sakura
+        AppearanceSettingValues.ColorModeForest -> DesktopThemeMode.Forest
+        AppearanceSettingValues.ColorModeSunset -> DesktopThemeMode.Sunset
+        else -> throw IllegalArgumentException("System theme mode is not supported by Desktop settings")
+    }
+    return copy(
+        themeMode = nextTheme,
+        compactHome = state.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeCompact,
+        connectionDisplayMode = state.connectionDisplayMode,
+        classicShowFloatingPowerButton = state.classicShowFloatingPowerButton,
+        pinConnectionPanelOnHome = state.pinConnectionPanelOnHome,
+        proxyServerListColumns = state.proxyServerListLayout.coerceIn(1, 3),
+        enableAllProxyGroup = state.enableAllProxyGroup,
+        showServerSearch = state.showServerSearch,
+        enableSubscriptionSwipe = state.enableSubscriptionSwipe,
+        showTunnelMemory = state.showTunnelMemoryOnHome,
+        customColorsEnabled = state.enableCustomColors,
+        customAccentColor = state.customAccentColor,
+        customBackgroundColor = state.customBackgroundColor,
+        customSurfaceColor = state.customSurfaceColor,
+        customSurfaceVariantColor = state.customSurfaceVariantColor,
+        customTextColor = state.customTextColor,
+        customTextSecondaryColor = state.customTextSecondaryColor,
+        customStatusRunningColor = state.customStatusRunningColor,
+        customStatusStoppedColor = state.customStatusStoppedColor,
+        customPingFastColor = state.customPingFastColor,
+        customPingMediumColor = state.customPingMediumColor,
+        customPingSlowColor = state.customPingSlowColor,
+        customCategoryIconColor = state.customCategoryIconColor,
+        customProtocolVlessColor = state.customProtocolVlessColor,
+        customProtocolVmessColor = state.customProtocolVmessColor,
+        customProtocolHysteria2Color = state.customProtocolHysteria2Color,
+        customProtocolTrojanColor = state.customProtocolTrojanColor,
+        customProtocolShadowsocksColor = state.customProtocolShadowsocksColor,
+        customProtocolWireguardColor = state.customProtocolWireguardColor,
+        customProtocolSocksColor = state.customProtocolSocksColor,
+        customProtocolHttpColor = state.customProtocolHttpColor,
+        customProtocolStrategyColor = state.customProtocolStrategyColor,
+        customProtocolChainColor = state.customProtocolChainColor,
+        customProtocolJsonColor = state.customProtocolJsonColor,
+        fontFamilyMode = state.fontFamilyMode,
+        fontSizeMode = state.fontSizeMode,
+        fontWeightMode = state.fontWeightMode,
+        backgroundStyle = state.backgroundStyle,
+        backgroundPhotoDimPercent = state.backgroundPhotoDimPercent,
+        bottomBarSize = state.bottomBarSize,
+        seedIndex = state.seedIndex,
+        customMaterialYouSeed = state.customMaterialYouSeed,
+    )
+}
 private fun DesktopAppSettings.withAppearance(appearance: AppearanceSettings): DesktopAppSettings {
     require(appearance.themeMode != ThemeMode.System) {
         "System theme mode is not supported by Desktop settings"

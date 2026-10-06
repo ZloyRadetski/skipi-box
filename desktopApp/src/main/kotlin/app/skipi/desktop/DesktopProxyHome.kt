@@ -20,6 +20,7 @@ import app.skipi.app.home.ProxyHomeGroupKind
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,7 @@ import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
 import app.skipi.ui.home.ProxyHomeScreen
+import app.skipi.ui.home.rememberSaveableProxyHomePresentation
 import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.home.dialogs.SkipiAddSourceDialog
 import app.skipi.ui.home.dialogs.SkipiAddSourceMode
@@ -63,11 +65,19 @@ import app.skipi.ui.resources.proxy_server_list_chain_proxy_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary_with_filter
 import app.skipi.ui.resources.subscription_delete
-import app.skipi.ui.server.editor.SkipiProxyServerEditorDialog
+import app.skipi.ui.resources.proxy_group_select_active_server
+import app.skipi.ui.resources.proxy_editor_strategy_group_no_servers
+import app.skipi.ui.server.editor.GroupMemberChoice
+import app.skipi.ui.server.editor.SkipiSelectGroupMemberDialog
+import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.resolveStrategyGroupMembers
 import features.proxy.server.model.ProxyServer
+import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.extractLeadingCountryFlagOrNull
 import features.proxy.server.model.getTransportDisplay
 import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.model.getUrlOrNull
+import features.proxy.server.model.stripLeadingCountryFlag
 import features.proxy.server.presentation.ProxyServerPresentationFormatter
 import features.proxy.server.presentation.ProxyServerPresentationLabels
 import features.proxy.server.presentation.ProxyServerPresentationNode
@@ -105,6 +115,9 @@ internal fun DesktopProxyHome(
     confirmDeletion: Boolean,
     activeProfileName: String?,
     activeTrafficConfigId: Int?,
+    trafficConfigContentById: Map<Int, String> = emptyMap(),
+    exportFullJson: suspend (Int, ProxyServer<*>) -> String,
+    onSelectStrategyMember: (Int, Int) -> Unit,
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     testingServerIds: Set<Int>,
     pingingSubscriptionIds: Set<Int>,
@@ -142,6 +155,7 @@ internal fun DesktopProxyHome(
     var editingGroupDraft by remember { mutableStateOf<DesktopGroupDialogDraft?>(null) }
     var editingGroupError by remember { mutableStateOf<String?>(null) }
     var editingServerModel by remember { mutableStateOf<Pair<Int, ProxyServer<*>>?>(null) }
+    var selectingMembersForServerId by remember { mutableStateOf<Int?>(null) }
 
     val decodedServers = remember(serverLibrary) {
         serverLibrary.servers.map { stored -> stored to stored.decode().getOrNull() }
@@ -296,6 +310,7 @@ internal fun DesktopProxyHome(
                         add(ProxyHomeCopyFormat.FullJson)
                         if (current.getUrlOrNull() != null) add(ProxyHomeCopyFormat.Url)
                     },
+                    isStrategyGroup = current is StrategyGroup,
                     groupId = groupId,
                     searchText = listOf(info.remarks, info.address, info.protocol).joinToString(" "),
                     sortKey = info.remarks.ifBlank { title },
@@ -319,6 +334,10 @@ internal fun DesktopProxyHome(
             add(ProxyHomeActionId.EditServer)
             add(ProxyHomeActionId.DeleteServer)
             add(ProxyHomeActionId.CopyServer)
+        }
+        if (decodedServers.any { (_, server) -> server is StrategyGroup }) {
+            add(ProxyHomeActionId.OpenStrategyMemberPicker)
+            add(ProxyHomeActionId.SelectStrategyMember)
         }
         if (allProxyServers.any(ProxyServerSummary::canTest)) {
             add(ProxyHomeActionId.TestServer)
@@ -392,11 +411,14 @@ internal fun DesktopProxyHome(
     )
 
     val scope = rememberCoroutineScope()
+    var homePresentation by rememberSaveableProxyHomePresentation(
+        ProxyHomePresentation(selectedGroupId = groupCatalog.defaultGroupId),
+    )
     val effectContextState = remember { mutableStateOf<DesktopProxyHomeEffectContext?>(null) }
     val homeStore = remember {
         ProxyHomeStore(
             initialInput = homeInput,
-            initialPresentation = ProxyHomePresentation(selectedGroupId = groupCatalog.defaultGroupId),
+            initialPresentation = homePresentation,
             scope = scope,
             effectHandler = ProxyHomeEffectHandler { effect ->
                 effectContextState.value?.handle(effect)
@@ -406,6 +428,18 @@ internal fun DesktopProxyHome(
     }
     LaunchedEffect(homeInput) {
         homeStore.updateInput(homeInput)
+    }
+    val homeUiState by homeStore.uiState.collectAsState()
+    LaunchedEffect(homeStore, homeUiState.selectedGroupId, homeUiState.searchQuery, homeUiState.isSearchVisible, homeUiState.pages) {
+        val nextPresentation = ProxyHomePresentation(
+            selectedGroupId = homeUiState.selectedGroupId,
+            searchQuery = homeUiState.searchQuery,
+            isSearchVisible = homeUiState.isSearchVisible,
+            collapsedSubscriptionGroupIds = homeUiState.pages
+                .filterNot { page -> page.subscriptionExpanded }
+                .mapTo(linkedSetOf()) { page -> page.group.id },
+        )
+        if (homePresentation != nextPresentation) homePresentation = nextPresentation
     }
     val importFromClipboard: () -> Unit = {
         readDesktopClipboardText().onSuccess { text ->
@@ -467,6 +501,8 @@ internal fun DesktopProxyHome(
                 if (server != null) editingServerModel = stored.id to server
             }
         },
+        onOpenStrategyMemberPicker = { id -> selectingMembersForServerId = id },
+        onSelectStrategyMember = onSelectStrategyMember,
         onDeleteServerConfirm = { id -> pendingServerDeletion = id },
         onEditSubscription = { subscription ->
             editSubscriptionError = null
@@ -496,11 +532,71 @@ internal fun DesktopProxyHome(
         effectContextState.value = effectContext
     }
 
-    ProxyHomeScreen(
-        store = homeStore,
-        contentPadding = contentPadding,
-        topContentPadding = 40.dp,
-    )
+    if (editingServerModel == null) {
+        ProxyHomeScreen(
+            store = homeStore,
+            contentPadding = contentPadding,
+            topContentPadding = 40.dp,
+        )
+    }
+
+    selectingMembersForServerId?.let { serverId ->
+        val strategyGroup = decodedServers.firstOrNull { it.first.id == serverId }?.second as? StrategyGroup
+        if (strategyGroup == null) {
+            selectingMembersForServerId = null
+        } else {
+            val choices = remember(strategyGroup, decodedServers, trafficConfigContentById, latencyByServerId) {
+                val records = decodedServers.mapNotNull { (stored, server) ->
+                    server?.let {
+                        ProxyServerRecord(
+                            id = stored.id,
+                            groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                            server = it,
+                        )
+                    }
+                }
+                val resolved = resolveStrategyGroupMembers(
+                    strategyGroup = strategyGroup,
+                    servers = records,
+                    trafficConfigContentById = trafficConfigContentById,
+                    stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
+                )
+                val selectedId = strategyGroup.selectedMemberId ?: resolved.firstOrNull()?.id
+                resolved.map { record ->
+                    val info = record.server.getInfo()
+                    val flag = info.remarks.extractLeadingCountryFlagOrNull()
+                    val name = info.remarks.stripLeadingCountryFlag().ifBlank { info.protocol }
+                    val latency = when (val result = latencyByServerId[record.id]) {
+                        is DesktopServerLatencyResult.Success -> "${result.milliseconds} ms"
+                        DesktopServerLatencyResult.Timeout -> "Timeout"
+                        is DesktopServerLatencyResult.Error -> "Error"
+                        null -> ""
+                    }
+                    GroupMemberChoice(
+                        id = record.id,
+                        displayName = name,
+                        protocol = info.protocol,
+                        flag = flag,
+                        latency = latency,
+                        selected = record.id == selectedId,
+                    )
+                }
+            }
+            SkipiSelectGroupMemberDialog(
+                show = true,
+                title = strategyGroup.remarks.ifBlank { stringResource(Res.string.proxy_group_select_active_server) },
+                summary = stringResource(Res.string.proxy_group_select_active_server),
+                members = choices,
+                noMembersMessage = stringResource(Res.string.proxy_editor_strategy_group_no_servers),
+                cancelLabel = stringResource(Res.string.common_cancel),
+                onDismissRequest = { selectingMembersForServerId = null },
+                onSelectMember = { memberId ->
+                    onSelectStrategyMember(serverId, memberId)
+                    selectingMembersForServerId = null
+                },
+            )
+        }
+    }
 
     if (addDialogVisible) {
         SkipiAddSourceDialog(
@@ -622,14 +718,18 @@ internal fun DesktopProxyHome(
     }
 
     editingServerModel?.let { (serverId, server) ->
-        SkipiProxyServerEditorDialog(
-            show = true,
-            server = server,
-            onSave = { updatedServer ->
-                onUpdateServer(serverId, updatedServer)
-                editingServerModel = null
-            },
+        DesktopProxyServerEditorHost(
+            contentPadding = contentPadding,
+            serverId = serverId,
+            original = server,
+            decodedServers = decodedServers,
+            groupCatalog = groupCatalog,
+            presentationNodes = presentationNodes,
+            presentationFormatter = presentationFormatter,
+            onSave = onUpdateServer,
             onDismiss = { editingServerModel = null },
+            onMessage = { localMessage = it },
+            exportFullJson = { exportFullJson(serverId, it) },
         )
     }
 
@@ -842,6 +942,8 @@ internal class DesktopProxyHomeEffectContext(
     val onDeleteSubscription: (Int) -> Unit = {},
     val onMoveGroup: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     val onMoveServer: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    val onOpenStrategyMemberPicker: (Int) -> Unit = {},
+    val onSelectStrategyMember: (Int, Int) -> Unit = { _, _ -> },
 ) {
     fun handle(effect: ProxyHomeEffect): Result<Unit> = when (effect) {
         ProxyHomeEffect.ToggleTunnel -> invoke(onToggleTunnel)
@@ -967,8 +1069,18 @@ internal class DesktopProxyHomeEffectContext(
                 } ?: unsupported("Некорректный идентификатор сервера.")
             }
         }
-        is ProxyHomeEffect.OpenStrategyMemberPicker -> unsupported("Выбор участника стратегии не поддерживается в Desktop.")
-        is ProxyHomeEffect.SelectStrategyMember -> unsupported("Выбор участника стратегии не поддерживается в Desktop.")
+        is ProxyHomeEffect.OpenStrategyMemberPicker -> effect.serverId.toIntOrNull()?.let { id ->
+            if (decodedServers.firstOrNull { it.first.id == id }?.second is StrategyGroup) invoke { onOpenStrategyMemberPicker(id) }
+            else unsupported("Группа стратегий не найдена.")
+        } ?: unsupported("Некорректный идентификатор группы стратегий.")
+        is ProxyHomeEffect.SelectStrategyMember -> {
+            val id = effect.serverId.toIntOrNull()
+            val memberId = effect.memberId.toIntOrNull()
+            if (id == null || memberId == null) unsupported("Некорректный идентификатор участника стратегии.")
+            else if (decodedServers.firstOrNull { it.first.id == id }?.second !is StrategyGroup) unsupported("Группа стратегий не найдена.")
+            else if (decodedServers.none { it.first.id == memberId } || memberId == id) unsupported("Участник стратегии не найден.")
+            else invoke { onSelectStrategyMember(id, memberId) }
+        }
         is ProxyHomeEffect.SetSort -> invoke { onSetSortMode(effect.mode) }
         is ProxyHomeEffect.RunServerTool -> runServerTool(effect.tool)
         is ProxyHomeEffect.OpenExternalLink -> openExternalLink(effect.url)

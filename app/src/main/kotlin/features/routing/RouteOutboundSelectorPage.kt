@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,28 +51,32 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import app.SubscriptionGroupState
+import app.skipi.ui.routing.SkipiRoutingPageScaffold
+import app.skipi.ui.routing.SkipiRoutingOutboundGroup
+import app.skipi.ui.routing.SkipiRoutingOutboundGroupDetails
+import app.skipi.ui.routing.SkipiRoutingOutboundOption
+import app.skipi.ui.routing.SkipiRoutingOutboundGroupHeader
+import app.skipi.ui.routing.SkipiRoutingOutboundOptionRow
+import app.skipi.ui.routing.SkipiRoutingOutboundEmptyGroupRow
 import features.proxy.server.display.CountryFlagUtils
-import features.proxy.server.editor.ServerPickerEmptyGroupRow
-import features.proxy.server.editor.ServerPickerGroupHeader
-import features.proxy.server.editor.ServerPickerItemRow
 import features.proxy.server.model.getTransportDisplay
 import features.subscription.DefaultSubscriptionGroupId
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
+import features.subscription.subscriptionExpirySummary
+import features.subscription.subscriptionTrafficProgress
+import features.subscription.subscriptionTrafficSummary
+import ui.text.formatTemplate
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.AppTheme
-import ui.components.BackNavigationIcon
 import ui.components.NavigationIcon
-import ui.layout.AdaptiveTopAppBar
-import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
 import androidx.compose.ui.graphics.Color
+import java.text.DateFormat
+import java.util.Date
 
 private sealed interface RouteOutboundItem {
     val key: String
@@ -118,7 +123,6 @@ fun RouteOutboundSelectorPage(
     val appState by LocalAppStateStore.current.collectAppState()
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
-    val scrollBehavior = MiuixScrollBehavior()
     val listState = rememberLazyListState()
     val defaultGroupName = stringResource(R.string.subscription_default_group)
     val autoBalancerName = stringResource(R.string.proxy_server_list_auto_balancers)
@@ -313,35 +317,84 @@ fun RouteOutboundSelectorPage(
         matchingGroup?.key ?: groups.firstOrNull()?.key
     }
 
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        modifier = Modifier
-            .fillMaxSize(),
-        topBar = {
-            AdaptiveTopAppBar(
-                title = stringResource(
-                    if (shadowrocketPolicyMode) R.string.configs_rules_policy else R.string.routing_outbound_tag_label,
-                ),
-                isWideScreen = isWideScreen,
-                scrollBehavior = scrollBehavior,
-                navigationIcon = { BackNavigationIcon(onClick = navigator::pop) },
-                actions = {
-                    NavigationIcon(
-                        onClick = {
-                            navigator.setResult(resultKey, RouteOutboundSelectionResult(targetTag))
-                        },
-                        imageVector = MiuixIcons.Ok,
-                        contentDescription = stringResource(R.string.common_save),
-                    )
+    val presentationGroups = groups.map { group ->
+        val subscription = group.subscriptionGroup
+        val lastUpdated = subscription?.lastUpdatedAtMillis?.takeIf { it > 0L }?.let { millis ->
+            DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(millis))
+        }
+        val details = subscription?.let {
+            SkipiRoutingOutboundGroupDetails(
+                traffic = it.subscriptionTrafficSummary()?.let { value ->
+                    stringResource(R.string.subscription_provider_traffic).formatTemplate("value" to value)
+                },
+                expiry = it.subscriptionExpirySummary(),
+                trafficProgress = it.subscriptionTrafficProgress(),
+                announcement = it.announce,
+                updatedLabel = lastUpdated?.let { value ->
+                    stringResource(R.string.subscription_provider_updated).formatTemplate("value" to value)
                 },
             )
-        },
-    ) { innerPadding ->
-        val contentPadding = pageContentPaddingWithCutout(
-            innerPadding = innerPadding,
-            outerPadding = padding,
-            isWideScreen = isWideScreen,
+        }
+        SkipiRoutingOutboundGroup(
+            key = group.key,
+            title = group.title,
+            countLabel = stringResource(R.string.subscription_provider_servers, group.items.size),
+            details = details,
+            items = group.items.map { item ->
+                when (item) {
+                    is RouteOutboundItem.Static -> {
+                        val flag = when (item.tag) {
+                            "PROXY", DefaultRouteOutboundTag -> "⚡"
+                            "DIRECT", "direct" -> "🔄"
+                            "REJECT", "block" -> "🚫"
+                            else -> if (item.tag.startsWith("CONFIG:")) "⚙️" else "🌐"
+                        }
+                        SkipiRoutingOutboundOption(
+                            key = item.key,
+                            tag = item.tag,
+                            title = item.title,
+                            subtitle = item.summary.takeIf { it.isNotBlank() },
+                            flag = flag,
+                        )
+                    }
+                    is RouteOutboundItem.Server -> {
+                        val info = item.serverState.server.getInfo()
+                        val rawRemarks = info.remarks
+                        val flag = CountryFlagUtils.extractLeadingCountryFlag(rawRemarks)
+                        val title = if (flag != null) {
+                            CountryFlagUtils.stripLeadingCountryFlag(rawRemarks)
+                        } else {
+                            rawRemarks.ifBlank { defaultProxyServerTemplate.replace("{id}", item.serverState.id.toString()) }
+                        }
+                        val transport = item.serverState.server.getTransportDisplay()
+                        val subtitle = if (!transport.isNullOrBlank()) "${info.protocol} • $transport" else info.protocol
+                        SkipiRoutingOutboundOption(
+                            key = item.key,
+                            tag = item.resolveTag(),
+                            title = title,
+                            subtitle = subtitle,
+                            flag = flag,
+                        )
+                    }
+                }
+            },
         )
+    }
+
+    SkipiRoutingPageScaffold(
+        title = stringResource(if (shadowrocketPolicyMode) R.string.configs_rules_policy else R.string.routing_outbound_tag_label),
+        padding = padding,
+        isWideScreen = isWideScreen,
+        onBack = navigator::pop,
+        actions = {
+            NavigationIcon(
+                onClick = { navigator.setResult(resultKey, RouteOutboundSelectionResult(targetTag)) },
+                imageVector = MiuixIcons.Ok,
+                contentDescription = stringResource(R.string.common_save),
+            )
+        },
+    ) { contentPadding, scrollBehavior ->
+        val globePainter = painterResource(app.R.drawable.ic_globe)
         Box(
             modifier = Modifier
                 .fillMaxSize(),
@@ -351,13 +404,14 @@ fun RouteOutboundSelectorPage(
                 modifier = Modifier.pageScrollModifiers(scrollBehavior),
                 contentPadding = pageListPadding(contentPadding),
             ) {
-                groups.forEach { group ->
+                presentationGroups.forEach { group ->
                     val expanded = expandedGroups[group.key] ?: (group.key == initiallyExpandedGroupKey)
                     item(key = "route-outbound-group-${group.key}") {
-                        ServerPickerGroupHeader(
+                        SkipiRoutingOutboundGroupHeader(
                             title = group.title,
-                            count = group.items.size,
-                            subscriptionGroup = group.subscriptionGroup,
+                            countLabel = group.countLabel,
+                            itemCount = group.items.size,
+                            details = group.details,
                             expanded = expanded,
                             onExpandedChange = { expandedGroups[group.key] = it },
                         )
@@ -365,50 +419,24 @@ fun RouteOutboundSelectorPage(
                     if (expanded) {
                         if (group.items.isEmpty()) {
                             item(key = "route-outbound-empty-${group.key}") {
-                                ServerPickerEmptyGroupRow()
+                                SkipiRoutingOutboundEmptyGroupRow(
+                                    message = stringResource(R.string.proxy_editor_strategy_group_no_servers),
+                                )
                             }
                         } else {
-                            val lastItemKey = group.items.last().key
                             items(
                                 items = group.items,
                                 key = { item -> "route-outbound-entry-${group.key}-${item.key}" },
                                 contentType = { "route-outbound-entry" },
                             ) { item ->
-                                val tag = when (item) {
-                                    is RouteOutboundItem.Static -> item.tag
-                                    is RouteOutboundItem.Server -> item.resolveTag()
-                                }
-                                val (flag, title, subtitle) = when (item) {
-                                    is RouteOutboundItem.Static -> {
-                                        val staticFlag = when (item.tag) {
-                                            "PROXY", DefaultRouteOutboundTag -> "⚡"
-                                            "DIRECT", "direct" -> "🔄"
-                                            "REJECT", "block" -> "🚫"
-                                            else -> if (item.tag.startsWith("CONFIG:")) "⚙️" else "🌐"
-                                        }
-                                        Triple(staticFlag, item.title, item.summary.takeIf { it.isNotBlank() })
-                                    }
-                                    is RouteOutboundItem.Server -> {
-                                        val info = item.serverState.server.getInfo()
-                                        val rawRemarks = info.remarks
-                                        val flag = CountryFlagUtils.extractLeadingCountryFlag(rawRemarks)
-                                        val displayTitle = if (flag != null) {
-                                            CountryFlagUtils.stripLeadingCountryFlag(rawRemarks)
-                                        } else {
-                                            rawRemarks.ifBlank { defaultProxyServerTemplate.replace("{id}", item.serverState.id.toString()) }
-                                        }
-                                        val transport = item.serverState.server.getTransportDisplay()
-                                        val subtitle = if (!transport.isNullOrBlank()) "${info.protocol} • $transport" else info.protocol
-                                        Triple(flag, displayTitle, subtitle)
-                                    }
-                                }
-                                ServerPickerItemRow(
-                                    flag = flag,
-                                    displayTitle = title,
-                                    subtitle = subtitle,
-                                    selected = tag == targetTag,
-                                    isLast = item.key == lastItemKey,
-                                    onClick = { targetTag = tag },
+                                SkipiRoutingOutboundOptionRow(
+                                    flag = item.flag,
+                                    fallbackPainter = globePainter,
+                                    displayTitle = item.title,
+                                    subtitle = item.subtitle,
+                                    selected = item.tag == targetTag,
+                                    isLast = item.key == group.items.lastOrNull()?.key,
+                                    onClick = { targetTag = item.tag },
                                 )
                             }
                         }

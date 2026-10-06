@@ -25,6 +25,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -80,6 +81,16 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import app.skipi.ui.theme.LocalAppColors
 import kotlin.math.roundToInt
 
+data class AppearanceSettingsCapabilities(
+    val systemTheme: Boolean = true,
+    val appIcon: Boolean = true,
+    val wallpaper: Boolean = true,
+    val dynamicColors: Boolean = true,
+    val customColors: Boolean = true,
+    val fonts: Boolean = true,
+    val bottomBarSize: Boolean = true,
+)
+
 @Composable
 fun SkipiAppearanceSettingsScreen(
     state: AppearanceSettingsState,
@@ -94,6 +105,8 @@ fun SkipiAppearanceSettingsScreen(
     onRemoveBackgroundPhoto: () -> Unit,
     onRequestAppIconSelection: () -> Unit,
     onColorsReset: (String) -> Unit,
+    capabilities: AppearanceSettingsCapabilities = AppearanceSettingsCapabilities(),
+    platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val appState = state
     val updateAppState = onSettingsChange
@@ -114,7 +127,7 @@ fun SkipiAppearanceSettingsScreen(
         AppearanceSettingValues.ColorModeSakura to stringResource(Res.string.option_theme_sakura),
         AppearanceSettingValues.ColorModeForest to stringResource(Res.string.option_theme_forest),
         AppearanceSettingValues.ColorModeSunset to stringResource(Res.string.option_theme_sunset),
-    )
+    ).filter { capabilities.systemTheme || it.first != AppearanceSettingValues.ColorModeSystem }
     val selectedColorModeIndex = colorModeOptions.indexOfFirst { (mode) ->
         AppearanceSettingValues.normalizeColorMode(mode) == AppearanceSettingValues.normalizeColorMode(appState.colorMode)
     }.coerceAtLeast(0)
@@ -245,37 +258,41 @@ fun SkipiAppearanceSettingsScreen(
                                 }
                             },
                         )
-                        AppOverlayDropdownPreference(
-                            title = stringResource(Res.string.settings_font_family),
-                            items = fontFamilyOptions,
-                            selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
-                            onSelectedIndexChange = { index -> updateAppState { it.copy(fontFamilyMode = index) } },
-                        )
-                        FontSizeSliderPreference(
-                            fontSizeMode = appState.fontSizeMode,
-                            onFontSizeModeChange = { mode ->
-                                updateAppState { it.copy(fontSizeMode = mode) }
-                            },
-                        )
-                        AnimatedVisibility(
-                            visible = AppearanceSettingValues.isFontWeightSupported(appState.fontFamilyMode),
-                            enter = fadeIn() + expandVertically(),
-                            exit = shrinkVertically() + fadeOut(),
-                        ) {
+                        if (capabilities.fonts) {
                             AppOverlayDropdownPreference(
-                                title = stringResource(Res.string.settings_font_weight),
-                                items = fontWeightOptions,
-                                selectedIndex = appState.fontWeightMode.coerceIn(0, fontWeightOptions.lastIndex),
-                                onSelectedIndexChange = { index -> updateAppState { it.copy(fontWeightMode = index) } },
+                                title = stringResource(Res.string.settings_font_family),
+                                items = fontFamilyOptions,
+                                selectedIndex = appState.fontFamilyMode.coerceIn(0, fontFamilyOptions.lastIndex),
+                                onSelectedIndexChange = { index -> updateAppState { it.copy(fontFamilyMode = index) } },
+                            )
+                            FontSizeSliderPreference(
+                                fontSizeMode = appState.fontSizeMode,
+                                onFontSizeModeChange = { mode ->
+                                    updateAppState { it.copy(fontSizeMode = mode) }
+                                },
+                            )
+                            AnimatedVisibility(
+                                visible = AppearanceSettingValues.isFontWeightSupported(appState.fontFamilyMode),
+                                enter = fadeIn() + expandVertically(),
+                                exit = shrinkVertically() + fadeOut(),
+                            ) {
+                                AppOverlayDropdownPreference(
+                                    title = stringResource(Res.string.settings_font_weight),
+                                    items = fontWeightOptions,
+                                    selectedIndex = appState.fontWeightMode.coerceIn(0, fontWeightOptions.lastIndex),
+                                    onSelectedIndexChange = { index -> updateAppState { it.copy(fontWeightMode = index) } },
+                                )
+                            }
+                        }
+                        if (capabilities.appIcon) {
+                            ArrowPreference(
+                                title = stringResource(Res.string.settings_app_icon),
+                                summary = appIconTitle,
+                                onClick = onRequestAppIconSelection,
                             )
                         }
-                        ArrowPreference(
-                            title = stringResource(Res.string.settings_app_icon),
-                            summary = appIconTitle,
-                            onClick = onRequestAppIconSelection,
-                        )
                         AnimatedVisibility(
-                            visible = !isNamedThemeSelected,
+                            visible = capabilities.dynamicColors && !isNamedThemeSelected,
                             enter = fadeIn() + expandVertically(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {
@@ -287,7 +304,7 @@ fun SkipiAppearanceSettingsScreen(
                             )
                         }
                         AnimatedVisibility(
-                            visible = appState.enableMaterialYou && !isNamedThemeSelected,
+                            visible = capabilities.dynamicColors && capabilities.customColors && appState.enableMaterialYou && !isNamedThemeSelected,
                             enter = fadeIn() + expandVertically(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {
@@ -320,7 +337,7 @@ fun SkipiAppearanceSettingsScreen(
                             }
                         }
                         AnimatedVisibility(
-                            visible = !appState.enableMaterialYou && !isNamedThemeSelected,
+                            visible = capabilities.customColors && !appState.enableMaterialYou && !isNamedThemeSelected,
                             enter = fadeIn() + expandVertically(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {
@@ -334,7 +351,7 @@ fun SkipiAppearanceSettingsScreen(
                     }
                 }
 
-                item(key = "appearance_background") {
+                if (capabilities.wallpaper) item(key = "appearance_background") {
                     SmallTitle(text = stringResource(Res.string.settings_background_title))
                     SkipiSettingsSectionCard {
                         AppOverlayDropdownPreference(
@@ -383,7 +400,7 @@ fun SkipiAppearanceSettingsScreen(
                     }
                 }
 
-                item(key = "appearance_custom_colors") {
+                if (capabilities.customColors) item(key = "appearance_custom_colors") {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SmallTitle(text = stringResource(Res.string.settings_custom_colors_title))
                         SkipiSettingsSectionCard {
@@ -588,18 +605,22 @@ fun SkipiAppearanceSettingsScreen(
                     }
                 }
 
+                platformContent?.let { content -> item(key = "appearance_platform_extension") { Column(content = content) } }
+
                 item(key = "appearance_layout") {
                     SmallTitle(text = stringResource(Res.string.settings_header_layout))
                     SkipiSettingsSectionCard {
-                        AppOverlayDropdownPreference(
-                            title = stringResource(Res.string.settings_bottom_bar_size),
-                            summary = stringResource(Res.string.settings_bottom_bar_size_summary),
-                            items = bottomBarSizeOptions,
-                            selectedIndex = appState.bottomBarSize,
-                            onSelectedIndexChange = { size ->
-                                updateAppState { it.copy(bottomBarSize = size) }
-                            },
-                        )
+                        if (capabilities.bottomBarSize) {
+                            AppOverlayDropdownPreference(
+                                title = stringResource(Res.string.settings_bottom_bar_size),
+                                summary = stringResource(Res.string.settings_bottom_bar_size_summary),
+                                items = bottomBarSizeOptions,
+                                selectedIndex = appState.bottomBarSize,
+                                onSelectedIndexChange = { size ->
+                                    updateAppState { it.copy(bottomBarSize = size) }
+                                },
+                            )
+                        }
                         AppOverlayDropdownPreference(
                             title = stringResource(Res.string.settings_connection_display_mode),
                             summary = stringResource(Res.string.settings_connection_display_mode_summary),

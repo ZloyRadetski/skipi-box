@@ -23,6 +23,8 @@ typealias DesktopProxyGroupOptions = ProxyGroupOptions
 typealias DesktopProxyGroupSelection = ProxyGroupSelection
 
 object DesktopProxyGroupIds {
+    /** Manual server rows use the long-standing default subscription-group ID. */
+    const val DefaultManualSubscriptionId = 1
     const val All = ProxyGroupIds.All
     const val Manual = ProxyGroupIds.Manual
     const val AutoBalancers = ProxyGroupIds.AutoBalancers

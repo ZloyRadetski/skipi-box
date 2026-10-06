@@ -4,6 +4,8 @@
 package app.skipi.ui.settings
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -83,6 +85,11 @@ data class IntegrationSettingsLabels(
     val broadcastControlSummary: String,
 )
 
+data class IntegrationSettingsCapabilities(
+    val urlSchemes: Boolean = true,
+    val broadcastControl: Boolean = true,
+)
+
 /** Shared integration settings page. Navigation and persistence are supplied by the platform host. */
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -94,6 +101,8 @@ fun SkipiIntegrationSettingsScreen(
     onBack: () -> Unit,
     onOpenUrlSchemes: () -> Unit,
     onBroadcastControlChange: (Boolean) -> Unit,
+    capabilities: IntegrationSettingsCapabilities = IntegrationSettingsCapabilities(),
+    platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
     Scaffold(
@@ -114,19 +123,24 @@ fun SkipiIntegrationSettingsScreen(
                 item(key = "integration_settings") {
                     SmallTitle(text = labels.sectionTitle)
                     SkipiSettingsSectionCard {
-                        ArrowPreference(
-                            title = labels.urlSchemesTitle,
-                            summary = labels.urlSchemesSummary,
-                            onClick = onOpenUrlSchemes,
-                        )
-                        SwitchPreference(
-                            title = labels.broadcastControlTitle,
-                            summary = labels.broadcastControlSummary,
-                            checked = state.broadcastControlEnabled,
-                            onCheckedChange = onBroadcastControlChange,
-                        )
+                        if (capabilities.urlSchemes) {
+                            ArrowPreference(
+                                title = labels.urlSchemesTitle,
+                                summary = labels.urlSchemesSummary,
+                                onClick = onOpenUrlSchemes,
+                            )
+                        }
+                        if (capabilities.broadcastControl) {
+                            SwitchPreference(
+                                title = labels.broadcastControlTitle,
+                                summary = labels.broadcastControlSummary,
+                                checked = state.broadcastControlEnabled,
+                                onCheckedChange = onBroadcastControlChange,
+                            )
+                        }
                     }
                 }
+                platformContent?.let { content -> item(key = "integration_platform_extension") { Column(content = content) } }
             }
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(listState),
@@ -162,6 +176,16 @@ data class LogsSettingsLabels(
     val bugReportSummary: String,
 )
 
+data class LogsSettingsCapabilities(
+    val logLevel: Boolean = true,
+    val retention: Boolean = true,
+    val accessLog: Boolean = true,
+    val coreLogs: Boolean = true,
+    val accessLogs: Boolean = true,
+    val logcat: Boolean = true,
+    val bugReport: Boolean = true,
+)
+
 /** Shared logs settings page. The host owns log storage, pruning, navigation, and external links. */
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -179,6 +203,8 @@ fun SkipiLogsSettingsScreen(
     onOpenAccessLogs: () -> Unit,
     onOpenLogcat: () -> Unit,
     onOpenBugReport: () -> Unit,
+    capabilities: LogsSettingsCapabilities = LogsSettingsCapabilities(),
+    platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -198,42 +224,48 @@ fun SkipiLogsSettingsScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = contentPadding,
             ) {
-                item(key = "log_options") {
+                if (capabilities.logLevel || capabilities.retention || capabilities.accessLog) item(key = "log_options") {
                     SmallTitle(text = labels.optionsSectionTitle)
                     SkipiSettingsSectionCard {
-                        AppOverlayDropdownPreference(
-                            title = labels.logLevelTitle,
-                            items = labels.logLevels,
-                            selectedIndex = state.coreLogLevelIndex.coerceIn(labels.logLevels.indices),
-                            onSelectedIndexChange = onLogLevelChange,
-                        )
-                        AppOverlayDropdownPreference(
-                            title = labels.retentionTitle,
-                            summary = labels.retentionSummary,
-                            items = labels.retentionOptions,
-                            selectedIndex = retentionIndex,
-                            onSelectedIndexChange = { index ->
-                                labels.retentionDays.getOrNull(index)?.let(onRetentionDaysChange)
-                            },
-                        )
-                        SwitchPreference(
-                            title = labels.accessLogTitle,
-                            checked = state.accessLogEnabled,
-                            onCheckedChange = onAccessLogChange,
-                        )
+                        if (capabilities.logLevel) {
+                            AppOverlayDropdownPreference(
+                                title = labels.logLevelTitle,
+                                items = labels.logLevels,
+                                selectedIndex = state.coreLogLevelIndex.coerceIn(labels.logLevels.indices),
+                                onSelectedIndexChange = onLogLevelChange,
+                            )
+                        }
+                        if (capabilities.retention) {
+                            AppOverlayDropdownPreference(
+                                title = labels.retentionTitle,
+                                summary = labels.retentionSummary,
+                                items = labels.retentionOptions,
+                                selectedIndex = retentionIndex,
+                                onSelectedIndexChange = { index ->
+                                    labels.retentionDays.getOrNull(index)?.let(onRetentionDaysChange)
+                                },
+                            )
+                        }
+                        if (capabilities.accessLog) {
+                            SwitchPreference(
+                                title = labels.accessLogTitle,
+                                checked = state.accessLogEnabled,
+                                onCheckedChange = onAccessLogChange,
+                            )
+                        }
                     }
                 }
-                item(key = "log_viewers") {
+                if (capabilities.coreLogs || (capabilities.accessLogs && showAccessLogs) || capabilities.logcat) item(key = "log_viewers") {
                     SmallTitle(text = labels.viewersSectionTitle)
                     SkipiSettingsSectionCard {
-                        ArrowPreference(title = labels.coreLogsTitle, onClick = onOpenCoreLogs)
-                        if (showAccessLogs) {
+                        if (capabilities.coreLogs) ArrowPreference(title = labels.coreLogsTitle, onClick = onOpenCoreLogs)
+                        if (capabilities.accessLogs && showAccessLogs) {
                             ArrowPreference(title = labels.accessLogsTitle, onClick = onOpenAccessLogs)
                         }
-                        ArrowPreference(title = labels.logcatTitle, onClick = onOpenLogcat)
+                        if (capabilities.logcat) ArrowPreference(title = labels.logcatTitle, onClick = onOpenLogcat)
                     }
                 }
-                item(key = "logs_feedback") {
+                if (capabilities.bugReport) item(key = "logs_feedback") {
                     SmallTitle(text = labels.feedbackSectionTitle)
                     SkipiSettingsSectionCard {
                         ArrowPreference(
@@ -243,6 +275,7 @@ fun SkipiLogsSettingsScreen(
                         )
                     }
                 }
+                platformContent?.let { content -> item(key = "logs_platform_extension") { Column(content = content) } }
             }
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(listState),

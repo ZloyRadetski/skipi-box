@@ -1,10 +1,10 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings.sheets
+package app.skipi.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
-import ui.components.AppWindowBottomSheet
+import app.skipi.ui.components.AppWindowBottomSheet
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,15 +14,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import app.R
+import app.skipi.app.settings.DnsSettingsDraft
+import app.skipi.app.settings.toSavedSettings
+import app.skipi.ui.resources.*
 import engine.network.isIpAddress
 import engine.xray.isSupportedXrayDnsServer
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import ui.components.StringListEditor
+import app.skipi.ui.components.StringListEditor
 import utils.toTrimmedNonEmptyDistinctList
 
 
@@ -30,7 +32,7 @@ private const val DnsHostSeparator = ':'
 
 
 @Composable
-internal fun DnsSettingsBottomSheet(
+fun DnsSettingsBottomSheet(
     show: Boolean,
     enableVpnLocalDns: Boolean,
     enableFakeDns: Boolean,
@@ -54,26 +56,26 @@ internal fun DnsSettingsBottomSheet(
     val proxyDnsEntries = proxyDns.toTrimmedNonEmptyDistinctList()
     val directDnsEntries = directDns.toTrimmedNonEmptyDistinctList()
     val directDnsDomainEntries = directDnsDomains.toTrimmedNonEmptyDistinctList()
-    val dnsHostsInvalidMessage = stringResource(R.string.settings_dns_hosts_invalid)
+    val dnsHostsInvalidMessage = stringResource(Res.string.settings_dns_hosts_invalid)
     val dnsHostEntries = dnsHosts.toTrimmedNonEmptyDistinctList()
-    val dnsServerInvalidMessage = stringResource(R.string.settings_dns_server_invalid)
-    val dnsDomainInvalidMessage = stringResource(R.string.settings_dns_domain_invalid)
+    val dnsServerInvalidMessage = stringResource(Res.string.settings_dns_server_invalid)
+    val dnsDomainInvalidMessage = stringResource(Res.string.settings_dns_domain_invalid)
     val effectiveLocalDnsEnabled = enableVpnLocalDns
     val effectiveFakeDnsEnabled = effectiveLocalDnsEnabled && enableFakeDns
     AppWindowBottomSheet(
         show = show,
-        title = stringResource(R.string.settings_dns),
+        title = stringResource(Res.string.settings_dns),
         startAction = {
             TextButton(
-                text = stringResource(R.string.common_cancel),
+                text = stringResource(Res.string.common_cancel),
                 onClick = onDismissRequest,
             )
         },
         endAction = {
             TextButton(
-                text = stringResource(R.string.common_save),
+                text = stringResource(Res.string.common_save),
                 onClick = {
-                    onSave(
+                    val saved = DnsSettingsDraft(
                         enableVpnLocalDns,
                         effectiveFakeDnsEnabled,
                         enableResolveProxyServerDomain,
@@ -82,7 +84,10 @@ internal fun DnsSettingsBottomSheet(
                         directDnsDomainEntries,
                         enableDirectDnsForProxyServerDomains,
                         dnsHostEntries,
-                    )
+                    ).toSavedSettings()
+                    onSave(saved.enableVpnLocalDns, saved.enableFakeDns, saved.enableResolveProxyServerDomain,
+                        saved.proxyDns, saved.directDns, saved.directDnsDomains,
+                        saved.enableDirectDnsForProxyServerDomains, saved.dnsHosts)
                 },
             )
         },
@@ -90,8 +95,8 @@ internal fun DnsSettingsBottomSheet(
     ) {
         SettingsSheetContent {
             SwitchPreference(
-                title = stringResource(R.string.settings_vpn_local_dns),
-                summary = stringResource(R.string.settings_vpn_local_dns_summary),
+                title = stringResource(Res.string.settings_vpn_local_dns),
+                summary = stringResource(Res.string.settings_vpn_local_dns_summary),
                 checked = effectiveLocalDnsEnabled,
                 onCheckedChange = onEnableVpnLocalDnsChange,
             )
@@ -102,63 +107,63 @@ internal fun DnsSettingsBottomSheet(
             ) {
                 SwitchPreference(
                     title = "FakeDNS",
-                    summary = stringResource(R.string.settings_fake_dns_summary),
+                    summary = stringResource(Res.string.settings_fake_dns_summary),
                     checked = effectiveFakeDnsEnabled,
                     onCheckedChange = onEnableFakeDnsChange,
                 )
             }
             SwitchPreference(
-                title = stringResource(R.string.settings_resolve_proxy_server_domain),
-                summary = stringResource(R.string.settings_resolve_proxy_server_domain_summary),
+                title = stringResource(Res.string.settings_resolve_proxy_server_domain),
+                summary = stringResource(Res.string.settings_resolve_proxy_server_domain_summary),
                 checked = enableResolveProxyServerDomain,
                 onCheckedChange = onEnableResolveProxyServerDomainChange,
             )
             SwitchPreference(
-                title = stringResource(R.string.settings_direct_dns_resolve_proxy_server_domains),
-                summary = stringResource(R.string.settings_direct_dns_resolve_proxy_server_domains_summary),
+                title = stringResource(Res.string.settings_direct_dns_resolve_proxy_server_domains),
+                summary = stringResource(Res.string.settings_direct_dns_resolve_proxy_server_domains_summary),
                 checked = enableDirectDnsForProxyServerDomains,
                 onCheckedChange = onEnableDirectDnsForProxyServerDomainsChange,
             )
             Spacer(Modifier.height(12.dp))
             StringListEditor(
                 editorKey = "direct-dns:$show",
-                title = stringResource(R.string.settings_direct_dns),
+                title = stringResource(Res.string.settings_direct_dns),
                 values = directDnsEntries,
                 onValuesChange = { onDirectDnsChange(it.toTrimmedNonEmptyDistinctList()) },
-                emptyText = stringResource(R.string.settings_direct_dns_empty),
-                description = stringResource(R.string.settings_dns_server_system_hint),
+                emptyText = stringResource(Res.string.settings_direct_dns_empty),
+                description = stringResource(Res.string.settings_dns_server_system_hint),
                 validateInput = { dnsServerInputError(it, dnsServerInvalidMessage) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(8.dp))
             StringListEditor(
                 editorKey = "direct-dns-domains:$show",
-                title = stringResource(R.string.settings_direct_dns_domains),
+                title = stringResource(Res.string.settings_direct_dns_domains),
                 values = directDnsDomainEntries,
                 onValuesChange = { onDirectDnsDomainsChange(it.toTrimmedNonEmptyDistinctList()) },
-                emptyText = stringResource(R.string.settings_direct_dns_domains_empty),
+                emptyText = stringResource(Res.string.settings_direct_dns_domains_empty),
                 validateInput = { dnsDomainInputError(it, dnsDomainInvalidMessage) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(8.dp))
             StringListEditor(
                 editorKey = "proxy-dns:$show",
-                title = stringResource(R.string.settings_proxy_dns),
+                title = stringResource(Res.string.settings_proxy_dns),
                 values = proxyDnsEntries,
                 onValuesChange = { onProxyDnsChange(it.toTrimmedNonEmptyDistinctList()) },
-                emptyText = stringResource(R.string.settings_proxy_dns_empty),
-                description = stringResource(R.string.settings_dns_server_system_hint),
+                emptyText = stringResource(Res.string.settings_proxy_dns_empty),
+                description = stringResource(Res.string.settings_dns_server_system_hint),
                 validateInput = { dnsServerInputError(it, dnsServerInvalidMessage) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(8.dp))
             StringListEditor(
                 editorKey = "dns-hosts:$show",
-                title = stringResource(R.string.settings_dns_hosts),
-                description = stringResource(R.string.settings_dns_hosts_format),
+                title = stringResource(Res.string.settings_dns_hosts),
+                description = stringResource(Res.string.settings_dns_hosts_format),
                 values = dnsHostEntries,
                 onValuesChange = { onDnsHostsChange(it.toTrimmedNonEmptyDistinctList()) },
-                emptyText = stringResource(R.string.settings_dns_hosts_empty),
+                emptyText = stringResource(Res.string.settings_dns_hosts_empty),
                 validateInput = { dnsHostInputError(it, dnsHostsInvalidMessage) },
                 modifier = Modifier.fillMaxWidth(),
             )

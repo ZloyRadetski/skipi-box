@@ -15,14 +15,8 @@ import app.modes.FontFamilyModeJetBrainsMono
 import app.modes.FontFamilyModeManrope
 import app.modes.FontFamilyModeOnest
 import app.modes.FontFamilyModeUnbounded
-import app.modes.FontWeightModeBold
-import app.modes.FontWeightModeDefault
-import app.modes.FontWeightModeLight
-import app.modes.FontWeightModeMedium
-import app.modes.FontWeightModeNormal
-import app.modes.FontWeightModeSemiBold
+import app.skipi.ui.text.resolveFontWeight as sharedResolveFontWeight
 import app.modes.normalizeFontFamilyMode
-import app.modes.normalizeFontWeightMode
 
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontVariation
@@ -69,11 +63,4 @@ fun resolveFontFamily(fontFamilyMode: Int): FontFamily? = when (normalizeFontFam
     else -> null
 }
 
-fun resolveFontWeight(fontWeightMode: Int): FontWeight? = when (normalizeFontWeightMode(fontWeightMode)) {
-    FontWeightModeLight -> FontWeight.Light
-    FontWeightModeNormal -> FontWeight.Normal
-    FontWeightModeMedium -> FontWeight.Medium
-    FontWeightModeSemiBold -> FontWeight.SemiBold
-    FontWeightModeBold -> FontWeight.Bold
-    else -> null
-}
+fun resolveFontWeight(fontWeightMode: Int): FontWeight? = sharedResolveFontWeight(fontWeightMode)

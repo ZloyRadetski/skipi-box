@@ -26,6 +26,7 @@ import app.proxyServerOutboundTag
 import app.skipi.app.routing.upsertRouteRule
 import app.skipi.ui.routing.RouteRuleOutboundItem
 import app.skipi.ui.routing.SkipiRouteRuleEditorForm
+import app.skipi.ui.routing.SkipiRoutingPageScaffold
 import features.proxy.server.display.displayNameById
 import features.proxy.server.display.displayNameWithGroup
 import features.proxy.server.model.isCustomProxyServer
@@ -33,12 +34,6 @@ import features.routing.model.RouteRule
 import features.routing.ui.GeoAssetPickerDialog
 import features.routing.ui.ProcessAppPickerDialog
 import features.routing.usecase.RoutingSuggestionsProvider
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import ui.AppTheme
-import ui.components.BackNavigationIcon
-import ui.layout.AdaptiveTopAppBar
-import ui.layout.pageContentPaddingWithCutout
 
 internal data class RouteRuleOutboundOption(
     val tag: String,
@@ -99,18 +94,13 @@ fun RouteRuleEditorPage(
         navigator.pop()
     }
 
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        topBar = {
-            AdaptiveTopAppBar(
-                title = stringResource(if (initialRule == null) R.string.routing_add_rule else R.string.routing_edit_rule),
-                isWideScreen = isWideScreen,
-                scrollBehavior = MiuixScrollBehavior(),
-                navigationIcon = { BackNavigationIcon(onClick = navigator::pop) },
-            )
-        },
-    ) { innerPadding ->
-        Column(Modifier.fillMaxSize().padding(pageContentPaddingWithCutout(innerPadding, padding, isWideScreen))) {
+    SkipiRoutingPageScaffold(
+        title = stringResource(if (initialRule == null) R.string.routing_add_rule else R.string.routing_edit_rule),
+        padding = padding,
+        isWideScreen = isWideScreen,
+        onBack = navigator::pop,
+    ) { contentPadding, _ ->
+        Column(Modifier.fillMaxSize().padding(contentPadding)) {
             SkipiRouteRuleEditorForm(
                 initialRule = initialRule,
                 nextRuleId = appState.nextRouteRuleId,

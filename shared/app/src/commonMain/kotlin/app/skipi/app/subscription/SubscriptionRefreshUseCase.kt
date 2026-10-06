@@ -12,6 +12,26 @@ fun interface SubscriptionRefreshLoader<Request, Update> {
     suspend fun load(request: Request): Update
 }
 
+/**
+ * Runs one refresh around a caller-owned snapshot and commit policy.
+ *
+ * The snapshot is captured before any network work starts and is passed only
+ * to the commit callback. Hosts keep transport and persistence operations at
+ * their platform boundary while sharing the ordering that prevents a delayed
+ * response from being committed against an unrelated baseline. Exceptions,
+ * including coroutine cancellation, propagate to the host unchanged.
+ */
+suspend fun <Request, Snapshot, Update, Outcome> runSubscriptionRefresh(
+    request: Request,
+    captureSnapshot: (Request) -> Snapshot,
+    loader: SubscriptionRefreshLoader<Request, Update>,
+    commit: suspend (Snapshot, Request, Update) -> Outcome,
+): Outcome {
+    val snapshot = captureSnapshot(request)
+    val update = loader.load(request)
+    return commit(snapshot, request, update)
+}
+
 data class SubscriptionRefreshFailure<Request>(
     val request: Request,
     val error: Throwable,

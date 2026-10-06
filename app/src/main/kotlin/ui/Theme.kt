@@ -34,6 +34,10 @@ import app.modes.resolveFontSizeScale
 import app.skipi.ui.theme.ProvideSkipiTheme
 import ui.text.resolveFontFamily
 import ui.text.resolveFontWeight
+import app.skipi.ui.text.applySkipiFontAndWeight
+import app.skipi.ui.text.scaleSkipiFontSize
+import app.skipi.ui.theme.NamedThemePalette as SharedNamedThemePalette
+import app.skipi.ui.theme.namedThemePaletteFor as sharedNamedThemePaletteFor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -233,18 +237,18 @@ fun AppTheme(
     val baseMiuixTextStyles = MiuixTheme.textStyles
     val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight, appColors.onSurface) {
         baseMiuixTextStyles.copy(
-            main = baseMiuixTextStyles.main.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            headline1 = baseMiuixTextStyles.headline1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            headline2 = baseMiuixTextStyles.headline2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            title1 = baseMiuixTextStyles.title1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            title2 = baseMiuixTextStyles.title2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            title3 = baseMiuixTextStyles.title3.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            title4 = baseMiuixTextStyles.title4.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            body1 = baseMiuixTextStyles.body1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            body2 = baseMiuixTextStyles.body2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            footnote1 = baseMiuixTextStyles.footnote1.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            footnote2 = baseMiuixTextStyles.footnote2.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            button = baseMiuixTextStyles.button.applyFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            main = baseMiuixTextStyles.main.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            headline1 = baseMiuixTextStyles.headline1.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            headline2 = baseMiuixTextStyles.headline2.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            title1 = baseMiuixTextStyles.title1.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            title2 = baseMiuixTextStyles.title2.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            title3 = baseMiuixTextStyles.title3.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            title4 = baseMiuixTextStyles.title4.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            body1 = baseMiuixTextStyles.body1.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            body2 = baseMiuixTextStyles.body2.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            footnote1 = baseMiuixTextStyles.footnote1.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            footnote2 = baseMiuixTextStyles.footnote2.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
+            button = baseMiuixTextStyles.button.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
         )
     }
     val popupMiuixTextStyles = remember(miuixTextStyles, fontScaleFactor) {
@@ -252,18 +256,18 @@ fun AppTheme(
             miuixTextStyles
         } else {
             miuixTextStyles.copy(
-                main = miuixTextStyles.main.scaleFontSize(fontScaleFactor),
-                headline1 = miuixTextStyles.headline1.scaleFontSize(fontScaleFactor),
-                headline2 = miuixTextStyles.headline2.scaleFontSize(fontScaleFactor),
-                title1 = miuixTextStyles.title1.scaleFontSize(fontScaleFactor),
-                title2 = miuixTextStyles.title2.scaleFontSize(fontScaleFactor),
-                title3 = miuixTextStyles.title3.scaleFontSize(fontScaleFactor),
-                title4 = miuixTextStyles.title4.scaleFontSize(fontScaleFactor),
-                body1 = miuixTextStyles.body1.scaleFontSize(fontScaleFactor),
-                body2 = miuixTextStyles.body2.scaleFontSize(fontScaleFactor),
-                footnote1 = miuixTextStyles.footnote1.scaleFontSize(fontScaleFactor),
-                footnote2 = miuixTextStyles.footnote2.scaleFontSize(fontScaleFactor),
-                button = miuixTextStyles.button.scaleFontSize(fontScaleFactor),
+                main = miuixTextStyles.main.scaleSkipiFontSize(fontScaleFactor),
+                headline1 = miuixTextStyles.headline1.scaleSkipiFontSize(fontScaleFactor),
+                headline2 = miuixTextStyles.headline2.scaleSkipiFontSize(fontScaleFactor),
+                title1 = miuixTextStyles.title1.scaleSkipiFontSize(fontScaleFactor),
+                title2 = miuixTextStyles.title2.scaleSkipiFontSize(fontScaleFactor),
+                title3 = miuixTextStyles.title3.scaleSkipiFontSize(fontScaleFactor),
+                title4 = miuixTextStyles.title4.scaleSkipiFontSize(fontScaleFactor),
+                body1 = miuixTextStyles.body1.scaleSkipiFontSize(fontScaleFactor),
+                body2 = miuixTextStyles.body2.scaleSkipiFontSize(fontScaleFactor),
+                footnote1 = miuixTextStyles.footnote1.scaleSkipiFontSize(fontScaleFactor),
+                footnote2 = miuixTextStyles.footnote2.scaleSkipiFontSize(fontScaleFactor),
+                button = miuixTextStyles.button.scaleSkipiFontSize(fontScaleFactor),
             )
         }
     }
@@ -296,42 +300,6 @@ fun AppTheme(
             content()
         }
     }
-}
-
-private fun TextStyle.scaleFontSize(scaleFactor: Float): TextStyle {
-    val newFontSize = if (scaleFactor != 1.0f && fontSize.isSpecified) {
-        fontSize * scaleFactor
-    } else {
-        fontSize
-    }
-    val newLineHeight = if (scaleFactor != 1.0f && lineHeight.isSpecified) {
-        lineHeight * scaleFactor
-    } else {
-        lineHeight
-    }
-    return copy(
-        fontSize = newFontSize,
-        lineHeight = newLineHeight,
-    )
-}
-
-private fun TextStyle.applyFontAndWeight(
-    fontFamily: androidx.compose.ui.text.font.FontFamily?,
-    targetWeight: FontWeight?,
-): TextStyle {
-    val newFontFamily = fontFamily ?: this.fontFamily
-    val currentWeight = this.fontWeight ?: FontWeight.Normal
-    val newWeight = if (targetWeight == null) {
-        this.fontWeight
-    } else {
-        val shift = targetWeight.weight - FontWeight.Normal.weight
-        val effectiveWeight = (currentWeight.weight + shift).coerceIn(100, 900)
-        FontWeight(effectiveWeight)
-    }
-    return copy(
-        fontFamily = newFontFamily,
-        fontWeight = newWeight,
-    )
 }
 
 @Composable
@@ -371,62 +339,15 @@ private fun SystemBarAppearance(
     }
 }
 
-@Immutable
-internal data class NamedThemePalette(
-    val background: Color,
-    val onBackground: Color,
-    val accent: Color,
-    val onAccent: Color,
-    val surface: Color,
-    val onSurface: Color,
-    val surfaceVariant: Color,
-    val onSurfaceVariant: Color,
-)
+internal typealias NamedThemePalette = SharedNamedThemePalette
 
 internal fun namedThemePaletteFor(colorMode: Int): NamedThemePalette? = when (normalizeColorMode(colorMode)) {
-    ColorModeAurora -> NamedThemePalette(
-        background = Color(0xFF081427),
-        onBackground = Color(0xFFE7F1FF),
-        accent = Color(0xFF3B82F6),
-        onAccent = Color.White,
-        surface = Color(0xFF102443),
-        onSurface = Color(0xFFE7F1FF),
-        surfaceVariant = Color(0xFF18345E),
-        onSurfaceVariant = Color(0xFFB2C8EA),
-    )
-    ColorModeSakura -> NamedThemePalette(
-        background = Color(0xFFFFF7FB),
-        onBackground = Color(0xFF351321),
-        accent = Color(0xFFB93872),
-        onAccent = Color.White,
-        surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF351321),
-        surfaceVariant = Color(0xFFF7E4EE),
-        onSurfaceVariant = Color(0xFF806171),
-    )
-    ColorModeForest -> NamedThemePalette(
-        background = Color(0xFF061B15),
-        onBackground = Color(0xFFE6FFF4),
-        accent = Color(0xFF16835A),
-        onAccent = Color.White,
-        surface = Color(0xFF0C2A20),
-        onSurface = Color(0xFFE6FFF4),
-        surfaceVariant = Color(0xFF164235),
-        onSurfaceVariant = Color(0xFFA9D7C0),
-    )
-    ColorModeSunset -> NamedThemePalette(
-        background = Color(0xFF211015),
-        onBackground = Color(0xFFFFF0ED),
-        accent = Color(0xFFC85048),
-        onAccent = Color.White,
-        surface = Color(0xFF32161D),
-        onSurface = Color(0xFFFFF0ED),
-        surfaceVariant = Color(0xFF4A2029),
-        onSurfaceVariant = Color(0xFFE9B8B1),
-    )
+    ColorModeAurora -> sharedNamedThemePaletteFor("aurora")
+    ColorModeSakura -> sharedNamedThemePaletteFor("sakura")
+    ColorModeForest -> sharedNamedThemePaletteFor("forest")
+    ColorModeSunset -> sharedNamedThemePaletteFor("sunset")
     else -> null
 }
-
 val KeyColors: List<Color> = listOf(
     Color(0xFF3482FF),
     Color(0xFF36D167),

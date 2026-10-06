@@ -1,7 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings.sheets
+package app.skipi.ui.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -26,7 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import engine.network.toPortOrNull
 import top.yukonga.miuix.kmp.basic.TextField
-import ui.components.StringListStatusText
+import app.skipi.ui.components.StringListStatusText
 
 @Composable
 internal fun SettingsSheetContent(

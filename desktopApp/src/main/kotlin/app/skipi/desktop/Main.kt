@@ -47,18 +47,24 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
+import app.skipi.app.subscription.SubscriptionRefreshLoader
+import app.skipi.app.subscription.runSubscriptionRefresh
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.navigation.SkipiNavigationBarSize
 import app.skipi.ui.theme.SkipiTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import features.proxy.server.model.Custom
+import features.proxy.server.model.ChainProxy
+import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.model.formatCustomXrayConfigJson
 import features.proxy.server.model.parseCustomXrayConfigJsonObject
 import kotlinx.serialization.json.JsonArray
@@ -559,6 +565,28 @@ fun main() = application {
                             confirmDeletion = desktopSettings.confirmDeletion,
                             activeProfileName = activeProfileName,
                             activeTrafficConfigId = configLibrary.selectedConfigId,
+                            trafficConfigContentById = configLibrary.configs.associate { config -> config.id to config.content },
+                            exportFullJson = { serverId, draft ->
+                                withContext(Dispatchers.IO) {
+                                    val tempServerLibrary = serverLibrary.copy(
+                                        selectedServerId = serverId,
+                                        servers = serverLibrary.servers.map { stored ->
+                                            if (stored.id == serverId) stored.copy(serverJson = draft.encodePersistedProxyServer()) else stored
+                                        },
+                                    )
+                                    val activeProfile = configLibrary.selectedConfigId
+                                        ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
+                                    if (activeProfile != null) {
+                                        DesktopTrafficProfileXrayConfigFactory.build(activeProfile, tempServerLibrary, localProxyOptions)
+                                    } else {
+                                        when (draft) {
+                                            is Custom -> buildDesktopCustomXrayConfig(draft, localProxyOptions)
+                                            is ChainProxy, is StrategyGroup -> error("Composite server export requires an active traffic profile")
+                                            else -> LocalProxyXrayConfigFactory.build(draft, localProxyOptions)
+                                        }
+                                    }
+                                }
+                            },
                             latencyByServerId = latencyByServerId,
                             testingServerIds = testingServerIds,
                             pingingSubscriptionIds = pingingSubscriptionIds,
@@ -724,6 +752,41 @@ fun main() = application {
                                     serverLibraryMessage = "Не удалось изменить сервер: ${error.message.orEmpty()}"
                                 }
                             },
+                            onSelectStrategyMember = { serverId, memberId ->
+                                val strategy = serverLibrary.servers
+                                    .firstOrNull { it.id == serverId }
+                                    ?.decode()
+                                    ?.getOrNull() as? StrategyGroup
+                                if (strategy == null) {
+                                    serverLibraryMessage = "Группа стратегий не найдена."
+                                } else {
+                                    runCatching {
+                                        DesktopServerLibraries.update(
+                                            serverLibrary,
+                                            serverId,
+                                            strategy.copy(selectedMemberId = memberId),
+                                        )
+                                    }.fold(
+                                        onSuccess = { updated ->
+                                            DesktopServerLibraries.saveDefault(updated).fold(
+                                                onSuccess = {
+                                                    serverLibrary = updated
+                                                    serverLibraryMessage = "Активный сервер группы изменён."
+                                                    if (coreState.isRunning) {
+                                                        requestTunnelReconnect("Участник активной группы изменён.")
+                                                    }
+                                                },
+                                                onFailure = { error ->
+                                                    serverLibraryMessage = "Не удалось сохранить участника группы: ${error.message.orEmpty()}"
+                                                },
+                                            )
+                                        },
+                                        onFailure = { error ->
+                                            serverLibraryMessage = "Не удалось изменить участника группы: ${error.message.orEmpty()}"
+                                        },
+                                    )
+                                }
+                            },
                             onMeasureServers = { targets -> startDesktopHomeLatencyTest(targets) },
                             onPingSubscriptionServers = { subscriptionId, targets ->
                                 startDesktopHomeLatencyTest(targets, subscriptionId)
@@ -868,22 +931,73 @@ fun main() = application {
                                         try {
                                         subscriptionMessage = "Обновление подписки…"
                                         subscriptionUpdate = null
-                                        val update = runCatching {
-                                            withContext(Dispatchers.IO) {
-                                                subscriptionFetcher.fetchAndImport(
-                                                    url = requestedUrl,
-                                                    userAgent = subscriptionUserAgent,
-                                                    timeout = Duration.ofSeconds(
-                                                        desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
-                                                    ),
-                                                    proxy = socksProxy,
-                                                    deviceHeaders = deviceHeaders,
-                                                )
-                                            }
-                                        }.getOrElse { error ->
+                                        val refreshAttempt = try {
+                                            runSubscriptionRefresh(
+                                                request = requestedUrl,
+                                                captureSnapshot = { refreshBaseline },
+                                                loader = SubscriptionRefreshLoader { url ->
+                                                    val loaded = withContext(Dispatchers.IO) {
+                                                        subscriptionFetcher.fetchAndImport(
+                                                            url = url,
+                                                            userAgent = subscriptionUserAgent,
+                                                            timeout = Duration.ofSeconds(
+                                                                desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
+                                                            ),
+                                                            proxy = socksProxy,
+                                                            deviceHeaders = deviceHeaders,
+                                                        )
+                                                    }
+                                                    val embedded = if (loaded.importResult.servers.isEmpty()) {
+                                                        Result.success(null)
+                                                    } else {
+                                                        try {
+                                                            withContext(Dispatchers.IO) {
+                                                                Result.success(
+                                                                    subscriptionFetcher.resolveEmbeddedConfig(
+                                                                        metadata = loaded.metadata,
+                                                                        userAgent = subscriptionUserAgent,
+                                                                        timeout = Duration.ofSeconds(
+                                                                            desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
+                                                                        ),
+                                                                        proxy = socksProxy,
+                                                                        deviceHeaders = deviceHeaders,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        } catch (cancelled: CancellationException) {
+                                                            throw cancelled
+                                                        } catch (error: Throwable) {
+                                                            Result.failure(error)
+                                                        }
+                                                    }
+                                                    DesktopSubscriptionRefreshLoadedData(loaded, embedded)
+                                                },
+                                                commit = { baseline, url, loadedData ->
+                                                    val loaded = loadedData.update
+                                                    val serverCommit = if (loaded.importResult.servers.isEmpty()) null else {
+                                                        runCatching {
+                                                            DesktopSubscriptionRefreshCommitter.rebaseServers(
+                                                                baseline = baseline,
+                                                                latestSubscriptions = subscriptionLibrary,
+                                                                latestServers = serverLibrary,
+                                                                url = url,
+                                                                userAgent = subscription?.userAgent.orEmpty(),
+                                                                name = loaded.metadata.profileTitle.orEmpty(),
+                                                                metadata = loaded.metadata,
+                                                                importedServers = loaded.importResult.servers,
+                                                            )
+                                                        }
+                                                    }
+                                                    DesktopSubscriptionRefreshAttempt(loaded, loadedData.resolvedEmbeddedConfig, serverCommit)
+                                                },
+                                            )
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (error: Throwable) {
                                             subscriptionMessage = "Не удалось обновить подписку: ${error.message.orEmpty()}"
                                             return@launch
                                         }
+                                        val update = refreshAttempt.update
                                         if (update.importResult.servers.isEmpty()) {
                                             val metadataOnlyLibrary = runCatching {
                                                 DesktopSubscriptionLibraries.addOrReplace(
@@ -911,42 +1025,19 @@ fun main() = application {
                                             return@launch
                                         }
 
-                                        val resolvedEmbeddedConfig = runCatching {
-                                            withContext(Dispatchers.IO) {
-                                                subscriptionFetcher.resolveEmbeddedConfig(
-                                                    metadata = update.metadata,
-                                                    userAgent = subscriptionUserAgent,
-                                                    timeout = Duration.ofSeconds(
-                                                        desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
-                                                    ),
-                                                    proxy = socksProxy,
-                                                    deviceHeaders = deviceHeaders,
-                                                )
-                                            }
-                                        }
-
-                                        val refreshCommit = runCatching {
-                                            DesktopSubscriptionRefreshCommitter.rebaseServers(
-                                                baseline = refreshBaseline,
-                                                latestSubscriptions = subscriptionLibrary,
-                                                latestServers = serverLibrary,
-                                                url = requestedUrl,
-                                                userAgent = subscription?.userAgent.orEmpty(),
-                                                name = update.metadata.profileTitle.orEmpty(),
-                                                metadata = update.metadata,
-                                                importedServers = update.importResult.servers,
-                                            )
-                                        }.getOrElse { error ->
+                                        val refreshCommit = requireNotNull(refreshAttempt.serverCommit)
+                                        val refreshCommitValue = refreshCommit.getOrNull() ?: run {
+                                            val error = refreshCommit.exceptionOrNull() ?: IllegalStateException("Missing refresh failure")
                                             subscriptionMessage = "Список получен, но ссылка некорректна: ${error.message.orEmpty()}"
                                             return@launch
                                         }
-                                        val readyCommit = when (refreshCommit) {
+                                        val readyCommit = when (refreshCommitValue) {
                                             is DesktopSubscriptionRefreshServerCommit.Conflict -> {
-                                                subscriptionMessage = "Подписка не применена: ${refreshCommit.message} Повторите обновление."
+                                                subscriptionMessage = "Подписка не применена: ${refreshCommitValue.message} Повторите обновление."
                                                 return@launch
                                             }
 
-                                            is DesktopSubscriptionRefreshServerCommit.Ready -> refreshCommit
+                                            is DesktopSubscriptionRefreshServerCommit.Ready -> refreshCommitValue
                                         }
                                         DesktopSubscriptionLibraries.saveDefault(readyCommit.subscriptions).getOrElse { error ->
                                             subscriptionMessage = "Список получен, но подписка не сохранена: ${error.message.orEmpty()}"
@@ -972,7 +1063,7 @@ fun main() = application {
                                             update.importDiagnostics.take(2).joinToString(" ")
                                                 .takeIf(String::isNotBlank)
                                                 ?.let { diagnostics -> subscriptionMessage += " $diagnostics" }
-                                            val embeddedConfigMessage = resolvedEmbeddedConfig.fold(
+                                            val embeddedConfigMessage = refreshAttempt.resolvedEmbeddedConfig.fold(
                                                 onSuccess = { embedded ->
                                                     embedded?.let { resolved ->
                                                         when (val profileCommit = DesktopSubscriptionRefreshCommitter.rebaseEmbeddedProfile(
@@ -1195,6 +1286,17 @@ private fun DesktopBottomNavigation(
 private val SkipiBackground: Color
     @Composable get() = DesktopContentBackground
 private const val MaxHomeLatencyChecks = 24
+private data class DesktopSubscriptionRefreshAttempt(
+    val update: DesktopSubscriptionUpdate,
+    val resolvedEmbeddedConfig: Result<DesktopResolvedEmbeddedConfig?>,
+    val serverCommit: Result<DesktopSubscriptionRefreshServerCommit>?,
+)
+
+private data class DesktopSubscriptionRefreshLoadedData(
+    val update: DesktopSubscriptionUpdate,
+    val resolvedEmbeddedConfig: Result<DesktopResolvedEmbeddedConfig?>,
+)
+
 private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
 private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L
 

@@ -236,6 +236,64 @@ class DesktopApplicationRepositoriesTest {
     }
 
     @Test
+    fun appearanceStateAdapterPreservesDesktopSettingsAndMapsSharedHomeOptions() {
+        val original = DesktopAppSettings(
+            localProxyPort = 10808,
+            localHttpProxyPort = 10809,
+            useSystemProxy = false,
+            localProxyListenAddress = "0.0.0.0",
+            subscriptionUserAgent = "Desktop Agent",
+            installationUuid = "stable-device-id",
+            themeMode = DesktopThemeMode.Sakura,
+            compactHome = true,
+            showTunnelMemory = false,
+            pinConnectionPanelOnHome = true,
+            enableAllProxyGroup = true,
+            showServerSearch = true,
+            enableSubscriptionSwipe = false,
+            proxyServerListColumns = 3,
+            confirmDeletion = false,
+            customColorsEnabled = true,
+            customAccentColor = 0xFF123456,
+            connectionDisplayMode = 0,
+            routeDomainStrategy = 2,
+            defaultRouteOutboundTag = "direct",
+        )
+
+        val shared = original.toAppearanceSettingsState()
+        val proxy = original.toLocalProxySettingsState()
+        assertFalse(proxy.dynamicPort)
+        assertTrue(proxy.listenAllInterfaces)
+        assertEquals("10808", proxy.port)
+        assertEquals("0.0.0.0:10808", proxy.socksEndpoint)
+        assertFalse(proxy.authenticationEnabled)
+
+        val subscriptions = original.toSubscriptionSettingsState()
+        assertEquals(30, subscriptions.fetchTimeoutSeconds)
+        assertTrue(subscriptions.deviceHeadersEnabled)
+        assertFalse(subscriptions.deletionConfirmationEnabled)
+        assertEquals(45, original.withSubscriptionSettingsState(subscriptions.copy(fetchTimeoutSeconds = 45)).subscriptionFetchTimeoutSeconds)
+
+        assertEquals(8, shared.colorMode)
+        assertEquals(0, shared.connectionDisplayMode)
+        assertEquals(3, shared.proxyServerListLayout)
+        assertFalse(shared.enableMaterialYou)
+
+        val updated = original.withAppearanceState(shared.copy(showServerSearch = false))
+        assertEquals(DesktopThemeMode.Sakura, updated.themeMode)
+        assertFalse(updated.showServerSearch)
+        assertEquals(10808, updated.localProxyPort)
+        assertEquals(10809, updated.localHttpProxyPort)
+        assertFalse(updated.useSystemProxy)
+        assertEquals("0.0.0.0", updated.localProxyListenAddress)
+        assertEquals("Desktop Agent", updated.subscriptionUserAgent)
+        assertEquals("stable-device-id", updated.installationUuid)
+        assertFalse(updated.confirmDeletion)
+        assertEquals(2, updated.routeDomainStrategy)
+        assertEquals("direct", updated.defaultRouteOutboundTag)
+        assertEquals(0xFF123456L, updated.customAccentColor)
+    }
+    @Test
     fun legacySettingsJsonLoadsWithDefaultsForNewAppearanceKeys() {
         val path = Files.createTempFile("skipi-settings-compat", ".json")
         try {

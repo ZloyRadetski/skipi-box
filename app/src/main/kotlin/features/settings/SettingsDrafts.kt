@@ -4,114 +4,64 @@
 package features.settings
 
 import app.AppState
-import app.effectiveFakeDnsEnabled
-import features.settings.sheets.sanitizeMuxUdp443Index
+import app.skipi.app.settings.DnsSettingsDraft as SharedDnsSettingsDraft
+import app.skipi.app.settings.FragmentSettingsDraft as SharedFragmentSettingsDraft
+import app.skipi.app.settings.LocalProxySettingsDraft as SharedLocalProxySettingsDraft
+import app.skipi.app.settings.MuxSettingsDraft as SharedMuxSettingsDraft
+import app.skipi.app.settings.SettingsValues
+import app.skipi.app.settings.SubscriptionPingSettingsDraft as SharedSubscriptionPingSettingsDraft
+import app.skipi.app.settings.TunSettingsDraft as SharedTunSettingsDraft
+import app.skipi.app.settings.toDnsSettingsDraft
+import app.skipi.app.settings.toFragmentSettingsDraft
+import app.skipi.app.settings.toLocalProxySettingsDraft
+import app.skipi.app.settings.toMuxSettingsDraft
+import app.skipi.app.settings.toSubscriptionPingSettingsDraft
+import app.skipi.app.settings.toTunSettingsDraft
 
+internal typealias TunSettingsDraft = SharedTunSettingsDraft
+internal typealias LocalProxySettingsDraft = SharedLocalProxySettingsDraft
+internal typealias DnsSettingsDraft = SharedDnsSettingsDraft
+internal typealias MuxSettingsDraft = SharedMuxSettingsDraft
+internal typealias FragmentSettingsDraft = SharedFragmentSettingsDraft
+internal typealias SubscriptionPingSettingsDraft = SharedSubscriptionPingSettingsDraft
 
-internal data class TunSettingsDraft(
-    val mtu: String = "",
-    val vpnDns: String = "",
-    val ipv4Cidr: String = "",
-    val ipv6Cidr: String = "",
-    val tcpKeepAliveInterval: String = "",
-    val tcpUserTimeout: String = "",
+private fun AppState.toSettingsValues() = SettingsValues(
+    tunMtu = tunMtu,
+    tunVpnDns = tunVpnDns,
+    tunIpv4Cidr = tunIpv4Cidr,
+    tunIpv6Cidr = tunIpv6Cidr,
+    tunTcpKeepAliveInterval = tunTcpKeepAliveInterval,
+    tunTcpUserTimeout = tunTcpUserTimeout,
+    localProxyPort = localProxyPort,
+    dynamicLocalProxyPort = enableDynamicLocalProxyPort,
+    localProxyListenAllInterfaces = localProxyListenAllInterfaces,
+    localProxyAuth = enableLocalProxyAuth,
+    localProxyUsername = localProxyUsername,
+    localProxyPassword = localProxyPassword,
+    enableVpnLocalDns = enableVpnLocalDns,
+    enableFakeDns = enableFakeDns,
+    enableResolveProxyServerDomain = enableResolveProxyServerDomain,
+    proxyDns = proxyDns,
+    directDns = directDns,
+    directDnsDomains = directDnsDomains,
+    enableDirectDnsForProxyServerDomains = enableDirectDnsForProxyServerDomains,
+    dnsHosts = dnsHosts,
+    enableMux = enableMux,
+    muxConcurrency = muxConcurrency,
+    muxXudpConcurrency = muxXudpConcurrency,
+    muxXudpProxyUdp443 = muxXudpProxyUdp443,
+    enableFragment = enableFragment,
+    fragmentPackets = fragmentPackets,
+    fragmentLength = fragmentLength,
+    fragmentInterval = fragmentInterval,
+    subscriptionPingUrl = subscriptionPingUrl,
+    subscriptionPingTimeoutMillis = subscriptionPingTimeoutMillis,
+    serviceControl = serviceControl,
 )
 
-internal fun AppState.toTunSettingsDraft(): TunSettingsDraft {
-    return TunSettingsDraft(
-        mtu = tunMtu,
-        vpnDns = tunVpnDns,
-        ipv4Cidr = tunIpv4Cidr,
-        ipv6Cidr = tunIpv6Cidr,
-        tcpKeepAliveInterval = tunTcpKeepAliveInterval,
-        tcpUserTimeout = tunTcpUserTimeout,
-    )
-}
-
-internal data class LocalProxySettingsDraft(
-    val port: String = "",
-    val enableDynamicPort: Boolean = false,
-    val listenAllInterfaces: Boolean = false,
-    val enableAuth: Boolean = true,
-    val username: String = "",
-    val password: String = "",
-)
-
-internal fun AppState.toLocalProxySettingsDraft(): LocalProxySettingsDraft {
-    return LocalProxySettingsDraft(
-        port = localProxyPort,
-        enableDynamicPort = enableDynamicLocalProxyPort,
-        listenAllInterfaces = localProxyListenAllInterfaces,
-        enableAuth = enableLocalProxyAuth,
-        username = localProxyUsername,
-        password = localProxyPassword,
-    )
-}
-
-internal data class DnsSettingsDraft(
-    val enableVpnLocalDns: Boolean = true,
-    val enableFakeDns: Boolean = false,
-    val enableResolveProxyServerDomain: Boolean = false,
-    val proxyDns: List<String> = emptyList(),
-    val directDns: List<String> = emptyList(),
-    val directDnsDomains: List<String> = emptyList(),
-    val enableDirectDnsForProxyServerDomains: Boolean = true,
-    val dnsHosts: List<String> = emptyList(),
-)
-
-internal fun AppState.toDnsSettingsDraft(): DnsSettingsDraft {
-    return DnsSettingsDraft(
-        enableVpnLocalDns = enableVpnLocalDns,
-        enableFakeDns = effectiveFakeDnsEnabled,
-        enableResolveProxyServerDomain = enableResolveProxyServerDomain,
-        proxyDns = proxyDns,
-        directDns = directDns,
-        directDnsDomains = directDnsDomains,
-        enableDirectDnsForProxyServerDomains = enableDirectDnsForProxyServerDomains,
-        dnsHosts = dnsHosts,
-    )
-}
-
-internal data class MuxSettingsDraft(
-    val enabled: Boolean = false,
-    val concurrency: String = "",
-    val xudpConcurrency: String = "",
-    val xudpProxyUdp443: Int = 0,
-)
-
-internal fun AppState.toMuxSettingsDraft(): MuxSettingsDraft {
-    return MuxSettingsDraft(
-        enabled = enableMux,
-        concurrency = muxConcurrency,
-        xudpConcurrency = muxXudpConcurrency,
-        xudpProxyUdp443 = sanitizeMuxUdp443Index(muxXudpProxyUdp443),
-    )
-}
-
-internal data class FragmentSettingsDraft(
-    val enabled: Boolean = false,
-    val packets: String = "",
-    val length: String = "",
-    val interval: String = "",
-)
-
-internal fun AppState.toFragmentSettingsDraft(): FragmentSettingsDraft {
-    return FragmentSettingsDraft(
-        enabled = enableFragment,
-        packets = fragmentPackets,
-        length = fragmentLength,
-        interval = fragmentInterval,
-    )
-}
-
-internal data class SubscriptionPingSettingsDraft(
-    val url: String = "",
-    val timeoutMillis: String = "",
-)
-
-internal fun AppState.toSubscriptionPingSettingsDraft(): SubscriptionPingSettingsDraft {
-    return SubscriptionPingSettingsDraft(
-        url = subscriptionPingUrl,
-        timeoutMillis = subscriptionPingTimeoutMillis,
-    )
-}
+internal fun AppState.toTunSettingsDraft() = toSettingsValues().toTunSettingsDraft()
+internal fun AppState.toLocalProxySettingsDraft() = toSettingsValues().toLocalProxySettingsDraft()
+internal fun AppState.toDnsSettingsDraft() = toSettingsValues().toDnsSettingsDraft()
+internal fun AppState.toMuxSettingsDraft() = toSettingsValues().toMuxSettingsDraft()
+internal fun AppState.toFragmentSettingsDraft() = toSettingsValues().toFragmentSettingsDraft()
+internal fun AppState.toSubscriptionPingSettingsDraft() = toSettingsValues().toSubscriptionPingSettingsDraft()

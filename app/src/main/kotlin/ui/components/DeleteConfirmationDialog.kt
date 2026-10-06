@@ -4,23 +4,8 @@
 package ui.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import app.R
+import app.skipi.ui.components.DeleteConfirmationDialog as SharedDeleteConfirmationDialog
 
 @Composable
-internal fun DeleteConfirmationDialog(
-    show: Boolean,
-    title: String,
-    onDismissRequest: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    WarningConfirmDialog(
-        show = show,
-        title = title,
-        summary = stringResource(R.string.deletion_confirmation_summary),
-        dismissText = stringResource(R.string.common_cancel),
-        confirmText = stringResource(R.string.common_delete),
-        onDismissRequest = onDismissRequest,
-        onConfirm = onConfirm,
-    )
-}
+internal fun DeleteConfirmationDialog(show: Boolean, title: String, onDismissRequest: () -> Unit, onConfirm: () -> Unit) =
+    SharedDeleteConfirmationDialog(show, title, onDismissRequest, onConfirm)

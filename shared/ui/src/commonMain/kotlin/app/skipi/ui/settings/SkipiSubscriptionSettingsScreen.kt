@@ -6,6 +6,7 @@ package app.skipi.ui.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -77,6 +78,15 @@ data class SubscriptionSettingsLabels(
     val disableHeadersAction: String,
 )
 
+data class SubscriptionSettingsCapabilities(
+    val fetchTimeout: Boolean = true,
+    val userAgents: Boolean = true,
+    val deviceHeaders: Boolean = true,
+    val deletionConfirmation: Boolean = true,
+    val expiryNotifications: Boolean = true,
+    val pingSettings: Boolean = true,
+)
+
 /** Subscription preference UI. Persistence and navigation are provided by the host. */
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -93,6 +103,8 @@ fun SkipiSubscriptionSettingsScreen(
     onExpiryNotificationsChange: (Boolean) -> Unit,
     onExpiryRemindersChange: (List<SubscriptionExpiryReminder>) -> Unit,
     onOpenPingSettings: () -> Unit,
+    capabilities: SubscriptionSettingsCapabilities = SubscriptionSettingsCapabilities(),
+    platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
     var showDisableHeadersConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -118,35 +130,43 @@ fun SkipiSubscriptionSettingsScreen(
                 item(key = "subscriptions_general") {
                     SmallTitle(text = labels.generalSectionTitle)
                     SkipiSettingsSectionCard {
-                        AppOverlayDropdownPreference(
-                            title = labels.fetchTimeoutTitle,
-                            summary = labels.fetchTimeoutSummary,
-                            items = labels.timeoutOptions,
-                            selectedIndex = selectedTimeoutIndex.coerceIn(labels.timeoutOptions.indices),
-                            onSelectedIndexChange = { index -> timeoutValues.getOrNull(index)?.let(onFetchTimeoutChange) },
-                        )
-                        ArrowPreference(
-                            title = labels.userAgentsTitle,
-                            summary = labels.userAgentsSummary,
-                            onClick = onOpenUserAgents,
-                        )
-                        SwitchPreference(
-                            title = labels.deviceHeadersTitle,
-                            summary = labels.deviceHeadersSummary,
-                            checked = state.deviceHeadersEnabled,
-                            onCheckedChange = { enabled ->
-                                if (enabled) onDeviceHeadersChange(true) else showDisableHeadersConfirmation = true
-                            },
-                        )
-                        SwitchPreference(
-                            title = labels.deletionConfirmationTitle,
-                            summary = labels.deletionConfirmationSummary,
-                            checked = state.deletionConfirmationEnabled,
-                            onCheckedChange = onDeletionConfirmationChange,
-                        )
+                        if (capabilities.fetchTimeout) {
+                            AppOverlayDropdownPreference(
+                                title = labels.fetchTimeoutTitle,
+                                summary = labels.fetchTimeoutSummary,
+                                items = labels.timeoutOptions,
+                                selectedIndex = selectedTimeoutIndex.coerceIn(labels.timeoutOptions.indices),
+                                onSelectedIndexChange = { index -> timeoutValues.getOrNull(index)?.let(onFetchTimeoutChange) },
+                            )
+                        }
+                        if (capabilities.userAgents) {
+                            ArrowPreference(
+                                title = labels.userAgentsTitle,
+                                summary = labels.userAgentsSummary,
+                                onClick = onOpenUserAgents,
+                            )
+                        }
+                        if (capabilities.deviceHeaders) {
+                            SwitchPreference(
+                                title = labels.deviceHeadersTitle,
+                                summary = labels.deviceHeadersSummary,
+                                checked = state.deviceHeadersEnabled,
+                                onCheckedChange = { enabled ->
+                                    if (enabled) onDeviceHeadersChange(true) else showDisableHeadersConfirmation = true
+                                },
+                            )
+                        }
+                        if (capabilities.deletionConfirmation) {
+                            SwitchPreference(
+                                title = labels.deletionConfirmationTitle,
+                                summary = labels.deletionConfirmationSummary,
+                                checked = state.deletionConfirmationEnabled,
+                                onCheckedChange = onDeletionConfirmationChange,
+                            )
+                        }
                     }
                 }
-                item(key = "subscriptions_expiry") {
+                if (capabilities.expiryNotifications) item(key = "subscriptions_expiry") {
                     SmallTitle(text = labels.expirySectionTitle)
                     SkipiSettingsSectionCard {
                         Column(Modifier.padding(16.dp)) {
@@ -194,7 +214,7 @@ fun SkipiSubscriptionSettingsScreen(
                         }
                     }
                 }
-                item(key = "subscriptions_ping") {
+                if (capabilities.pingSettings) item(key = "subscriptions_ping") {
                     SmallTitle(text = labels.pingSectionTitle)
                     SkipiSettingsSectionCard {
                         ArrowPreference(
@@ -204,6 +224,7 @@ fun SkipiSubscriptionSettingsScreen(
                         )
                     }
                 }
+                platformContent?.let { content -> item(key = "subscriptions_platform_extension") { Column(content = content) } }
             }
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(listState),

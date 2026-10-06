@@ -1,11 +1,11 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings.sheets
+package app.skipi.ui.settings
 
 import androidx.compose.foundation.background
-import ui.text.themedFontWeight
-import ui.components.AppWindowBottomSheet
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.components.AppWindowBottomSheet
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,14 +22,17 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import app.skipi.app.settings.LocalProxySettingsDraft
+import app.skipi.app.settings.hasValidPort
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.R
+import app.skipi.ui.resources.*
+import app.skipi.app.settings.generateRandomProxyCredential
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -37,7 +40,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @Composable
-internal fun LocalProxySettingsBottomSheet(
+fun LocalProxySettingsBottomSheet(
     show: Boolean,
     port: String,
     enableDynamicPort: Boolean,
@@ -54,21 +57,21 @@ internal fun LocalProxySettingsBottomSheet(
     onDismissRequest: () -> Unit,
     onSave: (String, Boolean, Boolean, Boolean, String, String) -> Unit,
 ) {
-    val portError = if (isPort(port)) null else stringResource(R.string.settings_local_proxy_port_invalid)
+    val portError = if (LocalProxySettingsDraft(port = port).hasValidPort()) null else stringResource(Res.string.settings_local_proxy_port_invalid)
     var isPasswordVisible by remember { mutableStateOf(false) }
 
     AppWindowBottomSheet(
         show = show,
-        title = stringResource(R.string.settings_local_proxy),
+        title = stringResource(Res.string.settings_local_proxy),
         startAction = {
             TextButton(
-                text = stringResource(R.string.common_cancel),
+                text = stringResource(Res.string.common_cancel),
                 onClick = onDismissRequest,
             )
         },
         endAction = {
             TextButton(
-                text = stringResource(R.string.common_save),
+                text = stringResource(Res.string.common_save),
                 onClick = {
                     if (portError == null) {
                         onSave(
@@ -90,26 +93,26 @@ internal fun LocalProxySettingsBottomSheet(
                 SettingsTextField(
                     value = port,
                     onValueChange = onPortChange,
-                    label = stringResource(R.string.settings_local_proxy_port),
+                    label = stringResource(Res.string.settings_local_proxy_port),
                     errorText = portError,
                     keyboardOptions = fiveDigitKeyboardOptions(),
                     sanitizeInput = ::sanitizeFiveDigitInput,
                 )
                 SwitchPreference(
-                    title = stringResource(R.string.settings_local_proxy_dynamic_port),
-                    summary = stringResource(R.string.settings_local_proxy_dynamic_port_summary),
+                    title = stringResource(Res.string.settings_local_proxy_dynamic_port),
+                    summary = stringResource(Res.string.settings_local_proxy_dynamic_port_summary),
                     checked = enableDynamicPort,
                     onCheckedChange = onEnableDynamicPortChange,
                 )
                 SwitchPreference(
-                    title = stringResource(R.string.settings_local_proxy_listen_all_interfaces),
-                    summary = stringResource(R.string.settings_local_proxy_listen_all_interfaces_summary),
+                    title = stringResource(Res.string.settings_local_proxy_listen_all_interfaces),
+                    summary = stringResource(Res.string.settings_local_proxy_listen_all_interfaces_summary),
                     checked = listenAllInterfaces,
                     onCheckedChange = onListenAllInterfacesChange,
                 )
                 SwitchPreference(
-                    title = stringResource(R.string.settings_local_proxy_enable_auth),
-                    summary = stringResource(R.string.settings_local_proxy_enable_auth_summary),
+                    title = stringResource(Res.string.settings_local_proxy_enable_auth),
+                    summary = stringResource(Res.string.settings_local_proxy_enable_auth_summary),
                     checked = enableAuth,
                     onCheckedChange = onEnableAuthChange,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -124,16 +127,16 @@ internal fun LocalProxySettingsBottomSheet(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = stringResource(R.string.settings_local_proxy_credentials_section),
+                            text = stringResource(Res.string.settings_local_proxy_credentials_section),
                             fontSize = 14.sp,
                             fontWeight = themedFontWeight(FontWeight.SemiBold),
                             color = MiuixTheme.colorScheme.onSurface,
                         )
                         TextButton(
-                            text = stringResource(R.string.settings_local_proxy_generate),
+                            text = stringResource(Res.string.settings_local_proxy_generate),
                             onClick = {
-                                onUsernameChange(app.generateRandomProxyCredential())
-                                onPasswordChange(app.generateRandomProxyCredential())
+                                onUsernameChange(generateRandomProxyCredential())
+                                onPasswordChange(generateRandomProxyCredential())
                             },
                         )
                     }
@@ -141,7 +144,7 @@ internal fun LocalProxySettingsBottomSheet(
                     SettingsTextField(
                         value = username,
                         onValueChange = onUsernameChange,
-                        label = stringResource(R.string.settings_local_proxy_username),
+                        label = stringResource(Res.string.settings_local_proxy_username),
                         errorText = null,
                     )
 
@@ -150,7 +153,7 @@ internal fun LocalProxySettingsBottomSheet(
                             SettingsTextField(
                                 value = password,
                                 onValueChange = onPasswordChange,
-                                label = stringResource(R.string.settings_local_proxy_password),
+                                label = stringResource(Res.string.settings_local_proxy_password),
                                 errorText = null,
                             )
                             Row(
@@ -158,7 +161,7 @@ internal fun LocalProxySettingsBottomSheet(
                                 horizontalArrangement = Arrangement.End,
                             ) {
                                 TextButton(
-                                    text = stringResource(R.string.common_hide),
+                                    text = stringResource(Res.string.common_hide),
                                     onClick = { isPasswordVisible = false }
                                 )
                             }
@@ -178,7 +181,7 @@ internal fun LocalProxySettingsBottomSheet(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = stringResource(R.string.settings_local_proxy_password),
+                                    text = stringResource(Res.string.settings_local_proxy_password),
                                     fontSize = 12.sp,
                                     color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 )
@@ -191,7 +194,7 @@ internal fun LocalProxySettingsBottomSheet(
                                 )
                             }
                             TextButton(
-                                text = stringResource(R.string.common_show),
+                                text = stringResource(Res.string.common_show),
                                 onClick = { isPasswordVisible = true }
                             )
                         }

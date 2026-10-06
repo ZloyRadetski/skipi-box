@@ -5,13 +5,13 @@ package features.settings
 
 import androidx.compose.runtime.Composable
 import app.AppState
-import features.settings.sheets.DnsSettingsBottomSheet
-import features.settings.sheets.FragmentSettingsBottomSheet
-import features.settings.sheets.LocalProxySettingsBottomSheet
-import features.settings.sheets.MuxSettingsBottomSheet
-import features.settings.sheets.TunSettingsBottomSheet
-import features.settings.sheets.SubscriptionPingSettingsBottomSheet
-import features.settings.sheets.sanitizeMuxUdp443Index
+import app.skipi.ui.settings.DnsSettingsBottomSheet
+import app.skipi.ui.settings.FragmentSettingsBottomSheet
+import app.skipi.ui.settings.LocalProxySettingsBottomSheet
+import app.skipi.ui.settings.MuxSettingsBottomSheet
+import app.skipi.ui.settings.TunSettingsBottomSheet
+import app.skipi.ui.settings.SubscriptionPingSettingsBottomSheet
+import app.skipi.ui.settings.sanitizeMuxUdp443Index
 import app.modes.RunModeVpnService
 
 @Composable
