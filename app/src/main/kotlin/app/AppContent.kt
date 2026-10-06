@@ -4,15 +4,11 @@
 package app
 
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
@@ -155,6 +151,25 @@ private inline fun <reified T : NavKey> androidx.navigation3.runtime.EntryProvid
         AppBackground {
             content(route)
         }
+    }
+}
+
+private const val PredictiveSlideOutThreshold = 0.20f
+
+private val PredictiveSlideOutEasing = Easing { fraction ->
+    if (fraction <= PredictiveSlideOutThreshold) {
+        0f
+    } else {
+        val t = (fraction - PredictiveSlideOutThreshold) / (1f - PredictiveSlideOutThreshold)
+        FastOutSlowInEasing.transform(t.coerceIn(0f, 1f))
+    }
+}
+
+private val PredictiveScaleOutEasing = Easing { fraction ->
+    if (fraction <= PredictiveSlideOutThreshold) {
+        FastOutSlowInEasing.transform((fraction / PredictiveSlideOutThreshold).coerceIn(0f, 1f))
+    } else {
+        1f
     }
 }
 
@@ -421,7 +436,7 @@ fun AppContent(
         val transitionEffects = remember {
             NavDisplayTransitionEffects(
                 enableCornerClip = true,
-                dimAmount = 0.35f,
+                dimAmount = 0f,
                 blockInputDuringTransition = true,
                 popDirectionFollowsSwipeEdge = false,
             )
@@ -432,43 +447,33 @@ fun AppContent(
             onBack = { navigator.pop() },
             popTransitionSpec = {
                 ContentTransform(
-                    targetContentEnter = scaleIn(
-                        initialScale = 0.92f,
+                    targetContentEnter = EnterTransition.None,
+                    initialContentExit = slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
+                    ) + scaleOut(
+                        targetScale = 0.90f,
                         transformOrigin = TransformOrigin.Center,
                         animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-                    ) + fadeIn(
-                        initialAlpha = 0.5f,
-                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-                    ),
-                    initialContentExit = scaleOut(
-                        targetScale = 0.78f,
-                        transformOrigin = TransformOrigin.Center,
-                        animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing),
-                    ) + fadeOut(
-                        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
                     ),
                 )
             },
             predictivePopTransitionSpec = { _ ->
                 ContentTransform(
-                    targetContentEnter = scaleIn(
-                        initialScale = 0.92f,
+                    targetContentEnter = EnterTransition.None,
+                    initialContentExit = slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(
+                            durationMillis = 550,
+                            easing = PredictiveSlideOutEasing,
+                        ),
+                    ) + scaleOut(
+                        targetScale = 0.90f,
                         transformOrigin = TransformOrigin.Center,
-                        animationSpec = tween(durationMillis = 550, easing = LinearEasing),
-                    ) + fadeIn(
-                        initialAlpha = 0.5f,
-                        animationSpec = tween(durationMillis = 550, easing = LinearEasing),
-                    ),
-                    initialContentExit = scaleOut(
-                        targetScale = 0.78f,
-                        transformOrigin = TransformOrigin.Center,
-                        animationSpec = tween(durationMillis = 550, easing = LinearEasing),
-                    ) + fadeOut(
-                        animationSpec = keyframes {
-                            durationMillis = 550
-                            1.0f at 275 using LinearEasing
-                            0.0f at 550 using FastOutSlowInEasing
-                        },
+                        animationSpec = tween(
+                            durationMillis = 550,
+                            easing = PredictiveScaleOutEasing,
+                        ),
                     ),
                 )
             },
