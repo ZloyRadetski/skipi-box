@@ -140,7 +140,9 @@ private inline fun <reified T : NavKey> androidx.navigation3.runtime.EntryProvid
     crossinline content: @Composable (T) -> Unit,
 ) {
     entry<T> { route ->
-        content(route)
+        AppBackground {
+            content(route)
+        }
     }
 }
 
@@ -406,10 +408,10 @@ fun AppContent(
 
         val transitionEffects = remember {
             NavDisplayTransitionEffects(
-                enableCornerClip = false,
-                dimAmount = 0f,
+                enableCornerClip = true,
+                dimAmount = 0.35f,
                 blockInputDuringTransition = true,
-                popDirectionFollowsSwipeEdge = true,
+                popDirectionFollowsSwipeEdge = false,
             )
         }
 
