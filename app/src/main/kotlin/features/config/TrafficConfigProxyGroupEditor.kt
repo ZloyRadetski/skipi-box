@@ -61,6 +61,13 @@ internal fun TrafficConfigProxyGroupsPage(
 
     LaunchedEffect(navigator, proxyGroupResultKey, serverChoices) {
         navigator.observeResult<ProxyServerEditResult>(proxyGroupResultKey).collect { result ->
+            navigator.clearResult(proxyGroupResultKey)
+            if (result.deleted) {
+                if (result.serverId > 0) {
+                    updateRaw(config.rawConfig.withoutShadowrocketProxyGroupLine(result.serverId))
+                }
+                return@collect
+            }
             val strategy = result.server as? StrategyGroup ?: return@collect
             if (strategy.remarks.isBlank()) return@collect
             val line = strategy.toShadowrocketLine(serverChoices)
@@ -69,7 +76,6 @@ internal fun TrafficConfigProxyGroupsPage(
             } else {
                 updateRaw(config.rawConfig.withShadowrocketProxyGroupAdded(line))
             }
-            navigator.clearResult(proxyGroupResultKey)
         }
     }
 
@@ -106,7 +112,7 @@ internal fun TrafficConfigProxyGroupsPage(
         isWideScreen = isWideScreen,
         onBack = navigator::pop,
         onSave = navigator::pop,
-    ) { listPadding, scrollBehavior ->
+    ) { _, listPadding, scrollBehavior ->
         SkipiTrafficConfigProxyGroups(
             groups = groups,
             contentPadding = listPadding,

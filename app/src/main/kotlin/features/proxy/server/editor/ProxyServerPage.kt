@@ -1,44 +1,20 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-@file:OptIn(ExperimentalScrollBarApi::class)
-
 package features.proxy.server.editor
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import app.LocalAppServices
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -48,18 +24,17 @@ import app.collectAppState
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
 import app.navigation.StrategyGroupMemberSelectionResult
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
-import features.proxy.server.model.decodePersistedProxyServer
-import features.proxy.server.model.encodePersistedProxyServer
+import app.skipi.app.server.ProxyServerEditorController
+import app.skipi.app.server.ProxyServerEditorSaveDecision
+import app.skipi.ui.server.editor.ProxyServerEditorDialogText
+import app.skipi.ui.server.editor.rememberProxyServerEditorUiState
+import app.skipi.ui.server.editor.rememberSaveableProxyServerEditorDraft
+import app.skipi.ui.server.editor.SkipiProxyServerEditorScreen
 import features.proxy.server.display.displayName
 import features.proxy.server.display.displayNameById
 import features.proxy.server.display.displayNameWithGroup
-import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.ProxyServerValidationIssue
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import features.proxy.server.model.isCompositeProxyServer
@@ -68,32 +43,13 @@ import features.proxy.server.usecase.proxyServerCopyText
 import features.proxy.server.validation.rememberProxyServerValidationMessageResolver
 import features.subscription.DefaultSubscriptionGroupId
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import ui.AppTheme
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Copy
-import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.clipboard.setPlainText
-import ui.components.BackNavigationIcon
-import ui.components.NavigationIcon
-import ui.components.WarningConfirmDialog
-import ui.layout.AdaptiveTopAppBar
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageContentPaddingWithIme
-import ui.layout.pageListPadding
-import ui.layout.pageScrollModifiers
-import androidx.compose.ui.graphics.Color
-
-private val ProxyServerSaver: Saver<ProxyServer<*>, String> = Saver(
-    save = { it.encodePersistedProxyServer() },
-    restore = { it.decodePersistedProxyServer() },
-)
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
+import app.skipi.app.store.SharedApplicationAction
+import ui.components.DeleteConfirmationDialog
+import ui.text.formatTemplate
 
 @Composable
 fun ProxyServerPage(
@@ -106,9 +62,9 @@ fun ProxyServerPage(
 ) {
     val isWideScreen = LocalIsWideScreen.current
     val appState by LocalAppStateStore.current.collectAppState()
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
     val navigator = LocalNavigator.current
-    val tipNotifier = LocalAppServices.current.tipNotifier
+    val services = LocalAppServices.current
+    val tipNotifier = services.tipNotifier
     val clipboard = LocalClipboard.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -116,21 +72,24 @@ fun ProxyServerPage(
     val copiedMessage = stringResource(R.string.common_copied)
     val unsupportedMessage = stringResource(R.string.common_unsupported)
     val invalidConfigMessage = stringResource(R.string.proxy_server_config_invalid)
-    val fullValidationWarningTitle = stringResource(R.string.proxy_editor_full_validation_warning_title)
-    val fullValidationWarningSummary = stringResource(R.string.proxy_editor_full_validation_warning_summary)
-    val continueSaveMessage = stringResource(R.string.proxy_editor_continue_save)
-    val returnEditMessage = stringResource(R.string.proxy_editor_return_edit)
-    val discardChangesTitle = stringResource(R.string.proxy_editor_discard_changes_title)
-    val discardChangesSummary = stringResource(R.string.proxy_editor_discard_changes_summary)
-    val discardMessage = stringResource(R.string.proxy_editor_discard)
+    val deletedTemplate = stringResource(R.string.proxy_server_list_deleted)
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    val dialogText = ProxyServerEditorDialogText(
+        fullValidationTitle = stringResource(R.string.proxy_editor_full_validation_warning_title),
+        fullValidationSummary = stringResource(R.string.proxy_editor_full_validation_warning_summary),
+        returnEdit = stringResource(R.string.proxy_editor_return_edit),
+        continueSave = stringResource(R.string.proxy_editor_continue_save),
+        discardTitle = stringResource(R.string.proxy_editor_discard_changes_title),
+        discardSummary = stringResource(R.string.proxy_editor_discard_changes_summary),
+        discard = stringResource(R.string.proxy_editor_discard),
+    )
     val unknownGroupName = stringResource(R.string.common_unknown_group)
     val defaultGroupName = stringResource(R.string.subscription_default_group)
     val allGroupsLabel = stringResource(R.string.proxy_editor_strategy_group_all_groups)
     val defaultProxyServerTemplate = stringResource(R.string.routing_default_proxy_server)
 
-    val psEdit = rememberSaveable(ps, serverId, resultKey, saver = ProxyServerSaver) {
-        ps.editableCopy()
-    }
+    val editorUiState = rememberProxyServerEditorUiState()
+    val psEdit = rememberSaveableProxyServerEditorDraft(ps, serverId, resultKey)
     val strategyMemberResultKey = remember(serverId, resultKey) {
         "strategy-group-members-${serverId ?: resultKey ?: "draft"}"
     }
@@ -140,28 +99,17 @@ fun ProxyServerPage(
     if (psEdit is StrategyGroup) {
         LaunchedEffect(navigator, strategyMemberResultKey) {
             navigator.observeResult<StrategyGroupMemberSelectionResult>(strategyMemberResultKey).collect { result ->
-                val memberIds = result.serverIds.distinct()
+                val memberIds = ProxyServerEditorController.normalizeStrategyGroupMemberIds(result.serverIds)
                 strategyGroupMemberIds = memberIds
                 psEdit.proxyServerIds = memberIds
                 navigator.clearResult(strategyMemberResultKey)
             }
         }
     }
-    var pendingSaveIssues by remember { mutableStateOf<List<ProxyServerValidationIssue>>(emptyList()) }
-    var showDiscardConfirmationDialog by remember { mutableStateOf(false) }
 
     fun hasChanges(): Boolean {
-        if (psEdit is StrategyGroup) {
-            val originalStrategyGroup = ps as? StrategyGroup
-            if (strategyGroupMemberIds != originalStrategyGroup?.proxyServerIds.orEmpty()) {
-                return true
-            }
-        }
-        return try {
-            psEdit.encodePersistedProxyServer() != ps.encodePersistedProxyServer()
-        } catch (_: Throwable) {
-            psEdit != ps
-        }
+        if (psEdit is StrategyGroup && strategyGroupMemberIds != (ps as? StrategyGroup)?.proxyServerIds.orEmpty()) return true
+        return ProxyServerEditorController.hasChanges(ps, psEdit)
     }
 
     fun saveProxyServer() {
@@ -171,12 +119,7 @@ fun ProxyServerPage(
         if (resultKey != null && serverId != null) {
             navigator.setResult(
                 resultKey,
-                ProxyServerEditResult(
-                    serverId = serverId,
-                    server = psEdit,
-                    groupId = groupId,
-                    returnGroupId = returnGroupId,
-                ),
+                ProxyServerEditResult(serverId, psEdit, groupId = groupId, returnGroupId = returnGroupId),
             )
         } else {
             ps.update(psEdit)
@@ -184,73 +127,73 @@ fun ProxyServerPage(
         }
     }
 
-    fun requestSave() {
-        val basicIssues = psEdit.validateBasic()
-        if (basicIssues.isNotEmpty()) {
-            scope.launch {
-                tipNotifier.show(validationMessageOf(basicIssues.first()))
-            }
-            return
-        }
-        val fullIssues = psEdit.validateFull()
-        if (fullIssues.isNotEmpty()) {
-            if (psEdit is AmneziaWg) {
-                // Unlike other optional protocol details, invalid AWG
-                // obfuscation reaches a native Go runtime and can terminate
-                // the whole process. Do not offer a force-save path.
-                scope.launch {
-                    tipNotifier.show(validationMessageOf(fullIssues.first()))
-                }
-            } else {
-                pendingSaveIssues = fullIssues
-            }
+    fun deleteProxyServer() {
+        if (resultKey != null && serverId != null) {
+            navigator.setResult(
+                resultKey,
+                ProxyServerEditResult(
+                    serverId = serverId,
+                    server = psEdit,
+                    groupId = groupId,
+                    returnGroupId = returnGroupId,
+                    deleted = true,
+                ),
+            )
+        } else if (serverId != null) {
+            val remarks = psEdit.getInfo().remarks.ifBlank { psEdit.getInfo().protocol }
+            services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveProxyServer(serverId))
+            scope.launch { tipNotifier.show(deletedTemplate.formatTemplate("name" to remarks)) }
+            navigator.pop()
         } else {
-            saveProxyServer()
+            navigator.pop()
+        }
+    }
+
+    fun requestDelete() {
+        if (serverId != null && appState.enableDeletionConfirmation) {
+            showDeleteConfirmation = true
+        } else {
+            deleteProxyServer()
+        }
+    }
+
+    fun requestSave() {
+        when (val decision = ProxyServerEditorController.requestSave(psEdit)) {
+            is ProxyServerEditorSaveDecision.Reject -> scope.launch {
+                tipNotifier.show(validationMessageOf(decision.issue))
+            }
+            is ProxyServerEditorSaveDecision.ConfirmFullValidation -> editorUiState.showFullValidationWarning(decision.issues)
+            ProxyServerEditorSaveDecision.Save -> saveProxyServer()
         }
     }
 
     fun requestBack() {
-        if (hasChanges()) {
-            showDiscardConfirmationDialog = true
-        } else {
-            navigator.pop()
-        }
+        if (hasChanges()) editorUiState.requestDiscardConfirmation() else navigator.pop()
     }
 
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
         onBackCompleted = ::requestBack,
     )
+
     val groupOptions = remember(appState.subscriptionGroups, allGroupsLabel, defaultGroupName) {
         listOf(ProxyServerEditorGroupOption(null, allGroupsLabel)) +
             appState.subscriptionGroups
                 .filter { group -> group.enabled || group.builtIn || group.id == DefaultSubscriptionGroupId }
-                .map { group ->
-                    ProxyServerEditorGroupOption(
-                        id = group.id,
-                        label = group.displayName(defaultGroupName).ifBlank { defaultGroupName },
-                    )
-                }
+                .map { group -> ProxyServerEditorGroupOption(group.id, group.displayName(defaultGroupName).ifBlank { defaultGroupName }) }
     }
     val memberOptions = remember(appState.proxyServers, appState.subscriptionGroups, serverId, unknownGroupName, defaultGroupName) {
         val groupNames = appState.subscriptionGroups.displayNameById(defaultGroupName)
-        appState.proxyServers
-            .filter { server ->
-                server.id != serverId &&
-                    !server.server.isCompositeProxyServer() &&
-                    (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
-                    (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
-            }
-            .map { server ->
-                ProxyServerEditorMemberOption(
-                    id = server.id,
-                    label = server.displayNameWithGroup(
-                        defaultProxyServerTemplate = defaultProxyServerTemplate,
-                        groupNames = groupNames,
-                        unknownGroupName = unknownGroupName,
-                    ),
-                )
-            }
+        appState.proxyServers.filter { server ->
+            server.id != serverId && !server.server.isCompositeProxyServer() &&
+                (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
+                (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
+        }.map { server ->
+            ProxyServerEditorMemberOption(
+                id = server.id,
+                label = server.displayNameWithGroup(defaultProxyServerTemplate, groupNames, unknownGroupName),
+            )
+        }
     }
     val editorOptions = remember(groupOptions, memberOptions, strategyGroupMemberIds, psEdit, serverId) {
         ProxyServerEditorOptions(
@@ -258,197 +201,66 @@ fun ProxyServerPage(
             memberOptions = memberOptions,
             strategyGroupSelectedMemberCount = strategyGroupMemberIds.size,
             onOpenStrategyGroupMembers = if (psEdit is StrategyGroup) {
-                {
-                    navigator.navigateForResult(
-                        route = Route.StrategyGroupMemberSelector(
-                            selectedServerIds = strategyGroupMemberIds,
-                            excludedServerId = serverId,
-                            resultKey = strategyMemberResultKey,
-                        ),
-                        requestKey = strategyMemberResultKey,
-                    )
-                }
-            } else {
-                null
-            },
+                { navigator.navigateForResult(Route.StrategyGroupMemberSelector(strategyGroupMemberIds, serverId, strategyMemberResultKey), strategyMemberResultKey) }
+            } else null,
         )
     }
     val title = psEdit.editorTitle()
 
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        modifier = Modifier
-            .fillMaxSize(),
-        topBar = {
-            AdaptiveTopAppBar(
-                title = title,
-                isWideScreen = isWideScreen,
-                scrollBehavior = topAppBarScrollBehavior,
-                navigationIcon = {
-                    BackNavigationIcon(
-                        onClick = ::requestBack,
-                    )
-                },
-                actions = {
-                    NavigationIcon(
-                        onClick = {
-                            scope.launch {
-                                val basicIssues = psEdit.validateBasic()
-                                if (basicIssues.isNotEmpty()) {
-                                    tipNotifier.show(validationMessageOf(basicIssues.first()))
-                                    return@launch
-                                }
-                                when (
-                                    val result = psEdit.proxyServerCopyText(
-                                        context = context,
-                                        appState = appState,
-                                        serverId = serverId,
-                                        groupId = groupId,
-                                    )
-                                ) {
-                                    is ProxyServerCopyTextResult.Success -> {
-                                        clipboard.setPlainText(result.text)
-                                        tipNotifier.show(copiedMessage)
-                                    }
-
-                                    ProxyServerCopyTextResult.Unsupported -> {
-                                        tipNotifier.show(unsupportedMessage)
-                                    }
-
-                                    ProxyServerCopyTextResult.InvalidConfig -> {
-                                        tipNotifier.show(invalidConfigMessage)
-                                    }
-                                }
-                            }
-                        },
-                        imageVector = MiuixIcons.Copy,
-                    )
-                    NavigationIcon(
-                        onClick = {
-                            requestSave()
-                        },
-                        imageVector = MiuixIcons.Ok,
-                    )
-                },
-            )
-        },
-    ) { innerPadding ->
-        val lazyListState = rememberLazyListState()
-        val contentPadding = pageContentPaddingWithCutout(
-            innerPadding = innerPadding,
-            outerPadding = padding,
-            isWideScreen = isWideScreen,
-        )
-        val basePadding = pageListPadding(contentPadding)
-        val layoutDirection = LocalLayoutDirection.current
-        val listPadding = PaddingValues(
-            start = basePadding.calculateStartPadding(layoutDirection) + 12.dp,
-            top = basePadding.calculateTopPadding() + 8.dp,
-            end = basePadding.calculateEndPadding(layoutDirection) + 12.dp,
-            bottom = basePadding.calculateBottomPadding() + 12.dp,
-        )
-        val editorContentPadding = pageContentPaddingWithIme(listPadding)
-        if (psEdit is Custom) {
-            CustomProxyServerEditor(
-                customEdit = psEdit,
-                contentPadding = contentPadding,
-            )
-            return@Scaffold
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.background),
-        ) {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier.pageScrollModifiers(
-                    topAppBarScrollBehavior,
-                ),
-                contentPadding = editorContentPadding,
-            ) {
-                proxyServerEditorContent(psEdit, editorOptions)
-            }
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(lazyListState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = editorContentPadding,
-            )
-        }
-    }
-
-    ProxyServerFullValidationWarningDialog(
-        show = pendingSaveIssues.isNotEmpty(),
-        title = fullValidationWarningTitle,
-        summary = fullValidationWarningSummary,
-        issueMessages = pendingSaveIssues.map(validationMessageOf),
-        returnEditText = returnEditMessage,
-        continueSaveText = continueSaveMessage,
-        onDismissRequest = { pendingSaveIssues = emptyList() },
-        onContinueSave = {
-            pendingSaveIssues = emptyList()
-            saveProxyServer()
-        },
-    )
-
-    WarningConfirmDialog(
-        show = showDiscardConfirmationDialog,
-        title = discardChangesTitle,
-        summary = discardChangesSummary,
-        dismissText = returnEditMessage,
-        confirmText = discardMessage,
-        onDismissRequest = { showDiscardConfirmationDialog = false },
-        onConfirm = {
-            showDiscardConfirmationDialog = false
+    SkipiProxyServerEditorScreen(
+        padding = padding,
+        serverEdit = psEdit,
+        title = title,
+        isWideScreen = isWideScreen,
+        options = editorOptions,
+        hasChanges = ::hasChanges,
+        messages = dialogText,
+        fullValidationMessages = editorUiState.pendingSaveIssues.map(validationMessageOf),
+        showDiscardConfirmation = editorUiState.showDiscardConfirmation,
+        showFullValidationWarning = editorUiState.showFullValidationWarning,
+        onRequestBack = navigator::pop,
+        onRequestDiscardConfirmation = editorUiState::requestDiscardConfirmation,
+        onConfirmDiscard = {
+            editorUiState.dismissDiscardConfirmation()
             navigator.pop()
         },
+        onDismissDiscard = editorUiState::dismissDiscardConfirmation,
+        onCopy = {
+            scope.launch {
+                val basicIssue = psEdit.validateBasic().firstOrNull()
+                if (basicIssue != null) {
+                    tipNotifier.show(validationMessageOf(basicIssue))
+                    return@launch
+                }
+                when (val result = psEdit.proxyServerCopyText(context, appState, serverId, groupId)) {
+                    is ProxyServerCopyTextResult.Success -> {
+                        clipboard.setPlainText(result.text)
+                        tipNotifier.show(copiedMessage)
+                    }
+                    ProxyServerCopyTextResult.Unsupported -> tipNotifier.show(unsupportedMessage)
+                    ProxyServerCopyTextResult.InvalidConfig -> tipNotifier.show(invalidConfigMessage)
+                }
+            }
+        },
+        onDelete = if (psEdit is StrategyGroup) ::requestDelete else null,
+        onSave = ::requestSave,
+        onDismissFullValidation = editorUiState::dismissFullValidationWarning,
+        onContinueFullValidation = {
+            editorUiState.dismissFullValidationWarning()
+            saveProxyServer()
+        },
+        customEditor = { custom, contentPadding -> CustomProxyServerEditor(custom, contentPadding = contentPadding) },
     )
-}
 
-@Composable
-private fun ProxyServerFullValidationWarningDialog(
-    show: Boolean,
-    title: String,
-    summary: String,
-    issueMessages: List<String>,
-    returnEditText: String,
-    continueSaveText: String,
-    onDismissRequest: () -> Unit,
-    onContinueSave: () -> Unit,
-) {
-    val warningColor = MiuixTheme.colorScheme.error
-    WarningConfirmDialog(
-        show = show,
-        title = title,
-        summary = summary,
-        dismissText = returnEditText,
-        confirmText = continueSaveText,
-        onDismissRequest = onDismissRequest,
-        onConfirm = onContinueSave,
-    ) {
-        issueMessages.distinct().forEachIndexed { index, message ->
-            if (index > 0) {
-                Spacer(Modifier.height(10.dp))
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 7.dp)
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(warningColor),
-                )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    text = message,
-                    modifier = Modifier.weight(1f),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onBackground,
-                )
-            }
-        }
+    if (showDeleteConfirmation) {
+        DeleteConfirmationDialog(
+            show = true,
+            title = stringResource(R.string.deletion_confirmation_delete_proxy_server),
+            onDismissRequest = { showDeleteConfirmation = false },
+            onConfirm = {
+                showDeleteConfirmation = false
+                deleteProxyServer()
+            },
+        )
     }
 }

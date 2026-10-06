@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_delete
-import app.skipi.ui.resources.common_edit
 import app.skipi.ui.resources.common_refresh
 import app.skipi.ui.resources.configs_add
 import app.skipi.ui.resources.configs_global_proxy_groups
@@ -45,7 +44,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -79,9 +77,9 @@ fun SkipiTrafficConfigScreen(
     onUpdateProfile: (Int) -> Unit,
     onProfileMenu: (Int) -> Unit,
     onOpenProxyGroup: (String) -> Unit,
-    onEditGlobalProxyGroup: (String) -> Unit,
     onDeleteGlobalProxyGroup: (String) -> Unit,
     onGlobalProxyGroupMenu: (String) -> Unit,
+    onEditGlobalProxyGroup: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -104,7 +102,6 @@ fun SkipiTrafficConfigScreen(
             ProxyGroupCard(
                 group = group,
                 onClick = { onOpenProxyGroup(group.key) },
-                onEdit = { onEditGlobalProxyGroup(group.key) },
                 onDelete = { onDeleteGlobalProxyGroup(group.key) },
                 onLongPress = { onGlobalProxyGroupMenu(group.key) },
             )
@@ -150,54 +147,28 @@ private fun ProfileCard(
     onUpdate: () -> Unit,
     onLongPress: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(color = if (item.active) SkipiTheme.colors.surfaceVariant else SkipiTheme.colors.surface),
-        cornerRadius = 16.dp,
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-        onClick = onSelect,
+    SkipiTrafficConfigProfileCard(
+        item = TrafficConfigCatalogProfileItem(
+            id = item.profile.id,
+            name = item.profile.name,
+            sourceUrl = item.profile.sourceUrl,
+            active = item.active,
+            updating = item.updating,
+            canDelete = item.canDelete,
+            hasUnsupportedSections = item.hasUnsupportedSections,
+        ),
+        onSelect = onSelect,
+        onEdit = onEdit,
+        onDelete = onDelete,
+        onUpdate = onUpdate,
         onLongPress = onLongPress,
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = item.profile.name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (item.hasUnsupportedSections) {
-                    Text(
-                        text = stringResource(Res.string.configs_preserved_unsupported),
-                        color = MiuixTheme.colorScheme.error,
-                        style = MiuixTheme.textStyles.body2,
-                    )
-                }
-            }
-            Spacer(Modifier.width(6.dp))
-            if (item.profile.sourceUrl.isNotBlank()) {
-                IconButton(onClick = onUpdate, enabled = !item.updating) {
-                    if (item.updating) InfiniteProgressIndicator(modifier = Modifier.size(20.dp))
-                    else Icon(MiuixIcons.Refresh, contentDescription = stringResource(Res.string.common_refresh), tint = MiuixTheme.colorScheme.onSurface)
-                }
-            }
-            IconButton(onClick = onEdit) {
-                Icon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.configs_ui_edit), tint = MiuixTheme.colorScheme.onSurface)
-            }
-            IconButton(onClick = onDelete, enabled = item.canDelete) {
-                Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), tint = MiuixTheme.colorScheme.onSurface)
-            }
-        }
-    }
+    )
 }
 
 @Composable
 private fun ProxyGroupCard(
     group: TrafficConfigProxyGroupItem,
     onClick: () -> Unit,
-    onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
 ) {
@@ -215,7 +186,6 @@ private fun ProxyGroupCard(
                 Text(group.subtitle, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Text(group.badge, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-            if (onEdit != null) IconButton(onClick = onEdit) { Icon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.common_edit), tint = MiuixTheme.colorScheme.onSurface) }
             if (onDelete != null) IconButton(onClick = onDelete) { Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.common_delete), tint = MiuixTheme.colorScheme.onSurface) }
         }
     }

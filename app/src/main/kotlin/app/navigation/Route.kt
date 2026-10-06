@@ -180,6 +180,7 @@ data class ProxyServerEditResult(
     val server: ProxyServer<*>,
     val groupId: Int? = null,
     val returnGroupId: Int? = null,
+    val deleted: Boolean = false,
 )
 
 data class StrategyGroupMemberSelectionResult(

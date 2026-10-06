@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.config
@@ -61,6 +61,9 @@ import app.collectAppState
 import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.ui.config.SkipiTrafficConfigScreen
+import app.skipi.ui.config.SkipiTrafficConfigContextMenu
+import app.skipi.ui.config.SkipiTrafficConfigProxyGroupContextMenu
+import app.skipi.ui.config.SkipiTrafficConfigUrlImportDialog
 import app.skipi.ui.config.TrafficConfigProfileItem
 import app.skipi.ui.config.TrafficConfigProxyGroupItem
 import app.navigation.ProxyServerEditResult
@@ -106,6 +109,7 @@ import ui.components.AppCascadingListPopup
 import ui.components.WarningConfirmDialog
 import ui.layout.pageContentPaddingWithCutout
 import ui.layout.pageListPadding
+import ui.text.formatTemplate
 import utils.encodeBase64
 
 @OptIn(ExperimentalScrollBarApi::class)
@@ -144,6 +148,12 @@ fun TrafficConfigPage(
     LaunchedEffect(navigator) {
         navigator.observeResult<ProxyServerEditResult>(ConfigProxyGroupEditResultKey).collect { result ->
             navigator.clearResult(ConfigProxyGroupEditResultKey)
+            if (result.deleted) {
+                services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveProxyServer(result.serverId))
+                val remarks = result.server.getInfo().remarks.ifBlank { result.server.getInfo().protocol }
+                services.tipNotifier.show(context.getString(R.string.proxy_server_list_deleted).formatTemplate("name" to remarks))
+                return@collect
+            }
             services.sharedApplicationStore.dispatch(
                 SharedApplicationAction.UpsertProxyServer(
                     ProxyServerRecord(
@@ -442,11 +452,6 @@ fun TrafficConfigPage(
                     if (configId != null) navigator.push(Route.TrafficConfigSection(configId, TrafficConfigEditorSection.ProxyGroups))
                 }
             },
-            onEditGlobalProxyGroup = { key ->
-                val id = key.substringAfter(':').toIntOrNull()
-                val state = appState.proxyServers.firstOrNull { it.id == id }
-                (state?.server as? StrategyGroup)?.let { server -> openProxyGroupEditor(server, state.id) }
-            },
             onDeleteGlobalProxyGroup = { key ->
                 val id = key.substringAfter(':').toIntOrNull()
                 appState.proxyServers.firstOrNull { it.id == id }?.let { group ->
@@ -495,51 +500,21 @@ fun TrafficConfigPage(
                 importUrl = clipText
             }
         }
-        AppWindowDialog(
+        SkipiTrafficConfigUrlImportDialog(
             show = true,
-            title = stringResource(R.string.configs_import_url_dialog_title),
+            url = importUrl,
+            onUrlChange = { importUrl = it },
             onDismissRequest = { showUrlImportDialog = false },
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(R.string.configs_import_url_dialog_summary),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-                TextField(
-                    state = rememberTextFieldState(initialText = importUrl),
-                    inputTransformation = { importUrl = asCharSequence().toString() },
-                    label = stringResource(R.string.configs_source_url),
-                    lineLimits = TextFieldLineLimits.SingleLine,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TextButton(
-                        text = stringResource(R.string.common_cancel),
-                        onClick = { showUrlImportDialog = false },
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    TextButton(
-                        text = stringResource(R.string.configs_import_url),
-                        enabled = importUrl.isNotBlank(),
-                        onClick = {
-                            val url = importUrl.trim()
-                            showUrlImportDialog = false
-                            importConfigFromUrl(url)
-                        },
-                    )
-                }
-            }
-        }
+            onImport = { url ->
+                showUrlImportDialog = false
+                importConfigFromUrl(url)
+            },
+        )
     }
 
     contextMenuConfig?.let { config ->
-        TrafficConfigContextMenu(
+        SkipiTrafficConfigContextMenu(
+            show = true,
             onDismissRequest = { contextMenuConfig = null },
             onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
                 {
@@ -562,7 +537,8 @@ fun TrafficConfigPage(
     }
 
     contextMenuAutoBalancer?.let { proxyGroup ->
-        AutoBalancerContextMenu(
+        SkipiTrafficConfigProxyGroupContextMenu(
+            show = true,
             onDismissRequest = { contextMenuAutoBalancer = null },
             onEdit = {
                 contextMenuAutoBalancer = null
@@ -636,362 +612,3 @@ private data class TrafficConfigProxyGroupListItem(
     val configName: String,
     val group: ShadowrocketPolicyGroup,
 )
-
-@Composable
-private fun ConfigTagChip(
-    text: String,
-    selected: Boolean = false,
-    isWarning: Boolean = false,
-) {
-    val chipShape = RoundedCornerShape(8.dp)
-    Box(
-        modifier = Modifier
-            .clip(chipShape)
-            .background(
-                when {
-                    isWarning -> MiuixTheme.colorScheme.error.copy(alpha = 0.12f)
-                    selected -> AppTheme.colors.onSurface.copy(alpha = 0.12f)
-                    else -> AppTheme.colors.onSurface.copy(alpha = 0.06f)
-                },
-            )
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            fontSize = 11.sp,
-            fontWeight = themedFontWeight(FontWeight.Medium),
-            color = if (isWarning) MiuixTheme.colorScheme.error
-            else AppTheme.colors.onSurface.copy(alpha = if (selected) 0.95f else 0.70f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun TrafficConfigCard(
-    config: TrafficConfigState,
-    selected: Boolean,
-    isUpdating: Boolean,
-    canDelete: Boolean = true,
-    onSelect: () -> Unit,
-    onUiEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onUpdate: () -> Unit,
-    onLongPress: () -> Unit,
-) {
-    val analysis = remember(config.rawConfig) { config.rawConfig.analyzeShadowrocketConfig() }
-    val selectedShape = RoundedCornerShape(16.dp)
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(selectedShape)
-            .border(
-                width = if (selected) 1.dp else 0.dp,
-                color = if (selected) AppTheme.colors.onSurface.copy(alpha = 0.16f) else Color.Transparent,
-                shape = selectedShape,
-            ),
-        colors = CardDefaults.defaultColors(
-            color = if (selected) AppTheme.colors.accent else AppTheme.colors.surface,
-        ),
-        insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-        onClick = onSelect,
-        onLongPress = onLongPress,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = config.name,
-                    fontSize = 16.sp,
-                    fontWeight = themedFontWeight(FontWeight.SemiBold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                if (analysis.unsupportedSections.isNotEmpty()) {
-                    Spacer(Modifier.width(8.dp))
-                    ConfigTagChip(
-                        text = stringResource(R.string.configs_preserved_unsupported),
-                        isWarning = true,
-                    )
-                }
-            }
-            Spacer(Modifier.width(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (config.sourceUrl.isNotBlank()) {
-                    IconButton(
-                        onClick = onUpdate,
-                        enabled = !isUpdating,
-                    ) {
-                        if (isUpdating) {
-                            val updatingDescription = stringResource(R.string.configs_updating)
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .semantics { contentDescription = updatingDescription },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                InfiniteProgressIndicator(
-                                    color = MiuixTheme.colorScheme.primary,
-                                    size = 20.dp,
-                                    strokeWidth = 2.dp,
-                                )
-                            }
-                        } else {
-                            Icon(
-                                imageVector = MiuixIcons.Refresh,
-                                contentDescription = stringResource(R.string.common_refresh),
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
-                }
-                IconButton(onClick = onUiEdit) {
-                    Icon(
-                        imageVector = MiuixIcons.Edit,
-                        contentDescription = stringResource(R.string.configs_ui_edit),
-                        tint = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-                IconButton(
-                    onClick = onDelete,
-                    enabled = canDelete,
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Delete,
-                        contentDescription = stringResource(R.string.common_delete),
-                        tint = if (canDelete) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TrafficConfigGlobalProxyGroupCard(
-    name: String,
-    summary: String,
-    onClick: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onLongPress: () -> Unit,
-) {
-    val selectedShape = RoundedCornerShape(16.dp)
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(selectedShape),
-        cornerRadius = 16.dp,
-        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-        insideMargin = PaddingValues(14.dp),
-        onClick = onClick,
-        onLongPress = onLongPress,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = name,
-                        fontSize = 16.sp,
-                        fontWeight = themedFontWeight(FontWeight.SemiBold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = summary.ifBlank { "Auto-Balancer" },
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                ConfigTagChip(
-                    text = stringResource(R.string.proxy_server_list_auto_balancers),
-                    selected = false,
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ConfigTagChip(
-                    text = "StrategyGroup",
-                    selected = false,
-                )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = onEdit) {
-                        Icon(
-                            imageVector = MiuixIcons.Edit,
-                            contentDescription = stringResource(R.string.common_edit),
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            imageVector = MiuixIcons.Delete,
-                            contentDescription = stringResource(R.string.common_delete),
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TrafficConfigSourcedProxyGroupCard(
-    name: String,
-    configName: String,
-    groupType: String,
-    onClick: () -> Unit,
-) {
-    val selectedShape = RoundedCornerShape(16.dp)
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(selectedShape),
-        cornerRadius = 16.dp,
-        colors = CardDefaults.defaultColors(color = AppTheme.colors.surface),
-        insideMargin = PaddingValues(14.dp),
-        onClick = onClick,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = name,
-                        fontSize = 16.sp,
-                        fontWeight = themedFontWeight(FontWeight.SemiBold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = configName,
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                ConfigTagChip(
-                    text = groupType,
-                    selected = false,
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ConfigTagChip(
-                    text = configName,
-                    selected = false,
-                )
-
-                IconButton(onClick = onClick) {
-                    Icon(
-                        imageVector = MiuixIcons.Edit,
-                        contentDescription = stringResource(R.string.common_edit),
-                        tint = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AutoBalancerContextMenu(
-    onDismissRequest: () -> Unit,
-    onEdit: () -> Unit,
-    onDuplicate: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    AppCascadingListPopup(
-        show = true,
-        entries = listOf(
-            DropdownEntry(
-                items = listOf(
-                    DropdownItem(text = stringResource(R.string.common_edit), onClick = onEdit),
-                    DropdownItem(text = stringResource(R.string.configs_duplicate), onClick = onDuplicate),
-                    DropdownItem(text = stringResource(R.string.common_delete), onClick = onDelete),
-                ),
-            ),
-        ),
-        popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
-        alignment = PopupPositionProvider.Align.TopEnd,
-        onDismissRequest = onDismissRequest,
-    )
-}
-
-@Composable
-private fun TrafficConfigContextMenu(
-    onDismissRequest: () -> Unit,
-    onRawEdit: () -> Unit,
-    onUiEdit: () -> Unit,
-    onDuplicate: () -> Unit,
-    onExport: () -> Unit,
-    onExportBase64: () -> Unit,
-    onDelete: () -> Unit,
-    onEnable: () -> Unit,
-    onUpdate: (() -> Unit)? = null,
-) {
-    AppCascadingListPopup(
-        show = true,
-        entries = listOf(
-            DropdownEntry(
-                items = buildList {
-                    if (onUpdate != null) {
-                        add(DropdownItem(text = stringResource(R.string.common_refresh), onClick = onUpdate))
-                    }
-                    add(DropdownItem(text = stringResource(R.string.configs_raw_edit), onClick = onRawEdit))
-                    add(DropdownItem(text = stringResource(R.string.configs_ui_edit), onClick = onUiEdit))
-                    add(DropdownItem(text = stringResource(R.string.configs_duplicate), onClick = onDuplicate))
-                    add(DropdownItem(text = stringResource(R.string.configs_export), onClick = onExport))
-                    add(DropdownItem(text = stringResource(R.string.configs_export_base64), onClick = onExportBase64))
-                    add(DropdownItem(text = stringResource(R.string.common_delete), onClick = onDelete))
-                    add(DropdownItem(text = stringResource(R.string.configs_activate), onClick = onEnable))
-                },
-            ),
-        ),
-        popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
-        alignment = PopupPositionProvider.Align.TopEnd,
-        onDismissRequest = onDismissRequest,
-    )
-}

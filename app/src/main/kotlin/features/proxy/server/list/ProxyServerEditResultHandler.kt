@@ -23,9 +23,14 @@ internal fun ProxyServerEditResultHandler(
     tipNotifier: AndroidToastTipNotifier,
     onSelectedGroupIdChange: (Int) -> Unit,
 ) {
-    LaunchedEffect(navigator, tipNotifier, messages.savedTemplate, messages.joinedTemplate) {
+    LaunchedEffect(navigator, tipNotifier, messages.savedTemplate, messages.joinedTemplate, messages.deletedTemplate) {
         navigator.observeResult<ProxyServerEditResult>(resultKey).collect { result ->
             navigator.clearResult(resultKey)
+            if (result.deleted) {
+                sharedApplicationStore.dispatch(SharedApplicationAction.RemoveProxyServer(result.serverId))
+                tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
+                return@collect
+            }
             val existing = sharedApplicationStore.state.value.proxyServers.firstOrNull { it.id == result.serverId }
             val wasExisting = existing != null
             val existingGroupId = existing?.sourceSubscriptionId

@@ -96,4 +96,20 @@ class ShadowrocketConfigTest {
         val analysis = defaultShadowrocketConfig().analyzeShadowrocketConfig()
         assertEquals("true", analysis.general["ipv6"])
     }
+
+    @Test
+    fun withoutShadowrocketProxyGroupLineRemovesExpectedGroup() {
+        val original = """
+            [Proxy Group]
+            Group1 = select, One, Two
+            Group2 = url-test, Three, Four
+        """.trimIndent()
+        val analysis = original.analyzeShadowrocketConfig()
+        assertEquals(2, analysis.proxyGroups.size)
+        val firstGroupLine = analysis.proxyGroups.first().lineNumber
+        val updated = original.withoutShadowrocketProxyGroupLine(firstGroupLine)
+        val updatedAnalysis = updated.analyzeShadowrocketConfig()
+        assertEquals(1, updatedAnalysis.proxyGroups.size)
+        assertEquals("Group2", updatedAnalysis.proxyGroups.single().name)
+    }
 }
