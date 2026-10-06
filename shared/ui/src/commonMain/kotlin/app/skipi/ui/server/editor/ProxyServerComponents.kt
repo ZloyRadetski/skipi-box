@@ -266,7 +266,8 @@ fun LazyListScope.strategyGroupProxyServer(
                 summary = if (selectedMemberCount > 0) {
                     stringResource(
                         Res.string.proxy_editor_strategy_group_selected_servers_summary,
-                    ).formatTemplate("count" to selectedMemberCount.toString())
+                        selectedMemberCount,
+                    )
                 } else {
                     stringResource(Res.string.proxy_editor_strategy_group_select_servers_summary)
                 },
