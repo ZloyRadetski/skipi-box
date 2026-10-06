@@ -47,6 +47,7 @@ object DesktopProxyImportCommitter {
                                 }
                                 ?: mergedServers.firstOrNull()?.id,
                             servers = mergedServers,
+                            nextServerId = maxOf(nextServers.effectiveNextServerId, nextIdAfter(mergedServers)),
                         )
                         addedServers += imported.size
                     }
@@ -148,11 +149,11 @@ data class DesktopProxyImportCommitResult(
 private fun List<ProxyServer<*>>.toManualStoredServers(
     library: DesktopServerLibrary,
 ): List<DesktopStoredProxyServer> {
-    var nextId = library.servers.maxOfOrNull(DesktopStoredProxyServer::id) ?: 0
+    var nextId = library.effectiveNextServerId
     return map { server ->
         check(nextId < Int.MAX_VALUE) { "No desktop server IDs remain" }
         DesktopStoredProxyServer(
-            id = ++nextId,
+            id = nextId++,
             serverJson = server.encodePersistedProxyServer(),
             subscriptionId = null,
         )

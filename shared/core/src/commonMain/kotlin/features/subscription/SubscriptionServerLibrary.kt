@@ -25,16 +25,21 @@ fun replaceSubscriptionServerGroup(
     library: SubscriptionServerLibrary,
     subscriptionId: Int,
     incoming: List<ProxyServer<*>>,
+    firstNewServerId: Int? = null,
 ): SubscriptionServerLibrary {
     require(subscriptionId > 0) { "Subscription ID must be positive" }
+    firstNewServerId?.let { require(it > 0) { "First new server ID must be positive" } }
     val previousGroup = library.servers.filter { it.subscriptionId == subscriptionId }
     val remaining = library.servers.filterNot { it.subscriptionId == subscriptionId }
+    val maxServerId = library.servers.maxOfOrNull(SubscriptionServerRecord::id) ?: 0
+    val minimumNewServerId = if (maxServerId >= Int.MAX_VALUE) Int.MAX_VALUE else maxOf(1, maxServerId + 1)
+    val allocationStart = maxOf(firstNewServerId ?: minimumNewServerId, minimumNewServerId)
     val reconciliation = reconcileSubscriptionServers(
         previous = previousGroup.mapNotNull { record ->
             record.server?.let { SubscriptionServerCandidate(id = record.id, server = it) }
         },
         incoming = incoming,
-        firstNewServerId = (library.servers.maxOfOrNull(SubscriptionServerRecord::id) ?: 0) + 1,
+        firstNewServerId = allocationStart,
         occupiedIds = library.servers.mapTo(mutableSetOf(), SubscriptionServerRecord::id),
         policy = SubscriptionServerReconciliationPolicy(
             deduplicateIncomingByFingerprint = true,

@@ -32,11 +32,23 @@ data class DesktopStoredProxyServer(
     fun decode(): Result<ProxyServer<*>> = runCatching(serverJson::decodePersistedProxyServer)
 }
 
+/** Returns the next allocatable positive ID, or [Int.MAX_VALUE] when allocation is exhausted. */
+internal fun nextIdAfter(servers: List<DesktopStoredProxyServer>): Int {
+    val maxId = servers.maxOfOrNull(DesktopStoredProxyServer::id) ?: 0
+    return if (maxId >= Int.MAX_VALUE) Int.MAX_VALUE else maxOf(1, maxId + 1)
+}
+
 @Serializable
 data class DesktopServerLibrary(
     val selectedServerId: Int? = null,
     val servers: List<DesktopStoredProxyServer> = emptyList(),
+    /** High-water mark; a missing field in older JSON is derived from all stored IDs. */
+    val nextServerId: Int = nextIdAfter(servers),
 )
+
+/** Effective high-water mark, including IDs hidden from shared records because their payloads do not decode. */
+internal val DesktopServerLibrary.effectiveNextServerId: Int
+    get() = maxOf(nextServerId.coerceAtLeast(1), nextIdAfter(servers))
 
 /** User-owned local library. Its server payload format is shared with Android backups/storage. */
 object DesktopServerLibraries {
@@ -85,14 +97,19 @@ object DesktopServerLibraries {
         server: ProxyServer<*>,
         subscriptionId: Int? = null,
     ): DesktopServerLibrary {
-        val nextId = (library.servers.maxOfOrNull(DesktopStoredProxyServer::id) ?: 0) + 1
+        val nextId = library.effectiveNextServerId
+        check(nextId < Int.MAX_VALUE && library.servers.none { it.id == nextId }) {
+            "No desktop server IDs remain"
+        }
+        val servers = library.servers + DesktopStoredProxyServer(
+            id = nextId,
+            serverJson = server.encodePersistedProxyServer(),
+            subscriptionId = subscriptionId,
+        )
         return library.copy(
             selectedServerId = nextId,
-            servers = library.servers + DesktopStoredProxyServer(
-                id = nextId,
-                serverJson = server.encodePersistedProxyServer(),
-                subscriptionId = subscriptionId,
-            ),
+            servers = servers,
+            nextServerId = nextIdAfter(servers),
         )
     }
 
@@ -106,6 +123,7 @@ object DesktopServerLibraries {
         subscriptionId: Int,
         servers: List<ProxyServer<*>>,
     ): DesktopServerLibrary {
+        val nextServerId = library.effectiveNextServerId
         val portable = replaceSubscriptionServerGroup(
             library = SubscriptionServerLibrary(
                 selectedServerId = library.selectedServerId,
@@ -119,25 +137,35 @@ object DesktopServerLibraries {
             ),
             subscriptionId = subscriptionId,
             incoming = servers,
+            firstNewServerId = nextServerId,
         )
+        val updatedServers = portable.servers.map { record ->
+            val stored = record.server?.let { server ->
+                DesktopStoredProxyServer(
+                    id = record.id,
+                    serverJson = server.encodePersistedProxyServer(),
+                    subscriptionId = record.subscriptionId,
+                )
+            }
+            stored ?: library.servers.first { it.id == record.id }
+        }
         return library.copy(
             selectedServerId = portable.selectedServerId,
-            servers = portable.servers.map { record ->
-                val stored = record.server?.let { server ->
-                    DesktopStoredProxyServer(
-                        id = record.id,
-                        serverJson = server.encodePersistedProxyServer(),
-                        subscriptionId = record.subscriptionId,
-                    )
-                }
-                stored ?: library.servers.first { it.id == record.id }
-            },
+            servers = updatedServers,
+            nextServerId = maxOf(nextServerId, nextIdAfter(updatedServers)),
         ).normalized()
     }
 
     fun removeSubscriptionServers(library: DesktopServerLibrary, subscriptionId: Int): DesktopServerLibrary {
         val remaining = library.servers.filterNot { stored -> stored.subscriptionId == subscriptionId }
-        return library.copy(servers = remaining).normalized()
+        val selectedWasRemoved = library.selectedServerId?.let { selectedId ->
+            library.servers.any { it.id == selectedId && it.subscriptionId == subscriptionId }
+        } == true
+        return library.copy(
+            selectedServerId = if (selectedWasRemoved) remaining.firstOrNull()?.id else library.selectedServerId,
+            servers = remaining,
+            nextServerId = library.effectiveNextServerId,
+        ).normalized()
     }
 
     fun serversForSubscription(library: DesktopServerLibrary, subscriptionId: Int): List<DesktopStoredProxyServer> =
@@ -172,15 +200,21 @@ object DesktopServerLibraries {
     }
 
     fun remove(library: DesktopServerLibrary, serverId: Int): DesktopServerLibrary {
+        val remaining = library.servers.filterNot { it.id == serverId }
         return library.copy(
-            selectedServerId = library.selectedServerId.takeIf { it != serverId },
-            servers = library.servers.filterNot { it.id == serverId },
+            selectedServerId = if (library.selectedServerId == serverId) remaining.firstOrNull()?.id else library.selectedServerId,
+            servers = remaining,
+            nextServerId = library.effectiveNextServerId,
         ).normalized()
     }
 
     private fun DesktopServerLibrary.normalized(): DesktopServerLibrary {
         val distinctServers = servers.distinctBy(DesktopStoredProxyServer::id)
         val selected = selectedServerId?.takeIf { selectedId -> distinctServers.any { it.id == selectedId } }
-        return copy(selectedServerId = selected, servers = distinctServers)
+        return copy(
+            selectedServerId = selected,
+            servers = distinctServers,
+            nextServerId = maxOf(effectiveNextServerId, nextIdAfter(distinctServers)),
+        )
     }
 }
