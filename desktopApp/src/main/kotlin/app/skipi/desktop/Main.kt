@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
@@ -669,15 +671,27 @@ fun main() = application {
                             },
                             onDeleteServer = { serverId ->
                                 val deletedSelectedServer = serverLibrary.selectedServerId == serverId
-                                val updated = DesktopServerLibraries.remove(serverLibrary, serverId)
-                                DesktopServerLibraries.saveDefault(updated).onSuccess {
-                                    serverLibrary = updated
-                                    serverLibraryMessage = "Сервер удалён."
-                                    if (deletedSelectedServer && coreState.isRunning) {
-                                        requestTunnelReconnect("Активный сервер удалён.")
+                                val tunnelWasRunning = coreState.isRunning
+                                subscriptionScope.launch {
+                                    val result = desktopSharedApplication.store.dispatchAndAwait(
+                                        SharedApplicationAction.RemoveProxyServer(serverId),
+                                    )
+                                    when (val outcome = result.outcome) {
+                                        SharedApplicationActionOutcome.Completed -> {
+                                            serverLibraryMessage = "Сервер удалён."
+                                            if (deletedSelectedServer && tunnelWasRunning) {
+                                                requestTunnelReconnect("Активный сервер удалён.")
+                                            }
+                                        }
+
+                                        is SharedApplicationActionOutcome.Rejected -> {
+                                            serverLibraryMessage = "Не удалось удалить сервер: ${outcome.reason}"
+                                        }
+
+                                        is SharedApplicationActionOutcome.Failed -> {
+                                            serverLibraryMessage = "Не удалось удалить сервер: ${outcome.reason}"
+                                        }
                                     }
-                                }.onFailure { error ->
-                                    serverLibraryMessage = "Не удалось удалить сервер: ${error.message.orEmpty()}"
                                 }
                             },
                             onAddServer = { server ->

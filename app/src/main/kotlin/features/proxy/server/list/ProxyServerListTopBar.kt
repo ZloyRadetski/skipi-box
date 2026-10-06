@@ -40,6 +40,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.AppState
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.model.ProxyServerRecord as SharedProxyServerRecord
 import app.skipi.app.proxy.ProxyServerRecord as CollectionProxyServerRecord
 import app.skipi.app.proxy.importProxyServerRecords
@@ -1097,21 +1099,41 @@ private fun deleteServersByIds(
         return
     }
 
+    suspend fun notifyDeleted() {
+        tipNotifier.show(
+            if (existingServerIds.isNotEmpty()) {
+                deletedTemplate.formatTemplate("count" to existingServerIds.size)
+            } else {
+                emptyMessage
+            },
+        )
+    }
+
+    suspend fun notifyDeleteError(error: Throwable) {
+        tipNotifier.showError(error)
+    }
+
     fun applyDeleteAndNotify() {
         scope.launch {
-            stateStore.proxyServerRepository.updateCollection { current ->
-                current.filterNot { it.id in existingServerIds }
-            }
-            if (stateSnapshot.selectedProxyServerId in existingServerIds) {
-                updateAppState { state -> state.copy(proxyRunning = false) }
-            }
-            tipNotifier.show(
-                if (existingServerIds.isNotEmpty()) {
-                    deletedTemplate.formatTemplate("count" to existingServerIds.size)
-                } else {
-                    emptyMessage
-                },
+            val result = stateStore.sharedApplicationStore.dispatchAndAwait(
+                SharedApplicationAction.RemoveProxyServers(serverIds = existingServerIds),
             )
+            when (val outcome = result.outcome) {
+                SharedApplicationActionOutcome.Completed -> {
+                    if (stateSnapshot.selectedProxyServerId in existingServerIds) {
+                        updateAppState { state -> state.copy(proxyRunning = false) }
+                    }
+                    notifyDeleted()
+                }
+
+                is SharedApplicationActionOutcome.Rejected -> {
+                    notifyDeleteError(IllegalArgumentException(outcome.reason))
+                }
+
+                is SharedApplicationActionOutcome.Failed -> {
+                    notifyDeleteError(IllegalStateException(outcome.reason))
+                }
+            }
         }
     }
 
@@ -1123,14 +1145,31 @@ private fun deleteServersByIds(
     if (serviceOperationInProgress) return
 
     runProxyServiceOperation {
-        when (val stopResult = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
-            is ProxyServiceResult.Success -> applyDeleteAndNotify()
-            ProxyServiceResult.MissingServer -> applyDeleteAndNotify()
-            is ProxyServiceResult.Failed -> {
+        deleteProxyServersAfterStoppingService(
+            stopService = { proxyServiceUseCase.stop(stateStore.state.value.runMode) },
+            dispatchDelete = {
+                stateStore.sharedApplicationStore.dispatchAndAwait(
+                    SharedApplicationAction.RemoveProxyServers(serverIds = existingServerIds),
+                ).outcome
+            },
+            applyStopState = { stopResult ->
+                updateAppState { state ->
+                    state.copy(
+                        proxyRunning = stopResult.proxyRunning,
+                        localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
+                    )
+                }
+            },
+            onDeleted = {
                 updateAppState { state -> state.copy(proxyRunning = false) }
-                tipNotifier.showError(stopResult.error, serviceStoppedMessage)
-            }
-        }
+                notifyDeleted()
+            },
+            onDeleteError = { error -> notifyDeleteError(error) },
+            onStopFailed = { error ->
+                updateAppState { state -> state.copy(proxyRunning = false) }
+                tipNotifier.showError(error, serviceStoppedMessage)
+            },
+        )
     }
 }
 
@@ -1150,7 +1189,21 @@ private fun deleteDuplicateServers(
     val removedIds = stateStore.currentState.proxyServers.map { it.id }.filterNot { it in retainedIds }.toSet()
     scope.launch {
         if (removedIds.isNotEmpty()) {
-            stateStore.proxyServerRepository.updateCollection { current -> current.filterNot { it.id in removedIds } }
+            val result = stateStore.sharedApplicationStore.dispatchAndAwait(
+                SharedApplicationAction.RemoveProxyServers(serverIds = removedIds),
+            )
+            when (val outcome = result.outcome) {
+                SharedApplicationActionOutcome.Completed -> Unit
+                is SharedApplicationActionOutcome.Rejected -> {
+                    tipNotifier.showError(IllegalArgumentException(outcome.reason))
+                    return@launch
+                }
+
+                is SharedApplicationActionOutcome.Failed -> {
+                    tipNotifier.showError(IllegalStateException(outcome.reason))
+                    return@launch
+                }
+            }
         }
         tipNotifier.show(
             if (removedIds.isNotEmpty()) {

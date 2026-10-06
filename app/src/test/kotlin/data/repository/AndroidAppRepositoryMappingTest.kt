@@ -21,12 +21,15 @@ import app.skipi.app.model.ResourceDefinition
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.ThemeMode
 import app.skipi.app.model.TrafficConfigRecord
+import app.skipi.app.proxy.deleteProxyServerRecords
 import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigResourceSettings
 import features.config.TrafficConfigState
 import features.subscription.SubscriptionExpiryReminder
 import features.subscription.DefaultSubscriptionGroupId
+import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.HTTP
+import features.proxy.server.model.StrategyGroup
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -83,6 +86,51 @@ class AndroidAppRepositoryMappingTest {
         assertEquals(listOf("34 ms", "12 ms"), restored.proxyServers.map { it.latency })
         assertEquals(91, restored.nextProxyServerId)
         assertEquals(42, restored.selectedProxyServerId)
+    }
+
+    @Test
+    fun deletingFromSharedCatalogPreservesAndroidRecordMetadataAndRuntimeState() {
+        val original = AppState(
+            proxyServers = listOf(
+                ProxyServerState(42, HTTP(server = "manual.example"), DefaultSubscriptionGroupId, "12 ms"),
+                ProxyServerState(9, HTTP(server = "provider.example"), 73, "34 ms"),
+                ProxyServerState(
+                    100,
+                    StrategyGroup(
+                        remarks = "Selected group",
+                        proxyServerIds = listOf(42, 9),
+                        selectedMemberId = 42,
+                        sourceTrafficConfigId = 7,
+                        sourcePolicyGroupName = "policy-group",
+                    ),
+                    groupId = -2,
+                    latency = "50 ms",
+                ),
+                ProxyServerState(
+                    101,
+                    ChainProxy(remarks = "Chain", proxyServerIds = listOf(42, 9)),
+                    groupId = -2,
+                    latency = "60 ms",
+                ),
+            ),
+            nextProxyServerId = 188,
+            selectedProxyServerId = 42,
+            proxyRunning = true,
+            localProxyPort = "10991",
+        )
+        val catalog = original.toProxyServerCatalog()
+        val updatedCatalog = deleteProxyServerRecords(catalog, setOf(42))
+
+        val restored = original.withProxyServerCatalog(updatedCatalog)
+
+        assertEquals(listOf(9, 100, 101), restored.proxyServers.map { it.id })
+        assertEquals(listOf(73, -2, -2), restored.proxyServers.map { it.groupId })
+        assertEquals(listOf("34 ms", "50 ms", "60 ms"), restored.proxyServers.map { it.latency })
+        assertEquals(updatedCatalog.servers.map { it.server }, restored.proxyServers.map { it.server })
+        assertEquals(188, restored.nextProxyServerId)
+        assertEquals(9, restored.selectedProxyServerId)
+        assertEquals(original.proxyRunning, restored.proxyRunning)
+        assertEquals(original.localProxyPort, restored.localProxyPort)
     }
 
     @Test
