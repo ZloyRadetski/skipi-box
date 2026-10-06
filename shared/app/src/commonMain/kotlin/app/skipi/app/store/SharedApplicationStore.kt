@@ -10,6 +10,7 @@ import app.skipi.app.model.ResourceCatalogRecord
 import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.TrafficConfigRecord
+import app.skipi.app.proxy.deleteProxyServerRecords
 import app.skipi.app.repository.AppRepositories
 import app.skipi.app.runtime.AppRuntimeState
 import kotlinx.coroutines.CancellationException
@@ -52,6 +53,7 @@ sealed interface SharedApplicationAction {
     data class UpdateProxyCatalog(val transform: (ProxyServerCatalog) -> ProxyServerCatalog) : SharedApplicationAction
     data class UpsertProxyServer(val server: ProxyServerRecord) : SharedApplicationAction
     data class RemoveProxyServer(val serverId: Int) : SharedApplicationAction
+    data class RemoveProxyServers(val serverIds: Set<Int>) : SharedApplicationAction
     data class UpsertSubscription(val subscription: SubscriptionRecord) : SharedApplicationAction
     data class RemoveSubscription(val subscriptionId: Int) : SharedApplicationAction
     data class RefreshSubscription(val subscriptionId: Int) : SharedApplicationAction
@@ -187,7 +189,8 @@ class SharedApplicationStore(
                 next
             }
             is SharedApplicationAction.UpsertProxyServer -> repositories.proxyServers.upsert(action.server)
-            is SharedApplicationAction.RemoveProxyServer -> repositories.proxyServers.remove(action.serverId)
+            is SharedApplicationAction.RemoveProxyServer -> removeProxyServers(setOf(action.serverId))
+            is SharedApplicationAction.RemoveProxyServers -> removeProxyServers(action.serverIds)
             is SharedApplicationAction.UpsertSubscription -> repositories.subscriptions.upsert(action.subscription)
             is SharedApplicationAction.RemoveSubscription -> repositories.subscriptions.remove(action.subscriptionId)
             is SharedApplicationAction.RefreshSubscription -> {
@@ -203,6 +206,13 @@ class SharedApplicationStore(
                 "Resource repository is not configured"
             }.update(action.transform)
             is SharedApplicationAction.UpdateRuntime -> repositories.runtime.update(action.transform)
+        }
+    }
+
+    private suspend fun removeProxyServers(serverIds: Set<Int>) {
+        if (serverIds.isEmpty()) return
+        repositories.proxyServers.updateCatalog { current ->
+            deleteProxyServerRecords(current, serverIds)
         }
     }
 }

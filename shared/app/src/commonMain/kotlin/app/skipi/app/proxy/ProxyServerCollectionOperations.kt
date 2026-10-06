@@ -3,6 +3,7 @@
 
 package app.skipi.app.proxy
 
+import app.skipi.app.model.ProxyServerCatalog
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
@@ -90,35 +91,68 @@ fun deleteProxyServerRecords(
         return ProxyServerCollectionResult(servers, nextServerId, selectedServerId, proxyRunning)
     }
     val next = servers.filterNot { it.id in deletedServerIds }.map { record ->
-        val updatedServer = when (val server = record.server) {
-            is StrategyGroup -> {
-                val remaining = server.proxyServerIds.filterNot { it in deletedServerIds }
-                val selectedMemberId = if (server.selectedMemberId in deletedServerIds) {
-                    remaining.firstOrNull()
-                } else {
-                    server.selectedMemberId
-                }
-                if (remaining == server.proxyServerIds && selectedMemberId == server.selectedMemberId) {
-                    server
-                } else {
-                    server.copy(proxyServerIds = remaining, selectedMemberId = selectedMemberId)
-                }
-            }
-            is ChainProxy -> {
-                val remaining = server.proxyServerIds.filterNot { it in deletedServerIds }
-                if (remaining == server.proxyServerIds) server else server.copy(proxyServerIds = remaining)
-            }
-            else -> server
-        }
+        val updatedServer = record.server.withoutDeletedProxyReferences(deletedServerIds)
         if (updatedServer === record.server) record else record.copy(server = updatedServer)
     }
-    val selectedDeleted = selectedServerId in deletedServerIds
     return ProxyServerCollectionResult(
         servers = next,
         nextServerId = nextServerId,
-        selectedServerId = if (selectedDeleted) next.firstOrNull()?.id ?: selectedServerId else selectedServerId,
-        proxyRunning = proxyRunning && !selectedDeleted,
+        selectedServerId = selectedServerIdAfterDeletion(
+            selectedServerId = selectedServerId,
+            deletedServerIds = deletedServerIds,
+            remainingServerIds = next.map(ProxyServerRecord::id),
+        ),
+        proxyRunning = proxyRunning && selectedServerId !in deletedServerIds,
     )
+}
+
+/** Removes rows and prunes references while keeping catalog-owned metadata intact. */
+fun deleteProxyServerRecords(
+    catalog: ProxyServerCatalog,
+    deletedServerIds: Set<Int>,
+): ProxyServerCatalog {
+    if (deletedServerIds.isEmpty()) return catalog
+
+    val remaining = catalog.servers.filterNot { it.id in deletedServerIds }.map { record ->
+        val updatedServer = record.server.withoutDeletedProxyReferences(deletedServerIds)
+        if (updatedServer === record.server) record else record.copy(server = updatedServer)
+    }
+    return catalog.copy(
+        servers = remaining,
+        selectedServerId = selectedServerIdAfterDeletion(
+            selectedServerId = catalog.selectedServerId,
+            deletedServerIds = deletedServerIds,
+            remainingServerIds = remaining.map { it.id },
+        ),
+    )
+}
+
+private fun ProxyServer<*>.withoutDeletedProxyReferences(deletedServerIds: Set<Int>): ProxyServer<*> = when (this) {
+    is StrategyGroup -> {
+        val remainingIds = proxyServerIds.filterNot { it in deletedServerIds }
+        val nextSelectedMemberId = if (selectedMemberId in deletedServerIds) {
+            remainingIds.firstOrNull()
+        } else {
+            selectedMemberId
+        }
+        if (remainingIds == proxyServerIds && nextSelectedMemberId == selectedMemberId) this
+        else copy(proxyServerIds = remainingIds, selectedMemberId = nextSelectedMemberId)
+    }
+    is ChainProxy -> {
+        val remainingIds = proxyServerIds.filterNot { it in deletedServerIds }
+        if (remainingIds == proxyServerIds) this else copy(proxyServerIds = remainingIds)
+    }
+    else -> this
+}
+
+private fun selectedServerIdAfterDeletion(
+    selectedServerId: Int,
+    deletedServerIds: Set<Int>,
+    remainingServerIds: List<Int>,
+): Int = if (selectedServerId in deletedServerIds) {
+    remainingServerIds.firstOrNull() ?: selectedServerId
+} else {
+    selectedServerId
 }
 
 /** Reorders only real subscription groups while preserving fixed and built-in slots. */

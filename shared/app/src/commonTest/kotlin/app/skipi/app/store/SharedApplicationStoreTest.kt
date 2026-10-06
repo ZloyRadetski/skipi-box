@@ -19,7 +19,9 @@ import app.skipi.app.repository.SettingsRepository
 import app.skipi.app.repository.SubscriptionRepository
 import app.skipi.app.repository.TrafficConfigRepository
 import app.skipi.app.runtime.AppRuntimeState
+import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.HTTP
+import features.proxy.server.model.StrategyGroup
 import features.routing.model.RouteRule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -192,6 +194,168 @@ class SharedApplicationStoreTest {
         assertEquals(30, repositories.proxyServers.catalog.nextServerId)
         assertEquals(3, repositories.proxyServers.catalog.selectedServerId)
         assertIs<SharedApplicationActionOutcome.Completed>(store.lastActionResult.value?.outcome)
+    }
+
+    @Test
+    fun removingSelectedProxyServerPrunesCompositeReferencesAndPreservesCatalogMetadata() = runTest {
+        val strategy = StrategyGroup(proxyServerIds = listOf(7, 8), selectedMemberId = 7)
+        val chain = ChainProxy(proxyServerIds = listOf(7, 8))
+        val catalog = ProxyServerCatalog(
+            servers = listOf(
+                ProxyServerRecord(id = 30, server = strategy, sourceSubscriptionId = 70, enabled = false),
+                ProxyServerRecord(id = 40, server = chain, sourceSubscriptionId = 71),
+                ProxyServerRecord(id = 7, server = HTTP(server = "deleted.example"), sourceSubscriptionId = 72),
+                ProxyServerRecord(id = 8, server = HTTP(server = "remaining.example"), enabled = false),
+                ProxyServerRecord(id = 9, server = HTTP(server = "other.example"), sourceSubscriptionId = 73),
+            ),
+            nextServerId = 60,
+            selectedServerId = 7,
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = catalog
+        repositories.proxyServers.servers.value = catalog.servers
+        repositories.proxyServers.selectedId = catalog.selectedServerId
+        val initialRuntime = AppRuntimeState(
+            latencyByServerId = mapOf(7 to 37L, 8 to 12L),
+            testingServerIds = setOf(7),
+        )
+        repositories.runtime.state.value = initialRuntime
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val result = store.dispatchAndAwait(SharedApplicationAction.RemoveProxyServer(7))
+        runCurrent()
+
+        assertIs<SharedApplicationActionOutcome.Completed>(result.outcome)
+        val updatedCatalog = repositories.proxyServers.catalog
+        assertEquals(listOf(30, 40, 8, 9), updatedCatalog.servers.map { it.id })
+        val updatedStrategy = updatedCatalog.servers.single { it.id == 30 }.server as StrategyGroup
+        val updatedChain = updatedCatalog.servers.single { it.id == 40 }.server as ChainProxy
+        assertEquals(listOf(8), updatedStrategy.proxyServerIds)
+        assertEquals(8, updatedStrategy.selectedMemberId)
+        assertEquals(listOf(8), updatedChain.proxyServerIds)
+        assertEquals(listOf(70, 71, null, 73), updatedCatalog.servers.map { it.sourceSubscriptionId })
+        assertEquals(listOf(false, true, false, true), updatedCatalog.servers.map { it.enabled })
+        assertEquals(60, updatedCatalog.nextServerId)
+        assertEquals(30, updatedCatalog.selectedServerId)
+        assertEquals(listOf(30, 40, 8, 9), store.state.value.proxyServers.map { it.id })
+        assertEquals(initialRuntime, repositories.runtime.state.value)
+    }
+
+    @Test
+    fun removingUnselectedOrUnknownProxyServerPreservesSelectionAndHighWaterMark() = runTest {
+        val catalog = ProxyServerCatalog(
+            servers = listOf(
+                ProxyServerRecord(id = 12, server = HTTP(server = "remove.example"), sourceSubscriptionId = 90),
+                ProxyServerRecord(id = 7, server = HTTP(server = "selected.example"), enabled = false),
+            ),
+            nextServerId = 41,
+            selectedServerId = 7,
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = catalog
+        repositories.proxyServers.servers.value = catalog.servers
+        repositories.proxyServers.selectedId = catalog.selectedServerId
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val removed = store.dispatchAndAwait(SharedApplicationAction.RemoveProxyServer(12))
+        runCurrent()
+
+        assertIs<SharedApplicationActionOutcome.Completed>(removed.outcome)
+        assertEquals(listOf(7), repositories.proxyServers.catalog.servers.map { it.id })
+        assertEquals(41, repositories.proxyServers.catalog.nextServerId)
+        assertEquals(7, repositories.proxyServers.catalog.selectedServerId)
+
+        val afterExistingRemoval = repositories.proxyServers.catalog
+        val unknown = store.dispatchAndAwait(SharedApplicationAction.RemoveProxyServer(999))
+        runCurrent()
+
+        assertIs<SharedApplicationActionOutcome.Completed>(unknown.outcome)
+        assertEquals(afterExistingRemoval, repositories.proxyServers.catalog)
+        assertEquals(listOf(7), store.state.value.proxyServers.map { it.id })
+    }
+
+    @Test
+    fun removingMultipleProxyServersPrunesCompositeReferencesAndPreservesCatalogMetadata() = runTest {
+        val catalog = ProxyServerCatalog(
+            servers = listOf(
+                ProxyServerRecord(
+                    id = 30,
+                    server = StrategyGroup(proxyServerIds = listOf(7, 8, 9), selectedMemberId = 8),
+                    sourceSubscriptionId = 70,
+                    enabled = false,
+                ),
+                ProxyServerRecord(
+                    id = 40,
+                    server = ChainProxy(proxyServerIds = listOf(7, 8, 9)),
+                    sourceSubscriptionId = 71,
+                ),
+                ProxyServerRecord(id = 7, server = HTTP(server = "first-delete.example"), sourceSubscriptionId = 72),
+                ProxyServerRecord(id = 8, server = HTTP(server = "second-delete.example"), sourceSubscriptionId = 73),
+                ProxyServerRecord(id = 9, server = HTTP(server = "referenced-survivor.example"), enabled = false),
+                ProxyServerRecord(id = 10, server = HTTP(server = "unrelated.example"), sourceSubscriptionId = 74),
+            ),
+            nextServerId = 80,
+            selectedServerId = 7,
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = catalog
+        repositories.proxyServers.servers.value = catalog.servers
+        repositories.proxyServers.selectedId = catalog.selectedServerId
+        val initialRuntime = AppRuntimeState(
+            latencyByServerId = mapOf(7 to 37L, 8 to 18L, 9 to 12L),
+            testingServerIds = setOf(7, 8),
+        )
+        repositories.runtime.state.value = initialRuntime
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val result = store.dispatchAndAwait(
+            SharedApplicationAction.RemoveProxyServers(serverIds = setOf(7, 8)),
+        )
+        runCurrent()
+
+        assertIs<SharedApplicationActionOutcome.Completed>(result.outcome)
+        val updatedCatalog = repositories.proxyServers.catalog
+        assertEquals(listOf(30, 40, 9, 10), updatedCatalog.servers.map { it.id })
+        val updatedStrategy = updatedCatalog.servers.single { it.id == 30 }.server as StrategyGroup
+        val updatedChain = updatedCatalog.servers.single { it.id == 40 }.server as ChainProxy
+        assertEquals(listOf(9), updatedStrategy.proxyServerIds)
+        assertEquals(9, updatedStrategy.selectedMemberId)
+        assertEquals(listOf(9), updatedChain.proxyServerIds)
+        assertEquals(listOf(70, 71, null, 74), updatedCatalog.servers.map { it.sourceSubscriptionId })
+        assertEquals(listOf(false, true, false, true), updatedCatalog.servers.map { it.enabled })
+        assertEquals(80, updatedCatalog.nextServerId)
+        assertEquals(30, updatedCatalog.selectedServerId)
+        assertEquals(initialRuntime, repositories.runtime.state.value)
+    }
+
+    @Test
+    fun removingEmptySetOfProxyServersIsANoOp() = runTest {
+        val catalog = ProxyServerCatalog(
+            servers = listOf(
+                ProxyServerRecord(id = 12, server = HTTP(server = "first.example"), sourceSubscriptionId = 90),
+                ProxyServerRecord(id = 7, server = HTTP(server = "selected.example"), enabled = false),
+            ),
+            nextServerId = 41,
+            selectedServerId = 7,
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = catalog
+        repositories.proxyServers.servers.value = catalog.servers
+        repositories.proxyServers.selectedId = catalog.selectedServerId
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val result = store.dispatchAndAwait(
+            SharedApplicationAction.RemoveProxyServers(serverIds = emptySet()),
+        )
+        runCurrent()
+
+        assertIs<SharedApplicationActionOutcome.Completed>(result.outcome)
+        assertEquals(catalog, repositories.proxyServers.catalog)
+        assertEquals(catalog.servers, store.state.value.proxyServers)
     }
 
     @Test
