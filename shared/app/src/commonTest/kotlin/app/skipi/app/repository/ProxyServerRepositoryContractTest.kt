@@ -3,6 +3,7 @@
 
 package app.skipi.app.repository
 
+import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ProxyServerRecord
 import features.proxy.server.model.HTTP
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,23 @@ class ProxyServerRepositoryContractTest {
         override val servers = MutableStateFlow(records)
         var selectedServerId: Int? = null
             private set
+
+        override suspend fun updateCatalog(transform: (ProxyServerCatalog) -> ProxyServerCatalog) {
+            val currentRecords = servers.value
+            val maximumId = currentRecords.maxOfOrNull(ProxyServerRecord::id) ?: 0
+            val nextId = if (maximumId == Int.MAX_VALUE) Int.MAX_VALUE else maxOf(1, maximumId + 1)
+            val catalog = transform(
+                ProxyServerCatalog(
+                    servers = currentRecords,
+                    nextServerId = nextId,
+                    selectedServerId = selectedServerId ?: currentRecords.firstOrNull()?.id ?: 0,
+                ),
+            )
+            servers.value = catalog.servers
+            selectedServerId = catalog.selectedServerId.takeIf { selectedId ->
+                catalog.servers.any { it.id == selectedId }
+            }
+        }
 
         override suspend fun select(serverId: Int) {
             selectedServerId = serverId

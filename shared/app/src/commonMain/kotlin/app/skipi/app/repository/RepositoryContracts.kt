@@ -24,29 +24,16 @@ interface SettingsRepository {
 interface ProxyServerRepository {
     val servers: StateFlow<List<ProxyServerRecord>>
 
-    /** Atomically updates the ordered records and their persisted ID/selection metadata. */
-    suspend fun updateCatalog(transform: (ProxyServerCatalog) -> ProxyServerCatalog) {
-        val current = servers.value
-        val next = transform(
-            ProxyServerCatalog(
-                servers = current,
-                nextServerId = ((current.maxOfOrNull { it.id } ?: 0) + 1).coerceAtLeast(1),
-                selectedServerId = current.firstOrNull()?.id ?: 1,
-            ),
-        )
-        require(next.servers.all { it.id > 0 }) { "Proxy server IDs must be positive" }
-        require(next.servers.map { it.id }.distinct().size == next.servers.size) { "Proxy server IDs must be unique" }
-        updateCollection { next.servers }
-        if (next.servers.any { it.id == next.selectedServerId }) select(next.selectedServerId)
-    }
+    /**
+     * Atomically updates the ordered records and their persisted ID/selection metadata.
+     * Adapters must treat the transform as one logical catalogue update. Persistence
+     * durability timing remains specific to each platform implementation.
+     */
+    suspend fun updateCatalog(transform: (ProxyServerCatalog) -> ProxyServerCatalog)
 
-    /** Applies one ordered catalogue change as a repository transaction where supported. */
+    /** Applies one ordered catalogue change through the catalogue transaction. */
     suspend fun updateCollection(transform: (List<ProxyServerRecord>) -> List<ProxyServerRecord>) {
-        val current = servers.value
-        val next = transform(current)
-        val nextIds = next.mapTo(hashSetOf()) { it.id }
-        current.filterNot { it.id in nextIds }.forEach { remove(it.id) }
-        next.forEach { upsert(it) }
+        updateCatalog { catalog -> catalog.copy(servers = transform(catalog.servers)) }
     }
 
     /** Persist the active server selection using the host's existing settings format. */

@@ -270,15 +270,24 @@ class SharedApplicationStoreTest {
         var catalog = ProxyServerCatalog()
         var selectedId: Int? = null
         override suspend fun updateCatalog(transform: (ProxyServerCatalog) -> ProxyServerCatalog) {
-            catalog = transform(catalog)
+            // Tests sometimes seed the exposed StateFlow directly. Keep the
+            // fake's catalog view aligned while retaining explicit metadata.
+            catalog = transform(catalog.copy(servers = servers.value))
             servers.value = catalog.servers
-            selectedId = catalog.selectedServerId
+            selectedId = catalog.selectedServerId.takeIf { id -> catalog.servers.any { it.id == id } }
         }
-        override suspend fun select(serverId: Int) { selectedId = serverId }
+        override suspend fun select(serverId: Int) {
+            selectedId = serverId
+            catalog = catalog.copy(selectedServerId = serverId)
+        }
         override suspend fun upsert(server: ProxyServerRecord) {
             servers.value = servers.value.filterNot { it.id == server.id } + server
+            catalog = catalog.copy(servers = servers.value)
         }
-        override suspend fun remove(serverId: Int) { servers.value = servers.value.filterNot { it.id == serverId } }
+        override suspend fun remove(serverId: Int) {
+            servers.value = servers.value.filterNot { it.id == serverId }
+            catalog = catalog.copy(servers = servers.value)
+        }
     }
 
     private class FakeSubscriptionRepository : SubscriptionRepository {
