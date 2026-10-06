@@ -3,8 +3,17 @@
 
 package app
 
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
@@ -409,7 +418,7 @@ fun AppContent(
         val transitionEffects = remember {
             NavDisplayTransitionEffects(
                 enableCornerClip = true,
-                dimAmount = 0.35f,
+                dimAmount = 0.5f,
                 blockInputDuringTransition = true,
                 popDirectionFollowsSwipeEdge = false,
             )
@@ -418,6 +427,44 @@ fun AppContent(
         NavDisplay(
             entries = entries,
             onBack = { navigator.pop() },
+            popTransitionSpec = {
+                ContentTransform(
+                    targetContentEnter = slideInHorizontally(
+                        initialOffsetX = { -it / 4 },
+                        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+                    ) + scaleIn(
+                        initialScale = 0.96f,
+                        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+                    ),
+                    initialContentExit = slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+                    ) + scaleOut(
+                        targetScale = 0.90f,
+                        transformOrigin = TransformOrigin.Center,
+                        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+                    ),
+                )
+            },
+            predictivePopTransitionSpec = { _ ->
+                ContentTransform(
+                    targetContentEnter = slideInHorizontally(
+                        initialOffsetX = { -it / 4 },
+                        animationSpec = tween(durationMillis = 550, easing = LinearEasing),
+                    ) + scaleIn(
+                        initialScale = 0.96f,
+                        animationSpec = tween(durationMillis = 550, easing = LinearEasing),
+                    ),
+                    initialContentExit = slideOutHorizontally(
+                        targetOffsetX = { it },
+                        animationSpec = tween(durationMillis = 550, easing = LinearEasing),
+                    ) + scaleOut(
+                        targetScale = 0.90f,
+                        transformOrigin = TransformOrigin.Center,
+                        animationSpec = tween(durationMillis = 550, easing = LinearEasing),
+                    ),
+                )
+            },
             transitionEffects = transitionEffects,
         )
     }
