@@ -96,6 +96,7 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlinx.coroutines.launch
 import platform.TunnelPhase
 import platform.TunnelSnapshot
 
@@ -137,7 +138,7 @@ internal fun DesktopProxyHome(
     scheduledSubscriptionId: Int?,
     onScheduledSubscriptionConsumed: () -> Unit,
     onPrepareSubscription: (DesktopSubscriptionInstallUri) -> Result<Unit>,
-    onImport: (DesktopProxyImportInput) -> Result<String>,
+    onImport: suspend (DesktopProxyImportInput) -> Result<String>,
     onUpdateSubscriptionProvider: (Int, DesktopSubscriptionProviderEdit) -> Result<Unit>,
     onDeleteSubscription: (Int) -> Unit,
     contentPadding: PaddingValues,
@@ -456,34 +457,38 @@ internal fun DesktopProxyHome(
         if (homePresentation != nextPresentation) homePresentation = nextPresentation
     }
     val importFromClipboard: () -> Unit = {
-        readDesktopClipboardText().onSuccess { text ->
-            val install = text.trim().toDesktopSubscriptionInstallUriOrNull()
-            if (install != null) {
-                onPrepareSubscription(install).fold(
-                    onSuccess = {
-                        onSubscriptionUrlChange(install.url)
-                        onUpdateSubscription()
-                        localMessage = "Подписка «${install.name}» добавлена."
-                    },
-                    onFailure = { error -> localMessage = error.message ?: "Не удалось сохранить подписку." },
-                )
-            } else {
-                onImport(DesktopProxyImportInput.Clipboard(text)).fold(
-                    onSuccess = { summary -> localMessage = summary },
-                    onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
-                )
-            }
-        }.onFailure { error -> localMessage = error.message ?: "Не удалось прочитать буфер обмена." }
+        scope.launch {
+            readDesktopClipboardText().onSuccess { text ->
+                val install = text.trim().toDesktopSubscriptionInstallUriOrNull()
+                if (install != null) {
+                    onPrepareSubscription(install).fold(
+                        onSuccess = {
+                            onSubscriptionUrlChange(install.url)
+                            onUpdateSubscription()
+                            localMessage = "Подписка «${install.name}» добавлена."
+                        },
+                        onFailure = { error -> localMessage = error.message ?: "Не удалось сохранить подписку." },
+                    )
+                } else {
+                    onImport(DesktopProxyImportInput.Clipboard(text)).fold(
+                        onSuccess = { summary -> localMessage = summary },
+                        onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
+                    )
+                }
+            }.onFailure { error -> localMessage = error.message ?: "Не удалось прочитать буфер обмена." }
+        }
     }
     val importFromFile: () -> Unit = {
-        chooseDesktopImportFile().onSuccess { file ->
-            if (file != null) {
-                onImport(DesktopProxyImportInput.File(file.name, file.content)).fold(
-                    onSuccess = { summary -> localMessage = summary },
-                    onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
-                )
-            }
-        }.onFailure { error -> localMessage = error.message ?: "Не удалось прочитать файл." }
+        scope.launch {
+            chooseDesktopImportFile().onSuccess { file ->
+                if (file != null) {
+                    onImport(DesktopProxyImportInput.File(file.name, file.content)).fold(
+                        onSuccess = { summary -> localMessage = summary },
+                        onFailure = { error -> localMessage = error.message ?: "Не удалось импортировать." },
+                    )
+                }
+            }.onFailure { error -> localMessage = error.message ?: "Не удалось прочитать файл." }
+        }
     }
 
     val effectContext = DesktopProxyHomeEffectContext(
@@ -682,16 +687,19 @@ internal fun DesktopProxyHome(
             onClipboardImport = importFromClipboard,
             onFileImport = importFromFile,
             onConfirmImport = {
-                onImport(DesktopProxyImportInput.Text(importText)).fold(
-                    onSuccess = { summary ->
-                        localMessage = summary
-                        importDialogVisible = false
-                        importText = ""
-                    },
-                    onFailure = { error ->
-                        localMessage = error.message ?: "Ошибка импорта."
-                    },
-                )
+                val input = DesktopProxyImportInput.Text(importText)
+                scope.launch {
+                    onImport(input).fold(
+                        onSuccess = { summary ->
+                            localMessage = summary
+                            importDialogVisible = false
+                            importText = ""
+                        },
+                        onFailure = { error ->
+                            localMessage = error.message ?: "Ошибка импорта."
+                        },
+                    )
+                }
             },
             onDismiss = { importDialogVisible = false },
         )

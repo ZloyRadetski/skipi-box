@@ -7,71 +7,34 @@ import features.proxy.server.model.ProxyServer
 import features.subscription.SubscriptionMetadata
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopProxyImportCommitterTest {
     @Test
-    fun addsDirectServersAsManualAndPreservesTheSelectedExistingServer() {
-        val existingManual = proxy("manual.example", "Manual")
-        val subscriptionServer = proxy("subscription.example", "Subscription")
+    fun countsPlannedServerBatchesWithoutReturningADetachedCatalog() {
         val importedFirst = proxy("first.example", "First import")
         val importedSecond = proxy("second.example", "Second import")
-        val withManual = DesktopServerLibraries.add(DesktopServerLibrary(), existingManual)
-        val initial = DesktopServerLibraries.replaceSubscriptionServers(
-            withManual,
-            subscriptionId = 40,
-            servers = listOf(subscriptionServer),
-        )
-        val selected = DesktopServerLibraries.select(initial, serverId = 2)
+        val importedThird = proxy("third.example", "Third import")
 
         val result = DesktopProxyImportCommitter.commit(
             plan = DesktopProxyImportPlan(
                 source = DesktopProxyImportSource.Clipboard,
-                actions = listOf(DesktopProxyImportAction.AddServers(listOf(importedFirst, importedSecond))),
+                actions = listOf(
+                    DesktopProxyImportAction.AddServers(listOf(importedFirst, importedSecond)),
+                    DesktopProxyImportAction.AddServers(listOf(importedThird)),
+                ),
             ),
-            serverLibrary = selected,
             subscriptionLibrary = DesktopSubscriptionLibrary(),
             configLibrary = DesktopConfigLibrary(),
         )
 
-        assertEquals(2, result.counts.addedServers)
-        assertEquals(2, result.serverLibrary.selectedServerId)
-        assertEquals(4, result.serverLibrary.servers.size)
-        assertEquals(listOf("First import", "Second import"), result.serverLibrary.servers.take(2).map { stored ->
-            stored.decode().getOrThrow().getInfo().remarks
-        })
-        assertTrue(result.serverLibrary.servers.take(2).all { stored -> stored.subscriptionId == null })
-        assertEquals(40, result.serverLibrary.servers.single { it.id == 2 }.subscriptionId)
-    }
-
-    @Test
-    fun selectsTheFirstImportedServerWhenTheCurrentSelectionIsAbsent() {
-        val existing = proxy("existing.example", "Existing")
-        val imported = proxy("imported.example", "Imported")
-        val libraryWithMissingSelection = DesktopServerLibraries
-            .add(DesktopServerLibrary(), existing)
-            .copy(selectedServerId = 999)
-
-        val result = DesktopProxyImportCommitter.commit(
-            plan = DesktopProxyImportPlan(
-                source = DesktopProxyImportSource.Text,
-                actions = listOf(DesktopProxyImportAction.AddServers(listOf(imported))),
-            ),
-            serverLibrary = libraryWithMissingSelection,
-            subscriptionLibrary = DesktopSubscriptionLibrary(),
-            configLibrary = DesktopConfigLibrary(),
-        )
-
-        assertEquals(2, result.serverLibrary.selectedServerId)
-        assertEquals("Imported", result.serverLibrary.servers.first().decode().getOrThrow().getInfo().remarks)
+        assertEquals(3, result.counts.addedServers)
+        assertEquals(3, result.addedCount)
     }
 
     @Test
     fun appliesMixedActionsAndKeepsUnrelatedDataWhileReportingAddedAndUpdatedCounts() {
-        val existingManual = proxy("manual.example", "Existing manual")
         val imported = proxy("imported.example", "Imported")
-        val servers = DesktopServerLibraries.add(DesktopServerLibrary(), existingManual)
         val existingSubscription = DesktopSubscriptionLibraries.addOrReplace(
             library = DesktopSubscriptionLibrary(),
             url = "https://provider.example.com/existing",
@@ -118,7 +81,6 @@ class DesktopProxyImportCommitterTest {
                     ),
                 ),
             ),
-            serverLibrary = servers,
             subscriptionLibrary = existingSubscription,
             configLibrary = configs,
             subscriptionUserAgent = "Desktop import agent",
@@ -135,10 +97,6 @@ class DesktopProxyImportCommitterTest {
             "Добавлено: серверов: 1, подписок: 1, конфигов: 1; обновлено: подписок: 1, конфигов: 1.",
             result.summary,
         )
-
-        assertEquals(2, result.serverLibrary.servers.size)
-        assertNull(result.serverLibrary.servers.first().subscriptionId)
-        assertEquals("Existing manual", result.serverLibrary.servers.last().decode().getOrThrow().getInfo().remarks)
 
         val retainedSubscription = result.subscriptionLibrary.subscriptions.single { stored ->
             stored.url == "https://provider.example.com/existing"

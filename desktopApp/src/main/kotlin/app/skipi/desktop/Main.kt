@@ -686,16 +686,14 @@ fun main() = application {
                                 runCatching {
                                     proxyServerRepository.selectAndCommit(serverId)
                                 }
-                                    .onSuccess { updated ->
-                                        proxyServerRepository.persistIfChanged(updated).onSuccess {
-                                            serverLibrary = updated
-                                            serverLibraryMessage = "Сервер выбран."
-                                            if (coreState.isRunning) {
-                                                requestTunnelReconnect("Сервер изменён.")
-                                            }
-                                        }.onFailure { error ->
-                                            serverLibraryMessage = "Не удалось сохранить выбор: ${error.message.orEmpty()}"
+                                    .onSuccess {
+                                        serverLibraryMessage = "Сервер выбран."
+                                        if (coreState.isRunning) {
+                                            requestTunnelReconnect("Сервер изменён.")
                                         }
+                                    }
+                                    .onFailure { error ->
+                                        serverLibraryMessage = "Не удалось сохранить выбор: ${error.message.orEmpty()}"
                                     }
                             },
                             onDeleteServer = { serverId ->
@@ -822,20 +820,42 @@ fun main() = application {
                                 }
                             },
                             onImport = import@{ input ->
-                                val selectedServerBefore = serverLibrary.selectedServerId
-                                val plan = DesktopProxyImportPlanner.plan(
-                                    input = input,
-                                    existing = DesktopProxyImportExisting(
-                                        serverFingerprints = serverLibrary.servers.mapNotNull { stored ->
-                                            stored.decode().getOrNull()?.connectionFingerprint()
-                                        }.toSet(),
-                                        subscriptionUrls = subscriptionLibrary.subscriptions.mapTo(mutableSetOf()) { it.url },
-                                        configContents = configLibrary.configs.mapTo(mutableSetOf()) { it.content },
-                                        serverDuplicatePolicy = DesktopProxyImportDuplicatePolicy.KeepExistingAndRepeated,
-                                        subscriptionDuplicatePolicy =
-                                            DesktopProxyImportDuplicatePolicy.KeepExistingDeduplicateRepeated,
-                                    ),
+                                val importDeviceHeaders = if (desktopSettings.sendDeviceHeaders) {
+                                    DesktopDeviceIdentity.deviceHeaders(desktopSettings.installationUuid)
+                                } else emptyMap()
+                                val importTimeout = Duration.ofSeconds(
+                                    desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
                                 )
+                                val plan = try {
+                                    DesktopProxyImportPlanner.planWithProviderFetcher(
+                                        input = input,
+                                        existing = DesktopProxyImportExisting(
+                                            serverFingerprints = serverLibrary.servers.mapNotNull { stored ->
+                                                stored.decode().getOrNull()?.connectionFingerprint()
+                                            }.toSet(),
+                                            subscriptionUrls = subscriptionLibrary.subscriptions.mapTo(mutableSetOf()) { it.url },
+                                            configContents = configLibrary.configs.mapTo(mutableSetOf()) { it.content },
+                                            serverDuplicatePolicy = DesktopProxyImportDuplicatePolicy.KeepExistingAndRepeated,
+                                            subscriptionDuplicatePolicy =
+                                                DesktopProxyImportDuplicatePolicy.KeepExistingDeduplicateRepeated,
+                                        ),
+                                        providerUrlFetcher = { providerUrl ->
+                                            withContext(Dispatchers.IO) {
+                                                subscriptionFetcher.fetch(
+                                                    url = providerUrl,
+                                                    userAgent = "",
+                                                    timeout = importTimeout,
+                                                    proxy = null,
+                                                    deviceHeaders = importDeviceHeaders,
+                                                ).body
+                                            }
+                                        },
+                                    )
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (error: Throwable) {
+                                    return@import Result.failure(error)
+                                }
                                 val errors = plan.diagnostics.filter { diagnostic ->
                                     diagnostic.severity == DesktopProxyImportDiagnosticSeverity.Error
                                 }
@@ -846,17 +866,28 @@ fun main() = application {
                                 }
                                 val committed = DesktopProxyImportCommitter.commit(
                                     plan = plan,
-                                    serverLibrary = serverLibrary,
                                     subscriptionLibrary = subscriptionLibrary,
                                     configLibrary = configLibrary,
                                     subscriptionUserAgent = desktopSettings.subscriptionUserAgent,
                                 )
                                 val savedSections = mutableListOf<String>()
+                                var importedServerSelectionChanged = false
                                 try {
-                                    if (committed.serverLibrary != serverLibrary) {
-                                        DesktopServerLibraries.saveDefault(committed.serverLibrary).getOrThrow()
-                                        serverLibrary = committed.serverLibrary
-                                        savedSections += "серверы"
+                                    if (plan.servers.isNotEmpty()) {
+                                        val selectedServerBefore = serverLibrary.selectedServerId
+                                        val actionResult = desktopSharedApplication.store.dispatchAndAwaitInStoreScope(
+                                            SharedApplicationAction.ImportProxyServerBatch(plan.servers),
+                                        )
+                                        when (val outcome = actionResult.outcome) {
+                                            SharedApplicationActionOutcome.Completed -> savedSections += "серверы"
+                                            is SharedApplicationActionOutcome.Rejected ->
+                                                throw IllegalStateException(outcome.reason)
+
+                                            is SharedApplicationActionOutcome.Failed ->
+                                                throw IllegalStateException(outcome.reason)
+                                        }
+                                        importedServerSelectionChanged =
+                                            serverLibrary.selectedServerId != selectedServerBefore
                                     }
                                     if (committed.subscriptionLibrary != subscriptionLibrary) {
                                         DesktopSubscriptionLibraries.saveDefault(committed.subscriptionLibrary).getOrThrow()
@@ -872,6 +903,8 @@ fun main() = application {
                                             requestTunnelReconnect("Импорт изменил активный профиль.")
                                         }
                                     }
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
                                 } catch (error: Throwable) {
                                     val prefix = if (savedSections.isEmpty()) {
                                         "Импорт не сохранён"
@@ -882,9 +915,7 @@ fun main() = application {
                                         IllegalStateException("$prefix: ${error.message.orEmpty()}", error),
                                     )
                                 }
-                                if (coreState.isRunning &&
-                                    committed.serverLibrary.selectedServerId != selectedServerBefore
-                                ) {
+                                if (coreState.isRunning && importedServerSelectionChanged) {
                                     requestTunnelReconnect("Импорт изменил выбранный сервер.")
                                 }
                                 val diagnostics = plan.diagnostics
@@ -1054,75 +1085,93 @@ fun main() = application {
                                             return@launch
                                         }
 
-                                        val saveServers = if (readyCommit.serverGroupWasReplaced) {
-                                            DesktopServerLibraries.saveDefault(readyCommit.servers)
-                                        } else {
-                                            Result.success(Unit)
-                                        }
-                                        saveServers.onSuccess {
-                                            subscriptionLibrary = readyCommit.subscriptions
-                                            serverLibrary = readyCommit.servers
-                                            subscriptionUrl = requestedUrl
-                                            subscriptionUpdate = update
-                                            subscriptionMessage = if (readyCommit.serverGroupWasReplaced) {
-                                                "Серверы обновлены: ${update.importResult.servers.size}. " +
-                                                    "Отклонено ссылок: ${update.importResult.rejectedUrlCount}."
-                                            } else {
-                                                "Подписка обновлена, но её группа серверов была изменена во время загрузки и сохранена без замены."
-                                            }
-                                            update.importDiagnostics.take(2).joinToString(" ")
-                                                .takeIf(String::isNotBlank)
-                                                ?.let { diagnostics -> subscriptionMessage += " $diagnostics" }
-                                            val embeddedConfigMessage = refreshAttempt.resolvedEmbeddedConfig.fold(
-                                                onSuccess = { embedded ->
-                                                    embedded?.let { resolved ->
-                                                        when (val profileCommit = DesktopSubscriptionRefreshCommitter.rebaseEmbeddedProfile(
-                                                            baseline = refreshBaseline,
-                                                            latestConfigs = configLibrary,
-                                                            subscription = readyCommit.subscription,
-                                                            metadata = update.metadata,
-                                                            resolved = resolved,
-                                                            nowMillis = System.currentTimeMillis(),
-                                                        )) {
-                                                            is DesktopSubscriptionRefreshProfileCommit.Applied -> {
-                                                                val activeBefore = configLibrary.selectedConfigId
-                                                                DesktopConfigLibraries.saveDefault(profileCommit.configs).fold(
-                                                                    onSuccess = {
-                                                                        configLibrary = profileCommit.configs
-                                                                        if (coreState.isRunning && activeBefore != profileCommit.configs.selectedConfigId) {
-                                                                            requestTunnelReconnect("Профиль из подписки активирован.")
-                                                                        }
-                                                                        " Маршрутный профиль ${if (profileCommit.added) "добавлен" else "обновлён"}."
-                                                                    },
-                                                                    onFailure = { error ->
-                                                                        " Маршрутный профиль из подписки не сохранён: ${error.message.orEmpty()}."
-                                                                    },
-                                                                )
-                                                            }
+                                        val appliedServerCommit = runCatching {
+                                            var rebasedCommit: DesktopSubscriptionRefreshServerCommit.Ready? = null
+                                            proxyServerRepository.updateLibrary { latestServers ->
+                                                when (val rebased = DesktopSubscriptionRefreshCommitter.rebaseServers(
+                                                    baseline = refreshBaseline,
+                                                    latestSubscriptions = subscriptionLibrary,
+                                                    latestServers = latestServers,
+                                                    url = requestedUrl,
+                                                    userAgent = subscription?.userAgent.orEmpty(),
+                                                    name = update.metadata.profileTitle.orEmpty(),
+                                                    metadata = update.metadata,
+                                                    importedServers = update.importResult.servers,
+                                                )) {
+                                                    is DesktopSubscriptionRefreshServerCommit.Conflict ->
+                                                        throw IllegalStateException(rebased.message)
 
-                                                            DesktopSubscriptionRefreshProfileCommit.Conflict ->
-                                                                " Маршрутный профиль из подписки не обновлён: профиль изменился во время загрузки."
-
-                                                            DesktopSubscriptionRefreshProfileCommit.Locked ->
-                                                                " Маршрутный профиль из подписки не обновлён: обновление заблокировано."
-
-                                                            is DesktopSubscriptionRefreshProfileCommit.Invalid ->
-                                                                " Маршрутный профиль из подписки не применён: ${profileCommit.message}."
-                                                        }
+                                                    is DesktopSubscriptionRefreshServerCommit.Ready -> {
+                                                        rebasedCommit = rebased
+                                                        rebased.servers
                                                     }
-                                                },
-                                                onFailure = { error ->
-                                                    " Маршрутный профиль из подписки не загружен: ${error.message.orEmpty()}."
-                                                },
-                                            ).orEmpty()
-                                            subscriptionMessage += embeddedConfigMessage
-                                            if (coreState.isRunning) {
-                                                requestTunnelReconnect("Подписка обновлена.")
+                                                }
                                             }
-                                        }.onFailure { error ->
+                                            checkNotNull(rebasedCommit) { "Subscription server rebase did not complete" }
+                                        }.getOrElse { error ->
                                             subscriptionLibrary = readyCommit.subscriptions
                                             subscriptionUrl = requestedUrl
                                             subscriptionMessage = "Подписка сохранена, но серверы не обновлены: ${error.message.orEmpty()}"
+                                            return@launch
+                                        }
+
+                                        subscriptionLibrary = appliedServerCommit.subscriptions
+                                        subscriptionUrl = requestedUrl
+                                        subscriptionUpdate = update
+                                        subscriptionMessage = if (appliedServerCommit.serverGroupWasReplaced) {
+                                            "Серверы обновлены: ${update.importResult.servers.size}. " +
+                                                "Отклонено ссылок: ${update.importResult.rejectedUrlCount}."
+                                        } else {
+                                            "Подписка обновлена, но её группа серверов была изменена во время загрузки и сохранена без замены."
+                                        }
+                                        update.importDiagnostics.take(2).joinToString(" ")
+                                            .takeIf(String::isNotBlank)
+                                            ?.let { diagnostics -> subscriptionMessage += " $diagnostics" }
+                                        val embeddedConfigMessage = refreshAttempt.resolvedEmbeddedConfig.fold(
+                                            onSuccess = { embedded ->
+                                                embedded?.let { resolved ->
+                                                    when (val profileCommit = DesktopSubscriptionRefreshCommitter.rebaseEmbeddedProfile(
+                                                        baseline = refreshBaseline,
+                                                        latestConfigs = configLibrary,
+                                                        subscription = appliedServerCommit.subscription,
+                                                        metadata = update.metadata,
+                                                        resolved = resolved,
+                                                        nowMillis = System.currentTimeMillis(),
+                                                    )) {
+                                                        is DesktopSubscriptionRefreshProfileCommit.Applied -> {
+                                                            val activeBefore = configLibrary.selectedConfigId
+                                                            DesktopConfigLibraries.saveDefault(profileCommit.configs).fold(
+                                                                onSuccess = {
+                                                                    configLibrary = profileCommit.configs
+                                                                    if (coreState.isRunning && activeBefore != profileCommit.configs.selectedConfigId) {
+                                                                        requestTunnelReconnect("Профиль из подписки активирован.")
+                                                                    }
+                                                                    " Маршрутный профиль ${if (profileCommit.added) "добавлен" else "обновлён"}."
+                                                                },
+                                                                onFailure = { error ->
+                                                                    " Маршрутный профиль из подписки не сохранён: ${error.message.orEmpty()}."
+                                                                },
+                                                            )
+                                                        }
+
+                                                        DesktopSubscriptionRefreshProfileCommit.Conflict ->
+                                                            " Маршрутный профиль из подписки не обновлён: профиль изменился во время загрузки."
+
+                                                        DesktopSubscriptionRefreshProfileCommit.Locked ->
+                                                            " Маршрутный профиль из подписки не обновлён: обновление заблокировано."
+
+                                                        is DesktopSubscriptionRefreshProfileCommit.Invalid ->
+                                                            " Маршрутный профиль из подписки не применён: ${profileCommit.message}."
+                                                    }
+                                                }
+                                            },
+                                            onFailure = { error ->
+                                                " Маршрутный профиль из подписки не загружен: ${error.message.orEmpty()}."
+                                            },
+                                        ).orEmpty()
+                                        subscriptionMessage += embeddedConfigMessage
+                                        if (coreState.isRunning) {
+                                            requestTunnelReconnect("Подписка обновлена.")
                                         }
                                         } finally {
                                             subscriptionUpdateInProgress = false

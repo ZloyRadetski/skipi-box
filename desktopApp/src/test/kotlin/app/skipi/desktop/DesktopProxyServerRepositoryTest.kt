@@ -224,6 +224,43 @@ class DesktopProxyServerRepositoryTest {
     }
 
     @Test
+    fun sharedManualBatchUsesLatestHighWaterPrependsInOrderAndKeepsExistingSelection() = runBlocking {
+        val afterDeletingHighestId = DesktopServerLibraries.remove(
+            library = DesktopServerLibraries.add(
+                library = DesktopServerLibraries.add(
+                    library = DesktopServerLibrary(),
+                    server = HTTP(remarks = "Remaining", server = "remaining.example"),
+                ),
+                server = HTTP(remarks = "Deleted highest", server = "deleted.example"),
+            ),
+            serverId = 2,
+        )
+        val fixture = RepositoryFixture(afterDeletingHighestId)
+        val imported = listOf(
+            HTTP(remarks = "Imported one", server = "import-one.example"),
+            HTTP(remarks = "Imported two", server = "import-two.example"),
+        )
+
+        fixture.repository.updateCatalog { current ->
+            importProxyServerRecordBatch(
+                catalog = current,
+                importedServers = imported,
+            )
+        }
+
+        val result = fixture.persistedLibrary
+        assertEquals(listOf(3, 4, 1), result.servers.map(DesktopStoredProxyServer::id))
+        assertEquals(listOf(3, 4, 1), fixture.repository.servers.value.map(ProxyServerRecord::id))
+        assertEquals(listOf("Imported one", "Imported two"), result.servers.take(2).map { stored ->
+            stored.decode().getOrThrow().getInfo().remarks
+        })
+        assertTrue(result.servers.take(2).all { it.subscriptionId == null })
+        assertEquals(1, result.servers.last().id)
+        assertEquals(1, result.selectedServerId)
+        assertEquals(5, result.nextServerId)
+    }
+
+    @Test
     fun sharedEditReplacesTheServerInPlaceAndPreservesItsAssociation() = runBlocking {
         val initial = serverLibrary(
             selectedServerId = 9,

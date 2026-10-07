@@ -7,9 +7,6 @@ import androidx.compose.ui.platform.Clipboard
 import app.AppState
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
-import app.skipi.app.model.ProxyServerRecord as SharedProxyServerRecord
-import app.skipi.app.proxy.ProxyServerRecord as CollectionProxyServerRecord
-import app.skipi.app.proxy.importProxyServerRecords
 import app.skipi.app.server.createProxyServerEditorDraft
 import app.ProxyServerListState
 import app.ProxyServerState
@@ -243,7 +240,6 @@ private suspend fun importProxyServers(
     // Clipboard, QR and file imports are all explicit user additions. A
     // subscription is installed through its own flow above; anything reaching
     // this point belongs to the permanent manual-server group.
-    val targetGroupId = DefaultSubscriptionGroupId
     val importResult = importProxyServersFromText(
         text = text,
         source = source,
@@ -259,32 +255,13 @@ private suspend fun importProxyServers(
         },
     )
     if (importResult.servers.isNotEmpty()) {
-        stateStore.proxyServerRepository.updateCatalog { catalog ->
-            importProxyServerRecords(
-                servers = catalog.servers.map { record ->
-                    CollectionProxyServerRecord(
-                        id = record.id,
-                        groupId = record.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
-                        server = record.server,
-                    )
-                },
-                imported = importResult.servers,
-                groupId = targetGroupId,
-                nextServerId = catalog.nextServerId,
-                selectedServerId = catalog.selectedServerId,
-            ).let { collection ->
-                app.skipi.app.model.ProxyServerCatalog(
-                    servers = collection.servers.map { record ->
-                        SharedProxyServerRecord(
-                            id = record.id,
-                            server = record.server,
-                            sourceSubscriptionId = record.groupId.takeIf { it != DefaultSubscriptionGroupId },
-                        )
-                    },
-                    nextServerId = collection.nextServerId,
-                    selectedServerId = collection.selectedServerId,
-                )
-            }
+        val actionResult = stateStore.sharedApplicationStore.dispatchAndAwaitInStoreScope(
+            SharedApplicationAction.ImportProxyServerBatch(importResult.servers),
+        )
+        when (val outcome = actionResult.outcome) {
+            SharedApplicationActionOutcome.Completed -> Unit
+            is SharedApplicationActionOutcome.Rejected -> throw IllegalStateException(outcome.reason)
+            is SharedApplicationActionOutcome.Failed -> throw IllegalStateException(outcome.reason)
         }
     }
     tipNotifier.show(

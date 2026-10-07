@@ -29,28 +29,6 @@ class DesktopServerIdAllocationTest {
     }
 
     @Test
-    fun importAfterDeletingHighestIdUsesHighWaterMarkAndKeepsExistingIds() {
-        val existing = libraryAfterDeletingHighestId()
-        val result = DesktopProxyImportCommitter.commit(
-            plan = DesktopProxyImportPlan(
-                source = DesktopProxyImportSource.Text,
-                actions = listOf(
-                    DesktopProxyImportAction.AddServers(
-                        listOf(proxy("import-one.example", "Imported one"), proxy("import-two.example", "Imported two")),
-                    ),
-                ),
-            ),
-            serverLibrary = existing,
-            subscriptionLibrary = DesktopSubscriptionLibrary(),
-            configLibrary = DesktopConfigLibrary(),
-        ).serverLibrary
-
-        assertEquals(existing.servers.single(), result.servers.single { it.id == 1 })
-        assertEquals(listOf(3, 4), result.servers.filter { it.id != 1 }.map { it.id })
-        assertEquals(1, result.selectedServerId)
-    }
-
-    @Test
     fun subscriptionReplacementUsesHighWaterMarkAndKeepsUnchangedIds() {
         val existing = libraryAfterDeletingHighestId()
         val updated = DesktopServerLibraries.replaceSubscriptionServers(

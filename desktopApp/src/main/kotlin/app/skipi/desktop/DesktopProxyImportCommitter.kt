@@ -3,27 +3,20 @@
 
 package app.skipi.desktop
 
-import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.encodePersistedProxyServer
-
 /**
- * Applies a previously reviewed [DesktopProxyImportPlan] entirely in memory.
+ * Applies the non-server mutations from a previously reviewed [DesktopProxyImportPlan].
  *
- * The planner owns parsing and duplicate diagnostics; this layer owns the
- * Android-compatible local mutations.  In particular, direct links always
- * become manual servers and never acquire a subscription id.  Persistence is
- * deliberately left to the caller so the three libraries can be saved as one
- * UI operation.
+ * The planner owns parsing and duplicate diagnostics. Server batches are counted
+ * here but committed by the shared application store so IDs come from its latest
+ * catalog snapshot rather than a detached library captured before import.
  */
 object DesktopProxyImportCommitter {
     fun commit(
         plan: DesktopProxyImportPlan,
-        serverLibrary: DesktopServerLibrary,
         subscriptionLibrary: DesktopSubscriptionLibrary,
         configLibrary: DesktopConfigLibrary,
         subscriptionUserAgent: String = DefaultDesktopSubscriptionUserAgent,
     ): DesktopProxyImportCommitResult {
-        var nextServers = serverLibrary
         var nextSubscriptions = subscriptionLibrary
         var nextConfigs = configLibrary
         var addedServers = 0
@@ -35,22 +28,7 @@ object DesktopProxyImportCommitter {
         plan.actions.forEach { action ->
             when (action) {
                 is DesktopProxyImportAction.AddServers -> {
-                    val imported = action.servers.toManualStoredServers(nextServers)
-                    if (imported.isNotEmpty()) {
-                        // Android prepends imported servers and retains the existing
-                        // choice whenever it still points to a real server.
-                        val mergedServers = imported + nextServers.servers
-                        nextServers = nextServers.copy(
-                            selectedServerId = nextServers.selectedServerId
-                                ?.takeIf { selectedId ->
-                                    mergedServers.any { stored -> stored.id == selectedId }
-                                }
-                                ?: mergedServers.firstOrNull()?.id,
-                            servers = mergedServers,
-                            nextServerId = maxOf(nextServers.effectiveNextServerId, nextIdAfter(mergedServers)),
-                        )
-                        addedServers += imported.size
-                    }
+                    addedServers += action.servers.size
                 }
 
                 is DesktopProxyImportAction.AddSubscription -> {
@@ -81,7 +59,6 @@ object DesktopProxyImportCommitter {
         }
 
         return DesktopProxyImportCommitResult(
-            serverLibrary = nextServers,
             subscriptionLibrary = nextSubscriptions,
             configLibrary = nextConfigs,
             counts = DesktopProxyImportCommitCounts(
@@ -130,7 +107,6 @@ data class DesktopProxyImportCommitCounts(
 }
 
 data class DesktopProxyImportCommitResult(
-    val serverLibrary: DesktopServerLibrary,
     val subscriptionLibrary: DesktopSubscriptionLibrary,
     val configLibrary: DesktopConfigLibrary,
     val counts: DesktopProxyImportCommitCounts,
@@ -144,20 +120,6 @@ data class DesktopProxyImportCommitResult(
     /** Short user-facing text suitable for the desktop snackbar. */
     val summary: String
         get() = counts.summary
-}
-
-private fun List<ProxyServer<*>>.toManualStoredServers(
-    library: DesktopServerLibrary,
-): List<DesktopStoredProxyServer> {
-    var nextId = library.effectiveNextServerId
-    return map { server ->
-        check(nextId < Int.MAX_VALUE) { "No desktop server IDs remain" }
-        DesktopStoredProxyServer(
-            id = nextId++,
-            serverJson = server.encodePersistedProxyServer(),
-            subscriptionId = null,
-        )
-    }
 }
 
 private fun DesktopConfigLibrary.wouldReplace(action: DesktopProxyImportAction.AddConfig): Boolean {
