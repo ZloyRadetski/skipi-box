@@ -116,7 +116,7 @@ fun ProxyServerPage(
         if (psEdit is StrategyGroup) {
             psEdit.proxyServerIds = strategyGroupMemberIds
         }
-        if (resultKey != null && serverId != null) {
+        if (resultKey != null) {
             navigator.setResult(
                 resultKey,
                 ProxyServerEditResult(serverId, psEdit, groupId = groupId, returnGroupId = returnGroupId),

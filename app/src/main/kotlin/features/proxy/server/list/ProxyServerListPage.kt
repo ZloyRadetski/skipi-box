@@ -781,7 +781,6 @@ fun ProxyServerListPage(
                         handleProxyServerListAddAction(
                             action = action,
                             groupState = groupState,
-                            proxyListState = proxyListState,
                             stateStore = stateStore,
                             updateAppState = updateAppState,
                             navigator = navigator,
@@ -813,7 +812,6 @@ fun ProxyServerListPage(
                         handleProxyServerListAddAction(
                             action = action,
                             groupState = groupState,
-                            proxyListState = proxyListState,
                             stateStore = stateStore,
                             updateAppState = updateAppState,
                             navigator = navigator,

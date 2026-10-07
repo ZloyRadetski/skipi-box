@@ -15,6 +15,7 @@ import app.skipi.app.repository.AppRepositories
 import app.skipi.app.runtime.AppRuntimeState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -144,6 +145,20 @@ class SharedApplicationStore(
         val actionId = nextActionId.getAndUpdate { it + 1 }
         mutableState.update { it.copy(inFlightActionIds = it.inFlightActionIds + actionId) }
         return performAction(actionId, action)
+    }
+
+    /**
+     * Enqueues an action in the store scope and awaits its result. The queued action belongs to
+     * the store lifetime rather than the host observer that awaits it, so cancelling a screen or
+     * result observer does not discard an already-consumed editor result. Cancelling the store
+     * scope still cancels the action.
+     */
+    suspend fun dispatchAndAwaitInStoreScope(
+        action: SharedApplicationAction,
+    ): SharedApplicationActionResult {
+        val actionId = nextActionId.getAndUpdate { it + 1 }
+        mutableState.update { it.copy(inFlightActionIds = it.inFlightActionIds + actionId) }
+        return scope.async { performAction(actionId, action) }.await()
     }
 
     private suspend fun performAction(actionId: Long, action: SharedApplicationAction): SharedApplicationActionResult {

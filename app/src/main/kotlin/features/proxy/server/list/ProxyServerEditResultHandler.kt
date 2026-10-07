@@ -5,10 +5,9 @@ package features.proxy.server.list
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import app.skipi.app.model.ProxyServerRecord
-import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.server.ProxyServerEditApplyOutcome
+import app.skipi.app.server.applyProxyServerEditResult
 import app.skipi.app.store.SharedApplicationStore
-import features.subscription.DefaultSubscriptionGroupId
 import app.navigation.Navigator
 import app.navigation.ProxyServerEditResult
 import ui.feedback.AndroidToastTipNotifier
@@ -23,32 +22,38 @@ internal fun ProxyServerEditResultHandler(
     tipNotifier: AndroidToastTipNotifier,
     onSelectedGroupIdChange: (Int) -> Unit,
 ) {
-    LaunchedEffect(navigator, tipNotifier, messages.savedTemplate, messages.joinedTemplate, messages.deletedTemplate) {
+    LaunchedEffect(
+        navigator,
+        tipNotifier,
+        sharedApplicationStore,
+        messages.savedTemplate,
+        messages.joinedTemplate,
+        messages.deletedTemplate,
+        onSelectedGroupIdChange,
+    ) {
         navigator.observeResult<ProxyServerEditResult>(resultKey).collect { result ->
             navigator.clearResult(resultKey)
-            if (result.deleted) {
-                sharedApplicationStore.dispatch(SharedApplicationAction.RemoveProxyServer(result.serverId))
-                tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
-                return@collect
-            }
-            val existing = sharedApplicationStore.state.value.proxyServers.firstOrNull { it.id == result.serverId }
-            val wasExisting = existing != null
-            val existingGroupId = existing?.sourceSubscriptionId
-            sharedApplicationStore.dispatch(
-                SharedApplicationAction.UpsertProxyServer(
-                    ProxyServerRecord(
-                        id = result.serverId,
-                        server = result.server,
-                        sourceSubscriptionId = result.groupId,
-                    ),
-                ),
-            )
-            if (wasExisting) {
-                onSelectedGroupIdChange(result.returnGroupId ?: existingGroupId ?: DefaultSubscriptionGroupId)
-                tipNotifier.show(messages.savedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
-            } else if (result.groupId != null) {
-                onSelectedGroupIdChange(result.returnGroupId ?: result.groupId)
-                tipNotifier.show(messages.joinedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
+            when (
+                val outcome = applyProxyServerEditResult(
+                    result = result,
+                    store = sharedApplicationStore,
+                    defaultGroupId = features.subscription.DefaultSubscriptionGroupId,
+                )
+            ) {
+                is ProxyServerEditApplyOutcome.Saved -> {
+                    outcome.selectedGroupId?.let(onSelectedGroupIdChange)
+                    if (outcome.wasExistingAtCommit) {
+                        tipNotifier.show(messages.savedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
+                    } else if (result.groupId != null) {
+                        tipNotifier.show(messages.joinedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
+                    }
+                }
+                ProxyServerEditApplyOutcome.Deleted -> {
+                    tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to result.server.getInfo().remarks))
+                }
+                is ProxyServerEditApplyOutcome.Failed -> {
+                    tipNotifier.showError(IllegalStateException(outcome.reason))
+                }
             }
         }
     }

@@ -58,8 +58,9 @@ import app.LocalUpdateAppState
 import app.ProxyServerState
 import app.R
 import app.collectAppState
-import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.server.ProxyServerEditApplyOutcome
+import app.skipi.app.server.applyProxyServerEditResult
 import app.skipi.ui.config.SkipiTrafficConfigScreen
 import app.skipi.ui.config.SkipiTrafficConfigContextMenu
 import app.skipi.ui.config.SkipiTrafficConfigProxyGroupContextMenu
@@ -73,6 +74,7 @@ import features.proxy.server.editor.editableCopy
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.StrategyGroup
 import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.usecase.toSubscriptionFetchOptions
@@ -148,21 +150,22 @@ fun TrafficConfigPage(
     LaunchedEffect(navigator) {
         navigator.observeResult<ProxyServerEditResult>(ConfigProxyGroupEditResultKey).collect { result ->
             navigator.clearResult(ConfigProxyGroupEditResultKey)
-            if (result.deleted) {
-                services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveProxyServer(result.serverId))
-                val remarks = result.server.getInfo().remarks.ifBlank { result.server.getInfo().protocol }
-                services.tipNotifier.show(context.getString(R.string.proxy_server_list_deleted).formatTemplate("name" to remarks))
-                return@collect
+            when (
+                val outcome = applyProxyServerEditResult(
+                    result = result,
+                    store = services.sharedApplicationStore,
+                    defaultGroupId = DefaultSubscriptionGroupId,
+                )
+            ) {
+                is ProxyServerEditApplyOutcome.Saved -> Unit
+                ProxyServerEditApplyOutcome.Deleted -> {
+                    val remarks = result.server.getInfo().remarks.ifBlank { result.server.getInfo().protocol }
+                    services.tipNotifier.show(context.getString(R.string.proxy_server_list_deleted).formatTemplate("name" to remarks))
+                }
+                is ProxyServerEditApplyOutcome.Failed -> {
+                    services.tipNotifier.showError(IllegalStateException(outcome.reason))
+                }
             }
-            services.sharedApplicationStore.dispatch(
-                SharedApplicationAction.UpsertProxyServer(
-                    ProxyServerRecord(
-                        id = result.serverId,
-                        server = result.server,
-                        sourceSubscriptionId = AutoBalancerGroupId,
-                    ),
-                ),
-            )
         }
     }
 
@@ -291,11 +294,10 @@ fun TrafficConfigPage(
     }
 
     fun createProxyGroup() {
-        val serverId = appState.nextProxyServerId
         navigator.navigateForResult(
             route = Route.ProxyServerEditor(
                 ps = StrategyGroup(),
-                serverId = serverId,
+                serverId = null,
                 groupId = AutoBalancerGroupId,
                 returnGroupId = AutoBalancerGroupId,
                 resultKey = ConfigProxyGroupEditResultKey,
@@ -306,7 +308,7 @@ fun TrafficConfigPage(
 
     fun openProxyGroupEditor(
         server: StrategyGroup,
-        serverId: Int,
+        serverId: Int?,
     ) {
         navigator.navigateForResult(
             route = Route.ProxyServerEditor(
@@ -329,7 +331,7 @@ fun TrafficConfigPage(
         )
         openProxyGroupEditor(
             server = duplicate,
-            serverId = appState.nextProxyServerId,
+            serverId = null,
         )
     }
 

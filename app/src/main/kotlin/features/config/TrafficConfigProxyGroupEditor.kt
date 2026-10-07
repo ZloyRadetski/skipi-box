@@ -63,16 +63,18 @@ internal fun TrafficConfigProxyGroupsPage(
         navigator.observeResult<ProxyServerEditResult>(proxyGroupResultKey).collect { result ->
             navigator.clearResult(proxyGroupResultKey)
             if (result.deleted) {
-                if (result.serverId > 0) {
-                    updateRaw(config.rawConfig.withoutShadowrocketProxyGroupLine(result.serverId))
+                val serverId = result.serverId
+                if (serverId != null && serverId > 0) {
+                    updateRaw(config.rawConfig.withoutShadowrocketProxyGroupLine(serverId))
                 }
                 return@collect
             }
             val strategy = result.server as? StrategyGroup ?: return@collect
             if (strategy.remarks.isBlank()) return@collect
             val line = strategy.toShadowrocketLine(serverChoices)
-            if (result.serverId > 0) {
-                updateRaw(config.rawConfig.withShadowrocketProxyGroupLine(result.serverId, line))
+            val serverId = result.serverId
+            if (serverId != null && serverId > 0) {
+                updateRaw(config.rawConfig.withShadowrocketProxyGroupLine(serverId, line))
             } else {
                 updateRaw(config.rawConfig.withShadowrocketProxyGroupAdded(line))
             }

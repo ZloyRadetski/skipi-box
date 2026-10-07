@@ -67,7 +67,6 @@ internal val ProxyServerListToolAction.deletionConfirmationTitleResId: Int
 internal fun handleProxyServerListAddAction(
     action: ProxyServerListAddAction,
     groupState: ProxyServerListGroups,
-    proxyListState: ProxyServerListState,
     stateStore: AndroidAppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     navigator: Navigator,
@@ -143,11 +142,10 @@ internal fun handleProxyServerListAddAction(
         }
 
         else -> {
-            val serverId = proxyListState.nextProxyServerId
             navigator.navigateForResult(
                 route = Route.ProxyServerEditor(
                     ps = createProxyServer(action),
-                    serverId = serverId,
+                    serverId = null,
                     groupId = if (action == ProxyServerListAddAction.StrategyGroup) {
                         AutoBalancerGroupId
                     } else {
@@ -691,4 +689,3 @@ private fun deleteDuplicateServers(
         )
     }
 }
-

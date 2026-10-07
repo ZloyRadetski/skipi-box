@@ -175,13 +175,7 @@ enum class TrafficConfigEditorSection {
     RoutingRules,
 }
 
-data class ProxyServerEditResult(
-    val serverId: Int,
-    val server: ProxyServer<*>,
-    val groupId: Int? = null,
-    val returnGroupId: Int? = null,
-    val deleted: Boolean = false,
-)
+typealias ProxyServerEditResult = app.skipi.app.server.ProxyServerEditResult
 
 data class StrategyGroupMemberSelectionResult(
     val serverIds: List<Int>,
