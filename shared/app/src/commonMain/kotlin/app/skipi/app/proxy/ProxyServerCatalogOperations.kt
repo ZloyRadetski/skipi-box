@@ -36,6 +36,41 @@ fun createProxyServerRecord(
     )
 }
 
+/** Imports an ordered batch at the front of the catalog using its current ID high-water marks. */
+fun importProxyServerRecordBatch(
+    catalog: ProxyServerCatalog,
+    importedServers: List<ProxyServer<*>>,
+    sourceSubscriptionId: Int? = null,
+): ProxyServerCatalog {
+    if (importedServers.isEmpty()) return catalog
+
+    require(catalog.nextServerId > 0) { "Next proxy server ID must be positive" }
+
+    val firstServerId = maxOf(
+        catalog.nextServerId,
+        nextServerIdAfter(catalog.servers, catalog.retainedServerIds),
+    )
+    val nextServerIdLong = firstServerId.toLong() + importedServers.size.toLong()
+    check(firstServerId < Int.MAX_VALUE && nextServerIdLong <= Int.MAX_VALUE.toLong()) {
+        "No proxy server IDs remain"
+    }
+
+    val importedRecords = importedServers.mapIndexed { index, server ->
+        ProxyServerRecord(
+            id = (firstServerId.toLong() + index.toLong()).toInt(),
+            server = server,
+            sourceSubscriptionId = sourceSubscriptionId,
+        )
+    }
+    return catalog.copy(
+        servers = importedRecords + catalog.servers,
+        nextServerId = nextServerIdLong.toInt(),
+        selectedServerId = catalog.selectedServerId.takeIf { selectedId ->
+            catalog.containsServerId(selectedId)
+        } ?: firstServerId,
+    )
+}
+
 /** Replaces a server in place; a removed row is restored at the front with its captured identity. */
 fun editProxyServerRecord(
     catalog: ProxyServerCatalog,
