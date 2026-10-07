@@ -2,6 +2,7 @@
 
 package app.skipi.desktop
 
+import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Hysteria2
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Shadowsocks
@@ -150,7 +151,133 @@ class DesktopMihomoPayloadImporterTest {
     }
 
     @Test
-    fun deDuplicatesEquivalentNodesAcrossTheRootAndProvider() {
+    fun nonemptyHttpProviderBodyReplacesInlineFallbackAndKeepsRootOrder() {
+        val providerUrl = "https://provider.example.com/remote.yaml"
+        val result = DesktopMihomoPayloadImporter.import(
+            text = """
+                proxies:
+                  - name: Root node
+                    type: socks
+                    server: root.example.com
+                    port: 1080
+                proxy-providers:
+                  remote:
+                    type: http
+                    url: $providerUrl
+                    payload:
+                      - name: Inline fallback
+                        type: socks
+                        server: inline.example.com
+                        port: 1080
+            """.trimIndent(),
+            providerPayloads = mapOf(
+                providerUrl to """
+                    proxies:
+                      - name: Remote node
+                        type: socks
+                        server: remote.example.com
+                        port: 1080
+                """.trimIndent(),
+            ),
+        )
+
+        assertTrue(result.recognizedYaml)
+        assertEquals(4, result.proxyEntryCount)
+        assertEquals(
+            listOf("Root node", "Remote node"),
+            result.servers.map { it.getInfo().remarks },
+        )
+        assertTrue(result.pendingProviders.isEmpty())
+    }
+
+    @Test
+    fun emptyProviderBodyFallsBackToItsInlinePayloadAndCountsTheFallback() {
+        val providerUrl = "https://provider.example.com/empty.yaml"
+        val result = DesktopMihomoPayloadImporter.import(
+            text = httpProviderWithInlineSocks(providerUrl, "Inline after empty", "inline-empty.example.com"),
+            providerPayloads = mapOf(providerUrl to "proxies: []"),
+        )
+
+        assertEquals(2, result.proxyEntryCount)
+        assertEquals(listOf("Inline after empty"), result.servers.map { it.getInfo().remarks })
+    }
+
+    @Test
+    fun malformedProviderBodyFallsBackToItsInlinePayloadAndCountsTheFallback() {
+        val providerUrl = "https://provider.example.com/malformed.yaml"
+        val result = DesktopMihomoPayloadImporter.import(
+            text = httpProviderWithInlineSocks(providerUrl, "Inline after failure", "inline-failed.example.com"),
+            providerPayloads = mapOf(providerUrl to "proxies: ["),
+        )
+
+        assertEquals(2, result.proxyEntryCount)
+        assertEquals(listOf("Inline after failure"), result.servers.map { it.getInfo().remarks })
+    }
+
+    @Test
+    fun literalAncestorProviderUrlUsesTheNestedInlineFallback() {
+        val providerUrl = "https://provider.example.com/ancestor.yaml"
+        val result = DesktopMihomoPayloadImporter.import(
+            text = httpProviderWithInlineSocks(providerUrl, "Outer inline fallback", "outer-inline.example.com"),
+            providerPayloads = mapOf(
+                providerUrl to httpProviderWithInlineSocks(
+                    providerUrl,
+                    "Cycle inline fallback",
+                    "cycle-inline.example.com",
+                ),
+            ),
+        )
+
+        assertEquals(4, result.proxyEntryCount)
+        assertEquals(listOf("Cycle inline fallback"), result.servers.map { it.getInfo().remarks })
+    }
+
+    @Test
+    fun mihomoInlineStringPayloadIsNotRecursivelyTreatedAsAProxyUrl() {
+        val result = DesktopMihomoPayloadImporter.import(
+            text = """
+                proxies:
+                  - name: Root node
+                    type: socks
+                    server: root.example.com
+                    port: 1080
+                proxy-providers:
+                  inline:
+                    type: inline
+                    payload: 'vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@inline.example.com:443#Inline'
+            """.trimIndent(),
+        )
+
+        assertTrue(result.recognizedYaml)
+        assertEquals(2, result.proxyEntryCount)
+        assertEquals(listOf("Root node"), result.servers.map { it.getInfo().remarks })
+    }
+
+    @Test
+    fun importsPortableAmneziaWgYamlEvenWhenDesktopNativeRuntimeCannotRunIt() {
+        val result = DesktopMihomoPayloadImporter.import(
+            text = """
+                proxies:
+                  - name: Portable AWG node
+                    type: awg
+                    server: 192.0.2.10
+                    port: 51820
+                    private-key: aGVsbG8gd29ybGQgdGhpcyBpcyBhIHZhbGlkIGtleSE=
+                    public-key: YW5vdGhlciB2YWxpZCBrZXkgZm9yIHRlc3Rpbmcgb2s=
+                    ip: 10.0.0.2
+            """.trimIndent(),
+        )
+
+        assertTrue(result.recognizedYaml)
+        assertEquals(1, result.proxyEntryCount)
+        assertEquals(0, result.rejectedProxyCount)
+        val awg = assertIs<AmneziaWg>(result.servers.single())
+        assertEquals("Portable AWG node", awg.getInfo().remarks)
+        assertEquals("192.0.2.10", awg.server)
+    }
+
+    @Test
+    fun preservesEquivalentNodesAcrossTheRootAndProvider() {
         val providerUrl = "https://provider.example.com/duplicate.yaml"
         val result = DesktopMihomoPayloadImporter.import(
             text = """
@@ -179,9 +306,12 @@ class DesktopMihomoPayloadImporterTest {
             ),
         )
 
-        assertEquals(2, result.proxyEntryCount)
-        assertEquals(1, result.servers.size)
-        assertEquals("Root SS", assertIs<Shadowsocks>(result.servers.single()).remarks)
+        assertEquals(4, result.proxyEntryCount)
+        assertEquals(2, result.servers.size)
+        assertEquals(
+            listOf("Root SS", "Provider SS with another label"),
+            result.servers.map { assertIs<Shadowsocks>(it).remarks },
+        )
     }
 
     @Test
@@ -233,6 +363,18 @@ class DesktopMihomoPayloadImporterTest {
         assertEquals("Helsinki Node", server2.remarks)
     }
 }
+
+private fun httpProviderWithInlineSocks(providerUrl: String, name: String, server: String): String = """
+    proxy-providers:
+      remote:
+        type: http
+        url: $providerUrl
+        payload:
+          - name: $name
+            type: socks
+            server: $server
+            port: 1080
+""".trimIndent()
 
 private val anchoredYamlFixture = """
     proxies:
