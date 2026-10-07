@@ -123,9 +123,10 @@ class DesktopSubscriptionFetcher(
     }
 
     /**
-     * Downloads only the HTTP provider bodies requested by a recognized Mihomo
-     * payload. URLs never come from the UI directly; they are declared by the
-     * downloaded document and are therefore checked and bounded by depth/count.
+     * Fetches HTTP provider bodies as the shared importer encounters them. URLs
+     * come from the downloaded document; shared traversal stops ancestor cycles
+     * and limits recursive depth, while the host fetch path checks automatic
+     * resource URLs and redirect hops.
      */
     private fun importMihomoOrStandardPayload(
         rootPayload: String,
@@ -134,14 +135,9 @@ class DesktopSubscriptionFetcher(
         proxy: DesktopSubscriptionSocksProxy?,
         deviceHeaders: Map<String, String> = emptyMap(),
     ): DesktopFetchedSubscriptionImport = runBlocking {
-        var providerRequestCount = 0
         val imported = DesktopMihomoPayloadImporter.importWithProviderFetcher(
             text = rootPayload,
             providerUrlFetcher = ProxyServerProviderUrlFetcher { providerUrl ->
-                check(providerRequestCount < MaxProviderRequests) {
-                    "Subscription import exceeded $MaxProviderRequests provider requests"
-                }
-                providerRequestCount += 1
                 fetchAutomaticResource(
                     url = providerUrl,
                     userAgent = userAgent,
@@ -636,7 +632,6 @@ const val DefaultDesktopSubscriptionUserAgent = "SKIPI Desktop"
 
 private val DefaultConnectTimeout: Duration = Duration.ofSeconds(10)
 private val DefaultRequestTimeout: Duration = Duration.ofSeconds(30)
-private const val MaxProviderRequests = 12
 const val MaxDesktopSubscriptionResponseBytes = 8 * 1024 * 1024
 private const val MaxSubscriptionRedirects = 5
 private val HttpRedirectStatusCodes = setOf(301, 302, 303, 307, 308)

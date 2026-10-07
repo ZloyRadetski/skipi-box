@@ -114,6 +114,45 @@ class DesktopSubscriptionLiveProviderFetcherTest {
     }
 
     @Test
+    fun fetchAndImportKeepsMoreThanTwelveProviderDeclarationsInOrder() {
+        val providerCount = 13
+        val providersYaml = (1..providerCount).joinToString("\n") { index ->
+            """
+                provider-$index:
+                  type: http
+                  url: $PublicProviderHost/provider-$index.yaml
+            """.trimIndent().prependIndent("  ")
+        }
+        val rootPayload = "proxy-providers:\n$providersYaml"
+        val harness = FakeSubscriptionTransport { url ->
+            when {
+                url.path == "/subscription.yaml" -> StubHttpResponse(body = rootPayload)
+                url.path.startsWith("/provider-") -> {
+                    val index = url.path.removePrefix("/provider-").removeSuffix(".yaml").toInt()
+                    StubHttpResponse(
+                        body = socksProxyPayload("Provider $index", "provider-$index.example.com"),
+                    )
+                }
+
+                else -> error("Unexpected URL ${url.path}")
+            }
+        }
+
+        val update = harness.fetchAndImport()
+
+        assertEquals(
+            listOf("/subscription.yaml") + (1..providerCount).map { "/provider-$it.yaml" },
+            harness.requestedUrls.map { it.path },
+        )
+        assertEquals(
+            (1..providerCount).map { "Provider $it" },
+            update.importResult.servers.map { it.getInfo().remarks },
+        )
+        assertEquals(providerCount * 3, update.importResult.urlCount)
+        harness.assertAllRequestsUsedSocksProxy()
+    }
+
+    @Test
     fun failedRemoteProviderKeepsItsInlineFallback() {
         val providerUrl = "$PublicProviderHost/unavailable.yaml"
         val harness = FakeSubscriptionTransport { url ->
