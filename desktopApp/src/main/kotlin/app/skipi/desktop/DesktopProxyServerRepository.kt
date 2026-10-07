@@ -35,6 +35,32 @@ class DesktopProxyServerRepository(
         }
     }
 
+    /**
+     * Applies a host-library transform to the latest persisted snapshot under
+     * the same lock as shared catalog actions. It commits the exact transformed
+     * raw library after validation and high-water normalization, saving before
+     * publishing the updated library.
+     */
+    fun updateLibrary(transform: (DesktopServerLibrary) -> DesktopServerLibrary): DesktopServerLibrary =
+        synchronized(lock) {
+            val current = readLibrary()
+            val transformed = transform(current)
+            validateLibrary(transformed)
+            val updated = transformed.copy(
+                nextServerId = maxOf(
+                    current.effectiveNextServerId,
+                    transformed.nextServerId,
+                    nextIdAfter(transformed.servers),
+                ),
+            )
+            if (updated == current) {
+                _servers.value = updated.toRecords()
+            } else {
+                saveAndPublish(updated)
+            }
+            updated
+        }
+
     override suspend fun select(serverId: Int) {
         selectAndCommit(serverId)
     }
@@ -189,10 +215,25 @@ class DesktopProxyServerRepository(
             return updated
         }
 
-        saveLibrary(updated).getOrThrow()
-        publishLibrary(updated)
-        _servers.value = updated.toRecords()
+        saveAndPublish(updated)
         return updated
+    }
+
+    private fun saveAndPublish(library: DesktopServerLibrary) {
+        saveLibrary(library).getOrThrow()
+        publishLibrary(library)
+        _servers.value = library.toRecords()
+    }
+
+    private fun validateLibrary(library: DesktopServerLibrary) {
+        require(library.nextServerId > 0) { "Next proxy server ID must be positive" }
+        require(library.servers.all { it.id > 0 }) { "Proxy server IDs must be positive" }
+        require(library.servers.map(DesktopStoredProxyServer::id).distinct().size == library.servers.size) {
+            "Proxy server IDs must be unique"
+        }
+        require(library.selectedServerId == null || library.servers.any { it.id == library.selectedServerId }) {
+            "Selected proxy server ID must exist in Desktop storage"
+        }
     }
 
     private fun DesktopServerLibrary.toCatalog(): ProxyServerCatalog {

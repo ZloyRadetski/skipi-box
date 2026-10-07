@@ -6,6 +6,7 @@ package app.skipi.desktop
 import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.proxy.createProxyServerRecord
 import app.skipi.app.proxy.editProxyServerRecord
+import app.skipi.app.proxy.importProxyServerRecordBatch
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.encodePersistedProxyServer
 import kotlinx.coroutines.runBlocking
@@ -379,6 +380,254 @@ class DesktopProxyServerRepositoryTest {
             executor.shutdownNow()
             assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
         }
+    }
+
+    @Test
+    fun concurrentManualBatchCreateAndSubscriptionRefreshUseLatestLibrary() {
+        val opaque = DesktopStoredProxyServer(
+            id = 99,
+            serverJson = "future protocol payload; keep these bytes",
+            subscriptionId = 70,
+        )
+        val initial = DesktopServerLibrary(
+            selectedServerId = opaque.id,
+            servers = listOf(
+                serverRecord(1, "existing-manual.example").toStoredServer(),
+                serverRecord(7, "old-subscription.example", subscriptionId = 10).toStoredServer(),
+                opaque,
+            ),
+            nextServerId = 100,
+        )
+        val persistedLibrary = AtomicReference(initial)
+        val saveCount = AtomicInteger()
+        val firstSaveEntered = CountDownLatch(1)
+        val allowFirstSaveToFinish = CountDownLatch(1)
+        val publications = CopyOnWriteArrayList<DesktopServerLibrary>()
+        val repository = DesktopProxyServerRepository(
+            initialLibrary = initial,
+            readLibrary = { persistedLibrary.get() },
+            saveLibrary = { candidate ->
+                if (saveCount.incrementAndGet() == 1) {
+                    firstSaveEntered.countDown()
+                    check(allowFirstSaveToFinish.await(10, TimeUnit.SECONDS)) {
+                        "Timed out waiting to release the first catalog save"
+                    }
+                }
+                persistedLibrary.set(candidate)
+                Result.success(Unit)
+            },
+            publishLibrary = { published ->
+                persistedLibrary.set(published)
+                publications.add(published)
+            },
+        )
+        val executor = Executors.newFixedThreadPool(3)
+
+        try {
+            val batchImport = executor.submit {
+                runBlocking {
+                    repository.updateCatalog { current ->
+                        importProxyServerRecordBatch(
+                            catalog = current,
+                            importedServers = listOf(
+                                HTTP(remarks = "manual batch first", server = "batch-first.example"),
+                                HTTP(remarks = "manual batch second", server = "batch-second.example"),
+                            ),
+                        )
+                    }
+                }
+            }
+            assertTrue(firstSaveEntered.await(10, TimeUnit.SECONDS))
+
+            val otherMutationsStarted = CountDownLatch(2)
+            val createServer = executor.submit {
+                otherMutationsStarted.countDown()
+                runBlocking {
+                    repository.updateCatalog { current ->
+                        createProxyServerRecord(
+                            catalog = current,
+                            server = HTTP(remarks = "created while importing", server = "created.example"),
+                            sourceSubscriptionId = null,
+                        )
+                    }
+                }
+            }
+            val refreshSubscription = executor.submit {
+                otherMutationsStarted.countDown()
+                runBlocking {
+                    repository.updateLibrary { current ->
+                        DesktopServerLibraries.replaceSubscriptionServers(
+                            library = current,
+                            subscriptionId = 10,
+                            servers = listOf(
+                                HTTP(remarks = "refreshed subscription", server = "refreshed.example"),
+                            ),
+                        )
+                    }
+                }
+            }
+            assertTrue(otherMutationsStarted.await(10, TimeUnit.SECONDS))
+            allowFirstSaveToFinish.countDown()
+            batchImport.get(10, TimeUnit.SECONDS)
+            createServer.get(10, TimeUnit.SECONDS)
+            refreshSubscription.get(10, TimeUnit.SECONDS)
+
+            val finalLibrary = persistedLibrary.get()
+            val decodedServers = finalLibrary.servers.mapNotNull { stored ->
+                stored.decode().getOrNull()?.let { server -> stored to server.getInfo().remarks }
+            }
+            val batchRows = decodedServers.filter { (_, remarks) -> remarks.startsWith("manual batch") }
+
+            assertEquals(99, finalLibrary.selectedServerId)
+            assertEquals(opaque, finalLibrary.servers.single { it.id == opaque.id })
+            assertEquals(
+                listOf("manual batch first", "manual batch second"),
+                batchRows.map { (_, remarks) -> remarks },
+            )
+            assertEquals(listOf(null, null), batchRows.map { (stored, _) -> stored.subscriptionId })
+            assertEquals(1, decodedServers.count { (_, remarks) -> remarks == "created while importing" })
+            assertEquals(
+                listOf("refreshed subscription"),
+                decodedServers.filter { (stored, _) -> stored.subscriptionId == 10 }
+                    .map { (_, remarks) -> remarks },
+            )
+            assertEquals(finalLibrary.servers.size, finalLibrary.servers.map(DesktopStoredProxyServer::id).distinct().size)
+            assertTrue(finalLibrary.nextServerId > finalLibrary.servers.maxOf(DesktopStoredProxyServer::id))
+            assertEquals(3, publications.size)
+            assertEquals(finalLibrary, publications.last())
+            assertEquals(
+                decodedServers.map { (stored, _) -> stored.id },
+                repository.servers.value.map(ProxyServerRecord::id),
+            )
+        } finally {
+            allowFirstSaveToFinish.countDown()
+            executor.shutdownNow()
+            assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
+        }
+    }
+
+    @Test
+    fun failedManualBatchSaveLeavesPersistedAndPublishedOpaqueCatalogUnchanged() = runBlocking {
+        val directory = Files.createTempDirectory("skipi-proxy-server-batch-save-failure-")
+        val path = directory.resolve("servers.json")
+        val opaque = DesktopStoredProxyServer(
+            id = 999,
+            serverJson = "future protocol payload; preserve exactly",
+            subscriptionId = 70,
+        )
+        val original = DesktopServerLibrary(
+            selectedServerId = opaque.id,
+            servers = listOf(
+                serverRecord(42, "visible.example", subscriptionId = 4).toStoredServer(),
+                opaque,
+            ),
+            nextServerId = 10,
+        )
+        val publicationHistory = mutableListOf<DesktopServerLibrary>()
+        try {
+            DesktopServerLibraries.save(path, original).getOrThrow()
+            val persistedOriginal = DesktopServerLibraries.load(path).getOrThrow()
+            val repository = createFileBackedRepository(
+                path = path,
+                initialLibrary = persistedOriginal,
+                saveLibrary = { candidate ->
+                    if (candidate.servers.any { it.id == 1000 }) {
+                        Result.failure(IllegalStateException("The host cannot persist the imported batch"))
+                    } else {
+                        DesktopServerLibraries.save(path, candidate)
+                    }
+                },
+                publishLibrary = { published -> publicationHistory += published },
+            )
+            val originalVisibleServers = repository.servers.value
+
+            val failure = runCatching {
+                repository.updateCatalog { current ->
+                    importProxyServerRecordBatch(
+                        catalog = current,
+                        importedServers = listOf(
+                            HTTP(remarks = "failed first", server = "failed-first.example"),
+                            HTTP(remarks = "failed second", server = "failed-second.example"),
+                        ),
+                    )
+                }
+            }.exceptionOrNull()
+
+            assertTrue(failure is IllegalStateException)
+            assertEquals(
+                persistedOriginal,
+                DesktopServerLibraries.load(path).getOrThrow(),
+            )
+            assertEquals(opaque, DesktopServerLibraries.load(path).getOrThrow().servers.single { it.id == opaque.id })
+            assertEquals(originalVisibleServers, repository.servers.value)
+            assertEquals(emptyList(), publicationHistory)
+        } finally {
+            Files.deleteIfExists(path.resolveSibling("${path.fileName}.tmp"))
+            Files.deleteIfExists(path)
+            Files.deleteIfExists(directory)
+        }
+    }
+
+    @Test
+    fun libraryTransformPersistsTheExactSubscriptionReplacementWithOpaqueRows() {
+        val replacedOpaque = DesktopStoredProxyServer(
+            id = 7,
+            serverJson = "future target protocol payload; remove with this subscription group",
+            subscriptionId = 10,
+        )
+        val unrelatedOpaque = DesktopStoredProxyServer(
+            id = 40,
+            serverJson = "future unrelated protocol payload; keep these exact bytes",
+            subscriptionId = 90,
+        )
+        val initial = DesktopServerLibrary(
+            selectedServerId = 8,
+            servers = listOf(
+                serverRecord(2, "first-manual.example").toStoredServer(),
+                replacedOpaque,
+                serverRecord(8, "old-target.example", subscriptionId = 10).toStoredServer(),
+                unrelatedOpaque,
+                serverRecord(1, "last-manual.example").toStoredServer(),
+            ),
+            nextServerId = 10,
+        )
+        val incoming = listOf(
+            HTTP(remarks = "new target first", server = "new-first.example"),
+            HTTP(remarks = "new target second", server = "new-second.example"),
+        )
+        val expected = DesktopServerLibraries.replaceSubscriptionServers(
+            library = initial,
+            subscriptionId = 10,
+            servers = incoming,
+        )
+        var currentLibrary = initial
+        val publications = mutableListOf<DesktopServerLibrary>()
+        val repository = DesktopProxyServerRepository(
+            initialLibrary = initial,
+            readLibrary = { currentLibrary },
+            saveLibrary = { candidate ->
+                currentLibrary = candidate
+                Result.success(Unit)
+            },
+            publishLibrary = { published ->
+                currentLibrary = published
+                publications += published
+            },
+        )
+
+        val actual = repository.updateLibrary { latest ->
+            DesktopServerLibraries.replaceSubscriptionServers(
+                library = latest,
+                subscriptionId = 10,
+                servers = incoming,
+            )
+        }
+
+        assertEquals(expected, actual)
+        assertEquals(expected, currentLibrary)
+        assertEquals(listOf(unrelatedOpaque), actual.servers.filter { it.id == unrelatedOpaque.id })
+        assertTrue(actual.servers.none { it.id == replacedOpaque.id })
+        assertEquals(listOf(expected), publications)
     }
 
     @Test
