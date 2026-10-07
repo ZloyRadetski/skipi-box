@@ -224,34 +224,25 @@ internal fun DesktopConfigsScreen(
             onBack = { editorDraft = null },
             onSave = { name, content, sourceUrl, updateLocked ->
                 val draft = editorDraft ?: return@DesktopConfigEditor false
-                val normalizedContent = content.trimEnd().plus("\n")
-                    .withDesktopSkipiProfileMetadata(name, sourceUrl, updateLocked)
-                val validationError = normalizedContent.analyzeShadowrocketConfig().diagnostics
-                    .firstOrNull { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }
-                if (validationError != null) {
-                    message = "Конфиг не сохранён: ${validationError.message}"
-                    return@DesktopConfigEditor false
-                }
-                val updated = if (draft.id == null) {
-                    DesktopConfigLibraries.put(
-                        library = configLibrary,
-                        name = name,
-                        content = normalizedContent,
-                        sourceUrl = sourceUrl,
-                        updateLocked = updateLocked,
-                    )
-                } else {
-                    DesktopConfigLibraries.update(
+                when (
+                    val save = applyDesktopConfigEditorSave(
                         library = configLibrary,
                         id = draft.id,
+                        lastUpdatedAtMillis = draft.lastUpdatedAtMillis,
                         name = name,
-                        content = normalizedContent,
+                        content = content,
                         sourceUrl = sourceUrl,
                         updateLocked = updateLocked,
-                        lastUpdatedAtMillis = draft.lastUpdatedAtMillis,
                     )
+                ) {
+                    is DesktopConfigEditorSaveResult.Rejected -> {
+                        message = "Конфиг не сохранён: ${save.message}"
+                        false
+                    }
+
+                    is DesktopConfigEditorSaveResult.Saved ->
+                        persist(save.library, "Конфиг сохранён.") { editorDraft = null }
                 }
-                persist(updated, "Конфиг сохранён.") { editorDraft = null }
             },
         )
         return
