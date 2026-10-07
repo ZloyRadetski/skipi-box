@@ -178,6 +178,14 @@ internal fun AppState.withUpdatedSubscriptionServers(
                     id = group.id,
                     title = group.name,
                     url = group.url,
+                    userAgent = group.userAgent,
+                    updateInterval = group.updateInterval,
+                    hwid = group.hwid,
+                    ageSecretKey = group.ageSecretKey,
+                    updateViaProxy = group.updateViaProxy,
+                    autoOverrideRules = group.autoOverrideRules,
+                    enabled = group.enabled,
+                    builtIn = group.builtIn,
                     metadata = features.subscription.SubscriptionMetadata(
                         profileTitle = group.profileTitle,
                         announce = group.announce,
@@ -191,6 +199,9 @@ internal fun AppState.withUpdatedSubscriptionServers(
                         trafficExpireAtSeconds = group.trafficExpireAtSeconds,
                         profileUpdateIntervalHours = group.updateInterval,
                     ),
+                    lastUpdatedAtMillis = group.lastUpdatedAtMillis,
+                    notifyOnExpiry = group.notifyOnExpiry,
+                    customExpiryReminders = group.customExpiryReminders,
                 ).withRefreshedMetadata(update.metadata, updatedAtMillis)
                 group.copy(
                     lastUpdatedAtMillis = refreshed.lastUpdatedAtMillis ?: group.lastUpdatedAtMillis,

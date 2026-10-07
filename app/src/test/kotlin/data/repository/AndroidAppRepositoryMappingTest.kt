@@ -27,9 +27,11 @@ import features.config.TrafficConfigResourceSettings
 import features.config.TrafficConfigState
 import features.subscription.SubscriptionExpiryReminder
 import features.subscription.DefaultSubscriptionGroupId
+import features.subscription.ExpiryReminderUnit
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.StrategyGroup
+import features.subscription.SubscriptionMetadata
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -237,7 +239,7 @@ class AndroidAppRepositoryMappingTest {
     }
 
     @Test
-    fun subscriptionUpdatePreservesAndroidOnlyProviderOptions() {
+    fun subscriptionUpdateMapsCompleteOptionsAndPreservesAbsentMetadata() {
         val existing = SubscriptionGroupState(
             id = 8,
             name = "old",
@@ -256,8 +258,23 @@ class AndroidAppRepositoryMappingTest {
             trafficTotalBytes = 9876,
         )
 
-        val mapped = SubscriptionRecord(id = 8, title = "renamed", url = "https://new.example/sub")
-            .toAndroidGroup(existing)
+        val mapped = SubscriptionRecord(
+            id = 8,
+            title = "renamed",
+            url = "https://new.example/sub",
+            userAgent = existing.userAgent,
+            updateInterval = existing.updateInterval,
+            hwid = existing.hwid,
+            ageSecretKey = existing.ageSecretKey,
+            updateViaProxy = existing.updateViaProxy,
+            autoOverrideRules = existing.autoOverrideRules,
+            enabled = existing.enabled,
+            builtIn = existing.builtIn,
+            metadata = null,
+            lastUpdatedAtMillis = null,
+            notifyOnExpiry = existing.notifyOnExpiry,
+            customExpiryReminders = existing.customExpiryReminders,
+        ).toAndroidGroup(existing)
 
         assertEquals("renamed", mapped.name)
         assertEquals("https://new.example/sub", mapped.url)
@@ -271,6 +288,71 @@ class AndroidAppRepositoryMappingTest {
         assertEquals(existing.customExpiryReminders, mapped.customExpiryReminders)
         assertEquals("Provider title", mapped.profileTitle)
         assertEquals(9876, mapped.trafficTotalBytes)
+    }
+
+    @Test
+    fun subscriptionRecordRoundTripsAllAndroidGroupFields() {
+        val original = SubscriptionGroupState(
+            id = DefaultSubscriptionGroupId,
+            name = "Default",
+            url = "https://example.com/default-sub",
+            userAgent = "Android custom agent",
+            updateInterval = "12",
+            hwid = "legacy-group-hwid",
+            ageSecretKey = "AGE-SECRET-KEY-1EXAMPLE",
+            updateViaProxy = true,
+            autoOverrideRules = false,
+            enabled = true,
+            builtIn = true,
+            lastUpdatedAtMillis = 1_700_000_000_000,
+            profileTitle = "Provider title",
+            announce = "Maintenance tonight",
+            supportUrl = "https://example.com/support",
+            supportEmail = "support@example.com",
+            profileWebPageUrl = "https://example.com/home",
+            announceUrl = "https://example.com/announce",
+            trafficUploadBytes = 100,
+            trafficDownloadBytes = 200,
+            trafficTotalBytes = 1_000,
+            trafficExpireAtSeconds = 2_000,
+            notifyOnExpiry = false,
+            customExpiryReminders = listOf(SubscriptionExpiryReminder(3, ExpiryReminderUnit.Days)),
+        )
+
+        val expected = SubscriptionRecord(
+            id = original.id,
+            title = original.name,
+            url = original.url,
+            userAgent = original.userAgent,
+            updateInterval = original.updateInterval,
+            hwid = original.hwid,
+            ageSecretKey = original.ageSecretKey,
+            updateViaProxy = original.updateViaProxy,
+            autoOverrideRules = original.autoOverrideRules,
+            enabled = original.enabled,
+            builtIn = original.builtIn,
+            metadata = SubscriptionMetadata(
+                profileTitle = original.profileTitle,
+                announce = original.announce,
+                supportUrl = original.supportUrl,
+                supportEmail = original.supportEmail,
+                profileWebPageUrl = original.profileWebPageUrl,
+                announceUrl = original.announceUrl,
+                userInfoReceived = true,
+                trafficUploadBytes = original.trafficUploadBytes,
+                trafficDownloadBytes = original.trafficDownloadBytes,
+                trafficTotalBytes = original.trafficTotalBytes,
+                trafficExpireAtSeconds = original.trafficExpireAtSeconds,
+            ),
+            lastUpdatedAtMillis = original.lastUpdatedAtMillis,
+            notifyOnExpiry = original.notifyOnExpiry,
+            customExpiryReminders = original.customExpiryReminders,
+        )
+
+        val mapped = original.toSubscriptionRecord()
+
+        assertEquals(expected, mapped)
+        assertEquals(original, mapped.toAndroidGroup(existing = null))
     }
 
     @Test

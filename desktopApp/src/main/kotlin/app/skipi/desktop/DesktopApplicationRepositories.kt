@@ -29,6 +29,7 @@ import app.skipi.app.store.SharedApplicationStore
 import features.config.ConfigProfile
 import features.subscription.StoredSubscription
 import features.subscription.StoredSubscriptionMetadata
+import features.subscription.SubscriptionEmbeddedConfig
 import features.subscription.SubscriptionMetadata
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -172,12 +173,29 @@ class DesktopSubscriptionRepository(
         val current = readLibrary()
         val existing = current.subscriptions.firstOrNull { it.id == subscription.id }
         val metadata = subscription.metadata
+        val providerProfileTitle = metadata?.profileTitle
         val previousMetadata = existing?.metadata ?: StoredSubscriptionMetadata()
+        val storedProfileTitle = when {
+            providerProfileTitle == null -> previousMetadata.profileTitle
+            providerProfileTitle.isEmpty() -> ""
+            existing?.metadata?.profileTitle == null && providerProfileTitle == subscription.title -> null
+            else -> providerProfileTitle
+        }
         val updatedProvider = (existing ?: StoredSubscription(id = subscription.id, url = "")).copy(
             name = subscription.title,
             url = subscription.url,
+            userAgent = subscription.userAgent,
             enabled = subscription.enabled,
+            updateInterval = subscription.updateInterval,
+            hwid = subscription.hwid,
+            ageSecretKey = subscription.ageSecretKey,
+            updateViaProxy = subscription.updateViaProxy,
+            autoOverrideRules = subscription.autoOverrideRules,
+            builtIn = subscription.builtIn,
+            notifyOnExpiry = subscription.notifyOnExpiry,
+            customExpiryReminders = subscription.customExpiryReminders,
             metadata = previousMetadata.copy(
+                profileTitle = storedProfileTitle,
                 description = metadata?.profileDescription ?: previousMetadata.description,
                 announce = metadata?.announce ?: previousMetadata.announce,
                 supportUrl = metadata?.supportUrl ?: previousMetadata.supportUrl,
@@ -194,10 +212,23 @@ class DesktopSubscriptionRepository(
                     ?: previousMetadata.trafficExpireAtSeconds,
                 profileUpdateIntervalHours = metadata?.profileUpdateIntervalHours
                     ?: previousMetadata.profileUpdateIntervalHours,
+                embeddedConfigPayload = metadata?.embeddedConfig?.payload
+                    ?: previousMetadata.embeddedConfigPayload,
+                embeddedConfigActivate = metadata?.embeddedConfig?.activate
+                    ?: previousMetadata.embeddedConfigActivate,
+                embeddedConfigIsUrl = metadata?.embeddedConfig?.isUrl
+                    ?: previousMetadata.embeddedConfigIsUrl,
                 lastUpdatedAtMillis = subscription.lastUpdatedAtMillis ?: previousMetadata.lastUpdatedAtMillis,
             ),
         )
-        commit(current.copy(subscriptions = current.subscriptions.filterNot { it.id == subscription.id } + updatedProvider))
+        val updatedSubscriptions = if (existing == null) {
+            current.subscriptions + updatedProvider
+        } else {
+            current.subscriptions.map { stored ->
+                if (stored.id == subscription.id) updatedProvider else stored
+            }
+        }
+        commit(current.copy(subscriptions = updatedSubscriptions))
     }
 
     override suspend fun remove(subscriptionId: Int) {
@@ -584,9 +615,20 @@ private fun DesktopSubscriptionLibrary.toSubscriptionRecords(): List<Subscriptio
         id = item.id,
         title = item.name,
         url = item.url,
+        userAgent = item.userAgent,
+        updateInterval = item.updateInterval,
+        hwid = item.hwid,
+        ageSecretKey = item.ageSecretKey,
+        updateViaProxy = item.updateViaProxy,
+        autoOverrideRules = item.autoOverrideRules,
         enabled = item.enabled,
+        builtIn = item.builtIn,
         metadata = SubscriptionMetadata(
-            profileTitle = item.name.takeIf(String::isNotBlank),
+            profileTitle = if (stored.profileTitle == null) {
+                item.name.takeIf(String::isNotBlank)
+            } else {
+                stored.profileTitle?.takeIf(String::isNotBlank)
+            },
             profileDescription = stored.description.takeIf(String::isNotBlank),
             announce = stored.announce.takeIf(String::isNotBlank),
             supportUrl = stored.supportUrl.takeIf(String::isNotBlank),
@@ -600,8 +642,19 @@ private fun DesktopSubscriptionLibrary.toSubscriptionRecords(): List<Subscriptio
             trafficTotalBytes = stored.trafficTotalBytes,
             trafficExpireAtSeconds = stored.trafficExpireAtSeconds,
             profileUpdateIntervalHours = stored.profileUpdateIntervalHours.takeIf(String::isNotBlank),
+            embeddedConfig = stored.takeIf {
+                it.embeddedConfigPayload.isNotEmpty() || it.embeddedConfigActivate || it.embeddedConfigIsUrl
+            }?.let { metadata ->
+                SubscriptionEmbeddedConfig(
+                    payload = metadata.embeddedConfigPayload,
+                    activate = metadata.embeddedConfigActivate,
+                    isUrl = metadata.embeddedConfigIsUrl,
+                )
+            },
         ),
         lastUpdatedAtMillis = stored.lastUpdatedAtMillis.takeIf { it > 0L },
+        notifyOnExpiry = item.notifyOnExpiry,
+        customExpiryReminders = item.customExpiryReminders,
     )
 }
 

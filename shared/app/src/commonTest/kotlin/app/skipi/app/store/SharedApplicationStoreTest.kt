@@ -54,7 +54,21 @@ class SharedApplicationStoreTest {
             ProxyServerRecord(id = 12, server = HTTP(server = "proxy.example")),
         )
         repositories.subscriptions.subscriptions.value = listOf(
-            SubscriptionRecord(id = 3, title = "Primary", url = "https://example.test/sub"),
+            SubscriptionRecord(
+                id = 3,
+                title = "Primary",
+                url = "https://example.test/sub",
+                userAgent = "test-agent",
+                updateInterval = "6",
+                hwid = "",
+                ageSecretKey = "",
+                updateViaProxy = false,
+                autoOverrideRules = true,
+                enabled = true,
+                builtIn = false,
+                notifyOnExpiry = true,
+                customExpiryReminders = null,
+            ),
         )
         repositories.trafficConfigs.configs.value = listOf(
             TrafficConfigRecord(id = 4, name = "Default", rawDocument = "{}"),

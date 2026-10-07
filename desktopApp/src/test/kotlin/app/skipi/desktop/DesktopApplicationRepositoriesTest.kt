@@ -13,6 +13,9 @@ import features.config.ConfigProfileLibrary
 import features.proxy.server.model.ProxyServer
 import features.subscription.StoredSubscription
 import features.subscription.StoredSubscriptionMetadata
+import features.subscription.ExpiryReminderUnit
+import features.subscription.SubscriptionEmbeddedConfig
+import features.subscription.SubscriptionExpiryReminder
 import features.subscription.SubscriptionMetadata
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
@@ -103,11 +106,13 @@ class DesktopApplicationRepositoriesTest {
 
         assertEquals("old", repository.subscriptions.value.single().metadata?.profileDescription)
         repository.upsert(
-            SubscriptionRecord(
+            subscriptionRecord(
                 id = 3,
                 title = "Renamed",
                 url = "https://example.com/sub",
                 enabled = false,
+                ageSecretKey = "secret",
+                updateViaProxy = true,
                 metadata = SubscriptionMetadata(profileDescription = "new"),
                 lastUpdatedAtMillis = 200,
             ),
@@ -125,7 +130,7 @@ class DesktopApplicationRepositoriesTest {
         assertIs<UnsupportedOperationException>(refresh.exceptionOrNull())
 
         repository.upsert(
-            SubscriptionRecord(
+            subscriptionRecord(
                 id = 4,
                 title = "New provider",
                 url = "https://example.com/new",
@@ -133,6 +138,194 @@ class DesktopApplicationRepositoriesTest {
             ),
         )
         assertEquals("created metadata", library.subscriptions.single { it.id == 4 }.metadata.description)
+    }
+
+    @Test
+    fun subscriptionUpsertEditsExistingRecordInPlaceWithoutChangingLibraryOrder(): Unit = runBlocking {
+        var library = DesktopSubscriptionLibrary(
+            subscriptions = listOf(
+                StoredSubscription(id = 3, url = "https://example.com/first", name = "First"),
+                StoredSubscription(id = 8, url = "https://example.com/second", name = "Second"),
+            ),
+        )
+        val repository = DesktopSubscriptionRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+        )
+
+        repository.upsert(
+            subscriptionRecord(
+                id = 3,
+                title = "First edited",
+                url = "https://example.com/first-updated",
+                enabled = false,
+            ),
+        )
+
+        assertEquals(listOf(3, 8), library.subscriptions.map { it.id })
+        assertEquals("First edited", library.subscriptions[0].name)
+        assertEquals("https://example.com/first-updated", library.subscriptions[0].url)
+        assertFalse(library.subscriptions[0].enabled)
+        assertEquals("Second", library.subscriptions[1].name)
+        assertEquals("https://example.com/second", library.subscriptions[1].url)
+    }
+
+    @Test
+    fun subscriptionRepositoryPreservesProfileTitleSeparatelyFromDisplayTitle(): Unit = runBlocking {
+        var library = DesktopSubscriptionLibrary(
+            subscriptions = listOf(
+                StoredSubscription(id = 3, url = "https://example.com/sub", name = "Old display title"),
+            ),
+        )
+        val repository = DesktopSubscriptionRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+        )
+
+        repository.upsert(
+            subscriptionRecord(
+                id = 3,
+                title = "Display title",
+                url = "https://example.com/sub",
+                metadata = SubscriptionMetadata(profileTitle = "Provider profile title"),
+            ),
+        )
+
+        assertEquals("Provider profile title", repository.subscriptions.value.single().metadata?.profileTitle)
+        assertEquals("Provider profile title", library.subscriptions.single().metadata.profileTitle)
+        assertEquals("Display title", library.subscriptions.single().name)
+    }
+
+    @Test
+    fun subscriptionRepositoryPreservesExplicitEmptyProfileTitle(): Unit = runBlocking {
+        var library = DesktopSubscriptionLibrary(
+            subscriptions = listOf(
+                StoredSubscription(id = 3, url = "https://example.com/sub", name = "Display title"),
+            ),
+        )
+        val repository = DesktopSubscriptionRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+        )
+
+        repository.upsert(
+            subscriptionRecord(
+                id = 3,
+                title = "Display title",
+                url = "https://example.com/sub",
+                metadata = SubscriptionMetadata(profileTitle = ""),
+            ),
+        )
+
+        assertEquals(null, repository.subscriptions.value.single().metadata?.profileTitle)
+        assertEquals("", library.subscriptions.single().metadata.profileTitle)
+        assertEquals("Display title", library.subscriptions.single().name)
+    }
+
+    @Test
+    fun subscriptionRepositoryRoundTripsProviderOptionsAndDoesNotReserveDesktopIdOne(): Unit = runBlocking {
+        val reminders = listOf(SubscriptionExpiryReminder(12, ExpiryReminderUnit.Hours))
+        val metadata = StoredSubscriptionMetadata(
+            description = "Premium nodes",
+            announce = "Maintenance tonight",
+            supportUrl = "https://example.com/support",
+            supportEmail = "support@example.com",
+            profileWebPageUrl = "https://example.com/home",
+            announceUrl = "https://example.com/announce",
+            trafficUploadBytes = 100,
+            trafficDownloadBytes = 200,
+            trafficTotalBytes = 1_000,
+            trafficExpireAtSeconds = 2_000,
+            profileUpdateIntervalHours = "6",
+            embeddedConfigPayload = "https://example.com/routing.yaml",
+            embeddedConfigActivate = true,
+            embeddedConfigIsUrl = true,
+            lastUpdatedAtMillis = 1_700_000_000_000,
+        )
+        var library = DesktopSubscriptionLibrary(
+            subscriptions = listOf(
+                StoredSubscription(id = 1, url = "https://example.com/ordinary-id-one", name = "ID one"),
+                StoredSubscription(
+                    id = 42,
+                    url = "https://example.com/provider",
+                    userAgent = "Provider agent",
+                    name = "Provider",
+                    metadata = metadata,
+                    enabled = false,
+                    updateInterval = "6",
+                    hwid = "legacy-group-hwid",
+                    ageSecretKey = "AGE-SECRET-KEY-1EXAMPLE",
+                    updateViaProxy = true,
+                    autoOverrideRules = false,
+                    builtIn = true,
+                    notifyOnExpiry = false,
+                    customExpiryReminders = reminders,
+                ),
+            ),
+        )
+        val repository = DesktopSubscriptionRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+        )
+
+        val ordinary = repository.subscriptions.value.first { it.id == 1 }
+        val provider = repository.subscriptions.value.first { it.id == 42 }
+
+        assertFalse(ordinary.builtIn)
+        assertEquals("Provider agent", provider.userAgent)
+        assertEquals("6", provider.updateInterval)
+        assertEquals("legacy-group-hwid", provider.hwid)
+        assertEquals("AGE-SECRET-KEY-1EXAMPLE", provider.ageSecretKey)
+        assertTrue(provider.updateViaProxy)
+        assertFalse(provider.autoOverrideRules)
+        assertTrue(provider.builtIn)
+        assertFalse(provider.notifyOnExpiry)
+        assertEquals(reminders, provider.customExpiryReminders)
+        assertEquals(
+            SubscriptionMetadata(
+                profileTitle = "Provider",
+                profileDescription = "Premium nodes",
+                announce = "Maintenance tonight",
+                supportUrl = "https://example.com/support",
+                supportEmail = "support@example.com",
+                profileWebPageUrl = "https://example.com/home",
+                announceUrl = "https://example.com/announce",
+                userInfoReceived = true,
+                trafficUploadBytes = 100,
+                trafficDownloadBytes = 200,
+                trafficTotalBytes = 1_000,
+                trafficExpireAtSeconds = 2_000,
+                profileUpdateIntervalHours = "6",
+                embeddedConfig = SubscriptionEmbeddedConfig(
+                    payload = "https://example.com/routing.yaml",
+                    activate = true,
+                    isUrl = true,
+                ),
+            ),
+            provider.metadata,
+        )
+        assertEquals(1_700_000_000_000, provider.lastUpdatedAtMillis)
+
+        repository.upsert(provider.copy(updateViaProxy = false))
+
+        val storedProvider = library.subscriptions.first { it.id == 42 }
+        assertEquals(listOf(1, 42), library.subscriptions.map { it.id })
+        assertEquals("legacy-group-hwid", storedProvider.hwid)
+        assertEquals("AGE-SECRET-KEY-1EXAMPLE", storedProvider.ageSecretKey)
+        assertFalse(storedProvider.updateViaProxy)
+        assertFalse(storedProvider.autoOverrideRules)
+        assertTrue(storedProvider.builtIn)
+        assertFalse(storedProvider.notifyOnExpiry)
+        assertEquals(reminders, storedProvider.customExpiryReminders)
+        assertEquals(metadata, storedProvider.metadata)
     }
 
     @Test
@@ -312,4 +505,38 @@ class DesktopApplicationRepositoriesTest {
             Files.deleteIfExists(path)
         }
     }
+
+    private fun subscriptionRecord(
+        id: Int,
+        title: String,
+        url: String,
+        userAgent: String = "",
+        updateInterval: String = "",
+        hwid: String = "",
+        ageSecretKey: String = "",
+        updateViaProxy: Boolean = false,
+        autoOverrideRules: Boolean = true,
+        enabled: Boolean = true,
+        builtIn: Boolean = false,
+        metadata: SubscriptionMetadata? = null,
+        lastUpdatedAtMillis: Long? = null,
+        notifyOnExpiry: Boolean = true,
+        customExpiryReminders: List<SubscriptionExpiryReminder>? = null,
+    ) = SubscriptionRecord(
+        id = id,
+        title = title,
+        url = url,
+        userAgent = userAgent,
+        updateInterval = updateInterval,
+        hwid = hwid,
+        ageSecretKey = ageSecretKey,
+        updateViaProxy = updateViaProxy,
+        autoOverrideRules = autoOverrideRules,
+        enabled = enabled,
+        builtIn = builtIn,
+        metadata = metadata,
+        lastUpdatedAtMillis = lastUpdatedAtMillis,
+        notifyOnExpiry = notifyOnExpiry,
+        customExpiryReminders = customExpiryReminders,
+    )
 }

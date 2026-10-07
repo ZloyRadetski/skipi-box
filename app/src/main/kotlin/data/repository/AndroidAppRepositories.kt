@@ -35,7 +35,6 @@ import features.config.withConfigProxyGroupsReflected
 import features.config.withUpdatedTrafficConfigProfile
 import features.config.withSkipiSettingsInRawConfig
 import features.config.withSkipiSettingsReadFromRawConfig
-import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.SubscriptionMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -436,7 +435,14 @@ internal fun SubscriptionGroupState.toSubscriptionRecord() = SubscriptionRecord(
     id = id,
     title = name,
     url = url,
+    userAgent = userAgent,
+    updateInterval = updateInterval,
+    hwid = hwid,
+    ageSecretKey = ageSecretKey,
+    updateViaProxy = updateViaProxy,
+    autoOverrideRules = autoOverrideRules,
     enabled = enabled,
+    builtIn = builtIn,
     metadata = SubscriptionMetadata(
         profileTitle = profileTitle.takeIf(String::isNotBlank),
         announce = announce.takeIf(String::isNotBlank),
@@ -451,6 +457,8 @@ internal fun SubscriptionGroupState.toSubscriptionRecord() = SubscriptionRecord(
         trafficExpireAtSeconds = trafficExpireAtSeconds,
     ),
     lastUpdatedAtMillis = lastUpdatedAtMillis.takeIf { it > 0L },
+    notifyOnExpiry = notifyOnExpiry,
+    customExpiryReminders = customExpiryReminders,
 )
 
 internal fun SubscriptionRecord.toAndroidGroup(existing: SubscriptionGroupState?): SubscriptionGroupState {
@@ -459,14 +467,28 @@ internal fun SubscriptionRecord.toAndroidGroup(existing: SubscriptionGroupState?
         id = id,
         name = title,
         url = url,
-        userAgent = DefaultSubscriptionUserAgent,
-        updateInterval = DefaultAndroidSubscriptionUpdateInterval,
+        userAgent = userAgent,
+        updateInterval = updateInterval,
         enabled = enabled,
+        builtIn = builtIn,
+        hwid = hwid,
+        ageSecretKey = ageSecretKey,
+        updateViaProxy = updateViaProxy,
+        autoOverrideRules = autoOverrideRules,
+        notifyOnExpiry = notifyOnExpiry,
+        customExpiryReminders = customExpiryReminders,
     )).copy(
         id = id,
         name = title,
         url = url,
+        userAgent = userAgent,
+        updateInterval = updateInterval,
+        hwid = hwid,
+        ageSecretKey = ageSecretKey,
+        updateViaProxy = updateViaProxy,
+        autoOverrideRules = autoOverrideRules,
         enabled = enabled,
+        builtIn = builtIn,
         lastUpdatedAtMillis = lastUpdatedAtMillis ?: existing?.lastUpdatedAtMillis ?: 0L,
         profileTitle = metadata?.profileTitle ?: existing?.profileTitle.orEmpty(),
         announce = metadata?.announce ?: existing?.announce.orEmpty(),
@@ -478,6 +500,8 @@ internal fun SubscriptionRecord.toAndroidGroup(existing: SubscriptionGroupState?
         trafficDownloadBytes = metadata?.takeIf { it.userInfoReceived }?.trafficDownloadBytes ?: existing?.trafficDownloadBytes ?: -1L,
         trafficTotalBytes = metadata?.takeIf { it.userInfoReceived }?.trafficTotalBytes ?: existing?.trafficTotalBytes ?: -1L,
         trafficExpireAtSeconds = metadata?.takeIf { it.userInfoReceived }?.trafficExpireAtSeconds ?: existing?.trafficExpireAtSeconds ?: -1L,
+        notifyOnExpiry = notifyOnExpiry,
+        customExpiryReminders = customExpiryReminders,
     )
 }
 
@@ -506,5 +530,3 @@ internal fun TrafficConfigRecord.toAndroidTrafficConfig(existing: TrafficConfigS
 private fun Int.saturatedIncrement(): Int = if (this == Int.MAX_VALUE) Int.MAX_VALUE else this + 1
 
 private fun ResourceDefinition.toAndroidResource() = app.CustomResourceFileState(id = id, name = name, url = url)
-
-private const val DefaultAndroidSubscriptionUpdateInterval = "24"

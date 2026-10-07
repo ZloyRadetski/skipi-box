@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class StoredSubscriptionMetadata(
+    /** Null means an older file stored the provider title only in [StoredSubscription.name]. */
+    val profileTitle: String? = null,
     val description: String = "",
     val announce: String = "",
     val supportUrl: String = "",
@@ -33,9 +35,11 @@ data class StoredSubscription(
     val metadata: StoredSubscriptionMetadata = StoredSubscriptionMetadata(),
     val enabled: Boolean = true,
     val updateInterval: String = "",
+    val hwid: String = "",
     val ageSecretKey: String = "",
     val updateViaProxy: Boolean = false,
     val autoOverrideRules: Boolean = true,
+    val builtIn: Boolean = false,
     val notifyOnExpiry: Boolean = true,
     val customExpiryReminders: List<SubscriptionExpiryReminder>? = null,
 )
@@ -95,9 +99,11 @@ object SubscriptionProviderLibraries {
                 ?: StoredSubscriptionMetadata(),
             enabled = existing?.enabled ?: true,
             updateInterval = existing?.updateInterval.orEmpty(),
+            hwid = existing?.hwid.orEmpty(),
             ageSecretKey = existing?.ageSecretKey.orEmpty(),
             updateViaProxy = existing?.updateViaProxy ?: false,
             autoOverrideRules = existing?.autoOverrideRules ?: true,
+            builtIn = existing?.builtIn ?: false,
             notifyOnExpiry = existing?.notifyOnExpiry ?: true,
             customExpiryReminders = existing?.customExpiryReminders,
         )
@@ -192,6 +198,7 @@ private fun SubscriptionMetadata.toStoredSubscriptionMetadata(
     previous: StoredSubscriptionMetadata,
     nowMillis: Long,
 ): StoredSubscriptionMetadata = StoredSubscriptionMetadata(
+    profileTitle = profileTitle ?: previous.profileTitle,
     description = profileDescription ?: previous.description,
     announce = announce ?: previous.announce,
     supportUrl = supportUrl ?: previous.supportUrl,

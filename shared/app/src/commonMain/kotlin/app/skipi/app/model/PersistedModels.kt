@@ -7,6 +7,7 @@ import features.config.SkipiPerAppSettings
 import features.config.parseSkipiPerAppSettings
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.ProxyServerInfo
+import features.subscription.SubscriptionExpiryReminder
 import features.subscription.SubscriptionMetadata
 
 /**
@@ -120,9 +121,18 @@ data class SubscriptionRecord(
     val id: Int,
     val title: String,
     val url: String,
+    val userAgent: String,
+    val updateInterval: String,
+    val hwid: String,
+    val ageSecretKey: String,
+    val updateViaProxy: Boolean,
+    val autoOverrideRules: Boolean,
     val enabled: Boolean = true,
+    val builtIn: Boolean,
     val metadata: SubscriptionMetadata? = null,
     val lastUpdatedAtMillis: Long? = null,
+    val notifyOnExpiry: Boolean,
+    val customExpiryReminders: List<SubscriptionExpiryReminder>?,
 )
 
 /**
