@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import app.skipi.app.server.ProxyServerEditApplyOutcome
+import app.skipi.app.server.applyProxyServerEditResult
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.subscription.SubscriptionRefreshLoader
@@ -722,34 +724,41 @@ fun main() = application {
                                     }
                                 }
                             },
-                            onAddServer = { server ->
-                                val updated = DesktopServerLibraries.add(serverLibrary, server)
-                                DesktopServerLibraries.saveDefault(updated).onSuccess {
-                                    serverLibrary = updated
-                                    serverLink = ""
-                                    serverLibraryMessage = "Сервер добавлен и выбран."
-                                    if (coreState.isRunning) {
-                                        requestTunnelReconnect("Сервер добавлен и выбран.")
-                                    }
-                                }.onFailure { error ->
-                                    serverLibraryMessage = "Не удалось сохранить сервер: ${error.message.orEmpty()}"
-                                }
-                            },
-                            onUpdateServer = { serverId, server ->
-                                runCatching {
-                                    DesktopServerLibraries.update(serverLibrary, serverId, server)
-                                }.onSuccess { updated ->
-                                    DesktopServerLibraries.saveDefault(updated).onSuccess {
-                                        serverLibrary = updated
-                                        serverLibraryMessage = "Сервер изменён."
-                                        if (serverLibrary.selectedServerId == serverId && coreState.isRunning) {
-                                            requestTunnelReconnect("Активный сервер изменён.")
+                            onSaveServer = { result ->
+                                subscriptionScope.launch {
+                                    when (val outcome = applyProxyServerEditResult(
+                                        result = result,
+                                        store = desktopSharedApplication.store,
+                                        defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                                    )) {
+                                        is ProxyServerEditApplyOutcome.Saved -> {
+                                            if (result.serverId == null) {
+                                                serverLink = ""
+                                                val addedMessage = "Сервер ${result.server.getInfo().remarks} добавлен в список."
+                                                serverLibraryMessage = addedMessage
+                                                if (coreState.isRunning && serverLibrary.selectedServerId == outcome.serverId) {
+                                                    requestTunnelReconnect(addedMessage)
+                                                }
+                                            } else {
+                                                serverLibraryMessage = "Сервер изменён."
+                                                if (serverLibrary.selectedServerId == result.serverId && coreState.isRunning) {
+                                                    requestTunnelReconnect("Активный сервер изменён.")
+                                                }
+                                            }
                                         }
-                                    }.onFailure { error ->
-                                        serverLibraryMessage = "Не удалось сохранить изменения сервера: ${error.message.orEmpty()}"
+
+                                        ProxyServerEditApplyOutcome.Deleted -> {
+                                            serverLibraryMessage = "Сервер удалён."
+                                        }
+
+                                        is ProxyServerEditApplyOutcome.Failed -> {
+                                            serverLibraryMessage = if (result.serverId == null) {
+                                                "Не удалось сохранить сервер: ${outcome.reason}"
+                                            } else {
+                                                "Не удалось сохранить изменения сервера: ${outcome.reason}"
+                                            }
+                                        }
                                     }
-                                }.onFailure { error ->
-                                    serverLibraryMessage = "Не удалось изменить сервер: ${error.message.orEmpty()}"
                                 }
                             },
                             onSelectStrategyMember = { serverId, memberId ->

@@ -18,6 +18,7 @@ import app.skipi.app.proxy.ProxyServerTextCopyResult
 import app.skipi.app.proxy.copyProxyServerText
 import app.skipi.app.server.ProxyServerEditorController
 import app.skipi.app.server.ProxyServerEditorSaveDecision
+import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_copied
 import app.skipi.ui.resources.common_save
@@ -72,17 +73,18 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun DesktopProxyServerEditorHost(
     contentPadding: PaddingValues,
-    serverId: Int,
-    original: ProxyServer<*>,
+    editResult: ProxyServerEditResult,
     decodedServers: List<Pair<DesktopStoredProxyServer, ProxyServer<*>?>>,
     groupCatalog: DesktopProxyGroupCatalog,
     presentationNodes: List<ProxyServerPresentationNode>,
     presentationFormatter: ProxyServerPresentationFormatter,
     exportFullJson: suspend (ProxyServer<*>) -> String,
-    onSave: (Int, ProxyServer<*>) -> Unit,
+    onSave: (ProxyServerEditResult) -> Unit,
     onDismiss: () -> Unit,
     onMessage: (String) -> Unit,
 ) {
+    val serverId = requireNotNull(editResult.serverId)
+    val original = editResult.server
     val serverEdit = rememberSaveableProxyServerEditorDraft(original, serverId, resultKey = null)
     val editorUiState = rememberProxyServerEditorUiState(serverId, original)
     val validationMessageOf = rememberProxyServerValidationMessageResolver()
@@ -136,7 +138,7 @@ internal fun DesktopProxyServerEditorHost(
             is ProxyServerEditorSaveDecision.Reject -> onMessage(validationMessageOf(decision.issue))
             is ProxyServerEditorSaveDecision.ConfirmFullValidation -> editorUiState.showFullValidationWarning(decision.issues)
             ProxyServerEditorSaveDecision.Save -> {
-                onSave(serverId, serverEdit)
+                onSave(editResult.copy(server = serverEdit))
                 editorUiState.dismissDiscardConfirmation()
                 onDismiss()
             }
@@ -145,7 +147,7 @@ internal fun DesktopProxyServerEditorHost(
 
     fun continueSaveAfterWarning() {
         if (serverEdit is StrategyGroup) serverEdit.proxyServerIds = strategyGroupMemberIds
-        onSave(serverId, serverEdit)
+        onSave(editResult.copy(server = serverEdit))
         editorUiState.dismissFullValidationWarning()
         onDismiss()
     }

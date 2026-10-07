@@ -40,6 +40,7 @@ import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
+import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.ui.home.ProxyHomeScreen
 import app.skipi.ui.home.rememberSaveableProxyHomePresentation
 import app.skipi.ui.components.DeleteConfirmationDialog
@@ -126,8 +127,7 @@ internal fun DesktopProxyHome(
     onToggleTunnel: () -> Unit,
     onSelectServer: (Int) -> Unit,
     onDeleteServer: (Int) -> Unit,
-    onAddServer: (ProxyServer<*>) -> Unit,
-    onUpdateServer: (Int, ProxyServer<*>) -> Unit,
+    onSaveServer: (ProxyServerEditResult) -> Unit,
     onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit,
     onPingSubscriptionServers: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
     onUpdateSubscription: () -> Unit,
@@ -154,7 +154,7 @@ internal fun DesktopProxyHome(
     var editSubscriptionError by remember { mutableStateOf<String?>(null) }
     var editingGroupDraft by remember { mutableStateOf<DesktopGroupDialogDraft?>(null) }
     var editingGroupError by remember { mutableStateOf<String?>(null) }
-    var editingServerModel by remember { mutableStateOf<Pair<Int, ProxyServer<*>>?>(null) }
+    var editingServerModel by remember { mutableStateOf<ProxyServerEditResult?>(null) }
     var selectingMembersForServerId by remember { mutableStateOf<Int?>(null) }
 
     val decodedServers = remember(serverLibrary) {
@@ -498,7 +498,13 @@ internal fun DesktopProxyHome(
         onImportFromFile = importFromFile,
         onEditServer = { id ->
             decodedServers.firstOrNull { it.first.id == id }?.let { (stored, server) ->
-                if (server != null) editingServerModel = stored.id to server
+                if (server != null) {
+                    editingServerModel = ProxyServerEditResult(
+                        serverId = stored.id,
+                        server = server,
+                        groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                    )
+                }
             }
         },
         onOpenStrategyMemberPicker = { id -> selectingMembersForServerId = id },
@@ -613,7 +619,13 @@ internal fun DesktopProxyHome(
             onServerLinkChange = onServerLinkChange,
             onSubscriptionUrlChange = onSubscriptionUrlChange,
             onSaveServer = { server ->
-                editingServerId?.let { serverId -> onUpdateServer(serverId, server) } ?: onAddServer(server)
+                onSaveServer(
+                    ProxyServerEditResult(
+                        serverId = editingServerId,
+                        server = server,
+                        groupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                    ),
+                )
                 editingServerId = null
                 addDialogVisible = false
             },
@@ -717,16 +729,16 @@ internal fun DesktopProxyHome(
         )
     }
 
-    editingServerModel?.let { (serverId, server) ->
+    editingServerModel?.let { editResult ->
+        val serverId = requireNotNull(editResult.serverId)
         DesktopProxyServerEditorHost(
             contentPadding = contentPadding,
-            serverId = serverId,
-            original = server,
+            editResult = editResult,
             decodedServers = decodedServers,
             groupCatalog = groupCatalog,
             presentationNodes = presentationNodes,
             presentationFormatter = presentationFormatter,
-            onSave = onUpdateServer,
+            onSave = onSaveServer,
             onDismiss = { editingServerModel = null },
             onMessage = { localMessage = it },
             exportFullJson = { exportFullJson(serverId, it) },
