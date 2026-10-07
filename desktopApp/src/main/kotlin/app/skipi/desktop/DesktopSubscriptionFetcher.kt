@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import features.config.decodeSkipiConfigPayloadOrNull
+import features.proxy.server.usecase.ProxyServerProviderUrlFetcher
 import features.subscription.SubscriptionFetchResponse
 import features.subscription.SubscriptionMetadata
 import features.subscription.SubscriptionServerImportResult
@@ -28,6 +29,7 @@ import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.zip.GZIPInputStream
 import java.util.zip.InflaterInputStream
+import kotlinx.coroutines.runBlocking
 
 /** Desktop HTTP adapter for subscriptions. Parsing and validation stay in the shared core. */
 class DesktopSubscriptionFetcher(
@@ -131,59 +133,35 @@ class DesktopSubscriptionFetcher(
         timeout: Duration,
         proxy: DesktopSubscriptionSocksProxy?,
         deviceHeaders: Map<String, String> = emptyMap(),
-    ): DesktopFetchedSubscriptionImport {
-        var imported = DesktopMihomoPayloadImporter.import(rootPayload)
-        if (!imported.recognizedYaml) {
-            return DesktopFetchedSubscriptionImport(
-                result = SubscriptionServerImportResult(
-                    urlCount = imported.proxyEntryCount,
-                    servers = imported.servers,
-                    rejectedUrlCount = imported.rejectedProxyCount,
-                ),
-                diagnostics = imported.diagnostics,
-            )
-        }
-
-        val providerBodies = linkedMapOf<String, String>()
-        val attemptedProviders = mutableSetOf<String>()
-        val diagnostics = mutableListOf<String>()
-        repeat(DesktopMihomoPayloadImporter.DefaultMaxProviderDepth) {
-            val pending = imported.pendingProviders
-                .filter { request -> request.url !in providerBodies && request.url !in attemptedProviders }
-                .take((MaxProviderRequests - attemptedProviders.size).coerceAtLeast(0))
-            if (pending.isEmpty()) return@repeat
-            pending.forEach { request ->
-                attemptedProviders += request.url
-                runCatching {
-                    fetchAutomaticResource(
-                        url = request.url,
-                        userAgent = userAgent,
-                        timeout = timeout,
-                        proxy = proxy,
-                        deviceHeaders = deviceHeaders,
-                    )
+    ): DesktopFetchedSubscriptionImport = runBlocking {
+        var providerRequestCount = 0
+        val imported = DesktopMihomoPayloadImporter.importWithProviderFetcher(
+            text = rootPayload,
+            providerUrlFetcher = ProxyServerProviderUrlFetcher { providerUrl ->
+                check(providerRequestCount < MaxProviderRequests) {
+                    "Subscription import exceeded $MaxProviderRequests provider requests"
                 }
-                    .onSuccess { provider -> providerBodies[request.url] = provider.body }
-                    .onFailure {
-                        diagnostics += "Провайдер '${request.name.ifBlank { "без названия" }}' не удалось загрузить; остальные серверы сохранены."
-                    }
-            }
-            imported = DesktopMihomoPayloadImporter.import(
-                text = rootPayload,
-                providerPayloads = providerBodies,
-            )
-            if (attemptedProviders.size >= MaxProviderRequests) return@repeat
-        }
-        val unavailableProviders = imported.pendingProviders
-            .filter { request -> request.url !in providerBodies }
-            .map { request -> "Провайдер '${request.name.ifBlank { "без названия" }}' пока недоступен." }
-        return DesktopFetchedSubscriptionImport(
+                providerRequestCount += 1
+                fetchAutomaticResource(
+                    url = providerUrl,
+                    userAgent = userAgent,
+                    timeout = timeout,
+                    proxy = proxy,
+                    deviceHeaders = deviceHeaders,
+                ).body
+            },
+            onProviderFetchFailureMessage = { providerName ->
+                "Провайдер '${providerName.ifBlank { "без названия" }}' " +
+                    "не удалось загрузить; остальные серверы сохранены."
+            },
+        )
+        DesktopFetchedSubscriptionImport(
             result = SubscriptionServerImportResult(
                 urlCount = imported.proxyEntryCount,
                 servers = imported.servers,
                 rejectedUrlCount = imported.rejectedProxyCount,
             ),
-            diagnostics = (imported.diagnostics + diagnostics + unavailableProviders).distinct(),
+            diagnostics = imported.diagnostics.distinct(),
         )
     }
 

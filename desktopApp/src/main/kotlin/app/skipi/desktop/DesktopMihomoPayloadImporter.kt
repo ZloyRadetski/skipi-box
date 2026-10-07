@@ -9,6 +9,7 @@ import features.proxy.server.model.ProxyServer
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.ProxyServerPayloadParser
+import features.proxy.server.usecase.ProxyServerProviderUrlFetcher
 import features.proxy.server.usecase.importer.DefaultMihomoProviderMaxDepth
 import features.proxy.server.usecase.importer.MihomoProviderSkipReason
 import features.proxy.server.usecase.importer.MihomoYamlImportDiagnostic
@@ -20,8 +21,8 @@ import kotlinx.coroutines.runBlocking
 
 /**
  * Desktop Mihomo/Clash payload adapter. The shared parser owns YAML interpretation and provider
- * traversal; this host layer supplies YAML loading, URL policy, diagnostics, and the already-fetched
- * provider-body map. It never performs network requests.
+ * traversal; this host layer supplies YAML loading, URL policy, diagnostics, and a provider-body
+ * fetch callback. The callback owns any network I/O.
  */
 internal object DesktopMihomoPayloadImporter {
     const val DefaultMaxProviderDepth: Int = DefaultMihomoProviderMaxDepth
@@ -31,6 +32,26 @@ internal object DesktopMihomoPayloadImporter {
         providerPayloads: Map<String, String> = emptyMap(),
         maxProviderDepth: Int = DefaultMaxProviderDepth,
         source: ProxyServerImportSource = ProxyServerImportSource.SubscriptionUrl,
+    ): DesktopMihomoPayloadImportResult = runBlocking {
+        importWithProviderFetcher(
+            text = text,
+            providerUrlFetcher = ProxyServerProviderUrlFetcher { url ->
+                providerPayloads[url] ?: throw MissingDesktopProviderBody(url)
+            },
+            maxProviderDepth = maxProviderDepth,
+            source = source,
+        )
+    }
+
+    /** Imports providers as the shared traversal encounters them through a host-supplied fetcher. */
+    suspend fun importWithProviderFetcher(
+        text: String,
+        providerUrlFetcher: ProxyServerProviderUrlFetcher,
+        maxProviderDepth: Int = DefaultMaxProviderDepth,
+        source: ProxyServerImportSource = ProxyServerImportSource.SubscriptionUrl,
+        onProviderFetchFailureMessage: (String) -> String = { providerName ->
+            "Provider '$providerName' skipped: provider URL fetch failed."
+        },
     ): DesktopMihomoPayloadImportResult {
         require(maxProviderDepth >= 0) { "Provider depth must not be negative" }
 
@@ -67,6 +88,8 @@ internal object DesktopMihomoPayloadImporter {
                                 name = diagnostic.providerName,
                                 url = missingBody.url,
                             )
+                        } else if (diagnostic.reason == MihomoProviderSkipReason.FetchFailed) {
+                            diagnostics += onProviderFetchFailureMessage(diagnostic.providerName)
                         } else {
                             diagnostics += diagnostic.toDesktopDiagnostic()
                         }
@@ -102,19 +125,8 @@ internal object DesktopMihomoPayloadImporter {
             },
         )
 
-        val context = ProxyServerImportContext(
-            source = source,
-            providerUrlFetcher = features.proxy.server.usecase.ProxyServerProviderUrlFetcher { url ->
-                providerPayloads[url] ?: throw MissingDesktopProviderBody(url)
-            },
-        )
-        val imported = runBlocking {
-            importProxyServerPayloadText(
-                text = text,
-                context = context,
-                parsers = parsers,
-            )
-        }
+        val context = ProxyServerImportContext(source = source, providerUrlFetcher = providerUrlFetcher)
+        val imported = importProxyServerPayloadText(text = text, context = context, parsers = parsers)
 
         return DesktopMihomoPayloadImportResult(
             recognizedYaml = recognizedYaml,
@@ -135,11 +147,11 @@ internal data class DesktopMihomoProviderRequest(
 internal data class DesktopMihomoPayloadImportResult(
     /** Whether this input was recognized as a Mihomo/Clash YAML document. */
     val recognizedYaml: Boolean,
-    /** Number of proxy entries encountered across the root and supplied provider payloads. */
+    /** Number of proxy entries encountered across the root and fetched provider payloads. */
     val proxyEntryCount: Int,
     val servers: List<ProxyServer<*>>,
     val rejectedProxyCount: Int,
-    /** HTTP(S) proxy-provider URLs whose body was not supplied through [DesktopMihomoPayloadImporter.import]. */
+    /** HTTP(S) provider URLs missing from the synchronous map-backed importer input. */
     val pendingProviders: List<DesktopMihomoProviderRequest>,
     /** Safe, user-facing diagnostics; server secrets are never included. */
     val diagnostics: List<String>,
