@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import app.skipi.app.home.ProxyHomeActionId
+import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeEffect
 import app.skipi.app.home.ProxyHomeEffectHandler
@@ -41,6 +42,8 @@ import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
 import app.skipi.app.server.ProxyServerEditResult
+import app.skipi.app.server.ProxyServerEditApplyOutcome
+import app.skipi.app.server.createProxyServerEditorDraft
 import app.skipi.ui.home.ProxyHomeScreen
 import app.skipi.ui.home.rememberSaveableProxyHomePresentation
 import app.skipi.ui.components.DeleteConfirmationDialog
@@ -117,7 +120,7 @@ internal fun DesktopProxyHome(
     activeProfileName: String?,
     activeTrafficConfigId: Int?,
     trafficConfigContentById: Map<Int, String> = emptyMap(),
-    exportFullJson: suspend (Int, ProxyServer<*>) -> String,
+    exportFullJson: suspend (ProxyServerEditResult) -> String,
     onSelectStrategyMember: (Int, Int) -> Unit,
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     testingServerIds: Set<Int>,
@@ -127,7 +130,7 @@ internal fun DesktopProxyHome(
     onToggleTunnel: () -> Unit,
     onSelectServer: (Int) -> Unit,
     onDeleteServer: (Int) -> Unit,
-    onSaveServer: (ProxyServerEditResult) -> Unit,
+    onSaveServer: (ProxyServerEditResult, (ProxyServerEditApplyOutcome) -> Unit) -> Unit,
     onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit,
     onPingSubscriptionServers: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
     onUpdateSubscription: () -> Unit,
@@ -406,7 +409,7 @@ internal fun DesktopProxyHome(
             ProxyHomeImportSource.File,
         ),
         availableCopyFormats = setOf(ProxyHomeCopyFormat.Url, ProxyHomeCopyFormat.FullJson),
-        availableServerKinds = setOf(ProxyHomeServerKind.Custom),
+        availableServerKinds = ProxyHomeServerKind.entries.toSet(),
         availableServerTools = emptySet(),
     )
 
@@ -430,6 +433,17 @@ internal fun DesktopProxyHome(
         homeStore.updateInput(homeInput)
     }
     val homeUiState by homeStore.uiState.collectAsState()
+    var pendingSavedHomeGroupId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(homeUiState.groups, pendingSavedHomeGroupId) {
+        val resolution = resolvePendingDesktopProxyHomeGroupSelection(
+            pendingGroupId = pendingSavedHomeGroupId,
+            availableGroupIds = homeUiState.groups.mapTo(linkedSetOf()) { group -> group.id },
+        )
+        resolution.groupToSelect?.let { groupId ->
+            homeStore.dispatch(ProxyHomeAction.SelectGroup(groupId))
+        }
+        pendingSavedHomeGroupId = resolution.pendingGroupId
+    }
     LaunchedEffect(homeStore, homeUiState.selectedGroupId, homeUiState.searchQuery, homeUiState.isSearchVisible, homeUiState.pages) {
         val nextPresentation = ProxyHomePresentation(
             selectedGroupId = homeUiState.selectedGroupId,
@@ -493,6 +507,12 @@ internal fun DesktopProxyHome(
             addMode = mode
             addDialogVisible = true
         },
+        onCreateServerDraft = { kind ->
+            editingServerModel = createProxyServerEditorDraft(
+                kind = kind,
+                defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
+            )
+        },
         onOpenImportDialog = { importDialogVisible = true },
         onImportFromClipboard = importFromClipboard,
         onImportFromFile = importFromFile,
@@ -503,6 +523,7 @@ internal fun DesktopProxyHome(
                         serverId = stored.id,
                         server = server,
                         groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                        returnGroupId = desktopProxyServerGroupIdForHomeGroup(homeUiState.selectedGroupId),
                     )
                 }
             }
@@ -625,7 +646,7 @@ internal fun DesktopProxyHome(
                         server = server,
                         groupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
                     ),
-                )
+                ) {}
                 editingServerId = null
                 addDialogVisible = false
             },
@@ -730,7 +751,6 @@ internal fun DesktopProxyHome(
     }
 
     editingServerModel?.let { editResult ->
-        val serverId = requireNotNull(editResult.serverId)
         DesktopProxyServerEditorHost(
             contentPadding = contentPadding,
             editResult = editResult,
@@ -738,10 +758,16 @@ internal fun DesktopProxyHome(
             groupCatalog = groupCatalog,
             presentationNodes = presentationNodes,
             presentationFormatter = presentationFormatter,
-            onSave = onSaveServer,
+            onSave = { result ->
+                onSaveServer(result) { outcome ->
+                    outcome.toDesktopProxyHomeGroupId()?.let { groupId ->
+                        pendingSavedHomeGroupId = groupId
+                    }
+                }
+            },
             onDismiss = { editingServerModel = null },
             onMessage = { localMessage = it },
-            exportFullJson = { exportFullJson(serverId, it) },
+            exportFullJson = exportFullJson,
         )
     }
 
@@ -940,6 +966,7 @@ internal class DesktopProxyHomeEffectContext(
     val onSubscriptionUrlChange: (String) -> Unit = {},
     val onUpdateSubscription: () -> Unit = {},
     val onUpdateSubscriptionProvider: (Int, DesktopSubscriptionProviderEdit) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    val onCreateServerDraft: (ProxyHomeServerKind) -> Unit = {},
     val onOpenAdd: (SkipiAddSourceMode) -> Unit = {},
     val onOpenImportDialog: () -> Unit = {},
     val onImportFromClipboard: () -> Unit = {},
@@ -994,7 +1021,7 @@ internal class DesktopProxyHomeEffectContext(
                 )
             }
         } ?: unsupported("Подписка не найдена.")
-        is ProxyHomeEffect.AddServer -> invoke { onOpenAdd(SkipiAddSourceMode.Server) }
+        is ProxyHomeEffect.AddServer -> invoke { onCreateServerDraft(effect.kind) }
         ProxyHomeEffect.AddSubscription -> invoke { onOpenAdd(SkipiAddSourceMode.Subscription) }
         is ProxyHomeEffect.ImportServers -> when (effect.source) {
             ProxyHomeImportSource.ManualInput -> invoke(onOpenImportDialog)

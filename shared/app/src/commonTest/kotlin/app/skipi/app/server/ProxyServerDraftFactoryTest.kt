@@ -4,6 +4,7 @@
 package app.skipi.app.server
 
 import app.skipi.app.home.ProxyHomeServerKind
+import app.skipi.app.proxy.DefaultAutoBalancerGroupId
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
@@ -25,8 +26,33 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotSame
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 class ProxyServerDraftFactoryTest {
+    @Test
+    fun createProxyServerEditorDraftUsesAndroidGroupForEveryServerKind() {
+        val androidManualGroupId = 1
+        val cases = ProxyHomeServerKind.entries.map { kind ->
+            kind to if (kind == ProxyHomeServerKind.StrategyGroup) {
+                DefaultAutoBalancerGroupId
+            } else {
+                androidManualGroupId
+            }
+        }
+
+        cases.forEach { (kind, expectedGroupId) ->
+            val result: ProxyServerEditResult = createProxyServerEditorDraft(
+                kind = kind,
+                defaultGroupId = androidManualGroupId,
+            )
+
+            assertNull(result.serverId, kind.name)
+            assertEquals(createProxyServerDraft(kind), result.server, kind.name)
+            assertEquals<Int?>(expectedGroupId, result.groupId, kind.name)
+            assertEquals<Int?>(expectedGroupId, result.returnGroupId, kind.name)
+        }
+    }
+
     @Test
     fun createProxyServerDraftMatchesAndroidManualActionDefaults() {
         val cases = listOf(

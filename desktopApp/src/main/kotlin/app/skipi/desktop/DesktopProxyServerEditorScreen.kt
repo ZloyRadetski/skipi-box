@@ -78,12 +78,12 @@ internal fun DesktopProxyServerEditorHost(
     groupCatalog: DesktopProxyGroupCatalog,
     presentationNodes: List<ProxyServerPresentationNode>,
     presentationFormatter: ProxyServerPresentationFormatter,
-    exportFullJson: suspend (ProxyServer<*>) -> String,
+    exportFullJson: suspend (ProxyServerEditResult) -> String,
     onSave: (ProxyServerEditResult) -> Unit,
     onDismiss: () -> Unit,
     onMessage: (String) -> Unit,
 ) {
-    val serverId = requireNotNull(editResult.serverId)
+    val serverId = editResult.serverId
     val original = editResult.server
     val serverEdit = rememberSaveableProxyServerEditorDraft(original, serverId, resultKey = null)
     val editorUiState = rememberProxyServerEditorUiState(serverId, original)
@@ -160,7 +160,7 @@ internal fun DesktopProxyServerEditorHost(
         }
         scope.launch {
             when (val result = copyProxyServerText(serverEdit, ProxyServerTextCopyFormat.Default) {
-                exportFullJson(serverEdit)
+                exportFullJson(editResult.copy(server = serverEdit))
             }) {
                 is ProxyServerTextCopyResult.Success -> runCatching {
                     Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(result.text), null)

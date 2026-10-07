@@ -9,6 +9,7 @@ import app.ProxyServerState
 import app.skipi.app.proxy.ProxyServerTextCopyFormat
 import app.skipi.app.proxy.ProxyServerTextCopyResult
 import app.skipi.app.proxy.copyProxyServerText
+import app.skipi.app.server.withProxyServerCopyTarget
 import engine.xray.XrayExportConfigFactory
 import features.proxy.server.model.ProxyServer
 import features.subscription.DefaultSubscriptionGroupId
@@ -74,15 +75,8 @@ private fun generatedProxyServerXrayConfig(
     return XrayExportConfigFactory.build(copyState, selectedServer)
 }
 
-private fun AppState.withCopyTargetServer(target: ProxyServerState): AppState {
-    val index = proxyServers.indexOfFirst { server -> server.id == target.id }
-    if (index < 0) return copy(proxyServers = proxyServers + target)
-    return copy(
-        proxyServers = proxyServers.toMutableList().also { servers ->
-            servers[index] = target
-        },
-    )
-}
+private fun AppState.withCopyTargetServer(target: ProxyServerState): AppState =
+    copy(proxyServers = proxyServers.withProxyServerCopyTarget(target) { server -> server.id })
 
 private fun ProxyServerTextCopyResult.toAndroidResult(): ProxyServerCopyTextResult = when (this) {
     is ProxyServerTextCopyResult.Success -> ProxyServerCopyTextResult.Success(text)

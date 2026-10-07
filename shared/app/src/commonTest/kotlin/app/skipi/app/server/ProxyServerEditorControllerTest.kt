@@ -4,7 +4,10 @@
 package app.skipi.app.server
 
 import features.proxy.server.model.AmneziaWg
+import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.HTTP
+import features.proxy.server.model.ProxyServerValidationError
+import features.proxy.server.model.StrategyGroup
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -57,5 +60,40 @@ class ProxyServerEditorControllerTest {
     @Test
     fun strategyMemberIdsKeepFirstSeenOrderWhileRemovingDuplicates() {
         assertEquals(listOf(7, 2, 9), ProxyServerEditorController.normalizeStrategyGroupMemberIds(listOf(7, 2, 7, 9, 2)))
+    }
+
+    @Test
+    fun strategyGroupDraftCanSaveAndOnlyPersistedChangesRequireDiscardConfirmation() {
+        val original = StrategyGroup(remarks = "Primary route")
+
+        assertEquals(ProxyServerEditorSaveDecision.Save, ProxyServerEditorController.requestSave(original))
+        assertFalse(ProxyServerEditorController.hasChanges(original, original.copy()))
+        assertTrue(ProxyServerEditorController.hasChanges(original, original.copy(remarks = "Updated route")))
+
+        val rejected = assertIs<ProxyServerEditorSaveDecision.Reject>(
+            ProxyServerEditorController.requestSave(original.copy(strategy = "unknown")),
+        )
+        assertFalse(rejected.fullValidation)
+        assertEquals(ProxyServerValidationError.UnsupportedValue, rejected.issue.error)
+    }
+
+    @Test
+    fun chainProxyRequiresTwoMembersAndTracksPersistedChangesForDiscardConfirmation() {
+        val original = ChainProxy(remarks = "Two-hop route", proxyServerIds = listOf(12, 19))
+
+        assertEquals(ProxyServerEditorSaveDecision.Save, ProxyServerEditorController.requestSave(original))
+        assertFalse(ProxyServerEditorController.hasChanges(original, original.copy()))
+        assertTrue(
+            ProxyServerEditorController.hasChanges(
+                original,
+                original.copy(proxyServerIds = listOf(12, 24)),
+            ),
+        )
+
+        val rejected = assertIs<ProxyServerEditorSaveDecision.Reject>(
+            ProxyServerEditorController.requestSave(original.copy(proxyServerIds = listOf(12))),
+        )
+        assertFalse(rejected.fullValidation)
+        assertEquals(ProxyServerValidationError.ChainProxyMemberCountInvalid, rejected.issue.error)
     }
 }

@@ -10,6 +10,7 @@ import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.model.ProxyServerRecord as SharedProxyServerRecord
 import app.skipi.app.proxy.ProxyServerRecord as CollectionProxyServerRecord
 import app.skipi.app.proxy.importProxyServerRecords
+import app.skipi.app.server.createProxyServerEditorDraft
 import app.ProxyServerListState
 import app.ProxyServerState
 import app.modes.ProxyServerListSortDefault
@@ -25,12 +26,12 @@ import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import features.proxy.server.usecase.ProxyServerImportFileUseCase
 import features.proxy.server.usecase.ProxyServerImportSource
-import features.proxy.server.usecase.createProxyServer
 import features.proxy.server.usecase.deleteDuplicateServersInGroup
 import features.proxy.server.usecase.deleteInvalidServersInGroup
 import features.proxy.server.usecase.importProxyServersFromText
 import features.proxy.server.usecase.updatableSubscriptionGroups
 import features.proxy.server.usecase.applyProxySubscriptionUpdates
+import features.proxy.server.usecase.toProxyHomeServerKind
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionInstallConfigUseCase
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
@@ -142,23 +143,16 @@ internal fun handleProxyServerListAddAction(
         }
 
         else -> {
+            val editDraft = createProxyServerEditorDraft(
+                kind = action.toProxyHomeServerKind(),
+                defaultGroupId = DefaultSubscriptionGroupId,
+            )
             navigator.navigateForResult(
                 route = Route.ProxyServerEditor(
-                    ps = createProxyServer(action),
-                    serverId = null,
-                    groupId = if (action == ProxyServerListAddAction.StrategyGroup) {
-                        AutoBalancerGroupId
-                    } else {
-                        // A server created from the add menu is always a manual
-                        // server. It must not become part of the subscription the
-                        // user happened to be viewing when they pressed Add.
-                        DefaultSubscriptionGroupId
-                    },
-                    returnGroupId = if (action == ProxyServerListAddAction.StrategyGroup) {
-                        AutoBalancerGroupId
-                    } else {
-                        DefaultSubscriptionGroupId
-                    },
+                    ps = editDraft.server,
+                    serverId = editDraft.serverId,
+                    groupId = editDraft.groupId,
+                    returnGroupId = editDraft.returnGroupId,
                     resultKey = resultKey,
                 ),
                 requestKey = resultKey,

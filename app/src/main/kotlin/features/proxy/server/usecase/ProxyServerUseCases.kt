@@ -371,26 +371,27 @@ internal fun AppState.withDeletedProxyServers(deletedServerIds: Set<Int>): AppSt
 }
 
 internal fun createProxyServer(action: ProxyServerListAddAction): ProxyServer<*> {
-    val kind = when (action) {
-        ProxyServerListAddAction.ScanQrCode,
-        ProxyServerListAddAction.Clipboard,
-        ProxyServerListAddAction.File -> error("Import action cannot create a proxy server")
+    return createProxyServerDraft(action.toProxyHomeServerKind())
+}
 
-        ProxyServerListAddAction.Shadowsocks -> ProxyHomeServerKind.Shadowsocks
-        ProxyServerListAddAction.ChainProxy -> ProxyHomeServerKind.ChainProxy
-        ProxyServerListAddAction.StrategyGroup -> ProxyHomeServerKind.StrategyGroup
-        ProxyServerListAddAction.HTTP -> ProxyHomeServerKind.Http
-        ProxyServerListAddAction.VMess -> ProxyHomeServerKind.Vmess
-        ProxyServerListAddAction.VLESS -> ProxyHomeServerKind.Vless
-        ProxyServerListAddAction.Trojan -> ProxyHomeServerKind.Trojan
-        ProxyServerListAddAction.Socks -> ProxyHomeServerKind.Socks
-        ProxyServerListAddAction.Hysteria2 -> ProxyHomeServerKind.Hysteria2
-        ProxyServerListAddAction.Wireguard -> ProxyHomeServerKind.Wireguard
-        ProxyServerListAddAction.AmneziaWg -> ProxyHomeServerKind.AmneziaWg
-        ProxyServerListAddAction.OlcRtc -> ProxyHomeServerKind.OlcRtc
-        ProxyServerListAddAction.Custom -> ProxyHomeServerKind.Custom
-    }
-    return createProxyServerDraft(kind)
+internal fun ProxyServerListAddAction.toProxyHomeServerKind(): ProxyHomeServerKind = when (this) {
+    ProxyServerListAddAction.ScanQrCode,
+    ProxyServerListAddAction.Clipboard,
+    ProxyServerListAddAction.File -> error("Import action cannot create a proxy server")
+
+    ProxyServerListAddAction.Shadowsocks -> ProxyHomeServerKind.Shadowsocks
+    ProxyServerListAddAction.ChainProxy -> ProxyHomeServerKind.ChainProxy
+    ProxyServerListAddAction.StrategyGroup -> ProxyHomeServerKind.StrategyGroup
+    ProxyServerListAddAction.HTTP -> ProxyHomeServerKind.Http
+    ProxyServerListAddAction.VMess -> ProxyHomeServerKind.Vmess
+    ProxyServerListAddAction.VLESS -> ProxyHomeServerKind.Vless
+    ProxyServerListAddAction.Trojan -> ProxyHomeServerKind.Trojan
+    ProxyServerListAddAction.Socks -> ProxyHomeServerKind.Socks
+    ProxyServerListAddAction.Hysteria2 -> ProxyHomeServerKind.Hysteria2
+    ProxyServerListAddAction.Wireguard -> ProxyHomeServerKind.Wireguard
+    ProxyServerListAddAction.AmneziaWg -> ProxyHomeServerKind.AmneziaWg
+    ProxyServerListAddAction.OlcRtc -> ProxyHomeServerKind.OlcRtc
+    ProxyServerListAddAction.Custom -> ProxyHomeServerKind.Custom
 }
 
 private fun AppState.selectedProxyServerIdOrFirstAvailable(nextServers: List<ProxyServerState>): Int {

@@ -47,6 +47,7 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.applyProxyServerEditResult
+import app.skipi.app.server.toProxyServerCopyTarget
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.subscription.SubscriptionRefreshLoader
@@ -66,7 +67,6 @@ import kotlinx.coroutines.withContext
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.model.formatCustomXrayConfigJson
 import features.proxy.server.model.parseCustomXrayConfigJsonObject
 import kotlinx.serialization.json.JsonArray
@@ -568,14 +568,13 @@ fun main() = application {
                             activeProfileName = activeProfileName,
                             activeTrafficConfigId = configLibrary.selectedConfigId,
                             trafficConfigContentById = configLibrary.configs.associate { config -> config.id to config.content },
-                            exportFullJson = { serverId, draft ->
+                            exportFullJson = { editResult ->
                                 withContext(Dispatchers.IO) {
-                                    val tempServerLibrary = serverLibrary.copy(
-                                        selectedServerId = serverId,
-                                        servers = serverLibrary.servers.map { stored ->
-                                            if (stored.id == serverId) stored.copy(serverJson = draft.encodePersistedProxyServer()) else stored
-                                        },
+                                    val copyTarget = editResult.toProxyServerCopyTarget(
+                                        defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
                                     )
+                                    val tempServerLibrary = serverLibrary.withProxyServerCopyTarget(copyTarget)
+                                    val draft = copyTarget.server
                                     val activeProfile = configLibrary.selectedConfigId
                                         ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
                                     if (activeProfile != null) {
@@ -724,13 +723,14 @@ fun main() = application {
                                     }
                                 }
                             },
-                            onSaveServer = { result ->
+                            onSaveServer = { result, onCompleted ->
                                 subscriptionScope.launch {
-                                    when (val outcome = applyProxyServerEditResult(
+                                    val outcome = applyProxyServerEditResult(
                                         result = result,
                                         store = desktopSharedApplication.store,
                                         defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
-                                    )) {
+                                    )
+                                    when (outcome) {
                                         is ProxyServerEditApplyOutcome.Saved -> {
                                             if (result.serverId == null) {
                                                 serverLink = ""
@@ -759,6 +759,7 @@ fun main() = application {
                                             }
                                         }
                                     }
+                                    onCompleted(outcome)
                                 }
                             },
                             onSelectStrategyMember = { serverId, memberId ->

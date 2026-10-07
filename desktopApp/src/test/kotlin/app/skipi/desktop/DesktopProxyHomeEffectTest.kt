@@ -9,9 +9,11 @@ import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeEffectHandler
 import app.skipi.app.home.ProxyHomeInput
+import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyServerSummary
+import app.skipi.ui.home.dialogs.SkipiAddSourceMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.test.Test
@@ -173,6 +175,37 @@ class DesktopProxyHomeEffectTest {
         assertTrue(effects.handle(ProxyHomeEffect.ImportServers(ProxyHomeImportSource.QrCode)).isFailure)
 
         assertEquals(1, dialogOpens)
+    }
+
+    @Test
+    fun typedServerAddDoesNotOpenTheServerLinkDialog() {
+        val openedModes = mutableListOf<SkipiAddSourceMode>()
+        val effects = DesktopProxyHomeEffectContext(onOpenAdd = { openedModes += it })
+
+        assertTrue(effects.handle(ProxyHomeEffect.AddServer(ProxyHomeServerKind.Custom)).isSuccess)
+
+        assertEquals(emptyList<SkipiAddSourceMode>(), openedModes)
+    }
+
+    @Test
+    fun typedServerAddPassesEveryKindOnceToDraftCreationWithoutOpeningDialogs() {
+        val requestedKinds = mutableListOf<ProxyHomeServerKind>()
+        val openedModes = mutableListOf<SkipiAddSourceMode>()
+        var importDialogOpens = 0
+        val effects = DesktopProxyHomeEffectContext(
+            onCreateServerDraft = { requestedKinds += it },
+            onOpenAdd = { openedModes += it },
+            onOpenImportDialog = { importDialogOpens += 1 },
+        )
+        val everyServerKind: List<ProxyHomeServerKind> = ProxyHomeServerKind.entries.toList()
+
+        everyServerKind.forEach { kind ->
+            assertTrue(effects.handle(ProxyHomeEffect.AddServer(kind)).isSuccess)
+        }
+
+        assertEquals(everyServerKind, requestedKinds)
+        assertEquals(emptyList<SkipiAddSourceMode>(), openedModes)
+        assertEquals(0, importDialogOpens)
     }
 
     @Test

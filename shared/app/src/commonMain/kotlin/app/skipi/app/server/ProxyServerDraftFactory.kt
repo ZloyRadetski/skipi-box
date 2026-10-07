@@ -4,6 +4,7 @@
 package app.skipi.app.server
 
 import app.skipi.app.home.ProxyHomeServerKind
+import app.skipi.app.proxy.DefaultAutoBalancerGroupId
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
@@ -18,6 +19,24 @@ import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
+
+/** Creates an unsaved editor result with Android's add-menu group and return-group defaults. */
+fun createProxyServerEditorDraft(
+    kind: ProxyHomeServerKind,
+    defaultGroupId: Int,
+): ProxyServerEditResult {
+    val groupId = if (kind == ProxyHomeServerKind.StrategyGroup) {
+        DefaultAutoBalancerGroupId
+    } else {
+        defaultGroupId
+    }
+    return ProxyServerEditResult(
+        serverId = null,
+        server = createProxyServerDraft(kind),
+        groupId = groupId,
+        returnGroupId = groupId,
+    )
+}
 
 /** Creates a fresh unsaved editor draft with the canonical Android manual-add defaults. */
 fun createProxyServerDraft(kind: ProxyHomeServerKind): ProxyServer<*> = when (kind) {
