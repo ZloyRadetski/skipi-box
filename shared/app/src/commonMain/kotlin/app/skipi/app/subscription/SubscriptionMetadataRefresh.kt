@@ -30,6 +30,7 @@ fun SubscriptionRecord.withRefreshedMetadata(
     )
     return copy(
         title = response.profileTitle?.takeIf(String::isNotBlank) ?: title,
+        updateInterval = response.profileUpdateIntervalHours ?: updateInterval,
         metadata = merged,
         lastUpdatedAtMillis = refreshedAtMillis,
     )
