@@ -7,20 +7,9 @@ import app.AppState
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import features.proxy.server.list.ProxyServerListAddAction
-import features.proxy.server.model.AmneziaWg
-import features.proxy.server.model.ChainProxy
-import features.proxy.server.model.Custom
-import features.proxy.server.model.HTTP
-import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.Shadowsocks
-import features.proxy.server.model.Socks
-import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.Trojan
-import features.proxy.server.model.VLESS
-import features.proxy.server.model.VMess
-import features.proxy.server.model.Wireguard
+import app.skipi.app.home.ProxyHomeServerKind
+import app.skipi.app.server.createProxyServerDraft
 import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.SubscriptionServerCollectionUpdate
 import app.skipi.app.proxy.deleteProxyServerRecords
@@ -382,46 +371,26 @@ internal fun AppState.withDeletedProxyServers(deletedServerIds: Set<Int>): AppSt
 }
 
 internal fun createProxyServer(action: ProxyServerListAddAction): ProxyServer<*> {
-    return when (action) {
+    val kind = when (action) {
         ProxyServerListAddAction.ScanQrCode,
         ProxyServerListAddAction.Clipboard,
         ProxyServerListAddAction.File -> error("Import action cannot create a proxy server")
 
-        ProxyServerListAddAction.Shadowsocks -> Shadowsocks(port = "")
-
-        ProxyServerListAddAction.ChainProxy -> ChainProxy()
-
-        ProxyServerListAddAction.StrategyGroup -> StrategyGroup()
-
-        ProxyServerListAddAction.HTTP -> HTTP(port = "")
-
-        ProxyServerListAddAction.VMess -> VMess(port = "")
-
-        ProxyServerListAddAction.VLESS -> VLESS()
-
-        ProxyServerListAddAction.Trojan -> Trojan(port = "")
-
-        ProxyServerListAddAction.Socks -> Socks(port = "")
-
-        ProxyServerListAddAction.Hysteria2 -> Hysteria2(port = "")
-
-        ProxyServerListAddAction.Wireguard -> Wireguard(port = "", reserved = "", address = "", mtu = "")
-
-        ProxyServerListAddAction.AmneziaWg -> AmneziaWg(
-            server = "",
-            port = "",
-            secretKey = "",
-            publicKey = "",
-            preSharedKey = "",
-            reserved = "",
-            address = "",
-            mtu = "",
-        )
-
-        ProxyServerListAddAction.OlcRtc -> OlcRtc()
-
-        ProxyServerListAddAction.Custom -> Custom()
+        ProxyServerListAddAction.Shadowsocks -> ProxyHomeServerKind.Shadowsocks
+        ProxyServerListAddAction.ChainProxy -> ProxyHomeServerKind.ChainProxy
+        ProxyServerListAddAction.StrategyGroup -> ProxyHomeServerKind.StrategyGroup
+        ProxyServerListAddAction.HTTP -> ProxyHomeServerKind.Http
+        ProxyServerListAddAction.VMess -> ProxyHomeServerKind.Vmess
+        ProxyServerListAddAction.VLESS -> ProxyHomeServerKind.Vless
+        ProxyServerListAddAction.Trojan -> ProxyHomeServerKind.Trojan
+        ProxyServerListAddAction.Socks -> ProxyHomeServerKind.Socks
+        ProxyServerListAddAction.Hysteria2 -> ProxyHomeServerKind.Hysteria2
+        ProxyServerListAddAction.Wireguard -> ProxyHomeServerKind.Wireguard
+        ProxyServerListAddAction.AmneziaWg -> ProxyHomeServerKind.AmneziaWg
+        ProxyServerListAddAction.OlcRtc -> ProxyHomeServerKind.OlcRtc
+        ProxyServerListAddAction.Custom -> ProxyHomeServerKind.Custom
     }
+    return createProxyServerDraft(kind)
 }
 
 private fun AppState.selectedProxyServerIdOrFirstAvailable(nextServers: List<ProxyServerState>): Int {
