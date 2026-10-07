@@ -4,10 +4,18 @@
 package app.skipi.desktop
 
 import app.skipi.app.model.ProxyServerRecord
+import app.skipi.app.proxy.createProxyServerRecord
+import app.skipi.app.proxy.editProxyServerRecord
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.encodePersistedProxyServer
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -160,7 +168,91 @@ class DesktopProxyServerRepositoryTest {
     }
 
     @Test
-    fun persistenceFailureLeavesThePreviousCatalogAndPublicationHistoryIntact() = runBlocking {
+    fun sharedCreatePrependsAndPreservesAnExistingSelection() = runBlocking {
+        val initial = serverLibrary(
+            selectedServerId = 9,
+            records = listOf(
+                serverRecord(42, "first.example", subscriptionId = 4),
+                serverRecord(9, "selected.example", subscriptionId = 8),
+            ),
+        ).copy(nextServerId = 50)
+        val fixture = RepositoryFixture(initial)
+
+        fixture.repository.updateCatalog { current ->
+            createProxyServerRecord(
+                catalog = current,
+                server = HTTP(remarks = "Created", server = "created.example"),
+                sourceSubscriptionId = 17,
+            )
+        }
+
+        assertEquals(listOf(50, 42, 9), fixture.persistedLibrary.servers.map(DesktopStoredProxyServer::id))
+        assertEquals(listOf(50, 42, 9), fixture.repository.servers.value.map(ProxyServerRecord::id))
+        assertEquals(9, fixture.persistedLibrary.selectedServerId)
+        assertEquals(51, fixture.persistedLibrary.nextServerId)
+        assertEquals(17, fixture.persistedLibrary.servers.first().subscriptionId)
+        assertEquals("created.example", fixture.repository.servers.value.first().server.let { (it as HTTP).server })
+    }
+
+    @Test
+    fun sharedCreatePreservesTheSelectionOfAnOpaqueRawRecord() = runBlocking {
+        val opaque = DesktopStoredProxyServer(
+            id = 99,
+            serverJson = "future protocol payload; retain these exact bytes",
+            subscriptionId = 17,
+        )
+        val initial = DesktopServerLibrary(
+            selectedServerId = 99,
+            servers = listOf(serverRecord(42, "visible.example").toStoredServer(), opaque),
+            nextServerId = 100,
+        )
+        val fixture = RepositoryFixture(initial)
+
+        fixture.repository.updateCatalog { current ->
+            createProxyServerRecord(
+                catalog = current,
+                server = HTTP(remarks = "Created", server = "created.example"),
+                sourceSubscriptionId = null,
+            )
+        }
+
+        assertEquals(99, fixture.persistedLibrary.selectedServerId)
+        assertEquals(opaque, fixture.persistedLibrary.servers.single { it.id == 99 })
+        assertEquals(listOf(100, 42), fixture.repository.servers.value.map(ProxyServerRecord::id))
+        assertEquals(101, fixture.persistedLibrary.nextServerId)
+    }
+
+    @Test
+    fun sharedEditReplacesTheServerInPlaceAndPreservesItsAssociation() = runBlocking {
+        val initial = serverLibrary(
+            selectedServerId = 9,
+            records = listOf(
+                serverRecord(42, "first.example", subscriptionId = 4),
+                serverRecord(9, "old.example", subscriptionId = 8),
+                serverRecord(7, "last.example", subscriptionId = 7),
+            ),
+        ).copy(nextServerId = 50)
+        val fixture = RepositoryFixture(initial)
+
+        fixture.repository.updateCatalog { current ->
+            editProxyServerRecord(
+                catalog = current,
+                serverId = 9,
+                server = HTTP(remarks = "Edited", server = "edited.example"),
+                sourceSubscriptionId = 99,
+            )
+        }
+
+        assertEquals(listOf(42, 9, 7), fixture.persistedLibrary.servers.map(DesktopStoredProxyServer::id))
+        assertEquals(listOf(42, 9, 7), fixture.repository.servers.value.map(ProxyServerRecord::id))
+        assertEquals(8, fixture.persistedLibrary.servers[1].subscriptionId)
+        assertEquals(9, fixture.persistedLibrary.selectedServerId)
+        assertEquals(50, fixture.persistedLibrary.nextServerId)
+        assertEquals("edited.example", fixture.repository.servers.value[1].server.let { (it as HTTP).server })
+    }
+
+    @Test
+    fun failedSharedCreateLeavesThePreviousCatalogAndPublicationHistoryIntact() = runBlocking {
         val directory = Files.createTempDirectory("skipi-proxy-server-save-failure-")
         val path = directory.resolve("servers.json")
         val original = serverLibrary(
@@ -179,8 +271,8 @@ class DesktopProxyServerRepositoryTest {
                 path = path,
                 initialLibrary = persistedOriginal,
                 saveLibrary = { candidate ->
-                    if (candidate.servers.none { it.id == 3 }) {
-                        Result.failure(IllegalStateException("The host cannot persist a catalog after C is removed"))
+                    if (candidate.servers.any { it.id == 4 }) {
+                        Result.failure(IllegalStateException("The host cannot persist the new server"))
                     } else {
                         DesktopServerLibraries.save(path, candidate)
                     }
@@ -190,12 +282,10 @@ class DesktopProxyServerRepositoryTest {
             val originalVisibleServers = repository.servers.value
             val failure = runCatching {
                 repository.updateCatalog { current ->
-                    current.copy(
-                        servers = listOf(
-                            current.servers.single { it.id == 1 },
-                            serverRecord(4, "d.example"),
-                        ),
-                        selectedServerId = 4,
+                    createProxyServerRecord(
+                        catalog = current,
+                        server = HTTP(remarks = "New", server = "new.example"),
+                        sourceSubscriptionId = null,
                     )
                 }
             }.exceptionOrNull()
@@ -211,6 +301,83 @@ class DesktopProxyServerRepositoryTest {
             Files.deleteIfExists(path.resolveSibling("${path.fileName}.tmp"))
             Files.deleteIfExists(path)
             Files.deleteIfExists(directory)
+        }
+    }
+
+    @Test
+    fun concurrentSharedCreatesAllocateDistinctIdsFromSerializedCatalogSnapshots() {
+        val initial = DesktopServerLibrary(
+            selectedServerId = 8,
+            servers = listOf(serverRecord(8, "existing.example").toStoredServer()),
+            nextServerId = 10,
+        )
+        val persistedLibrary = AtomicReference(initial)
+        val saveCount = AtomicInteger()
+        val firstSaveEntered = CountDownLatch(1)
+        val allowFirstSaveToFinish = CountDownLatch(1)
+        val publications = CopyOnWriteArrayList<DesktopServerLibrary>()
+        val repository = DesktopProxyServerRepository(
+            initialLibrary = initial,
+            readLibrary = { persistedLibrary.get() },
+            saveLibrary = { candidate ->
+                if (saveCount.incrementAndGet() == 1) {
+                    firstSaveEntered.countDown()
+                    check(allowFirstSaveToFinish.await(10, TimeUnit.SECONDS)) {
+                        "Timed out waiting to release the first catalog save"
+                    }
+                }
+                persistedLibrary.set(candidate)
+                Result.success(Unit)
+            },
+            publishLibrary = { published -> publications.add(published) },
+        )
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            val firstCreate = executor.submit {
+                runBlocking {
+                    repository.updateCatalog { current ->
+                        createProxyServerRecord(
+                            catalog = current,
+                            server = HTTP(server = "concurrent-first.example"),
+                            sourceSubscriptionId = null,
+                        )
+                    }
+                }
+            }
+            assertTrue(firstSaveEntered.await(10, TimeUnit.SECONDS))
+
+            val secondStarted = CountDownLatch(1)
+            val secondCreate = executor.submit {
+                secondStarted.countDown()
+                runBlocking {
+                    repository.updateCatalog { current ->
+                        createProxyServerRecord(
+                            catalog = current,
+                            server = HTTP(server = "concurrent-second.example"),
+                            sourceSubscriptionId = null,
+                        )
+                    }
+                }
+            }
+            assertTrue(secondStarted.await(10, TimeUnit.SECONDS))
+            allowFirstSaveToFinish.countDown()
+            firstCreate.get(10, TimeUnit.SECONDS)
+            secondCreate.get(10, TimeUnit.SECONDS)
+
+            val finalLibrary = persistedLibrary.get()
+            assertEquals(listOf(11, 10, 8), finalLibrary.servers.map(DesktopStoredProxyServer::id))
+            assertEquals(listOf(11, 10, 8), repository.servers.value.map(ProxyServerRecord::id))
+            assertEquals(12, finalLibrary.nextServerId)
+            assertEquals(8, finalLibrary.selectedServerId)
+            assertEquals(2, publications.size)
+            assertEquals(listOf(10, 8), publications.first().servers.map(DesktopStoredProxyServer::id))
+            assertEquals(listOf(11, 10, 8), publications.last().servers.map(DesktopStoredProxyServer::id))
+            assertTrue(finalLibrary.servers.all { it.id > 0 })
+        } finally {
+            allowFirstSaveToFinish.countDown()
+            executor.shutdownNow()
+            assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
         }
     }
 
@@ -395,43 +562,60 @@ class DesktopProxyServerRepositoryTest {
     }
 
     @Test
-    fun catalogIdAllocatorSurvivesReloadAndDoesNotRewindAfterDeletion() {
+    fun sharedCreateUsesOpaqueIdHighWaterAcrossReloadAndDeletion() {
         val directory = Files.createTempDirectory("skipi-proxy-server-catalog-")
         val path = directory.resolve("servers.json")
+        val opaque = DesktopStoredProxyServer(
+            id = 999,
+            serverJson = "future protocol payload that this version cannot decode",
+            subscriptionId = 17,
+        )
         try {
-            val initial = serverLibrary(
+            val initial = DesktopServerLibrary(
                 selectedServerId = 42,
-                records = listOf(serverRecord(42, "existing.example")),
+                servers = listOf(serverRecord(42, "existing.example").toStoredServer(), opaque),
+                nextServerId = 10,
             )
             DesktopServerLibraries.save(path, initial).getOrThrow()
-            createFileBackedRepository(path, DesktopServerLibraries.load(path).getOrThrow()).let { repository ->
-                runBlocking {
-                    repository.updateCatalog { current -> current.copy(nextServerId = 100) }
+            val loaded = DesktopServerLibraries.load(path).getOrThrow()
+            assertEquals(1000, loaded.nextServerId)
+            assertEquals(opaque, loaded.servers.single { it.id == opaque.id })
+
+            val repositoryAfterLoad = createFileBackedRepository(path, loaded)
+            runBlocking {
+                repositoryAfterLoad.updateCatalog { current ->
+                    createProxyServerRecord(
+                        catalog = current,
+                        server = HTTP(server = "first-created.example"),
+                        sourceSubscriptionId = null,
+                    )
                 }
             }
+            val afterFirstCreate = DesktopServerLibraries.load(path).getOrThrow()
+            assertEquals(1000, afterFirstCreate.servers.first { it.id != opaque.id }.id)
+            assertEquals(1001, afterFirstCreate.nextServerId)
+            assertEquals(opaque, afterFirstCreate.servers.single { it.id == opaque.id })
 
-            val afterHighWaterUpdate = DesktopServerLibraries.load(path).getOrThrow()
-            val reloadedRepository = createFileBackedRepository(path, afterHighWaterUpdate)
-            var nextIdSeenAfterReload: Int? = null
             runBlocking {
-                reloadedRepository.updateCatalog { current ->
-                    nextIdSeenAfterReload = current.nextServerId
-                    current
-                }
-            }
-
-            val firstAddition = DesktopServerLibraries.add(afterHighWaterUpdate, HTTP(server = "allocated.example"))
-            DesktopServerLibraries.save(path, firstAddition).getOrThrow()
-            val allocatedId = firstAddition.servers.last().id
-            runBlocking {
-                createFileBackedRepository(path, DesktopServerLibraries.load(path).getOrThrow())
-                    .remove(allocatedId)
+                createFileBackedRepository(path, afterFirstCreate).remove(1000)
             }
             val afterDeletion = DesktopServerLibraries.load(path).getOrThrow()
-            val nextAddition = DesktopServerLibraries.add(afterDeletion, HTTP(server = "after-delete.example"))
-            val nextIdAfterDeletion = nextAddition.servers.last().id
+            assertEquals(1001, afterDeletion.nextServerId)
+            assertEquals(opaque, afterDeletion.servers.single { it.id == opaque.id })
 
-            assertEquals(listOf(100, 100, 101), listOf(nextIdSeenAfterReload, allocatedId, nextIdAfterDeletion))
+            runBlocking {
+                createFileBackedRepository(path, afterDeletion).updateCatalog { current ->
+                    createProxyServerRecord(
+                        catalog = current,
+                        server = HTTP(server = "after-delete.example"),
+                        sourceSubscriptionId = null,
+                    )
+                }
+            }
+            val afterSecondCreate = DesktopServerLibraries.load(path).getOrThrow()
+            assertEquals(1001, afterSecondCreate.servers.first { it.id != opaque.id }.id)
+            assertEquals(1002, afterSecondCreate.nextServerId)
+            assertEquals(opaque, afterSecondCreate.servers.single { it.id == opaque.id })
         } finally {
             Files.deleteIfExists(path.resolveSibling("${path.fileName}.tmp"))
             Files.deleteIfExists(path)

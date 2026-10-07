@@ -167,6 +167,75 @@ class ProxyServerCatalogOperationsTest {
     }
 
     @Test
+    fun createPreservesASelectedRetainedServerId() {
+        val catalog = ProxyServerCatalog(
+            servers = listOf(ProxyServerRecord(id = 42, server = HTTP(server = "visible.example"))),
+            nextServerId = 100,
+            selectedServerId = 99,
+            retainedServerIds = setOf(99),
+        )
+
+        val created = createProxyServerRecord(
+            catalog = catalog,
+            server = HTTP(server = "new.example"),
+            sourceSubscriptionId = null,
+        )
+
+        assertEquals(listOf(100, 42), created.servers.map(ProxyServerRecord::id))
+        assertEquals(99, created.selectedServerId)
+        assertEquals(setOf(99), created.retainedServerIds)
+    }
+
+    @Test
+    fun createAllocatesAboveRetainedIdsWhenTheCatalogCounterIsStale() {
+        val catalog = ProxyServerCatalog(
+            servers = listOf(ProxyServerRecord(id = 42, server = HTTP(server = "visible.example"))),
+            nextServerId = 50,
+            selectedServerId = 42,
+            retainedServerIds = setOf(99),
+        )
+
+        val created = createProxyServerRecord(
+            catalog = catalog,
+            server = HTTP(server = "new.example"),
+            sourceSubscriptionId = null,
+        )
+
+        assertEquals(listOf(100, 42), created.servers.map(ProxyServerRecord::id))
+        assertEquals(101, created.nextServerId)
+        assertEquals(42, created.selectedServerId)
+        assertEquals(setOf(99), created.retainedServerIds)
+    }
+
+    @Test
+    fun editPreservesASelectedRetainedServerIdAndItsMetadata() {
+        val catalog = ProxyServerCatalog(
+            servers = listOf(
+                ProxyServerRecord(
+                    id = 42,
+                    server = HTTP(server = "old.example"),
+                    sourceSubscriptionId = 7,
+                ),
+            ),
+            nextServerId = 100,
+            selectedServerId = 99,
+            retainedServerIds = setOf(99),
+        )
+
+        val edited = editProxyServerRecord(
+            catalog = catalog,
+            serverId = 42,
+            server = HTTP(server = "edited.example"),
+        )
+
+        assertEquals(listOf(42), edited.servers.map(ProxyServerRecord::id))
+        assertEquals(7, edited.servers.single().sourceSubscriptionId)
+        assertEquals(99, edited.selectedServerId)
+        assertEquals(100, edited.nextServerId)
+        assertEquals(setOf(99), edited.retainedServerIds)
+    }
+
+    @Test
     fun editingARecordRemovedWhileTheEditorWasOpenRestoresItsCapturedIdAndGroup() {
         val catalog = ProxyServerCatalog(
             servers = listOf(

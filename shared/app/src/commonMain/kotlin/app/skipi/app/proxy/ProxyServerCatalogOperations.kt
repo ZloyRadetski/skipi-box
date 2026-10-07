@@ -15,7 +15,10 @@ fun createProxyServerRecord(
 ): ProxyServerCatalog {
     require(catalog.nextServerId > 0) { "Next proxy server ID must be positive" }
 
-    val serverId = maxOf(catalog.nextServerId, nextServerIdAfter(catalog.servers))
+    val serverId = maxOf(
+        catalog.nextServerId,
+        nextServerIdAfter(catalog.servers, catalog.retainedServerIds),
+    )
     check(serverId < Int.MAX_VALUE) { "No proxy server IDs remain" }
 
     val created = ProxyServerRecord(
@@ -28,7 +31,7 @@ fun createProxyServerRecord(
         servers = servers,
         nextServerId = serverId + 1,
         selectedServerId = catalog.selectedServerId.takeIf { selectedId ->
-            catalog.servers.any { it.id == selectedId }
+            catalog.containsServerId(selectedId)
         } ?: serverId,
     )
 }
@@ -59,19 +62,23 @@ fun editProxyServerRecord(
         servers = servers,
         nextServerId = maxOf(
             catalog.nextServerId,
-            nextServerIdAfter(servers),
+            nextServerIdAfter(servers, catalog.retainedServerIds),
             positiveIncrementSaturated(serverId),
         ),
         selectedServerId = catalog.selectedServerId.takeIf { selectedId ->
-            servers.any { it.id == selectedId }
+            servers.any { it.id == selectedId } || selectedId in catalog.retainedServerIds
         } ?: servers.firstOrNull()?.id ?: catalog.selectedServerId,
     )
 }
 
-private fun nextServerIdAfter(servers: List<ProxyServerRecord>): Int =
-    servers.maxOfOrNull(ProxyServerRecord::id)
-        ?.let(::positiveIncrementSaturated)
-        ?: 1
+private fun ProxyServerCatalog.containsServerId(serverId: Int): Boolean =
+    servers.any { it.id == serverId } || serverId in retainedServerIds
+
+private fun nextServerIdAfter(servers: List<ProxyServerRecord>, retainedServerIds: Set<Int>): Int =
+    maxOf(
+        servers.maxOfOrNull(ProxyServerRecord::id) ?: 0,
+        retainedServerIds.maxOrNull() ?: 0,
+    ).let(::positiveIncrementSaturated)
 
 private fun positiveIncrementSaturated(id: Int): Int = when {
     id >= Int.MAX_VALUE -> Int.MAX_VALUE

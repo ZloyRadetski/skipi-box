@@ -8,4 +8,9 @@ data class ProxyServerCatalog(
     val servers: List<ProxyServerRecord> = emptyList(),
     val nextServerId: Int = 1,
     val selectedServerId: Int = 1,
+    /**
+     * IDs of persisted rows the adapter keeps opaque. Shared operations use them for selection and
+     * allocation only; the adapter remains responsible for each row and its payload.
+     */
+    val retainedServerIds: Set<Int> = emptySet(),
 )

@@ -195,11 +195,17 @@ class DesktopProxyServerRepository(
         return updated
     }
 
-    private fun DesktopServerLibrary.toCatalog(): ProxyServerCatalog = ProxyServerCatalog(
-        servers = toRecords(),
-        nextServerId = effectiveNextServerId,
-        selectedServerId = selectedServerId ?: NO_SELECTION,
-    )
+    private fun DesktopServerLibrary.toCatalog(): ProxyServerCatalog {
+        val records = toRecords()
+        val typedIds = records.mapTo(hashSetOf(), ProxyServerRecord::id)
+        val retainedIds = servers.mapTo(hashSetOf(), DesktopStoredProxyServer::id) - typedIds
+        return ProxyServerCatalog(
+            servers = records,
+            nextServerId = effectiveNextServerId,
+            selectedServerId = selectedServerId ?: NO_SELECTION,
+            retainedServerIds = retainedIds,
+        )
+    }
 
     private fun DesktopServerLibrary.toRecords(): List<ProxyServerRecord> =
         servers.mapNotNull { stored -> stored.toRecordOrNull() }
