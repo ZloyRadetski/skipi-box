@@ -5,20 +5,26 @@ package app.skipi.desktop
 
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
+import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
+import features.proxy.server.usecase.ProxyServerImportSource
+import features.proxy.server.usecase.ProxyServerProviderUrlFetcher
 import features.proxy.server.usecase.importer.CustomXrayConfigImportResult
 import features.proxy.server.usecase.importer.WireguardConfParseResult
 import features.proxy.server.usecase.importer.parseCustomXrayConfigPayload
 import features.proxy.server.usecase.importer.parseWireguardConf
 import features.subscription.isValidManualSubscriptionUrl
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 /**
  * Pure, desktop-side planning for the ``+`` import flow.
  *
  * The caller supplies text it has already read from the clipboard or a file,
- * receives typed mutations to apply to the local libraries, and owns all UI,
- * file picking and networking.  In particular, a Mihomo `proxy-providers`
- * URL is reported as pending instead of being fetched here.
+ * receives typed mutations to apply to the local libraries, and owns the UI,
+ * file picking and network callback. `plan` reports unavailable Mihomo
+ * providers as pending; `planWithProviderFetcher` resolves them through the
+ * caller-supplied callback.
  */
 object DesktopProxyImportPlanner {
     fun plan(
@@ -26,29 +32,100 @@ object DesktopProxyImportPlanner {
         existing: DesktopProxyImportExisting = DesktopProxyImportExisting(),
     ): DesktopProxyImportPlan {
         val text = input.text.removePrefix(ImportByteOrderMark)
-        if (text.isBlank()) {
-            return DesktopProxyImportPlan(
-                source = input.source,
-                diagnostics = listOf(
-                    DesktopProxyImportDiagnostic(
-                        severity = DesktopProxyImportDiagnosticSeverity.Error,
-                        code = DesktopProxyImportDiagnosticCode.EmptyInput,
-                        message = "Нет данных для импорта.",
-                    ),
+        emptyInputPlan(input, text)?.let { plan -> return plan }
+
+        val imported = DesktopMihomoPayloadImporter.import(
+            text = text,
+            source = input.source.proxyServerImportSource(),
+        )
+        return planImported(input, existing, text, imported)
+    }
+
+    /** Plans a manual import while resolving Mihomo providers through the caller's network boundary. */
+    suspend fun planWithProviderFetcher(
+        input: DesktopProxyImportInput,
+        existing: DesktopProxyImportExisting = DesktopProxyImportExisting(),
+        providerUrlFetcher: ProxyServerProviderUrlFetcher,
+    ): DesktopProxyImportPlan {
+        val text = input.text.removePrefix(ImportByteOrderMark)
+        emptyInputPlan(input, text)?.let { plan -> return plan }
+
+        val imported = DesktopMihomoPayloadImporter.importWithProviderFetcher(
+            text = text,
+            source = input.source.proxyServerImportSource(),
+            providerUrlFetcher = providerUrlFetcher,
+        )
+        currentCoroutineContext().ensureActive()
+        return planImported(input, existing, text, imported)
+    }
+
+    private fun emptyInputPlan(
+        input: DesktopProxyImportInput,
+        text: String,
+    ): DesktopProxyImportPlan? = if (text.isBlank()) {
+        DesktopProxyImportPlan(
+            source = input.source,
+            diagnostics = listOf(
+                DesktopProxyImportDiagnostic(
+                    severity = DesktopProxyImportDiagnosticSeverity.Error,
+                    code = DesktopProxyImportDiagnosticCode.EmptyInput,
+                    message = "Нет данных для импорта.",
                 ),
+            ),
+        )
+    } else {
+        null
+    }
+
+    private fun planImported(
+        input: DesktopProxyImportInput,
+        existing: DesktopProxyImportExisting,
+        text: String,
+        imported: DesktopMihomoPayloadImportResult,
+    ): DesktopProxyImportPlan {
+        val parsedServers = imported.servers
+        val wireguard = parseWireguardConf(text)
+        val shadowrocket = text.analyzeShadowrocketConfig()
+        val hasConfigSections = shadowrocket.sections.isNotEmpty()
+        val invalidWireguardOnlyDocument =
+            wireguard is WireguardConfParseResult.Invalid &&
+                shadowrocket.sections.keys.all { section -> section == "interface" || section == "peer" }
+        val looksLikeShadowrocketProfile = hasConfigSections && !invalidWireguardOnlyDocument
+        val recognizedCustomJson = looksLikeShadowrocketProfile &&
+            when (parseCustomXrayConfigPayload(text)) {
+                is CustomXrayConfigImportResult.Imported,
+                CustomXrayConfigImportResult.NoConfigObjects -> true
+
+                CustomXrayConfigImportResult.InvalidJson,
+                CustomXrayConfigImportResult.NotJson -> false
+            }
+        val sharedStructuredPayloadOwnsRoute =
+            imported.recognizedYaml ||
+                recognizedCustomJson ||
+                (wireguard is WireguardConfParseResult.Imported &&
+                    !imported.recognizedYaml && imported.servers.size == 1)
+
+        // Recognized Shadowrocket documents are profile imports even when the
+        // shared URL parser finds a proxy link in a comment or section. The
+        // common structured routes remain authoritative for JSON, YAML, and
+        // standalone WireGuard payloads.
+        if (looksLikeShadowrocketProfile && !sharedStructuredPayloadOwnsRoute) {
+            return planShadowrocketConfig(
+                input = input,
+                text = text,
+                existing = existing,
+                looksLikeConfig = true,
             )
         }
 
-        when (val wireguardConf = parseWireguardConf(text)) {
-            is WireguardConfParseResult.Imported -> {
-                return planWireguardConf(
-                    input = input,
-                    server = wireguardConf.server,
-                    existing = existing,
-                )
-            }
-
-            is WireguardConfParseResult.Invalid -> {
+        if (imported.servers.isEmpty()) {
+            if (
+                imported.proxyEntryCount == 0 &&
+                !imported.recognizedYaml &&
+                imported.pendingProviders.isEmpty() &&
+                wireguard is WireguardConfParseResult.Invalid &&
+                !looksLikeShadowrocketProfile
+            ) {
                 return DesktopProxyImportPlan(
                     source = input.source,
                     diagnostics = listOf(
@@ -61,42 +138,22 @@ object DesktopProxyImportPlanner {
                 )
             }
 
-            WireguardConfParseResult.NotWireguardConf -> Unit
-        }
+            val requiresConfig = input is DesktopProxyImportInput.File &&
+                input.fileName.endsWith(".conf", ignoreCase = true)
+            if (requiresConfig) {
+                return planShadowrocketConfig(
+                    input = input,
+                    text = text,
+                    existing = existing,
+                    looksLikeConfig = looksLikeShadowrocketProfile,
+                )
+            }
 
-        val shadowrocket = text.analyzeShadowrocketConfig()
-        val looksLikeConfig = shadowrocket.sections.isNotEmpty()
-        val requiresConfig = input is DesktopProxyImportInput.File && input.fileName.endsWith(".conf", ignoreCase = true)
-        if (looksLikeConfig || requiresConfig) {
-            return planShadowrocketConfig(
-                input = input,
+            planCustomXrayJson(
+                source = input.source,
                 text = text,
                 existing = existing,
-                looksLikeConfig = looksLikeConfig,
-            )
-        }
-
-        planCustomXrayJson(
-            source = input.source,
-            text = text,
-            existing = existing,
-        )?.let { plan -> return plan }
-
-        val imported = DesktopMihomoPayloadImporter.import(text)
-        // `importSubscriptionServers()` intentionally chooses either an ordinary
-        // line list or one Base64 payload. A mixed paste needs per-line parsing
-        // so a subscription URL or a direct link cannot hide an adjacent Base64
-        // payload. A wrapped Base64-only payload still goes through the whole
-        // text parser above.
-        val parsedServers = when {
-            imported.recognizedYaml -> imported.servers
-            text.needsPerLineProxyImport(imported.servers.isEmpty()) -> text.lineSequence()
-                .map(String::trim)
-                .filter(String::isNotBlank)
-                .flatMap { line -> DesktopMihomoPayloadImporter.import(line).servers }
-                .toList()
-
-            else -> imported.servers
+            )?.let { plan -> return plan }
         }
         val diagnostics = imported.diagnostics.map { message ->
             DesktopProxyImportDiagnostic(
@@ -139,7 +196,11 @@ object DesktopProxyImportPlanner {
         // A recognized YAML document may legitimately contain HTTP(S) provider URLs.
         // They are not subscription URLs selected by the user, so only scan ordinary
         // text/base64 payloads for manual subscriptions.
-        if (!imported.recognizedYaml) {
+        if (
+            !imported.recognizedYaml &&
+            imported.servers.none { server -> server is Custom } &&
+            !text.isJsonImportPayload()
+        ) {
             val subscriptions = text.manualSubscriptionUrls()
                 .withoutKnownSubscriptions(
                     existing.subscriptionUrls,
@@ -177,6 +238,13 @@ object DesktopProxyImportPlanner {
         )
     }
 
+    private fun DesktopProxyImportSource.proxyServerImportSource(): ProxyServerImportSource = when (this) {
+        DesktopProxyImportSource.Text,
+        DesktopProxyImportSource.Clipboard -> ProxyServerImportSource.Clipboard
+
+        DesktopProxyImportSource.File -> ProxyServerImportSource.File
+    }
+
     /** Convenience entry point for a pasted text field. */
     fun planText(
         text: String,
@@ -198,35 +266,6 @@ object DesktopProxyImportPlanner {
         text: String,
         existing: DesktopProxyImportExisting = DesktopProxyImportExisting(),
     ): DesktopProxyImportPlan = plan(DesktopProxyImportInput.File(fileName, text), existing)
-
-    private fun planWireguardConf(
-        input: DesktopProxyImportInput,
-        server: ProxyServer<*>,
-        existing: DesktopProxyImportExisting,
-    ): DesktopProxyImportPlan {
-        val deduplicated = listOf(server).withoutKnownServers(
-            existing.serverFingerprints,
-            existing.serverDuplicatePolicy,
-        )
-        val diagnostics = buildList {
-            deduplicated.duplicateCount.takeIf { it > 0 }?.let { duplicates ->
-                add(
-                    DesktopProxyImportDiagnostic(
-                        severity = DesktopProxyImportDiagnosticSeverity.Info,
-                        code = DesktopProxyImportDiagnosticCode.DuplicateServers,
-                        message = "Duplicate servers skipped: $duplicates.",
-                    ),
-                )
-            }
-        }
-        return DesktopProxyImportPlan(
-            source = input.source,
-            actions = deduplicated.values.takeIf { values -> values.isNotEmpty() }
-                ?.let { servers -> listOf(DesktopProxyImportAction.AddServers(servers)) }
-                .orEmpty(),
-            diagnostics = diagnostics,
-        )
-    }
 
     private fun planShadowrocketConfig(
         input: DesktopProxyImportInput,
@@ -523,12 +562,10 @@ private fun String.manualSubscriptionUrls(): List<String> = lineSequence()
     .filterNot(::isValidProxyServerLink)
     .toList()
 
-private fun String.needsPerLineProxyImport(wholeTextProducedNoServers: Boolean): Boolean =
-    wholeTextProducedNoServers || lineSequence().any { rawLine ->
-        val line = rawLine.trim()
-        line.isValidManualSubscriptionUrl() ||
-            line.substringBefore("://", missingDelimiterValue = "").lowercase() in ProxyLinkSchemes
-    }
+private fun String.isJsonImportPayload(): Boolean {
+    val candidate = trimStart('\uFEFF', ' ', '\t', '\r', '\n')
+    return candidate.startsWith('{') || candidate.startsWith('[')
+}
 
 private fun List<String>.withoutKnownSubscriptions(
     existingUrls: Set<String>,
@@ -572,16 +609,3 @@ private fun String.removeSuffixIgnoreCase(suffix: String): String =
 
 private const val ImportByteOrderMark = "\uFEFF"
 private const val DefaultImportedConfigName = "Импортированный конфиг"
-private val ProxyLinkSchemes = setOf(
-    "http",
-    "socks",
-    "socks4",
-    "socks5",
-    "ss",
-    "vmess",
-    "vless",
-    "trojan",
-    "hy2",
-    "hysteria2",
-    "wireguard",
-)
