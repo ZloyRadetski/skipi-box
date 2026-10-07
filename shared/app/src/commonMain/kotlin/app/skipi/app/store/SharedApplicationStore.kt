@@ -11,8 +11,10 @@ import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.TrafficConfigRecord
 import app.skipi.app.proxy.deleteProxyServerRecords
+import app.skipi.app.proxy.importProxyServerRecordBatch
 import app.skipi.app.repository.AppRepositories
 import app.skipi.app.runtime.AppRuntimeState
+import features.proxy.server.model.ProxyServer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -52,6 +54,11 @@ sealed interface SharedApplicationAction {
         val transform: (List<ProxyServerRecord>) -> List<ProxyServerRecord>,
     ) : SharedApplicationAction
     data class UpdateProxyCatalog(val transform: (ProxyServerCatalog) -> ProxyServerCatalog) : SharedApplicationAction
+    /** Imports one ordered batch as manual servers unless a subscription association is supplied. */
+    data class ImportProxyServerBatch(
+        val servers: List<ProxyServer<*>>,
+        val sourceSubscriptionId: Int? = null,
+    ) : SharedApplicationAction
     data class UpsertProxyServer(val server: ProxyServerRecord) : SharedApplicationAction
     data class RemoveProxyServer(val serverId: Int) : SharedApplicationAction
     data class RemoveProxyServers(val serverIds: Set<Int>) : SharedApplicationAction
@@ -202,6 +209,13 @@ class SharedApplicationStore(
                 require(next.servers.map { it.id }.distinct().size == next.servers.size) { "Proxy server IDs must be unique" }
                 require(next.nextServerId > 0) { "Next proxy server ID must be positive" }
                 next
+            }
+            is SharedApplicationAction.ImportProxyServerBatch -> repositories.proxyServers.updateCatalog { current ->
+                importProxyServerRecordBatch(
+                    catalog = current,
+                    importedServers = action.servers,
+                    sourceSubscriptionId = action.sourceSubscriptionId,
+                )
             }
             is SharedApplicationAction.UpsertProxyServer -> repositories.proxyServers.upsert(action.server)
             is SharedApplicationAction.RemoveProxyServer -> removeProxyServers(setOf(action.serverId))

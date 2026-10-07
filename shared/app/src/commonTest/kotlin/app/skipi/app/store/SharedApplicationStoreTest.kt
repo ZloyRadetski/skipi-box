@@ -198,6 +198,130 @@ class SharedApplicationStoreTest {
     }
 
     @Test
+    fun importingProxyServerBatchUsesRetainedIdHighWaterAndKeepsManualServersGrouped() = runTest {
+        val initialCatalog = ProxyServerCatalog(
+            servers = listOf(
+                ProxyServerRecord(
+                    id = 42,
+                    server = HTTP(remarks = "existing", server = "existing.example"),
+                    sourceSubscriptionId = 17,
+                ),
+            ),
+            nextServerId = 5,
+            selectedServerId = 99,
+            retainedServerIds = setOf(99, 500),
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = initialCatalog
+        repositories.proxyServers.servers.value = initialCatalog.servers
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val result = store.dispatchAndAwaitInStoreScope(
+            SharedApplicationAction.ImportProxyServerBatch(
+                servers = listOf(
+                    HTTP(remarks = "first import", server = "first-import.example"),
+                    HTTP(remarks = "second import", server = "second-import.example"),
+                ),
+            ),
+        )
+        runCurrent()
+
+        assertIs<SharedApplicationActionOutcome.Completed>(result.outcome)
+        val updatedCatalog = repositories.proxyServers.catalog
+        assertEquals(listOf(501, 502, 42), updatedCatalog.servers.map(ProxyServerRecord::id))
+        assertEquals(503, updatedCatalog.nextServerId)
+        assertEquals(99, updatedCatalog.selectedServerId)
+        assertEquals(
+            listOf("first import", "second import", "existing"),
+            updatedCatalog.servers.map { (it.server as HTTP).remarks },
+        )
+        assertEquals(listOf(null, null, 17), updatedCatalog.servers.map(ProxyServerRecord::sourceSubscriptionId))
+    }
+
+    @Test
+    fun concurrentProxyServerBatchActionsKeepBothBatchesAndAllocateDistinctRanges() = runTest {
+        val initialCatalog = ProxyServerCatalog(
+            servers = listOf(ProxyServerRecord(id = 8, server = HTTP(server = "existing.example"))),
+            nextServerId = 10,
+            selectedServerId = 8,
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = initialCatalog
+        repositories.proxyServers.servers.value = initialCatalog.servers
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val outcomes = listOf(
+            async {
+                store.dispatchAndAwaitInStoreScope(
+                    SharedApplicationAction.ImportProxyServerBatch(
+                        servers = listOf(
+                            HTTP(remarks = "batch one first", server = "batch-one-first.example"),
+                            HTTP(remarks = "batch one second", server = "batch-one-second.example"),
+                        ),
+                    ),
+                )
+            },
+            async {
+                store.dispatchAndAwaitInStoreScope(
+                    SharedApplicationAction.ImportProxyServerBatch(
+                        servers = listOf(
+                            HTTP(remarks = "batch two first", server = "batch-two-first.example"),
+                            HTTP(remarks = "batch two second", server = "batch-two-second.example"),
+                        ),
+                    ),
+                )
+            },
+        ).awaitAll()
+        runCurrent()
+
+        assertTrue(outcomes.all { it.outcome is SharedApplicationActionOutcome.Completed })
+        val updatedCatalog = repositories.proxyServers.catalog
+        assertEquals(setOf(8, 10, 11, 12, 13), updatedCatalog.servers.map(ProxyServerRecord::id).toSet())
+        assertEquals(14, updatedCatalog.nextServerId)
+        assertEquals(8, updatedCatalog.selectedServerId)
+
+        val batchOne = updatedCatalog.servers.filter { (it.server as HTTP).remarks.startsWith("batch one") }
+        val batchTwo = updatedCatalog.servers.filter { (it.server as HTTP).remarks.startsWith("batch two") }
+        assertEquals(listOf("batch one first", "batch one second"), batchOne.map { (it.server as HTTP).remarks })
+        assertEquals(listOf("batch two first", "batch two second"), batchTwo.map { (it.server as HTTP).remarks })
+        assertEquals(1, batchOne[1].id - batchOne[0].id)
+        assertEquals(1, batchTwo[1].id - batchTwo[0].id)
+        assertTrue(batchOne.map(ProxyServerRecord::id).toSet().intersect(batchTwo.map(ProxyServerRecord::id).toSet()).isEmpty())
+    }
+
+    @Test
+    fun failedProxyServerBatchSaveLeavesCatalogUnchanged() = runTest {
+        val initialCatalog = ProxyServerCatalog(
+            servers = listOf(
+                ProxyServerRecord(id = 8, server = HTTP(server = "existing.example")),
+            ),
+            nextServerId = 10,
+            selectedServerId = 8,
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = initialCatalog
+        repositories.proxyServers.servers.value = initialCatalog.servers
+        repositories.proxyServers.catalogUpdateFailure = IllegalStateException("Catalog save failed")
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val result = store.dispatchAndAwaitInStoreScope(
+            SharedApplicationAction.ImportProxyServerBatch(
+                servers = listOf(HTTP(remarks = "not saved", server = "not-saved.example")),
+            ),
+        )
+        runCurrent()
+
+        assertIs<SharedApplicationActionOutcome.Failed>(result.outcome)
+        assertEquals("Catalog save failed", (result.outcome as SharedApplicationActionOutcome.Failed).reason)
+        assertEquals(initialCatalog, repositories.proxyServers.catalog)
+        assertEquals(initialCatalog.servers, repositories.proxyServers.servers.value)
+        assertEquals(initialCatalog.servers, store.state.value.proxyServers)
+    }
+
+    @Test
     fun concurrentCatalogCreatesAllocateDistinctIdsFromTheLatestCatalog() = runTest {
         val initialCatalog = ProxyServerCatalog(
             servers = listOf(ProxyServerRecord(id = 8, server = HTTP(server = "existing.example"))),
@@ -499,10 +623,13 @@ class SharedApplicationStoreTest {
         override val servers = MutableStateFlow(emptyList<ProxyServerRecord>())
         var catalog = ProxyServerCatalog()
         var selectedId: Int? = null
+        var catalogUpdateFailure: Exception? = null
         override suspend fun updateCatalog(transform: (ProxyServerCatalog) -> ProxyServerCatalog) {
             // Tests sometimes seed the exposed StateFlow directly. Keep the
             // fake's catalog view aligned while retaining explicit metadata.
-            catalog = transform(catalog.copy(servers = servers.value))
+            val updatedCatalog = transform(catalog.copy(servers = servers.value))
+            catalogUpdateFailure?.let { throw it }
+            catalog = updatedCatalog
             servers.value = catalog.servers
             selectedId = catalog.selectedServerId.takeIf { id -> catalog.servers.any { it.id == id } }
         }
