@@ -3,7 +3,9 @@
 package app.skipi.desktop
 
 import features.proxy.server.model.Hysteria2
+import features.proxy.server.model.HTTP
 import features.proxy.server.model.Shadowsocks
+import features.proxy.server.model.Socks
 import features.proxy.server.model.Trojan
 import features.proxy.server.model.VLESS
 import kotlin.test.Test
@@ -13,7 +15,31 @@ import kotlin.test.assertTrue
 
 class DesktopMihomoPayloadImporterTest {
     @Test
-    fun importsTypicalMihomoProxyListWithoutYamlRuntimeDependency() {
+    fun importsScalarAliasesAndBlockScalarCredentialsForSocksAndHttp() {
+        val result = DesktopMihomoPayloadImporter.import(anchoredYamlFixture)
+
+        assertTrue(result.recognizedYaml)
+        assertEquals(2, result.proxyEntryCount)
+        assertEquals(0, result.rejectedProxyCount)
+        assertEquals(2, result.servers.size)
+
+        val socks = assertIs<Socks>(result.servers[0])
+        assertEquals("Socks shared scalar", socks.remarks)
+        assertEquals("proxy.example.test", socks.server)
+        assertEquals("1080", socks.port)
+        assertEquals("shared-user", socks.user)
+        assertEquals("first secret line\nsecond secret line", socks.password)
+
+        val http = assertIs<HTTP>(result.servers[1])
+        assertEquals("HTTP alias node", http.remarks)
+        assertEquals("proxy.example.test", http.server)
+        assertEquals("1080", http.port)
+        assertEquals("shared-user", http.user)
+        assertEquals("first secret line\nsecond secret line", http.password)
+    }
+
+    @Test
+    fun importsTypicalMihomoProxyListWithSharedYamlLoader() {
         val result = DesktopMihomoPayloadImporter.import(
             """
             proxies:
@@ -207,3 +233,21 @@ class DesktopMihomoPayloadImporterTest {
         assertEquals("Helsinki Node", server2.remarks)
     }
 }
+
+private val anchoredYamlFixture = """
+    proxies:
+      - name: Socks shared scalar
+        type: socks
+        server: &sharedServer proxy.example.test
+        port: &sharedPort "1080"
+        username: &sharedUser shared-user
+        password: &sharedPassword |
+          first secret line
+          second secret line
+      - name: HTTP alias node
+        type: http
+        server: *sharedServer
+        port: *sharedPort
+        username: *sharedUser
+        password: *sharedPassword
+""".trimIndent()

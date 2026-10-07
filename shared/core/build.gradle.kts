@@ -9,6 +9,19 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+val generatedProjectInfoDir = layout.buildDirectory.dir("generated/projectInfo/kotlin")
+val generateProjectInfo = tasks.register<GenerateProjectInfoTask>("generateProjectInfo") {
+    description = "Generate shared ProjectInfo metadata for Android and Desktop"
+    packageName.set("app")
+    projectName.set(ProjectConfig.PROJECT_NAME)
+    versionName.set(ProjectConfig.VERSION_NAME)
+    versionCode.set(getGitVersionCode())
+    xrayCoreVersion.set(ProjectConfig.XRAY_CORE_VERSION)
+    skipiCoreVersion.set(ProjectConfig.SKIPI_CORE_VERSION)
+    hevSocks5TunnelVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
+    outputDirectory.set(generatedProjectInfoDir)
+}
+
 kotlin {
     android {
         namespace = "com.radetski.skipi.shared.core"
@@ -22,6 +35,9 @@ kotlin {
     jvm("desktop")
 
     sourceSets {
+        commonMain {
+            kotlin.srcDir(generateProjectInfo)
+        }
         commonMain.dependencies {
             implementation(libs.ktor.http)
             implementation(libs.kotlinx.serialization.json)

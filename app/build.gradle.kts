@@ -16,7 +16,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val generatedSrcDir: Provider<Directory> = layout.buildDirectory.dir("generated/projectInfo")
 val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val androidTestJavaHome = providers.gradleProperty("skipiAndroidTestJavaHome").orNull
@@ -121,6 +120,7 @@ tasks.named("preBuild") {
 
 dependencies {
     implementation(project(":shared:core"))
+    implementation(project(":shared:yaml-jvm"))
     implementation(project(":shared:app"))
     implementation(project(":shared:ui"))
     implementation(libs.compose.ui)
@@ -143,9 +143,6 @@ dependencies {
     implementation(libs.miuix.navigation3.ui)
     implementation(libs.miuix.preference)
     implementation(libs.reorderable)
-    implementation(libs.snakeyaml.engine) {
-        exclude(group = "org.junit.jupiter", module = "junit-jupiter-api")
-    }
     implementation(libs.sora.editor)
     implementation(libs.zxing.android.embedded)
     implementation(libs.tukaani.xz)
@@ -162,34 +159,15 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-val generateProjectInfo = tasks.register<GenerateProjectInfoTask>("generateProjectInfo") {
-    description = "Generate ProjectInfo object for the app"
-    packageName.set("app")
-    projectName.set(ProjectConfig.PROJECT_NAME)
-    versionName.set(ProjectConfig.VERSION_NAME)
-    versionCode.set(getGitVersionCode())
-    xrayCoreVersion.set(ProjectConfig.XRAY_CORE_VERSION)
-    skipiCoreVersion.set(ProjectConfig.SKIPI_CORE_VERSION)
-    hevSocks5TunnelVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
-    outputDirectory.set(generatedSrcDir.map { it.dir("kotlin") })
-}
-
 androidComponents {
     beforeVariants(selector().all()) { variant ->
         variant.enableAndroidTest = false
     }
 
     onVariants { variant ->
-        variant.sources.kotlin?.addGeneratedSourceDirectory(generateProjectInfo) { task ->
-            task.outputDirectory
-        }
         variant.sources.assets?.addStaticSourceDirectory("build/generated/resourceFileAssets")
         variant.sources.jniLibs?.addStaticSourceDirectory("build/generated/xrayCoreJniLibs")
     }
-}
-
-tasks.matching { it.name.startsWith("ksp") }.configureEach {
-    dependsOn(generateProjectInfo)
 }
 
 // Keep Robolectric on its supported runtime without changing Desktop test JVMs.

@@ -95,6 +95,7 @@ plugins {
 
 dependencies {
     implementation(project(":shared:core"))
+    implementation(project(":shared:yaml-jvm"))
     implementation(project(":shared:app"))
     implementation(project(":shared:ui"))
     implementation(compose.desktop.currentOs)
