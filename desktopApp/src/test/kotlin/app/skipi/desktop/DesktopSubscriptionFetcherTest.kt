@@ -4,10 +4,13 @@
 package app.skipi.desktop
 
 import com.sun.net.httpserver.HttpServer
+import features.subscription.SubscriptionAgeCrypto
 import features.subscription.SubscriptionEmbeddedConfig
 import features.subscription.SubscriptionMetadata
 import utils.encodeBase64
 import java.net.InetAddress
+import java.net.URI
+import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -48,6 +51,58 @@ class DesktopSubscriptionFetcherTest {
                 DesktopSubscriptionFetcher().fetch("http://127.0.0.1:${server.address.port}/denied")
             }
             assertEquals(403, error.statusCode)
+        }
+    }
+
+    @Test
+    fun follows_any_three_hundred_redirect_for_a_direct_subscription_fetch() {
+        withSubscriptionServer { server ->
+            server.createContext("/start") { exchange ->
+                exchange.responseHeaders.add("Location", "/final")
+                exchange.sendResponseHeaders(300, -1)
+                exchange.close()
+            }
+            server.createContext("/final") { exchange ->
+                val body = "redirected body"
+                exchange.sendResponseHeaders(200, body.encodeToByteArray().size.toLong())
+                exchange.responseBody.use { it.write(body.encodeToByteArray()) }
+            }
+
+            val response = DesktopSubscriptionFetcher()
+                .fetch("http://127.0.0.1:${server.address.port}/start")
+
+            assertEquals("redirected body", response.body)
+        }
+    }
+
+    @Test
+    fun rejects_a_third_redirect_hop_for_a_direct_subscription_fetch() {
+        withSubscriptionServer { server ->
+            server.createContext("/start") { exchange ->
+                exchange.responseHeaders.add("Location", "/one")
+                exchange.sendResponseHeaders(302, -1)
+                exchange.close()
+            }
+            server.createContext("/one") { exchange ->
+                exchange.responseHeaders.add("Location", "/two")
+                exchange.sendResponseHeaders(303, -1)
+                exchange.close()
+            }
+            server.createContext("/two") { exchange ->
+                exchange.responseHeaders.add("Location", "/final")
+                exchange.sendResponseHeaders(307, -1)
+                exchange.close()
+            }
+            server.createContext("/final") { exchange ->
+                val body = "must not be reached"
+                exchange.sendResponseHeaders(200, body.encodeToByteArray().size.toLong())
+                exchange.responseBody.use { it.write(body.encodeToByteArray()) }
+            }
+
+            assertFailsWith<IllegalStateException> {
+                DesktopSubscriptionFetcher()
+                    .fetch("http://127.0.0.1:${server.address.port}/start")
+            }
         }
     }
 
@@ -161,18 +216,93 @@ class DesktopSubscriptionFetcherTest {
     }
 
     @Test
-    fun limits_subscription_response_body_before_importing_it() {
+    fun accepts_a_response_larger_than_the_old_desktop_body_cap() {
         withSubscriptionServer { server ->
+            val body = "x".repeat(8 * 1024 * 1024 + 1)
             server.createContext("/large") { exchange ->
-                val body = "x".repeat(33)
                 exchange.sendResponseHeaders(200, body.encodeToByteArray().size.toLong())
                 exchange.responseBody.use { it.write(body.encodeToByteArray()) }
             }
 
-            assertFailsWith<DesktopSubscriptionResponseTooLargeException> {
-                DesktopSubscriptionFetcher(maxResponseBytes = 32)
-                    .fetch("http://127.0.0.1:${server.address.port}/large")
+            val response = DesktopSubscriptionFetcher()
+                .fetch("http://127.0.0.1:${server.address.port}/large")
+
+            assertEquals(body.length, response.body.length)
+            assertEquals(body, response.body)
+        }
+    }
+
+    @Test
+    fun direct_fetch_uses_connection_timeouts_clamped_to_the_android_range() {
+        withSubscriptionServer { server ->
+            server.createContext("/timeout") { exchange ->
+                val body = "timeout body"
+                exchange.sendResponseHeaders(200, body.encodeToByteArray().size.toLong())
+                exchange.responseBody.use { it.write(body.encodeToByteArray()) }
             }
+
+            val seenConnections = mutableListOf<java.net.HttpURLConnection>()
+            val seenProxies = mutableListOf<java.net.Proxy?>()
+            val fetcher = DesktopSubscriptionFetcher(
+                urlConnectionFactory = { url, proxy ->
+                    seenProxies += proxy
+                    (url.openConnection() as java.net.HttpURLConnection).also(seenConnections::add)
+                },
+            )
+            val url = "http://127.0.0.1:${server.address.port}/timeout"
+
+            assertEquals("timeout body", fetcher.fetch(url, timeout = Duration.ofSeconds(1)).body)
+            assertEquals("timeout body", fetcher.fetch(url, timeout = Duration.ofSeconds(900)).body)
+
+            assertEquals(listOf<java.net.Proxy?>(null, null), seenProxies)
+            assertEquals(2, seenConnections.size)
+            assertEquals(3_000, seenConnections[0].connectTimeout)
+            assertEquals(3_000, seenConnections[0].readTimeout)
+            assertEquals(600_000, seenConnections[1].connectTimeout)
+            assertEquals(600_000, seenConnections[1].readTimeout)
+        }
+    }
+
+    @Test
+    fun converts_a_unicode_host_to_ascii_before_a_direct_request() {
+        assertEquals(
+            "http://xn--e1afmkfd.xn--p1ai/path",
+            "http://пример.рф/path".toIdnSubscriptionUrl(),
+        )
+    }
+
+    @Test
+    fun preserves_android_empty_embedded_userinfo_basic_auth_behavior() {
+        assertEquals("Basic Og==", URI("http://@example.com/sub").toBasicAuthHeaderOrNull())
+    }
+
+    @Test
+    fun decrypts_age_body_before_import_and_sends_the_derived_public_key() {
+        withSubscriptionServer { server ->
+            var receivedAgePublicKey = ""
+            val encryptedBody = "-----BEGIN AGE ENCRYPTED FILE-----\nfixture\n-----END AGE ENCRYPTED FILE-----"
+            val plaintext = "vless://123e4567-e89b-42d3-a456-426614174000@example.com:443?security=tls#One"
+            server.createContext("/sub") { exchange ->
+                receivedAgePublicKey = exchange.requestHeaders.getFirst("X-Age-Public-Key").orEmpty()
+                exchange.responseHeaders.add("profile-title", "Age Provider")
+                exchange.sendResponseHeaders(200, encryptedBody.encodeToByteArray().size.toLong())
+                exchange.responseBody.use { it.write(encryptedBody.encodeToByteArray()) }
+            }
+            val crypto = RecordingAgeCrypto(plaintext)
+            val fetcher = DesktopSubscriptionFetcher(ageCrypto = crypto)
+
+            val update = fetcher.fetchAndImport(
+                url = "http://127.0.0.1:${server.address.port}/sub",
+                ageSecretKey = " secret ",
+            )
+
+            assertEquals("age1test-recipient", receivedAgePublicKey)
+            assertEquals("secret", crypto.publicKeySecret)
+            assertEquals("secret", crypto.decryptSecret)
+            assertEquals(encryptedBody, crypto.decryptedText)
+            assertEquals(plaintext, update.response.body)
+            assertEquals("Age Provider", update.metadata.profileTitle)
+            assertEquals(1, update.importResult.servers.size)
         }
     }
 
@@ -286,7 +416,7 @@ class DesktopSubscriptionFetcherTest {
                 exchange.responseBody.use { it.write(body.encodeToByteArray()) }
             }
 
-            // Direct request via HttpClient
+            // Direct request through the same URLConnection path Android uses.
             DesktopSubscriptionFetcher().fetch("http://myuser:mypass@127.0.0.1:${server.address.port}/sub")
             assertEquals("Basic " + "myuser:mypass".encodeBase64(), receivedAuthHeader)
 
@@ -312,7 +442,7 @@ class DesktopSubscriptionFetcherTest {
     }
 
     @Test
-    fun sends_device_headers_with_http_client_and_url_connection() {
+    fun sends_device_headers_with_direct_and_proxy_http_connections() {
         withSubscriptionServer { server ->
             val receivedHeaders = mutableMapOf<String, String>()
             server.createContext("/sub") { exchange ->
@@ -330,7 +460,7 @@ class DesktopSubscriptionFetcherTest {
                 "x-device-os" to "Linux",
             )
 
-            // Via standard HTTP client
+            // Direct requests use URLConnection with no proxy.
             DesktopSubscriptionFetcher().fetch(
                 url = "http://127.0.0.1:${server.address.port}/sub",
                 deviceHeaders = testHeaders,
@@ -339,7 +469,7 @@ class DesktopSubscriptionFetcherTest {
             assertEquals("testhwid123", receivedHeaders["x-hwid"])
             assertEquals("Linux", receivedHeaders["x-device-os"])
 
-            // Via HttpURLConnection
+            // Proxy requests use URLConnection with the configured SOCKS proxy.
             receivedHeaders.clear()
             val connFetcher = DesktopSubscriptionFetcher(
                 urlConnectionFactory = { url, _ -> url.openConnection() as java.net.HttpURLConnection },
@@ -354,6 +484,25 @@ class DesktopSubscriptionFetcherTest {
             assertEquals("testhwid123", receivedHeaders["x-hwid"])
             assertEquals("Linux", receivedHeaders["x-device-os"])
         }
+    }
+}
+
+private class RecordingAgeCrypto(
+    private val plaintext: String,
+) : SubscriptionAgeCrypto {
+    var publicKeySecret: String? = null
+    var decryptSecret: String? = null
+    var decryptedText: String? = null
+
+    override fun publicKey(secretKey: String): String {
+        publicKeySecret = secretKey
+        return "age1test-recipient"
+    }
+
+    override fun decryptArmored(text: String, secretKey: String): String {
+        decryptedText = text
+        decryptSecret = secretKey
+        return plaintext
     }
 }
 

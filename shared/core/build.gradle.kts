@@ -35,6 +35,12 @@ kotlin {
     jvm("desktop")
 
     sourceSets {
+        val sharedJvmMain = create("jvmMain") {
+            dependsOn(getByName("commonMain"))
+        }
+        getByName("androidMain").dependsOn(sharedJvmMain)
+        getByName("desktopMain").dependsOn(sharedJvmMain)
+
         commonMain {
             kotlin.srcDir(generateProjectInfo)
         }
@@ -42,8 +48,14 @@ kotlin {
             implementation(libs.ktor.http)
             implementation(libs.kotlinx.serialization.json)
         }
+        sharedJvmMain.dependencies {
+            implementation(libs.kage)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
+        }
+        getByName("desktopTest").dependencies {
+            implementation(libs.kage)
         }
     }
 }

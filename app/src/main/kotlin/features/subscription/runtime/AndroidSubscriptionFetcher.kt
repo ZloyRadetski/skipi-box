@@ -7,7 +7,10 @@ import android.content.Context
 import android.os.Build
 import data.AppSettingsPreferences
 import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.KageSubscriptionAgeCrypto
+import features.subscription.SubscriptionAgePolicy
 import features.subscription.SubscriptionFetchResponse
+import features.subscription.SubscriptionFetchPolicy
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.SubscriptionHttpException
 import engine.network.TunnelNetworks
@@ -63,12 +66,7 @@ internal class AndroidSubscriptionFetcher(
                 timeoutSeconds = options.timeoutSeconds,
             )
         }.let { response ->
-            response.copy(
-                body = response.body.decryptAgeArmoredOrPassThrough(
-                    secretKey = options.ageSecretKey,
-                    ageCrypto = ageCrypto,
-                ),
-            )
+            response.copy(body = SubscriptionAgePolicy.decryptResponseBody(response.body, options.ageSecretKey, ageCrypto))
         }
     }
 }
@@ -78,7 +76,7 @@ internal data class AndroidSubscriptionFetchOptions(
     val ageSecretKey: String = "",
     /** Controls the full set of opt-in device headers for subscription providers. */
     val sendDeviceHeaders: Boolean = true,
-    val timeoutSeconds: Int = 10,
+    val timeoutSeconds: Int = SubscriptionFetchPolicy.defaultTimeoutSeconds,
 )
 
 private data class SubscriptionRequestCredentials(
@@ -92,8 +90,6 @@ internal data class AndroidSubscriptionProxy(
     val username: String,
     val password: String,
 )
-
-private const val MaxRedirects = 3
 
 internal fun AndroidSubscriptionFetchOptions.toProxy(): AndroidSubscriptionProxy? {
     if (!useRunningProxy) return null
@@ -114,8 +110,8 @@ private fun fetchWithRedirects(
     timeoutSeconds: Int,
 ): SubscriptionFetchResponse {
     var currentUrl = url
-    val timeoutMillis = timeoutSeconds.coerceIn(3, 600) * 1000
-    repeat(MaxRedirects) {
+    val timeoutMillis = SubscriptionFetchPolicy.timeoutSeconds(timeoutSeconds) * 1000
+    repeat(SubscriptionFetchPolicy.maxRedirects + 1) {
         val connection = currentUrl.toConnection(proxy, timeoutMillis)
         try {
             connection.setRequestProperty("User-Agent", userAgent)
@@ -174,7 +170,7 @@ private fun AndroidSubscriptionFetchOptions.toRequestCredentials(
         } else {
             emptyMap()
         },
-        agePublicKey = secretKey.takeIf(String::isNotEmpty)?.let(ageCrypto::publicKey),
+        agePublicKey = SubscriptionAgePolicy.publicKeyHeaderValue(secretKey, ageCrypto),
     )
 }
 
@@ -188,18 +184,6 @@ private fun subscriptionDeviceHeaders(installationHwid: String): Map<String, Str
         "x-hwid" to installationHwid,
         "X-Device-ID" to installationHwid,
     )
-}
-
-private fun String.decryptAgeArmoredOrPassThrough(
-    secretKey: String,
-    ageCrypto: SubscriptionAgeCrypto,
-): String {
-    if (!trimStart().startsWith(AgeArmorHeader)) return this
-    val normalizedSecretKey = secretKey.trim()
-    require(normalizedSecretKey.isNotEmpty()) {
-        "Age-encrypted subscription requires a secret key"
-    }
-    return ageCrypto.decryptArmored(this, normalizedSecretKey)
 }
 
 private fun String.toConnection(
@@ -248,8 +232,6 @@ private fun String.toIdnUrl(): String {
     val asciiHost = IDN.toASCII(host, IDN.ALLOW_UNASSIGNED)
     return if (host == asciiHost) this else replace(host, asciiHost)
 }
-
-private const val AgeArmorHeader = "-----BEGIN AGE ENCRYPTED FILE-----"
 
 internal fun parseSubscriptionHttpErrorMessage(errorBody: String?): String? {
     if (errorBody.isNullOrBlank()) return null

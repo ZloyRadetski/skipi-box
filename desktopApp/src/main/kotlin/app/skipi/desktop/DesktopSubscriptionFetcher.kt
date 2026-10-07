@@ -5,7 +5,11 @@ package app.skipi.desktop
 
 import features.config.decodeSkipiConfigPayloadOrNull
 import features.proxy.server.usecase.ProxyServerProviderUrlFetcher
+import features.subscription.KageSubscriptionAgeCrypto
+import features.subscription.SubscriptionAgeCrypto
+import features.subscription.SubscriptionAgePolicy
 import features.subscription.SubscriptionFetchResponse
+import features.subscription.SubscriptionFetchPolicy
 import features.subscription.SubscriptionMetadata
 import features.subscription.SubscriptionServerImportResult
 import features.subscription.isValidManualSubscriptionUrl
@@ -15,6 +19,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.Authenticator
 import java.net.HttpURLConnection
+import java.net.IDN
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -39,6 +44,7 @@ class DesktopSubscriptionFetcher(
      * Optional test seam for opening HTTP connections, e.g. through a local SOCKS proxy.
      */
     private val urlConnectionFactory: (URL, Proxy?) -> HttpURLConnection = ::defaultUrlConnectionFactory,
+    private val ageCrypto: SubscriptionAgeCrypto = KageSubscriptionAgeCrypto,
 ) {
     init {
         require(maxResponseBytes > 0) { "Subscription response limit must be positive" }
@@ -50,14 +56,15 @@ class DesktopSubscriptionFetcher(
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
         deviceHeaders: Map<String, String> = emptyMap(),
+        ageSecretKey: String = "",
     ): DesktopSubscriptionUpdate {
         val response = fetchResponse(
             url = url,
             userAgent = userAgent,
             timeout = timeout,
-            automaticResource = false,
             proxy = proxy,
             deviceHeaders = deviceHeaders,
+            ageSecretKey = ageSecretKey,
         )
         val imported = importMihomoOrStandardPayload(
             rootPayload = response.body,
@@ -80,13 +87,32 @@ class DesktopSubscriptionFetcher(
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
         deviceHeaders: Map<String, String> = emptyMap(),
+        ageSecretKey: String = "",
     ): SubscriptionFetchResponse = fetchResponse(
+        url = url,
+        userAgent = userAgent,
+        timeout = timeout,
+        proxy = proxy,
+        deviceHeaders = deviceHeaders,
+        ageSecretKey = ageSecretKey,
+    )
+
+    /** Fetches one direct subscription response with the shared Android request/decryption policy. */
+    fun fetchResponse(
+        url: String,
+        userAgent: String = DefaultDesktopSubscriptionUserAgent,
+        timeout: Duration = DefaultRequestTimeout,
+        proxy: DesktopSubscriptionSocksProxy? = null,
+        deviceHeaders: Map<String, String> = emptyMap(),
+        ageSecretKey: String = "",
+    ): SubscriptionFetchResponse = fetchResponseInternal(
         url = url,
         userAgent = userAgent,
         timeout = timeout,
         automaticResource = false,
         proxy = proxy,
         deviceHeaders = deviceHeaders,
+        ageSecretKey = ageSecretKey,
     )
 
     /**
@@ -173,7 +199,7 @@ class DesktopSubscriptionFetcher(
         timeout: Duration,
         proxy: DesktopSubscriptionSocksProxy?,
         deviceHeaders: Map<String, String> = emptyMap(),
-    ): SubscriptionFetchResponse = fetchResponse(
+    ): SubscriptionFetchResponse = fetchResponseInternal(
         url = url,
         userAgent = userAgent,
         timeout = timeout,
@@ -182,29 +208,56 @@ class DesktopSubscriptionFetcher(
         deviceHeaders = deviceHeaders,
     )
 
-    private fun fetchResponse(
+    private fun fetchResponseInternal(
         url: String,
         userAgent: String,
         timeout: Duration,
         automaticResource: Boolean,
         proxy: DesktopSubscriptionSocksProxy?,
         deviceHeaders: Map<String, String> = emptyMap(),
+        ageSecretKey: String = "",
     ): SubscriptionFetchResponse {
-        return if (proxy != null) {
-            fetchViaConnection(
-                url = url,
-                userAgent = userAgent,
-                timeout = timeout,
-                automaticResource = automaticResource,
-                proxy = proxy,
-                deviceHeaders = deviceHeaders,
-            )
+        val normalizedTimeout = if (automaticResource) {
+            timeout
         } else {
+            Duration.ofSeconds(
+                SubscriptionFetchPolicy.timeoutSeconds(
+                    timeout.seconds.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt(),
+                ).toLong(),
+            )
+        }
+        val agePublicKey = if (automaticResource) {
+            null
+        } else {
+            SubscriptionAgePolicy.publicKeyHeaderValue(ageSecretKey, ageCrypto)
+        }
+        val maxRedirects = if (automaticResource) {
+            MaxAutomaticResourceRedirects
+        } else {
+            SubscriptionFetchPolicy.maxRedirects
+        }
+        val maxBodyBytes = if (automaticResource) maxResponseBytes else null
+        return if (automaticResource && proxy == null) {
             fetchViaHttpClient(
                 url = url,
                 userAgent = userAgent,
-                timeout = timeout,
+                timeout = normalizedTimeout,
                 automaticResource = automaticResource,
+                maxRedirects = maxRedirects,
+                maxBodyBytes = maxBodyBytes,
+                deviceHeaders = deviceHeaders,
+            )
+        } else {
+            fetchViaConnection(
+                url = url,
+                userAgent = userAgent,
+                timeout = normalizedTimeout,
+                automaticResource = automaticResource,
+                maxRedirects = maxRedirects,
+                maxBodyBytes = maxBodyBytes,
+                agePublicKey = agePublicKey,
+                ageSecretKey = ageSecretKey,
+                proxy = proxy,
                 deviceHeaders = deviceHeaders,
             )
         }
@@ -215,10 +268,12 @@ class DesktopSubscriptionFetcher(
         userAgent: String,
         timeout: Duration,
         automaticResource: Boolean,
+        maxRedirects: Int,
+        maxBodyBytes: Int?,
         deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse {
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        var requestUri = URI(url.trim()).withoutFragment()
+        var requestUri = URI(url.trim().toIdnSubscriptionUrl()).withoutFragment()
         var redirects = 0
 
         while (true) {
@@ -246,10 +301,10 @@ class DesktopSubscriptionFetcher(
                 requireSafeAutomaticSubscriptionResourceUrl(response.uri().toString())
             }
 
-            if (response.statusCode() in HttpRedirectStatusCodes) {
+            if (response.statusCode().isRedirect(automaticResource)) {
                 response.body().close()
-                check(redirects < MaxSubscriptionRedirects) {
-                    "Subscription request exceeded $MaxSubscriptionRedirects redirects"
+                check(redirects < maxRedirects) {
+                    "Subscription request exceeded $maxRedirects redirects"
                 }
                 val location = response.headers().firstValue("location").orElseThrow {
                     IllegalStateException("Subscription redirect does not provide Location")
@@ -262,7 +317,7 @@ class DesktopSubscriptionFetcher(
                 continue
             }
 
-            val responseBody = response.readUtf8BodyAtMost(maxResponseBytes)
+            val responseBody = response.readUtf8BodyAtMost(maxBodyBytes)
             if (response.statusCode() !in 200..299) {
                 throw DesktopSubscriptionHttpException(
                     statusCode = response.statusCode(),
@@ -281,13 +336,21 @@ class DesktopSubscriptionFetcher(
         userAgent: String,
         timeout: Duration,
         automaticResource: Boolean,
-        proxy: DesktopSubscriptionSocksProxy,
+        maxRedirects: Int,
+        maxBodyBytes: Int?,
+        agePublicKey: String?,
+        ageSecretKey: String,
+        proxy: DesktopSubscriptionSocksProxy?,
         deviceHeaders: Map<String, String> = emptyMap(),
     ): SubscriptionFetchResponse {
         require(url.isValidManualSubscriptionUrl()) { "Invalid subscription URL" }
-        var requestUri = URI(url.trim()).withoutFragment()
+        var requestUri = URI(url.trim().toIdnSubscriptionUrl()).withoutFragment()
         var redirects = 0
-        val timeoutMillis = timeout.toMillis().coerceIn(1_000, 600_000).toInt()
+        val timeoutMillis = if (automaticResource) {
+            timeout.toMillis().coerceIn(1_000, 600_000).toInt()
+        } else {
+            timeout.toMillis().coerceIn(3_000, 600_000).toInt()
+        }
 
         return proxy.withAuthenticator {
             while (true) {
@@ -295,27 +358,28 @@ class DesktopSubscriptionFetcher(
                     requestUri = requireSafeAutomaticSubscriptionResourceUrl(requestUri.toString()).withoutFragment()
                 }
                 val javaUrl = requestUri.toURL()
-                val connection = urlConnectionFactory(javaUrl, proxy.toJavaProxy()).apply {
+                val connection = urlConnectionFactory(javaUrl, proxy?.toJavaProxy()).apply {
                     connectTimeout = timeoutMillis
                     readTimeout = timeoutMillis
                     instanceFollowRedirects = false
                     requestMethod = "GET"
                     setRequestProperty("User-Agent", userAgent.ifBlank { DefaultDesktopSubscriptionUserAgent })
-                    setRequestProperty("Accept-Encoding", "gzip, deflate")
                     setRequestProperty("Connection", "close")
+                    if (automaticResource) setRequestProperty("Accept-Encoding", "gzip, deflate")
                     deviceHeaders.forEach { (name, value) ->
                         if (name.isNotBlank() && value.isNotBlank() && !name.equals("User-Agent", ignoreCase = true)) {
                             setRequestProperty(name, value)
                         }
                     }
+                    agePublicKey?.let { setRequestProperty("X-Age-Public-Key", it) }
                     setEmbeddedBasicAuth(requestUri.toString())
                 }
 
                 try {
                     val statusCode = connection.responseCode
-                    if (statusCode in HttpRedirectStatusCodes) {
-                        check(redirects < MaxSubscriptionRedirects) {
-                            "Subscription request exceeded $MaxSubscriptionRedirects redirects"
+                    if (statusCode.isRedirect(automaticResource)) {
+                        check(redirects < maxRedirects) {
+                            "Subscription request exceeded $maxRedirects redirects"
                         }
                         val location = connection.getHeaderField("Location")
                             ?: throw IllegalStateException("Subscription redirect does not provide Location")
@@ -332,7 +396,7 @@ class DesktopSubscriptionFetcher(
                             rawStream = connection.inputStream,
                             contentLength = connection.contentLengthLong.takeIf { it >= 0L },
                             contentEncoding = connection.contentEncoding.orEmpty(),
-                            maxBytes = maxResponseBytes,
+                            maxBytes = maxBodyBytes,
                         )
                     } else {
                         val errorStream = connection.errorStream ?: InputStream.nullInputStream()
@@ -341,7 +405,7 @@ class DesktopSubscriptionFetcher(
                                 rawStream = errorStream,
                                 contentLength = connection.contentLengthLong.takeIf { it >= 0L },
                                 contentEncoding = connection.contentEncoding.orEmpty(),
-                                maxBytes = maxResponseBytes,
+                                maxBytes = maxBodyBytes,
                             )
                         }.getOrNull().orEmpty()
                         throw DesktopSubscriptionHttpException(
@@ -360,7 +424,11 @@ class DesktopSubscriptionFetcher(
                         .toMap()
 
                     return@withAuthenticator SubscriptionFetchResponse(
-                        body = responseBody,
+                        body = if (automaticResource) {
+                            responseBody
+                        } else {
+                            SubscriptionAgePolicy.decryptResponseBody(responseBody, ageSecretKey, ageCrypto)
+                        },
                         headers = headers,
                     )
                 } finally {
@@ -488,8 +556,15 @@ internal fun HttpURLConnection.setEmbeddedBasicAuth(rawUrl: String) {
     setRequestProperty("Authorization", header)
 }
 
+/** Converts a Unicode URL hostname the same way Android's subscription transport does. */
+internal fun String.toIdnSubscriptionUrl(): String {
+    val host = URL(this).host
+    val asciiHost = IDN.toASCII(host, IDN.ALLOW_UNASSIGNED)
+    return if (host == asciiHost) this else replace(host, asciiHost)
+}
+
 internal fun URI.toBasicAuthHeaderOrNull(): String? {
-    val info = userInfo?.takeIf(String::isNotBlank) ?: return null
+    val info = rawUserInfo ?: return null
     val parts = info.split(":", limit = 2)
     val user = parts.getOrElse(0) { "" }
     val password = parts.getOrElse(1) { "" }
@@ -500,9 +575,9 @@ private fun readUtf8BodyAtMost(
     rawStream: InputStream,
     contentLength: Long?,
     contentEncoding: String,
-    maxBytes: Int,
+    maxBytes: Int?,
 ): String {
-    if (contentLength != null && contentLength > maxBytes) {
+    if (maxBytes != null && contentLength != null && contentLength > maxBytes) {
         rawStream.close()
         throw DesktopSubscriptionResponseTooLargeException(maxBytes)
     }
@@ -527,14 +602,16 @@ private fun readUtf8BodyAtMost(
             if (count < 0) break
             if (count == 0) continue
             total += count
-            if (total > maxBytes) throw DesktopSubscriptionResponseTooLargeException(maxBytes)
+            if (maxBytes != null && total > maxBytes) {
+                throw DesktopSubscriptionResponseTooLargeException(maxBytes)
+            }
             output.write(buffer, 0, count)
         }
         String(output.toByteArray(), StandardCharsets.UTF_8)
     }
 }
 
-private fun HttpResponse<InputStream>.readUtf8BodyAtMost(maxBytes: Int): String {
+private fun HttpResponse<InputStream>.readUtf8BodyAtMost(maxBytes: Int?): String {
     val contentEncoding = headers().firstValue("content-encoding").orElse("")
     val contentLength = headers().firstValue("content-length").orElse(null)
         ?.trim()
@@ -547,6 +624,9 @@ private fun HttpResponse<InputStream>.readUtf8BodyAtMost(maxBytes: Int): String 
         maxBytes = maxBytes,
     )
 }
+
+private fun Int.isRedirect(automaticResource: Boolean): Boolean =
+    if (automaticResource) this in HttpRedirectStatusCodes else this in 300..399
 
 internal fun URI.withoutFragment(): URI {
     if (rawFragment == null) return this
@@ -631,9 +711,9 @@ data class DesktopResolvedEmbeddedConfig(
 const val DefaultDesktopSubscriptionUserAgent = "SKIPI Desktop"
 
 private val DefaultConnectTimeout: Duration = Duration.ofSeconds(10)
-private val DefaultRequestTimeout: Duration = Duration.ofSeconds(30)
+private val DefaultRequestTimeout: Duration = Duration.ofSeconds(SubscriptionFetchPolicy.defaultTimeoutSeconds.toLong())
 const val MaxDesktopSubscriptionResponseBytes = 8 * 1024 * 1024
-private const val MaxSubscriptionRedirects = 5
+private const val MaxAutomaticResourceRedirects = 5
 private val HttpRedirectStatusCodes = setOf(301, 302, 303, 307, 308)
 private val KnownMetadataHosts = setOf(
     "metadata",
