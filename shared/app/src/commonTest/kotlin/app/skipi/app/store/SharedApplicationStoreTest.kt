@@ -10,6 +10,7 @@ import app.skipi.app.model.ResourceCatalogRecord
 import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.TrafficConfigRecord
+import app.skipi.app.proxy.createProxyServerRecord
 import app.skipi.app.repository.AppRepositories
 import app.skipi.app.repository.ProxyServerRepository
 import app.skipi.app.repository.ResourceRepository
@@ -194,6 +195,71 @@ class SharedApplicationStoreTest {
         assertEquals(30, repositories.proxyServers.catalog.nextServerId)
         assertEquals(3, repositories.proxyServers.catalog.selectedServerId)
         assertIs<SharedApplicationActionOutcome.Completed>(store.lastActionResult.value?.outcome)
+    }
+
+    @Test
+    fun concurrentCatalogCreatesAllocateDistinctIdsFromTheLatestCatalog() = runTest {
+        val initialCatalog = ProxyServerCatalog(
+            servers = listOf(ProxyServerRecord(id = 8, server = HTTP(server = "existing.example"))),
+            nextServerId = 10,
+            selectedServerId = 8,
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = initialCatalog
+        repositories.proxyServers.servers.value = initialCatalog.servers
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val outcomes = (1..2).map { index ->
+            async {
+                store.dispatchAndAwait(
+                    SharedApplicationAction.UpdateProxyCatalog { current ->
+                        createProxyServerRecord(
+                            catalog = current,
+                            server = HTTP(server = "created-$index.example"),
+                            sourceSubscriptionId = null,
+                        )
+                    },
+                )
+            }
+        }.awaitAll()
+
+        assertTrue(outcomes.all { it.outcome is SharedApplicationActionOutcome.Completed })
+        assertEquals(setOf(10, 11), repositories.proxyServers.catalog.servers
+            .filter { (it.server as HTTP).server.startsWith("created-") }
+            .map(ProxyServerRecord::id)
+            .toSet())
+        assertEquals(setOf(8, 10, 11), repositories.proxyServers.catalog.servers.map(ProxyServerRecord::id).toSet())
+        assertEquals(12, repositories.proxyServers.catalog.nextServerId)
+        assertEquals(8, repositories.proxyServers.catalog.selectedServerId)
+    }
+
+    @Test
+    fun failedCatalogCreateAtIdExhaustionLeavesThePersistedCatalogUntouched() = runTest {
+        val originalCatalog = ProxyServerCatalog(
+            servers = listOf(ProxyServerRecord(id = Int.MAX_VALUE - 1, server = HTTP(server = "last.example"))),
+            nextServerId = Int.MAX_VALUE,
+            selectedServerId = Int.MAX_VALUE - 1,
+        )
+        val repositories = FakeRepositories()
+        repositories.proxyServers.catalog = originalCatalog
+        repositories.proxyServers.servers.value = originalCatalog.servers
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val result = store.dispatchAndAwait(
+            SharedApplicationAction.UpdateProxyCatalog { current ->
+                createProxyServerRecord(
+                    catalog = current,
+                    server = HTTP(server = "must-not-be-saved.example"),
+                    sourceSubscriptionId = null,
+                )
+            },
+        )
+
+        assertFalse(result.outcome is SharedApplicationActionOutcome.Completed)
+        assertEquals(originalCatalog, repositories.proxyServers.catalog)
+        assertEquals(originalCatalog.servers, repositories.proxyServers.servers.value)
     }
 
     @Test
