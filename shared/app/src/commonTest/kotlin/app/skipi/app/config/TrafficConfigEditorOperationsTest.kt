@@ -6,6 +6,7 @@ package app.skipi.app.config
 import features.config.TrafficConfigNetworkTransportCellular
 import features.config.TrafficConfigNetworkTransportWifi
 import features.config.TrafficConfigAndroidSettings
+import features.config.SkipiPerAppModeWhitelist
 import features.config.withSkipiSettingsReadFromRawConfig
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
@@ -150,5 +151,71 @@ profile-name = Old name
         assertTrue(parsed.sections["rule"].orEmpty().contains("DOMAIN-SUFFIX,example.net,DIRECT"))
         assertTrue(parsed.sections["skipi"].orEmpty().contains("profile-name = New name"))
         assertTrue(parsed.sections["skipi"].orEmpty().contains("profile-update-url = https://new.example/profile.conf"))
+    }
+
+    @Test
+    fun profileBasicsEditKeepsKnownSkipiValuesAndExternalCommentsButDropsInnerUnknowns() {
+        val rawDocument = """# external file comment
+[General]
+# external general comment
+loglevel = warning
+
+[SKIPI]
+# this comment is inside the section being rewritten
+profile-name = Before
+profile-update-url = https://before.example/profile
+profile-update-locked = false
+profile-auto-update = true
+profile-update-interval = 18
+fake-dns = true
+per-app-mode = whitelist
+per-app-package = com.example.allowed
+resource-auto-update = false
+resource-update-interval = 36
+future-skipi-option = discard-me
+
+[Vendor]
+# external vendor comment
+vendor-option = preserve-me
+""".trimIndent() + "\n"
+        val initial = TrafficConfigState(
+            id = 21,
+            name = "Before",
+            rawConfig = rawDocument,
+        ).withSkipiSettingsReadFromRawConfig()
+
+        val saved = updateTrafficConfigProfile(listOf(initial), profileId = initial.id) { current ->
+            current.withProfileBasics(
+                name = "After visual edit",
+                sourceUrl = "https://after.example/profile",
+                updateLocked = true,
+                autoUpdate = current.autoUpdate,
+                updateInterval = current.updateInterval,
+                resourceAutoUpdate = current.resourceSettings.autoUpdate,
+                resourceUpdateInterval = current.resourceSettings.updateInterval,
+            )
+        }.single()
+        val skipiBody = saved.rawConfig.substringAfter("[SKIPI]\n").substringBefore("\n[Vendor]")
+        val reparsed = saved.withSkipiSettingsReadFromRawConfig()
+
+        assertEquals("After visual edit", reparsed.name)
+        assertEquals("https://after.example/profile", reparsed.sourceUrl)
+        assertTrue(reparsed.updateLocked)
+        assertTrue(reparsed.autoUpdate)
+        assertEquals("18", reparsed.updateInterval)
+        assertTrue(reparsed.androidSettings.enableFakeDns)
+        assertEquals(SkipiPerAppModeWhitelist, reparsed.proxyAppListMode)
+        assertEquals(listOf("com.example.allowed"), reparsed.proxyAppListSelectedApps)
+        assertFalse(reparsed.resourceSettings.autoUpdate)
+        assertEquals("36", reparsed.resourceSettings.updateInterval)
+        assertTrue(skipiBody.contains("fake-dns = true"))
+        assertTrue(skipiBody.contains("per-app-package = com.example.allowed"))
+        assertFalse(skipiBody.contains("future-skipi-option"))
+        assertFalse(skipiBody.contains("comment is inside the section"))
+        assertTrue(saved.rawConfig.contains("# external file comment"))
+        assertTrue(saved.rawConfig.contains("# external general comment"))
+        assertTrue(saved.rawConfig.contains("loglevel = warning"))
+        assertTrue(saved.rawConfig.contains("# external vendor comment"))
+        assertTrue(saved.rawConfig.contains("vendor-option = preserve-me"))
     }
 }
