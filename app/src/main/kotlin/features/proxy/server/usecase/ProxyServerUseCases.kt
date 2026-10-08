@@ -18,12 +18,24 @@ import app.skipi.app.proxy.reconcileSubscriptionServerCollection
 import app.skipi.app.proxy.saveProxyServerRecord
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.SubscriptionRecord
+import app.skipi.app.subscription.LoadedSubscriptionRefresh
+import app.skipi.app.subscription.ResolvedEmbeddedSubscriptionConfig
+import app.skipi.app.subscription.SubscriptionRefreshCommitPort
+import app.skipi.app.subscription.SubscriptionRefreshReconciliationResult
+import app.skipi.app.subscription.SubscriptionRefreshRequestIdentity
+import app.skipi.app.subscription.SubscriptionRefreshSnapshot
+import app.skipi.app.subscription.commitSubscriptionRefresh
+import app.skipi.app.subscription.reconcileSubscriptionRefresh
 import app.skipi.app.subscription.withRefreshedMetadata
 import data.AndroidAppStateStore
+import data.repository.toAndroidGroup
+import data.repository.toSubscriptionRecord
+import data.repository.withProxyServerCatalog
 import data.repository.reconcileTrafficConfigProxyGroups
 import features.config.withImportedTrafficConfig
 import features.subscription.SubscriptionMetadata
 import features.subscription.DefaultSubscriptionGroupId
+import kotlinx.coroutines.CancellationException
 
 internal data class ResolvedEmbeddedTrafficConfig(
     val content: String,
@@ -141,6 +153,42 @@ internal fun AppState.withUpdatedSubscriptionServers(
     updates: List<ProxyServerListSubscriptionUpdate>,
     updatedAtMillis: Long,
 ): AppState {
+    if (updates.size == 1) {
+        return withUpdatedSingleSubscriptionServers(updates.single(), updatedAtMillis)
+    }
+    return withUpdatedSubscriptionServersBatch(updates, updatedAtMillis)
+}
+
+private fun AppState.withUpdatedSingleSubscriptionServers(
+    update: ProxyServerListSubscriptionUpdate,
+    updatedAtMillis: Long,
+): AppState {
+    val reconciled = reconcileSubscriptionRefresh(
+        snapshot = toSubscriptionRefreshSnapshot(),
+        loaded = update.toLoadedSubscriptionRefresh(),
+        refreshedAtMillis = updatedAtMillis,
+    )
+    if (!reconciled.applicable) return this
+
+    var nextState = withSubscriptionRefreshSnapshot(reconciled.snapshot)
+    val config = reconciled.resolvedEmbeddedConfig
+    if (config != null && config.content.isNotBlank()) {
+        nextState = runCatching {
+            nextState.withImportedTrafficConfig(
+                content = config.content,
+                activate = config.activate,
+                fallbackName = config.fallbackName,
+                sourceUrl = config.sourceUrl,
+            )
+        }.getOrDefault(nextState)
+    }
+    return nextState
+}
+
+private fun AppState.withUpdatedSubscriptionServersBatch(
+    updates: List<ProxyServerListSubscriptionUpdate>,
+    updatedAtMillis: Long,
+): AppState {
     val applicableUpdates = updates.filter { update ->
         subscriptionGroups.any { group ->
             group.id == update.groupId &&
@@ -245,6 +293,61 @@ internal fun AppState.withUpdatedSubscriptionServers(
     return finalState
 }
 
+private fun SubscriptionGroupState.toRefreshSubscriptionRecord(): SubscriptionRecord {
+    val record = toSubscriptionRecord()
+    return record.copy(
+        metadata = record.metadata?.copy(profileUpdateIntervalHours = updateInterval),
+    )
+}
+
+private fun AppState.toSubscriptionRefreshSnapshot(): SubscriptionRefreshSnapshot = SubscriptionRefreshSnapshot(
+    subscriptions = subscriptionGroups.map(SubscriptionGroupState::toRefreshSubscriptionRecord),
+    servers = proxyServers.map { server ->
+        ProxyServerRecord(
+            id = server.id,
+            groupId = server.groupId,
+            server = server.server,
+            latency = server.latency,
+        )
+    },
+    nextServerId = nextProxyServerId,
+    selectedServerId = selectedProxyServerId,
+)
+
+private fun AppState.withSubscriptionRefreshSnapshot(snapshot: SubscriptionRefreshSnapshot): AppState = copy(
+    subscriptionGroups = snapshot.subscriptions.map { record ->
+        record.toAndroidGroup(subscriptionGroups.firstOrNull { existing -> existing.id == record.id })
+    },
+    proxyServers = snapshot.servers.map { server ->
+        ProxyServerState(server.id, server.server, server.groupId, server.latency)
+    },
+    nextProxyServerId = snapshot.nextServerId,
+    selectedProxyServerId = snapshot.selectedServerId,
+)
+
+private fun ProxyServerListSubscriptionUpdate.toLoadedSubscriptionRefresh() = LoadedSubscriptionRefresh(
+    sourceIdentity = SubscriptionRefreshRequestIdentity(
+        id = groupId,
+        url = sourceIdentity.url,
+        userAgent = sourceIdentity.userAgent,
+        updateInterval = sourceIdentity.updateInterval,
+        ageSecretKey = sourceIdentity.ageSecretKey,
+        updateViaProxy = sourceIdentity.updateViaProxy,
+        enabled = sourceIdentity.enabled,
+    ),
+    urlCount = urlCount,
+    servers = servers,
+    metadata = metadata,
+    resolvedEmbeddedConfig = resolvedConfig?.let { config ->
+        ResolvedEmbeddedSubscriptionConfig(
+            content = config.content,
+            sourceUrl = config.sourceUrl,
+            fallbackName = config.fallbackName,
+            activate = config.activate,
+        )
+    },
+)
+
 /** Shared-catalog half of subscription refresh; metadata/config state stays in the AppState adapter. */
 internal fun reconcileUpdatedSubscriptionProxyRecords(
     servers: List<app.skipi.app.model.ProxyServerRecord>,
@@ -295,6 +398,24 @@ internal suspend fun applyProxySubscriptionUpdates(
     updateAppState: ((AppState) -> AppState) -> Unit,
 ) {
     if (updates.isEmpty()) return
+    if (updates.size == 1) {
+        val receipt = commitSubscriptionRefresh(
+            loaded = updates.single().toLoadedSubscriptionRefresh(),
+            refreshedAtMillis = updatedAtMillis,
+            port = AndroidSubscriptionRefreshCommitPort(stateStore, updateAppState),
+        )
+        receipt.failure?.let { failure -> throw failure.error }
+        return
+    }
+    applyProxySubscriptionUpdatesBatch(stateStore, updates, updatedAtMillis, updateAppState)
+}
+
+private suspend fun applyProxySubscriptionUpdatesBatch(
+    stateStore: AndroidAppStateStore,
+    updates: List<ProxyServerListSubscriptionUpdate>,
+    updatedAtMillis: Long,
+    updateAppState: ((AppState) -> AppState) -> Unit,
+) {
     val previous = stateStore.currentState
     stateStore.proxyServerRepository.updateCatalog { current ->
         reconcileUpdatedSubscriptionProxyRecords(
@@ -317,6 +438,92 @@ internal suspend fun applyProxySubscriptionUpdates(
         previous.activeTrafficConfigId != updated.activeTrafficConfigId
     ) {
         stateStore.reconcileTrafficConfigProxyGroups()
+    }
+}
+
+private class AndroidSubscriptionRefreshCommitPort(
+    private val stateStore: AndroidAppStateStore,
+    private val updateAppState: ((AppState) -> AppState) -> Unit,
+) : SubscriptionRefreshCommitPort {
+    override suspend fun updateServers(
+        reconcileLatest: (SubscriptionRefreshSnapshot) -> SubscriptionRefreshReconciliationResult,
+    ): SubscriptionRefreshReconciliationResult {
+        var result: SubscriptionRefreshReconciliationResult? = null
+        stateStore.update { state ->
+            val reconciled = reconcileLatest(state.toSubscriptionRefreshSnapshot())
+            result = reconciled
+            if (!reconciled.applicable) {
+                state
+            } else {
+                state.withProxyServerCatalog(
+                    ProxyServerCatalog(
+                        servers = reconciled.snapshot.servers.map { server ->
+                            app.skipi.app.model.ProxyServerRecord(
+                                id = server.id,
+                                server = server.server,
+                                sourceSubscriptionId = server.groupId.takeIf {
+                                    it != DefaultSubscriptionGroupId
+                                },
+                            )
+                        },
+                        nextServerId = reconciled.snapshot.nextServerId,
+                        selectedServerId = reconciled.snapshot.selectedServerId,
+                    ),
+                )
+            }
+        }
+        return checkNotNull(result)
+    }
+
+    override suspend fun updateSubscription(
+        subscriptionId: Int,
+        transform: (SubscriptionRecord?) -> SubscriptionRecord?,
+    ): SubscriptionRecord? {
+        var updated: SubscriptionRecord? = null
+        updateAppState { state ->
+            val target = state.subscriptionGroups.firstOrNull { group -> group.id == subscriptionId }
+            val refreshed = transform(target?.toRefreshSubscriptionRecord())
+            updated = refreshed
+            if (target == null || refreshed == null) {
+                state
+            } else {
+                state.copy(
+                    subscriptionGroups = state.subscriptionGroups.map { group ->
+                        if (group.id == subscriptionId) refreshed.toAndroidGroup(group) else group
+                    },
+                )
+            }
+        }
+        return updated
+    }
+
+    override suspend fun applyEmbeddedConfig(config: ResolvedEmbeddedSubscriptionConfig): Boolean {
+        if (config.content.isBlank()) return false
+        val previous = stateStore.currentState
+        var imported = false
+        updateAppState { state ->
+            try {
+                state.withImportedTrafficConfig(
+                    content = config.content,
+                    activate = config.activate,
+                    fallbackName = config.fallbackName,
+                    sourceUrl = config.sourceUrl,
+                )
+                    .also { imported = true }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Throwable) {
+                state
+            }
+        }
+        if (!imported) return false
+        val updated = stateStore.currentState
+        if (previous.trafficConfigs != updated.trafficConfigs ||
+            previous.activeTrafficConfigId != updated.activeTrafficConfigId
+        ) {
+            stateStore.reconcileTrafficConfigProxyGroups()
+        }
+        return true
     }
 }
 

@@ -136,7 +136,6 @@ dependencies {
     implementation("app.skipi.core:skipicore:${ProjectConfig.SKIPI_CORE_VERSION}@aar")
     implementation(dependencies.project(":hevtun"))
     implementation(libs.ktor.http)
-    implementation(libs.kage)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.miuix.ui)
     implementation(libs.miuix.icons)

@@ -5,20 +5,21 @@ package features.subscription.usecase
 
 import app.AppState
 import app.SubscriptionGroupState
+import app.skipi.app.subscription.SubscriptionRefreshLoadRequest
+import app.skipi.app.subscription.loadSubscriptionRefresh
 import app.skipi.app.subscription.SubscriptionRefreshLoader
 import app.skipi.app.subscription.refreshSubscriptions as refreshSubscriptionBatch
-import features.config.decodeSkipiPayload
+import data.repository.toSubscriptionRecord
 import features.logs.AndroidAppLogger
-import features.proxy.server.usecase.ProxyServerImportSource
 import features.proxy.server.usecase.ProxyServerListSubscriptionFailure
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdate
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
-import features.proxy.server.usecase.importProxyServersFromText
+import features.proxy.server.usecase.ProxyServerPayloadParser
+import features.proxy.server.usecase.importer.parseProxyServersFromPayloads
 import features.proxy.server.usecase.subscriptionFetchIdentity
+import features.subscription.SubscriptionFetchResponse
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.runtime.AndroidSubscriptionFetcher
-import features.subscription.SubscriptionFetchResponse
-import features.subscription.subscriptionMetadata
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
@@ -89,56 +90,29 @@ private suspend fun updateSubscriptionGroup(
     fetchOptions: AndroidSubscriptionFetchOptions,
 ): Result<ProxyServerListSubscriptionUpdate> {
     return try {
-        val response = fetchResponse(group.url, group.userAgent, fetchOptions)
-        val text = response.body
-        val importResult = importProxyServersFromText(
-            text = text,
-            source = ProxyServerImportSource.SubscriptionUrl,
-            providerUrlFetcher = { providerUrl ->
-                fetchResponse(providerUrl, group.userAgent, fetchOptions).body
-            },
+        val loaded = loadSubscriptionRefresh(
+            request = SubscriptionRefreshLoadRequest(
+                subscription = group.toSubscriptionRecord(),
+                fetchOptions = fetchOptions,
+            ),
+            fetchResponse = fetchResponse,
+            parsers = listOf(AndroidSubscriptionRefreshPayloadParser),
         )
-        val metadata = response.subscriptionMetadata()
-        val resolvedConfig = metadata.embeddedConfig?.let { embedded ->
-            val content = if (embedded.isUrl) {
-                try {
-                    fetchResponse(embedded.payload, group.userAgent, fetchOptions).body
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Throwable) {
-                    null
-                }
-            } else {
-                embedded.payload.decodeSkipiPayload() ?: embedded.payload.trim()
-            }
-            content?.takeIf(String::isNotBlank)?.let { configContent ->
-                features.proxy.server.usecase.ResolvedEmbeddedTrafficConfig(
-                    content = configContent,
-                    sourceUrl = if (embedded.isUrl) embedded.payload.trim() else "subscription://${group.id}",
-                    fallbackName = group.name.ifBlank { "Subscription Config" },
-                    activate = embedded.activate,
-                )
-            }
-        }
         val update = ProxyServerListSubscriptionUpdate(
             groupId = group.id,
             sourceIdentity = group.subscriptionFetchIdentity(),
-            urlCount = importResult.urlCount,
-            servers = importResult.servers,
-            metadata = metadata,
-            resolvedConfig = resolvedConfig,
-        ).also { update ->
-            if (update.servers.isEmpty()) {
-                AndroidAppLogger.warn(
-                    LogTag,
-                    "Subscription update imported no proxy servers ${group.logIdentity()} " +
-                        "parsedProxyServerCount=${update.urlCount} responseLength=${text.length}",
+            urlCount = loaded.urlCount,
+            servers = loaded.servers,
+            metadata = loaded.metadata,
+            resolvedConfig = loaded.resolvedEmbeddedConfig?.let { config ->
+                features.proxy.server.usecase.ResolvedEmbeddedTrafficConfig(
+                    content = config.content,
+                    sourceUrl = config.sourceUrl,
+                    fallbackName = config.fallbackName,
+                    activate = config.activate,
                 )
-            }
-            require(update.servers.isNotEmpty()) {
-                "Subscription update imported no proxy servers"
-            }
-        }
+            },
+        )
         Result.success(update)
     } catch (cancelled: CancellationException) {
         throw cancelled
@@ -150,6 +124,10 @@ private suspend fun updateSubscriptionGroup(
         )
         Result.failure(error)
     }
+}
+
+private val AndroidSubscriptionRefreshPayloadParser: ProxyServerPayloadParser = { payload, context ->
+    parseProxyServersFromPayloads(listOf(payload), context)
 }
 
 internal class SubscriptionUpdateCoordinator {

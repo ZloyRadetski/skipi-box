@@ -28,6 +28,7 @@ fun reconcileSubscriptionServerCollection(
     updates: List<SubscriptionServerCollectionUpdate>,
     nextServerId: Int,
     selectedServerId: Int,
+    retainedServerIds: Set<Int> = emptySet(),
 ): ProxyServerCollectionResult {
     if (updates.isEmpty()) {
         return ProxyServerCollectionResult(servers, nextServerId, selectedServerId)
@@ -50,6 +51,7 @@ fun reconcileSubscriptionServerCollection(
             },
             incoming = update.servers,
             firstNewServerId = nextId,
+            occupiedIds = retainedServerIds + servers.map(ProxyServerRecord::id),
         )
         nextId = reconciliation.nextServerId
         oldIdToNewId.putAll(reconciliation.oldIdToNewId)
@@ -77,6 +79,7 @@ fun reconcileSubscriptionServerCollection(
     }
     val validServerIds = (importedServers + otherServers + existingCompositeServers)
         .mapTo(mutableSetOf(), ProxyServerRecord::id)
+        .apply { addAll(retainedServerIds) }
 
     val updatedCompositeServers = existingCompositeServers.map { row ->
         val updatedServer = when (val composite = row.server) {
@@ -115,6 +118,7 @@ fun reconcileSubscriptionServerCollection(
     val nextServers = importedServers + otherServers + updatedCompositeServers
     val selectedId = when {
         nextServers.any { row -> row.id == selectedServerId } -> selectedServerId
+        selectedServerId in retainedServerIds -> selectedServerId
         else -> servers.firstOrNull { row -> row.groupId !in updatedGroupIds }?.id
             ?: nextServers.firstOrNull()?.id
             ?: selectedServerId

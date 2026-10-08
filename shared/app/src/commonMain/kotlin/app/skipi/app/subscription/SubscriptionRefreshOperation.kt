@@ -73,6 +73,8 @@ data class SubscriptionRefreshSnapshot(
     val servers: List<ProxyServerRecord>,
     val nextServerId: Int,
     val selectedServerId: Int,
+    /** Host rows omitted from [servers] but still present in the persisted catalog. */
+    val retainedServerIds: Set<Int> = emptySet(),
 )
 
 /** Result leaves a stale response's aggregate untouched and withholds its profile handoff. */
@@ -163,6 +165,7 @@ fun reconcileSubscriptionRefresh(
         ),
         nextServerId = snapshot.nextServerId,
         selectedServerId = snapshot.selectedServerId,
+        retainedServerIds = snapshot.retainedServerIds,
     )
     val refreshedSubscription = currentSubscription.withRefreshedMetadata(
         response = loaded.metadata,
