@@ -35,6 +35,33 @@ import java.time.Duration
 import java.util.zip.GZIPInputStream
 import java.util.zip.InflaterInputStream
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/** Transport settings shared by the root, provider, and embedded-config requests in one refresh. */
+internal data class DesktopSubscriptionRefreshFetchOptions(
+    val timeout: Duration,
+    val proxy: DesktopSubscriptionSocksProxy?,
+    val deviceHeaders: Map<String, String>,
+    val ageSecretKey: String,
+    val fallbackUserAgent: String,
+)
+
+/** Applies Desktop's configured legacy User-Agent fallback without changing request identity. */
+internal suspend fun DesktopSubscriptionFetcher.fetchSubscriptionRefreshResponse(
+    url: String,
+    storedUserAgent: String,
+    options: DesktopSubscriptionRefreshFetchOptions,
+): SubscriptionFetchResponse = withContext(Dispatchers.IO) {
+    fetchResponse(
+        url = url,
+        userAgent = storedUserAgent.trim().ifBlank { options.fallbackUserAgent },
+        timeout = options.timeout,
+        proxy = options.proxy,
+        deviceHeaders = options.deviceHeaders,
+        ageSecretKey = options.ageSecretKey,
+    )
+}
 
 /** Desktop HTTP adapter for subscriptions. Parsing and validation stay in the shared core. */
 class DesktopSubscriptionFetcher(

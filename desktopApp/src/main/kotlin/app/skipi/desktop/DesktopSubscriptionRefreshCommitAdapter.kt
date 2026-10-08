@@ -56,14 +56,24 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
     private val readLatencyByServerId: () -> Map<Int, DesktopServerLatencyResult>,
     private val publishLatencyByServerId: (Map<Int, DesktopServerLatencyResult>) -> Unit,
 ) : SubscriptionRefreshCommitPort {
+    var serverLibraryChanged: Boolean = false
+        private set
+
+    var profileLibraryChanged: Boolean = false
+        private set
+
     override suspend fun updateServers(
         reconcileLatest: (SubscriptionRefreshSnapshot) -> SubscriptionRefreshReconciliationResult,
     ): SubscriptionRefreshReconciliationResult {
         currentCoroutineContext().ensureActive()
+        serverLibraryChanged = false
+        profileLibraryChanged = false
 
         var reconciliation: SubscriptionRefreshReconciliationResult? = null
+        var previousServerLibrary: DesktopServerLibrary? = null
         var updatedLatencyByServerId: Map<Int, DesktopServerLatencyResult>? = null
-        proxyServerRepository.updateLibrary { latestLibrary ->
+        val updatedServerLibrary = proxyServerRepository.updateLibrary { latestLibrary ->
+            previousServerLibrary = latestLibrary
             val latencyByServerId = readLatencyByServerId()
             val result = reconcileLatest(
                 latestLibrary.toRefreshSnapshot(
@@ -88,6 +98,9 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
         val result = checkNotNull(reconciliation) { "Subscription server reconciliation did not run" }
         if (result.applicable) {
             publishLatencyByServerId(checkNotNull(updatedLatencyByServerId))
+            val previous = checkNotNull(previousServerLibrary)
+            serverLibraryChanged = previous.servers != updatedServerLibrary.servers ||
+                previous.selectedServerId != updatedServerLibrary.selectedServerId
         }
         return result
     }
@@ -117,6 +130,7 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
 
     override suspend fun applyEmbeddedConfig(config: ResolvedEmbeddedSubscriptionConfig): Boolean {
         currentCoroutineContext().ensureActive()
+        profileLibraryChanged = false
         val latestLibrary = readConfigs()
         val imported = try {
             val convertedContent = config.content.toRoscomRoutingJsonOrNull()
@@ -155,8 +169,14 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
             },
             configs = imported.trafficConfigs.map { profile -> profile.toDesktopConfigProfile() },
         )
+        val activeBefore = latestLibrary.selectedConfigId
+            ?.let { selectedId -> latestLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
+        val activeAfter = updatedLibrary.selectedConfigId
+            ?.let { selectedId -> updatedLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
+        val activeProfileChanged = activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
         saveConfigs(updatedLibrary).getOrThrow()
         publishConfigs(updatedLibrary)
+        profileLibraryChanged = activeProfileChanged
         return true
     }
 

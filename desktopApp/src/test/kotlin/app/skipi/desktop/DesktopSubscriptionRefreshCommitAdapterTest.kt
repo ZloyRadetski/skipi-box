@@ -8,6 +8,7 @@ import app.skipi.app.subscription.LoadedSubscriptionRefresh
 import app.skipi.app.subscription.ResolvedEmbeddedSubscriptionConfig
 import app.skipi.app.subscription.SubscriptionRefreshCommitScope
 import app.skipi.app.subscription.SubscriptionRefreshLoadRequest
+import app.skipi.app.subscription.SubscriptionRefreshReconciliationResult
 import app.skipi.app.subscription.commitSubscriptionRefresh
 import app.skipi.app.subscription.refreshSubscription
 import app.skipi.app.subscription.subscriptionRefreshRequestIdentity
@@ -161,6 +162,135 @@ class DesktopSubscriptionRefreshCommitAdapterTest {
         assertEquals(DesktopServerLatencyResult.Success(61), latencyByServerId[lateManual.id])
         assertEquals(DesktopServerLatencyResult.Success(18), latencyByServerId[otherSubscription.id])
         assertEquals(900L, subscriptionRepository.catalog.value.subscriptions.single { it.id == target.id }.lastUpdatedAtMillis)
+    }
+
+    @Test
+    fun metadataOnlyRefreshDoesNotMarkServerOrProfileLibraryChanged() = runBlocking {
+        val fixture = CommitFixture(
+            storedSubscriptions = listOf(StoredSubscription(id = 51, url = "https://example.com/provider", name = "Provider")),
+        )
+        val adapter = fixture.adapter(51)
+        val target = fixture.subscriptionRepository.catalog.value.subscriptions.single()
+
+        val result = commitSubscriptionRefresh(
+            loaded = loaded(target, servers = emptyList()),
+            refreshedAtMillis = 5_100L,
+            port = adapter,
+        )
+
+        assertTrue(result.applicable)
+        assertNull(result.failure)
+        assertEquals(listOf(SubscriptionRefreshCommitScope.SERVERS, SubscriptionRefreshCommitScope.SUBSCRIPTION), result.appliedScopes)
+        assertEquals(0, fixture.serverWriteCount)
+        assertEquals(1, fixture.subscriptionWriteCount)
+        assertEquals(5_100L, fixture.subscriptionRepository.catalog.value.subscriptions.single().lastUpdatedAtMillis)
+        assertFalse(adapter.serverLibraryChanged)
+        assertFalse(adapter.profileLibraryChanged)
+    }
+
+    @Test
+    fun highWaterOnlyServerLibraryWriteDoesNotMarkServerLibraryChanged() = runBlocking {
+        val fixture = CommitFixture(
+            storedSubscriptions = listOf(StoredSubscription(id = 52, url = "https://example.com/provider", name = "Provider")),
+        )
+        val adapter = fixture.adapter(52)
+
+        val result = adapter.updateServers { latest ->
+            SubscriptionRefreshReconciliationResult(
+                applicable = true,
+                snapshot = latest.copy(nextServerId = latest.nextServerId + 12),
+                resolvedEmbeddedConfig = null,
+            )
+        }
+
+        assertTrue(result.applicable)
+        assertEquals(1, fixture.serverWriteCount)
+        assertEquals(13, fixture.serverLibrary.nextServerId)
+        assertFalse(adapter.serverLibraryChanged)
+    }
+
+    @Test
+    fun serverLibraryChangedFlagRequiresSuccessfulVisibleServerChange() = runBlocking {
+        val targetRow = StoredSubscription(id = 53, url = "https://example.com/provider", name = "Provider")
+        val initialServers = DesktopServerLibrary(
+            servers = listOf(
+                DesktopStoredProxyServer(
+                    id = 8,
+                    serverJson = proxy("old.example", "Old").encodePersistedProxyServer(),
+                    subscriptionId = targetRow.id,
+                ),
+            ),
+        )
+        val changedFixture = CommitFixture(storedSubscriptions = listOf(targetRow), initialServers = initialServers)
+        val changedAdapter = changedFixture.adapter(targetRow.id)
+        val target = changedFixture.subscriptionRepository.catalog.value.subscriptions.single()
+
+        val changed = commitSubscriptionRefresh(
+            loaded = loaded(target, listOf(proxy("fresh.example", "Fresh"))),
+            refreshedAtMillis = 5_300L,
+            port = changedAdapter,
+        )
+
+        assertTrue(changed.applicable)
+        assertNull(changed.failure)
+        assertTrue(changedAdapter.serverLibraryChanged)
+
+        val failedFixture = CommitFixture(
+            storedSubscriptions = listOf(targetRow),
+            initialServers = initialServers,
+        ).apply { serverSaveFailure = IllegalStateException("servers.json unavailable") }
+        val failedAdapter = failedFixture.adapter(targetRow.id)
+        val failedTarget = failedFixture.subscriptionRepository.catalog.value.subscriptions.single()
+
+        val failed = commitSubscriptionRefresh(
+            loaded = loaded(failedTarget, listOf(proxy("fresh.example", "Fresh"))),
+            refreshedAtMillis = 5_301L,
+            port = failedAdapter,
+        )
+
+        assertEquals(SubscriptionRefreshCommitScope.SERVERS, failed.failure?.scope)
+        assertFalse(failedAdapter.serverLibraryChanged)
+    }
+
+    @Test
+    fun profileLibraryChangedFlagRequiresSuccessfulActiveProfileChange() = runBlocking {
+        val targetRow = StoredSubscription(id = 54, url = "https://example.com/provider", name = "Provider")
+        val successFixture = CommitFixture(storedSubscriptions = listOf(targetRow))
+        val successAdapter = successFixture.adapter(targetRow.id)
+        val target = successFixture.subscriptionRepository.catalog.value.subscriptions.single()
+
+        val success = commitSubscriptionRefresh(
+            loaded = loaded(
+                target,
+                servers = emptyList(),
+                resolvedEmbeddedConfig = embeddedConfig().copy(activate = true),
+            ),
+            refreshedAtMillis = 5_400L,
+            port = successAdapter,
+        )
+
+        assertNull(success.failure)
+        assertTrue(successFixture.configLibrary.selectedConfigId != null)
+        assertTrue(successAdapter.profileLibraryChanged)
+
+        val failedFixture = CommitFixture(
+            storedSubscriptions = listOf(targetRow),
+        ).apply { configSaveFailure = IllegalStateException("configs.json unavailable") }
+        val failedAdapter = failedFixture.adapter(targetRow.id)
+        val failedTarget = failedFixture.subscriptionRepository.catalog.value.subscriptions.single()
+
+        val failed = commitSubscriptionRefresh(
+            loaded = loaded(
+                failedTarget,
+                servers = emptyList(),
+                resolvedEmbeddedConfig = embeddedConfig().copy(activate = true),
+            ),
+            refreshedAtMillis = 5_401L,
+            port = failedAdapter,
+        )
+
+        assertEquals(SubscriptionRefreshCommitScope.PROFILE, failed.failure?.scope)
+        assertFalse(failedAdapter.profileLibraryChanged)
     }
 
     @Test
