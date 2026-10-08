@@ -8,6 +8,7 @@ import app.skipi.yaml.normalizeMihomoProviderUrl
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportSource
+import features.proxy.server.usecase.ProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerPayloadParser
 import features.proxy.server.usecase.ProxyServerProviderUrlFetcher
 import features.proxy.server.usecase.importer.DefaultMihomoProviderMaxDepth
@@ -26,6 +27,24 @@ import kotlinx.coroutines.runBlocking
  */
 internal object DesktopMihomoPayloadImporter {
     const val DefaultMaxProviderDepth: Int = DefaultMihomoProviderMaxDepth
+
+    /**
+     * Adapts the existing Desktop format pipeline to the shared single-refresh loader.
+     * Provider bodies continue to use the fetch callback carried by the common import context.
+     */
+    fun subscriptionPayloadParser(): ProxyServerPayloadParser = { text, context ->
+        val imported = importWithProviderFetcher(
+            text = text,
+            providerUrlFetcher = context.providerUrlFetcher ?: ProxyServerProviderUrlFetcher { url ->
+                throw MissingDesktopProviderBody(url)
+            },
+            source = context.source,
+        )
+        ProxyServerImportResult(
+            urlCount = imported.proxyEntryCount,
+            servers = imported.servers,
+        )
+    }
 
     fun import(
         text: String,

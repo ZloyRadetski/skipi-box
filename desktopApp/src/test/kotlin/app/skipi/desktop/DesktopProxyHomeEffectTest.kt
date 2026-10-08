@@ -103,27 +103,24 @@ class DesktopProxyHomeEffectTest {
     }
 
     @Test
-    fun subscriptionOperationsAreRejectedWhileAnUpdateIsInProgress() {
-        var urlChanges = 0
-        var refreshes = 0
-        var providerUpdates = 0
+    fun refreshIsRejectedWhileAnUpdateRunsButTheGroupToggleStillUsesItsSharedOperation() {
+        val refreshIds = mutableListOf<Int>()
+        val enabledChanges = mutableListOf<Pair<Int, Boolean>>()
         val effects = DesktopProxyHomeEffectContext(
             subscriptions = listOf(DesktopStoredSubscription(id = 7, url = "https://example.com/sub")),
             updatingSubscription = true,
-            onSubscriptionUrlChange = { urlChanges += 1 },
-            onUpdateSubscription = { refreshes += 1 },
-            onUpdateSubscriptionProvider = { _, _ ->
-                providerUpdates += 1
+            onUpdateSubscriptionById = { refreshIds += it },
+            onSetSubscriptionEnabled = { id, enabled ->
+                enabledChanges += id to enabled
                 Result.success(Unit)
             },
         )
 
         assertTrue(effects.handle(ProxyHomeEffect.RefreshSubscription("7")).isFailure)
-        assertTrue(effects.handle(ProxyHomeEffect.ToggleSubscriptionEnabled("7")).isFailure)
+        assertTrue(effects.handle(ProxyHomeEffect.ToggleSubscriptionEnabled("7")).isSuccess)
 
-        assertEquals(0, urlChanges)
-        assertEquals(0, refreshes)
-        assertEquals(0, providerUpdates)
+        assertEquals(emptyList(), refreshIds)
+        assertEquals(listOf(7 to false), enabledChanges)
     }
 
     @Test
@@ -373,20 +370,20 @@ class DesktopProxyHomeEffectTest {
 
     @Test
     fun refreshSubscriptionRejectsBlankUrl() {
-        var refreshCount = 0
+        val refreshIds = mutableListOf<Int>()
         val subs = listOf(
             DesktopStoredSubscription(id = 1, url = "", name = "Blank manual"),
             DesktopStoredSubscription(id = 2, url = "https://example.com/sub", name = "Real sub"),
         )
         val context = DesktopProxyHomeEffectContext(
             subscriptions = subs,
-            onUpdateSubscription = { refreshCount += 1 },
+            onUpdateSubscriptionById = { refreshIds += it },
         )
 
         assertTrue(context.handle(ProxyHomeEffect.RefreshSubscription("1")).isFailure)
-        assertEquals(0, refreshCount)
+        assertEquals(emptyList(), refreshIds)
 
         assertTrue(context.handle(ProxyHomeEffect.RefreshSubscription("2")).isSuccess)
-        assertEquals(1, refreshCount)
+        assertEquals(listOf(2), refreshIds)
     }
 }

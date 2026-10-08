@@ -3,16 +3,7 @@
 
 package app.skipi.desktop
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeDisplayOptions
@@ -41,6 +32,8 @@ import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
+import app.skipi.app.model.SubscriptionCatalog
+import app.skipi.app.subscription.SubscriptionEditorSaveResult
 import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.createProxyServerEditorDraft
@@ -50,14 +43,12 @@ import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.home.dialogs.SkipiAddSourceDialog
 import app.skipi.ui.home.dialogs.SkipiAddSourceMode
 import app.skipi.ui.home.dialogs.SkipiImportDialog
-import app.skipi.ui.home.dialogs.SkipiSubscriptionEditData
-import app.skipi.ui.home.dialogs.SkipiSubscriptionEditDialog
+import app.skipi.ui.subscription.SubscriptionGroupEditorDialog
+import app.skipi.ui.subscription.SubscriptionGroupUiState
+import app.skipi.ui.subscription.toSubscriptionGroupUiState
 import app.skipi.ui.resources.Res
-import app.skipi.ui.resources.common_add
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_delete
-import app.skipi.ui.resources.common_save
-import app.skipi.ui.resources.configs_name
 import app.skipi.ui.resources.common_unknown_group
 import app.skipi.ui.resources.proxy_editor_strategy_group_all_groups
 import app.skipi.ui.resources.proxy_editor_strategy_group_least_load
@@ -69,6 +60,8 @@ import app.skipi.ui.resources.proxy_server_list_chain_proxy_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary_with_filter
 import app.skipi.ui.resources.subscription_delete
+import app.skipi.ui.resources.subscription_default_group
+import app.skipi.ui.resources.subscription_invalid_url
 import app.skipi.ui.resources.proxy_group_select_active_server
 import app.skipi.ui.resources.proxy_editor_strategy_group_no_servers
 import app.skipi.ui.server.editor.GroupMemberChoice
@@ -82,6 +75,7 @@ import features.proxy.server.model.getTransportDisplay
 import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.model.getUrlOrNull
 import features.proxy.server.model.stripLeadingCountryFlag
+import features.subscription.DefaultSubscriptionExpiryReminders
 import features.proxy.server.presentation.ProxyServerPresentationFormatter
 import features.proxy.server.presentation.ProxyServerPresentationLabels
 import features.proxy.server.presentation.ProxyServerPresentationNode
@@ -107,6 +101,7 @@ import platform.TunnelSnapshot
 internal fun DesktopProxyHome(
     serverLibrary: DesktopServerLibrary,
     subscriptionLibrary: DesktopSubscriptionLibrary,
+    subscriptionCatalog: SubscriptionCatalog,
     subscriptionUpdate: DesktopSubscriptionUpdate?,
     serverLink: String,
     subscriptionUrl: String,
@@ -134,17 +129,17 @@ internal fun DesktopProxyHome(
     onSaveServer: (ProxyServerEditResult, (ProxyServerEditApplyOutcome) -> Unit) -> Unit,
     onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit,
     onPingSubscriptionServers: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
-    onUpdateSubscription: () -> Unit,
+    onUpdateSubscriptionById: (Int) -> Unit,
     scheduledSubscriptionId: Int?,
     onScheduledSubscriptionConsumed: () -> Unit,
-    onPrepareSubscription: (DesktopSubscriptionInstallUri) -> Result<Unit>,
+    onPrepareSubscription: (DesktopSubscriptionInstallUri) -> Result<Int>,
     onImport: suspend (DesktopProxyImportInput) -> Result<String>,
-    onUpdateSubscriptionProvider: (Int, DesktopSubscriptionProviderEdit) -> Result<Unit>,
-    onDeleteSubscription: (Int) -> Unit,
+    onSaveSubscriptionGroup: suspend (SubscriptionGroupUiState, Boolean, Boolean) -> SubscriptionEditorSaveResult,
+    onSetSubscriptionEnabled: suspend (Int, Boolean) -> Unit,
+    onDeleteSubscription: suspend (Int) -> Unit,
     contentPadding: PaddingValues,
     desktopSettings: DesktopAppSettings = DesktopAppSettings(),
-    onAddManualGroup: (String) -> Result<Unit> = { Result.success(Unit) },
-    onMoveGroup: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    onMoveGroup: suspend (Int, Int) -> Unit,
     onMoveServer: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
 ) {
     var addDialogVisible by remember { mutableStateOf(false) }
@@ -154,10 +149,9 @@ internal fun DesktopProxyHome(
     var pendingServerDeletion by remember { mutableStateOf<Int?>(null) }
     var pendingSubscriptionDeletion by remember { mutableStateOf<Int?>(null) }
     var editingServerId by remember { mutableStateOf<Int?>(null) }
-    var editingSubscriptionProvider by remember { mutableStateOf<DesktopStoredSubscription?>(null) }
-    var editSubscriptionError by remember { mutableStateOf<String?>(null) }
-    var editingGroupDraft by remember { mutableStateOf<DesktopGroupDialogDraft?>(null) }
-    var editingGroupError by remember { mutableStateOf<String?>(null) }
+    var subscriptionEditorVisible by remember { mutableStateOf(false) }
+    var editingSubscriptionGroup by remember { mutableStateOf<SubscriptionGroupUiState?>(null) }
+    var editingManualGroup by remember { mutableStateOf(false) }
     var editingServerModel by remember { mutableStateOf<ProxyServerEditResult?>(null) }
     var selectingMembersForServerId by remember { mutableStateOf<Int?>(null) }
 
@@ -174,12 +168,11 @@ internal fun DesktopProxyHome(
             ),
         )
     }
-    LaunchedEffect(scheduledSubscriptionId, updatingSubscription) {
+    LaunchedEffect(scheduledSubscriptionId, updatingSubscription, subscriptionCatalog) {
         val subscriptionId = scheduledSubscriptionId ?: return@LaunchedEffect
-        val subscription = subscriptionLibrary.subscriptions.firstOrNull { it.id == subscriptionId }
+        val subscription = subscriptionCatalog.subscriptions.firstOrNull { it.id == subscriptionId }
         if (subscription != null && subscription.url.isNotBlank() && !updatingSubscription) {
-            onSubscriptionUrlChange(subscription.url)
-            onUpdateSubscription()
+            onUpdateSubscriptionById(subscriptionId)
         }
         onScheduledSubscriptionConsumed()
     }
@@ -198,6 +191,8 @@ internal fun DesktopProxyHome(
     var sortMode by remember { mutableStateOf(ProxyHomeSortMode.Default) }
 
     val unknownGroupName = stringResource(Res.string.common_unknown_group)
+    val defaultGroupName = stringResource(Res.string.subscription_default_group)
+    val invalidSubscriptionUrlMessage = stringResource(Res.string.subscription_invalid_url)
     val presentationLabels = ProxyServerPresentationLabels(
         unknownGroupName = unknownGroupName,
         allGroupsName = stringResource(Res.string.proxy_editor_strategy_group_all_groups),
@@ -361,7 +356,7 @@ internal fun DesktopProxyHome(
         if (hasRealSubscriptions && !updatingSubscription) {
             add(ProxyHomeActionId.RefreshSubscription)
         }
-        if (subscriptionLibrary.subscriptions.isNotEmpty() && !updatingSubscription) {
+        if (subscriptionLibrary.subscriptions.isNotEmpty()) {
             add(ProxyHomeActionId.ToggleSubscriptionEnabled)
         }
         if (subscriptionLibrary.subscriptions.isNotEmpty()) {
@@ -462,9 +457,8 @@ internal fun DesktopProxyHome(
                 val install = text.trim().toDesktopSubscriptionInstallUriOrNull()
                 if (install != null) {
                     onPrepareSubscription(install).fold(
-                        onSuccess = {
-                            onSubscriptionUrlChange(install.url)
-                            onUpdateSubscription()
+                        onSuccess = { subscriptionId ->
+                            onUpdateSubscriptionById(subscriptionId)
                             localMessage = "Подписка «${install.name}» добавлена."
                         },
                         onFailure = { error -> localMessage = error.message ?: "Не удалось сохранить подписку." },
@@ -503,9 +497,14 @@ internal fun DesktopProxyHome(
         onDeleteServer = onDeleteServer,
         onMeasureServers = onMeasureServers,
         onPingSubscription = onPingSubscriptionServers,
-        onSubscriptionUrlChange = onSubscriptionUrlChange,
-        onUpdateSubscription = onUpdateSubscription,
-        onUpdateSubscriptionProvider = onUpdateSubscriptionProvider,
+        onUpdateSubscriptionById = onUpdateSubscriptionById,
+        onSetSubscriptionEnabled = { id, enabled ->
+            scope.launch {
+                runCatching { onSetSubscriptionEnabled(id, enabled) }
+                    .onFailure { error -> localMessage = error.message ?: "Не удалось изменить группу." }
+            }
+            Result.success(Unit)
+        },
         onOpenAdd = { mode ->
             editingServerId = null
             if (mode == SkipiAddSourceMode.Server) onServerLinkChange("") else onSubscriptionUrlChange("")
@@ -537,27 +536,49 @@ internal fun DesktopProxyHome(
         onSelectStrategyMember = onSelectStrategyMember,
         onDeleteServerConfirm = { id -> pendingServerDeletion = id },
         onEditSubscription = { subscription ->
-            editSubscriptionError = null
-            editingSubscriptionProvider = subscription
+            val record = subscriptionCatalog.subscriptions.firstOrNull { it.id == subscription.id }
+            if (record == null) {
+                localMessage = "Группа не найдена."
+            } else {
+                editingSubscriptionGroup = record.toSubscriptionGroupUiState(defaultGroupName)
+                editingManualGroup = record.url.isBlank()
+                subscriptionEditorVisible = true
+            }
         },
         onSetSortMode = { sortMode = it },
         onSetLocalMessage = { localMessage = it },
         sortMode = sortMode,
         onOpenEditGroup = { groupId ->
-            editingGroupError = null
             if (groupId == null) {
-                editingGroupDraft = DesktopGroupDialogDraft(subscriptionId = null, name = "")
+                editingSubscriptionGroup = null
+                editingManualGroup = true
+                subscriptionEditorVisible = true
             } else {
                 val subId = groupId.removePrefix("subscription:").toIntOrNull()
-                val sub = subId?.let { id -> subscriptionLibrary.subscriptions.firstOrNull { it.id == id } }
-                if (sub != null) {
-                    editingGroupDraft = DesktopGroupDialogDraft(subscriptionId = sub.id, name = sub.name)
+                val record = subId?.let { id -> subscriptionCatalog.subscriptions.firstOrNull { it.id == id } }
+                if (record != null) {
+                    editingSubscriptionGroup = record.toSubscriptionGroupUiState(defaultGroupName)
+                    editingManualGroup = record.builtIn || record.url.isBlank()
+                    subscriptionEditorVisible = true
+                } else {
+                    localMessage = "Группа не найдена."
                 }
             }
         },
         onDeleteSubscriptionConfirm = { id -> pendingSubscriptionDeletion = id },
-        onDeleteSubscription = onDeleteSubscription,
-        onMoveGroup = onMoveGroup,
+        onDeleteSubscription = { id ->
+            scope.launch {
+                runCatching { onDeleteSubscription(id) }
+                    .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+            }
+        },
+        onMoveGroup = { id, offset ->
+            scope.launch {
+                runCatching { onMoveGroup(id, offset) }
+                    .onFailure { error -> localMessage = error.message ?: "Не удалось переместить группу." }
+            }
+            Result.success(Unit)
+        },
         onMoveServer = onMoveServer,
     )
     SideEffect {
@@ -659,8 +680,8 @@ internal fun DesktopProxyHome(
                 val uri = DesktopSubscriptionInstallUri.parseOrNull(url)
                 if (uri != null) {
                     onPrepareSubscription(uri).fold(
-                        onSuccess = {
-                            onUpdateSubscription()
+                        onSuccess = { subscriptionId ->
+                            onUpdateSubscriptionById(subscriptionId)
                             addDialogVisible = false
                         },
                         onFailure = { error ->
@@ -705,59 +726,6 @@ internal fun DesktopProxyHome(
         )
     }
 
-    editingSubscriptionProvider?.let { subscription ->
-        SkipiSubscriptionEditDialog(
-            show = true,
-            errorMessage = editSubscriptionError,
-            onDraftChanged = { editSubscriptionError = null },
-            initialData = SkipiSubscriptionEditData(
-                name = subscription.name,
-                url = subscription.url,
-                userAgent = subscription.userAgent,
-                updateInterval = subscription.updateInterval,
-                ageSecretKey = subscription.ageSecretKey,
-                updateViaProxy = subscription.updateViaProxy,
-                autoOverrideRules = subscription.autoOverrideRules,
-                enabled = subscription.enabled,
-            ),
-            onSave = { draft ->
-                editSubscriptionError = null
-                val result = onUpdateSubscriptionProvider(
-                    subscription.id,
-                    subscription.toProviderEdit().copy(
-                        name = draft.name,
-                        url = draft.url,
-                        userAgent = draft.userAgent,
-                        updateInterval = draft.updateInterval,
-                        ageSecretKey = draft.ageSecretKey,
-                        updateViaProxy = draft.updateViaProxy,
-                        autoOverrideRules = draft.autoOverrideRules,
-                        enabled = draft.enabled,
-                    ),
-                )
-                result.fold(
-                    onSuccess = {
-                        editSubscriptionError = null
-                        editingSubscriptionProvider = null
-                    },
-                    onFailure = { failure ->
-                        editSubscriptionError = failure.message?.takeIf(String::isNotBlank)
-                            ?: "Не удалось сохранить параметры подписки."
-                    },
-                )
-            },
-            onDelete = {
-                editSubscriptionError = null
-                editingSubscriptionProvider = null
-                pendingSubscriptionDeletion = subscription.id
-            },
-            onDismiss = {
-                editSubscriptionError = null
-                editingSubscriptionProvider = null
-            },
-        )
-    }
-
     editingServerModel?.let { editResult ->
         DesktopProxyServerEditorHost(
             contentPadding = contentPadding,
@@ -797,110 +765,55 @@ internal fun DesktopProxyHome(
             title = stringResource(Res.string.subscription_delete),
             onDismissRequest = { pendingSubscriptionDeletion = null },
             onConfirm = {
-                onDeleteSubscription(subscriptionId)
                 pendingSubscriptionDeletion = null
+                scope.launch {
+                    runCatching { onDeleteSubscription(subscriptionId) }
+                        .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+                }
             },
         )
     }
 
-    editingGroupDraft?.let { draft ->
-        var nameText by remember(draft) { mutableStateOf(draft.name) }
-        val isNew = draft.subscriptionId == null
-        val titleText = if (isNew) "Новая группа" else "Редактировать группу"
-        val confirmText = if (isNew) stringResource(Res.string.common_add) else stringResource(Res.string.common_save)
-        AlertDialog(
-            onDismissRequest = {
-                editingGroupDraft = null
-                editingGroupError = null
-            },
-            title = {
-                Text(titleText)
-            },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedTextField(
-                        value = nameText,
-                        onValueChange = {
-                            nameText = it
-                            editingGroupError = null
-                        },
-                        label = { Text(stringResource(Res.string.configs_name)) },
-                        singleLine = true,
-                        isError = editingGroupError != null,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    editingGroupError?.let { err ->
-                        Text(
-                            text = err,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+    SubscriptionGroupEditorDialog(
+        show = subscriptionEditorVisible,
+        group = editingSubscriptionGroup,
+        nextGroupId = subscriptionCatalog.nextSubscriptionId,
+        userAgentOptions = emptyList(),
+        defaultUserAgent = DefaultDesktopSubscriptionUserAgent,
+        defaultExpiryReminders = DefaultSubscriptionExpiryReminders,
+        confirmDeletion = confirmDeletion,
+        isManualGroup = editingManualGroup,
+        onDismissRequest = {
+            subscriptionEditorVisible = false
+            editingSubscriptionGroup = null
+            editingManualGroup = false
+        },
+        onDismissFinished = {},
+        onSave = { draft, isNew ->
+            val refreshWhenPreviouslyManual = editingSubscriptionGroup?.url.isNullOrBlank()
+            scope.launch {
+                runCatching { onSaveSubscriptionGroup(draft, isNew, refreshWhenPreviouslyManual) }
+                    .onSuccess { result ->
+                        val saved = result.savedSubscription
+                        if (result.shouldStartRefresh && saved != null) {
+                            onUpdateSubscriptionById(saved.id)
+                        } else if (saved == null) {
+                            localMessage = "Группа не найдена."
+                        }
                     }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val trimmed = nameText.trim()
-                        if (trimmed.isBlank()) {
-                            editingGroupError = "Имя группы не может быть пустым."
-                            return@TextButton
-                        }
-                        if (isNew) {
-                            onAddManualGroup(trimmed).fold(
-                                onSuccess = {
-                                    editingGroupDraft = null
-                                    editingGroupError = null
-                                },
-                                onFailure = { err ->
-                                    editingGroupError = err.message ?: "Не удалось создать группу."
-                                },
-                            )
-                        } else {
-                            val sub = subscriptionLibrary.subscriptions.firstOrNull { it.id == draft.subscriptionId }
-                            if (sub != null) {
-                                onUpdateSubscriptionProvider(
-                                    sub.id,
-                                    sub.toProviderEdit().copy(name = trimmed),
-                                ).fold(
-                                    onSuccess = {
-                                        editingGroupDraft = null
-                                        editingGroupError = null
-                                    },
-                                    onFailure = { err ->
-                                        editingGroupError = err.message ?: "Не удалось сохранить изменения группы."
-                                    },
-                                )
-                            } else {
-                                editingGroupError = "Группа не найдена."
-                            }
-                        }
-                    },
-                    enabled = nameText.isNotBlank(),
-                ) {
-                    Text(confirmText)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        editingGroupDraft = null
-                        editingGroupError = null
-                    },
-                ) {
-                    Text(stringResource(Res.string.common_cancel))
-                }
-            },
-        )
-    }
+                    .onFailure { error -> localMessage = error.message ?: "Не удалось сохранить группу." }
+            }
+        },
+        onDelete = { group ->
+            subscriptionEditorVisible = false
+            scope.launch {
+                runCatching { onDeleteSubscription(group.id) }
+                    .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+            }
+        },
+        onInvalidUrl = { localMessage = invalidSubscriptionUrlMessage },
+    )
 }
-
-internal data class DesktopGroupDialogDraft(
-    val subscriptionId: Int?,
-    val name: String,
-)
 
 private data class DesktopImportFile(val name: String, val content: String)
 
@@ -971,9 +884,8 @@ internal class DesktopProxyHomeEffectContext(
     val onDeleteServer: (Int) -> Unit = {},
     val onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit = {},
     val onPingSubscription: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
-    val onSubscriptionUrlChange: (String) -> Unit = {},
-    val onUpdateSubscription: () -> Unit = {},
-    val onUpdateSubscriptionProvider: (Int, DesktopSubscriptionProviderEdit) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    val onUpdateSubscriptionById: (Int) -> Unit = {},
+    val onSetSubscriptionEnabled: (Int, Boolean) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     val onCreateServerDraft: (ProxyHomeServerKind) -> Unit = {},
     val onOpenAdd: (SkipiAddSourceMode) -> Unit = {},
     val onOpenImportDialog: () -> Unit = {},
@@ -1015,19 +927,11 @@ internal class DesktopProxyHomeEffectContext(
         is ProxyHomeEffect.RefreshSubscription -> findSubscription(effect.id)?.let { subscription ->
             if (subscription.url.isBlank()) unsupported("Ручные группы не имеют URL для обновления.")
             else if (updatingSubscription) unsupported("Дождитесь завершения текущего обновления подписки.")
-            else invoke {
-                onSubscriptionUrlChange(subscription.url)
-                onUpdateSubscription()
-            }
+            else invoke { onUpdateSubscriptionById(subscription.id) }
         } ?: unsupported("Подписка не найдена.")
         ProxyHomeEffect.RefreshAllSubscriptions -> unsupported("Массовое обновление подписок не поддерживается в Desktop.")
         is ProxyHomeEffect.ToggleSubscriptionEnabled -> findSubscription(effect.id)?.let { subscription ->
-            if (updatingSubscription) unsupported("Дождитесь завершения текущего обновления подписки.") else {
-                onUpdateSubscriptionProvider(
-                    subscription.id,
-                    subscription.toProviderEdit().copy(enabled = !subscription.enabled),
-                )
-            }
+            onSetSubscriptionEnabled(subscription.id, !subscription.enabled)
         } ?: unsupported("Подписка не найдена.")
         is ProxyHomeEffect.AddServer -> invoke { onCreateServerDraft(effect.kind) }
         ProxyHomeEffect.AddSubscription -> invoke { onOpenAdd(SkipiAddSourceMode.Subscription) }
