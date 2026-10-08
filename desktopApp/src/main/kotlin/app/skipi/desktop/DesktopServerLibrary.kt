@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.model.ProxyServerCatalog
+import app.skipi.app.model.ProxyServerRecord
+import app.skipi.app.proxy.deleteProxyServerRecords
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.decodePersistedProxyServer
 import features.proxy.server.model.encodePersistedProxyServer
@@ -157,14 +160,49 @@ object DesktopServerLibraries {
     }
 
     fun removeSubscriptionServers(library: DesktopServerLibrary, subscriptionId: Int): DesktopServerLibrary {
-        val remaining = library.servers.filterNot { stored -> stored.subscriptionId == subscriptionId }
+        val deletedIds = library.servers.asSequence()
+            .filter { stored -> stored.subscriptionId == subscriptionId }
+            .map(DesktopStoredProxyServer::id)
+            .toSet()
+        if (deletedIds.isEmpty()) return library
+
+        val catalog = ProxyServerCatalog(
+            servers = library.servers.mapNotNull { stored ->
+                stored.decode().getOrNull()?.let { server ->
+                    ProxyServerRecord(
+                        id = stored.id,
+                        server = server,
+                        sourceSubscriptionId = stored.subscriptionId,
+                    )
+                }
+            },
+            nextServerId = library.effectiveNextServerId,
+            selectedServerId = library.selectedServerId ?: 0,
+        )
+        val cleaned = deleteProxyServerRecords(catalog, deletedIds)
+        val cleanedById = cleaned.servers.associateBy(ProxyServerRecord::id)
+        val remaining = library.servers.asSequence()
+            .filterNot { stored -> stored.id in deletedIds }
+            .map { stored ->
+                val before = stored.decode().getOrNull()
+                val after = cleanedById[stored.id]
+                if (before != null && after != null && before != after.server) {
+                    stored.copy(
+                        serverJson = after.server.encodePersistedProxyServer(),
+                        subscriptionId = after.sourceSubscriptionId,
+                    )
+                } else {
+                    stored
+                }
+            }
+            .toList()
         val selectedWasRemoved = library.selectedServerId?.let { selectedId ->
-            library.servers.any { it.id == selectedId && it.subscriptionId == subscriptionId }
+            selectedId in deletedIds
         } == true
         return library.copy(
             selectedServerId = if (selectedWasRemoved) remaining.firstOrNull()?.id else library.selectedServerId,
             servers = remaining,
-            nextServerId = library.effectiveNextServerId,
+            nextServerId = maxOf(library.effectiveNextServerId, cleaned.nextServerId),
         ).normalized()
     }
 

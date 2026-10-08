@@ -6,6 +6,7 @@ package app.skipi.app.server
 import app.skipi.app.model.PersistedSettings
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ProxyServerRecord
+import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.TrafficConfigRecord
 import app.skipi.app.repository.AppRepositories
@@ -353,6 +354,11 @@ class ProxyServerEditResultHandlerTest {
 
     private class TestSubscriptionRepository : SubscriptionRepository {
         override val subscriptions = MutableStateFlow(emptyList<SubscriptionRecord>())
+        override val catalog = MutableStateFlow(SubscriptionCatalog())
+        override suspend fun updateCatalog(transform: (SubscriptionCatalog) -> SubscriptionCatalog) {
+            catalog.value = transform(catalog.value)
+            subscriptions.value = catalog.value.subscriptions
+        }
         override suspend fun upsert(subscription: SubscriptionRecord) = Unit
         override suspend fun remove(subscriptionId: Int) = Unit
         override suspend fun refresh(subscriptionId: Int): Result<SubscriptionRecord> =

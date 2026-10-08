@@ -14,6 +14,7 @@ import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.model.ResourceCatalogRecord
 import app.skipi.app.model.ResourceDefinition
 import app.skipi.app.model.RoutingConfigRecord
+import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.ThemeMode
 import app.skipi.app.model.TrafficConfigRecord
@@ -25,8 +26,7 @@ import app.skipi.app.repository.RuntimeStateRepository
 import app.skipi.app.repository.SettingsRepository
 import app.skipi.app.repository.SubscriptionRepository
 import app.skipi.app.repository.TrafficConfigRepository
-import app.skipi.app.proxy.ProxyServerRecord as CollectionProxyServerRecord
-import app.skipi.app.proxy.deleteProxyServerRecords
+import app.skipi.app.subscription.SubscriptionCatalogOperations
 import data.AndroidAppStateStore
 import features.config.TrafficConfigState
 import features.config.newAndroidTrafficConfig
@@ -104,55 +104,60 @@ private class AndroidSubscriptionRepository(
     scope: CoroutineScope,
     private val subscriptionRefresh: (suspend (Int) -> Result<SubscriptionRecord>)?,
 ) : SubscriptionRepository {
-    override val subscriptions: StateFlow<List<SubscriptionRecord>> = stateStore.state
-        .map { state -> state.subscriptionGroups.map(SubscriptionGroupState::toSubscriptionRecord) }
+    override val catalog: StateFlow<SubscriptionCatalog> = stateStore.state
+        .map(AppState::toSubscriptionCatalog)
         .stateIn(
             scope,
             SharingStarted.Eagerly,
-            stateStore.currentState.subscriptionGroups.map(SubscriptionGroupState::toSubscriptionRecord),
+            stateStore.currentState.toSubscriptionCatalog(),
         )
+    override val subscriptions: StateFlow<List<SubscriptionRecord>> = catalog
+        .map { it.subscriptions }
+        .stateIn(scope, SharingStarted.Eagerly, catalog.value.subscriptions)
 
     override suspend fun upsert(subscription: SubscriptionRecord) {
+        updateCatalog { current -> SubscriptionCatalogOperations.upsert(current, subscription) }
+    }
+
+    override suspend fun updateCatalog(transform: (SubscriptionCatalog) -> SubscriptionCatalog) {
         stateStore.update { state ->
-            val previous = state.subscriptionGroups.firstOrNull { it.id == subscription.id }
-            val next = subscription.toAndroidGroup(previous)
+            val current = state.toSubscriptionCatalog()
+            val requested = transform(current)
+            require(requested.subscriptions.all { it.id > 0 }) { "Subscription IDs must be positive" }
+            require(requested.subscriptions.map { it.id }.distinct().size == requested.subscriptions.size) {
+                "Subscription IDs must be unique"
+            }
+            require(requested.nextSubscriptionId > 0) { "Next subscription ID must be positive" }
+            val nextSubscriptionGroupId = maxOf(
+                current.nextSubscriptionId,
+                requested.nextSubscriptionId,
+                requested.subscriptions.maxOfOrNull(SubscriptionRecord::id)?.saturatedIncrement() ?: 1,
+            )
             state.copy(
-                subscriptionGroups = if (previous == null) state.subscriptionGroups + next
-                else state.subscriptionGroups.map { if (it.id == subscription.id) next else it },
-                nextSubscriptionGroupId = maxOf(state.nextSubscriptionGroupId, subscription.id + 1),
+                subscriptionGroups = requested.subscriptions.map { record ->
+                    record.toAndroidGroup(state.subscriptionGroups.firstOrNull { it.id == record.id })
+                },
+                nextSubscriptionGroupId = nextSubscriptionGroupId,
             )
         }
     }
 
     override suspend fun remove(subscriptionId: Int) {
         stateStore.update { state ->
-            val group = state.subscriptionGroups.firstOrNull { it.id == subscriptionId }
-                ?: return@update state
-            require(!group.builtIn) { "Built-in subscription groups cannot be removed" }
-            val removedServerIds = state.proxyServers.filter { it.groupId == subscriptionId }.mapTo(hashSetOf()) { it.id }
-            val collection = deleteProxyServerRecords(
-                servers = state.proxyServers.map { CollectionProxyServerRecord(it.id, it.groupId, it.server, it.latency) },
-                deletedServerIds = removedServerIds,
-                nextServerId = state.nextProxyServerId,
-                selectedServerId = state.selectedProxyServerId,
-                proxyRunning = state.proxyRunning,
+            val currentCatalog = state.toSubscriptionCatalog()
+            val result = SubscriptionCatalogOperations.remove(
+                catalog = currentCatalog,
+                proxyCatalog = state.toProxyServerCatalog(),
+                subscriptionId = subscriptionId,
             )
-            val catalogUpdated = state.withProxyServerCatalog(
-                ProxyServerCatalog(
-                    servers = collection.servers.map { row ->
-                        ProxyServerRecord(
-                            id = row.id,
-                            server = row.server,
-                            sourceSubscriptionId = row.groupId.takeIf { it != features.subscription.DefaultSubscriptionGroupId },
-                        )
-                    },
-                    nextServerId = collection.nextServerId,
-                    selectedServerId = collection.selectedServerId,
-                ),
-            )
-            catalogUpdated.copy(
-                subscriptionGroups = state.subscriptionGroups.filterNot { it.id == subscriptionId },
-                proxyRunning = collection.proxyRunning,
+            if (result.catalog == currentCatalog) return@update state
+
+            state.withProxyServerCatalog(result.proxyCatalog).copy(
+                subscriptionGroups = result.catalog.subscriptions.map { record ->
+                    record.toAndroidGroup(state.subscriptionGroups.firstOrNull { it.id == record.id })
+                },
+                nextSubscriptionGroupId = maxOf(state.nextSubscriptionGroupId, result.catalog.nextSubscriptionId),
+                proxyRunning = if (result.shouldStopProxy) false else state.proxyRunning,
             )
         }
     }
@@ -460,6 +465,15 @@ internal fun SubscriptionGroupState.toSubscriptionRecord() = SubscriptionRecord(
     notifyOnExpiry = notifyOnExpiry,
     customExpiryReminders = customExpiryReminders,
 )
+
+private fun AppState.toSubscriptionCatalog(): SubscriptionCatalog {
+    val records = subscriptionGroups.map(SubscriptionGroupState::toSubscriptionRecord)
+    val nextAfterRows = records.maxOfOrNull(SubscriptionRecord::id)?.saturatedIncrement() ?: 1
+    return SubscriptionCatalog(
+        subscriptions = records,
+        nextSubscriptionId = maxOf(nextSubscriptionGroupId, nextAfterRows),
+    )
+}
 
 internal fun SubscriptionRecord.toAndroidGroup(existing: SubscriptionGroupState?): SubscriptionGroupState {
     val metadata = metadata

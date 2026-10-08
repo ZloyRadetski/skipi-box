@@ -45,7 +45,11 @@ data class StoredSubscription(
 )
 
 @Serializable
-data class SubscriptionProviderLibrary(val subscriptions: List<StoredSubscription> = emptyList())
+data class SubscriptionProviderLibrary(
+    val subscriptions: List<StoredSubscription> = emptyList(),
+    /** Null is a legacy file; adapters derive the first safe ID from its rows before writing. */
+    val nextSubscriptionId: Int? = null,
+)
 
 data class SubscriptionProviderEdit(
     val name: String,

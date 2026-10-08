@@ -162,7 +162,7 @@ fun <T> moveSubscriptionGroup(
     offset: Int,
     idOf: (T) -> Int,
     isBuiltIn: (T) -> Boolean,
-    fixedGroupId: Int,
+    fixedGroupId: Int?,
 ): List<T> {
     if (offset == 0 || groupId == fixedGroupId) return groups
     val movable = groups.filter { idOf(it) != fixedGroupId && !isBuiltIn(it) }

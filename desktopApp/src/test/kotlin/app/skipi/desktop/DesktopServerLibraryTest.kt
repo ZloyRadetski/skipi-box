@@ -5,6 +5,10 @@ package app.skipi.desktop
 
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.VLESS
+import features.proxy.server.model.ChainProxy
+import features.proxy.server.model.HTTP
+import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.encodePersistedProxyServer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -62,6 +66,49 @@ class DesktopServerLibraryTest {
         assertEquals(2, removed.servers.size)
         assertEquals(0, DesktopServerLibraries.serversForSubscription(removed, 10).size)
         assertEquals(1, DesktopServerLibraries.serversForSubscription(removed, 20).size)
+    }
+
+    @Test
+    fun removingSubscriptionServersDeletesOpaqueTargetsAndPrunesCompositeReferences() {
+        val linked = HTTP(server = "linked.example")
+        val other = HTTP(server = "other.example")
+        val strategy = StrategyGroup(
+            remarks = "Strategy",
+            proxyServerIds = listOf(2, 3, 4, 5),
+            selectedMemberId = 2,
+        )
+        val chain = ChainProxy(remarks = "Chain", proxyServerIds = listOf(2, 3, 4, 5))
+        val unrelatedOpaque = DesktopStoredProxyServer(
+            id = 5,
+            serverJson = "{\"futureServerPayload\":\"preserve exactly\"}",
+            subscriptionId = 30,
+        )
+        val library = DesktopServerLibrary(
+            selectedServerId = 2,
+            nextServerId = 12,
+            servers = listOf(
+                DesktopStoredProxyServer(2, linked.encodePersistedProxyServer(), subscriptionId = 10),
+                DesktopStoredProxyServer(3, other.encodePersistedProxyServer(), subscriptionId = 20),
+                DesktopStoredProxyServer(4, "{\"futureServerPayload\":\"linked\"}", subscriptionId = 10),
+                unrelatedOpaque,
+                DesktopStoredProxyServer(6, strategy.encodePersistedProxyServer()),
+                DesktopStoredProxyServer(7, chain.encodePersistedProxyServer()),
+            ),
+        )
+
+        val removed = DesktopServerLibraries.removeSubscriptionServers(library, subscriptionId = 10)
+
+        assertEquals(listOf(3, 5, 6, 7), removed.servers.map { it.id })
+        assertEquals(3, removed.selectedServerId)
+        assertEquals(12, removed.nextServerId)
+        assertEquals(unrelatedOpaque, removed.servers[1])
+        assertEquals(
+            listOf(3, 5),
+            assertIs<StrategyGroup>(removed.servers[2].decode().getOrThrow()).proxyServerIds,
+        )
+        val updatedStrategy = assertIs<StrategyGroup>(removed.servers[2].decode().getOrThrow())
+        assertEquals(3, updatedStrategy.selectedMemberId)
+        assertEquals(listOf(3, 5), assertIs<ChainProxy>(removed.servers[3].decode().getOrThrow()).proxyServerIds)
     }
 
     @Test

@@ -8,6 +8,7 @@ import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ResourceCatalogRecord
 import app.skipi.app.model.RoutingConfigRecord
+import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.TrafficConfigRecord
 import app.skipi.app.proxy.deleteProxyServerRecords
@@ -33,6 +34,7 @@ data class SharedApplicationState(
     val settings: PersistedSettings = PersistedSettings(),
     val proxyServers: List<ProxyServerRecord> = emptyList(),
     val subscriptions: List<SubscriptionRecord> = emptyList(),
+    val subscriptionCatalog: SubscriptionCatalog = SubscriptionCatalog(),
     val trafficConfigs: List<TrafficConfigRecord> = emptyList(),
     val routing: RoutingConfigRecord = RoutingConfigRecord(),
     val resources: ResourceCatalogRecord = ResourceCatalogRecord(),
@@ -64,6 +66,9 @@ sealed interface SharedApplicationAction {
     data class RemoveProxyServers(val serverIds: Set<Int>) : SharedApplicationAction
     data class UpsertSubscription(val subscription: SubscriptionRecord) : SharedApplicationAction
     data class RemoveSubscription(val subscriptionId: Int) : SharedApplicationAction
+    data class UpdateSubscriptionCatalog(
+        val transform: (SubscriptionCatalog) -> SubscriptionCatalog,
+    ) : SharedApplicationAction
     data class RefreshSubscription(val subscriptionId: Int) : SharedApplicationAction
     data class UpsertTrafficConfig(val config: TrafficConfigRecord) : SharedApplicationAction
     data class RemoveTrafficConfig(val configId: Int) : SharedApplicationAction
@@ -94,7 +99,7 @@ class SharedApplicationStore(
     private data class RepositorySnapshot(
         val settings: PersistedSettings,
         val proxyServers: List<ProxyServerRecord>,
-        val subscriptions: List<SubscriptionRecord>,
+        val subscriptionCatalog: SubscriptionCatalog,
         val trafficConfigs: List<TrafficConfigRecord>,
         val runtime: AppRuntimeState,
     )
@@ -113,11 +118,11 @@ class SharedApplicationStore(
             val primary = combine(
                 repositories.settings.state,
                 repositories.proxyServers.servers,
-                repositories.subscriptions.subscriptions,
+                repositories.subscriptions.catalog,
                 repositories.trafficConfigs.configs,
                 repositories.runtime.state,
-            ) { settings, servers, subscriptions, configs, runtime ->
-                RepositorySnapshot(settings, servers, subscriptions, configs, runtime)
+            ) { settings, servers, subscriptionCatalog, configs, runtime ->
+                RepositorySnapshot(settings, servers, subscriptionCatalog, configs, runtime)
             }
             combine(
                 primary,
@@ -128,7 +133,8 @@ class SharedApplicationStore(
                     it.copy(
                         settings = snapshot.settings,
                         proxyServers = snapshot.proxyServers,
-                        subscriptions = snapshot.subscriptions,
+                        subscriptions = snapshot.subscriptionCatalog.subscriptions,
+                        subscriptionCatalog = snapshot.subscriptionCatalog,
                         trafficConfigs = snapshot.trafficConfigs,
                         runtime = snapshot.runtime,
                         routing = routing,
@@ -222,6 +228,15 @@ class SharedApplicationStore(
             is SharedApplicationAction.RemoveProxyServers -> removeProxyServers(action.serverIds)
             is SharedApplicationAction.UpsertSubscription -> repositories.subscriptions.upsert(action.subscription)
             is SharedApplicationAction.RemoveSubscription -> repositories.subscriptions.remove(action.subscriptionId)
+            is SharedApplicationAction.UpdateSubscriptionCatalog -> repositories.subscriptions.updateCatalog { current ->
+                val next = action.transform(current)
+                require(next.subscriptions.all { it.id > 0 }) { "Subscription IDs must be positive" }
+                require(next.subscriptions.map { it.id }.distinct().size == next.subscriptions.size) {
+                    "Subscription IDs must be unique"
+                }
+                require(next.nextSubscriptionId > 0) { "Next subscription ID must be positive" }
+                next
+            }
             is SharedApplicationAction.RefreshSubscription -> {
                 val result = repositories.subscriptions.refresh(action.subscriptionId)
                 result.getOrElse { throw it }

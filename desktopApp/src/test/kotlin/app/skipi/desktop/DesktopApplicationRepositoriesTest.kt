@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import app.skipi.app.model.SubscriptionRecord
+import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ThemeMode
 import app.skipi.app.model.TrafficConfigRecord
 import app.skipi.app.model.ProxySelectionSettings
@@ -17,8 +18,15 @@ import features.subscription.ExpiryReminderUnit
 import features.subscription.SubscriptionEmbeddedConfig
 import features.subscription.SubscriptionExpiryReminder
 import features.subscription.SubscriptionMetadata
+import app.skipi.app.subscription.SubscriptionCatalogOperations
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -226,6 +234,144 @@ class DesktopApplicationRepositoriesTest {
         assertEquals(null, repository.subscriptions.value.single().metadata?.profileTitle)
         assertEquals("", library.subscriptions.single().metadata.profileTitle)
         assertEquals("Display title", library.subscriptions.single().name)
+    }
+
+    @Test
+    fun desktopRepositoryMigratesMissingLegacyCounterAndPersistsCreateCounter() = runBlocking {
+        val path = Files.createTempFile("skipi-subscriptions-counter", ".json")
+        try {
+            Files.writeString(
+                path,
+                """{"subscriptions":[{"id":1,"url":"https://one.example/sub","name":"ID one"},{"id":4,"url":"https://four.example/sub","name":"ID four"}]}""",
+            )
+            var library = DesktopSubscriptionLibraries.load(path).getOrThrow()
+            assertEquals(null, library.nextSubscriptionId)
+            val repository = DesktopSubscriptionRepository(
+                initialLibrary = library,
+                readLibrary = { library },
+                saveLibrary = { updated ->
+                    DesktopSubscriptionLibraries.save(path, updated).onSuccess { library = updated }
+                },
+                publishLibrary = { library = it },
+            )
+
+            assertEquals(5, repository.catalog.value.nextSubscriptionId)
+            repository.updateCatalog { catalog ->
+                SubscriptionCatalogOperations.createEditor(
+                    catalog = catalog,
+                    proxyCatalog = ProxyServerCatalog(),
+                    draft = subscriptionRecord(
+                        id = 1,
+                        title = "Manual folder",
+                        url = "",
+                    ),
+                ).catalog
+            }
+
+            assertEquals(listOf(1, 4, 5), library.subscriptions.map { it.id })
+            assertEquals(6, repository.catalog.value.nextSubscriptionId)
+            assertEquals(6, library.nextSubscriptionId)
+            assertEquals(6, DesktopSubscriptionLibraries.load(path).getOrThrow().nextSubscriptionId)
+        } finally {
+            Files.deleteIfExists(path)
+        }
+    }
+
+    @Test
+    fun desktopRemoveMigratesLegacyCounterBeforeTheNextCreate() = runBlocking {
+        var library = DesktopSubscriptionLibrary(
+            subscriptions = listOf(
+                StoredSubscription(id = 1, url = "", name = "Manual"),
+                StoredSubscription(id = 4, url = "https://four.example/sub", name = "Removed high ID"),
+            ),
+        )
+        val repository = DesktopSubscriptionRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+            removeLinkedServers = {},
+        )
+
+        repository.remove(4)
+        assertEquals(5, library.nextSubscriptionId)
+
+        repository.updateCatalog { current ->
+            SubscriptionCatalogOperations.createEditor(
+                catalog = current,
+                proxyCatalog = ProxyServerCatalog(),
+                draft = subscriptionRecord(id = 1, title = "After deletion", url = ""),
+            ).catalog
+        }
+
+        assertEquals(listOf(1, 5), library.subscriptions.map { it.id })
+        assertEquals(6, library.nextSubscriptionId)
+    }
+
+    @Test
+    fun desktopRepositoryRejectsRemovingBuiltInSubscriptionBeforeHostCleanup() = runBlocking {
+        var library = DesktopSubscriptionLibrary(
+            subscriptions = listOf(StoredSubscription(id = 1, url = "", name = "Default", builtIn = true)),
+        )
+        var removeLinkedCalls = 0
+        var saveCalls = 0
+        val repository = DesktopSubscriptionRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { saveCalls++; library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+            removeLinkedServers = { removeLinkedCalls++ },
+        )
+
+        val failure = runCatching { repository.remove(1) }.exceptionOrNull()
+
+        assertIs<IllegalArgumentException>(failure)
+        assertEquals(0, removeLinkedCalls)
+        assertEquals(0, saveCalls)
+        assertEquals(1, library.subscriptions.single().id)
+    }
+
+    @Test
+    fun concurrentSubscriptionCreatesUseLatestCounterWithoutLosingRows() = runBlocking {
+        val initialLibrary = DesktopSubscriptionLibrary(
+            subscriptions = listOf(StoredSubscription(id = 1, url = "", name = "Manual")),
+            nextSubscriptionId = 2,
+        )
+        val library = AtomicReference(initialLibrary)
+        val ready = CountDownLatch(2)
+        val startTogether = CountDownLatch(1)
+        val repository = DesktopSubscriptionRepository(
+            initialLibrary = initialLibrary,
+            readLibrary = {
+                val snapshot = library.get()
+                Thread.sleep(100)
+                snapshot
+            },
+            saveLibrary = { updated -> library.set(updated); Result.success(Unit) },
+            publishLibrary = library::set,
+        )
+
+        val creates = listOf("First", "Second").map { title ->
+            async(Dispatchers.IO) {
+                ready.countDown()
+                check(startTogether.await(5, TimeUnit.SECONDS))
+                repository.updateCatalog { current ->
+                    SubscriptionCatalogOperations.createEditor(
+                        catalog = current,
+                        proxyCatalog = ProxyServerCatalog(),
+                        draft = subscriptionRecord(id = 1, title = title, url = ""),
+                    ).catalog
+                }
+            }
+        }
+        assertTrue(ready.await(5, TimeUnit.SECONDS))
+        startTogether.countDown()
+        creates.awaitAll()
+
+        val saved = library.get()
+        assertEquals(listOf(1, 2, 3), saved.subscriptions.map { it.id })
+        assertEquals(4, saved.nextSubscriptionId)
+        assertEquals(setOf("First", "Second"), saved.subscriptions.drop(1).map { it.name }.toSet())
     }
 
     @Test

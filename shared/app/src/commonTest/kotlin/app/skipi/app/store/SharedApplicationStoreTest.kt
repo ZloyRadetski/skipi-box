@@ -8,6 +8,7 @@ import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ResourceCatalogRecord
 import app.skipi.app.model.RoutingConfigRecord
+import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.TrafficConfigRecord
 import app.skipi.app.proxy.createProxyServerRecord
@@ -53,11 +54,13 @@ class SharedApplicationStoreTest {
         repositories.proxyServers.servers.value = listOf(
             ProxyServerRecord(id = 12, server = HTTP(server = "proxy.example")),
         )
-        repositories.subscriptions.subscriptions.value = listOf(
-            SubscriptionRecord(
-                id = 3,
-                title = "Primary",
-                url = "https://example.test/sub",
+        repositories.subscriptions.updateCatalog { catalog ->
+            catalog.copy(
+                subscriptions = listOf(
+                    SubscriptionRecord(
+                    id = 3,
+                    title = "Primary",
+                    url = "https://example.test/sub",
                 userAgent = "test-agent",
                 updateInterval = "6",
                 hwid = "",
@@ -65,11 +68,13 @@ class SharedApplicationStoreTest {
                 updateViaProxy = false,
                 autoOverrideRules = true,
                 enabled = true,
-                builtIn = false,
-                notifyOnExpiry = true,
-                customExpiryReminders = null,
-            ),
-        )
+                    builtIn = false,
+                    notifyOnExpiry = true,
+                    customExpiryReminders = null,
+                    ),
+                ),
+            )
+        }
         repositories.trafficConfigs.configs.value = listOf(
             TrafficConfigRecord(id = 4, name = "Default", rawDocument = "{}"),
         )
@@ -93,6 +98,47 @@ class SharedApplicationStoreTest {
         runCurrent()
         assertEquals(setOf(12), store.state.value.runtime.testingServerIds)
         assertEquals("ru", store.state.value.settings.application.languageTag)
+    }
+
+    @Test
+    fun updateSubscriptionCatalogUsesRepositoryTransactionAndPublishesCounter() = runTest {
+        val repositories = FakeRepositories()
+        repositories.subscriptions.updateCatalog {
+            it.copy(
+                subscriptions = listOf(
+                    SubscriptionRecord(
+                        id = 3,
+                        title = "Primary",
+                        url = "https://example.test/sub",
+                        userAgent = "test-agent",
+                        updateInterval = "6",
+                        hwid = "",
+                        ageSecretKey = "",
+                        updateViaProxy = false,
+                        autoOverrideRules = true,
+                        enabled = true,
+                        builtIn = false,
+                        notifyOnExpiry = true,
+                        customExpiryReminders = null,
+                    ),
+                ),
+                nextSubscriptionId = 12,
+            )
+        }
+        val store = SharedApplicationStore(repositories.bundle, backgroundScope)
+        runCurrent()
+
+        val result = store.dispatchAndAwait(
+            SharedApplicationAction.UpdateSubscriptionCatalog { catalog ->
+                catalog.copy(nextSubscriptionId = 15)
+            },
+        )
+        runCurrent()
+
+        assertIs<SharedApplicationActionOutcome.Completed>(result.outcome)
+        assertEquals(15, repositories.subscriptions.catalog.value.nextSubscriptionId)
+        assertEquals(15, store.state.value.subscriptionCatalog.nextSubscriptionId)
+        assertEquals(listOf(3), store.state.value.subscriptions.map { it.id })
     }
 
     @Test
@@ -663,8 +709,27 @@ class SharedApplicationStoreTest {
 
     private class FakeSubscriptionRepository : SubscriptionRepository {
         override val subscriptions = MutableStateFlow(emptyList<SubscriptionRecord>())
-        override suspend fun upsert(subscription: SubscriptionRecord) { }
-        override suspend fun remove(subscriptionId: Int) { }
+        override val catalog = MutableStateFlow(SubscriptionCatalog())
+        override suspend fun updateCatalog(transform: (SubscriptionCatalog) -> SubscriptionCatalog) {
+            catalog.value = transform(catalog.value)
+            subscriptions.value = catalog.value.subscriptions
+        }
+        override suspend fun upsert(subscription: SubscriptionRecord) {
+            updateCatalog { current ->
+                val existing = current.subscriptions.indexOfFirst { it.id == subscription.id }
+                val records = if (existing < 0) {
+                    current.subscriptions + subscription
+                } else {
+                    current.subscriptions.toMutableList().also { it[existing] = subscription }
+                }
+                current.copy(subscriptions = records)
+            }
+        }
+        override suspend fun remove(subscriptionId: Int) {
+            updateCatalog { current ->
+                current.copy(subscriptions = current.subscriptions.filterNot { it.id == subscriptionId })
+            }
+        }
         override suspend fun refresh(subscriptionId: Int): Result<SubscriptionRecord> =
             Result.failure(UnsupportedOperationException("No refresh implementation"))
     }

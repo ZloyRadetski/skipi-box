@@ -14,6 +14,8 @@ import features.subscription.SubscriptionExpiryReminder
 import app.skipi.app.model.HomeDisplaySettings
 import app.skipi.app.model.PersistedSettings
 import app.skipi.app.model.ProxySelectionSettings
+import app.skipi.app.model.ProxyServerCatalog
+import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.ThemeMode
 import app.skipi.app.model.TrafficConfigRecord
@@ -26,6 +28,7 @@ import app.skipi.app.repository.TrafficConfigRepository
 import app.skipi.app.runtime.AppRuntimeState
 import app.skipi.app.runtime.RuntimeMessage
 import app.skipi.app.store.SharedApplicationStore
+import app.skipi.app.subscription.SubscriptionCatalogOperations
 import features.config.ConfigProfile
 import features.subscription.StoredSubscription
 import features.subscription.StoredSubscriptionMetadata
@@ -162,81 +165,87 @@ class DesktopSubscriptionRepository(
         Result.failure(UnsupportedOperationException("Subscription refresh is owned by the Desktop host"))
     },
 ) : SubscriptionRepository {
-    private val mutableSubscriptions = MutableStateFlow(initialLibrary.toSubscriptionRecords())
+    private val lock = Any()
+    private val mutableCatalog = MutableStateFlow(initialLibrary.toSubscriptionCatalog())
+    private val mutableSubscriptions = MutableStateFlow(mutableCatalog.value.subscriptions)
+    override val catalog: StateFlow<SubscriptionCatalog> = mutableCatalog.asStateFlow()
     override val subscriptions: StateFlow<List<SubscriptionRecord>> = mutableSubscriptions.asStateFlow()
 
     fun refresh(library: DesktopSubscriptionLibrary = readLibrary()) {
-        mutableSubscriptions.value = library.toSubscriptionRecords()
+        synchronized(lock) {
+            refreshSnapshot(library)
+        }
     }
 
     override suspend fun upsert(subscription: SubscriptionRecord) {
-        val current = readLibrary()
-        val existing = current.subscriptions.firstOrNull { it.id == subscription.id }
-        val metadata = subscription.metadata
-        val providerProfileTitle = metadata?.profileTitle
-        val previousMetadata = existing?.metadata ?: StoredSubscriptionMetadata()
-        val storedProfileTitle = when {
-            providerProfileTitle == null -> previousMetadata.profileTitle
-            providerProfileTitle.isEmpty() -> ""
-            existing?.metadata?.profileTitle == null && providerProfileTitle == subscription.title -> null
-            else -> providerProfileTitle
-        }
-        val updatedProvider = (existing ?: StoredSubscription(id = subscription.id, url = "")).copy(
-            name = subscription.title,
-            url = subscription.url,
-            userAgent = subscription.userAgent,
-            enabled = subscription.enabled,
-            updateInterval = subscription.updateInterval,
-            hwid = subscription.hwid,
-            ageSecretKey = subscription.ageSecretKey,
-            updateViaProxy = subscription.updateViaProxy,
-            autoOverrideRules = subscription.autoOverrideRules,
-            builtIn = subscription.builtIn,
-            notifyOnExpiry = subscription.notifyOnExpiry,
-            customExpiryReminders = subscription.customExpiryReminders,
-            metadata = previousMetadata.copy(
-                profileTitle = storedProfileTitle,
-                description = metadata?.profileDescription ?: previousMetadata.description,
-                announce = metadata?.announce ?: previousMetadata.announce,
-                supportUrl = metadata?.supportUrl ?: previousMetadata.supportUrl,
-                supportEmail = metadata?.supportEmail ?: previousMetadata.supportEmail,
-                profileWebPageUrl = metadata?.profileWebPageUrl ?: previousMetadata.profileWebPageUrl,
-                announceUrl = metadata?.announceUrl ?: previousMetadata.announceUrl,
-                trafficUploadBytes = metadata?.takeIf { it.userInfoReceived }?.trafficUploadBytes
-                    ?: previousMetadata.trafficUploadBytes,
-                trafficDownloadBytes = metadata?.takeIf { it.userInfoReceived }?.trafficDownloadBytes
-                    ?: previousMetadata.trafficDownloadBytes,
-                trafficTotalBytes = metadata?.takeIf { it.userInfoReceived }?.trafficTotalBytes
-                    ?: previousMetadata.trafficTotalBytes,
-                trafficExpireAtSeconds = metadata?.takeIf { it.userInfoReceived }?.trafficExpireAtSeconds
-                    ?: previousMetadata.trafficExpireAtSeconds,
-                profileUpdateIntervalHours = metadata?.profileUpdateIntervalHours
-                    ?: previousMetadata.profileUpdateIntervalHours,
-                embeddedConfigPayload = metadata?.embeddedConfig?.payload
-                    ?: previousMetadata.embeddedConfigPayload,
-                embeddedConfigActivate = metadata?.embeddedConfig?.activate
-                    ?: previousMetadata.embeddedConfigActivate,
-                embeddedConfigIsUrl = metadata?.embeddedConfig?.isUrl
-                    ?: previousMetadata.embeddedConfigIsUrl,
-                lastUpdatedAtMillis = subscription.lastUpdatedAtMillis ?: previousMetadata.lastUpdatedAtMillis,
-            ),
-        )
-        val updatedSubscriptions = if (existing == null) {
-            current.subscriptions + updatedProvider
-        } else {
-            current.subscriptions.map { stored ->
-                if (stored.id == subscription.id) updatedProvider else stored
+        updateCatalog { current -> SubscriptionCatalogOperations.upsert(current, subscription) }
+    }
+
+    override suspend fun updateCatalog(transform: (SubscriptionCatalog) -> SubscriptionCatalog) {
+        synchronized(lock) {
+            val current = readLibrary()
+            val currentCatalog = current.toSubscriptionCatalog()
+            val requestedCatalog = transform(currentCatalog)
+            val minimumNextId = maxOf(
+                currentCatalog.nextSubscriptionId,
+                saturatedIncrement(requestedCatalog.subscriptions.maxOfOrNull(SubscriptionRecord::id) ?: 0),
+            )
+            val updatedCatalog = requestedCatalog.copy(
+                nextSubscriptionId = maxOf(requestedCatalog.nextSubscriptionId, minimumNextId),
+            )
+            require(updatedCatalog.nextSubscriptionId > 0) { "Next subscription ID must be positive" }
+            require(updatedCatalog.subscriptions.all { it.id > 0 }) { "Subscription IDs must be positive" }
+            require(updatedCatalog.subscriptions.map { it.id }.distinct().size == updatedCatalog.subscriptions.size) {
+                "Subscription IDs must be unique"
             }
+
+            if (updatedCatalog == currentCatalog) {
+                refreshSnapshot(current)
+                return@synchronized
+            }
+
+            val existingById = current.subscriptions.associateBy(StoredSubscription::id)
+            val updatedLibrary = current.copy(
+                subscriptions = updatedCatalog.subscriptions.map { record ->
+                    record.toStoredSubscription(existingById[record.id])
+                },
+                nextSubscriptionId = updatedCatalog.nextSubscriptionId,
+            )
+            commit(updatedLibrary)
         }
-        commit(current.copy(subscriptions = updatedSubscriptions))
     }
 
     override suspend fun remove(subscriptionId: Int) {
-        require(readLibrary().subscriptions.any { it.id == subscriptionId }) {
-            "Unknown subscription ID: $subscriptionId"
+        synchronized(lock) {
+            val current = readLibrary()
+            require(current.subscriptions.any { it.id == subscriptionId }) {
+                "Unknown subscription ID: $subscriptionId"
+            }
+            SubscriptionCatalogOperations.remove(
+                catalog = current.toSubscriptionCatalog(),
+                proxyCatalog = ProxyServerCatalog(),
+                subscriptionId = subscriptionId,
+            )
         }
         removeLinkedServers(subscriptionId)
-        commit(DesktopSubscriptionLibraries.remove(readLibrary(), subscriptionId))
+        synchronized(lock) {
+            val current = readLibrary()
+            if (current.subscriptions.none { it.id == subscriptionId }) {
+                refreshSnapshot(current)
+                return@synchronized
+            }
+            val operation = SubscriptionCatalogOperations.remove(
+                catalog = current.toSubscriptionCatalog(),
+                proxyCatalog = ProxyServerCatalog(),
+                subscriptionId = subscriptionId,
+            )
+            val existingById = current.subscriptions.associateBy(StoredSubscription::id)
+            val updated = current.copy(
+                subscriptions = operation.catalog.subscriptions.mapNotNull { record -> existingById[record.id] },
+                nextSubscriptionId = operation.catalog.nextSubscriptionId,
+            )
+            if (updated == current) refreshSnapshot(current) else commit(updated)
+        }
     }
 
     override suspend fun refresh(subscriptionId: Int): Result<SubscriptionRecord> {
@@ -261,8 +270,65 @@ class DesktopSubscriptionRepository(
     private fun commit(library: DesktopSubscriptionLibrary) {
         saveLibrary(library).getOrThrow()
         publishLibrary(library)
-        refresh(library)
+        refreshSnapshot(library)
     }
+
+    private fun refreshSnapshot(library: DesktopSubscriptionLibrary) {
+        val current = library.toSubscriptionCatalog()
+        mutableCatalog.value = current
+        mutableSubscriptions.value = current.subscriptions
+    }
+}
+
+private fun SubscriptionRecord.toStoredSubscription(existing: StoredSubscription?): StoredSubscription {
+    val providerProfileTitle = metadata?.profileTitle
+    val previousMetadata = existing?.metadata ?: StoredSubscriptionMetadata()
+    val storedProfileTitle = when {
+        providerProfileTitle == null -> previousMetadata.profileTitle
+        providerProfileTitle.isEmpty() -> ""
+        existing?.metadata?.profileTitle == null && providerProfileTitle == title -> null
+        else -> providerProfileTitle
+    }
+    return (existing ?: StoredSubscription(id = id, url = "")).copy(
+        name = title,
+        url = url,
+        userAgent = userAgent,
+        enabled = enabled,
+        updateInterval = updateInterval,
+        hwid = hwid,
+        ageSecretKey = ageSecretKey,
+        updateViaProxy = updateViaProxy,
+        autoOverrideRules = autoOverrideRules,
+        builtIn = builtIn,
+        notifyOnExpiry = notifyOnExpiry,
+        customExpiryReminders = customExpiryReminders,
+        metadata = previousMetadata.copy(
+            profileTitle = storedProfileTitle,
+            description = metadata?.profileDescription ?: previousMetadata.description,
+            announce = metadata?.announce ?: previousMetadata.announce,
+            supportUrl = metadata?.supportUrl ?: previousMetadata.supportUrl,
+            supportEmail = metadata?.supportEmail ?: previousMetadata.supportEmail,
+            profileWebPageUrl = metadata?.profileWebPageUrl ?: previousMetadata.profileWebPageUrl,
+            announceUrl = metadata?.announceUrl ?: previousMetadata.announceUrl,
+            trafficUploadBytes = metadata?.takeIf { it.userInfoReceived }?.trafficUploadBytes
+                ?: previousMetadata.trafficUploadBytes,
+            trafficDownloadBytes = metadata?.takeIf { it.userInfoReceived }?.trafficDownloadBytes
+                ?: previousMetadata.trafficDownloadBytes,
+            trafficTotalBytes = metadata?.takeIf { it.userInfoReceived }?.trafficTotalBytes
+                ?: previousMetadata.trafficTotalBytes,
+            trafficExpireAtSeconds = metadata?.takeIf { it.userInfoReceived }?.trafficExpireAtSeconds
+                ?: previousMetadata.trafficExpireAtSeconds,
+            profileUpdateIntervalHours = metadata?.profileUpdateIntervalHours
+                ?: previousMetadata.profileUpdateIntervalHours,
+            embeddedConfigPayload = metadata?.embeddedConfig?.payload
+                ?: previousMetadata.embeddedConfigPayload,
+            embeddedConfigActivate = metadata?.embeddedConfig?.activate
+                ?: previousMetadata.embeddedConfigActivate,
+            embeddedConfigIsUrl = metadata?.embeddedConfig?.isUrl
+                ?: previousMetadata.embeddedConfigIsUrl,
+            lastUpdatedAtMillis = lastUpdatedAtMillis ?: previousMetadata.lastUpdatedAtMillis,
+        ),
+    )
 }
 
 /** Runtime snapshots are read from the Desktop composition root; mutations stay host-owned. */
@@ -656,6 +722,21 @@ private fun DesktopSubscriptionLibrary.toSubscriptionRecords(): List<Subscriptio
         notifyOnExpiry = item.notifyOnExpiry,
         customExpiryReminders = item.customExpiryReminders,
     )
+}
+
+private fun DesktopSubscriptionLibrary.toSubscriptionCatalog(): SubscriptionCatalog {
+    val records = toSubscriptionRecords()
+    val firstAvailableAfterRows = saturatedIncrement(records.maxOfOrNull(SubscriptionRecord::id) ?: 0)
+    return SubscriptionCatalog(
+        subscriptions = records,
+        nextSubscriptionId = maxOf(nextSubscriptionId?.takeIf { it > 0 } ?: 1, firstAvailableAfterRows),
+    )
+}
+
+private fun saturatedIncrement(value: Int): Int = when {
+    value >= Int.MAX_VALUE -> Int.MAX_VALUE
+    value < 0 -> 1
+    else -> value + 1
 }
 
 fun desktopRuntimeState(

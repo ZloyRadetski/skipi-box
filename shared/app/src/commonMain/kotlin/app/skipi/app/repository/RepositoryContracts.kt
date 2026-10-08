@@ -8,6 +8,7 @@ import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ResourceCatalogRecord
 import app.skipi.app.model.RoutingConfigRecord
+import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.TrafficConfigRecord
 import app.skipi.app.runtime.AppRuntimeState
@@ -53,6 +54,12 @@ suspend fun ProxyServerRepository.selectExisting(serverId: Int) {
 /** Storage-independent subscription catalog and refresh boundary. */
 interface SubscriptionRepository {
     val subscriptions: StateFlow<List<SubscriptionRecord>>
+
+    /** Ordered subscription rows and the persisted high-water ID used for atomic creation. */
+    val catalog: StateFlow<SubscriptionCatalog>
+
+    /** Applies an ordered row/counter change as one logical catalogue transaction. */
+    suspend fun updateCatalog(transform: (SubscriptionCatalog) -> SubscriptionCatalog)
 
     suspend fun upsert(subscription: SubscriptionRecord)
 
