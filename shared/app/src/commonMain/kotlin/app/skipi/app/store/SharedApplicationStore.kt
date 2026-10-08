@@ -15,6 +15,7 @@ import app.skipi.app.proxy.deleteProxyServerRecords
 import app.skipi.app.proxy.importProxyServerRecordBatch
 import app.skipi.app.repository.AppRepositories
 import app.skipi.app.runtime.AppRuntimeState
+import app.skipi.app.subscription.SubscriptionEditorController
 import features.proxy.server.model.ProxyServer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -112,6 +113,12 @@ class SharedApplicationStore(
 
     private val nextActionId = MutableStateFlow(1L)
     private val actionMutex = Mutex()
+
+    /** One shared editor coordinator for UI actions using this application store. */
+    val subscriptionEditorController = SubscriptionEditorController(
+        subscriptions = repositories.subscriptions,
+        proxyServers = repositories.proxyServers,
+    )
 
     init {
         scope.launch {

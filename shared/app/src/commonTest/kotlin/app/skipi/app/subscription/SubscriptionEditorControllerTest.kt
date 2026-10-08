@@ -12,9 +12,15 @@ import app.skipi.app.repository.SubscriptionRepository
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.subscription.SubscriptionMetadata
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -134,6 +140,62 @@ class SubscriptionEditorControllerTest {
     }
 
     @Test
+    fun concurrentSavesForSameSubscriptionKeepLinkedOverridesInFinalSavedState() = runTest {
+        val initial = record(id = 5, title = "Manual folder", url = "", autoOverrideRules = true)
+        val subscriptions = FakeSubscriptions(SubscriptionCatalog(listOf(initial), nextSubscriptionId = 6))
+        val linkedCustom = ProxyServerRecord(
+            id = 41,
+            server = Custom(remarks = "linked", overrideInboundAndDns = true),
+            sourceSubscriptionId = 5,
+        )
+        val proxies = FakeProxyRepository(
+            ProxyServerCatalog(servers = listOf(linkedCustom), nextServerId = 42, selectedServerId = 41),
+        ).apply {
+            pauseFirstCatalogUpdate = true
+        }
+        val controller = SubscriptionEditorController(subscriptions, proxies)
+
+        val firstSave = async {
+            controller.save(initial.copy(autoOverrideRules = false), isNew = false)
+        }
+        proxies.firstCatalogUpdateEntered.await()
+
+        val secondSave = async {
+            controller.save(initial.copy(autoOverrideRules = true), isNew = false)
+        }
+        yield()
+        proxies.resumeFirstCatalogUpdate.complete(Unit)
+        firstSave.await()
+        secondSave.await()
+
+        val finalSubscription = subscriptions.catalog.value.subscriptions.single()
+        val finalCustom = proxies.catalog.servers.single().server as Custom
+        assertTrue(finalSubscription.autoOverrideRules)
+        assertEquals(finalSubscription.autoOverrideRules, finalCustom.overrideInboundAndDns)
+    }
+
+    @Test
+    fun alreadyCancelledSaveDoesNotStartSubscriptionOrProxyWrites() = runTest {
+        val initial = record(id = 5, title = "Manual folder", url = "")
+        val subscriptions = FakeSubscriptions(SubscriptionCatalog(listOf(initial), nextSubscriptionId = 6))
+        val proxies = FakeProxyRepository()
+        val controller = SubscriptionEditorController(subscriptions, proxies)
+        val callerJob = Job()
+
+        val failure = runCatching {
+            withContext(callerJob) {
+                callerJob.cancel()
+                controller.save(initial.copy(title = "Changed"), isNew = false)
+            }
+        }.exceptionOrNull()
+
+        assertTrue(failure is CancellationException)
+        assertEquals(0, subscriptions.updateCatalogCalls)
+        assertEquals(0, proxies.updateCatalogCalls)
+        assertEquals(initial, subscriptions.catalog.value.subscriptions.single())
+    }
+
+    @Test
     fun savingAnEditorForADeletedGroupDoesNotRecreateItOrTouchProxies() = runTest {
         val remaining = record(id = 9, title = "Neighbor", url = "https://neighbor.example/sub")
         val subscriptions = FakeSubscriptions(SubscriptionCatalog(listOf(remaining), nextSubscriptionId = 10))
@@ -246,12 +308,19 @@ class SubscriptionEditorControllerTest {
         private val mutableServers = MutableStateFlow(initial.servers)
         override val servers: StateFlow<List<ProxyServerRecord>> = mutableServers
         var beforeNextCatalogUpdate: ((ProxyServerCatalog) -> ProxyServerCatalog)? = null
+        var pauseFirstCatalogUpdate: Boolean = false
+        val firstCatalogUpdateEntered = CompletableDeferred<Unit>()
+        val resumeFirstCatalogUpdate = CompletableDeferred<Unit>()
         var updateCatalogCalls: Int = 0
             private set
         val catalog: ProxyServerCatalog get() = currentCatalog
 
         override suspend fun updateCatalog(transform: (ProxyServerCatalog) -> ProxyServerCatalog) {
-            updateCatalogCalls++
+            val updateIndex = updateCatalogCalls++
+            if (updateIndex == 0 && pauseFirstCatalogUpdate) {
+                firstCatalogUpdateEntered.complete(Unit)
+                resumeFirstCatalogUpdate.await()
+            }
             beforeNextCatalogUpdate?.also { beforeNextCatalogUpdate = null }?.let { before ->
                 currentCatalog = before(currentCatalog)
             }

@@ -7,6 +7,10 @@ import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.repository.ProxyServerRepository
 import app.skipi.app.repository.SubscriptionRepository
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Result of saving a subscription editor draft. */
 data class SubscriptionEditorSaveResult(
@@ -23,11 +27,14 @@ class SubscriptionEditorController(
     private val subscriptions: SubscriptionRepository,
     private val proxyServers: ProxyServerRepository,
 ) {
+    private val saveMutex = Mutex()
+
     /** Saves a new group from the latest counter or edits an existing latest row. */
     suspend fun save(
         draft: SubscriptionRecord,
         isNew: Boolean,
-    ): SubscriptionEditorSaveResult {
+    ): SubscriptionEditorSaveResult = saveMutex.withLock {
+        currentCoroutineContext().ensureActive()
         var savedSubscription: SubscriptionRecord? = null
         subscriptions.updateCatalog { current ->
             val result = if (isNew) {
