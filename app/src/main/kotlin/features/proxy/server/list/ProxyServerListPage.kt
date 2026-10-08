@@ -107,6 +107,7 @@ import app.skipi.app.home.reduceProxyHomePresentation
 import app.skipi.ui.home.ProxyHomeScreen
 import app.skipi.ui.home.rememberSaveableProxyHomePresentation
 import app.skipi.ui.home.rememberSaveableProxyHomeDialogsState
+import data.repository.toSubscriptionRecord
 import ui.text.formatTemplate
 import platform.TunnelConnectRequest
 import platform.TunnelFailure
@@ -540,9 +541,16 @@ fun ProxyServerListPage(
         if (serviceOperationInProgress) return
         val groupName = group.name
 
-        fun removeGroup(stopResult: ProxyServiceResult.Success? = null): Boolean {
+        suspend fun removeGroup(stopResult: ProxyServiceResult.Success? = null): Boolean {
             if (stateStore.currentState.subscriptionGroups.none { it.id == group.id && !it.builtIn }) return false
-            services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveSubscription(group.id))
+            try {
+                services.sharedApplicationStore.subscriptionEditorController.remove(group.id)
+            } catch (failure: kotlinx.coroutines.CancellationException) {
+                throw failure
+            } catch (failure: Exception) {
+                tipNotifier.showError(failure)
+                return false
+            }
             if (stopResult != null) {
                 updateAppState { state ->
                     state.copy(
@@ -551,6 +559,10 @@ fun ProxyServerListPage(
                     )
                 }
             }
+            if (selectedGroupId == group.id) {
+                updateHomePresentation(ProxyHomeAction.SelectGroup(DefaultSubscriptionGroupId.toString()))
+            }
+            tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to groupName))
             return true
         }
 
@@ -559,20 +571,14 @@ fun ProxyServerListPage(
         val isCurrentRunningServerInGroup = stateSnapshot.proxyRunning && groupServerIds.contains(stateSnapshot.selectedProxyServerId)
 
         if (!isCurrentRunningServerInGroup) {
-            if (removeGroup()) {
-                services.appScope.launch {
-                    tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to groupName))
-                }
-            }
+            services.appScope.launch { removeGroup() }
             return
         }
 
         runProxyServiceOperation {
             when (val stopResult = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
                 is ProxyServiceResult.Success -> {
-                    if (removeGroup(stopResult)) {
-                        tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to groupName))
-                    }
+                    removeGroup(stopResult)
                 }
                 ProxyServiceResult.MissingServer -> {
                     tipNotifier.show(messages.selectServerFirst)
@@ -754,11 +760,12 @@ fun ProxyServerListPage(
                     is ProxyHomeEffect.ToggleSubscriptionEnabled -> {
                         val groupId = effect.id.toIntOrNull()
                             ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid subscription ID."))
-                        updateAppState { state ->
-                            state.copy(
-                                subscriptionGroups = state.subscriptionGroups.map { group ->
-                                    if (group.id == groupId) group.copy(enabled = !group.enabled) else group
-                                },
+                        services.appScope.launch {
+                            val current = stateStore.state.value.subscriptionGroups.firstOrNull { it.id == groupId }
+                                ?: return@launch
+                            services.sharedApplicationStore.subscriptionEditorController.setEnabled(
+                                subscriptionId = groupId,
+                                enabled = !current.enabled,
                             )
                         }
                     }
@@ -941,7 +948,13 @@ fun ProxyServerListPage(
                     is ProxyHomeEffect.MoveGroup -> {
                         val groupId = effect.groupId.toIntOrNull()
                             ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid group ID."))
-                        updateAppState { state -> state.withMovedSubscriptionGroup(groupId, effect.offset) }
+                        services.appScope.launch {
+                            services.sharedApplicationStore.subscriptionEditorController.move(
+                                groupId = groupId,
+                                offset = effect.offset,
+                                fixedGroupId = DefaultSubscriptionGroupId,
+                            )
+                        }
                     }
                     is ProxyHomeEffect.MoveServer -> {
                         val serverId = effect.serverId.toIntOrNull()
@@ -1222,36 +1235,26 @@ fun ProxyServerListPage(
         },
         onDismissFinished = {},
         onSave = { group, isNew ->
-            val wasUrlBlank = editingSubscriptionGroup?.url.isNullOrBlank()
-            services.sharedApplicationStore.dispatch(
-                SharedApplicationAction.UpdateProxyServers { servers ->
-                    servers.map { record ->
-                        val server = record.server
-                        if (record.sourceSubscriptionId == group.id && server is Custom) {
-                            record.copy(server = server.copy(overrideInboundAndDns = group.autoOverrideRules))
-                        } else {
-                            record
-                        }
-                    }
-                },
-            )
-            updateAppState { state ->
-                state.copy(
-                    subscriptionGroups = if (isNew) {
-                        state.subscriptionGroups.filterNot { current -> current.id == group.id } + group
-                    } else {
-                        state.subscriptionGroups.map { current ->
-                            if (current.id == group.id) group else current
-                        }
-                    },
-                    nextSubscriptionGroupId = maxOf(state.nextSubscriptionGroupId, group.id + 1),
-                )
-            }
+            val draft = group.toSubscriptionRecord()
             homeDialogs = homeDialogs.copy(editingSubscriptionGroupId = null)
             homeDialogs = homeDialogs.copy(creatingSubscriptionGroup = false)
             homeDialogs = homeDialogs.copy(creatingManualGroup = false)
-            if ((isNew || wasUrlBlank) && group.url.isNotBlank() && group.enabled) {
-                scope.launch { updateSubscription(group.id) }
+            services.appScope.launch {
+                try {
+                    val result = services.sharedApplicationStore.subscriptionEditorController.save(
+                        draft = draft,
+                        isNew = isNew,
+                        refreshWhenPreviouslyManual = editingSubscriptionGroup?.url.isNullOrBlank(),
+                    )
+                    val saved = result.savedSubscription
+                    if (result.shouldStartRefresh && saved != null) {
+                        updateSubscription(saved.id)
+                    }
+                } catch (failure: kotlinx.coroutines.CancellationException) {
+                    throw failure
+                } catch (failure: Exception) {
+                    tipNotifier.showError(failure)
+                }
             }
         },
         onDelete = { group ->

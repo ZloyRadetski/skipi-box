@@ -33,10 +33,16 @@ class SubscriptionEditorController(
     suspend fun save(
         draft: SubscriptionRecord,
         isNew: Boolean,
+        refreshWhenPreviouslyManual: Boolean = false,
     ): SubscriptionEditorSaveResult = saveMutex.withLock {
         currentCoroutineContext().ensureActive()
         var savedSubscription: SubscriptionRecord? = null
+        var wasManualBeforeSave = false
         subscriptions.updateCatalog { current ->
+            wasManualBeforeSave = current.subscriptions
+                .firstOrNull { it.id == draft.id }
+                ?.url
+                .isNullOrBlank()
             val result = if (isNew) {
                 SubscriptionCatalogOperations.createEditor(
                     catalog = current,
@@ -63,7 +69,8 @@ class SubscriptionEditorController(
 
         return SubscriptionEditorSaveResult(
             savedSubscription = saved,
-            shouldStartRefresh = isNew && saved != null && saved.enabled && saved.url.isNotBlank(),
+            shouldStartRefresh = saved != null && saved.enabled && saved.url.isNotBlank() &&
+                (isNew || (refreshWhenPreviouslyManual && wasManualBeforeSave)),
         )
     }
 

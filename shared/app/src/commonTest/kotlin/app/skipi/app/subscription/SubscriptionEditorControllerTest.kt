@@ -140,6 +140,44 @@ class SubscriptionEditorControllerTest {
     }
 
     @Test
+    fun homeCanRefreshAnExistingManualGroupWhenItBecomesAProvider() = runTest {
+        val manual = record(id = 5, title = "Manual folder", url = "")
+        val enabledProvider = record(id = 9, title = "Enabled provider", url = "https://enabled.example/sub")
+        val disabledManual = record(id = 12, title = "Disabled folder", url = "", enabled = false)
+        val listManual = record(id = 14, title = "List manual", url = "")
+        val subscriptions = FakeSubscriptions(
+            SubscriptionCatalog(listOf(manual, enabledProvider, disabledManual, listManual), nextSubscriptionId = 15),
+        )
+        val controller = SubscriptionEditorController(subscriptions, FakeProxyRepository())
+
+        val homeSave = controller.save(
+            draft = manual.copy(url = "https://manual.example/sub", updateInterval = "6"),
+            isNew = false,
+            refreshWhenPreviouslyManual = true,
+        )
+        val ordinaryEdit = controller.save(
+            draft = enabledProvider.copy(url = "https://updated.example/sub", updateInterval = "12"),
+            isNew = false,
+            refreshWhenPreviouslyManual = true,
+        )
+        val disabledHomeSave = controller.save(
+            draft = disabledManual.copy(url = "https://disabled.example/sub", updateInterval = "6"),
+            isNew = false,
+            refreshWhenPreviouslyManual = true,
+        )
+        val subscriptionListSave = controller.save(
+            draft = listManual.copy(url = "https://list.example/sub", updateInterval = "6"),
+            isNew = false,
+        )
+
+        assertTrue(homeSave.shouldStartRefresh)
+        assertFalse(ordinaryEdit.shouldStartRefresh)
+        assertFalse(disabledHomeSave.shouldStartRefresh)
+        assertFalse(subscriptionListSave.shouldStartRefresh)
+        assertEquals("https://manual.example/sub", subscriptions.catalog.value.subscriptions.first { it.id == 5 }.url)
+    }
+
+    @Test
     fun concurrentSavesForSameSubscriptionKeepLinkedOverridesInFinalSavedState() = runTest {
         val initial = record(id = 5, title = "Manual folder", url = "", autoOverrideRules = true)
         val subscriptions = FakeSubscriptions(SubscriptionCatalog(listOf(initial), nextSubscriptionId = 6))

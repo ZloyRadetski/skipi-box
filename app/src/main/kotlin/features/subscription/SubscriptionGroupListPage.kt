@@ -11,7 +11,6 @@ import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.SubscriptionGroupState
-import app.skipi.app.store.SharedApplicationAction
 import app.collectAppState
 import app.skipi.ui.subscription.SubscriptionGroupListScreen
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,12 +20,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.stringResource
 import app.R
 import data.AndroidAppStateStore
-import features.proxy.server.model.Custom
+import data.repository.toAndroidGroup
+import data.repository.toSubscriptionRecord
 import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import ui.text.formatTemplate
 
 @Composable
@@ -54,45 +55,35 @@ fun SubscriptionGroupListPage(
         isNew: Boolean,
         startUpdate: (groupId: Int, group: SubscriptionGroupState?) -> Unit,
     ) {
-        val targetGroup = if (isNew) {
-            group.copy(id = appState.nextSubscriptionGroupId)
-        } else {
-            group
-        }
-        services.sharedApplicationStore.dispatch(
-            SharedApplicationAction.UpdateProxyServers { servers ->
-                servers.map { record ->
-                    val server = record.server
-                    if (record.sourceSubscriptionId == targetGroup.id && server is Custom) {
-                        record.copy(server = server.copy(overrideInboundAndDns = targetGroup.autoOverrideRules))
-                    } else {
-                        record
-                    }
+        services.appScope.launch {
+            try {
+                val result = services.sharedApplicationStore.subscriptionEditorController.save(
+                    draft = group.toSubscriptionRecord(),
+                    isNew = isNew,
+                )
+                val saved = result.savedSubscription ?: return@launch
+                if (result.shouldStartRefresh) {
+                    startUpdate(saved.id, saved.toAndroidGroup(existing = null))
                 }
-            },
-        )
-        updateAppState { state ->
-            if (isNew) {
-                state.copy(
-                    subscriptionGroups = state.subscriptionGroups + targetGroup,
-                    nextSubscriptionGroupId = state.nextSubscriptionGroupId + 1,
-                )
-            } else {
-                state.copy(
-                    subscriptionGroups = state.subscriptionGroups.map {
-                        if (it.id == group.id) targetGroup else it
-                    },
-                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                services.tipNotifier.show(error.message?.takeIf(String::isNotBlank) ?: "Не удалось сохранить группу подписки.")
             }
-        }
-        if (isNew && targetGroup.url.isNotBlank() && targetGroup.enabled) {
-            startUpdate(targetGroup.id, targetGroup)
         }
     }
 
     fun deleteGroup(group: SubscriptionGroupState) {
         if (group.builtIn) return
-        services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveSubscription(group.id))
+        services.appScope.launch {
+            try {
+                services.sharedApplicationStore.subscriptionEditorController.remove(group.id)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                services.tipNotifier.show(error.message?.takeIf(String::isNotBlank) ?: "Не удалось удалить группу подписки.")
+            }
+        }
     }
 
     SubscriptionGroupListScreen(
@@ -106,10 +97,14 @@ fun SubscriptionGroupListPage(
         resolveGroupPayload = { groupId -> groups.firstOrNull { it.id == groupId } },
         onBack = { navigator.pop() },
         onToggle = { edited, enabled ->
-            updateAppState { state ->
-                state.copy(subscriptionGroups = state.subscriptionGroups.map {
-                    if (it.id == edited.id) it.copy(enabled = enabled) else it
-                })
+            services.appScope.launch {
+                try {
+                    services.sharedApplicationStore.subscriptionEditorController.setEnabled(edited.id, enabled)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    services.tipNotifier.show(error.message?.takeIf(String::isNotBlank) ?: "Не удалось изменить группу подписки.")
+                }
             }
         },
         onUpdate = { _, group, onFinished ->

@@ -11,10 +11,13 @@ import app.LocalAppStateStore
 import app.R
 import app.SubscriptionGroupState
 import app.collectAppState
+import app.skipi.ui.subscription.toSubscriptionGroupUiState as projectSubscriptionRecord
+import app.skipi.ui.subscription.toSubscriptionRecord as subscriptionRecordFromUi
 import app.skipi.ui.subscription.SubscriptionGroupCard as SharedSubscriptionGroupCard
 import app.skipi.ui.subscription.SubscriptionGroupEditorDialog as SharedSubscriptionGroupEditorDialog
 import app.skipi.ui.subscription.SubscriptionGroupUiState
-import features.proxy.server.display.displayName
+import data.repository.toAndroidGroup
+import data.repository.toSubscriptionRecord as toAndroidSubscriptionRecord
 
 @Composable
 internal fun SubscriptionGroupEditorDialog(
@@ -70,69 +73,7 @@ internal fun SubscriptionGroupCard(
 }
 
 internal fun SubscriptionGroupState.toSubscriptionGroupUiState(defaultGroupName: String): SubscriptionGroupUiState =
-    SubscriptionGroupUiState(
-        id = id,
-        name = displayName(defaultGroupName),
-        url = url,
-        userAgent = userAgent,
-        updateInterval = updateInterval,
-        hwid = hwid,
-        ageSecretKey = ageSecretKey,
-        updateViaProxy = updateViaProxy,
-        autoOverrideRules = autoOverrideRules,
-        enabled = enabled,
-        builtIn = builtIn,
-        lastUpdatedAtMillis = lastUpdatedAtMillis,
-        profileTitle = profileTitle,
-        announce = announce,
-        supportUrl = supportUrl,
-        supportEmail = supportEmail,
-        profileWebPageUrl = profileWebPageUrl,
-        announceUrl = announceUrl,
-        trafficUploadBytes = trafficUploadBytes,
-        trafficDownloadBytes = trafficDownloadBytes,
-        trafficTotalBytes = trafficTotalBytes,
-        trafficExpireAtSeconds = trafficExpireAtSeconds,
-        notifyOnExpiry = notifyOnExpiry,
-        customExpiryReminders = customExpiryReminders,
-    )
+    toAndroidSubscriptionRecord().projectSubscriptionRecord(defaultGroupName)
 
 internal fun SubscriptionGroupUiState.toSubscriptionGroupState(original: SubscriptionGroupState?): SubscriptionGroupState =
-    original?.copy(
-        name = if (original.builtIn) original.name else name,
-        url = url,
-        userAgent = userAgent,
-        updateInterval = updateInterval,
-        hwid = hwid,
-        ageSecretKey = ageSecretKey,
-        updateViaProxy = updateViaProxy,
-        autoOverrideRules = autoOverrideRules,
-        enabled = enabled,
-        notifyOnExpiry = notifyOnExpiry,
-        customExpiryReminders = customExpiryReminders,
-    ) ?: SubscriptionGroupState(
-        id = id,
-        name = name,
-        url = url,
-        userAgent = userAgent,
-        updateInterval = updateInterval,
-        hwid = hwid,
-        ageSecretKey = ageSecretKey,
-        updateViaProxy = updateViaProxy,
-        autoOverrideRules = autoOverrideRules,
-        enabled = enabled,
-        builtIn = builtIn,
-        lastUpdatedAtMillis = lastUpdatedAtMillis,
-        profileTitle = profileTitle,
-        announce = announce,
-        supportUrl = supportUrl,
-        supportEmail = supportEmail,
-        profileWebPageUrl = profileWebPageUrl,
-        announceUrl = announceUrl,
-        trafficUploadBytes = trafficUploadBytes,
-        trafficDownloadBytes = trafficDownloadBytes,
-        trafficTotalBytes = trafficTotalBytes,
-        trafficExpireAtSeconds = trafficExpireAtSeconds,
-        notifyOnExpiry = notifyOnExpiry,
-        customExpiryReminders = customExpiryReminders,
-    )
+    subscriptionRecordFromUi(original?.toAndroidSubscriptionRecord()).toAndroidGroup(original)

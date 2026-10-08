@@ -5,7 +5,6 @@ package features.subscription
 
 import app.ProjectInfo
 
-const val DefaultSubscriptionGroupId = 1
 val DefaultSubscriptionUserAgent = "SKIPI/${ProjectInfo.VERSION_NAME}/Android"
 const val ClashMetaSubscriptionUserAgent = "clash.meta"
 const val FlClashXSubscriptionUserAgent = "FlClash X/v0.4.2 Platform/android"
