@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyServerGroupCleanupTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.908Z" hostname="VQSeGo" time="0.008">
+  <properties/>
+  <testcase name="invalidRemovalUsesModelValidationWithoutResolvingCompositeReferences[desktop]" classname="features.proxy.server.usecase.ProxyServerGroupCleanupTest" time="0.004"/>
+  <testcase name="duplicateRemovalIsGroupScopedKeepsSelectedAndIgnoresUrlLessCompositeServers[desktop]" classname="features.proxy.server.usecase.ProxyServerGroupCleanupTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

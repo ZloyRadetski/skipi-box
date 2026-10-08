@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.VpnTunIpv6ConfigTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.277Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="buildVpnHevSocks5TunnelConfig_includesIpv6AddressOnlyWhenEnableIpv6IsTrue" classname="engine.vpn.VpnTunIpv6ConfigTest" time="0.0"/>
+  <testcase name="appState_defaultTunMtuIsOptimized" classname="engine.vpn.VpnTunIpv6ConfigTest" time="0.0"/>
+  <testcase name="vpnDefaults_haveGamingOptimizedMtuAndIpv6Constants" classname="engine.vpn.VpnTunIpv6ConfigTest" time="0.0"/>
+  <testcase name="buildVpnTunInbound_includesIpv6GatewayOnlyWhenEnableIpv6IsTrue" classname="engine.vpn.VpnTunIpv6ConfigTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

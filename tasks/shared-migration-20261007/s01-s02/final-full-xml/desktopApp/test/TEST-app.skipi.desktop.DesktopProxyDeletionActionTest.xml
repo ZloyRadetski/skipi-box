@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyDeletionActionTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.055Z" hostname="VQSeGo" time="0.033">
+  <properties/>
+  <testcase name="removingTheLastKnownServerLeavesDesktopSelectionNullAndRetainsHighWaterMark" classname="app.skipi.desktop.DesktopProxyDeletionActionTest" time="0.022"/>
+  <testcase name="bulkRemoveActionCommitsOneOrderedCatalogAndPrunesEveryDeletedReference" classname="app.skipi.desktop.DesktopProxyDeletionActionTest" time="0.006"/>
+  <testcase name="removeActionPrunesCompositeReferencesAndPreservesOpaqueRowsAndHighWaterMark" classname="app.skipi.desktop.DesktopProxyDeletionActionTest" time="0.003"/>
+  <testcase name="failedRemovalSaveDoesNotPublishOrExposeAPartiallyUpdatedCatalog" classname="app.skipi.desktop.DesktopProxyDeletionActionTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionCatalogOperationsTest[desktop]" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T06:52:17.969Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="movePreservesFixedAndBuiltinSlotsAndDesktopCanMoveOrdinaryIdOne[desktop]" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
+  <testcase name="removeRejectsBuiltinButCleansLinkedRowsAndCompositeReferencesForOrdinaryIdOne[desktop]" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.001"/>
+  <testcase name="builtInManualEditorKeepsIdentityTitleEnabledAndBuiltInWhileSavingOptions[desktop]" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.001"/>
+  <testcase name="editorSaveCopiesLatestMetadataAndUpdatesOnlyLinkedCustomOverrides[desktop]" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
+  <testcase name="upsertReplacesInPlaceAndAllowsRefreshToUpdateBuiltinTitle[desktop]" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
+  <testcase name="twoDraftsWithTheSameDisplayedIdAllocateDistinctIdsFromLatestCatalog[desktop]" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
+  <testcase name="editorSaveDoesNotRecreateAGroupDeletedWhileTheEditorWasOpen[desktop]" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
+  <testcase name="manualGroupCreationUsesLatestHighWaterCounterAndKeepsBlankUrl[desktop]" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

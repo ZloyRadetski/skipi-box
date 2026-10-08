@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="PortableUtilitiesTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.266Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="flexibleBase64SupportsWhitespaceAndUrlSafeValues[desktop]" classname="utils.PortableUtilitiesTest" time="0.0"/>
+  <testcase name="valueParsingRemovesBlankValuesAndKeepsDistinctOrder[desktop]" classname="utils.PortableUtilitiesTest" time="0.0"/>
+  <testcase name="urlDecodingKeepsLiteralPlus[desktop]" classname="utils.PortableUtilitiesTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

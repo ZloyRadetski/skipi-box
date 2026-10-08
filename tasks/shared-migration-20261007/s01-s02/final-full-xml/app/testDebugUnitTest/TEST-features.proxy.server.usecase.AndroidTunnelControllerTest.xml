@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.usecase.AndroidTunnelControllerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.674Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="disconnects_through_the_same_shared_contract" classname="features.proxy.server.usecase.AndroidTunnelControllerTest" time="0.003"/>
+  <testcase name="rejects_a_profile_that_is_not_present_in_the_android_state" classname="features.proxy.server.usecase.AndroidTunnelControllerTest" time="0.0"/>
+  <testcase name="rejects_prepared_configuration_when_android_profile_adapter_does_not_support_it" classname="features.proxy.server.usecase.AndroidTunnelControllerTest" time="0.001"/>
+  <testcase name="connects_selected_profile_and_reports_shared_traffic" classname="features.proxy.server.usecase.AndroidTunnelControllerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

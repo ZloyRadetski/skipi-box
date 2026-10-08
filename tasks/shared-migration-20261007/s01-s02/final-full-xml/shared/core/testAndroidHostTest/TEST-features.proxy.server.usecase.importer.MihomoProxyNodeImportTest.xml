@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.usecase.importer.MihomoProxyNodeImportTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.136Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="importsSupportedNodesAndClassifiesRejectedNodesWithoutPlatformLogging" classname="features.proxy.server.usecase.importer.MihomoProxyNodeImportTest" time="0.002"/>
+  <testcase name="callerCanNarrowProtocolsWithoutDuplicatingValidation" classname="features.proxy.server.usecase.importer.MihomoProxyNodeImportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

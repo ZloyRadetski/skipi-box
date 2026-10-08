@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionRefreshUseCaseTest[desktop]" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.898Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="singleRefreshCapturesBeforeLoadAndCommitsWithThatSnapshot[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
+  <testcase name="commitPolicyAllowsUnchangedTargetAndProfile[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
+  <testcase name="singleRefreshDoesNotCommitAfterLoadFailure[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
+  <testcase name="commitPolicyRejectsProfileEditedDuringFetch[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.0"/>
+  <testcase name="singleRefreshPropagatesCancellationWithoutCommit[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
+  <testcase name="refreshLoadsRequestsAndKeepsFailuresIsolated[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

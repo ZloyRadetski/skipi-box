@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.usecase.importer.WireguardConfParserTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.192Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="identifiesInvalidAmneziaWgBeforeNativeCodeCanReceiveIt" classname="features.proxy.server.usecase.importer.WireguardConfParserTest" time="0.004"/>
+  <testcase name="doesNotClaimUnrelatedText" classname="features.proxy.server.usecase.importer.WireguardConfParserTest" time="0.001"/>
+  <testcase name="parsesStandardWireguardConfWithoutPlatformContext" classname="features.proxy.server.usecase.importer.WireguardConfParserTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

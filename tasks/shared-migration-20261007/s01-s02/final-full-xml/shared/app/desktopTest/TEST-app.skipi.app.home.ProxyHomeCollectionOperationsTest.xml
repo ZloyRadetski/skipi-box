@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyHomeCollectionOperationsTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:48.852Z" hostname="VQSeGo" time="0.104">
+  <properties/>
+  <testcase name="deletingSelectedGroupChoosesFirstRemainingServerAndEmptySentinel[desktop]" classname="app.skipi.app.home.ProxyHomeCollectionOperationsTest" time="0.002"/>
+  <testcase name="builtInAndMissingGroupsCannotChangeCollections[desktop]" classname="app.skipi.app.home.ProxyHomeCollectionOperationsTest" time="0.0"/>
+  <testcase name="deletingSelectedServerSelectsNextAndMissingServerIsNoOp[desktop]" classname="app.skipi.app.home.ProxyHomeCollectionOperationsTest" time="0.101"/>
+  <testcase name="deletingGroupRemovesItsServersAndKeepsSelectionWhenPossible[desktop]" classname="app.skipi.app.home.ProxyHomeCollectionOperationsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

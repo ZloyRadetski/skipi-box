@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTunnelControllerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.491Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="ownsWindowsSystemProxyInTheSameSharedTunnelLifecycle" classname="app.skipi.desktop.DesktopTunnelControllerTest" time="0.002"/>
+  <testcase name="uses_shared_prepared_configuration_without_resolving_profile_again" classname="app.skipi.desktop.DesktopTunnelControllerTest" time="0.001"/>
+  <testcase name="exposes_in_process_core_counters_through_the_shared_tunnel_snapshot" classname="app.skipi.desktop.DesktopTunnelControllerTest" time="0.0"/>
+  <testcase name="rollsBackXrayWhenWindowsSystemProxyCannotBeAcquired" classname="app.skipi.desktop.DesktopTunnelControllerTest" time="0.001"/>
+  <testcase name="rollsBackXrayWhenTheHttpEndpointNeverBecomesReady" classname="app.skipi.desktop.DesktopTunnelControllerTest" time="0.001"/>
+  <testcase name="reports_when_an_unexpected_xray_exit_cannot_restore_the_system_proxy" classname="app.skipi.desktop.DesktopTunnelControllerTest" time="0.0"/>
+  <testcase name="reports_config_failure_in_the_shared_snapshot" classname="app.skipi.desktop.DesktopTunnelControllerTest" time="0.001"/>
+  <testcase name="connects_and_disconnects_using_the_shared_tunnel_contract" classname="app.skipi.desktop.DesktopTunnelControllerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

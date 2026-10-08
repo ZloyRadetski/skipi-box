@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ThemeTest[desktop]" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.405Z" hostname="VQSeGo" time="0.017">
+  <properties/>
+  <testcase name="compactSpacingIsDenserThanExpandedSpacing[desktop]" classname="app.skipi.ui.theme.ThemeTest" time="0.006"/>
+  <testcase name="namedPaletteColorsReachMiuixSubscriptionFieldRoles[desktop]" classname="app.skipi.ui.theme.ThemeTest" time="0.01"/>
+  <testcase name="lightAppPaletteMapsMiuixSecondaryContainerAndTextRoles[desktop]" classname="app.skipi.ui.theme.ThemeTest" time="0.0"/>
+  <testcase name="adaptiveWindowClassificationUsesStableBreakpoints[desktop]" classname="app.skipi.ui.theme.ThemeTest" time="0.0"/>
+  <testcase name="simpleMiuixPaletteUsesTheRequestedLightOrDarkBase[desktop]" classname="app.skipi.ui.theme.ThemeTest" time="0.001"/>
+  <testcase name="namedPalettesProvideConsistentTokens[desktop]" classname="app.skipi.ui.theme.ThemeTest" time="0.0"/>
+  <testcase name="darkAppPaletteMapsMiuixControlAndStateRoles[desktop]" classname="app.skipi.ui.theme.ThemeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

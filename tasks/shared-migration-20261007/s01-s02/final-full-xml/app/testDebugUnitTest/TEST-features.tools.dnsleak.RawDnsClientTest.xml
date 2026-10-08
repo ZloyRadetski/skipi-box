@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.tools.dnsleak.RawDnsClientTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.916Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="parseTxtRecords_extracts_txt_strings" classname="features.tools.dnsleak.RawDnsClientTest" time="0.001"/>
+  <testcase name="parseTxtRecords_rejects_mismatched_id_or_error_rcode" classname="features.tools.dnsleak.RawDnsClientTest" time="0.0"/>
+  <testcase name="buildQuery_formats_dns_question_correctly" classname="features.tools.dnsleak.RawDnsClientTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

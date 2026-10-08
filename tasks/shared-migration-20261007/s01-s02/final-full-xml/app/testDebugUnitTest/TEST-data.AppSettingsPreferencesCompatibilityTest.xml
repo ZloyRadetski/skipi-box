@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="data.AppSettingsPreferencesCompatibilityTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.316Z" hostname="VQSeGo" time="0.08">
+  <properties/>
+  <testcase name="loadsLiteralLegacyHomeKeysAndOlderTrafficProfileJson" classname="data.AppSettingsPreferencesCompatibilityTest" time="0.057"/>
+  <testcase name="savesAndReloadsLegacyHomeSettingsAcrossTwoAndThreeColumnLayouts" classname="data.AppSettingsPreferencesCompatibilityTest" time="0.02"/>
+  <testcase name="savesAndReloadsTheExistingPreferenceKeysAndJsonValues" classname="data.AppSettingsPreferencesCompatibilityTest" time="0.001"/>
+  <testcase name="loadsLiteralLegacyHomeKeysWithNonDefaultValues" classname="data.AppSettingsPreferencesCompatibilityTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

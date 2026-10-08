@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.tools.dnsleak.DnsLeakAnalysisTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.911Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="test_failure_names_dead_tunnel_when_vpn_network_present" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.001"/>
+  <testcase name="failure_kind_reflects_vpn_presence" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.001"/>
+  <testcase name="egressIpFromTxt_finds_ipv4_record" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <testcase name="resolvers_prefer_client_subnet_for_geo" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <testcase name="parseIpWhoIs_rejects_failures_and_invalid_bodies" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <testcase name="parseIpWhoIs_reads_geo_and_connection" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.001"/>
+  <testcase name="verdict_is_leak_when_any_path_country_differs_from_exit" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <testcase name="test_failure_reports_offline_when_no_vpn_network" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <testcase name="verdict_is_unknown_without_data" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <testcase name="verdict_is_no_leak_when_all_paths_match_exit" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <testcase name="country_flag_emoji_maps_two_letter_codes" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <testcase name="clientSubnetFromTxt_extracts_base_address" classname="features.tools.dnsleak.DnsLeakAnalysisTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

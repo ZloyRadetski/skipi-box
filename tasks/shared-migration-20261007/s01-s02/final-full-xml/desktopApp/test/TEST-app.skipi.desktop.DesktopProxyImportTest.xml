@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyImportTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.133Z" hostname="VQSeGo" time="0.016">
+  <properties/>
+  <testcase name="plansXrayJsonArrayWithAndroidRemarksFallback" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.002"/>
+  <testcase name="keepsProxyUrlsInsideShadowrocketConfAsPartOfTheProfile" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.001"/>
+  <testcase name="androidManualPolicyDeduplicatesRepeatedLiteralLinksAndKeepsDistinctLinksForOneConnection" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.003"/>
+  <testcase name="doesNotFetchMihomoProvidersAndReportsThemForTheCaller" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.0"/>
+  <testcase name="treatsHttpProxyAsServerAndHttpsAsSubscription" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.001"/>
+  <testcase name="prefersMihomoYamlOverWireguardAndProxyUrlTextInTheSameFile" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.002"/>
+  <testcase name="importsWireguardConfThroughSharedParserBeforeShadowrocketConfHandling" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.0"/>
+  <testcase name="reportsInvalidXrayJsonWithoutFallingBackToLinksImport" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.001"/>
+  <testcase name="plansShadowrocketConfAsConfigAndCarriesPortableMetadata" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.0"/>
+  <testcase name="excludesItemsAlreadyKnownToTheLibraries" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.002"/>
+  <testcase name="keepsProxyUrlsInsideRecognizedShadowrocketTextAsPartOfTheProfile" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.0"/>
+  <testcase name="plansClipboardPayloadWithAndroidSourceDecodingAndDuplicateSemantics" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.001"/>
+  <testcase name="fileImportAcceptsBase64ProxyPayloads" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.001"/>
+  <testcase name="plansXrayJsonObjectAsAndroidCompatibleCustomServer" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.0"/>
+  <testcase name="prefersCustomJsonOverYamlAndEmbeddedProxyUrls" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.001"/>
+  <testcase name="reportsJsonArraysWithoutConfigObjectsAsInvalidForTextAndFileSources" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.0"/>
+  <testcase name="clipboardDoesNotDecodeBase64ProxyPayloads" classname="app.skipi.desktop.DesktopProxyImportTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

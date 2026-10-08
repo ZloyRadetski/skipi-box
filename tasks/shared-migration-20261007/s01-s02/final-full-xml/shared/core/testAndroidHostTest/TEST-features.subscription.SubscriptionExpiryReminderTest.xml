@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionExpiryReminderTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.221Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="calculatesSecondsAndRoundTripsStorageFormat" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.003"/>
+  <testcase name="validatesPersistedCustomReminderListsForBothPlatforms" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

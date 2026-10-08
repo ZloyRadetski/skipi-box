@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopExternalLinkPolicyTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:44.962Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="allows_https_links_and_one_plain_mailto_recipient" classname="app.skipi.desktop.DesktopExternalLinkPolicyTest" time="0.002"/>
+  <testcase name="rejects_untrusted_protocol_handlers_and_mailto_parameters" classname="app.skipi.desktop.DesktopExternalLinkPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

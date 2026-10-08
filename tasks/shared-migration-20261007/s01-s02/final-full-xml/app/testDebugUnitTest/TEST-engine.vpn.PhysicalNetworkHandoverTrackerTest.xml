@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.PhysicalNetworkHandoverTrackerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.260Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="network loss waits for a replacement before reload" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>
+  <testcase name="losing an upstream clears a deferred recovery" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>
+  <testcase name="initial network and duplicate callback do not reload runtime" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>
+  <testcase name="deferred recovery remains pending until the service acknowledges it" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>
+  <testcase name="cleared tracker ignores a late callback from old service lifecycle" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>
+  <testcase name="wifi to cellular requests exactly one runtime reload" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>
+  <testcase name="upstream arriving after VPN started offline reloads runtime" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

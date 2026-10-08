@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ui.text.FontFamilyModeTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.928Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="testResolveFontSizeScale" classname="ui.text.FontFamilyModeTest" time="0.0"/>
+  <testcase name="testDefaultFontFamilyResolvesToNull" classname="ui.text.FontFamilyModeTest" time="0.006"/>
+  <testcase name="testResolveFontWeight" classname="ui.text.FontFamilyModeTest" time="0.0"/>
+  <testcase name="testCustomFontFamiliesResolveNonNull" classname="ui.text.FontFamilyModeTest" time="0.0"/>
+  <testcase name="testDefaultAppStateValues" classname="ui.text.FontFamilyModeTest" time="0.0"/>
+  <testcase name="testBackupRestoreMigratesLegacyFontSizeIndex" classname="ui.text.FontFamilyModeTest" time="0.001"/>
+  <testcase name="testBackupRestorePreservesFontSettings" classname="ui.text.FontFamilyModeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

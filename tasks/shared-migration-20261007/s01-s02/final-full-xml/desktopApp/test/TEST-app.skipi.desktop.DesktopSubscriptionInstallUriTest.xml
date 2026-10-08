@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionInstallUriTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.409Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="parses_supported_client_install_schemes_with_source_user_agents_and_names" classname="app.skipi.desktop.DesktopSubscriptionInstallUriTest" time="0.002"/>
+  <testcase name="rejects_untrusted_or_malformed_install_links" classname="app.skipi.desktop.DesktopSubscriptionInstallUriTest" time="0.001"/>
+  <testcase name="parses_raw_http_and_https_subscriptions_with_fragment_name" classname="app.skipi.desktop.DesktopSubscriptionInstallUriTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

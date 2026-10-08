@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionFetcherTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.203Z" hostname="VQSeGo" time="0.205">
+  <properties/>
+  <testcase name="rejects_private_loopback_and_metadata_automatic_resource_urls" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.001"/>
+  <testcase name="rejects_a_third_redirect_hop_for_a_direct_subscription_fetch" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.106"/>
+  <testcase name="routes_through_socks_proxy_when_proxy_specified" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.003"/>
+  <testcase name="fetches_subscription_body_headers_and_user_agent" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.003"/>
+  <testcase name="converts_a_unicode_host_to_ascii_before_a_direct_request" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.018"/>
+  <testcase name="accepts_public_automatic_resource_url" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="remote_embedded_config_rejects_a_loopback_url_before_fetching" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.001"/>
+  <testcase name="accepts_a_response_larger_than_the_old_desktop_body_cap" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.053"/>
+  <testcase name="follows_any_three_hundred_redirect_for_a_direct_subscription_fetch" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.003"/>
+  <testcase name="preserves_android_empty_embedded_userinfo_basic_auth_behavior" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="rejects_invalid_ports_for_subscription_socks_proxy" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="withAuthenticator_provides_credentials_for_socks_proxy" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.001"/>
+  <testcase name="sends_device_headers_with_direct_and_proxy_http_connections" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="resolvesInlineRoutingConfigFromSubscriptionMetadata" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="accepts_loopback_hosts_for_subscription_socks_proxy" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="rejects_hostname_when_dns_resolution_includes_a_private_address" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="exposes_non_success_http_statuses" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="refuses_loopback_mihomo_provider_without_touching_the_local_endpoint" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="direct_fetch_uses_connection_timeouts_clamped_to_the_android_range" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="rejects_non_loopback_or_untrimmed_hosts_for_subscription_socks_proxy" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="subscription_updates_directly_when_vpn_is_off_even_if_updateViaProxy_is_enabled" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="decrypts_age_body_before_import_and_sends_the_derived_public_key" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="sends_embedded_basic_auth_header" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

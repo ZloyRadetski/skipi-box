@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayRoutingConfigTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.363Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="testSanitizerFilteredRuleWithNoRemainingConditionsIsDropped" classname="engine.xray.XrayRoutingConfigTest" time="0.001"/>
+  <testcase name="testXrayGeoRuleSanitizerIpValidation" classname="engine.xray.XrayRoutingConfigTest" time="0.0"/>
+  <testcase name="testEmptyCriteriaRuleWithRemarksIsNotIncludedInRoutingPlan" classname="engine.xray.XrayRoutingConfigTest" time="0.0"/>
+  <testcase name="testValidRulesProduceEmptyUnappliedRules" classname="engine.xray.XrayRoutingConfigTest" time="0.001"/>
+  <testcase name="testDuplicateRuleRemarksProduceUniqueRuleTags" classname="engine.xray.XrayRoutingConfigTest" time="0.0"/>
+  <testcase name="testResolveUniqueRuleTagHelper" classname="engine.xray.XrayRoutingConfigTest" time="0.0"/>
+  <testcase name="testIpv6BlackholeRouteNotAdded" classname="engine.xray.XrayRoutingConfigTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

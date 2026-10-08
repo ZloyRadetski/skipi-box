@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="OlcRtcTest[desktop]" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.876Z" hostname="VQSeGo" time="0.008">
+  <properties/>
+  <testcase name="testPayloadParameterManipulationAndAliases[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.002"/>
+  <testcase name="parseOlcRtcVideoChannelWithAngleBrackets[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.001"/>
+  <testcase name="parseOlcRtcSeiChannelWithAngleBrackets[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.0"/>
+  <testcase name="testMatchesRuntimeConfig[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.001"/>
+  <testcase name="validationRejectsInvalidHexKey[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.0"/>
+  <testcase name="testCustomPayloadPreservesKnownKeys[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.001"/>
+  <testcase name="validationRejectsInvalidProvider[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.0"/>
+  <testcase name="testSignalingEndpointResolution[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.0"/>
+  <testcase name="persistenceRoundTrip[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.001"/>
+  <testcase name="parseOlcRtcVp8ChannelWithAngleBrackets[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.001"/>
+  <testcase name="parseOlcRtcUrlAndGenerateOutbound[desktop]" classname="features.proxy.server.model.OlcRtcTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

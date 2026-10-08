@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayLogConfigTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.346Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="normal_log_levels_do_not_enable_verbose_dns_diagnostics" classname="engine.xray.XrayLogConfigTest" time="0.0"/>
+  <testcase name="raw_custom_profile_cannot_suppress_app_owned_logs" classname="engine.xray.XrayLogConfigTest" time="0.001"/>
+  <testcase name="debug_mode_enables_dns_diagnostics_and_access_log_uses_its_configured_file" classname="engine.xray.XrayLogConfigTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

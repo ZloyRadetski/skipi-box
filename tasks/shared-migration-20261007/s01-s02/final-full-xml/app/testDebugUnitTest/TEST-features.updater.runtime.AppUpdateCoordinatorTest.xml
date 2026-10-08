@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.updater.runtime.AppUpdateCoordinatorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.924Z" hostname="VQSeGo" time="0.0">
+  <properties/>
+  <testcase name="stale_worker_can_only_update_its_current_release" classname="features.updater.runtime.AppUpdateCoordinatorTest" time="0.0"/>
+  <testcase name="release_identity_ignores_release_notes_but_rejects_a_different_asset" classname="features.updater.runtime.AppUpdateCoordinatorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

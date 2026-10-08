@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigCollectionOperationsTest[desktop]" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:48.840Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="updateReadsSettingsFromChangedDocumentAndKeepsOtherProfileOrder[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.002"/>
+  <testcase name="updatePersistsSettingsIntoDocumentWithoutChangingProfileIdentity[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
+  <testcase name="committedRawEditRewritesKnownSkipiValuesAndKeepsExternalSectionsAndNeighbors[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
+  <testcase name="unchangedOrUnknownUpdatePreservesOriginalCollection[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.0"/>
+  <testcase name="selectionAcceptsExistingIdAndIgnoresUnknownId[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.0"/>
+  <testcase name="readingAndProjectingProfileLeavesUntouchedRawDocumentAlone[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

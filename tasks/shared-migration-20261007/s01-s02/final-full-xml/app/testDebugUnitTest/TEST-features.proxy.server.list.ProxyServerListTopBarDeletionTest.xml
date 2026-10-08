@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.list.ProxyServerListTopBarDeletionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.517Z" hostname="VQSeGo" time="0.009">
+  <properties/>
+  <testcase name="rejectedCatalogDeleteSynchronizesStoppedRuntimeBeforeReportingError" classname="features.proxy.server.list.ProxyServerListTopBarDeletionTest" time="0.002"/>
+  <testcase name="failedCatalogDeleteSynchronizesStoppedRuntimeBeforeReportingError" classname="features.proxy.server.list.ProxyServerListTopBarDeletionTest" time="0.002"/>
+  <testcase name="failedServiceStopDoesNotAttemptCatalogDeleteOrReportDeletion" classname="features.proxy.server.list.ProxyServerListTopBarDeletionTest" time="0.002"/>
+  <testcase name="missingServerStillAttemptsAndReportsSuccessfulCatalogDelete" classname="features.proxy.server.list.ProxyServerListTopBarDeletionTest" time="0.002"/>
+  <testcase name="successfulStopAndDeleteSynchronizeRuntimeBeforeReportingDeletion" classname="features.proxy.server.list.ProxyServerListTopBarDeletionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

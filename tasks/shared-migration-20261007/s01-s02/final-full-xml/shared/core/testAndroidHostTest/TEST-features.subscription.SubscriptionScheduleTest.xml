@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionScheduleTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.252Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="parseSubscriptionSchedule_less_than_minimum_positive_returns_invalid" classname="features.subscription.SubscriptionScheduleTest" time="0.0"/>
+  <testcase name="parseSubscriptionSchedule_zero_or_negative_returns_disabled" classname="features.subscription.SubscriptionScheduleTest" time="0.001"/>
+  <testcase name="parseSubscriptionSchedule_valid_hours_returns_enabled" classname="features.subscription.SubscriptionScheduleTest" time="0.002"/>
+  <testcase name="isValidSubscriptionIntervalInput_handles_zero_properly" classname="features.subscription.SubscriptionScheduleTest" time="0.0"/>
+  <testcase name="parseSubscriptionSchedule_accepts_decimal_exponents_and_preserves_long_boundary" classname="features.subscription.SubscriptionScheduleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

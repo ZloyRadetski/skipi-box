@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.proxy.LocalProxyConfigTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.194Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="appendedHttpProxyDoesNotReuseTheStatsApiPort" classname="engine.proxy.LocalProxyConfigTest" time="0.002"/>
+  <testcase name="localProxyOptions_preservesCredentialsWhenAuthIsEnabled" classname="engine.proxy.LocalProxyConfigTest" time="0.0"/>
+  <testcase name="dynamicPortAllocatesANewEphemeralPortInsteadOfKeepingConfiguredPort" classname="engine.proxy.LocalProxyConfigTest" time="0.001"/>
+  <testcase name="withVpnSettingsReset_restoresEnableLocalProxyAuthToDefault" classname="engine.proxy.LocalProxyConfigTest" time="0.0"/>
+  <testcase name="localProxyOptions_omitsCredentialsWhenAuthIsDisabled" classname="engine.proxy.LocalProxyConfigTest" time="0.0"/>
+  <testcase name="localPortBindingFailureIsRecognizedForRetry" classname="engine.proxy.LocalProxyConfigTest" time="0.001"/>
+  <testcase name="dynamicPortExcludesThePortFromAPreviousFailedStart" classname="engine.proxy.LocalProxyConfigTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

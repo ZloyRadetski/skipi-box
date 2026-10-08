@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="RouteRuleCollectionOperationsTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.519Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="routingEditsPreserveOrderAndInvalidOperationsAreNoOps[desktop]" classname="app.skipi.app.routing.RouteRuleCollectionOperationsTest" time="0.001"/>
+  <testcase name="upsertReplacesInPlaceAndAllocatesIdsWithoutReordering[desktop]" classname="app.skipi.app.routing.RouteRuleCollectionOperationsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

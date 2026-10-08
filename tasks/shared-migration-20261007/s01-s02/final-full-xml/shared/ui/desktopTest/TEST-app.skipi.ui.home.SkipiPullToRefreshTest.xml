@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SkipiPullToRefreshTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.349Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="dragShowsPullingBeforeTheLegacyThresholdAndThresholdAfterEnoughPull[desktop]" classname="app.skipi.ui.home.SkipiPullToRefreshTest" time="0.001"/>
+  <testcase name="pullingBackToTheTopResetsTheIndicatorState[desktop]" classname="app.skipi.ui.home.SkipiPullToRefreshTest" time="0.0"/>
+  <testcase name="refreshFinishesOnlyAfterTheSingleRefreshAnimationIsReadyAndBusyStateIsFalse[desktop]" classname="app.skipi.ui.home.SkipiPullToRefreshTest" time="0.0"/>
+  <testcase name="pullRefreshHeaderAndContentPushReturnToZeroTogether[desktop]" classname="app.skipi.ui.home.SkipiPullToRefreshTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

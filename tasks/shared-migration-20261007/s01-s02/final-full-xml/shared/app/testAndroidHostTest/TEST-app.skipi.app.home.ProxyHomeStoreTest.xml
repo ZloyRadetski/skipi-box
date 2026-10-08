@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.home.ProxyHomeStoreTest" tests="26" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:52.631Z" hostname="VQSeGo" time="0.129">
+  <properties/>
+  <testcase name="globalSortingAndSearchFilterAppliedOnceAndPreservesOriginalOrderOnTies" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.027"/>
+  <testcase name="operationBusyStateCoversSuspendedEffect" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.066"/>
+  <testcase name="unavailableOperationIsRejectedAndDoesNotReachTheHandler" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="failedEffectSurfacesErrorAndDismissalHidesUnchangedSourceMessage" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="toggleSubscriptionExpandedIsLocalSurvivesUpdatesAndPrunesMissingGroups" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.004"/>
+  <testcase name="serverSpecificCopyAndStrategyCapabilitiesAreEnforced" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.003"/>
+  <testcase name="unsupportedVariantIsRejectedEvenWhenItsOperationIsAvailable" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="failedEffectWithoutPlatformMessageUsesTypedOperationError" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="reusablePageConstructionHandlesOverlappingGroupsEmptyGroupsAndLegacyMembership" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="allVisibleIntentUsesLatestSearchAndDispatchesOneEffect" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.003"/>
+  <testcase name="tunnelToggleRemainsReentrantDuringAReconnectEffect" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.004"/>
+  <testcase name="nameSortingFallsBackToDisplayTitleWhenSortKeyIsNull" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="pagesCalculateMembershipInOriginalOrderAndApplySearchFilter" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="duplicateSelectionIsSuppressedImmediatelyWhileItsEffectIsBusy" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="nameSortingUsesCanonicalSortKeyAndDoesNotReorderByFlagStrippedDisplayTitle" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="explicitGroupMembershipTakesPriorityOverStaleServerGroupId" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="proxyGroupSummaryKindDefaultsToOther" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="displayOptionsRequestedColumnsAreNormalizedOnUiStateBoundary" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="inputRefreshesAuthoritativeTunnelSelectionAndStatus" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="inputCanKeepToggleAvailableDuringBusyDesktopReconnect" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="localSearchSurvivesInputUpdatesAndMissingGroupSelectionFallsBackWithoutRestoringStaleGroup" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="latencySortPlacesTestingServersBeforeUnmeasuredAndKeepsFailuresLast" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="tunnelActionIsDispatchedOnceAndDoesNotInventConnectionState" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="serverSelectionFailureSurfacesErrorWithoutModifyingSelectedServer" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="serverSelectionIsNotOptimisticAndUpdatesOnlyFromInput" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="sortingMaintainsStableNameTiesAndOrdersLatencyValues" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

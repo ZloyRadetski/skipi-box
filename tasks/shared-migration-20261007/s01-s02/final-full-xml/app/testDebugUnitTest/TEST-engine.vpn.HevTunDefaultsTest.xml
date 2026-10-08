@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.HevTunDefaultsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.211Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="appState_enableVpnHevTun_defaults_to_true" classname="engine.vpn.HevTunDefaultsTest" time="0.0"/>
+  <testcase name="withVpnSettingsReset_restores_enableVpnHevTun_to_true" classname="engine.vpn.HevTunDefaultsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

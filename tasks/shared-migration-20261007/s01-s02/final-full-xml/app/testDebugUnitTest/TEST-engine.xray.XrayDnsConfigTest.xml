@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayDnsConfigTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.339Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="accepts_only_dns_transports_supported_by_bundled_xray" classname="engine.xray.XrayDnsConfigTest" time="0.0"/>
+  <testcase name="same_proxy_and_direct_dns_uses_system_for_its_bootstrap_lookup" classname="engine.xray.XrayDnsConfigTest" time="0.0"/>
+  <testcase name="generated_config_uses_system_bootstrap_for_same_proxy_and_direct_doh" classname="engine.xray.XrayDnsConfigTest" time="0.001"/>
+  <testcase name="tcp_fallback_only_assumes_a_raw_tcp_endpoint_when_the_transport_proves_it" classname="engine.xray.XrayDnsConfigTest" time="0.0"/>
+  <testcase name="custom_profile_dns_override_uses_the_same_proxied_tcp_fallback" classname="engine.xray.XrayDnsConfigTest" time="0.003"/>
+  <testcase name="dns_outbound_hijacks_ip_queries_and_proxies_other_types_to_nulls_tcp_dns" classname="engine.xray.XrayDnsConfigTest" time="0.0"/>
+  <testcase name="generated_balancer_dns_dialer_uses_loopback_and_routes_back_to_balancer" classname="engine.xray.XrayDnsConfigTest" time="0.001"/>
+  <testcase name="proxy_endpoint_bootstrap_domains_are_always_resolved_by_direct_dns" classname="engine.xray.XrayDnsConfigTest" time="0.0"/>
+  <testcase name="dns_dialer_reenters_the_live_balancer_instead_of_pinning_its_startup_fallback" classname="engine.xray.XrayDnsConfigTest" time="0.0"/>
+  <testcase name="generated_fragment_chain_uses_current_xray_dialer_proxy_field" classname="engine.xray.XrayDnsConfigTest" time="0.001"/>
+  <testcase name="planner_drops_unsupported_dns_servers_but_keeps_valid_fallbacks" classname="engine.xray.XrayDnsConfigTest" time="0.0"/>
+  <testcase name="remote_dns_host_is_bootstrapped_through_direct_dns" classname="engine.xray.XrayDnsConfigTest" time="0.0"/>
+  <testcase name="dnsPlan_queryStrategyMatchesEnableIpv6" classname="engine.xray.XrayDnsConfigTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="LocalProxySettingsValuesTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.379Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="sanitizesPortInputToFiveDigits[desktop]" classname="app.skipi.ui.settings.LocalProxySettingsValuesTest" time="0.0"/>
+  <testcase name="validatesPortRange[desktop]" classname="app.skipi.ui.settings.LocalProxySettingsValuesTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

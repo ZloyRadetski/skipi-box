@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayOutboundSupportTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.832Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="resolvesDnsDialerForBalancersAndSimpleOutbounds" classname="engine.xray.XrayOutboundSupportTest" time="0.001"/>
+  <testcase name="normalizesMuxAndFragmentSettingsInSharedCode" classname="engine.xray.XrayOutboundSupportTest" time="0.001"/>
+  <testcase name="rendersFreedomAndLoopbackOutboundsFromSharedValues" classname="engine.xray.XrayOutboundSupportTest" time="0.0"/>
+  <testcase name="buildsDnsOutboundWithAProxiedTcpFallback" classname="engine.xray.XrayOutboundSupportTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.automation.AutoConnectSettingsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.366Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="appState_autoConnect_defaults_to_false" classname="features.automation.AutoConnectSettingsTest" time="0.001"/>
+  <testcase name="appState_autoConnect_can_be_enabled" classname="features.automation.AutoConnectSettingsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

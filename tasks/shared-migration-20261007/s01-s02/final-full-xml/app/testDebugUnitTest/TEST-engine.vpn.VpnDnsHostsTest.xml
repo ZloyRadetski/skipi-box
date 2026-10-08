@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.VpnDnsHostsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.265Z" hostname="VQSeGo" time="0.009">
+  <properties/>
+  <testcase name="xrayConfig_hosts_block_contains_resolved_dns_hosts" classname="engine.vpn.VpnDnsHostsTest" time="0.008"/>
+  <testcase name="xrayDnsHosts_when_disabled_returns_original_dnsHosts" classname="engine.vpn.VpnDnsHostsTest" time="0.0"/>
+  <testcase name="trafficConfigAndroidSettings_enableResolveProxyServerDomain_defaults_to_true" classname="engine.vpn.VpnDnsHostsTest" time="0.0"/>
+  <testcase name="withActiveTrafficConfigApplied_propagates_enableResolveProxyServerDomain" classname="engine.vpn.VpnDnsHostsTest" time="0.0"/>
+  <testcase name="xrayDnsHosts_keeps_explicit_host_mapping_over_system_bootstrap" classname="engine.vpn.VpnDnsHostsTest" time="0.0"/>
+  <testcase name="enableResolveProxyServerDomain_defaults_to_true" classname="engine.vpn.VpnDnsHostsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

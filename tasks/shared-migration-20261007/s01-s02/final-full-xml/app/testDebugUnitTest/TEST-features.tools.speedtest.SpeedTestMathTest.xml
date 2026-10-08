@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.tools.speedtest.SpeedTestMathTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.921Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="jitter_is_mean_absolute_consecutive_difference" classname="features.tools.speedtest.SpeedTestMathTest" time="0.0"/>
+  <testcase name="jitter_is_zero_for_fewer_than_two_samples" classname="features.tools.speedtest.SpeedTestMathTest" time="0.0"/>
+  <testcase name="median_handles_odd_and_even_sizes" classname="features.tools.speedtest.SpeedTestMathTest" time="0.001"/>
+  <testcase name="smoothedMbps_zero_duration_keeps_previous_value" classname="features.tools.speedtest.SpeedTestMathTest" time="0.0"/>
+  <testcase name="smoothedMbps_blends_new_sample_with_alpha" classname="features.tools.speedtest.SpeedTestMathTest" time="0.0"/>
+  <testcase name="smoothedMbps_first_sample_becomes_the_ema" classname="features.tools.speedtest.SpeedTestMathTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

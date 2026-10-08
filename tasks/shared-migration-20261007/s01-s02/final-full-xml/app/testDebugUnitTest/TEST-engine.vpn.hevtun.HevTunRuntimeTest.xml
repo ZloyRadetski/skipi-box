@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.hevtun.HevTunRuntimeTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.279Z" hostname="VQSeGo" time="0.041">
+  <properties/>
+  <testcase name="start_times_out_and_stops_a_native_worker_that_never_initializes" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.032"/>
+  <testcase name="native_library_load_error_is_propagated_without_replacement" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.0"/>
+  <testcase name="start_propagates_native_log_diagnostics_on_readiness_failure" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.002"/>
+  <testcase name="readHevTunDiagnostics_handles_missing_empty_and_truncated_files" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.0"/>
+  <testcase name="start_fails_and_cleans_up_when_gateway_fails_readiness" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.001"/>
+  <testcase name="start_succeeds_after_gateway_initialization_and_stops_cleanly" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.001"/>
+  <testcase name="readiness_fails_when_native_thread_exits_before_initialization" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.0"/>
+  <testcase name="start_waits_for_the_native_initialization_signal" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.002"/>
+  <testcase name="readiness_fails_when_thread_exits_during_polling" classname="engine.vpn.hevtun.HevTunRuntimeTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

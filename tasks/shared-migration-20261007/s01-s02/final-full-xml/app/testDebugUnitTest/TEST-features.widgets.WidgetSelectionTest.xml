@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.widgets.WidgetSelectionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.925Z" hostname="VQSeGo" time="0.0">
+  <properties/>
+  <testcase name="uses the appropriate edge when the current option disappeared" classname="features.widgets.WidgetSelectionTest" time="0.0"/>
+  <testcase name="cycles previous and next with wrap around" classname="features.widgets.WidgetSelectionTest" time="0.0"/>
+  <testcase name="returns null when there are no options" classname="features.widgets.WidgetSelectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.server.ProxyServerEditResultHandlerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:52.824Z" hostname="VQSeGo" time="0.041">
+  <properties/>
+  <testcase name="editingManualServerUsesDefaultGroupWhenNoReturnGroupWasCaptured" classname="app.skipi.app.server.ProxyServerEditResultHandlerTest" time="0.02"/>
+  <testcase name="editingExistingServerKeepsItsPositionGroupAndOtherRecordMetadata" classname="app.skipi.app.server.ProxyServerEditResultHandlerTest" time="0.003"/>
+  <testcase name="editingRemovedServerRestoresCapturedIdAndGroup" classname="app.skipi.app.server.ProxyServerEditResultHandlerTest" time="0.004"/>
+  <testcase name="newDraftSavedAfterImportUsesCurrentIdAndKeepsImportedServer" classname="app.skipi.app.server.ProxyServerEditResultHandlerTest" time="0.003"/>
+  <testcase name="consumedNewDraftResultRemainsQueuedAfterCollectorCancellation" classname="app.skipi.app.server.ProxyServerEditResultHandlerTest" time="0.006"/>
+  <testcase name="repositoryFailureReturnsFailureWithoutPublishingSuccessOrGroupEffect" classname="app.skipi.app.server.ProxyServerEditResultHandlerTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

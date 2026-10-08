@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="data.repository.AndroidSubscriptionRepositoryCatalogTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-08T07:02:42.189Z" hostname="VQSeGo" time="3.621">
+  <properties/>
+  <testcase name="updateCatalogWritesAndroidGroupsAndCurrentHighWaterCounterTogether" classname="data.repository.AndroidSubscriptionRepositoryCatalogTest" time="3.454"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

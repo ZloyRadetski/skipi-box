@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.ConfCodeEditorTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.367Z" hostname="VQSeGo" time="0.009">
+  <properties/>
+  <testcase name="testTokenizeSectionHeader" classname="features.config.ConfCodeEditorTest" time="0.001"/>
+  <testcase name="testConfCodeEditorState" classname="features.config.ConfCodeEditorTest" time="0.008"/>
+  <testcase name="testTokenizeComment" classname="features.config.ConfCodeEditorTest" time="0.0"/>
+  <testcase name="testTokenizeRuleLine" classname="features.config.ConfCodeEditorTest" time="0.0"/>
+  <testcase name="testTokenizeKeyValuePair" classname="features.config.ConfCodeEditorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

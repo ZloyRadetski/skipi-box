@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.home.ProxyHomePolishTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:52.221Z" hostname="VQSeGo" time="0.229">
+  <properties/>
+  <testcase name="emptyGroupDoesNotAllowLatencyTest" classname="app.skipi.ui.home.ProxyHomePolishTest" time="0.001"/>
+  <testcase name="powerActionDisabledDuringBusyOrConnectingStates" classname="app.skipi.ui.home.ProxyHomePolishTest" time="0.0"/>
+  <testcase name="compactConnectedCardKeepsOnSurfaceTextReadableWithBrightAccent" classname="app.skipi.ui.home.ProxyHomePolishTest" time="0.227"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

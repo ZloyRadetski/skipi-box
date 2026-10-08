@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="CustomXrayConfigImportTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.916Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="retainsValidArrayEntriesAndReportsRejectedConfigs[desktop]" classname="features.proxy.server.usecase.importer.CustomXrayConfigImportTest" time="0.001"/>
+  <testcase name="distinguishesNonJsonMalformedJsonAndArraysWithoutObjects[desktop]" classname="features.proxy.server.usecase.importer.CustomXrayConfigImportTest" time="0.001"/>
+  <testcase name="parsesOneNamedCustomXrayConfigWithoutPlatformDependencies[desktop]" classname="features.proxy.server.usecase.importer.CustomXrayConfigImportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

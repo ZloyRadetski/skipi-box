@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshTransportBindingTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:16.618Z" hostname="VQSeGo" time="0.125">
+  <properties/>
+  <testcase name="refreshBindingUsesConfiguredGlobalAgentOnlyWhenStoredAgentIsBlankAndPreservesOptions" classname="app.skipi.desktop.DesktopSubscriptionRefreshTransportBindingTest" time="0.125"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopWindowsSystemProxyTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.498Z" hostname="VQSeGo" time="0.011">
+  <properties/>
+  <testcase name="release_never_overwrites_proxy_changed_outside_skipi" classname="app.skipi.desktop.DesktopWindowsSystemProxyTest" time="0.008"/>
+  <testcase name="stale_file_without_skipi_marker_is_discarded_without_changing_windows_proxy" classname="app.skipi.desktop.DesktopWindowsSystemProxyTest" time="0.001"/>
+  <testcase name="acquires_and_releases_the_exact_user_proxy_snapshot" classname="app.skipi.desktop.DesktopWindowsSystemProxyTest" time="0.001"/>
+  <testcase name="failed_acquire_rolls_back_before_leaving_a_lease" classname="app.skipi.desktop.DesktopWindowsSystemProxyTest" time="0.0"/>
+  <testcase name="recover_restores_an_interrupted_active_lease" classname="app.skipi.desktop.DesktopWindowsSystemProxyTest" time="0.001"/>
+  <testcase name="keeps_the_lease_and_xray_shutdown_guard_when_wininet_refresh_fails" classname="app.skipi.desktop.DesktopWindowsSystemProxyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

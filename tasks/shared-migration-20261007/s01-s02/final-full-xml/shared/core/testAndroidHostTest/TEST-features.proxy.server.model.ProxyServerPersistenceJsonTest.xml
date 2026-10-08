@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.model.ProxyServerPersistenceJsonTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.080Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="persistedServerRoundTripsItsProtocolAndFields" classname="features.proxy.server.model.ProxyServerPersistenceJsonTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

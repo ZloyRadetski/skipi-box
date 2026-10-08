@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopServerIdAllocationTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.182Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="manualAddAfterDeletingHighestIdUsesPersistedHighWaterMark" classname="app.skipi.desktop.DesktopServerIdAllocationTest" time="0.001"/>
+  <testcase name="subscriptionReplacementUsesHighWaterMarkAndKeepsUnchangedIds" classname="app.skipi.desktop.DesktopServerIdAllocationTest" time="0.001"/>
+  <testcase name="deletingSelectedServerOrSubscriptionGroupFallsBackToFirstRemainingOrNull" classname="app.skipi.desktop.DesktopServerIdAllocationTest" time="0.001"/>
+  <testcase name="legacyLibraryWithoutCounterLoadsAndAllocatesAboveItsMaximumId" classname="app.skipi.desktop.DesktopServerIdAllocationTest" time="0.001"/>
+  <testcase name="manualAddFailsWhenTheLargestPositiveIdIsAlreadyOccupied" classname="app.skipi.desktop.DesktopServerIdAllocationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

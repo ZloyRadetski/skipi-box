@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionMetadataTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.233Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="parse_embedded_config_from_routing_header_with_direct_url" classname="features.subscription.SubscriptionMetadataTest" time="0.001"/>
+  <testcase name="parse_embedded_config_from_autorouting_header" classname="features.subscription.SubscriptionMetadataTest" time="0.001"/>
+  <testcase name="parse_headers_with_provider_urls_and_userinfo" classname="features.subscription.SubscriptionMetadataTest" time="0.0"/>
+  <testcase name="parse_embedded_config_from_body_skipi_conf_links" classname="features.subscription.SubscriptionMetadataTest" time="0.0"/>
+  <testcase name="parse_body_comments_as_fallback_when_headers_missing" classname="features.subscription.SubscriptionMetadataTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

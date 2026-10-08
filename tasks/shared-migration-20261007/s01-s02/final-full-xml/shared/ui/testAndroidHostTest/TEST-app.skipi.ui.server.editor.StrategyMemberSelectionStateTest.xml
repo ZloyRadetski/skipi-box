@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.server.editor.StrategyMemberSelectionStateTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:52.525Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="groupToggleStateDistinguishesEmptyPartialAndComplete" classname="app.skipi.ui.server.editor.StrategyMemberSelectionStateTest" time="0.002"/>
+  <testcase name="togglingAGroupAddsInSourceOrderAndRemovesAllWhenAlreadySelected" classname="app.skipi.ui.server.editor.StrategyMemberSelectionStateTest" time="0.002"/>
+  <testcase name="togglingOneMemberPreservesOrderAndRemovesDuplicateInput" classname="app.skipi.ui.server.editor.StrategyMemberSelectionStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-08T07:25:11.114Z" hostname="VQSeGo" time="0.078">
+  <properties/>
+  <testcase name="cancellingDuringRootFetchDoesNotReachDesktopCommitAdapter" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.028"/>
+  <testcase name="commitReconcilesLatestRowsAndPreservesManualOpaqueAndUnrelatedData" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.01"/>
+  <testcase name="subscriptionPersistenceFailureKeepsServerScopeAndSkipsProfile" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.002"/>
+  <testcase name="changedOrDeletedTargetIsRejectedBeforeAnyRefreshWrite" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.002"/>
+  <testcase name="emptyRootImportIsRejectedBeforeAnyDesktopStoreWrite" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.006"/>
+  <testcase name="unrelatedOpaqueSelectionAndCompositeReferencesSurviveSubscriptionRefresh" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.003"/>
+  <testcase name="embeddedImportUsesLatestLibraryAndRefreshesLockedExistingProfileWithoutActivatingIt" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.012"/>
+  <testcase name="malformedEmbeddedProfileIsIgnoredAfterServersAndMetadataCommit" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.001"/>
+  <testcase name="embeddedImportActivatesOnlyNewProfileWhenRequested" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.003"/>
+  <testcase name="serverPersistenceFailureStopsLaterRefreshScopes" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.0"/>
+  <testcase name="targetIdentityChangedAfterServerSaveWithholdsMetadataAndProfile" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.001"/>
+  <testcase name="manualNullGroupDoesNotAliasAValidSubscriptionIdOne" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.004"/>
+  <testcase name="targetOpaqueRowIsRemovedAndItsCompositeReferencesArePruned" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.002"/>
+  <testcase name="profilePersistenceFailureReportsServerAndSubscriptionScopesAsApplied" classname="app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

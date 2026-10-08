@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.runtime.AndroidSubscriptionFetcherTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-07T20:51:23.608Z" hostname="VQSeGo" time="0.172">
+  <properties/>
+  <testcase name="sends_android_request_headers_and_decrypts_age_response" classname="features.subscription.runtime.AndroidSubscriptionFetcherTest" time="0.077"/>
+  <testcase name="disabledUpdateViaProxyUsesNoLocalSocksProxy" classname="features.subscription.runtime.AndroidSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="follows_any_three_hundred_redirect_and_allows_two_hops" classname="features.subscription.runtime.AndroidSubscriptionFetcherTest" time="0.005"/>
+  <testcase name="reads_a_response_larger_than_the_old_desktop_body_cap" classname="features.subscription.runtime.AndroidSubscriptionFetcherTest" time="0.071"/>
+  <testcase name="fails_after_two_redirect_hops" classname="features.subscription.runtime.AndroidSubscriptionFetcherTest" time="0.016"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

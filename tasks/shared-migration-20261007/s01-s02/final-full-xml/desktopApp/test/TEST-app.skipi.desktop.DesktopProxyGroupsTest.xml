@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyGroupsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.089Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="selection_falls_back_to_first_real_group_and_empty_catalog_is_safe" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.002"/>
+  <testcase name="hides_inactive_or_hidden_config_strategy_groups_and_keeps_manual_strategy_in_all" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.002"/>
+  <testcase name="creates_android_like_groups_with_stable_ids_and_group_local_filtering" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.001"/>
+  <testcase name="honors_enable_all_proxy_group_option_and_supports_blank_manual_groups" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

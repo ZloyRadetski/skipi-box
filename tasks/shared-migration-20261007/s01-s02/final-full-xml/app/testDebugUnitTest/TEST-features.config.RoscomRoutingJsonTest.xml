@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.RoscomRoutingJsonTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.377Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="converted_domain_set_rules_reach_xray_route_rules" classname="features.config.RoscomRoutingJsonTest" time="0.002"/>
+  <testcase name="conversion_produces_ordered_rules_and_skipi_settings" classname="features.config.RoscomRoutingJsonTest" time="0.0"/>
+  <testcase name="happ_base64_subscription_link_imports_end_to_end" classname="features.config.RoscomRoutingJsonTest" time="0.004"/>
+  <testcase name="detection_recognizes_routing_json_and_rejects_other_content" classname="features.config.RoscomRoutingJsonTest" time="0.0"/>
+  <testcase name="import_applies_converted_fields_to_state" classname="features.config.RoscomRoutingJsonTest" time="0.0"/>
+  <testcase name="conversion_does_not_generate_unsupported_dot_or_doq_urls" classname="features.config.RoscomRoutingJsonTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

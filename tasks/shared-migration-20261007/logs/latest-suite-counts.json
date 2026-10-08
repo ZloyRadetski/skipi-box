@@ -1,0 +1,56 @@
+{
+  "shared/core/build/test-results/desktopTest": {
+    "tests": 224,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared/core/build/test-results/testAndroidHostTest": {
+    "tests": 224,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared/app/build/test-results/desktopTest": {
+    "tests": 131,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared/app/build/test-results/testAndroidHostTest": {
+    "tests": 131,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared/ui/build/test-results/desktopTest": {
+    "tests": 59,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared/ui/build/test-results/testAndroidHostTest": {
+    "tests": 59,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared/yaml-jvm/build/test-results/test": {
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "desktopApp/build/test-results/test": {
+    "tests": 219,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app/build/test-results/testDebugUnitTest": {
+    "tests": 398,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

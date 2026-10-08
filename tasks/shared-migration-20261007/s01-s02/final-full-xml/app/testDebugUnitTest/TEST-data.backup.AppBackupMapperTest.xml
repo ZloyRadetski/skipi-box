@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="data.backup.AppBackupMapperTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:54.955Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="backupAndRestore_preservesTrafficNotificationRefreshInterval" classname="data.backup.AppBackupMapperTest" time="0.001"/>
+  <testcase name="backupAndRestore_preservesEnableLocalProxyAuth" classname="data.backup.AppBackupMapperTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

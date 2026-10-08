@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.OlcRtcReadinessTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.230Z" hostname="VQSeGo" time="0.03">
+  <properties/>
+  <testcase name="readinessPoll_usesOneBoundedDeadlineWhenTheListenerNeverAppears" classname="engine.vpn.OlcRtcReadinessTest" time="0.027"/>
+  <testcase name="readinessPoll_stopsImmediatelyWhenTheListenerAppears" classname="engine.vpn.OlcRtcReadinessTest" time="0.001"/>
+  <testcase name="readinessPoll_isCancelledWithoutWaitingForItsDeadline" classname="engine.vpn.OlcRtcReadinessTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,51 @@
+{
+  "shared/core:desktopTest": {
+    "tests": 231,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 76
+  },
+  "shared/core:testAndroidHostTest": {
+    "tests": 230,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 75
+  },
+  "shared/app:desktopTest": {
+    "tests": 173,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 26
+  },
+  "shared/app:testAndroidHostTest": {
+    "tests": 173,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 26
+  },
+  "shared/ui:desktopTest": {
+    "tests": 63,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 19
+  },
+  "shared/ui:testAndroidHostTest": {
+    "tests": 63,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 19
+  },
+  "app:testDebugUnitTest": {
+    "tests": 411,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 96
+  }
+}

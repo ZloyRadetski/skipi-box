@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopApplicationRepositoriesTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:10:00.194Z" hostname="VQSeGo" time="0.109">
+  <properties/>
+  <testcase name="subscriptionRepositoryPreservesExplicitEmptyProfileTitle" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.03"/>
+  <testcase name="subscriptionRepositoryRoundTripsProviderOptionsAndDoesNotReserveDesktopIdOne" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.007"/>
+  <testcase name="subscriptionUpsertEditsExistingRecordInPlaceWithoutChangingLibraryOrder" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.001"/>
+  <testcase name="subscriptionRepositoryPreservesHostOnlyFieldsAndRejectsUnconfiguredRefresh" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.007"/>
+  <testcase name="appearanceSettingsRoundTripThroughDesktopJsonModel" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.006"/>
+  <testcase name="trafficConfigUpsertRetainsLegacyAppendOrderAndActiveId" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.001"/>
+  <testcase name="appearanceStateAdapterPreservesDesktopSettingsAndMapsSharedHomeOptions" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.002"/>
+  <testcase name="trafficConfigRepositoryMapsAndPersistsWithoutChangingLibraryShape" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.002"/>
+  <testcase name="legacySettingsJsonLoadsWithDefaultsForNewAppearanceKeys" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.01"/>
+  <testcase name="settingsRepositoryMapsThemeAndSelectionsAndPreservesDesktopOnlySettings" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.038"/>
+  <testcase name="subscriptionRepositoryPreservesProfileTitleSeparatelyFromDisplayTitle" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

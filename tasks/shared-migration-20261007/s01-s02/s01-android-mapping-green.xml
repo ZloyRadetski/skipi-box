@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="data.repository.AndroidAppRepositoryMappingTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:10:07.195Z" hostname="VQSeGo" time="0.046">
+  <properties/>
+  <testcase name="subscriptionRecordRoundTripsAllAndroidGroupFields" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.015"/>
+  <testcase name="sharedCatalogWritePreservesLegacyIdsOrderLatencyAndCounters" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.022"/>
+  <testcase name="persistedSettingsUpdateKeepsAndroidOnlyAppearanceAndLanguageChoices" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.002"/>
+  <testcase name="trafficConfigUpdateKeepsAndroidProfileSettings" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.001"/>
+  <testcase name="proxyCatalogMappingRoundTripsIdsGroupsServersAndListOrder" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.0"/>
+  <testcase name="subscriptionUpdateMapsCompleteOptionsAndPreservesAbsentMetadata" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.0"/>
+  <testcase name="appearancePreferencesRoundTripWithoutLosingColorsOrBackgroundSettings" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.001"/>
+  <testcase name="sharedCatalogWriteRejectsDuplicateIdsWithoutChangingLegacyState" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.001"/>
+  <testcase name="deletingFromSharedCatalogPreservesAndroidRecordMetadataAndRuntimeState" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.001"/>
+  <testcase name="routingAndResourceCatalogMappingsKeepRepresentableFields" classname="data.repository.AndroidAppRepositoryMappingTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

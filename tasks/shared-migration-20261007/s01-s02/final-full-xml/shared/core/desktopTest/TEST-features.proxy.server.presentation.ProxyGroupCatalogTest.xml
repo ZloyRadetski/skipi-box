@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyGroupCatalogTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.897Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="empty_catalog_is_safe_and_config_strategies_follow_display_mode[desktop]" classname="features.proxy.server.presentation.ProxyGroupCatalogTest" time="0.002"/>
+  <testcase name="distinguishes_blank_url_manual_groups_from_url_subscriptions[desktop]" classname="features.proxy.server.presentation.ProxyGroupCatalogTest" time="0.0"/>
+  <testcase name="groups_keep_subscription_order_and_filter_inside_selected_group[desktop]" classname="features.proxy.server.presentation.ProxyGroupCatalogTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

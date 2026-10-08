@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionRefreshOperationTest[desktop]" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:07:00.404Z" hostname="VQSeGo" time="0.088">
+  <properties/>
+  <testcase name="reconciliationUsesLatestAggregateAndLatestOverrideWhileMergingPartialMetadata[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.036"/>
+  <testcase name="requestIdentityUsesOnlyTheAndroidFreshnessFields[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.0"/>
+  <testcase name="loadingUsesTheSameHostOptionsForRootProviderAndEmbeddedRequestsAndReturnsAndroidHandoff[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.041"/>
+  <testcase name="embeddedRequestFailureIsBestEffortButCancellationPropagates[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.002"/>
+  <testcase name="callerJobCancellationDuringProviderParsingIsNotHiddenByParserFallback[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.003"/>
+  <testcase name="omittedResponseIntervalKeepsCurrentDirectValueWhileRetainingStoredMetadata[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.0"/>
+  <testcase name="explicitProviderCancellationCaughtByParserFallsBackWhileCallerJobRemainsActive[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.001"/>
+  <testcase name="inlineEmbeddedConfigUsesSubscriptionSourceAndAndroidFallbackName[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.001"/>
+  <testcase name="embeddedConfigIsResolvedBeforeAnEmptyServerImportFails[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.0"/>
+  <testcase name="staleOrDeletedSubscriptionLeavesTheWholeAggregateUnchangedAndWithholdsEmbeddedConfig[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopConfigLibraryTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:44.926Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="stores_selects_and_removes_configs" classname="app.skipi.desktop.DesktopConfigLibraryTest" time="0.001"/>
+  <testcase name="clearingSelectionAndRemovingSelectedConfigUseSharedLibraryOperations" classname="app.skipi.desktop.DesktopConfigLibraryTest" time="0.0"/>
+  <testcase name="updatingOrImportingDoesNotSwitchActiveConfigAndRemovingItSelectsRemaining" classname="app.skipi.desktop.DesktopConfigLibraryTest" time="0.0"/>
+  <testcase name="legacyConfigsJsonKeepsIdsOrderSelectionAndOptionalFieldsAcrossRoundTrip" classname="app.skipi.desktop.DesktopConfigLibraryTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

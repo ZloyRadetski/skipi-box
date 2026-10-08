@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.config.TrafficConfigEditorOperationsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:52.600Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="profileBasicsUpdateSkipiFieldsAndPreserveUnrelatedConfContent" classname="app.skipi.app.config.TrafficConfigEditorOperationsTest" time="0.001"/>
+  <testcase name="generalOptionsUpdateKnownValuesAndPreserveOtherConfiguration" classname="app.skipi.app.config.TrafficConfigEditorOperationsTest" time="0.001"/>
+  <testcase name="tunnelOptionsUpdateOnlyPortableTunnelSettings" classname="app.skipi.app.config.TrafficConfigEditorOperationsTest" time="0.0"/>
+  <testcase name="profileBasicsEditKeepsKnownSkipiValuesAndExternalCommentsButDropsInnerUnknowns" classname="app.skipi.app.config.TrafficConfigEditorOperationsTest" time="0.001"/>
+  <testcase name="networkActivationKeepsBooleanAndBoundsUnsupportedTransport" classname="app.skipi.app.config.TrafficConfigEditorOperationsTest" time="0.001"/>
+  <testcase name="dnsOptionsNormalizeValuesPreserveOrderAndRoundTripThroughProfileDocument" classname="app.skipi.app.config.TrafficConfigEditorOperationsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

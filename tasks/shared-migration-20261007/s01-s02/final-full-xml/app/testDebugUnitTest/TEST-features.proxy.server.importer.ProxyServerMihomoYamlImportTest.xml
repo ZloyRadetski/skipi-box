@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.importer.ProxyServerMihomoYamlImportTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.472Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="leadingBomIsIgnoredBeforeParsingValidYaml" classname="features.proxy.server.importer.ProxyServerMihomoYamlImportTest" time="0.003"/>
+  <testcase name="importsJsonArrayAsCustomConfigsBeforeYamlClassification" classname="features.proxy.server.importer.ProxyServerMihomoYamlImportTest" time="0.001"/>
+  <testcase name="importsScalarAliasesAndBlockScalarCredentialsForSocksAndHttp" classname="features.proxy.server.importer.ProxyServerMihomoYamlImportTest" time="0.001"/>
+  <testcase name="emptyOrMalformedLeadingBomYamlReturnsNoServers" classname="features.proxy.server.importer.ProxyServerMihomoYamlImportTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

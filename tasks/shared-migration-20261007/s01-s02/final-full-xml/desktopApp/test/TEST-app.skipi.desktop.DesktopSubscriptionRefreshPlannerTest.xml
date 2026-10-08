@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshPlannerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.470Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="chooses_the_earliest_future_wakeup_and_reports_its_delay" classname="app.skipi.desktop.DesktopSubscriptionRefreshPlannerTest" time="0.001"/>
+  <testcase name="omits_invalid_intervals_instead_of_scheduling_them" classname="app.skipi.desktop.DesktopSubscriptionRefreshPlannerTest" time="0.0"/>
+  <testcase name="reports_due_providers_when_their_interval_has_elapsed_or_they_never_refreshed" classname="app.skipi.desktop.DesktopSubscriptionRefreshPlannerTest" time="0.0"/>
+  <testcase name="omits_disabled_blank_url_and_unscheduled_providers" classname="app.skipi.desktop.DesktopSubscriptionRefreshPlannerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

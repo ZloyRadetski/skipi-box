@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.subscription.SubscriptionEditorControllerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:53.028Z" hostname="VQSeGo" time="0.012">
+  <properties/>
+  <testcase name="homeCanRefreshAnExistingManualGroupWhenItBecomesAProvider" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.003"/>
+  <testcase name="savingAnEditorForADeletedGroupDoesNotRecreateItOrTouchProxies" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <testcase name="alreadyCancelledSaveDoesNotStartSubscriptionOrProxyWrites" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.002"/>
+  <testcase name="removeDelegatesToTheHostRepositoryCleanupBoundary" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <testcase name="concurrentSavesForSameSubscriptionKeepLinkedOverridesInFinalSavedState" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <testcase name="enableAndMoveDelegateToCommonBuiltinAndFixedSlotRules" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.003"/>
+  <testcase name="editUsesLatestMetadataAndProxyCatalogInsteadOfStaleSnapshots" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <testcase name="saveCreatesFromLatestCounterAndOnlyStartsRefreshForEnabledUrlGroups" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

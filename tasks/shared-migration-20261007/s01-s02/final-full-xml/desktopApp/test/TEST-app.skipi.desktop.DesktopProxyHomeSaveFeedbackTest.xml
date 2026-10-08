@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyHomeSaveFeedbackTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.113Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="currentHomeGroupCanBeCapturedForTheEditorReturnRoute" classname="app.skipi.desktop.DesktopProxyHomeSaveFeedbackTest" time="0.0"/>
+  <testcase name="unavailableSavedGroupStaysPendingUntilItAppearsThenSelectsOnce" classname="app.skipi.desktop.DesktopProxyHomeSaveFeedbackTest" time="0.001"/>
+  <testcase name="successfulSaveMapsServerGroupIdsToHomeGroupIds" classname="app.skipi.desktop.DesktopProxyHomeSaveFeedbackTest" time="0.0"/>
+  <testcase name="failedDeletedOrUnmappedSaveOutcomesDoNotSelectAHomeGroup" classname="app.skipi.desktop.DesktopProxyHomeSaveFeedbackTest" time="0.0"/>
+  <testcase name="nullPendingGroupIsANoop" classname="app.skipi.desktop.DesktopProxyHomeSaveFeedbackTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

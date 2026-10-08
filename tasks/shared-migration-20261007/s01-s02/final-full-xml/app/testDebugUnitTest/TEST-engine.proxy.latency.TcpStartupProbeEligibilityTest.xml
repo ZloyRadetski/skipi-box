@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.proxy.latency.TcpStartupProbeEligibilityTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.201Z" hostname="VQSeGo" time="0.008">
+  <properties/>
+  <testcase name="udp_quic_and_webrtc_transports_are_never_validated_by_tcp" classname="engine.proxy.latency.TcpStartupProbeEligibilityTest" time="0.008"/>
+  <testcase name="tcp_transports_can_use_the_short_startup_socket_check" classname="engine.proxy.latency.TcpStartupProbeEligibilityTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

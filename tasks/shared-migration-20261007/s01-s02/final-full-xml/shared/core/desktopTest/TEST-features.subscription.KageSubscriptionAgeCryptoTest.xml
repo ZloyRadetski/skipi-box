@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="KageSubscriptionAgeCryptoTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.975Z" hostname="VQSeGo" time="0.239">
+  <properties/>
+  <testcase name="derives_recipient_key_and_decrypts_an_armored_age_response[desktop]" classname="features.subscription.KageSubscriptionAgeCryptoTest" time="0.239"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

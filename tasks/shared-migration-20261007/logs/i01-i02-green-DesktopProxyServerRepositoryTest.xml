@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyServerRepositoryTest" tests="24" skipped="0" failures="0" errors="0" timestamp="2026-10-07T20:28:07.087Z" hostname="VQSeGo" time="0.029">
+  <properties/>
+  <testcase name="identityCatalogUpdateKeepsOpaquePayloadAndVisibleDecodedServers" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="sharedCreatePrependsAndPreservesAnExistingSelection" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="libraryTransformPersistsTheExactSubscriptionReplacementWithOpaqueRows" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.002"/>
+  <testcase name="replacingVisibleCatalogPreservesInterleavedOpaquePayloadAndVisibleOrder" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="failedSharedCreateLeavesThePreviousCatalogAndPublicationHistoryIntact" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.002"/>
+  <testcase name="concurrentSharedCreatesAllocateDistinctIdsFromSerializedCatalogSnapshots" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.002"/>
+  <testcase name="sharedCreateUsesOpaqueIdHighWaterAcrossReloadAndDeletion" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.003"/>
+  <testcase name="selectingServerPreservesPersistedIdPayloadAndSubscriptionAssociation" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="removingSelectedServerFallsBackToFirstRemainingAndEmptyCatalogStaysUnselected" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.0"/>
+  <testcase name="upsertingVisibleServerPreservesSelectionOfOpaqueRawRecord" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="disabledServerIsRejectedBeforePublication" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="sharedCreatePreservesTheSelectionOfAnOpaqueRawRecord" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.0"/>
+  <testcase name="sharedManualBatchUsesLatestHighWaterPrependsInOrderAndKeepsExistingSelection" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="transformedRecordCannotReplaceAnOpaqueRecordWithTheSameId" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="identityCatalogUpdatePreservesSelectionOfOpaqueRawRecord" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="catalogTransformUsesTheLatestHostLibraryAfterAnExternalAddition" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="catalogReplacementPublishesOnlyTheFinalOrderedSnapshotAndFallsBackToItsFirstServer" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.0"/>
+  <testcase name="identityCatalogUpdatePreservesExistingAndNullSelections" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="concurrentManualBatchCreateAndSubscriptionRefreshUseLatestLibrary" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.004"/>
+  <testcase name="transformErrorsInvalidServerIdsAndUnknownSelectionAreRejectedBeforePublication" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="nonpositiveNextServerIdIsRejectedBeforePublication" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.001"/>
+  <testcase name="updateCollectionPersistsAndPublishesReorderedServers" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.0"/>
+  <testcase name="failedManualBatchSaveLeavesPersistedAndPublishedOpaqueCatalogUnchanged" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.002"/>
+  <testcase name="sharedEditReplacesTheServerInPlaceAndPreservesItsAssociation" classname="app.skipi.desktop.DesktopProxyServerRepositoryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

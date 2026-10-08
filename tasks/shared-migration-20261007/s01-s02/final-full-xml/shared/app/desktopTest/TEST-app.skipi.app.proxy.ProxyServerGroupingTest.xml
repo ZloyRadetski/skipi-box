@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyServerGroupingTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.421Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="missingSelectionFallsBackToFirstVisibleThenManualGroup[desktop]" classname="app.skipi.app.proxy.ProxyServerGroupingTest" time="0.002"/>
+  <testcase name="ordersAutoBalancerSubscriptionsAndManualGroupsAndCountsBeforeSearch[desktop]" classname="app.skipi.app.proxy.ProxyServerGroupingTest" time="0.0"/>
+  <testcase name="allTabExcludesConfigOwnedStrategyServersButTabCountIncludesVisibleOnes[desktop]" classname="app.skipi.app.proxy.ProxyServerGroupingTest" time="0.0"/>
+  <testcase name="selectedAllTabKeepsAllIdAndResolvesBackingGroupToFirstVisibleGroup[desktop]" classname="app.skipi.app.proxy.ProxyServerGroupingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

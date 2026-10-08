@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionRefreshCommitPortTest[desktop]" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.848Z" hostname="VQSeGo" time="0.032">
+  <properties/>
+  <testcase name="commitReconcilesInsideLatestServerTransformThenUpdatesCurrentMetadataAndProfile[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.014"/>
+  <testcase name="deletedTargetIsInapplicableWithoutAnyCommitStep[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.001"/>
+  <testcase name="noEmbeddedHandoffStopsAfterCurrentMetadataUpdate[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.001"/>
+  <testcase name="serverSaveFailureReportsNoAppliedScopeAndDoesNotStartLaterSteps[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.001"/>
+  <testcase name="identityChangeBetweenCatalogAndMetadataStepsLeavesServerStepAppliedAndWithholdsProfile[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.001"/>
+  <testcase name="alreadyCancelledCallerDoesNotStartTheFirstPersistenceStep[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.001"/>
+  <testcase name="jobCancelledByServerCallbackStopsBeforeMetadataAndProfile[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.002"/>
+  <testcase name="profileSaveFailureReportsServersAndMetadataAsAlreadyApplied[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.001"/>
+  <testcase name="refreshSubscriptionFetchesAndParsesBeforeClockAndOrderedCommit[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.007"/>
+  <testcase name="cancellationDuringMetadataStepPropagatesWithoutApplyingProfile[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.001"/>
+  <testcase name="metadataSaveFailureReportsServerScopeAsAlreadyApplied[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.0"/>
+  <testcase name="ignoredEmbeddedHandoffDoesNotReportProfileAsApplied[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshCommitPortTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

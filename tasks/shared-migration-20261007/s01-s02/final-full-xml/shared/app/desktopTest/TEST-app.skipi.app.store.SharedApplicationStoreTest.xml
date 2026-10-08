@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SharedApplicationStoreTest[desktop]" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.701Z" hostname="VQSeGo" time="0.125">
+  <properties/>
+  <testcase name="removingEmptySetOfProxyServersIsANoOp[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.004"/>
+  <testcase name="proxyCollectionActionPreservesRequestedOrderAndRejectsDuplicateIds[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.004"/>
+  <testcase name="concurrentProxyServerBatchActionsKeepBothBatchesAndAllocateDistinctRanges[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.005"/>
+  <testcase name="selectingProxyServerUsesRepositoryAndPublishesSelectedRecord[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.003"/>
+  <testcase name="concurrentCatalogCreatesAllocateDistinctIdsFromTheLatestCatalog[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.004"/>
+  <testcase name="failedProxyServerBatchSaveLeavesCatalogUnchanged[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.002"/>
+  <testcase name="aggregatesPersistedCatalogsAndVolatileRuntimeSeparately[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.005"/>
+  <testcase name="validatesSelectionAndReportsMissingOptionalRepositoryAsRejected[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.003"/>
+  <testcase name="removingMultipleProxyServersPrunesCompositeReferencesAndPreservesCatalogMetadata[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.003"/>
+  <testcase name="removingUnselectedOrUnknownProxyServerPreservesSelectionAndHighWaterMark[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.003"/>
+  <testcase name="updateSubscriptionCatalogUsesRepositoryTransactionAndPublishesCounter[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.003"/>
+  <testcase name="proxyCatalogActionCommitsRecordsNextIdAndSelectionAsOneSnapshot[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.002"/>
+  <testcase name="failedCatalogCreateAtIdExhaustionLeavesThePersistedCatalogUntouched[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.003"/>
+  <testcase name="concurrent_dispatches_receive_unique_action_ids_and_clear_in_flight_actions[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.074"/>
+  <testcase name="routingAndResourceTransformsUpdateTheAggregate[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.003"/>
+  <testcase name="importingProxyServerBatchUsesRetainedIdHighWaterAndKeepsManualServersGrouped[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.002"/>
+  <testcase name="removingSelectedProxyServerPrunesCompositeReferencesAndPreservesCatalogMetadata[desktop]" classname="app.skipi.app.store.SharedApplicationStoreTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.subscription.SubscriptionRefreshOperationTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:53.078Z" hostname="VQSeGo" time="0.012">
+  <properties/>
+  <testcase name="reconciliationUsesLatestAggregateAndLatestOverrideWhileMergingPartialMetadata" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.001"/>
+  <testcase name="requestIdentityUsesOnlyTheAndroidFreshnessFields" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.0"/>
+  <testcase name="loadingUsesTheSameHostOptionsForRootProviderAndEmbeddedRequestsAndReturnsAndroidHandoff" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.002"/>
+  <testcase name="embeddedRequestFailureIsBestEffortButCancellationPropagates" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.002"/>
+  <testcase name="callerJobCancellationDuringProviderParsingIsNotHiddenByParserFallback" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.003"/>
+  <testcase name="omittedResponseIntervalKeepsCurrentDirectValueWhileRetainingStoredMetadata" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.0"/>
+  <testcase name="explicitProviderCancellationCaughtByParserFallsBackWhileCallerJobRemainsActive" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.001"/>
+  <testcase name="inlineEmbeddedConfigUsesSubscriptionSourceAndAndroidFallbackName" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.002"/>
+  <testcase name="embeddedConfigIsResolvedBeforeAnEmptyServerImportFails" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.0"/>
+  <testcase name="staleOrDeletedSubscriptionLeavesTheWholeAggregateUnchangedAndWithholdsEmbeddedConfig" classname="app.skipi.app.subscription.SubscriptionRefreshOperationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionProviderLibraryTest[desktop]" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.228Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="addOrReplaceKeepsStableIdAndProviderOptionsWhileMergingFetchedMetadata[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.003"/>
+  <testcase name="addManualGroupAssignsSequentialIdsPreservesOrderAndLeavesExistingEntriesIntact[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="updateProviderRejectsInvalidNonEmptyUrlAndDuplicateNonEmptyUrl[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.001"/>
+  <testcase name="providerEditRetainsFetchedMetadataAndRejectsUnsafeOrDuplicateValues[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="updateProviderAllowsEmptyUrlAndMultipleGroupsWithEmptyUrl[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="updateProviderRetainsMetadataWhenEditingToEmptyUrl[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="removeDeletesOnlyRequestedProvider[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="addManualGroupFindsFreePositiveIdWhenMaxIntIsPresent[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="addManualGroupRejectsBlankOrEmptyName[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="addManualGroupGeneratesIdOneForEmptyLibrary[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="addOrReplaceStillRejectsEmptyOrBlankUrl[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

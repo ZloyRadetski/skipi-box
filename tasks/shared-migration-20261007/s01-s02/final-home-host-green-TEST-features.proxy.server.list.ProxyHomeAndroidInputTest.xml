@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.list.ProxyHomeAndroidInputTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:21:07.178Z" hostname="VQSeGo" time="0.042">
+  <properties/>
+  <testcase name="disablesTunnelToggleWhenBusyOrWhenNoServerIsSelected" classname="features.proxy.server.list.ProxyHomeAndroidInputTest" time="0.016"/>
+  <testcase name="disablesTunnelToggleWhenAndroidCannotReadTunnelStatus" classname="features.proxy.server.list.ProxyHomeAndroidInputTest" time="0.005"/>
+  <testcase name="mapsNondefaultDisplayOptionsAndAllGroupKindsAccurately" classname="features.proxy.server.list.ProxyHomeAndroidInputTest" time="0.003"/>
+  <testcase name="mapsCompositeSummariesWithLocalizedSharedPresentationAndKeepsRegularAddresses" classname="features.proxy.server.list.ProxyHomeAndroidInputTest" time="0.004"/>
+  <testcase name="latencyAndDefaultSortingArePreservedThroughUiMapping" classname="features.proxy.server.list.ProxyHomeAndroidInputTest" time="0.012"/>
+  <testcase name="selectedServerOutsideVisibleGroupsKeepsItsTitleAndCanReconnect" classname="features.proxy.server.list.ProxyHomeAndroidInputTest" time="0.0"/>
+  <testcase name="mapsAllGroupMembershipSortedServersAndSubscriptionMetadata" classname="features.proxy.server.list.ProxyHomeAndroidInputTest" time="0.001"/>
+  <testcase name="canonicalSortingIsIdenticalBeforeAndAfterUiMappingWithFlagStrippedDisplayTitles" classname="features.proxy.server.list.ProxyHomeAndroidInputTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

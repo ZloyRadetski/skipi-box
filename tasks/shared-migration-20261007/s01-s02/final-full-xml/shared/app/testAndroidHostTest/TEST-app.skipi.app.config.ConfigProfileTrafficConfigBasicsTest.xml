@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.config.ConfigProfileTrafficConfigBasicsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:52.500Z" hostname="VQSeGo" time="0.088">
+  <properties/>
+  <testcase name="seedSuppliesOnlyMissingTypedDefaultsAndNeverReplacesEnvelopeIdentityOrRaw" classname="app.skipi.app.config.ConfigProfileTrafficConfigBasicsTest" time="0.072"/>
+  <testcase name="profileBasicsSaveRetainsTypedDocumentValuesAndExternalRawSections" classname="app.skipi.app.config.ConfigProfileTrafficConfigBasicsTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

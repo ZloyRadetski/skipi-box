@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayConfigTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.324Z" hostname="VQSeGo" time="0.014">
+  <properties/>
+  <testcase name="testBuildXrayOutboundPlanForSingleVlessServer" classname="engine.xray.XrayConfigTest" time="0.001"/>
+  <testcase name="testBuildXrayOutboundPlanUsesConcurrentObservatoryForBurstStartupGroup" classname="engine.xray.XrayConfigTest" time="0.0"/>
+  <testcase name="testStrategyGroupToShadowrocketLineForFallback" classname="engine.xray.XrayConfigTest" time="0.0"/>
+  <testcase name="testBalancerProbeIntervalPassedToObservatory" classname="engine.xray.XrayConfigTest" time="0.0"/>
+  <testcase name="testUpdatedSubscriptionWithCompletelyNewNodesRetainsBalancerMembers" classname="engine.xray.XrayConfigTest" time="0.005"/>
+  <testcase name="testBuildXrayOutboundPlanForLeastPingStrategyGroup" classname="engine.xray.XrayConfigTest" time="0.0"/>
+  <testcase name="testMaxTrafficDeltaIgnoresSmallProbeNoiseAndMaintainsStability" classname="engine.xray.XrayConfigTest" time="0.0"/>
+  <testcase name="testStrategyGroupToShadowrocketLineForUrlTest" classname="engine.xray.XrayConfigTest" time="0.0"/>
+  <testcase name="testBuildGeneratedXrayConfigWithActiveTrafficConfigRules" classname="engine.xray.XrayConfigTest" time="0.001"/>
+  <testcase name="testBuildXrayOutboundPlanForSelectStrategyGroup" classname="engine.xray.XrayConfigTest" time="0.001"/>
+  <testcase name="testStrategyGroupPersistenceAndDeserialization" classname="engine.xray.XrayConfigTest" time="0.001"/>
+  <testcase name="testBuildXrayOutboundPlanForFallbackStrategyGroup" classname="engine.xray.XrayConfigTest" time="0.0"/>
+  <testcase name="testShadowrocketProxyGroupDisplayModes" classname="engine.xray.XrayConfigTest" time="0.001"/>
+  <testcase name="testStrategyGroupPreservedDuringSubscriptionUpdate" classname="engine.xray.XrayConfigTest" time="0.001"/>
+  <testcase name="testProxyServerDomainsAndDohBootstrapInDirectDns" classname="engine.xray.XrayConfigTest" time="0.0"/>
+  <testcase name="testBuildXraySpeedTestConfigIsolatesOutboundAndDisablesFakeDns" classname="engine.xray.XrayConfigTest" time="0.002"/>
+  <testcase name="testBuildXrayOutboundPlanForLeastPingPrefersLowestLatencyFallback" classname="engine.xray.XrayConfigTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

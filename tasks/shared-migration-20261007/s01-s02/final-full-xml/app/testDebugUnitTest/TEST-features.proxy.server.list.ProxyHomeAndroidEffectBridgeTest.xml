@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.485Z" hostname="VQSeGo" time="0.02">
+  <properties/>
+  <testcase name="testBusyLatencyOperationIsNotStartedTwice" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.001"/>
+  <testcase name="finishedOldRunCannotClearTheNewRunBusyState" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.0"/>
+  <testcase name="selectingServerWhileDisconnectedUpdatesStateWithoutRestartAndDuplicateSelectionIsNoop" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.007"/>
+  <testcase name="testVisibleServersObeysIntendedVisibleSubset" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.001"/>
+  <testcase name="testGroupUsesHomeMembershipForAllAndAutoBalancerGroups" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.0"/>
+  <testcase name="hostLatencyStateBlocksNewTestsWithoutATrackedCoordinatorJob" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.001"/>
+  <testcase name="testVisibleServersSelectsTcpConnectWhenConfiguredAsTcp" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.002"/>
+  <testcase name="testGroupUsesOnlyGroupMembersAndExcludesOtherGroups" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.0"/>
+  <testcase name="selectingAnotherServerWhileRunningRequestsExactlyOneRestart" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.001"/>
+  <testcase name="testUnsupportedInvalidGroupIdFailsFast" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.001"/>
+  <testcase name="testCancelDispatchReachesRunningOperation" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.001"/>
+  <testcase name="toggleTunnelEffectInvokesAndroidTunnelControllerStartPathOnce" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.004"/>
+  <testcase name="testGroupSelectsRealConnectionWhenConfiguredAsHttp" classname="features.proxy.server.list.ProxyHomeAndroidEffectBridgeTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

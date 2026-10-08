@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionLibraryTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.413Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="persists_android_provider_options_through_edit_and_refresh" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.001"/>
+  <testcase name="rejects_invalid_urls" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.0"/>
+  <testcase name="rejects_invalid_advanced_provider_options_without_mutating_library" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.0"/>
+  <testcase name="persists_manual_groups_alongside_real_subscriptions_and_supports_isolated_edits" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.001"/>
+  <testcase name="persists_server_metadata_between_desktop_restarts" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.0"/>
+  <testcase name="normalizes_manual_url_before_replacing" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.0"/>
+  <testcase name="keeps_traffic_metadata_when_a_successful_response_has_no_userinfo_header" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.001"/>
+  <testcase name="persists_and_replaces_by_url" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.0"/>
+  <testcase name="updates_provider_fields_without_losing_id_or_fetched_metadata" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.001"/>
+  <testcase name="rejects_unsafe_or_ambiguous_provider_updates_without_mutating_library" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.0"/>
+  <testcase name="loads_legacy_json_with_safe_provider_defaults_and_persists_new_fields" classname="app.skipi.desktop.DesktopSubscriptionLibraryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

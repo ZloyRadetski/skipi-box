@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="XrayDnsPlanningTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.738Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="fakeDnsUsesCoreDefaultsAndKeepsTheRequiredDnsFallback[desktop]" classname="engine.xray.XrayDnsPlanningTest" time="0.004"/>
+  <testcase name="keepsSystemBootstrapOutsideTheDirectDnsLoop[desktop]" classname="engine.xray.XrayDnsPlanningTest" time="0.001"/>
+  <testcase name="plansValidatedDnsServersAndRequiredBootstrapDomains[desktop]" classname="engine.xray.XrayDnsPlanningTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

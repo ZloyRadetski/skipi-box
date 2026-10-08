@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyHomeInputProjectionTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:48.958Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="tunnelAvailabilityUsesConnectionPhaseBusyStateAndSelectedServerPresence[desktop]" classname="app.skipi.app.home.ProxyHomeInputProjectionTest" time="0.002"/>
+  <testcase name="projectionCarriesSelectedSummaryDisplayAndTunnelFailure[desktop]" classname="app.skipi.app.home.ProxyHomeInputProjectionTest" time="0.001"/>
+  <testcase name="actionAvailabilityIsDerivedFromSubscriptionGroupsSortAndCapabilities[desktop]" classname="app.skipi.app.home.ProxyHomeInputProjectionTest" time="0.0"/>
+  <testcase name="sharedPresentationReducerRetainsUnrelatedFieldsAndGatesSearchVisibility[desktop]" classname="app.skipi.app.home.ProxyHomeInputProjectionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

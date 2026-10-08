@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopMihomoPayloadImporterTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.022Z" hostname="VQSeGo" time="0.026">
+  <properties/>
+  <testcase name="emptyProviderBodyFallsBackToItsInlinePayloadAndCountsTheFallback" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.004"/>
+  <testcase name="importsJsonArrayOfXrayConfigs" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.004"/>
+  <testcase name="importsInlineAndProvidedHttpProviderPayloadsAndReportsMissingOnes" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.003"/>
+  <testcase name="importsTypicalMihomoProxyListWithSharedYamlLoader" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.003"/>
+  <testcase name="malformedProviderBodyFallsBackToItsInlinePayloadAndCountsTheFallback" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.003"/>
+  <testcase name="nonemptyHttpProviderBodyReplacesInlineFallbackAndKeepsRootOrder" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.001"/>
+  <testcase name="preservesEquivalentNodesAcrossTheRootAndProvider" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.001"/>
+  <testcase name="importsScalarAliasesAndBlockScalarCredentialsForSocksAndHttp" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.002"/>
+  <testcase name="importsPortableAmneziaWgYamlEvenWhenDesktopNativeRuntimeCannotRunIt" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.002"/>
+  <testcase name="usesSharedV2RayTransportMappingForDesktopYaml" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.001"/>
+  <testcase name="mihomoInlineStringPayloadIsNotRecursivelyTreatedAsAProxyUrl" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.001"/>
+  <testcase name="literalAncestorProviderUrlUsesTheNestedInlineFallback" classname="app.skipi.desktop.DesktopMihomoPayloadImporterTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

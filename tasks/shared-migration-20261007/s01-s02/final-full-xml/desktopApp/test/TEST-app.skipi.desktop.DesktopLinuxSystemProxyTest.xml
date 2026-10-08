@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopLinuxSystemProxyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:44.976Z" hostname="VQSeGo" time="0.008">
+  <properties/>
+  <testcase name="already_acquired_returns_idempotent_result" classname="app.skipi.desktop.DesktopLinuxSystemProxyTest" time="0.005"/>
+  <testcase name="forceClear_resets_proxy_and_deletes_lease" classname="app.skipi.desktop.DesktopLinuxSystemProxyTest" time="0.001"/>
+  <testcase name="recover_restores_interrupted_lease" classname="app.skipi.desktop.DesktopLinuxSystemProxyTest" time="0.001"/>
+  <testcase name="acquires_and_releases_exact_proxy_snapshot" classname="app.skipi.desktop.DesktopLinuxSystemProxyTest" time="0.001"/>
+  <system-out><![CDATA[[2026-10-08 16:26:44.981] [INFO] [SystemProxy] Acquired Linux system proxy (HTTP 10809, SOCKS 10808)
+[2026-10-08 16:26:44.982] [INFO] [SystemProxy] Acquired Linux system proxy (HTTP 10809, SOCKS 10808)
+[2026-10-08 16:26:44.983] [INFO] [SystemProxy] Acquired Linux system proxy (HTTP 10809, SOCKS 10808)
+[2026-10-08 16:26:44.983] [INFO] [SystemProxy] Recovered Linux system proxy from previous session
+[2026-10-08 16:26:44.984] [INFO] [SystemProxy] Acquired Linux system proxy (HTTP 10809, SOCKS 10808)
+[2026-10-08 16:26:44.984] [INFO] [SystemProxy] Released Linux system proxy
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

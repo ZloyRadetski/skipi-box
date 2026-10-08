@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.usecase.AndroidRuntimeStateRepositoryTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.532Z" hostname="VQSeGo" time="0.018">
+  <properties/>
+  <testcase name="status_read_cancellation_is_rethrown_without_publishing_failure" classname="features.proxy.server.usecase.AndroidRuntimeStateRepositoryTest" time="0.01"/>
+  <testcase name="refreshing_tunnel_status_preserves_other_runtime_fields" classname="features.proxy.server.usecase.AndroidRuntimeStateRepositoryTest" time="0.001"/>
+  <testcase name="ignores_stale_app_state_and_zeroes_cached_traffic_when_service_is_stopped" classname="features.proxy.server.usecase.AndroidRuntimeStateRepositoryTest" time="0.002"/>
+  <testcase name="status_read_failure_is_published_as_a_failed_snapshot" classname="features.proxy.server.usecase.AndroidRuntimeStateRepositoryTest" time="0.001"/>
+  <testcase name="background_service_and_selected_profile_changes_refresh_the_shared_snapshot" classname="features.proxy.server.usecase.AndroidRuntimeStateRepositoryTest" time="0.002"/>
+  <testcase name="proxy_running_changes_trigger_a_read_but_never_override_service_status" classname="features.proxy.server.usecase.AndroidRuntimeStateRepositoryTest" time="0.001"/>
+  <testcase name="cold_start_snapshot_uses_running_service_when_app_state_says_stopped" classname="features.proxy.server.usecase.AndroidRuntimeStateRepositoryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

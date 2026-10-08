@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionFetchPolicyTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-07T21:02:10.987Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="normalizes_timeout_seconds_to_android_fetcher_range[desktop]" classname="features.subscription.SubscriptionFetchPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

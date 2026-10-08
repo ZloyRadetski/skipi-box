@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.ConnectionDisplayModeTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.419Z" hostname="VQSeGo" time="0.0">
+  <properties/>
+  <testcase name="testClassicModeWithFloatingPowerButtonDisabled" classname="features.proxy.ConnectionDisplayModeTest" time="0.0"/>
+  <testcase name="testSubscriptionSwipeResolution" classname="features.proxy.ConnectionDisplayModeTest" time="0.0"/>
+  <testcase name="testPinConnectionPanelToggle" classname="features.proxy.ConnectionDisplayModeTest" time="0.0"/>
+  <testcase name="testConnectionPanelUnpinnedByDefault" classname="features.proxy.ConnectionDisplayModeTest" time="0.0"/>
+  <testcase name="testCompactModeAlwaysShowsPowerButtonAndToolbar" classname="features.proxy.ConnectionDisplayModeTest" time="0.0"/>
+  <testcase name="testClassicModeWithFloatingPowerButtonEnabled" classname="features.proxy.ConnectionDisplayModeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

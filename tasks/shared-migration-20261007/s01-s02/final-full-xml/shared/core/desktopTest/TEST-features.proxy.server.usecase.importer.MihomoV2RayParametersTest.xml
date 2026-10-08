@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="MihomoV2RayParametersTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.932Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="scalarAlpnIsRecognizedAsTlsLikeDesktopYamlImport[desktop]" classname="features.proxy.server.usecase.importer.MihomoV2RayParametersTest" time="0.0"/>
+  <testcase name="rejectsUnsupportedTransportSecurityOptionsBeforePlatformCodeRuns[desktop]" classname="features.proxy.server.usecase.importer.MihomoV2RayParametersTest" time="0.0"/>
+  <testcase name="normalizesYamlScalarsAndBuildsWebsocketEarlyDataParameters[desktop]" classname="features.proxy.server.usecase.importer.MihomoV2RayParametersTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

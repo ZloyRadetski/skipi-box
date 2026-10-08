@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.subscription.SubscriptionGroupRecordProjectionTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:52.577Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="record projection carries editor options metadata display and reminders" classname="app.skipi.ui.subscription.SubscriptionGroupRecordProjectionTest" time="0.003"/>
+  <testcase name="reverse projection edits group fields but retains existing fetched metadata and timestamp" classname="app.skipi.ui.subscription.SubscriptionGroupRecordProjectionTest" time="0.001"/>
+  <testcase name="new draft has no fetched metadata or update timestamp" classname="app.skipi.ui.subscription.SubscriptionGroupRecordProjectionTest" time="0.0"/>
+  <testcase name="default display name applies only to the Android built-in default group" classname="app.skipi.ui.subscription.SubscriptionGroupRecordProjectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

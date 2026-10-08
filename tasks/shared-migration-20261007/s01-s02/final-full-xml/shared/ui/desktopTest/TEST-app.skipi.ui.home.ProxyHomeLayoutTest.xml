@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyHomeLayoutTest[desktop]" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.314Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="floatingNavigationInsetMovesFromViewportToScrollableClearance[desktop]" classname="app.skipi.ui.home.ProxyHomeLayoutTest" time="0.003"/>
+  <testcase name="measuredFloatingNavigationInsetKeepsPinnedViewportFullAndAddsScrollableClearance[desktop]" classname="app.skipi.ui.home.ProxyHomeLayoutTest" time="0.0"/>
+  <testcase name="compactAndMediumWindowsUseOneColumnWhileExpandedWindowsShowDetailsPane[desktop]" classname="app.skipi.ui.home.ProxyHomeLayoutTest" time="0.0"/>
+  <testcase name="groupSwipeAdvancesInLogicalDirectionForLtrAndRtl[desktop]" classname="app.skipi.ui.home.ProxyHomeLayoutTest" time="0.0"/>
+  <testcase name="connectionStatusUsesSmallerTypeWhenTheCardHasLessTextWidth[desktop]" classname="app.skipi.ui.home.ProxyHomeLayoutTest" time="0.001"/>
+  <testcase name="compactLayoutForcesOneColumnWhileMediumAndExpandedHonorRequestedColumns[desktop]" classname="app.skipi.ui.home.ProxyHomeLayoutTest" time="0.0"/>
+  <testcase name="desktopPaddingStaysOnViewportWithoutAddingItToListClearance[desktop]" classname="app.skipi.ui.home.ProxyHomeLayoutTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

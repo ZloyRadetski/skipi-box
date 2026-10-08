@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyServerCopyTargetTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.523Z" hostname="VQSeGo" time="0.017">
+  <properties/>
+  <testcase name="copyTargetForAnAbsentIdIsAppendedWithoutChangingTheInput[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.014"/>
+  <testcase name="capturedServerIdAndSourceGroupAreKeptInsteadOfTheReturnGroup[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.0"/>
+  <testcase name="newDraftUsesTemporaryIdAndManualGroupWhenNoGroupWasCaptured[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.0"/>
+  <testcase name="copyTargetReplacesMatchingRowAtItsOriginalPositionWithoutChangingTheInput[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.002"/>
+  <testcase name="capturedAutoBalancerGroupIsKeptForPreview[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

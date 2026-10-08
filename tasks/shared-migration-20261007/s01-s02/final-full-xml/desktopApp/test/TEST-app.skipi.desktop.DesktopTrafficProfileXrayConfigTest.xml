@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.481Z" hostname="VQSeGo" time="0.009">
+  <properties/>
+  <testcase name="resolvesProxyGroupMemberWhenSubscriptionRemarkHasCountryFlag" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.004"/>
+  <testcase name="compilesActiveProfileRulesDnsAndProxyGroupsIntoDesktopXrayJson" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.002"/>
+  <testcase name="preservesExplicitDomainPrefixInRuleSet" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.0"/>
+  <testcase name="switchingProfilesKeepsRulesAndSkipiStrategyIsolatedToEachConfDocument" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.001"/>
+  <testcase name="serializesProcessNameWithXrayProcessField" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.0"/>
+  <testcase name="addsHttpInboundForSystemProxyWithoutChangingSocksInbound" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.001"/>
+  <testcase name="refusesProfilePolicyThatCannotBeResolvedToDesktopServerOrGroup" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.0"/>
+  <testcase name="failsFastForRulesThatNeedDesktopResourcesNotBundledWithXray" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.001"/>
+  <testcase name="usesSharedDnsValidationForProfileDnsServers" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.0"/>
+  <testcase name="rejectsTrafficProfileHttpInboundOutsideLoopback" classname="app.skipi.desktop.DesktopTrafficProfileXrayConfigTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

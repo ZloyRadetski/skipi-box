@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.AndroidResourceFileStoreTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.705Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="testProfileActivatesItsOwnBundledSnapshotWhenProviderChanges" classname="features.resources.runtime.AndroidResourceFileStoreTest" time="0.0"/>
+  <testcase name="testResourceFileSourceAssetDirMapping" classname="features.resources.runtime.AndroidResourceFileStoreTest" time="0.0"/>
+  <testcase name="testLegacyUnscopedDirectoryDoesNotReinterpretItsProvider" classname="features.resources.runtime.AndroidResourceFileStoreTest" time="0.0"/>
+  <testcase name="testShouldRestoreBundledOnPackageUpdateForPresets" classname="features.resources.runtime.AndroidResourceFileStoreTest" time="0.001"/>
+  <testcase name="testShouldNotRestoreCustomSourceOnPackageUpdate" classname="features.resources.runtime.AndroidResourceFileStoreTest" time="0.0"/>
+  <testcase name="testShouldNotRestoreWhenTargetIsNewerThanBundled" classname="features.resources.runtime.AndroidResourceFileStoreTest" time="0.0"/>
+  <testcase name="testShouldRestoreBundledWhenMissingOrEmpty" classname="features.resources.runtime.AndroidResourceFileStoreTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

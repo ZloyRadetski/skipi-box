@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyServerCatalogOperationsTest[desktop]" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.405Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="createSelectsTheFirstAvailableServerWhenTheOldSelectionIsMissing[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.001"/>
+  <testcase name="importBatchAllocatesAboveRetainedIdsAndPreservesRetainedSelection[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="importBatchRejectsInvalidOrExhaustedIdsWithoutMutatingTheCatalog[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="createRejectsNonPositiveCatalogCountersInsteadOfProducingInvalidIds[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="createAllocatesAboveRetainedIdsWhenTheCatalogCounterIsStale[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="successiveCreatesUseTheUpdatedCatalogAndAdvanceIds[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="createAfterAnImportTakesTheDraftIdUsesTheCurrentCatalogAndKeepsBothServers[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="createPreservesASelectedRetainedServerId[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="emptyImportBatchReturnsTheSameCatalogWithoutChangingMetadata[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="createPrependsAndPreservesAnExistingSelection[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="createDoesNotReuseIdsBelowTheHighestPersistedServerWhenCounterIsStale[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="importBatchPrependsInInputOrderAsManualAndPreservesAnExistingSelection[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="editPreservesASelectedRetainedServerIdAndItsMetadata[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.001"/>
+  <testcase name="editingARecordRemovedWhileTheEditorWasOpenRestoresItsCapturedIdAndGroup[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="importBatchSelectsFirstNewServerWhenSelectionIsMissingAndKeepsRepeatedServers[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="createRespectsTheCatalogHighWaterMarkEvenWhenNoRecordUsesIt[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="createAtTheIntMaxBoundaryFailsWithoutChangingTheCatalog[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <testcase name="editReplacesTheServerAtItsCurrentPositionAndPreservesIdentityAndMetadata[desktop]" classname="app.skipi.app.proxy.ProxyServerCatalogOperationsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

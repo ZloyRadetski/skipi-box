@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopCoreFfmIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:27:19.407Z" hostname="VQSeGo" time="0.228">
+  <properties/>
+  <testcase name="startsAndStopsTheBundledCoreInsideTheDesktopJvm" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.225"/>
+  <system-out><![CDATA[[2026-10-08 16:27:19.627] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 1)
+[2026-10-08 16:27:19.634] [INFO] [CoreController] Stopped in-process SKIPI Core session 1
+[2026-10-08 16:27:19.635] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 2)
+[2026-10-08 16:27:19.635] [INFO] [CoreController] Stopped in-process SKIPI Core session 2
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

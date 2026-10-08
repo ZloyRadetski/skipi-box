@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.TrafficProfileXrayPlannerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.771Z" hostname="VQSeGo" time="0.034">
+  <properties/>
+  <testcase name="resolvesLocalProxyGroupsAndCompilesTheirRoutingTargets" classname="engine.xray.TrafficProfileXrayPlannerTest" time="0.028"/>
+  <testcase name="rejectsUnknownPoliciesAndDesktopUnsupportedRules" classname="engine.xray.TrafficProfileXrayPlannerTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

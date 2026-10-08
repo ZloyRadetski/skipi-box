@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="MihomoYamlPayloadParserTest[desktop]" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.934Z" hostname="VQSeGo" time="0.012">
+  <properties/>
+  <testcase name="invalidRecursiveAndUnavailableProviderUrlsUseInlineNodesInDeclarationOrder[desktop]" classname="features.proxy.server.usecase.importer.MihomoYamlPayloadParserTest" time="0.005"/>
+  <testcase name="siblingProvidersAreFetchedIndependentlyAndDuplicateServersArePreserved[desktop]" classname="features.proxy.server.usecase.importer.MihomoYamlPayloadParserTest" time="0.002"/>
+  <testcase name="rejectedNodesAreReportedAndSummaryCountsOnlyTheCurrentDocument[desktop]" classname="features.proxy.server.usecase.importer.MihomoYamlPayloadParserTest" time="0.001"/>
+  <testcase name="failedAndCancelledProviderFetchesFallBackAndExposeSafeDiagnostics[desktop]" classname="features.proxy.server.usecase.importer.MihomoYamlPayloadParserTest" time="0.001"/>
+  <testcase name="emptyProviderResultFallsBackToInlineNodesAndDoesNotCountRemoteBody[desktop]" classname="features.proxy.server.usecase.importer.MihomoYamlPayloadParserTest" time="0.0"/>
+  <testcase name="remoteProviderServersReplaceInlineNodesAndKeepAndroidCountsAndOrder[desktop]" classname="features.proxy.server.usecase.importer.MihomoYamlPayloadParserTest" time="0.001"/>
+  <testcase name="providerAtDepthLimitIsFetchedBeforeChildPipelineBlocksItsBody[desktop]" classname="features.proxy.server.usecase.importer.MihomoYamlPayloadParserTest" time="0.001"/>
+  <testcase name="loadFailureReturnsEmptyAndForwardsTheOriginalError[desktop]" classname="features.proxy.server.usecase.importer.MihomoYamlPayloadParserTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

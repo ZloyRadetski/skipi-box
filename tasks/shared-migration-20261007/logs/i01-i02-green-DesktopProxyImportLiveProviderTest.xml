@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyImportLiveProviderTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-07T20:28:06.714Z" hostname="VQSeGo" time="0.112">
+  <properties/>
+  <testcase name="cancellingLivePlannerDuringProviderFetchDoesNotReachCommit" classname="app.skipi.desktop.DesktopProxyImportLiveProviderTest" time="0.071"/>
+  <testcase name="liveFileImportDecodesBase64RootAndProviderPayloads" classname="app.skipi.desktop.DesktopProxyImportLiveProviderTest" time="0.007"/>
+  <testcase name="liveProviderFetchFailureKeepsTheInlineFallback" classname="app.skipi.desktop.DesktopProxyImportLiveProviderTest" time="0.001"/>
+  <testcase name="liveClipboardImportFetchesProvidersFromRawYaml" classname="app.skipi.desktop.DesktopProxyImportLiveProviderTest" time="0.002"/>
+  <testcase name="livePlannerFetchesRepeatedProviderUrlsIndependentlyInOrder" classname="app.skipi.desktop.DesktopProxyImportLiveProviderTest" time="0.001"/>
+  <testcase name="livePlannerKeepsShadowrocketProfileWithProxyUrlWithoutFetchingProviders" classname="app.skipi.desktop.DesktopProxyImportLiveProviderTest" time="0.027"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

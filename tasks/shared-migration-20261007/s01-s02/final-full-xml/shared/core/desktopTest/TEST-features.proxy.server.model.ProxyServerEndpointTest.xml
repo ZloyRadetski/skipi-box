@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyServerEndpointTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.885Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="resolves_and_normalizes_direct_proxy_endpoints[desktop]" classname="features.proxy.server.model.ProxyServerEndpointTest" time="0.001"/>
+  <testcase name="rejects_empty_or_invalid_direct_endpoints[desktop]" classname="features.proxy.server.model.ProxyServerEndpointTest" time="0.0"/>
+  <testcase name="resolves_special_and_custom_proxy_endpoints[desktop]" classname="features.proxy.server.model.ProxyServerEndpointTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

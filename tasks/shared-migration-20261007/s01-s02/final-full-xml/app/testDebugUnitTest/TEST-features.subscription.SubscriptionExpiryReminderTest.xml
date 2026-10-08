@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionExpiryReminderTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.781Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="reminders_sorting_and_deduplication_by_totalSeconds" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.0"/>
+  <testcase name="subscription_group_notifyOnExpiry_defaults_and_custom_reminders" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.001"/>
+  <testcase name="serialization_and_deserialization_roundtrip_works" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.0"/>
+  <testcase name="invalid_serialized_string_returns_null" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.0"/>
+  <testcase name="totalSeconds_calculates_correct_seconds_for_each_unit" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

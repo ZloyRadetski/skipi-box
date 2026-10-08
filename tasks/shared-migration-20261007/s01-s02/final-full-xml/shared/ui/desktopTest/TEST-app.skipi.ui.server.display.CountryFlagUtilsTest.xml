@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="CountryFlagUtilsTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.353Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="extractLeadingCountryFlag_returnsNullWhenNoFlag[desktop]" classname="app.skipi.ui.server.display.CountryFlagUtilsTest" time="0.001"/>
+  <testcase name="stripLeadingCountryFlag_removesFlagAndTrims[desktop]" classname="app.skipi.ui.server.display.CountryFlagUtilsTest" time="0.0"/>
+  <testcase name="strategyGroupContainsMember_explicitList[desktop]" classname="app.skipi.ui.server.display.CountryFlagUtilsTest" time="0.004"/>
+  <testcase name="extractLeadingCountryFlag_extractsRegionalIndicators[desktop]" classname="app.skipi.ui.server.display.CountryFlagUtilsTest" time="0.0"/>
+  <testcase name="strategyGroupContainsMember_filterMatching[desktop]" classname="app.skipi.ui.server.display.CountryFlagUtilsTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.TrafficConfigImportUpdateTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.387Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="repeated_import_with_embedded_subscription_base64_updates_existing_config" classname="features.config.TrafficConfigImportUpdateTest" time="0.0"/>
+  <testcase name="deepLinkServerAdditionIsAnAtomicCatalogTransform" classname="features.config.TrafficConfigImportUpdateTest" time="0.002"/>
+  <testcase name="importingProfileDoesNotWriteProxyCatalogBeforeSharedReconciliation" classname="features.config.TrafficConfigImportUpdateTest" time="0.0"/>
+  <testcase name="repeated_onadd_import_updates_config_without_reactivating_it" classname="features.config.TrafficConfigImportUpdateTest" time="0.0"/>
+  <testcase name="repeated_import_with_source_url_updates_existing_config" classname="features.config.TrafficConfigImportUpdateTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

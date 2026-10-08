@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.networkautomation.engine.NetworkAutomationEvaluatorTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.411Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="testMakeDecisionForSwitchIfConnected" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.002"/>
+  <testcase name="testFindMatchingRuleForSpecificWifiSsid" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.001"/>
+  <testcase name="testFindMatchingRuleWifiTakesPrecedenceOverCellularWhenBothReported" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.0"/>
+  <testcase name="testMakeDecisionForNullRule" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.0"/>
+  <testcase name="physical Internet may trigger automation before validation completes" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.0"/>
+  <testcase name="SSID access is only needed for an enabled specific Wi-Fi rule" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.0"/>
+  <testcase name="testMakeDecisionForDisconnectVpn" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.001"/>
+  <testcase name="testMakeDecisionForSwitchServerAlways" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.0"/>
+  <testcase name="testFindMatchingRuleFallbackToAnyWifi" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.0"/>
+  <testcase name="testFindMatchingRuleForCellular" classname="features.networkautomation.engine.NetworkAutomationEvaluatorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

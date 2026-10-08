@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.settings.CoreMemoryStatsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.769Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="coreMemoryStats_deserializes_valid_json" classname="features.settings.CoreMemoryStatsTest" time="0.001"/>
+  <testcase name="coreMemoryStats_handles_empty_or_default_values" classname="features.settings.CoreMemoryStatsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

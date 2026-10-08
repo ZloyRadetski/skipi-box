@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.proxy.StrategyGroupStartupFallbackTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.199Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="strategyGroupWithMultipleReachableMembersPicksLowestLatency" classname="engine.proxy.StrategyGroupStartupFallbackTest" time="0.001"/>
+  <testcase name="fallbackGroupUsesReachableStartupMember" classname="engine.proxy.StrategyGroupStartupFallbackTest" time="0.0"/>
+  <testcase name="resolves_only_members_of_the_selected_group_from_observed_outbound_tags" classname="engine.proxy.StrategyGroupStartupFallbackTest" time="0.001"/>
+  <testcase name="usesFastestReachableMemberAsTransientBalancerFallback" classname="engine.proxy.StrategyGroupStartupFallbackTest" time="0.0"/>
+  <testcase name="doesNotAssignFallbackWhenNoCandidateWasReachable" classname="engine.proxy.StrategyGroupStartupFallbackTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

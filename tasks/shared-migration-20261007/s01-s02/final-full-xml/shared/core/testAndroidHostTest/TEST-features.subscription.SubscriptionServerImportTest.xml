@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionServerImportTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.256Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="accepts_servers_satisfying_basic_validation" classname="features.subscription.SubscriptionServerImportTest" time="0.006"/>
+  <testcase name="imports_base64_encoded_subscription" classname="features.subscription.SubscriptionServerImportTest" time="0.0"/>
+  <testcase name="imports_line_based_subscription_and_rejects_invalid_proxy_urls" classname="features.subscription.SubscriptionServerImportTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

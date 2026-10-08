@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopDeviceIdentityTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:44.950Z" hostname="VQSeGo" time="0.011">
+  <properties/>
+  <testcase name="hardwareIdentifierIsNotEmpty" classname="app.skipi.desktop.DesktopDeviceIdentityTest" time="0.0"/>
+  <testcase name="generatesExpectedDeviceHeaders" classname="app.skipi.desktop.DesktopDeviceIdentityTest" time="0.009"/>
+  <testcase name="generatesConsistentHwidForSameInputs" classname="app.skipi.desktop.DesktopDeviceIdentityTest" time="0.001"/>
+  <testcase name="producesDifferentHwidForDifferentInstallationUuids" classname="app.skipi.desktop.DesktopDeviceIdentityTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,34 @@
+[
+  {
+    "suite": "desktopApp/build/test-results/test",
+    "files": 40,
+    "tests": 246,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "shared/app/build/test-results/desktopTest",
+    "files": 22,
+    "tests": 134,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "shared/app/build/test-results/testAndroidHostTest",
+    "files": 22,
+    "tests": 134,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "app/build/test-results/testDebugUnitTest",
+    "files": 92,
+    "tests": 398,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

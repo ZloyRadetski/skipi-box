@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="platform.CoreTrafficTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.288Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="rejectsMalformedCoreSnapshot" classname="platform.CoreTrafficTest" time="0.002"/>
+  <testcase name="notification_requests_obey_shared_polling_limits" classname="platform.CoreTrafficTest" time="0.001"/>
+  <testcase name="uses_fast_polling_only_for_visible_meaningful_traffic" classname="platform.CoreTrafficTest" time="0.0"/>
+  <testcase name="parsesCoreSnapshotAndMapsInboundTrafficToTunnelContract" classname="platform.CoreTrafficTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

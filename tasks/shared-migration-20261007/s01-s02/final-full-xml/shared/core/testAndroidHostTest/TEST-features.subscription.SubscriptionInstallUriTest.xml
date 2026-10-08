@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionInstallUriTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.227Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="client_links_preserve_source_and_prefer_explicit_names" classname="features.subscription.SubscriptionInstallUriTest" time="0.003"/>
+  <testcase name="rejects_untrusted_or_invalid_links_and_identifies_known_custom_uris" classname="features.subscription.SubscriptionInstallUriTest" time="0.001"/>
+  <testcase name="direct_urls_follow_the_platform_scheme_policy" classname="features.subscription.SubscriptionInstallUriTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

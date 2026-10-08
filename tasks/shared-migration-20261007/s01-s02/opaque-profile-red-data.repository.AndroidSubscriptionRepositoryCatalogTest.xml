@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="data.repository.AndroidSubscriptionRepositoryCatalogTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T07:20:55.452Z" hostname="VQSeGo" time="2.556">
+  <properties/>
+  <testcase name="removeUsesSharedCleanupAndPreservesAndroidGroupAndServerState" classname="data.repository.AndroidSubscriptionRepositoryCatalogTest" time="2.377"/>
+  <testcase name="updateCatalogWritesAndroidGroupsAndCurrentHighWaterCounterTogether" classname="data.repository.AndroidSubscriptionRepositoryCatalogTest" time="0.047"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

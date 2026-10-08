@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionFetcherTest" tests="23" skipped="0" failures="2" errors="0" timestamp="2026-10-07T21:04:44.545Z" hostname="VQSeGo" time="0.293">
+  <properties/>
+  <testcase name="rejects_private_loopback_and_metadata_automatic_resource_urls" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="rejects_a_third_redirect_hop_for_a_direct_subscription_fetch" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.143"/>
+  <testcase name="routes_through_socks_proxy_when_proxy_specified" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.008"/>
+  <testcase name="fetches_subscription_body_headers_and_user_agent" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.027"/>
+  <testcase name="converts_a_unicode_host_to_ascii_before_a_direct_request" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.019"/>
+  <testcase name="accepts_public_automatic_resource_url" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.001"/>
+  <testcase name="remote_embedded_config_rejects_a_loopback_url_before_fetching" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="accepts_a_response_larger_than_the_old_desktop_body_cap" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.053"/>
+  <testcase name="sends_device_headers_with_http_client_and_url_connection" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.005"/>
+  <testcase name="follows_any_three_hundred_redirect_for_a_direct_subscription_fetch" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.004"/>
+  <testcase name="preserves_android_empty_embedded_userinfo_basic_auth_behavior" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.001">
+    <failure message="java.lang.AssertionError: expected:&lt;Basic Og==&gt; but was:&lt;null&gt;" type="java.lang.AssertionError">java.lang.AssertionError: expected:&lt;Basic Og==&gt; but was:&lt;null&gt;
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at kotlin.test.junit.JUnitAsserter.assertEquals(JUnitSupport.kt:32)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals(Assertions.kt:63)
+	at kotlin.test.AssertionsKt.assertEquals(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals$default(Assertions.kt:62)
+	at kotlin.test.AssertionsKt.assertEquals$default(Unknown Source)
+	at app.skipi.desktop.DesktopSubscriptionFetcherTest.preserves_android_empty_embedded_userinfo_basic_auth_behavior(DesktopSubscriptionFetcherTest.kt:276)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:174)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="rejects_invalid_ports_for_subscription_socks_proxy" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="withAuthenticator_provides_credentials_for_socks_proxy" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.001"/>
+  <testcase name="resolvesInlineRoutingConfigFromSubscriptionMetadata" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.003"/>
+  <testcase name="accepts_loopback_hosts_for_subscription_socks_proxy" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.002"/>
+  <testcase name="rejects_hostname_when_dns_resolution_includes_a_private_address" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="exposes_non_success_http_statuses" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.003"/>
+  <testcase name="refuses_loopback_mihomo_provider_without_touching_the_local_endpoint" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.01"/>
+  <testcase name="direct_fetch_uses_connection_timeouts_clamped_to_the_android_range" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.004">
+    <failure message="java.lang.AssertionError: expected:&lt;[null, null]&gt; but was:&lt;[]&gt;" type="java.lang.AssertionError">java.lang.AssertionError: expected:&lt;[null, null]&gt; but was:&lt;[]&gt;
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at kotlin.test.junit.JUnitAsserter.assertEquals(JUnitSupport.kt:32)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals(Assertions.kt:63)
+	at kotlin.test.AssertionsKt.assertEquals(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals$default(Assertions.kt:62)
+	at kotlin.test.AssertionsKt.assertEquals$default(Unknown Source)
+	at app.skipi.desktop.DesktopSubscriptionFetcherTest.direct_fetch_uses_connection_timeouts_clamped_to_the_android_range$lambda$0(DesktopSubscriptionFetcherTest.kt:257)
+	at app.skipi.desktop.DesktopSubscriptionFetcherTestKt.withSubscriptionServer(DesktopSubscriptionFetcherTest.kt:513)
+	at app.skipi.desktop.DesktopSubscriptionFetcherTestKt.access$withSubscriptionServer(DesktopSubscriptionFetcherTest.kt:1)
+	at app.skipi.desktop.DesktopSubscriptionFetcherTest.direct_fetch_uses_connection_timeouts_clamped_to_the_android_range(DesktopSubscriptionFetcherTest.kt:237)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:174)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="rejects_non_loopback_or_untrimmed_hosts_for_subscription_socks_proxy" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="subscription_updates_directly_when_vpn_is_off_even_if_updateViaProxy_is_enabled" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.0"/>
+  <testcase name="decrypts_age_body_before_import_and_sends_the_derived_public_key" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.003"/>
+  <testcase name="sends_embedded_basic_auth_header" classname="app.skipi.desktop.DesktopSubscriptionFetcherTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

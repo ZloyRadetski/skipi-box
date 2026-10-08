@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyHomePresentationTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.901Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="explicit search visibility overrides current value[desktop]" classname="features.proxy.server.presentation.ProxyHomePresentationTest" time="0.0"/>
+  <testcase name="hiding search preserves its query[desktop]" classname="features.proxy.server.presentation.ProxyHomePresentationTest" time="0.0"/>
+  <testcase name="group selection changes only selected group[desktop]" classname="features.proxy.server.presentation.ProxyHomePresentationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

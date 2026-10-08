@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopServerLibraryTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.191Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="updateReplacesTheExistingServerRatherThanAppendingADuplicate" classname="app.skipi.desktop.DesktopServerLibraryTest" time="0.0"/>
+  <testcase name="refreshKeepsStableIdsAndTheCurrentSelectionForUnchangedSubscriptionServers" classname="app.skipi.desktop.DesktopServerLibraryTest" time="0.001"/>
+  <testcase name="libraryRoundTripsTheSharedServerPayloadAndSelection" classname="app.skipi.desktop.DesktopServerLibraryTest" time="0.001"/>
+  <testcase name="replacingSubscriptionServersDoesNotTouchManualOrOtherSubscriptionGroups" classname="app.skipi.desktop.DesktopServerLibraryTest" time="0.001"/>
+  <testcase name="removingSubscriptionServersDeletesOpaqueTargetsAndPrunesCompositeReferences" classname="app.skipi.desktop.DesktopServerLibraryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

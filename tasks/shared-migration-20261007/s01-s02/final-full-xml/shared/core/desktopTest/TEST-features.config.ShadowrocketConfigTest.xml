@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ShadowrocketConfigTest[desktop]" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.835Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="decodesPortableInlineSkipiConfigPayload[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.001"/>
+  <testcase name="withoutShadowrocketProxyGroupLineRemovesExpectedGroup[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.001"/>
+  <testcase name="parserReportsMoreThanOneFinalRuleWithoutDiscardingThem[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.0"/>
+  <testcase name="portableSectionValueEditKeepsAndroidSpecificMetadataAndComments[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.001"/>
+  <testcase name="parserReadsPortableProfileGroupExtensions[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.0"/>
+  <testcase name="generalEditPreservesUnsupportedSectionsAndComments[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.0"/>
+  <testcase name="defaultShadowrocketConfigEnablesIpv6ByDefault[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

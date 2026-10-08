@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.427Z" hostname="VQSeGo" time="0.044">
+  <properties/>
+  <testcase name="importsAmneziaWgYamlToPortableServerModel" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.023"/>
+  <testcase name="providerAtDepthLimitIsFetchedBeforeItsBodyIsBlocked" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.005"/>
+  <testcase name="duplicateNodesFromRootAndRemoteProviderArePreserved" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.003"/>
+  <testcase name="failedProviderFetchFallsBackToInlineNodes" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.002"/>
+  <testcase name="remoteProviderServersReplaceItsInlineNodes" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.002"/>
+  <testcase name="cancellationExceptionFromProviderFetcherFallsBackToInlineNodes" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.002"/>
+  <testcase name="onlySubscriptionSourcesDecodeBase64Payloads" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.003"/>
+  <testcase name="literalAncestorUrlCycleUsesNestedInlineNodesWithoutRefetching" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.002"/>
+  <testcase name="emptyProviderDocumentFallsBackToInlineNodes" classname="features.proxy.server.importer.ProxyServerMihomoProviderImportTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

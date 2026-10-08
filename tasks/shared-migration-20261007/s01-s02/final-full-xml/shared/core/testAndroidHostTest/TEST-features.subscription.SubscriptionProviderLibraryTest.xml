@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionProviderLibraryTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.238Z" hostname="VQSeGo" time="0.013">
+  <properties/>
+  <testcase name="addOrReplaceKeepsStableIdAndProviderOptionsWhileMergingFetchedMetadata" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.01"/>
+  <testcase name="addManualGroupAssignsSequentialIdsPreservesOrderAndLeavesExistingEntriesIntact" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.001"/>
+  <testcase name="updateProviderRejectsInvalidNonEmptyUrlAndDuplicateNonEmptyUrl" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.001"/>
+  <testcase name="providerEditRetainsFetchedMetadataAndRejectsUnsafeOrDuplicateValues" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.001"/>
+  <testcase name="updateProviderAllowsEmptyUrlAndMultipleGroupsWithEmptyUrl" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="updateProviderRetainsMetadataWhenEditingToEmptyUrl" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="removeDeletesOnlyRequestedProvider" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="addManualGroupFindsFreePositiveIdWhenMaxIntIsPresent" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="addManualGroupRejectsBlankOrEmptyName" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="addManualGroupGeneratesIdOneForEmptyLibrary" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="addOrReplaceStillRejectsEmptyOrBlankUrl" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

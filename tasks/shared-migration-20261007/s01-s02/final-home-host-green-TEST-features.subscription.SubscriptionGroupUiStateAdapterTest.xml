@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionGroupUiStateAdapterTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:21:07.358Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="Android reverse adapter retains fetched values from original state" classname="features.subscription.SubscriptionGroupUiStateAdapterTest" time="0.002"/>
+  <testcase name="Android state projects its display name and all stored editor fields" classname="features.subscription.SubscriptionGroupUiStateAdapterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

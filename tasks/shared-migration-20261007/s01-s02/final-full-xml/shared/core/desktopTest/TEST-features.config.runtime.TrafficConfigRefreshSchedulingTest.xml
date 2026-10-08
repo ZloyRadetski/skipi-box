@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigRefreshSchedulingTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.856Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="reconciles_profile_and_geo_work_independently[desktop]" classname="features.config.runtime.TrafficConfigRefreshSchedulingTest" time="0.002"/>
+  <testcase name="produces_stable_work_names_for_each_work_kind[desktop]" classname="features.config.runtime.TrafficConfigRefreshSchedulingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

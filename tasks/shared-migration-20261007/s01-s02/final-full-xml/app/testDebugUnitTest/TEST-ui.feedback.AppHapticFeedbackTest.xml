@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ui.feedback.AppHapticFeedbackTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.926Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="testComposeHapticsAreRoutedToApplicationHaptics" classname="ui.feedback.AppHapticFeedbackTest" time="0.001"/>
+  <testcase name="testDefaultAppStateEnableHapticsIsTrue" classname="ui.feedback.AppHapticFeedbackTest" time="0.0"/>
+  <testcase name="testAppStateEnableHapticsMutation" classname="ui.feedback.AppHapticFeedbackTest" time="0.0"/>
+  <testcase name="testBackupRestorePreservesEnableHapticsFalse" classname="ui.feedback.AppHapticFeedbackTest" time="0.0"/>
+  <testcase name="testBackupRestorePreservesEnableHapticsTrue" classname="ui.feedback.AppHapticFeedbackTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

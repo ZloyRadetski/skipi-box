@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.TrafficConfigProxyGroupIsolationTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.391Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="balancer_plan_picks_alive_node_as_fallback_ignoring_failed_nodes" classname="features.config.TrafficConfigProxyGroupIsolationTest" time="0.0"/>
+  <testcase name="all_tab_excludes_config_internal_proxy_groups" classname="features.config.TrafficConfigProxyGroupIsolationTest" time="0.004"/>
+  <testcase name="withActiveTrafficConfig_switches_active_groups_seamlessly" classname="features.config.TrafficConfigProxyGroupIsolationTest" time="0.0"/>
+  <testcase name="isVisibleOnProxyServerList_hides_inactive_config_groups" classname="features.config.TrafficConfigProxyGroupIsolationTest" time="0.0"/>
+  <testcase name="withConfigProxyGroupsReflected_resolves_members_with_quotes_and_country_flags" classname="features.config.TrafficConfigProxyGroupIsolationTest" time="0.0"/>
+  <testcase name="withConfigProxyGroupsReflected_only_reflects_active_config_groups" classname="features.config.TrafficConfigProxyGroupIsolationTest" time="0.001"/>
+  <testcase name="trafficConfigPage_global_proxy_groups_excludes_config_sourced_groups" classname="features.config.TrafficConfigProxyGroupIsolationTest" time="0.0"/>
+  <testcase name="hysteria2_toXrayOutbound_fallbacks_serverName_and_normalizes_bandwidth" classname="features.config.TrafficConfigProxyGroupIsolationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="NetworkAutomationPolicyTest[desktop]" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.860Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="cellular rule is used when cellular is the preferred observed transport[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.002"/>
+  <testcase name="missing SSID with no any Wi-Fi rule makes no change[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="specific Wi-Fi rule overrides any Wi-Fi and matches SSID ignoring case and surrounding spaces[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="disabled automation and on-demand VPN do not produce actions[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="manual rule can switch only to an available server[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.001"/>
+  <testcase name="disabled rules and absent network do not match[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="Wi-Fi takes priority over Ethernet and cellular when multiple transports are reported[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="Ethernet takes priority over cellular and has no configured rule action[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="missing SSID falls back to any Wi-Fi rule[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="SSID collection is required only for enabled specific Wi-Fi rules[desktop]" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

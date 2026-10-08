@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopLocalProxyReadinessTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:44.985Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="succeeds_after_a_retry_when_xray_is_alive" classname="app.skipi.desktop.DesktopLocalProxyReadinessTest" time="0.001"/>
+  <testcase name="fails_without_touching_the_os_proxy_when_xray_exits" classname="app.skipi.desktop.DesktopLocalProxyReadinessTest" time="0.001"/>
+  <testcase name="rechecks_that_xray_is_alive_after_the_port_accepts_connections" classname="app.skipi.desktop.DesktopLocalProxyReadinessTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

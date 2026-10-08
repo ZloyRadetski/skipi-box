@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.TrafficConfigDnsTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.384Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="testParseAndSerializeDnsSettingsInTrafficConfig" classname="features.config.TrafficConfigDnsTest" time="0.001"/>
+  <testcase name="standard_profile_dns_and_hosts_override_stale_android_profile_values" classname="features.config.TrafficConfigDnsTest" time="0.0"/>
+  <testcase name="testFakeDnsPoolRoundTrip" classname="features.config.TrafficConfigDnsTest" time="0.001"/>
+  <testcase name="defaultTrafficConfigEnablesIpv6WhenApplied" classname="features.config.TrafficConfigDnsTest" time="0.0"/>
+  <testcase name="testWithActiveTrafficConfigAppliedProjectsDnsToAppState" classname="features.config.TrafficConfigDnsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

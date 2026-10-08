@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="XrayRoutingPlanTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.759Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="assigns_unique_tags_and_keeps_final_route_last[desktop]" classname="engine.xray.XrayRoutingPlanTest" time="0.003"/>
+  <testcase name="adds_dns_hijack_only_when_local_dns_is_enabled[desktop]" classname="engine.xray.XrayRoutingPlanTest" time="0.001"/>
+  <testcase name="drops_rejected_rules_and_reports_them_as_unapplied[desktop]" classname="engine.xray.XrayRoutingPlanTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

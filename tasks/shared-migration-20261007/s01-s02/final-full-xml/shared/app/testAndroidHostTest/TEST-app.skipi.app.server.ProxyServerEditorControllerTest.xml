@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.server.ProxyServerEditorControllerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:52.866Z" hostname="VQSeGo" time="0.039">
+  <properties/>
+  <testcase name="optionalFullValidationIssuesRequireConfirmation" classname="app.skipi.app.server.ProxyServerEditorControllerTest" time="0.002"/>
+  <testcase name="chainProxyRequiresTwoMembersAndTracksPersistedChangesForDiscardConfirmation" classname="app.skipi.app.server.ProxyServerEditorControllerTest" time="0.033"/>
+  <testcase name="invalidAmneziaWgFullValidationCannotBeForceSaved" classname="app.skipi.app.server.ProxyServerEditorControllerTest" time="0.0"/>
+  <testcase name="saveRequiresBasicValidationBeforeFullValidation" classname="app.skipi.app.server.ProxyServerEditorControllerTest" time="0.0"/>
+  <testcase name="savePassesWhenBasicAndFullValidationAreClean" classname="app.skipi.app.server.ProxyServerEditorControllerTest" time="0.0"/>
+  <testcase name="strategyGroupDraftCanSaveAndOnlyPersistedChangesRequireDiscardConfirmation" classname="app.skipi.app.server.ProxyServerEditorControllerTest" time="0.002"/>
+  <testcase name="strategyMemberIdsKeepFirstSeenOrderWhileRemovingDuplicates" classname="app.skipi.app.server.ProxyServerEditorControllerTest" time="0.0"/>
+  <testcase name="changeCheckUsesPersistedServerState" classname="app.skipi.app.server.ProxyServerEditorControllerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

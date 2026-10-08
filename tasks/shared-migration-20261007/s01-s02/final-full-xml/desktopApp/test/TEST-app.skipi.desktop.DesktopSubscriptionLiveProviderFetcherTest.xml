@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionLiveProviderFetcherTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.418Z" hostname="VQSeGo" time="0.017">
+  <properties/>
+  <testcase name="fetchAndImportKeepsMoreThanTwelveProviderDeclarationsInOrder" classname="app.skipi.desktop.DesktopSubscriptionLiveProviderFetcherTest" time="0.009"/>
+  <testcase name="failedRemoteProviderKeepsItsInlineFallback" classname="app.skipi.desktop.DesktopSubscriptionLiveProviderFetcherTest" time="0.002"/>
+  <testcase name="fetchAndImportPreservesRootAndProviderDeclarationOrderAndEntryCount" classname="app.skipi.desktop.DesktopSubscriptionLiveProviderFetcherTest" time="0.001"/>
+  <testcase name="fetchesBoundaryProviderThenUsesItsInlineFallbackWhenBodyIsBeyondDepthLimit" classname="app.skipi.desktop.DesktopSubscriptionLiveProviderFetcherTest" time="0.002"/>
+  <testcase name="fetchAndImportFetchesRepeatedSiblingUrlsIndependently" classname="app.skipi.desktop.DesktopSubscriptionLiveProviderFetcherTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

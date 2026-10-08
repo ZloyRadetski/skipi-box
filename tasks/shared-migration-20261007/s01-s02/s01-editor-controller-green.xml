@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionEditorControllerTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-08T07:06:43.838Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="savingAnEditorForADeletedGroupDoesNotRecreateItOrTouchProxies[desktop]" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <testcase name="removeDelegatesToTheHostRepositoryCleanupBoundary[desktop]" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <testcase name="enableAndMoveDelegateToCommonBuiltinAndFixedSlotRules[desktop]" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <testcase name="editUsesLatestMetadataAndProxyCatalogInsteadOfStaleSnapshots[desktop]" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <testcase name="saveCreatesFromLatestCounterAndOnlyStartsRefreshForEnabledUrlGroups[desktop]" classname="app.skipi.app.subscription.SubscriptionEditorControllerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

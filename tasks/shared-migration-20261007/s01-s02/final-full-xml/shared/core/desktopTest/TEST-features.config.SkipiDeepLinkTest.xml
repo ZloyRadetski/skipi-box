@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SkipiDeepLinkTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.848Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="decodeSkipiPayload_accepts_url_safe_base64_and_rejects_plain_text[desktop]" classname="features.config.SkipiDeepLinkTest" time="0.0"/>
+  <testcase name="parses_subscription_and_manual_server_links_from_encoded_payloads[desktop]" classname="features.config.SkipiDeepLinkTest" time="0.001"/>
+  <testcase name="parses_service_commands_and_ignores_unsupported_or_malformed_links[desktop]" classname="features.config.SkipiDeepLinkTest" time="0.0"/>
+  <testcase name="parses_config_links_with_activation_and_source_url[desktop]" classname="features.config.SkipiDeepLinkTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

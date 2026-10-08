@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.runtime.SubscriptionRefreshSchedulingTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.277Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="refresh_plan_marks_due_targets_and_keeps_the_earliest_wakeup" classname="features.subscription.runtime.SubscriptionRefreshSchedulingTest" time="0.004"/>
+  <testcase name="scheduler_cancels_stale_work_and_enqueues_only_eligible_targets" classname="features.subscription.runtime.SubscriptionRefreshSchedulingTest" time="0.001"/>
+  <testcase name="refresh_plan_ignores_ineligible_and_invalid_targets" classname="features.subscription.runtime.SubscriptionRefreshSchedulingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

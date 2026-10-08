@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.updater.runtime.AppUpdateCheckStoreTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.924Z" hostname="VQSeGo" time="0.0">
+  <properties/>
+  <testcase name="automatic_check_is_due_only_after_the_ttl" classname="features.updater.runtime.AppUpdateCheckStoreTest" time="0.0"/>
+  <testcase name="failed_automatic_attempt_has_a_short_retry_guard_without_changing_the_check_ttl" classname="features.updater.runtime.AppUpdateCheckStoreTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

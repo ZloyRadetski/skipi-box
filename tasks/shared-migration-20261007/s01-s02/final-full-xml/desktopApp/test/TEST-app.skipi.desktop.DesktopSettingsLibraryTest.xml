@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSettingsLibraryTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:26:45.195Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="keepsLanSocksListenerSeparateFromWindowsHttpProxy" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.0"/>
+  <testcase name="routingFieldsRoundTripAndOlderSettingsJsonGetsRoutingDefaults" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.002"/>
+  <testcase name="rejectsInvalidPortTimeoutAndBlankListenAddressWhenSaving" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.0"/>
+  <testcase name="roundTripsHomeDisplayOptionsWithNonDefaultValuesAndCustomColumns" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.001"/>
+  <testcase name="normalizesLoadedLegacyWhitespaceAndTimeout" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.0"/>
+  <testcase name="missingBlankAndMalformedFilesHaveSafeDefaultOrFailureResults" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.0"/>
+  <testcase name="validatesProxyServerListColumnsOnSaveAndNormalizesOnLoad" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.001"/>
+  <testcase name="repairsLegacySocksPortThatWouldCollideWithNewHttpProxyPort" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.0"/>
+  <testcase name="roundTripsNormalizedSettings" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.0"/>
+  <testcase name="loadsOldJsonMissingNewHomeFieldsAndPreservesDefaultsAndLegacyValues" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.001"/>
+  <testcase name="onlyEnablesWindowsSystemProxyOnWindowsHosts" classname="app.skipi.desktop.DesktopSettingsLibraryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,47 @@
+[
+  {
+    "name": "01-shared-home-ui",
+    "prompt": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/01-shared-home-ui.md",
+    "report": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/reports/01-shared-home-ui.md",
+    "log": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/runs/01-shared-home-ui.json.log",
+    "pid": 24305,
+    "dispatched_at": "2026-09-30T10:06:50.161419+00:00",
+    "model": "gemini-3.8-flash-high"
+  },
+  {
+    "name": "02-android-home-behavior",
+    "prompt": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/02-android-home-behavior.md",
+    "report": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/reports/02-android-home-behavior.md",
+    "log": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/runs/02-android-home-behavior.json.log",
+    "pid": 24306,
+    "dispatched_at": "2026-09-30T10:06:50.161741+00:00",
+    "model": "gemini-3.8-flash-high"
+  },
+  {
+    "name": "03-home-store-ordering",
+    "prompt": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/03-home-store-ordering.md",
+    "report": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/reports/03-home-store-ordering.md",
+    "log": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/runs/03-home-store-ordering.json.log",
+    "pid": 24307,
+    "dispatched_at": "2026-09-30T10:06:50.162054+00:00",
+    "model": "gemini-3.8-flash-high"
+  },
+  {
+    "name": "04-hevtun-runtime",
+    "prompt": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/04-hevtun-runtime.md",
+    "report": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/reports/04-hevtun-runtime.md",
+    "log": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/runs/04-hevtun-runtime.json.log",
+    "pid": 24309,
+    "dispatched_at": "2026-09-30T10:06:50.162360+00:00",
+    "model": "gemini-3.8-flash-high"
+  },
+  {
+    "name": "05-build-and-visual-qa",
+    "prompt": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/05-build-and-visual-qa.md",
+    "report": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/reports/05-build-and-visual-qa.md",
+    "log": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/home-polish-20260930/runs/05-build-and-visual-qa.json.log",
+    "pid": 24311,
+    "dispatched_at": "2026-09-30T10:06:50.162658+00:00",
+    "model": "gemini-3.8-flash-high"
+  }
+]

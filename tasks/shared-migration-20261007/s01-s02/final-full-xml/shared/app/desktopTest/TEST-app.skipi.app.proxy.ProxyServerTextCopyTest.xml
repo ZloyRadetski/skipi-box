@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyServerTextCopyTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:49.424Z" hostname="VQSeGo" time="0.055">
+  <properties/>
+  <testcase name="explicitFormatsAndCompositeDefaultUseExporterAndMapFailures[desktop]" classname="app.skipi.app.proxy.ProxyServerTextCopyTest" time="0.02"/>
+  <testcase name="defaultCopyUsesPortableTextAndDoesNotExportJsonUnnecessarily[desktop]" classname="app.skipi.app.proxy.ProxyServerTextCopyTest" time="0.035"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

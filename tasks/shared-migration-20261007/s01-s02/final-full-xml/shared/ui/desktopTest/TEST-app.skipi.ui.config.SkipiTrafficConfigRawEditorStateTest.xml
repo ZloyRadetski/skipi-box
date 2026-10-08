@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SkipiTrafficConfigRawEditorStateTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.309Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="saveRequiresNameAndContentAndNoErrorsButAllowsWarnings[desktop]" classname="app.skipi.ui.config.SkipiTrafficConfigRawEditorStateTest" time="0.001"/>
+  <testcase name="parsedPresentationDependsOnDiagnosticsNotNameOrContent[desktop]" classname="app.skipi.ui.config.SkipiTrafficConfigRawEditorStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TunnelContractTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:50.264Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="lifecycle_disconnect_clears_traffic_and_preserves_last_profile_reference[desktop]" classname="platform.TunnelContractTest" time="0.001"/>
+  <testcase name="lifecycle_accepts_retry_after_failure_and_keeps_selected_profile[desktop]" classname="platform.TunnelContractTest" time="0.0"/>
+  <testcase name="lifecycle_rejects_invalid_or_overlapping_connect_and_structures_failure[desktop]" classname="platform.TunnelContractTest" time="0.001"/>
+  <testcase name="disconnectedSnapshotIsSafeBeforeAnyPlatformAdapterStarts[desktop]" classname="platform.TunnelContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

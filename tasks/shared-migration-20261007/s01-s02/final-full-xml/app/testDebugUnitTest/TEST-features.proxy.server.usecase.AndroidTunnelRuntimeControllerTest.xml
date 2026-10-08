@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.usecase.AndroidTunnelRuntimeControllerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:55.680Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="publishes_failed_snapshot_without_reporting_a_successful_connection" classname="features.proxy.server.usecase.AndroidTunnelRuntimeControllerTest" time="0.002"/>
+  <testcase name="publishes_controller_snapshot_and_delegates_tunnel_operations" classname="features.proxy.server.usecase.AndroidTunnelRuntimeControllerTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

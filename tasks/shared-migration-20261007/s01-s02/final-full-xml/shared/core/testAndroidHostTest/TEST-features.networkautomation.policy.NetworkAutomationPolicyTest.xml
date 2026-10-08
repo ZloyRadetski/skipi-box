@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.networkautomation.policy.NetworkAutomationPolicyTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-08T13:22:51.015Z" hostname="VQSeGo" time="0.02">
+  <properties/>
+  <testcase name="cellular rule is used when cellular is the preferred observed transport" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.009"/>
+  <testcase name="missing SSID with no any Wi-Fi rule makes no change" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="specific Wi-Fi rule overrides any Wi-Fi and matches SSID ignoring case and surrounding spaces" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="disabled automation and on-demand VPN do not produce actions" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="manual rule can switch only to an available server" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.009"/>
+  <testcase name="disabled rules and absent network do not match" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="Wi-Fi takes priority over Ethernet and cellular when multiple transports are reported" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="Ethernet takes priority over cellular and has no configured rule action" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="missing SSID falls back to any Wi-Fi rule" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.0"/>
+  <testcase name="SSID collection is required only for enabled specific Wi-Fi rules" classname="features.networkautomation.policy.NetworkAutomationPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
