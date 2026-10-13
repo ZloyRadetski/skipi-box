@@ -47,13 +47,28 @@ class ProxyServerListGroupsCompatibilityTest {
                 displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
             ),
         )
+        val disabledFlagUserBalancer = ProxyServerState(
+            id = 32,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "Hidden flag is not a Home visibility rule",
+                showInAutoBalancerList = false,
+            ),
+        )
         val disabledGroupServer = ProxyServerState(
             id = 40,
             groupId = 3,
             server = VLESS(remarks = "Disabled node", id = "d", server = "disabled.example", port = "443"),
         )
         val state = AppState(
-            proxyServers = listOf(manualServer, subscriptionServer, activeConfigBalancer, inactiveConfigBalancer, disabledGroupServer),
+            proxyServers = listOf(
+                manualServer,
+                subscriptionServer,
+                activeConfigBalancer,
+                inactiveConfigBalancer,
+                disabledFlagUserBalancer,
+                disabledGroupServer,
+            ),
             subscriptionGroups = listOf(
                 SubscriptionGroupState(
                     id = DefaultSubscriptionGroupId,
@@ -68,6 +83,14 @@ class ProxyServerListGroupsCompatibilityTest {
                     id = 2,
                     name = "Subscription",
                     url = "https://example.com/sub",
+                    userAgent = "",
+                    updateInterval = "1d",
+                    enabled = true,
+                ),
+                SubscriptionGroupState(
+                    id = 4,
+                    name = "Empty enabled group",
+                    url = "https://example.com/empty",
                     userAgent = "",
                     updateInterval = "1d",
                     enabled = true,
@@ -94,16 +117,17 @@ class ProxyServerListGroupsCompatibilityTest {
             autoBalancerGroupName = "Auto balancers",
         )
 
-        assertEquals(listOf(AutoBalancerGroupId, 2, DefaultSubscriptionGroupId), result.visibleGroups.map { it.id })
-        assertEquals(listOf(AllProxyGroupId, AutoBalancerGroupId, 2, DefaultSubscriptionGroupId), result.groupTabs.map { it.id })
+        assertEquals(listOf(AutoBalancerGroupId, 2, 4, DefaultSubscriptionGroupId), result.visibleGroups.map { it.id })
+        assertEquals(listOf(AllProxyGroupId, AutoBalancerGroupId, 2, 4, DefaultSubscriptionGroupId), result.groupTabs.map { it.id })
         assertEquals(AutoBalancerGroupId, result.selectedGroup.id)
         assertEquals(AutoBalancerGroupId, result.selectedTabId)
-        assertEquals(listOf(10, 20, 30), result.visibleServers.map { it.id })
+        assertEquals(listOf(10, 20, 30, 32), result.visibleServers.map { it.id })
         assertEquals(listOf(30), result.currentFilteredServers.map { it.id })
         assertEquals("Default group", result.groupNames[DefaultSubscriptionGroupId])
         assertEquals("Auto balancers", result.groupNames[AutoBalancerGroupId])
         assertTrue(result.visibleGroupIds.contains(2))
-        assertEquals(1, result.groupTabs.first { it.id == AutoBalancerGroupId }.serverCount)
+        assertEquals(2, result.groupTabs.first { it.id == AutoBalancerGroupId }.serverCount)
         assertSame(activeConfigBalancer, result.visibleServers.first { it.id == activeConfigBalancer.id })
+        assertSame(disabledFlagUserBalancer, result.visibleServers.first { it.id == disabledFlagUserBalancer.id })
     }
 }

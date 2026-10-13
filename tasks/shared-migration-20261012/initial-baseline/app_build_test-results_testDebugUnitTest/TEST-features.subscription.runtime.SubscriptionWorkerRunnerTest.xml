@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.runtime.SubscriptionWorkerRunnerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-12T12:39:22.225Z" hostname="MAZAFAKA-PC" time="0.064">
+  <properties/>
+  <testcase name="transientFailureRequestsWorkManagerRetry" classname="features.subscription.runtime.SubscriptionWorkerRunnerTest" time="0.06"/>
+  <testcase name="missingOrDisabledGroupCompletesWithoutFetching" classname="features.subscription.runtime.SubscriptionWorkerRunnerTest" time="0.002"/>
+  <testcase name="permanentFailureFailsWorkAndSuccessfulUpdateCompletes" classname="features.subscription.runtime.SubscriptionWorkerRunnerTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

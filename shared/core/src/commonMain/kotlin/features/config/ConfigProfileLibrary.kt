@@ -20,6 +20,8 @@ data class ConfigProfile(
 data class ConfigProfileLibrary(
     val selectedConfigId: Int? = null,
     val configs: List<ConfigProfile> = emptyList(),
+    /** Next profile ID to allocate; omitted by legacy JSON and derived by [normalize]. */
+    val nextConfigId: Int = 1,
 )
 
 /** Pure config-library transformations. Filesystem access belongs to platform adapters. */
@@ -27,7 +29,11 @@ object ConfigProfileLibraries {
     fun normalize(library: ConfigProfileLibrary): ConfigProfileLibrary {
         val selected = library.selectedConfigId?.takeIf { id -> library.configs.any { it.id == id } }
             ?: library.configs.firstOrNull()?.id
-        return library.copy(selectedConfigId = selected)
+        val minimumNextId = (library.configs.maxOfOrNull { it.id } ?: 0) + 1
+        return library.copy(
+            selectedConfigId = selected,
+            nextConfigId = maxOf(library.nextConfigId, minimumNextId),
+        )
     }
 
     fun put(
@@ -44,7 +50,9 @@ object ConfigProfileLibraries {
         val existing = normalizedUrl
             ?.let { url -> library.configs.firstOrNull { it.sourceUrl.equals(url, ignoreCase = true) } }
             ?: library.configs.firstOrNull { it.name.equals(normalizedName, ignoreCase = true) }
-        val id = existing?.id ?: (library.configs.maxOfOrNull { it.id } ?: 0) + 1
+        val minimumNextId = (library.configs.maxOfOrNull { it.id } ?: 0) + 1
+        val nextConfigId = maxOf(library.nextConfigId, minimumNextId)
+        val id = existing?.id ?: nextConfigId
         val stored = ConfigProfile(
             id = id,
             name = normalizedName,
@@ -58,11 +66,12 @@ object ConfigProfileLibraries {
                 library.configs.any { config -> config.id == selectedId }
             } ?: id,
             configs = library.configs.filterNot { it.id == id } + stored,
+            nextConfigId = if (existing == null) id + 1 else nextConfigId,
         )
     }
 
     fun select(library: ConfigProfileLibrary, id: Int): ConfigProfileLibrary {
-        require(library.configs.any { it.id == id }) { "Unknown config ID: $id" }
+        if (library.configs.none { it.id == id }) return library
         return library.copy(selectedConfigId = id)
     }
 
@@ -89,6 +98,7 @@ object ConfigProfileLibraries {
     }
 
     fun remove(library: ConfigProfileLibrary, id: Int): ConfigProfileLibrary {
+        if (library.configs.size <= 1 || library.configs.none { it.id == id }) return library
         val remaining = library.configs.filterNot { it.id == id }
         return library.copy(
             selectedConfigId = library.selectedConfigId

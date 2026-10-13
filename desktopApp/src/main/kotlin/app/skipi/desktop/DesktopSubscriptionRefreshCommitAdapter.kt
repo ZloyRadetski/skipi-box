@@ -11,6 +11,7 @@ import app.skipi.app.subscription.SubscriptionRefreshCommitPort
 import app.skipi.app.subscription.SubscriptionRefreshReconciliationResult
 import app.skipi.app.subscription.SubscriptionRefreshSnapshot
 import app.skipi.app.config.importTrafficConfigDocument
+import app.skipi.app.config.TrafficConfigLibraryOperations
 import features.config.ConfigProfile
 import features.config.RoscomRoutingResourceSource
 import features.config.TrafficConfigResourceSettings
@@ -143,8 +144,7 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
 
             importTrafficConfigDocument(
                 trafficConfigs = latestLibrary.configs.map { profile -> profile.toRefreshTrafficConfigState() },
-                nextTrafficConfigId = (latestLibrary.configs.maxOfOrNull(ConfigProfile::id) ?: 0)
-                    .let { maxId -> if (maxId >= Int.MAX_VALUE) Int.MAX_VALUE else maxOf(1, maxId + 1) },
+                nextTrafficConfigId = TrafficConfigLibraryOperations.normalize(latestLibrary).nextConfigId,
                 activeTrafficConfigId = latestLibrary.selectedConfigId ?: NoSelectedConfigId,
                 content = convertedContent,
                 activate = config.activate,
@@ -168,6 +168,7 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
                 imported.trafficConfigs.any { trafficConfig -> trafficConfig.id == activeId }
             },
             configs = imported.trafficConfigs.map { profile -> profile.toDesktopConfigProfile() },
+            nextConfigId = imported.nextTrafficConfigId,
         )
         val activeBefore = latestLibrary.selectedConfigId
             ?.let { selectedId -> latestLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }

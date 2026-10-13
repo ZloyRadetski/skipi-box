@@ -6,6 +6,8 @@ package app.skipi.desktop
 import app.skipi.app.config.TrafficConfigLibraryOperations
 import app.skipi.app.model.ApplicationPreferences
 import app.skipi.app.model.AppearanceSettings
+import app.skipi.app.model.LocalProxyPreferences
+import app.skipi.app.model.SubscriptionPreferences
 import app.skipi.ui.settings.AppearanceSettingValues
 import app.skipi.ui.settings.AppearanceSettingsState
 import app.skipi.ui.settings.LocalProxySettingsState
@@ -71,11 +73,19 @@ class DesktopSettingsRepository(
         require(requested.appearance.dynamicColors == before.appearance.dynamicColors) {
             "Dynamic colors are not supported by Desktop settings"
         }
-        require(requested.application == before.application) {
-            "Application preferences are not supported by Desktop settings"
+        var newSettings = oldSettings.withAppearance(requested.appearance).withHomeDisplay(requested.home)
+        if (requested.application != before.application) {
+            newSettings = newSettings.withApplicationPreferences(requested.application)
         }
-
-        val newSettings = oldSettings.withAppearance(requested.appearance).withHomeDisplay(requested.home)
+        if (requested.localProxy != before.localProxy) {
+            newSettings = newSettings.withLocalProxyPreferences(
+                requested = requested.localProxy,
+                previous = before.localProxy,
+            )
+        }
+        if (requested.subscriptions != before.subscriptions) {
+            newSettings = newSettings.withSubscriptionPreferences(requested.subscriptions)
+        }
         val newServers = requested.proxy.selectedServerId
             ?.let { DesktopServerLibraries.select(oldServers, it) }
             ?: oldServers.copy(selectedServerId = null)
@@ -111,38 +121,57 @@ class DesktopSettingsRepository(
 }
 
 /** Maps traffic profile records to the existing configs.json schema. */
+data class DesktopConfigLibraryTransformResult(
+    val previous: DesktopConfigLibrary,
+    val updated: DesktopConfigLibrary,
+)
+
 class DesktopTrafficConfigRepository(
     initialLibrary: DesktopConfigLibrary,
     private val readLibrary: () -> DesktopConfigLibrary,
     private val saveLibrary: (DesktopConfigLibrary) -> Result<Unit>,
     private val publishLibrary: (DesktopConfigLibrary) -> Unit,
 ) : TrafficConfigRepository {
+    private val lock = Any()
     private val mutableConfigs = MutableStateFlow(initialLibrary.toTrafficRecords())
     override val configs: StateFlow<List<TrafficConfigRecord>> = mutableConfigs.asStateFlow()
 
     fun refresh(library: DesktopConfigLibrary = readLibrary()) {
-        mutableConfigs.value = library.toTrafficRecords()
+        synchronized(lock) {
+            mutableConfigs.value = library.toTrafficRecords()
+        }
+    }
+
+    fun transformLatest(
+        transform: (DesktopConfigLibrary) -> DesktopConfigLibrary,
+    ): DesktopConfigLibrary = transformLatestWithPrevious(transform).updated
+
+    fun transformLatestWithPrevious(
+        transform: (DesktopConfigLibrary) -> DesktopConfigLibrary,
+    ): DesktopConfigLibraryTransformResult = synchronized(lock) {
+        val previous = readLibrary()
+        val updated = transform(previous)
+        commit(updated)
+        DesktopConfigLibraryTransformResult(previous = previous, updated = updated)
     }
 
     override suspend fun upsert(config: TrafficConfigRecord) {
         require(config.enabled) { "Disabled traffic configs are not supported by Desktop storage" }
-        val current = readLibrary()
-        val profile = ConfigProfile(
-            id = config.id,
-            name = config.name,
-            content = config.rawDocument,
-            sourceUrl = config.sourceUrl.orEmpty(),
-            updateLocked = config.locked,
-            lastUpdatedAtMillis = current.configs.firstOrNull { it.id == config.id }?.lastUpdatedAtMillis ?: 0L,
-        )
-        val updated = TrafficConfigLibraryOperations.upsert(current, profile)
-        commit(updated)
+        transformLatest { current ->
+            val profile = ConfigProfile(
+                id = config.id,
+                name = config.name,
+                content = config.rawDocument,
+                sourceUrl = config.sourceUrl.orEmpty(),
+                updateLocked = config.locked,
+                lastUpdatedAtMillis = current.configs.firstOrNull { it.id == config.id }?.lastUpdatedAtMillis ?: 0L,
+            )
+            TrafficConfigLibraryOperations.upsert(current, profile)
+        }
     }
 
     override suspend fun remove(configId: Int) {
-        val current = readLibrary()
-        val updated = TrafficConfigLibraryOperations.remove(current, configId)
-        commit(updated)
+        transformLatest { current -> TrafficConfigLibraryOperations.remove(current, configId) }
     }
 
     private fun commit(library: DesktopConfigLibrary) {
@@ -444,9 +473,36 @@ private fun DesktopAppSettings.toPersistedSettings(
         showFloatingPowerButton = classicShowFloatingPowerButton,
         confirmDeletion = confirmDeletion,
         showServerSearch = showServerSearch,
+        proxyServerListSort = proxyServerListSort,
+        proxyServerListLayout = proxyServerListColumns,
+        enableAllProxyGroup = enableAllProxyGroup,
+        showTunnelMemoryOnHome = showTunnelMemory,
     ),
     traffic = TrafficSelectionSettings(activeConfigId = configs.selectedConfigId),
-    application = ApplicationPreferences(),
+    application = ApplicationPreferences(
+        languageTag = languageTag,
+        hapticsEnabled = hapticsEnabled,
+        onboardingCompleted = onboardingCompleted,
+    ),
+    localProxy = LocalProxyPreferences(
+        port = localProxyPortRaw ?: localProxyPort.toString(),
+        dynamicPort = enableDynamicLocalProxyPort,
+        listenAllInterfaces = localProxyListenAddress.trim() != "127.0.0.1",
+        authenticationEnabled = enableLocalProxyAuth,
+        username = localProxyUsername,
+        password = localProxyPassword,
+    ),
+    subscriptions = SubscriptionPreferences(
+        pingMode = subscriptionPingMode,
+        pingUrl = subscriptionPingUrl,
+        pingTimeoutMillis = subscriptionPingTimeoutMillis,
+        pingConcurrency = subscriptionPingConcurrency,
+        userAgents = subscriptionUserAgents,
+        deviceHeadersEnabled = sendDeviceHeaders,
+        fetchTimeoutSeconds = subscriptionFetchTimeoutSeconds,
+        expiryNotificationsEnabled = enableSubscriptionExpiryNotifications,
+        expiryReminders = subscriptionExpiryReminders,
+    ),
 )
 
 internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsState = AppearanceSettingsState(
@@ -508,16 +564,17 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
 
 internal fun DesktopAppSettings.toLocalProxySettingsState(): LocalProxySettingsState {
     val address = localProxyListenAddress.trim().ifBlank { "127.0.0.1" }
+    val portText = localProxyPortRaw ?: localProxyPort.toString()
     return LocalProxySettingsState(
-        dynamicPort = false,
-        port = localProxyPort.toString(),
+        dynamicPort = enableDynamicLocalProxyPort,
+        port = portText,
         listenAllInterfaces = address != "127.0.0.1",
-        enableHttpEndpoint = false,
-        authenticationEnabled = false,
-        username = "",
-        password = "",
+        enableHttpEndpoint = useSystemProxy && isDesktopSystemProxySupported(),
+        authenticationEnabled = enableLocalProxyAuth,
+        username = localProxyUsername,
+        password = localProxyPassword,
         displayIp = address,
-        socksEndpoint = "$address:$localProxyPort",
+        socksEndpoint = "$address:${portText.toIntOrNull() ?: localProxyPort}",
         httpEndpoint = "$address:$localHttpProxyPort",
         portError = null,
     )
@@ -527,15 +584,17 @@ internal fun DesktopAppSettings.toSubscriptionSettingsState(): SubscriptionSetti
     fetchTimeoutSeconds = subscriptionFetchTimeoutSeconds,
     deviceHeadersEnabled = sendDeviceHeaders,
     deletionConfirmationEnabled = confirmDeletion,
-    expiryNotificationsEnabled = false,
-    expiryReminders = emptyList<SubscriptionExpiryReminder>(),
-    pingSummary = "",
+    expiryNotificationsEnabled = enableSubscriptionExpiryNotifications,
+    expiryReminders = subscriptionExpiryReminders,
+    pingSummary = "${if (subscriptionPingMode == app.modes.SubscriptionPingModeHttp) "HTTP" else "TCP"} · $subscriptionPingUrl · ${subscriptionPingTimeoutMillis} ms",
 )
 
 internal fun DesktopAppSettings.withSubscriptionSettingsState(state: SubscriptionSettingsState): DesktopAppSettings = copy(
     subscriptionFetchTimeoutSeconds = state.fetchTimeoutSeconds,
     sendDeviceHeaders = state.deviceHeadersEnabled,
     confirmDeletion = state.deletionConfirmationEnabled,
+    enableSubscriptionExpiryNotifications = state.expiryNotificationsEnabled,
+    subscriptionExpiryReminders = state.expiryReminders,
 )
 internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsState): DesktopAppSettings {
     require(!state.enableMaterialYou) {
@@ -657,7 +716,52 @@ private fun DesktopAppSettings.withHomeDisplay(home: HomeDisplaySettings): Deskt
     classicShowFloatingPowerButton = home.showFloatingPowerButton,
     confirmDeletion = home.confirmDeletion,
     showServerSearch = home.showServerSearch,
+    proxyServerListSort = home.proxyServerListSort ?: proxyServerListSort,
+    proxyServerListColumns = home.proxyServerListLayout ?: proxyServerListColumns,
+    enableAllProxyGroup = home.enableAllProxyGroup ?: enableAllProxyGroup,
+    showTunnelMemory = home.showTunnelMemoryOnHome ?: showTunnelMemory,
 )
+
+private fun DesktopAppSettings.withApplicationPreferences(preferences: ApplicationPreferences): DesktopAppSettings = copy(
+    languageTag = preferences.languageTag,
+    hapticsEnabled = preferences.hapticsEnabled,
+    onboardingCompleted = preferences.onboardingCompleted,
+)
+
+private fun DesktopAppSettings.withLocalProxyPreferences(
+    requested: LocalProxyPreferences?,
+    previous: LocalProxyPreferences?,
+): DesktopAppSettings {
+    if (requested == null) return this
+    val parsedPort = requested.port.toIntOrNull()?.takeIf { it in 1..65_535 }
+    val listenAddress = if (requested.listenAllInterfaces != previous?.listenAllInterfaces) {
+        if (requested.listenAllInterfaces) "0.0.0.0" else "127.0.0.1"
+    } else {
+        localProxyListenAddress
+    }
+    return copy(
+        localProxyPort = parsedPort ?: localProxyPort,
+        localProxyPortRaw = requested.port,
+        localProxyListenAddress = listenAddress,
+        enableDynamicLocalProxyPort = requested.dynamicPort,
+        enableLocalProxyAuth = requested.authenticationEnabled,
+        localProxyUsername = requested.username,
+        localProxyPassword = requested.password,
+    )
+}
+
+private fun DesktopAppSettings.withSubscriptionPreferences(preferences: SubscriptionPreferences?): DesktopAppSettings =
+    if (preferences == null) this else copy(
+        subscriptionPingMode = preferences.pingMode,
+        subscriptionPingUrl = preferences.pingUrl,
+        subscriptionPingTimeoutMillis = preferences.pingTimeoutMillis,
+        subscriptionPingConcurrency = preferences.pingConcurrency,
+        subscriptionUserAgents = preferences.userAgents,
+        sendDeviceHeaders = preferences.deviceHeadersEnabled,
+        subscriptionFetchTimeoutSeconds = preferences.fetchTimeoutSeconds,
+        enableSubscriptionExpiryNotifications = preferences.expiryNotificationsEnabled,
+        subscriptionExpiryReminders = preferences.expiryReminders,
+    )
 
 private fun DesktopThemeMode.isNamedDesktopTheme(): Boolean = when (this) {
     DesktopThemeMode.Aurora, DesktopThemeMode.Sakura, DesktopThemeMode.Forest, DesktopThemeMode.Sunset -> true

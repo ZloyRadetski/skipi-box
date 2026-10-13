@@ -81,6 +81,53 @@ object GeneralSettingsValues {
         value.coerceIn(MinTrafficRefreshSeconds, MaxTrafficRefreshSeconds)
 }
 
+enum class GeneralSettingsControl {
+    Language,
+    Haptics,
+    TrafficStatsNotifications,
+    ResourceFileNotifications,
+    DeletionConfirmation,
+    UrlSchemes,
+    BroadcastControl,
+    BackupAndReset,
+}
+
+/** Host operations that are available alongside the portable general settings. */
+data class GeneralSettingsCapabilities(
+    val language: Boolean = true,
+    val haptics: Boolean = true,
+    val trafficStatsNotifications: Boolean = true,
+    val resourceFileNotifications: Boolean = true,
+    val deletionConfirmation: Boolean = true,
+    val urlSchemes: Boolean = true,
+    val broadcastControl: Boolean = true,
+    val backupAndReset: Boolean = true,
+) {
+    val visibleControls: Set<GeneralSettingsControl>
+        get() = buildSet {
+            if (language) add(GeneralSettingsControl.Language)
+            if (haptics) add(GeneralSettingsControl.Haptics)
+            if (trafficStatsNotifications) add(GeneralSettingsControl.TrafficStatsNotifications)
+            if (resourceFileNotifications) add(GeneralSettingsControl.ResourceFileNotifications)
+            if (deletionConfirmation) add(GeneralSettingsControl.DeletionConfirmation)
+            if (urlSchemes) add(GeneralSettingsControl.UrlSchemes)
+            if (broadcastControl) add(GeneralSettingsControl.BroadcastControl)
+            if (backupAndReset) add(GeneralSettingsControl.BackupAndReset)
+        }
+
+    companion object {
+        /** Desktop has locale and deletion behavior, but no Android notification or intent adapters. */
+        val Desktop = GeneralSettingsCapabilities(
+            haptics = false,
+            trafficStatsNotifications = false,
+            resourceFileNotifications = false,
+            urlSchemes = false,
+            broadcastControl = false,
+            backupAndReset = false,
+        )
+    }
+}
+
 /** Shared general settings form; platform locale changes and destination navigation stay in the host. */
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
@@ -92,6 +139,7 @@ fun SkipiGeneralSettingsScreen(
     onBack: () -> Unit,
     onOpenUrlSchemes: () -> Unit,
     onOpenBackupReset: () -> Unit,
+    capabilities: GeneralSettingsCapabilities = GeneralSettingsCapabilities(),
 ) {
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -110,6 +158,7 @@ fun SkipiGeneralSettingsScreen(
         stringResource(Res.string.option_chinese),
         stringResource(Res.string.option_persian),
     )
+    val visibleControls = capabilities.visibleControls
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -143,95 +192,127 @@ fun SkipiGeneralSettingsScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = contentPadding,
             ) {
-                item(key = "general_localization_feedback") {
-                    SmallTitle(text = stringResource(Res.string.settings_localization_and_feedback))
-                    SkipiSettingsSectionCard {
-                        AppOverlayDropdownPreference(
-                            title = stringResource(Res.string.settings_language),
-                            items = languageOptions,
-                            selectedIndex = languageModes.indexOf(state.languageMode).coerceAtLeast(0),
-                            onSelectedIndexChange = { index ->
-                                languageModes.getOrNull(index)?.let { mode ->
-                                    onSettingsChange { it.copy(languageMode = mode) }
-                                }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(Res.string.settings_enable_haptics),
-                            summary = stringResource(Res.string.settings_enable_haptics_summary),
-                            checked = state.enableHaptics,
-                            onCheckedChange = { enabled -> onSettingsChange { it.copy(enableHaptics = enabled) } },
-                        )
+                if (
+                    GeneralSettingsControl.Language in visibleControls ||
+                    GeneralSettingsControl.Haptics in visibleControls
+                ) {
+                    item(key = "general_localization_feedback") {
+                        SmallTitle(text = stringResource(Res.string.settings_localization_and_feedback))
+                        SkipiSettingsSectionCard {
+                            if (GeneralSettingsControl.Language in visibleControls) {
+                                AppOverlayDropdownPreference(
+                                    title = stringResource(Res.string.settings_language),
+                                    items = languageOptions,
+                                    selectedIndex = languageModes.indexOf(state.languageMode).coerceAtLeast(0),
+                                    onSelectedIndexChange = { index ->
+                                        languageModes.getOrNull(index)?.let { mode ->
+                                            onSettingsChange { it.copy(languageMode = mode) }
+                                        }
+                                    },
+                                )
+                            }
+                            if (GeneralSettingsControl.Haptics in visibleControls) {
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_enable_haptics),
+                                    summary = stringResource(Res.string.settings_enable_haptics_summary),
+                                    checked = state.enableHaptics,
+                                    onCheckedChange = { enabled -> onSettingsChange { it.copy(enableHaptics = enabled) } },
+                                )
+                            }
+                        }
                     }
                 }
 
-                item(key = "general_notifications") {
-                    SmallTitle(text = stringResource(Res.string.settings_notifications_title))
-                    SkipiSettingsSectionCard {
-                        SwitchPreference(
-                            title = stringResource(Res.string.settings_traffic_stats_notification),
-                            summary = stringResource(Res.string.settings_traffic_stats_notification_summary),
-                            checked = state.enableTrafficStatsNotification,
-                            onCheckedChange = { enabled ->
-                                onSettingsChange { it.copy(enableTrafficStatsNotification = enabled) }
-                            },
-                        )
-                        if (state.enableTrafficStatsNotification) {
-                            TrafficStatsRefreshIntervalPreference(
-                                refreshIntervalSeconds = state.trafficStatsNotificationRefreshIntervalSeconds,
-                                onRefreshIntervalSecondsChange = { seconds ->
-                                    onSettingsChange {
-                                        it.copy(trafficStatsNotificationRefreshIntervalSeconds = seconds)
-                                    }
-                                },
+                if (
+                    GeneralSettingsControl.TrafficStatsNotifications in visibleControls ||
+                    GeneralSettingsControl.ResourceFileNotifications in visibleControls ||
+                    GeneralSettingsControl.DeletionConfirmation in visibleControls
+                ) {
+                    item(key = "general_notifications") {
+                        SmallTitle(text = stringResource(Res.string.settings_notifications_title))
+                        SkipiSettingsSectionCard {
+                            if (GeneralSettingsControl.TrafficStatsNotifications in visibleControls) {
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_traffic_stats_notification),
+                                    summary = stringResource(Res.string.settings_traffic_stats_notification_summary),
+                                    checked = state.enableTrafficStatsNotification,
+                                    onCheckedChange = { enabled ->
+                                        onSettingsChange { it.copy(enableTrafficStatsNotification = enabled) }
+                                    },
+                                )
+                                if (state.enableTrafficStatsNotification) {
+                                    TrafficStatsRefreshIntervalPreference(
+                                        refreshIntervalSeconds = state.trafficStatsNotificationRefreshIntervalSeconds,
+                                        onRefreshIntervalSecondsChange = { seconds ->
+                                            onSettingsChange {
+                                                it.copy(trafficStatsNotificationRefreshIntervalSeconds = seconds)
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+                            if (GeneralSettingsControl.ResourceFileNotifications in visibleControls) {
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_resource_files_notifications),
+                                    summary = stringResource(Res.string.settings_resource_files_notifications_summary),
+                                    checked = state.enableResourceFileNotifications,
+                                    onCheckedChange = { enabled ->
+                                        onSettingsChange { it.copy(enableResourceFileNotifications = enabled) }
+                                    },
+                                )
+                            }
+                            if (GeneralSettingsControl.DeletionConfirmation in visibleControls) {
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_deletion_confirmation),
+                                    summary = stringResource(Res.string.settings_deletion_confirmation_summary),
+                                    checked = state.enableDeletionConfirmation,
+                                    onCheckedChange = { enabled ->
+                                        onSettingsChange { it.copy(enableDeletionConfirmation = enabled) }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (
+                    GeneralSettingsControl.UrlSchemes in visibleControls ||
+                    GeneralSettingsControl.BroadcastControl in visibleControls
+                ) {
+                    item(key = "general_integration") {
+                        SmallTitle(text = stringResource(Res.string.settings_category_integration))
+                        SkipiSettingsSectionCard {
+                            if (GeneralSettingsControl.UrlSchemes in visibleControls) {
+                                ArrowPreference(
+                                    title = stringResource(Res.string.settings_url_schemes),
+                                    summary = stringResource(Res.string.settings_url_schemes_summary),
+                                    onClick = onOpenUrlSchemes,
+                                )
+                            }
+                            if (GeneralSettingsControl.BroadcastControl in visibleControls) {
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_broadcast_control),
+                                    summary = stringResource(Res.string.settings_broadcast_control_summary),
+                                    checked = state.enableBroadcastControl,
+                                    onCheckedChange = { enabled ->
+                                        onSettingsChange { it.copy(enableBroadcastControl = enabled) }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (GeneralSettingsControl.BackupAndReset in visibleControls) {
+                    item(key = "general_backup_reset") {
+                        SmallTitle(text = stringResource(Res.string.settings_category_backup_reset))
+                        SkipiSettingsSectionCard(bottomPadding = 0.dp) {
+                            ArrowPreference(
+                                title = stringResource(Res.string.settings_category_backup_reset),
+                                summary = stringResource(Res.string.settings_category_backup_reset_summary),
+                                onClick = onOpenBackupReset,
                             )
                         }
-                        SwitchPreference(
-                            title = stringResource(Res.string.settings_resource_files_notifications),
-                            summary = stringResource(Res.string.settings_resource_files_notifications_summary),
-                            checked = state.enableResourceFileNotifications,
-                            onCheckedChange = { enabled ->
-                                onSettingsChange { it.copy(enableResourceFileNotifications = enabled) }
-                            },
-                        )
-                        SwitchPreference(
-                            title = stringResource(Res.string.settings_deletion_confirmation),
-                            summary = stringResource(Res.string.settings_deletion_confirmation_summary),
-                            checked = state.enableDeletionConfirmation,
-                            onCheckedChange = { enabled ->
-                                onSettingsChange { it.copy(enableDeletionConfirmation = enabled) }
-                            },
-                        )
-                    }
-                }
-
-                item(key = "general_integration") {
-                    SmallTitle(text = stringResource(Res.string.settings_category_integration))
-                    SkipiSettingsSectionCard {
-                        ArrowPreference(
-                            title = stringResource(Res.string.settings_url_schemes),
-                            summary = stringResource(Res.string.settings_url_schemes_summary),
-                            onClick = onOpenUrlSchemes,
-                        )
-                        SwitchPreference(
-                            title = stringResource(Res.string.settings_broadcast_control),
-                            summary = stringResource(Res.string.settings_broadcast_control_summary),
-                            checked = state.enableBroadcastControl,
-                            onCheckedChange = { enabled ->
-                                onSettingsChange { it.copy(enableBroadcastControl = enabled) }
-                            },
-                        )
-                    }
-                }
-
-                item(key = "general_backup_reset") {
-                    SmallTitle(text = stringResource(Res.string.settings_category_backup_reset))
-                    SkipiSettingsSectionCard(bottomPadding = 0.dp) {
-                        ArrowPreference(
-                            title = stringResource(Res.string.settings_category_backup_reset),
-                            summary = stringResource(Res.string.settings_category_backup_reset_summary),
-                            onClick = onOpenBackupReset,
-                        )
                     }
                 }
             }

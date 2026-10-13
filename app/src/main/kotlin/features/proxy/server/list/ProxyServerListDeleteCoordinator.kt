@@ -3,6 +3,9 @@
 
 package features.proxy.server.list
 
+import app.skipi.app.proxy.ProxyServerStopOutcome
+import app.skipi.app.proxy.runProxyServerBulkDeleteWhenRequired
+import app.skipi.app.proxy.runBulkDeleteAfterStoppingProxyService
 import app.skipi.app.store.SharedApplicationActionOutcome
 import features.proxy.server.usecase.ProxyServiceResult
 
@@ -15,29 +18,63 @@ internal suspend fun deleteProxyServersAfterStoppingService(
     onDeleteError: suspend (Throwable) -> Unit,
     onStopFailed: suspend (Throwable) -> Unit,
 ) {
-    suspend fun dispatchDeleteAndReport() {
-        when (val outcome = dispatchDelete()) {
-            SharedApplicationActionOutcome.Completed -> {
-                onDeleted()
+    var successfulStop: ProxyServiceResult.Success? = null
+
+    runBulkDeleteAfterStoppingProxyService(
+        stopService = {
+            when (val result = stopService()) {
+                is ProxyServiceResult.Success -> {
+                    successfulStop = result
+                    ProxyServerStopOutcome.Stopped
+                }
+
+                ProxyServiceResult.MissingServer -> ProxyServerStopOutcome.MissingServer
+                is ProxyServiceResult.Failed -> ProxyServerStopOutcome.Failed(result.error)
             }
+        },
+        applyStopState = { applyStopState(checkNotNull(successfulStop)) },
+        dispatchDelete = dispatchDelete,
+        onDeleted = onDeleted,
+        onDeleteError = onDeleteError,
+        onStopFailed = onStopFailed,
+    )
+}
 
-            is SharedApplicationActionOutcome.Rejected -> {
-                onDeleteError(IllegalArgumentException(outcome.reason))
+/** Applies Android Home's busy/selection decision before entering the existing runtime adapter. */
+internal suspend fun deleteProxyServersWhenRequired(
+    serverIds: Set<Int>,
+    selectedServerId: Int?,
+    serviceRunning: Boolean,
+    serviceOperationInProgress: Boolean,
+    stopService: suspend () -> ProxyServiceResult,
+    dispatchDelete: suspend () -> SharedApplicationActionOutcome,
+    applyStopState: (ProxyServiceResult.Success) -> Unit,
+    onDeleted: suspend () -> Unit,
+    onDeleteError: suspend (Throwable) -> Unit,
+    onStopFailed: suspend (Throwable) -> Unit,
+) {
+    var successfulStop: ProxyServiceResult.Success? = null
+
+    runProxyServerBulkDeleteWhenRequired(
+        serverIds = serverIds,
+        selectedServerId = selectedServerId,
+        serviceRunning = serviceRunning,
+        serviceOperationInProgress = serviceOperationInProgress,
+        stopService = {
+            when (val result = stopService()) {
+                is ProxyServiceResult.Success -> {
+                    successfulStop = result
+                    ProxyServerStopOutcome.Stopped
+                }
+
+                ProxyServiceResult.MissingServer -> ProxyServerStopOutcome.MissingServer
+                is ProxyServiceResult.Failed -> ProxyServerStopOutcome.Failed(result.error)
             }
-
-            is SharedApplicationActionOutcome.Failed -> {
-                onDeleteError(IllegalStateException(outcome.reason))
-            }
-        }
-    }
-
-    when (val stopResult = stopService()) {
-        is ProxyServiceResult.Success -> {
-            applyStopState(stopResult)
-            dispatchDeleteAndReport()
-        }
-
-        ProxyServiceResult.MissingServer -> dispatchDeleteAndReport()
-        is ProxyServiceResult.Failed -> onStopFailed(stopResult.error)
-    }
+        },
+        applyStopState = { applyStopState(checkNotNull(successfulStop)) },
+        dispatchDelete = dispatchDelete,
+        onDeleted = onDeleted,
+        onDeleteError = onDeleteError,
+        onStopFailed = onStopFailed,
+    )
 }

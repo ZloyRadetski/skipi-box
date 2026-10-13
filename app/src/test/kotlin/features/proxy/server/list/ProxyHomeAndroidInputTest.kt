@@ -22,6 +22,7 @@ import app.skipi.app.home.ProxyHomeStore
 import app.toProxyServerListState
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
+import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.VLESS
 import features.proxy.server.presentation.ProxyServerPresentationFormatter
 import features.proxy.server.presentation.ProxyServerPresentationLabels
@@ -39,6 +40,165 @@ import platform.TunnelFailure
 import platform.TunnelSnapshot
 
 class ProxyHomeAndroidInputTest {
+    @Test
+    fun homeAllSummaryExcludesConfigStrategiesWhileRawTabCountsVisibleRows() {
+        val manualGroup = SubscriptionGroupState(
+            id = DefaultSubscriptionGroupId,
+            name = "Manual",
+            url = "",
+            userAgent = "",
+            updateInterval = "",
+            enabled = true,
+            builtIn = true,
+        )
+        val workGroup = SubscriptionGroupState(
+            id = 2,
+            name = "Work",
+            url = "https://example.com/work",
+            userAgent = "",
+            updateInterval = "",
+            enabled = true,
+        )
+        val configStrategy = ProxyServerState(
+            id = 21,
+            server = StrategyGroup(
+                remarks = "Config strategy",
+                sourceTrafficConfigId = 7,
+                displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
+            ),
+            groupId = AutoBalancerGroupId,
+        )
+        val state = AppState(
+            subscriptionGroups = listOf(manualGroup, workGroup),
+            proxyServers = listOf(
+                ProxyServerState(
+                    id = 10,
+                    server = VLESS(remarks = "Manual node", id = "m", server = "manual.example", port = "443"),
+                    groupId = DefaultSubscriptionGroupId,
+                ),
+                ProxyServerState(
+                    id = 11,
+                    server = VLESS(remarks = "Work node", id = "w", server = "work.example", port = "443"),
+                    groupId = workGroup.id,
+                ),
+                ProxyServerState(
+                    id = 20,
+                    server = StrategyGroup(remarks = "User strategy"),
+                    groupId = AutoBalancerGroupId,
+                ),
+                configStrategy,
+            ),
+            activeTrafficConfigId = 7,
+            enableAllProxyGroup = true,
+            selectedProxyServerId = 10,
+            showServerSearch = true,
+        )
+        val groups = proxyServerListGroups(
+            state = state.toProxyServerListState(),
+            selectedGroupId = AllProxyGroupId,
+            searchValue = "",
+            allGroupName = "All",
+            defaultGroupName = "Manual",
+            autoBalancerGroupName = "Auto balancers",
+        )
+
+        val input = state.toProxyHomeInput(
+            groupState = groups,
+            tunnelSnapshot = TunnelSnapshot(phase = TunnelPhase.Disconnected),
+            tunnelBusy = false,
+            isTestingLatency = false,
+        )
+
+        assertEquals(4, groups.groupTabs.first { it.id == AllProxyGroupId }.serverCount)
+        assertEquals(listOf(10, 11, 20, 21), groups.visibleServers.map { it.id })
+        val allSummary = input.groups.first { it.id == AllProxyGroupId.toString() }
+        assertEquals(3, allSummary.serverCount)
+        assertEquals(setOf("10", "11", "20"), allSummary.serverIds)
+        assertEquals(listOf("10", "11", "20", "21"), input.servers.map { it.id })
+        val workSummary = input.servers.first { it.id == "11" }
+        assertTrue(workSummary.searchText?.contains("Work") == true)
+        assertEquals("Work node", workSummary.sortKey)
+    }
+
+    @Test
+    fun androidHomeHeadlinesPreserveProtocolStrategyAndCountryFlagFallbacks() {
+        val manualGroup = SubscriptionGroupState(
+            id = DefaultSubscriptionGroupId,
+            name = "Manual",
+            url = "",
+            userAgent = "",
+            updateInterval = "",
+            enabled = true,
+            builtIn = true,
+        )
+        val englandFlag = "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F"
+        val servers = listOf(
+            ProxyServerState(
+                id = 30,
+                server = VLESS(remarks = "", id = "blank", server = "blank.example", port = "443"),
+                groupId = DefaultSubscriptionGroupId,
+            ),
+            ProxyServerState(
+                id = 31,
+                server = StrategyGroup(remarks = ""),
+                groupId = AutoBalancerGroupId,
+            ),
+            ProxyServerState(
+                id = 32,
+                server = VLESS(remarks = "  😀 Plain label  ", id = "emoji", server = "emoji.example", port = "443"),
+                groupId = DefaultSubscriptionGroupId,
+            ),
+            ProxyServerState(
+                id = 33,
+                server = VLESS(remarks = "🇫🇮", id = "flag-only", server = "flag.example", port = "443"),
+                groupId = DefaultSubscriptionGroupId,
+            ),
+            ProxyServerState(
+                id = 34,
+                server = VLESS(
+                    remarks = "  ${englandFlag} England",
+                    id = "tag-flag",
+                    server = "tag.example",
+                    port = "443",
+                ),
+                groupId = DefaultSubscriptionGroupId,
+            ),
+        )
+        val state = AppState(
+            subscriptionGroups = listOf(manualGroup),
+            proxyServers = servers,
+            selectedProxyServerId = 30,
+            enableAllProxyGroup = true,
+        )
+        val groups = proxyServerListGroups(
+            state = state.toProxyServerListState(),
+            selectedGroupId = DefaultSubscriptionGroupId,
+            searchValue = "",
+            allGroupName = "All",
+            defaultGroupName = "Manual",
+            autoBalancerGroupName = "Auto balancers",
+        )
+
+        val input = state.toProxyHomeInput(
+            groupState = groups,
+            tunnelSnapshot = TunnelSnapshot(phase = TunnelPhase.Disconnected),
+            tunnelBusy = false,
+            isTestingLatency = false,
+        )
+        val summaries = input.servers.associateBy { it.id }
+
+        assertEquals("VLESS", summaries.getValue("30").title)
+        assertNull(summaries.getValue("30").flag)
+        assertEquals("Strategy", summaries.getValue("31").title)
+        assertEquals("⚡", summaries.getValue("31").flag)
+        assertEquals("  😀 Plain label  ", summaries.getValue("32").title)
+        assertNull(summaries.getValue("32").flag)
+        assertEquals("🇫🇮", summaries.getValue("33").title)
+        assertEquals("🇫🇮", summaries.getValue("33").flag)
+        assertEquals("England", summaries.getValue("34").title)
+        assertEquals(englandFlag, summaries.getValue("34").flag)
+    }
+
     @Test
     fun mapsAllGroupMembershipSortedServersAndSubscriptionMetadata() {
         val manualGroup = SubscriptionGroupState(
@@ -109,12 +269,14 @@ class ProxyHomeAndroidInputTest {
 
         // Legacy name sorting compares raw remarks, including the flag prefix.
         assertEquals(listOf("20", "10"), input.servers.map { it.id })
+        assertEquals(listOf("0", "2", DefaultSubscriptionGroupId.toString()), input.groups.map { it.id })
         val alphaSummary = input.servers.first { it.id == "10" }
         val zuluSummary = input.servers.first { it.id == "20" }
         assertEquals("Alpha", alphaSummary.title)
         assertEquals("🇺🇸", alphaSummary.flag)
         assertEquals("🇺🇸 Alpha", alphaSummary.sortKey)
         assertEquals("Zulu", zuluSummary.sortKey)
+        assertTrue(zuluSummary.searchText?.contains("Work") == true)
         assertEquals(19L, alphaSummary.latencyMs)
         assertTrue(zuluSummary.latencyError)
         assertEquals(setOf("10", "20"), input.groups.first { it.id == AllProxyGroupId.toString() }.serverIds)

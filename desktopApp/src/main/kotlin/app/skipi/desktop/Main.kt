@@ -48,24 +48,49 @@ import androidx.compose.ui.window.application
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.applyProxyServerEditResult
 import app.skipi.app.server.toProxyServerCopyTarget
+import app.skipi.app.home.toAndroidValue
+import app.skipi.app.proxy.deleteProxyServerRecords
+import app.skipi.app.proxy.ProxyServerStopOutcome
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.subscription.SubscriptionRefreshCommitScope
 import app.skipi.app.subscription.SubscriptionRefreshLoadRequest
+import app.skipi.app.subscription.SubscriptionRefreshLoader
+import app.skipi.app.subscription.loadSubscriptionRefresh
 import app.skipi.app.subscription.refreshSubscription
 import app.skipi.ui.subscription.toSubscriptionRecord
+import app.skipi.ui.home.SubscriptionRefreshMessageSummary
+import app.skipi.ui.home.formatSubscriptionRefreshMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.navigation.SkipiNavigationBarSize
 import app.skipi.ui.theme.SkipiTheme
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.proxy_server_list_duplicates_deleted
+import app.skipi.ui.resources.proxy_server_list_invalid_deleted
+import app.skipi.ui.resources.proxy_server_list_no_duplicates
+import app.skipi.ui.resources.proxy_server_list_no_invalid
+import app.skipi.ui.resources.proxy_server_list_all_deleted
+import app.skipi.ui.resources.proxy_server_list_no_servers_to_delete
+import app.skipi.ui.resources.proxy_server_list_no_subscription_updates
+import app.skipi.ui.resources.proxy_server_list_subscription_update_result
+import app.skipi.ui.resources.proxy_server_list_subscription_update_result_with_failed
+import app.skipi.ui.text.formatTemplate
+import features.proxy.server.usecase.ProxyServerGroupCleanup
+import features.proxy.server.usecase.ProxyServerGroupCleanupRecord
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
@@ -97,10 +122,22 @@ fun main() = application {
         var desktopSettings by remember {
             mutableStateOf(DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
         }
+                val homeSortSaveMutex = remember { Mutex() }
         CompositionLocalProvider(LocalDesktopThemeMode provides desktopSettings.themeMode) {
             DesktopAppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = DesktopContentBackground) {
                 val subscriptionScope = rememberCoroutineScope()
+                val duplicatesDeletedTemplate = stringResource(Res.string.proxy_server_list_duplicates_deleted)
+                val noDuplicatesMessage = stringResource(Res.string.proxy_server_list_no_duplicates)
+                val invalidDeletedTemplate = stringResource(Res.string.proxy_server_list_invalid_deleted)
+                val noInvalidMessage = stringResource(Res.string.proxy_server_list_no_invalid)
+                val allDeletedTemplate = stringResource(Res.string.proxy_server_list_all_deleted)
+                val noServersToDeleteMessage = stringResource(Res.string.proxy_server_list_no_servers_to_delete)
+                val noSubscriptionUpdatesMessage = stringResource(Res.string.proxy_server_list_no_subscription_updates)
+                val subscriptionRefreshSuccessTemplate =
+                    stringResource(Res.string.proxy_server_list_subscription_update_result)
+                val subscriptionRefreshFailedTemplate =
+                    stringResource(Res.string.proxy_server_list_subscription_update_result_with_failed)
                 val subscriptionFetcher = remember { DesktopSubscriptionFetcher() }
                 val subscriptionPayloadParsers = remember {
                     listOf(DesktopMihomoPayloadImporter.subscriptionPayloadParser())
@@ -112,6 +149,7 @@ fun main() = application {
                 var subscriptionMessage by remember { mutableStateOf("") }
                 var subscriptionUpdateInProgress by remember { mutableStateOf(false) }
                 var refreshingSubscriptionId by remember { mutableStateOf<Int?>(null) }
+                var batchRefreshingSubscriptionIds by remember { mutableStateOf(emptySet<Int>()) }
                 var scheduledSubscriptionId by remember { mutableStateOf<Int?>(null) }
                 var subscriptionSchedulerTick by remember { mutableStateOf(0) }
                 var subscriptionLibrary by remember {
@@ -167,6 +205,7 @@ fun main() = application {
                 var latencyByServerId by remember { mutableStateOf<Map<Int, DesktopServerLatencyResult>>(emptyMap()) }
                 var testingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 var pingingSubscriptionIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+                val desktopHomeLatencyJobOwner = remember { DesktopProxyHomeLatencyJobOwner() }
                 var coreState by remember { mutableStateOf(coreController.state()) }
                 var coreMessage by remember { mutableStateOf("") }
                 var pendingTunnelReconnectReason by remember { mutableStateOf<String?>(null) }
@@ -200,6 +239,7 @@ fun main() = application {
                     val subscriptionServerRemovalAdapter = DesktopSubscriptionServerRemovalAdapter(
                         readLibrary = { serverLibrary },
                         proxyServerRepository = proxyServerRepository,
+                        isTunnelRunning = { coreController.state().isRunning },
                         stopSelectedServer = { stopSelectedSubscriptionServer.run() },
                     )
                     val subscriptionRepository = DesktopSubscriptionRepository(
@@ -220,7 +260,8 @@ fun main() = application {
                             coreState = coreState,
                             latencyByServerId = latencyByServerId,
                             testingServerIds = testingServerIds,
-                            refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId),
+                            refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
+                                batchRefreshingSubscriptionIds,
                             message = coreMessage.ifBlank { subscriptionMessage },
                             isMessageError = coreMessage.isNotBlank(),
                         )
@@ -234,6 +275,65 @@ fun main() = application {
                         runtime = runtimeRepository,
                     )
                 }
+                val desktopSubscriptionRefreshBatchRunner = remember(desktopSharedApplication, subscriptionFetcher) {
+                    DesktopSubscriptionRefreshBatchRunner(
+                        captureRequests = {
+                            val settings = desktopSettings
+                            val proxyRunning = coreState.isRunning
+                            desktopSharedApplication.subscriptions.catalog.value.subscriptions.map { subscription ->
+                                SubscriptionRefreshLoadRequest(
+                                    subscription = subscription,
+                                    fetchOptions = DesktopSubscriptionRefreshFetchOptions(
+                                        timeout = Duration.ofSeconds(
+                                            settings.subscriptionFetchTimeoutSeconds.toLong(),
+                                        ),
+                                        proxy = if (subscription.updateViaProxy && proxyRunning) {
+                                            DesktopSubscriptionSocksProxy(
+                                                host = settings.localProxyListenAddress,
+                                                port = settings.localProxyPort,
+                                                username = "",
+                                                password = "",
+                                            )
+                                        } else null,
+                                        deviceHeaders = if (settings.sendDeviceHeaders) {
+                                            DesktopDeviceIdentity.deviceHeaders(settings.installationUuid)
+                                        } else emptyMap(),
+                                        ageSecretKey = subscription.ageSecretKey,
+                                        fallbackUserAgent = settings.subscriptionUserAgent.trim()
+                                            .ifBlank { DefaultDesktopSubscriptionUserAgent },
+                                    ),
+                                )
+                            }
+                        },
+                        loader = SubscriptionRefreshLoader { request ->
+                            loadSubscriptionRefresh(
+                                request = request,
+                                fetchResponse = { url, userAgent, options ->
+                                    subscriptionFetcher.fetchSubscriptionRefreshResponse(
+                                        url = url,
+                                        storedUserAgent = userAgent,
+                                        options = options,
+                                    )
+                                },
+                                parsers = subscriptionPayloadParsers,
+                            )
+                        },
+                        refreshedAtMillis = { System.currentTimeMillis() },
+                        subscriptionRepository = desktopSharedApplication.subscriptions,
+                        proxyServerRepository = proxyServerRepository,
+                        readConfigs = { configLibrary },
+                        saveConfigs = DesktopConfigLibraries::saveDefault,
+                        publishConfigs = { configLibrary = it },
+                        readLatencyByServerId = { latencyByServerId },
+                        publishLatencyByServerId = { latencyByServerId = it },
+                    )
+                }
+                LaunchedEffect(desktopSubscriptionRefreshBatchRunner) {
+                    desktopSubscriptionRefreshBatchRunner.progress.collect { progress ->
+                        batchRefreshingSubscriptionIds = progress.refreshingSubscriptionIds
+                    }
+                }
+
                 suspend fun <T> runInSubscriptionScope(block: suspend () -> T): T =
                     subscriptionScope.async { block() }.await()
 
@@ -247,6 +347,7 @@ fun main() = application {
                     testingServerIds,
                     subscriptionUpdateInProgress,
                     refreshingSubscriptionId,
+                    batchRefreshingSubscriptionIds,
                     scheduledSubscriptionId,
                     coreMessage,
                     subscriptionMessage,
@@ -550,9 +651,9 @@ fun main() = application {
                         return
                     }
                     if (subscriptionId != null) pingingSubscriptionIds = pingingSubscriptionIds + subscriptionId
-                    subscriptionScope.launch {
-                        val testedIds = eligible.map { (serverId, _) -> serverId }.toSet()
-                        testingServerIds = testingServerIds + testedIds
+                    val testedIds = eligible.map { (serverId, _) -> serverId }.toSet()
+                    testingServerIds = testingServerIds + testedIds
+                    val job = subscriptionScope.launch(start = CoroutineStart.UNDISPATCHED) {
                         try {
                             val results = withContext(Dispatchers.IO) {
                                 eligible.map { (serverId, server) ->
@@ -584,6 +685,107 @@ fun main() = application {
                             }
                         }
                     }
+                    desktopHomeLatencyJobOwner.track(job)
+                }
+
+                suspend fun withHomeDeleteRuntime(
+                    operation: suspend (
+                        stopService: suspend () -> ProxyServerStopOutcome,
+                        applyStoppedState: () -> Unit,
+                        onStopFailed: suspend (Throwable) -> Unit,
+                    ) -> Unit,
+                ) {
+                    var ownsTunnelOperation = false
+                    try {
+                        operation(
+                            {
+                                while (systemProxyRecoveryInProgress) delay(50)
+                                if (closeRequested || tunnelOperationInProgress) {
+                                    ProxyServerStopOutcome.Failed(
+                                        IllegalStateException("Дождитесь завершения операции SKIPI Core."),
+                                    )
+                                } else {
+                                    tunnelOperationInProgress = true
+                                    ownsTunnelOperation = true
+                                    val stopResult = try {
+                                        withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (error: Throwable) {
+                                        Result.failure(error)
+                                    }
+                                    stopResult.fold(
+                                        onSuccess = {
+                                            coreState = coreController.state()
+                                            ProxyServerStopOutcome.Stopped
+                                        },
+                                        onFailure = ProxyServerStopOutcome::Failed,
+                                    )
+                                }
+                            },
+                            {
+                                coreState = coreController.state()
+                                desiredTunnelRunning = false
+                                tunnelIntentVersion += 1
+                                pendingTunnelReconnectReason = null
+                                pendingTunnelReconnectRevision += 1
+                                coreMessage = if (desktopSettings.useSystemProxy) {
+                                    "Туннель SKIPI Core и системный прокси остановлены для удаления серверов."
+                                } else {
+                                    "Локальный туннель SKIPI Core остановлен для удаления серверов."
+                                }
+                            },
+                            { error ->
+                                coreState = coreController.state()
+                                desiredTunnelRunning = coreState.isRunning
+                                coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
+                                serverLibraryMessage = "Не удалось удалить серверы: ${error.message.orEmpty()}"
+                            },
+                        )
+                    } finally {
+                        if (ownsTunnelOperation) {
+                            tunnelOperationInProgress = false
+                            if (!closeRequested && desiredTunnelRunning != coreController.state().isRunning) {
+                                requestTunnelReconnect("Выполняю последнее действие с туннелем.")
+                            }
+                        }
+                    }
+                }
+
+                suspend fun runHomeBulkDelete(
+                    serverIds: Set<Int>,
+                    selectedServerId: Int?,
+                    tunnelRunning: Boolean,
+                    serviceOperationInProgress: Boolean,
+                    deletedTemplate: String,
+                    emptyMessage: String,
+                ) {
+                    if (serverIds.isEmpty()) {
+                        serverLibraryMessage = emptyMessage
+                        return
+                    }
+                    withHomeDeleteRuntime { stopService, applyStoppedState, onStopFailed ->
+                        runDesktopProxyHomeBulkDelete(
+                            serverIds = serverIds,
+                            selectedServerId = selectedServerId,
+                            tunnelRunning = tunnelRunning,
+                            serviceOperationInProgress = serviceOperationInProgress,
+                            stopService = stopService,
+                            applyStoppedState = applyStoppedState,
+                            dispatchDelete = {
+                                desktopSharedApplication.store.dispatchAndAwait(
+                                    SharedApplicationAction.RemoveProxyServers(serverIds),
+                                ).outcome
+                            },
+                            onDeleted = {
+                                serverLibraryMessage = deletedTemplate.formatTemplate("count" to serverIds.size)
+                            },
+                            onDeleteError = { error ->
+                                serverLibraryMessage = "Не удалось удалить серверы: ${error.message.orEmpty()}"
+                            },
+                            onStopFailed = onStopFailed,
+                        )
+                    }
                 }
 
                 Scaffold(
@@ -603,6 +805,8 @@ fun main() = application {
                             serverLink = serverLink,
                             subscriptionUrl = subscriptionUrl,
                             updatingSubscription = subscriptionUpdateInProgress,
+                            refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
+                                batchRefreshingSubscriptionIds,
                             running = coreState.isRunning,
                             connecting = tunnelOperationInProgress && desiredTunnelRunning,
                             // Keep the connected hero actionable while a reconnect is underway:
@@ -750,27 +954,35 @@ fun main() = application {
                                     }
                             },
                             onDeleteServer = { serverId ->
-                                val deletedSelectedServer = serverLibrary.selectedServerId == serverId
+                                val selectedServerId = serverLibrary.selectedServerId
                                 val tunnelWasRunning = coreState.isRunning
-                                subscriptionScope.launch {
-                                    val result = desktopSharedApplication.store.dispatchAndAwait(
-                                        SharedApplicationAction.RemoveProxyServer(serverId),
-                                    )
-                                    when (val outcome = result.outcome) {
-                                        SharedApplicationActionOutcome.Completed -> {
-                                            serverLibraryMessage = "Сервер удалён."
-                                            if (deletedSelectedServer && tunnelWasRunning) {
-                                                requestTunnelReconnect("Активный сервер удалён.")
-                                            }
-                                        }
-
-                                        is SharedApplicationActionOutcome.Rejected -> {
-                                            serverLibraryMessage = "Не удалось удалить сервер: ${outcome.reason}"
-                                        }
-
-                                        is SharedApplicationActionOutcome.Failed -> {
-                                            serverLibraryMessage = "Не удалось удалить сервер: ${outcome.reason}"
-                                        }
+                                val serviceOperationIsInProgress = closeRequested || tunnelOperationInProgress ||
+                                    systemProxyRecoveryInProgress
+                                subscriptionScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                                    withHomeDeleteRuntime { stopService, applyStoppedState, onStopFailed ->
+                                        runDesktopProxyHomeSingleDelete(
+                                            serverId = serverId,
+                                            selectedServerId = selectedServerId,
+                                            tunnelRunning = tunnelWasRunning,
+                                            serviceOperationInProgress = serviceOperationIsInProgress,
+                                            stopService = stopService,
+                                            dispatchDeleteIfPresent = {
+                                                if (proxyServerRepository.servers.value.none { it.id == serverId }) {
+                                                    false
+                                                } else {
+                                                    desktopSharedApplication.store.dispatch(
+                                                        SharedApplicationAction.RemoveProxyServer(serverId),
+                                                    )
+                                                    true
+                                                }
+                                            },
+                                            applyStoppedState = applyStoppedState,
+                                            onDeleted = { serverLibraryMessage = "Сервер удалён." },
+                                            onMissingServer = {
+                                                serverLibraryMessage = "Сначала выберите работающий сервер или профиль."
+                                            },
+                                            onStopFailed = onStopFailed,
+                                        )
                                     }
                                 }
                             },
@@ -852,26 +1064,108 @@ fun main() = application {
                             onPingSubscriptionServers = { subscriptionId, targets ->
                                 startDesktopHomeLatencyTest(targets, subscriptionId)
                             },
+                            onCancelLatencyTests = { desktopHomeLatencyJobOwner.cancel() },
+                            onRestartService = restartService@{
+                                if (closeRequested || tunnelOperationInProgress || systemProxyRecoveryInProgress) {
+                                    return@restartService
+                                }
+                                if (selectedServerConfig?.isSuccess != true) {
+                                    coreMessage = "Сначала выберите работающий сервер или профиль."
+                                    return@restartService
+                                }
+                                desktopHomeLatencyJobOwner.cancel()
+                                desiredTunnelRunning = true
+                                tunnelIntentVersion += 1
+                                requestTunnelReconnect("Перезапуск SKIPI Core.")
+                            },
                             onPrepareSubscription = { install ->
                                 if (subscriptionUpdateInProgress) {
                                     Result.failure(IllegalStateException("Дождитесь завершения обновления подписки."))
                                 } else {
-                                    runCatching {
-                                        val existing = subscriptionLibrary.subscriptions
-                                            .firstOrNull { subscription -> subscription.url == install.url }
-                                        val prepared = DesktopSubscriptionLibraries.addOrReplace(
-                                            library = subscriptionLibrary,
-                                            url = install.url,
-                                            userAgent = install.userAgent,
-                                            name = existing?.name.orEmpty().ifBlank { install.name },
-                                        )
-                                        DesktopSubscriptionLibraries.saveDefault(prepared).getOrThrow()
-                                        subscriptionLibrary = prepared
-                                        desktopSharedApplication.subscriptions.refresh(prepared)
+                                    try {
+                                        val prepared = install.prepareAndPersistIn(desktopSharedApplication.subscriptions)
                                         subscriptionUrl = install.url
                                         subscriptionMessage = "Подписка сохранена. Загружаю серверы…"
-                                        prepared.subscriptions.first { subscription -> subscription.url == install.url }.id
+                                        Result.success(prepared.id)
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (error: Throwable) {
+                                        Result.failure(error)
                                     }
+                                }
+                            },
+                            onDeleteDuplicateServers = { currentGroupServerIds ->
+                                subscriptionScope.launch {
+                                    var removedCount = 0
+                                    val result = desktopSharedApplication.store.dispatchAndAwait(
+                                        SharedApplicationAction.UpdateProxyCatalog { catalog ->
+                                            val duplicateIds = ProxyServerGroupCleanup.duplicateServerIds(
+                                                servers = catalog.servers.map { row ->
+                                                    ProxyServerGroupCleanupRecord(row.id, row.server)
+                                                },
+                                                currentGroupServerIds = currentGroupServerIds,
+                                                selectedServerId = catalog.selectedServerId,
+                                            )
+                                            removedCount = duplicateIds.size
+                                            deleteProxyServerRecords(catalog, duplicateIds)
+                                        },
+                                    )
+                                    serverLibraryMessage = when (val outcome = result.outcome) {
+                                        SharedApplicationActionOutcome.Completed -> if (removedCount > 0) {
+                                            duplicatesDeletedTemplate.formatTemplate("count" to removedCount)
+                                        } else noDuplicatesMessage
+                                        is SharedApplicationActionOutcome.Rejected -> outcome.reason
+                                        is SharedApplicationActionOutcome.Failed -> outcome.reason
+                                    }
+                                }
+                            },
+                            onDeleteInvalidServers = { currentGroupServerIds ->
+                                val capturedServers = proxyServerRepository.servers.value
+                                val selectedServerId = serverLibrary.selectedServerId
+                                val tunnelRunning = coreState.isRunning
+                                val serviceOperationInProgress = closeRequested || tunnelOperationInProgress ||
+                                    systemProxyRecoveryInProgress
+                                subscriptionScope.launch {
+                                    withHomeDeleteRuntime { stopService, applyStoppedState, onStopFailed ->
+                                        runDesktopProxyHomeDeleteInvalidServers(
+                                            currentGroupServerIds = currentGroupServerIds,
+                                            servers = capturedServers,
+                                            selectedServerId = selectedServerId,
+                                            tunnelRunning = tunnelRunning,
+                                            serviceOperationInProgress = serviceOperationInProgress,
+                                            stopService = stopService,
+                                            applyStoppedState = applyStoppedState,
+                                            dispatchDelete = { capturedIds ->
+                                                desktopSharedApplication.store.dispatchAndAwait(
+                                                    SharedApplicationAction.RemoveProxyServers(capturedIds),
+                                                ).outcome
+                                            },
+                                            onDeleted = { count ->
+                                                serverLibraryMessage = invalidDeletedTemplate.formatTemplate("count" to count)
+                                            },
+                                            onNoInvalidServers = { serverLibraryMessage = noInvalidMessage },
+                                            onDeleteError = { error ->
+                                                serverLibraryMessage = "Не удалось удалить серверы: ${error.message.orEmpty()}"
+                                            },
+                                            onStopFailed = onStopFailed,
+                                        )
+                                    }
+                                }
+                            },
+                            onDeleteAllServers = { currentGroupServerIds ->
+                                val selectedServerId = serverLibrary.selectedServerId
+                                val tunnelRunning = coreState.isRunning
+                                val serviceOperationInProgress = closeRequested || tunnelOperationInProgress ||
+                                    systemProxyRecoveryInProgress
+                                subscriptionScope.launch {
+                                    runHomeBulkDelete(
+                                        serverIds = currentGroupServerIds,
+                                        selectedServerId = selectedServerId,
+                                        tunnelRunning = tunnelRunning,
+                                        serviceOperationInProgress = serviceOperationInProgress,
+                                        deletedTemplate = allDeletedTemplate,
+                                        emptyMessage = noServersToDeleteMessage,
+                                    )
                                 }
                             },
                             onImport = import@{ input ->
@@ -1018,19 +1312,48 @@ fun main() = application {
                                 }
                             },
                             onDeleteSubscription = { subscriptionId ->
-                                check(!tunnelOperationInProgress) {
-                                    "Дождитесь завершения операции SKIPI Core перед удалением подписки."
-                                }
                                 val removedSubscription = desktopSharedApplication.subscriptions.catalog.value.subscriptions
                                     .firstOrNull { subscription -> subscription.id == subscriptionId }
-                                runInSubscriptionScope {
-                                    check(!tunnelOperationInProgress) {
-                                        "Дождитесь завершения операции SKIPI Core перед удалением подписки."
+                                val selectedServerId = serverLibrary.selectedServerId
+                                val groupServerIds = proxyServerRepository.servers.value
+                                    .asSequence()
+                                    .filter { server -> server.groupId == subscriptionId }
+                                    .mapTo(linkedSetOf()) { server -> server.id }
+                                val tunnelWasRunning = coreState.isRunning
+                                val serviceOperationIsInProgress = closeRequested || tunnelOperationInProgress ||
+                                    systemProxyRecoveryInProgress
+                                subscriptionScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                                    withHomeDeleteRuntime { stopService, applyStoppedState, onStopFailed ->
+                                        runDesktopProxyHomeSubscriptionGroupDelete(
+                                            groupServerIds = groupServerIds,
+                                            selectedServerId = selectedServerId,
+                                            tunnelRunning = tunnelWasRunning,
+                                            serviceOperationInProgress = serviceOperationIsInProgress,
+                                            groupIsBuiltIn = removedSubscription?.builtIn == true,
+                                            stopService = stopService,
+                                            deleteGroupIfPresent = {
+                                                if (desktopSharedApplication.subscriptions.catalog.value.subscriptions.none { it.id == subscriptionId }) {
+                                                    false
+                                                } else {
+                                                    desktopSharedApplication.store.subscriptionEditorController.remove(subscriptionId)
+                                                    true
+                                                }
+                                            },
+                                            applyStoppedState = applyStoppedState,
+                                            onDeleted = {
+                                                if (removedSubscription?.url == subscriptionUrl) subscriptionUrl = ""
+                                                subscriptionMessage = "Подписка и её серверы удалены."
+                                            },
+                                            onMissingServer = {
+                                                serverLibraryMessage = "Сначала выберите работающий сервер или профиль."
+                                            },
+                                            onStopFailed = onStopFailed,
+                                            onDeleteError = { error ->
+                                                subscriptionMessage = "Не удалось удалить подписку: ${error.message.orEmpty()}"
+                                            },
+                                        )
                                     }
-                                    desktopSharedApplication.store.subscriptionEditorController.remove(subscriptionId)
                                 }
-                                if (removedSubscription?.url == subscriptionUrl) subscriptionUrl = ""
-                                subscriptionMessage = "Подписка и её серверы удалены."
                             },
                             onUpdateSubscriptionById = updateSubscription@{ subscriptionId ->
                                 if (subscriptionUpdateInProgress) {
@@ -1133,6 +1456,62 @@ fun main() = application {
                                     }
                                 }
                             },
+                            onRefreshAllSubscriptions = {
+                                if (subscriptionUpdateInProgress) {
+                                    subscriptionMessage = "Дождитесь завершения обновления подписки."
+                                } else {
+                                    subscriptionUpdateInProgress = true
+                                    refreshingSubscriptionId = null
+                                    subscriptionUrl = ""
+                                    subscriptionScope.launch {
+                                        try {
+                                            subscriptionMessage = "Обновление подписок…"
+                                            subscriptionUpdate = null
+                                            val result = desktopSubscriptionRefreshBatchRunner.run()
+                                            val loaded = result.refresh.updates
+                                            val failures = result.refresh.failures
+                                            val commit = result.commitResult
+                                            val singleFailure = commit?.singleCommitResult?.failure
+                                            subscriptionMessage = when {
+                                                loaded.isEmpty() && failures.isEmpty() ->
+                                                    noSubscriptionUpdatesMessage
+                                                singleFailure != null -> when (singleFailure.scope) {
+                                                    SubscriptionRefreshCommitScope.SERVERS ->
+                                                        "Список получен, но серверы не сохранены: ${singleFailure.error.message.orEmpty()}"
+                                                    SubscriptionRefreshCommitScope.SUBSCRIPTION ->
+                                                        "Серверы обновлены, но метаданные подписки не сохранены: ${singleFailure.error.message.orEmpty()}"
+                                                    SubscriptionRefreshCommitScope.PROFILE ->
+                                                        "Серверы и подписка обновлены, но профиль не сохранён: ${singleFailure.error.message.orEmpty()}"
+                                                }
+                                                else -> formatSubscriptionRefreshMessage(
+                                                    summary = SubscriptionRefreshMessageSummary(
+                                                        updatedGroupCount = loaded.size,
+                                                        failedGroupCount = failures.size,
+                                                        importedServerCount = loaded.sumOf { update -> update.servers.size },
+                                                        firstFailureMessage = failures.firstOrNull()?.error
+                                                            ?.let(::desktopSubscriptionRefreshFailureMessage),
+                                                    ),
+                                                    successTemplate = subscriptionRefreshSuccessTemplate,
+                                                    failedTemplate = subscriptionRefreshFailedTemplate,
+                                                )
+                                            }
+                                            if (
+                                                (desktopSubscriptionRefreshBatchRunner.serverLibraryChanged ||
+                                                    desktopSubscriptionRefreshBatchRunner.profileLibraryChanged) &&
+                                                coreState.isRunning
+                                            ) {
+                                                requestTunnelReconnect("Подписки обновлены.")
+                                            }
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (error: Throwable) {
+                                            subscriptionMessage = "Не удалось обновить подписки: ${error.message.orEmpty()}"
+                                        } finally {
+                                            subscriptionUpdateInProgress = false
+                                        }
+                                    }
+                                }
+                            },
                             scheduledSubscriptionId = scheduledSubscriptionId,
                             onScheduledSubscriptionConsumed = {
                                 scheduledSubscriptionId = null
@@ -1140,30 +1519,49 @@ fun main() = application {
                             },
                             contentPadding = contentPadding,
                             desktopSettings = desktopSettings,
-                            onMoveServer = { serverId, offset ->
+                            onMoveServer = { fromServerId, toServerId ->
                                 runCatching {
-                                    val updatedServers = reorderServerInLibrary(serverLibrary.servers, serverId, offset)
-                                        ?: error("Невозможно переместить сервер за пределы группы.")
-                                    val updatedLibrary = serverLibrary.copy(servers = updatedServers)
-                                    DesktopServerLibraries.saveDefault(updatedLibrary).getOrThrow()
-                                    serverLibrary = updatedLibrary
+                                    proxyServerRepository.updateLibrary { latest ->
+                                        latest.copy(
+                                            servers = reorderServerInLibrary(
+                                                latest.servers,
+                                                fromServerId = fromServerId,
+                                                toServerId = toServerId,
+                                            ),
+                                        )
+                                    }
+                                    Unit
+                                }
+                            },
+                            onHomeSortModeChange = { mode ->
+                                subscriptionScope.launch {
+                                    homeSortSaveMutex.withLock {
+                                        val updated = desktopSettings.copy(proxyServerListSort = mode.toAndroidValue())
+                                        withContext(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(updated) }
+                                            .onSuccess { desktopSettings = updated }
+                                            .onFailure { error ->
+                                                coreMessage = "Не удалось сохранить настройки: ${error.message.orEmpty()}"
+                                            }
+                                    }
                                 }
                             },
                         )
 
                         SkipiMainDestination.Configs -> DesktopConfigsScreen(
                             configLibrary = configLibrary,
-                            onConfigLibraryChange = { updated ->
-                                val activeBefore = configLibrary.selectedConfigId
-                                    ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
-                                val activeAfter = updated.selectedConfigId
-                                    ?.let { selectedId -> updated.configs.firstOrNull { profile -> profile.id == selectedId } }
-                                configLibrary = updated
+                            onTransformConfigLibrary = { transform ->
+                                val result = desktopSharedApplication.trafficConfigs.transformLatestWithPrevious(transform)
+                                val activeBefore = result.previous.selectedConfigId
+                                    ?.let { selectedId -> result.previous.configs.firstOrNull { profile -> profile.id == selectedId } }
+                                val activeAfter = result.updated.selectedConfigId
+                                    ?.let { selectedId -> result.updated.configs.firstOrNull { profile -> profile.id == selectedId } }
+                                configLibrary = result.updated
                                 if (coreState.isRunning && (
                                     activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
                                     )) {
                                     requestTunnelReconnect("Активный профиль изменён.")
                                 }
+                                result.updated
                             },
                             fetchUserAgent = desktopSettings.subscriptionUserAgent,
                             fetchTimeoutSeconds = desktopSettings.subscriptionFetchTimeoutSeconds,

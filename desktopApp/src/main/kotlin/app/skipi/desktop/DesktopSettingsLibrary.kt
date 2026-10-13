@@ -3,6 +3,11 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.home.ProxyHomeSortMode
+import app.skipi.app.home.toAndroidValue
+import app.modes.SubscriptionPingModeHttp
+import engine.network.NetworkDefaults
+import features.subscription.SubscriptionExpiryReminder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -26,14 +31,29 @@ enum class DesktopThemeMode { Dark, Amoled, Light, Aurora, Sakura, Forest, Sunse
 @Serializable
 data class DesktopAppSettings(
     val localProxyPort: Int = DefaultLocalSocksPort,
+    /** Raw text retained for settings UI round-trip; null denotes a legacy numeric-only value. */
+    val localProxyPortRaw: String? = null,
     val localHttpProxyPort: Int = DefaultLocalHttpProxyPort,
     val useWindowsSystemProxy: Boolean = isDesktopSystemProxySupported(),
     /** Enables OS system proxy (gsettings/KDE on Linux, WinINet on Windows). */
     val useSystemProxy: Boolean = useWindowsSystemProxy,
     val localProxyListenAddress: String = "127.0.0.1",
+    val enableDynamicLocalProxyPort: Boolean = false,
+    /** The legacy Desktop listener did not authenticate; keep that default for old settings files. */
+    val enableLocalProxyAuth: Boolean = false,
+    val localProxyUsername: String = "",
+    val localProxyPassword: String = "",
     val coreLogLevel: String = "warning",
     val subscriptionUserAgent: String = DefaultDesktopSubscriptionUserAgent,
     val subscriptionFetchTimeoutSeconds: Int = 30,
+    val subscriptionPingMode: Int = SubscriptionPingModeHttp,
+    val subscriptionPingUrl: String = NetworkDefaults.CONNECTIVITY_CHECK_URL,
+    val subscriptionPingTimeoutMillis: String = "5000",
+    val subscriptionPingConcurrency: Int = 8,
+    /** Separate from the single Desktop fetch fallback in [subscriptionUserAgent]. */
+    val subscriptionUserAgents: List<String> = emptyList(),
+    val enableSubscriptionExpiryNotifications: Boolean = false,
+    val subscriptionExpiryReminders: List<SubscriptionExpiryReminder> = emptyList(),
     val themeMode: DesktopThemeMode = DesktopThemeMode.Dark,
     val compactHome: Boolean = false,
     val showTunnelMemory: Boolean = true,
@@ -43,6 +63,7 @@ data class DesktopAppSettings(
     val showServerSearch: Boolean = false,
     val enableSubscriptionSwipe: Boolean = true,
     val proxyServerListColumns: Int = 1,
+    val proxyServerListSort: Int = ProxyHomeSortMode.Default.toAndroidValue(),
     val confirmDeletion: Boolean = true,
     val sendDeviceHeaders: Boolean = true,
     val installationUuid: String = "",
@@ -85,6 +106,9 @@ data class DesktopAppSettings(
     val defaultRouteOutboundTag: String = DefaultRouteOutboundTag,
     val routeRules: List<RouteRule> = emptyList(),
     val nextRouteRuleId: Int = 10,
+    val languageTag: String? = null,
+    val hapticsEnabled: Boolean = true,
+    val onboardingCompleted: Boolean = false,
 )
 
 object DesktopSettingsLibraries {
@@ -147,7 +171,11 @@ internal fun DesktopAppSettings.normalized(
         }
         require(proxyServerListColumns in 1..3) { "Proxy server list columns must be in 1..3" }
     }
-    val normalizedSocksPort = localProxyPort.takeIf { it in 1..65_535 } ?: DefaultLocalSocksPort
+    val normalizedSocksPort = localProxyPortRaw
+        ?.toIntOrNull()
+        ?.takeIf { it in 1..65_535 }
+        ?: localProxyPort.takeIf { it in 1..65_535 }
+        ?: DefaultLocalSocksPort
     val fallbackHttpProxyPort = DefaultLocalHttpProxyPort
         .takeIf { it != normalizedSocksPort }
         ?: DefaultLocalHttpProxyPort + 1

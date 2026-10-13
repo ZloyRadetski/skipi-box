@@ -802,6 +802,7 @@ class DesktopSubscriptionRefreshCommitAdapterTest {
         var configs = DesktopConfigLibrary(
             selectedConfigId = 3,
             configs = listOf(ConfigProfile(3, "Active", "[Rule]\nFINAL,DIRECT\n")),
+            nextConfigId = 100,
         )
         var servers = DesktopServerLibrary()
         val proxyRepository = DesktopProxyServerRepository(
@@ -831,7 +832,8 @@ class DesktopSubscriptionRefreshCommitAdapterTest {
         )
 
         val created = configs.configs.single { it.sourceUrl == "https://example.com/new-routing.conf" }
-        assertEquals(4, created.id)
+        assertEquals(100, created.id)
+        assertEquals(101, configs.nextConfigId)
         assertEquals("Provider config", created.name)
         assertEquals(created.id, configs.selectedConfigId)
         val createdState = TrafficConfigState(
@@ -843,6 +845,17 @@ class DesktopSubscriptionRefreshCommitAdapterTest {
             versionedDesktopProfileResourceUserAgent(ProjectInfo.VERSION_NAME),
             createdState.resourceSettings.userAgent,
         )
+
+        adapter.applyEmbeddedConfig(
+            ResolvedEmbeddedSubscriptionConfig(
+                content = "[Rule]\nFINAL,DIRECT\n# name: Second provider config\n",
+                sourceUrl = "https://example.com/second-routing.conf",
+                fallbackName = "Second provider config",
+                activate = false,
+            ),
+        )
+        assertEquals(101, configs.configs.single { it.sourceUrl == "https://example.com/second-routing.conf" }.id)
+        assertEquals(102, configs.nextConfigId)
     }
 
     @Test

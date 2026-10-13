@@ -8,8 +8,6 @@ import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.ProxyServerLatencyTesting
 import app.modes.ConnectionDisplayModeCompact
-import app.modes.ProxyServerListSortLatency
-import app.modes.ProxyServerListSortName
 import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeCopyFormat
@@ -20,12 +18,14 @@ import app.skipi.app.home.ProxyHomeInput
 import app.skipi.app.home.ProxyHomeInputSnapshot
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeServerTool
-import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
 import app.skipi.app.home.toProxyHomeInput
+import app.skipi.app.home.proxyHomeServerHeadline
+import app.skipi.app.home.proxyHomeServerSearchText
+import app.skipi.app.home.proxyHomeServerSortKey
+import app.skipi.app.home.proxyHomeSortModeFromAndroidValue
 import app.activeTrafficConfig
-import features.proxy.server.display.CountryFlagUtils
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.UrlProxyServer
 import features.proxy.server.model.getTransportDisplay
@@ -55,35 +55,28 @@ internal fun AppState.toProxyHomeInput(
             presentationFormatter = presentationFormatter,
         )
     }
-    val groups = groupState.groupTabs.map { tab ->
-        val members = if (tab.id == AllProxyGroupId) {
-            visibleServers.filterNot { server ->
-                (server.server as? StrategyGroup)?.sourceTrafficConfigId != null
-            }
-        } else {
-            visibleServers.filter { server -> server.groupId == tab.id }
-        }
-        val subscriptionGroup = subscriptionGroups.firstOrNull { group -> group.id == tab.id }
+    val groups = groupState.homeGroupMemberships.map { membership ->
+        val subscriptionGroup = subscriptionGroups.firstOrNull { group -> group.id == membership.id }
         val kind = when {
-            tab.id == AllProxyGroupId -> ProxyHomeGroupKind.All
-            tab.id == AutoBalancerGroupId -> ProxyHomeGroupKind.AutoBalancer
+            membership.id == AllProxyGroupId -> ProxyHomeGroupKind.All
+            membership.id == AutoBalancerGroupId -> ProxyHomeGroupKind.AutoBalancer
             subscriptionGroup?.url?.isNotBlank() == true -> ProxyHomeGroupKind.Subscription
             subscriptionGroup != null -> ProxyHomeGroupKind.Manual
             else -> ProxyHomeGroupKind.Other
         }
         ProxyGroupSummary(
-            id = tab.id.toString(),
-            title = tab.name,
-            serverCount = members.size,
+            id = membership.id.toString(),
+            title = membership.title,
+            serverCount = membership.serverCount,
             enabled = subscriptionGroup?.enabled ?: true,
-            serverIds = members.mapTo(linkedSetOf()) { server -> server.id.toString() },
+            serverIds = membership.serverIds.mapTo(linkedSetOf(), Int::toString),
             canEdit = subscriptionGroup != null && !subscriptionGroup.builtIn,
             canDelete = subscriptionGroup != null && !subscriptionGroup.builtIn,
-            canMove = subscriptionGroup != null && !subscriptionGroup.builtIn && tab.id != DefaultSubscriptionGroupId,
+            canMove = subscriptionGroup != null && !subscriptionGroup.builtIn && membership.id != DefaultSubscriptionGroupId,
             subscription = subscriptionGroup
                 ?.takeIf { group -> group.url.isNotBlank() }
                 ?.toProxyHomeSubscription(
-                    serverCount = members.size,
+                    serverCount = membership.serverCount,
                     refreshing = subscriptionGroup.id in refreshingSubscriptionGroupIds,
                     pinging = subscriptionGroup.id in pingingSubscriptionGroupIds,
                 ),
@@ -107,11 +100,7 @@ internal fun AppState.toProxyHomeInput(
         servers = serverSummaries,
         hasSubscriptions = subscriptionGroups.any { group -> group.url.isNotBlank() },
         isTestingLatency = isTestingLatency,
-        sortMode = when (proxyServerListSort) {
-            ProxyServerListSortName -> ProxyHomeSortMode.Name
-            ProxyServerListSortLatency -> ProxyHomeSortMode.Latency
-            else -> ProxyHomeSortMode.Default
-        },
+        sortMode = proxyHomeSortModeFromAndroidValue(proxyServerListSort),
         searchEnabled = showServerSearch,
         subscriptionSwipeEnabled = enableSubscriptionSwipe,
         displayOptions = ProxyHomeDisplayOptions(
@@ -175,10 +164,12 @@ private fun ProxyServerState.toProxyHomeSummary(
     presentationFormatter: ProxyServerListItemTextFormatter?,
 ): ProxyServerSummary {
     val info = server.getInfo()
-    val flag = CountryFlagUtils.extractLeadingCountryFlag(info.remarks)
-        ?: if (server is StrategyGroup) "⚡" else null
-    val title = CountryFlagUtils.stripLeadingCountryFlag(info.remarks)
-        .ifBlank { info.protocol.ifBlank { "#$id" } }
+    val headline = proxyHomeServerHeadline(
+        remarks = info.remarks,
+        protocol = info.protocol,
+        serverId = id,
+        isStrategyGroup = server is StrategyGroup,
+    )
     val latencyText = latency.trim()
     val latencyTesting = latencyText == ProxyServerLatencyTesting
     val latencyMs = if (latencyText == ProxyServerLatencyTesting) {
@@ -190,11 +181,11 @@ private fun ProxyServerState.toProxyHomeSummary(
 
     return ProxyServerSummary(
         id = id.toString(),
-        title = title,
+        title = headline.title,
         address = presentationFormatter?.displayOf(this, allServers)?.summary ?: info.address,
         protocol = info.protocol,
         selected = id == selectedServerId,
-        flag = flag,
+        flag = headline.flag,
         transport = server.getTransportDisplay(),
         latencyMs = latencyMs,
         latencyError = latencyError,
@@ -207,8 +198,14 @@ private fun ProxyServerState.toProxyHomeSummary(
         },
         isStrategyGroup = server is StrategyGroup,
         groupId = groupId.toString(),
-        searchText = "$title ${info.remarks} ${info.address} ${info.protocol} $groupName",
-        sortKey = info.remarks.ifBlank { title },
+        searchText = proxyHomeServerSearchText(
+            title = headline.title,
+            remarks = info.remarks,
+            address = info.address,
+            protocol = info.protocol,
+            groupName = groupName,
+        ),
+        sortKey = proxyHomeServerSortKey(remarks = info.remarks, title = headline.title),
     )
 }
 

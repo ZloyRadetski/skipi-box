@@ -99,4 +99,109 @@ class DesktopConfigLibraryTest {
         assertEquals(listOf(1), afterDelete.configs.map { it.id })
         assertEquals(1, afterDelete.selectedConfigId)
     }
+
+    @Test
+    fun duplicateAdapterCreatesCopyWithoutUpsertingSameSourceUrl() {
+        val active = DesktopConfigLibraries.put(
+            DesktopConfigLibrary(),
+            "Active",
+            "[General]\nloglevel = warning\n",
+        )
+        val source = DesktopConfigLibraries.put(
+            active,
+            "Remote",
+            """[General]
+loglevel = info
+
+[SKIPI]
+profile-name = Remote
+profile-update-url = https://example.com/remote
+profile-update-locked = true
+profile-auto-update = false
+profile-update-interval = 48
+resource-user-agent = source-agent
+resource-auto-update = false
+resource-update-interval = 72
+
+[Vendor]
+vendor-option = keep
+""",
+            sourceUrl = "https://example.com/remote",
+            updateLocked = true,
+            lastUpdatedAtMillis = 9_876L,
+        )
+        val remote = source.configs.single { it.name == "Remote" }
+
+        val duplicated = DesktopConfigLibraries.duplicate(
+            library = source,
+            sourceProfileId = remote.id,
+            name = "Remote — копия",
+        )
+        val copy = duplicated.configs.last()
+
+        assertEquals(listOf(1, 2, 3), duplicated.configs.map { it.id })
+        assertEquals(active.selectedConfigId, duplicated.selectedConfigId)
+        assertEquals("Remote", duplicated.configs[1].name)
+        assertEquals(remote.content, duplicated.configs[1].content)
+        assertEquals(remote.lastUpdatedAtMillis, duplicated.configs[1].lastUpdatedAtMillis)
+        assertEquals("Remote — копия", copy.name)
+        assertEquals(remote.sourceUrl, copy.sourceUrl)
+        assertEquals(remote.updateLocked, copy.updateLocked)
+        assertEquals(0L, copy.lastUpdatedAtMillis)
+        assertEquals(4, duplicated.nextConfigId)
+        assertTrue(copy.content.contains("profile-name = Remote — копия"))
+        assertTrue(copy.content.contains("profile-auto-update = false"))
+        assertTrue(copy.content.contains("resource-user-agent = source-agent"))
+        assertTrue(copy.content.contains("resource-auto-update = false"))
+        assertTrue(copy.content.contains("resource-update-interval = 72"))
+        assertTrue(copy.content.contains("vendor-option = keep"))
+    }
+
+    @Test
+    fun deletingLastProfileIsANoOpLikeAndroid() {
+        val only = DesktopConfigLibraries.put(DesktopConfigLibrary(), "Only", "[General]")
+
+        assertEquals(only, DesktopConfigLibraries.remove(only, only.configs.single().id))
+    }
+
+    @Test
+    fun selectingUnknownNonNullIdKeepsCurrentProfileLikeAndroid() {
+        val library = DesktopConfigLibraries.put(DesktopConfigLibrary(), "Current", "[General]")
+
+        assertEquals(library, DesktopConfigLibraries.select(library, 99))
+    }
+
+    @Test
+    fun legacyNextIdSurvivesSaveReloadAndDeletingTheHighestProfile() {
+        val path = Files.createTempDirectory("skipi-config-id-counter").resolve("configs.json")
+        val fixture = requireNotNull(javaClass.getResourceAsStream("/fixtures/desktop-legacy/configs.json"))
+        fixture.use { Files.copy(it, path) }
+
+        val legacy = DesktopConfigLibraries.load(path).getOrThrow()
+        assertEquals(42, legacy.nextConfigId)
+
+        val firstNew = DesktopConfigLibraries.put(legacy, "New after legacy", "[General]")
+        assertEquals(42, firstNew.configs.last().id)
+        assertEquals(43, firstNew.nextConfigId)
+        DesktopConfigLibraries.save(path, firstNew).getOrThrow()
+
+        val restored = DesktopConfigLibraries.load(path).getOrThrow()
+        assertEquals(43, restored.nextConfigId)
+        val afterDelete = DesktopConfigLibraries.remove(restored, 42)
+        assertEquals(43, afterDelete.nextConfigId)
+        DesktopConfigLibraries.save(path, afterDelete).getOrThrow()
+
+        val restoredAfterDelete = DesktopConfigLibraries.load(path).getOrThrow()
+        assertEquals(43, restoredAfterDelete.nextConfigId)
+        val secondNew = DesktopConfigLibraries.put(restoredAfterDelete, "Next after delete", "[Rule]")
+        assertEquals(43, secondNew.configs.last().id)
+        assertEquals(44, secondNew.nextConfigId)
+    }
+
+    @Test
+    fun missingLibraryRemainsEmptyInsteadOfInventingStockProfile() {
+        val path = Files.createTempDirectory("skipi-empty-configs").resolve("configs.json")
+
+        assertEquals(emptyList(), DesktopConfigLibraries.load(path).getOrThrow().configs)
+    }
 }

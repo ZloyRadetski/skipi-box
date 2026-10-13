@@ -29,7 +29,7 @@ import java.nio.file.StandardOpenOption.TRUNCATE_EXISTING
 data class DesktopStoredProxyServer(
     val id: Int,
     val serverJson: String,
-    /** Null means a manually added server; otherwise this is its subscription group. */
+    /** Null is Manual, -2 is Auto, and positive IDs identify subscription groups. */
     val subscriptionId: Int? = null,
 ) {
     fun decode(): Result<ProxyServer<*>> = runCatching(serverJson::decodePersistedProxyServer)

@@ -3,10 +3,16 @@
 
 package app.skipi.app.subscription
 
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
@@ -26,6 +32,81 @@ class SubscriptionRefreshUseCaseTest {
         assertEquals(listOf("broken"), result.failures.map { it.request })
         assertEquals("fetch failed", result.failures.single().error.message)
         assertEquals(123L, result.updatedAtMillis)
+    }
+
+    @Test
+    fun failedBatchLoadProducesNoUpdateForTheHostApplyStep() = runTest {
+        val result = refreshSubscriptions(
+            requests = listOf("unavailable"),
+            loader = SubscriptionRefreshLoader { error("fetch failed") },
+            updatedAtMillis = { 321L },
+        )
+
+        assertEquals(emptyList(), result.updates)
+        assertEquals(listOf("unavailable"), result.failures.map { it.request })
+        assertEquals(321L, result.updatedAtMillis)
+    }
+
+    @Test
+    fun batchStartsEveryLoadBeforeWaitingForResponsesAndKeepsRequestOrder() = runTest {
+        val requests = listOf("first", "second", "third")
+        val started = mutableListOf<String>()
+        val releases = requests.associateWith { CompletableDeferred<Unit>() }
+        val batch = async {
+            refreshSubscriptions(
+                requests = requests,
+                loader = SubscriptionRefreshLoader { request ->
+                    started += request
+                    releases.getValue(request).await()
+                    request.uppercase()
+                },
+                updatedAtMillis = { 456L },
+            )
+        }
+
+        runCurrent()
+        try {
+            assertEquals(requests.toSet(), started.toSet())
+            assertEquals(requests.size, started.size)
+        } finally {
+            releases.values.forEach { it.complete(Unit) }
+        }
+
+        val result = batch.await()
+        assertEquals(listOf("FIRST", "SECOND", "THIRD"), result.updates)
+        assertEquals(456L, result.updatedAtMillis)
+    }
+
+    @Test
+    fun cancellingBatchCancelsEveryOutstandingLoadAndDoesNotSampleCompletionTime() = runTest {
+        val requests = listOf("first", "second")
+        val started = mutableSetOf<String>()
+        val cancelled = mutableSetOf<String>()
+        var sampledCompletionTime = false
+        val batch = async {
+            refreshSubscriptions(
+                requests = requests,
+                loader = SubscriptionRefreshLoader { request ->
+                    started += request
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        cancelled += request
+                    }
+                },
+                updatedAtMillis = {
+                    sampledCompletionTime = true
+                    789L
+                },
+            )
+        }
+
+        runCurrent()
+        assertEquals(requests.toSet(), started)
+        batch.cancelAndJoin()
+
+        assertEquals(requests.toSet(), cancelled)
+        assertFalse(sampledCompletionTime)
     }
 
     @Test

@@ -124,6 +124,27 @@ class DesktopProxyHomeEffectTest {
     }
 
     @Test
+    fun refreshAllSubscriptionsIsAcceptedByTheDesktopHomeEffect() {
+        val subscriptions = listOf(
+            DesktopStoredSubscription(id = 1, url = "https://first.example.test/sub"),
+            DesktopStoredSubscription(id = 2, url = "https://disabled.example.test/sub", enabled = false),
+            DesktopStoredSubscription(id = 3, url = "  "),
+        )
+        val context = DesktopProxyHomeEffectContext(
+            subscriptions = subscriptions,
+            onRefreshAllSubscriptions = { Result.success(Unit) },
+        )
+
+        val result = context.handle(ProxyHomeEffect.RefreshAllSubscriptions)
+
+        assertTrue(
+            result.isSuccess,
+            "Desktop Home should route batch refresh for eligible subscriptions instead of rejecting the effect: " +
+                result.exceptionOrNull()?.message,
+        )
+    }
+
+    @Test
     fun subscriptionPingPassesItsIdentityWithTheActualTestTargets() {
         val server = VLESS(remarks = "London", id = "l", server = "london.example", port = "443")
         val storedServer = DesktopStoredProxyServer(
@@ -220,24 +241,21 @@ class DesktopProxyHomeEffectTest {
     }
 
     @Test
-    fun reorderServerInLibraryMovesAmongPeersAndPreservesMetadata() {
+    fun reorderServerInLibraryMovesToTargetIdAndPreservesMetadata() {
         val s1 = DesktopStoredProxyServer(id = 1, serverJson = "json1", subscriptionId = 10)
         val s2 = DesktopStoredProxyServer(id = 2, serverJson = "json2", subscriptionId = 20)
         val s3 = DesktopStoredProxyServer(id = 3, serverJson = "json3", subscriptionId = 10)
         val initial = listOf(s1, s2, s3)
 
-        // S1 moved down among its peers (subscriptionId = 10): target peer is S3
-        val reordered = reorderServerInLibrary(initial, serverId = 1, offset = 1)
-        assertNotNull(reordered)
-        assertEquals(listOf(3, 2, 1), reordered.map { it.id })
-        assertEquals(listOf("json3", "json2", "json1"), reordered.map { it.serverJson })
-        assertEquals(listOf(10, 20, 10), reordered.map { it.subscriptionId })
+        // Moving S1 to visible neighbor ID 3 uses the full catalog order, including S2.
+        val reordered = reorderServerInLibrary(initial, fromServerId = 1, toServerId = 3)
+        assertEquals(listOf(2, 3, 1), reordered.map { it.id })
+        assertEquals(listOf("json2", "json3", "json1"), reordered.map { it.serverJson })
+        assertEquals(listOf(20, 10, 10), reordered.map { it.subscriptionId })
 
-        // Boundary rejection among peers
-        assertNull(reorderServerInLibrary(initial, serverId = 1, offset = -1))
-        assertNull(reorderServerInLibrary(initial, serverId = 3, offset = 1))
-        assertNull(reorderServerInLibrary(initial, serverId = 2, offset = 1)) // S2 is alone in subscription 20
-        assertNull(reorderServerInLibrary(initial, serverId = 99, offset = 1)) // non-existent
+        assertEquals(initial, reorderServerInLibrary(initial, fromServerId = 1, toServerId = 1))
+        assertEquals(initial, reorderServerInLibrary(initial, fromServerId = 1, toServerId = 99))
+        assertEquals(listOf(3, 1, 2), reorderServerInLibrary(initial, fromServerId = 3, toServerId = 1).map { it.id })
     }
 
     @Test
@@ -279,14 +297,15 @@ class DesktopProxyHomeEffectTest {
 
         val defaultContext = DesktopProxyHomeEffectContext(
             decodedServers = servers,
+            orderedVisibleServerIds = listOf(1, 2),
             sortMode = ProxyHomeSortMode.Default,
-            onMoveServer = { id, offset ->
-                moves += (id to offset)
+            onMoveServer = { fromServerId, toServerId ->
+                moves += (fromServerId to toServerId)
                 Result.success(Unit)
             },
         )
         assertTrue(defaultContext.handle(ProxyHomeEffect.MoveServer("1", 1)).isSuccess)
-        assertEquals(listOf(1 to 1), moves)
+        assertEquals(listOf(1 to 2), moves)
 
         // Boundary rejection
         assertTrue(defaultContext.handle(ProxyHomeEffect.MoveServer("1", -1)).isFailure)
@@ -295,9 +314,10 @@ class DesktopProxyHomeEffectTest {
         // Rejection during Name and Latency sort
         val nameContext = DesktopProxyHomeEffectContext(
             decodedServers = servers,
+            orderedVisibleServerIds = listOf(1, 2),
             sortMode = ProxyHomeSortMode.Name,
-            onMoveServer = { id, offset ->
-                moves += (id to offset)
+            onMoveServer = { fromServerId, toServerId ->
+                moves += (fromServerId to toServerId)
                 Result.success(Unit)
             },
         )
@@ -305,9 +325,10 @@ class DesktopProxyHomeEffectTest {
 
         val latencyContext = DesktopProxyHomeEffectContext(
             decodedServers = servers,
+            orderedVisibleServerIds = listOf(1, 2),
             sortMode = ProxyHomeSortMode.Latency,
-            onMoveServer = { id, offset ->
-                moves += (id to offset)
+            onMoveServer = { fromServerId, toServerId ->
+                moves += (fromServerId to toServerId)
                 Result.success(Unit)
             },
         )

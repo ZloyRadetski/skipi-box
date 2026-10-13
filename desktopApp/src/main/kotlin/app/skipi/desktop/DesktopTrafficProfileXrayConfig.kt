@@ -111,21 +111,7 @@ object DesktopTrafficProfileXrayConfigFactory {
             put(
                 "inbounds",
                 buildJsonArray {
-                    add(
-                        buildJsonObject {
-                            put("tag", SocksInboundTag)
-                            put("listen", options.listenAddress)
-                            put("port", options.socksPort)
-                            put("protocol", "socks")
-                            put(
-                                "settings",
-                                buildJsonObject {
-                                    put("auth", "noauth")
-                                    put("udp", true)
-                                },
-                            )
-                        },
-                    )
+                    add(LocalProxyXrayConfigFactory.buildSocksInbound(options, tag = SocksInboundTag))
                     if (options.enableHttpProxy) {
                         add(
                             buildJsonObject {

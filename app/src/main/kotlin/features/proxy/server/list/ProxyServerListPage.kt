@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CoroutineStart
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -63,12 +64,12 @@ import features.proxy.server.usecase.ProxyServerLatencyTracker
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.restartProxyServiceAfterSelection
 import features.proxy.server.usecase.runProxyServerLatencyTest
-import features.proxy.server.usecase.updatableSubscriptionGroups
 import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.SubscriptionGroupEditorDialog
 import features.subscription.usecase.subscriptionUpdateMessage
 import features.subscription.usecase.toSubscriptionFetchOptions
+import features.subscription.usecase.AndroidSubscriptionRefreshBatchRunner
 import features.subscription.usecase.updateSubscriptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -90,6 +91,11 @@ import app.skipi.ui.home.SkipiProxyHomeScaffold
 import app.skipi.ui.home.SkipiProxyHomeScaffoldState
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeAction
+import app.skipi.app.proxy.ProxyServerStopOutcome
+import app.skipi.app.proxy.proxyServerSingleDeleteRequiresStop
+import app.skipi.app.proxy.proxySubscriptionGroupDeleteRequiresStop
+import app.skipi.app.proxy.runSingleProxyServerDeleteWhenRequired
+import app.skipi.app.proxy.runSubscriptionGroupDeleteWhenRequired
 import app.skipi.app.home.moveProxyHomeItem
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
@@ -138,6 +144,7 @@ fun ProxyServerListPage(
     val appState by stateStore.collectAppState()
     val proxyListState by stateStore.collectProxyServerListState()
     val updateAppState = LocalUpdateAppState.current
+    val latestUpdateAppState = rememberUpdatedState(updateAppState)
     val navigator = LocalNavigator.current
     val services = LocalAppServices.current
     val proxyLatencyTester = services.proxyLatencyTester
@@ -151,18 +158,38 @@ fun ProxyServerListPage(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val serviceRestartMutex = remember { Mutex() }
-    val allSubscriptionsUpdateMutex = remember { Mutex() }
+    val subscriptionRefreshBatchRunner = remember(stateStore, subscriptionFetcher, services) {
+        AndroidSubscriptionRefreshBatchRunner(
+            captureGroups = { stateStore.state.value.subscriptionGroups },
+            onBeforeEligibility = {
+                services.appScope.launch(Dispatchers.IO) {
+                    runCatching { services.appUpdateCheckCoordinator.checkLatestRelease() }
+                }
+            },
+            fetchOptions = { group -> stateStore.state.value.toSubscriptionFetchOptions(group) },
+            fetchResponse = { url, userAgent, options ->
+                subscriptionFetcher.fetchResponse(url, userAgent, options)
+            },
+            onCommitUpdates = { updates, updatedAtMillis ->
+                applyProxySubscriptionUpdates(
+                    stateStore = stateStore,
+                    updates = updates,
+                    updatedAtMillis = updatedAtMillis,
+                    updateAppState = latestUpdateAppState.value,
+                )
+            },
+        )
+    }
+    val subscriptionRefreshBatchProgress by subscriptionRefreshBatchRunner.progress.collectAsState()
 
-    // Derive the initial selectedGroupId from the persisted selectedProxyServerId
-    // so the tab starts on the correct group after process death. rememberSaveable
-    // cannot survive process kill, so we compute the initial value from proxyListState
-    // (synchronously loaded from persistent storage) instead of defaulting to
-    // DefaultSubscriptionGroupId.
+    // Seed once from the persisted selected server. The presentation saver retains a valid
+    // restored or user-selected group; the host's synchronously loaded list supplies the
+    // process-death fallback when no matching decoded server record exists.
     val initialSelectedGroupId = remember {
-        proxyListState.proxyServers
-            .firstOrNull { it.id == proxyListState.selectedProxyServerId }
-            ?.groupId
-            ?: DefaultSubscriptionGroupId
+        initialAndroidProxyHomeGroupId(
+            selectedProxyServerId = proxyListState.selectedProxyServerId,
+            proxyServers = proxyListState.proxyServers,
+        )
     }
     var homePresentation by rememberSaveableProxyHomePresentation(
         ProxyHomePresentation(selectedGroupId = initialSelectedGroupId.toString()),
@@ -392,44 +419,17 @@ fun ProxyServerListPage(
     }
 
     suspend fun updateAllSubscriptions() {
-        allSubscriptionsUpdateMutex.withLock {
-            services.appScope.launch(Dispatchers.IO) {
-                runCatching {
-                    services.appUpdateCheckCoordinator.checkLatestRelease()
-                }
-            }
-
-            val subscriptionGroups = stateStore.state.value.subscriptionGroups.updatableSubscriptionGroups()
-            if (subscriptionGroups.isEmpty()) {
-                tipNotifier.show(messages.noSubscriptionUpdates)
-                return@withLock
-            }
-            val updatingIds = subscriptionGroups.mapTo(mutableSetOf()) { it.id }
-            refreshingSubscriptionGroupIds = refreshingSubscriptionGroupIds + updatingIds
-            try {
-                val result = updateSubscriptions(
-                    groups = subscriptionGroups,
-                    subscriptionFetcher = subscriptionFetcher,
-                    fetchOptions = { group -> stateStore.state.value.toSubscriptionFetchOptions(group) },
-                )
-                if (result.updates.isNotEmpty()) {
-                    applyProxySubscriptionUpdates(
-                        stateStore = stateStore,
-                        updates = result.updates,
-                        updatedAtMillis = result.updatedAtMillis,
-                        updateAppState = updateAppState,
-                    )
-                }
-                tipNotifier.show(
-                    subscriptionUpdateMessage(
-                        result = result,
-                        successTemplate = messages.subscriptionUpdateResultTemplate,
-                        failedTemplate = messages.subscriptionUpdateResultWithFailedTemplate,
-                    )
-                )
-            } finally {
-                refreshingSubscriptionGroupIds = refreshingSubscriptionGroupIds - updatingIds
-            }
+        val result = subscriptionRefreshBatchRunner.run()
+        if (result.updates.isEmpty() && result.failures.isEmpty()) {
+            tipNotifier.show(messages.noSubscriptionUpdates)
+        } else {
+            tipNotifier.show(
+                subscriptionUpdateMessage(
+                    result = result,
+                    successTemplate = messages.subscriptionUpdateResultTemplate,
+                    failedTemplate = messages.subscriptionUpdateResultWithFailedTemplate,
+                ),
+            )
         }
     }
 
@@ -481,51 +481,67 @@ fun ProxyServerListPage(
     }
 
     fun deleteProxyServer(server: ProxyServerState) {
-        if (serviceOperationInProgress) return
         val remarks = server.server.getInfo().remarks
-
-        fun removeServer(stopResult: ProxyServiceResult.Success? = null): Boolean {
-            if (stateStore.currentState.proxyServers.none { it.id == server.id }) return false
-            services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveProxyServer(server.id))
-            if (stopResult != null) {
-                updateAppState { state ->
-                    state.copy(
-                        proxyRunning = stopResult.proxyRunning,
-                        localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
-                    )
-                }
-            }
-            return true
-        }
-
         val stateSnapshot = stateStore.state.value
-        if (stateSnapshot.selectedProxyServerId != server.id || !stateSnapshot.proxyRunning) {
-            if (removeServer()) {
-                services.appScope.launch {
-                    tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to remarks))
-                }
-            }
-            return
-        }
+        val mustStop = proxyServerSingleDeleteRequiresStop(
+            serverId = server.id,
+            selectedServerId = stateSnapshot.selectedProxyServerId,
+            serviceRunning = stateSnapshot.proxyRunning,
+        )
+        val operation: suspend () -> Unit = {
+            var successfulStop: ProxyServiceResult.Success? = null
+            runSingleProxyServerDeleteWhenRequired(
+                serverId = server.id,
+                selectedServerId = stateSnapshot.selectedProxyServerId,
+                serviceRunning = stateSnapshot.proxyRunning,
+                serviceOperationInProgress = serviceOperationInProgress,
+                stopService = {
+                    when (val result = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
+                        is ProxyServiceResult.Success -> {
+                            successfulStop = result
+                            ProxyServerStopOutcome.Stopped
+                        }
 
-        runProxyServiceOperation {
-            when (val stopResult = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
-                is ProxyServiceResult.Success -> {
-                    if (removeServer(stopResult)) {
-                        tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to remarks))
+                        ProxyServiceResult.MissingServer -> ProxyServerStopOutcome.MissingServer
+                        is ProxyServiceResult.Failed -> ProxyServerStopOutcome.Failed(result.error)
                     }
-                }
-
-                ProxyServiceResult.MissingServer -> {
-                    tipNotifier.show(messages.selectServerFirst)
-                }
-
-                is ProxyServiceResult.Failed -> {
+                },
+                dispatchDeleteIfPresent = {
+                    if (stateStore.currentState.proxyServers.none { it.id == server.id }) {
+                        false
+                    } else {
+                        services.sharedApplicationStore.dispatch(SharedApplicationAction.RemoveProxyServer(server.id))
+                        true
+                    }
+                },
+                applyStopState = {
+                    val stopResult = checkNotNull(successfulStop)
+                    updateAppState { state ->
+                        state.copy(
+                            proxyRunning = stopResult.proxyRunning,
+                            localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
+                        )
+                    }
+                },
+                onDeleted = {
+                    if (mustStop) {
+                        tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to remarks))
+                    } else {
+                        services.appScope.launch {
+                            tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to remarks))
+                        }
+                    }
+                },
+                onMissingServer = { tipNotifier.show(messages.selectServerFirst) },
+                onStopFailed = { error ->
                     updateAppState { state -> state.copy(proxyRunning = false) }
-                    tipNotifier.showError(stopResult.error, messages.serviceStopped)
-                }
-            }
+                    tipNotifier.showError(error, messages.serviceStopped)
+                },
+            )
         }
+
+        if (mustStop) runProxyServiceOperation { operation() }
+        else services.appScope.launch(start = CoroutineStart.UNDISPATCHED) { operation() }
     }
 
     fun requestProxyServerDeletion(server: ProxyServerState) {
@@ -540,55 +556,67 @@ fun ProxyServerListPage(
         if (group.builtIn) return
         if (serviceOperationInProgress) return
         val groupName = group.name
-
-        suspend fun removeGroup(stopResult: ProxyServiceResult.Success? = null): Boolean {
-            if (stateStore.currentState.subscriptionGroups.none { it.id == group.id && !it.builtIn }) return false
-            try {
-                services.sharedApplicationStore.subscriptionEditorController.remove(group.id)
-            } catch (failure: kotlinx.coroutines.CancellationException) {
-                throw failure
-            } catch (failure: Exception) {
-                tipNotifier.showError(failure)
-                return false
-            }
-            if (stopResult != null) {
-                updateAppState { state ->
-                    state.copy(
-                        proxyRunning = stopResult.proxyRunning,
-                        localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
-                    )
-                }
-            }
-            if (selectedGroupId == group.id) {
-                updateHomePresentation(ProxyHomeAction.SelectGroup(DefaultSubscriptionGroupId.toString()))
-            }
-            tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to groupName))
-            return true
-        }
-
         val stateSnapshot = stateStore.state.value
         val groupServerIds = stateSnapshot.proxyServers.filter { it.groupId == group.id }.map { it.id }.toSet()
-        val isCurrentRunningServerInGroup = stateSnapshot.proxyRunning && groupServerIds.contains(stateSnapshot.selectedProxyServerId)
+        val mustStop = proxySubscriptionGroupDeleteRequiresStop(
+            groupServerIds = groupServerIds,
+            selectedServerId = stateSnapshot.selectedProxyServerId,
+            serviceRunning = stateSnapshot.proxyRunning,
+        )
 
-        if (!isCurrentRunningServerInGroup) {
-            services.appScope.launch { removeGroup() }
-            return
-        }
+        val operation: suspend () -> Unit = {
+            var successfulStop: ProxyServiceResult.Success? = null
+            runSubscriptionGroupDeleteWhenRequired(
+                groupServerIds = groupServerIds,
+                selectedServerId = stateSnapshot.selectedProxyServerId,
+                serviceRunning = stateSnapshot.proxyRunning,
+                serviceOperationInProgress = serviceOperationInProgress,
+                groupIsBuiltIn = group.builtIn,
+                stopService = {
+                    when (val result = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
+                        is ProxyServiceResult.Success -> {
+                            successfulStop = result
+                            ProxyServerStopOutcome.Stopped
+                        }
 
-        runProxyServiceOperation {
-            when (val stopResult = proxyServiceUseCase.stop(stateStore.state.value.runMode)) {
-                is ProxyServiceResult.Success -> {
-                    removeGroup(stopResult)
-                }
-                ProxyServiceResult.MissingServer -> {
-                    tipNotifier.show(messages.selectServerFirst)
-                }
-                is ProxyServiceResult.Failed -> {
+                        ProxyServiceResult.MissingServer -> ProxyServerStopOutcome.MissingServer
+                        is ProxyServiceResult.Failed -> ProxyServerStopOutcome.Failed(result.error)
+                    }
+                },
+                deleteGroupIfPresent = {
+                    if (stateStore.currentState.subscriptionGroups.none { it.id == group.id && !it.builtIn }) {
+                        false
+                    } else {
+                        services.sharedApplicationStore.subscriptionEditorController.remove(group.id)
+                        true
+                    }
+                },
+                applyStopState = {
+                    val stopResult = checkNotNull(successfulStop)
+                    updateAppState { state ->
+                        state.copy(
+                            proxyRunning = stopResult.proxyRunning,
+                            localProxyPort = stopResult.appState?.localProxyPort ?: state.localProxyPort,
+                        )
+                    }
+                },
+                onDeleted = {
+                    if (selectedGroupId == group.id) {
+                        updateHomePresentation(ProxyHomeAction.SelectGroup(DefaultSubscriptionGroupId.toString()))
+                    }
+                    tipNotifier.show(messages.deletedTemplate.formatTemplate("name" to groupName))
+                },
+                onMissingServer = { tipNotifier.show(messages.selectServerFirst) },
+                onStopFailed = { error ->
                     updateAppState { state -> state.copy(proxyRunning = false) }
-                    tipNotifier.showError(stopResult.error, messages.serviceStopped)
-                }
-            }
+                    tipNotifier.showError(error, messages.serviceStopped)
+                },
+                onDeleteError = { error -> tipNotifier.showError(error) },
+            )
         }
+
+        if (mustStop) runProxyServiceOperation { operation() }
+        else services.appScope.launch { operation() }
     }
 
     ProxyServerEditResultHandler(
@@ -671,7 +699,7 @@ fun ProxyServerListPage(
         groupState,
         tunnelSnapshot,
         serviceOperationInProgress,
-        refreshingSubscriptionGroupIds,
+        refreshingSubscriptionGroupIds + subscriptionRefreshBatchProgress.refreshingSubscriptionIds,
         pingingGroupIds,
         homeServerSummaryFormatter,
         runtimeOutboundMetric,
@@ -682,7 +710,8 @@ fun ProxyServerListPage(
             tunnelSnapshot = tunnelSnapshot,
             tunnelBusy = serviceOperationInProgress,
             isTestingLatency = proxyListState.proxyServers.any { it.isTestingLatency },
-            refreshingSubscriptionGroupIds = refreshingSubscriptionGroupIds,
+            refreshingSubscriptionGroupIds = refreshingSubscriptionGroupIds +
+                subscriptionRefreshBatchProgress.refreshingSubscriptionIds,
             pingingSubscriptionGroupIds = pingingGroupIds,
             presentationFormatter = homeServerSummaryFormatter,
             runtimeOutboundMetric = runtimeOutboundMetric,
@@ -1036,6 +1065,8 @@ fun ProxyServerListPage(
                         }
                         if (action.isDeletion && proxyListState.enableDeletionConfirmation) {
                             homeDialogs = homeDialogs.copy(pendingToolDeletion = action)
+                        } else if (action == ProxyServerListToolAction.UpdateSubscriptions) {
+                            updateAllSubscriptions()
                         } else {
                             handleProxyServerListToolAction(
                                 action = action,

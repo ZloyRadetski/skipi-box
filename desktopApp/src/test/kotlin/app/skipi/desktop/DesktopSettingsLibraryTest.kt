@@ -3,6 +3,10 @@
 
 package app.skipi.desktop
 
+import app.modes.ProxyServerListSortDefault
+import app.skipi.app.home.ProxyHomeSortMode
+import app.skipi.app.home.proxyHomeSortModeFromAndroidValue
+import app.skipi.app.home.toAndroidValue
 import java.nio.file.Files
 import java.util.Comparator
 import kotlin.test.Test
@@ -27,6 +31,7 @@ class DesktopSettingsLibraryTest {
                 coreLogLevel = " INFO ",
                 subscriptionUserAgent = " SKIPI test agent ",
                 subscriptionFetchTimeoutSeconds = 45,
+                proxyServerListSort = ProxyHomeSortMode.Latency.toAndroidValue(),
                 themeMode = DesktopThemeMode.Amoled,
                 compactHome = true,
                 showTunnelMemory = false,
@@ -35,14 +40,16 @@ class DesktopSettingsLibraryTest {
 
             DesktopSettingsLibraries.save(path, settings).getOrThrow()
 
+            val loaded = DesktopSettingsLibraries.load(path).getOrThrow()
             assertEquals(
                 settings.copy(
                     localProxyListenAddress = "0.0.0.0",
                     coreLogLevel = "info",
                     subscriptionUserAgent = "SKIPI test agent",
                 ),
-                DesktopSettingsLibraries.load(path).getOrThrow(),
+                loaded,
             )
+            assertEquals(ProxyHomeSortMode.Latency, proxyHomeSortModeFromAndroidValue(loaded.proxyServerListSort))
         } finally {
             deleteTree(directory)
         }
@@ -120,6 +127,7 @@ class DesktopSettingsLibraryTest {
             val path = directory.resolve("settings.json")
 
             assertEquals(DesktopAppSettings(), DesktopSettingsLibraries.load(path).getOrThrow())
+            assertEquals(ProxyServerListSortDefault, DesktopAppSettings().proxyServerListSort)
 
             Files.writeString(path, "   \n")
             assertEquals(DesktopAppSettings(), DesktopSettingsLibraries.load(path).getOrThrow())
@@ -129,6 +137,11 @@ class DesktopSettingsLibraryTest {
         } finally {
             deleteTree(directory)
         }
+    }
+
+    @Test
+    fun unknownPersistedHomeSortValueFallsBackToAndroidDefault() {
+        assertEquals(ProxyHomeSortMode.Default, proxyHomeSortModeFromAndroidValue(Int.MIN_VALUE))
     }
 
     @Test

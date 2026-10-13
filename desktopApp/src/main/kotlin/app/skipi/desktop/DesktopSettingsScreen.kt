@@ -51,6 +51,9 @@ import app.skipi.ui.settings.AboutRuntimeInfo
 import app.skipi.ui.settings.AboutSettingsCapabilities
 import app.skipi.ui.settings.AboutSettingsLabels
 import app.skipi.ui.settings.AppearanceSettingsCapabilities
+import app.skipi.ui.settings.GeneralSettingsCapabilities
+import app.skipi.ui.settings.GeneralSettingsState
+import app.skipi.ui.settings.GeneralSettingsValues
 import app.skipi.ui.settings.IntegrationSettingsCapabilities
 import app.skipi.ui.settings.IntegrationSettingsLabels
 import app.skipi.ui.settings.IntegrationSettingsState
@@ -61,6 +64,7 @@ import app.skipi.ui.settings.LogsSettingsLabels
 import app.skipi.ui.settings.LogsSettingsState
 import app.skipi.ui.settings.SkipiAboutScreen
 import app.skipi.ui.settings.SkipiAppearanceSettingsScreen
+import app.skipi.ui.settings.SkipiGeneralSettingsScreen
 import app.skipi.ui.settings.SkipiIntegrationSettingsScreen
 import app.skipi.ui.settings.SkipiLocalProxySettingsScreen
 import app.skipi.ui.settings.SkipiLogsSettingsScreen
@@ -68,6 +72,10 @@ import app.skipi.ui.settings.SkipiSettingsDestination
 import app.skipi.ui.settings.SkipiSettingsHomeScreen
 import app.skipi.ui.settings.SkipiSettingsHomeState
 import app.skipi.ui.settings.SkipiSubscriptionSettingsScreen
+import app.skipi.ui.settings.SkipiSubscriptionPingSettingsScreen
+import app.skipi.ui.settings.SubscriptionPingPageState
+import app.skipi.ui.settings.SubscriptionUserAgentsScreen
+import app.skipi.ui.settings.SubscriptionUserAgentsState
 import app.skipi.ui.settings.SubscriptionSettingsCapabilities
 import app.skipi.ui.settings.SubscriptionSettingsLabels
 import app.skipi.ui.theme.SkipiTheme
@@ -80,6 +88,9 @@ import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.nio.file.Files
+import java.util.Locale
+import app.skipi.app.settings.generateRandomProxyCredential
+import app.modes.SubscriptionPingModeHttp
 
 private val SettingsSurface = Color(0xFF202126)
 private val SettingsBorder = Color(0xFF3C3E45)
@@ -89,7 +100,8 @@ private val SettingsGreen = Color(0xFF58D27A)
 private val SettingsRed = Color(0xFFFF5B62)
 
 private enum class DesktopSettingsDestination {
-    Overview, Appearance, LocalProxy, Subscriptions, Integration, Diagnostics, About,
+    Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
+    Integration, Diagnostics, About,
 }
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
@@ -136,6 +148,13 @@ internal fun DesktopSettingsScreen(
             onPersist = ::persist,
             contentPadding = contentPadding,
         )
+        DesktopSettingsDestination.General -> DesktopGeneralSettings(
+            settings = currentSettings,
+            message = message,
+            onBack = { destination = DesktopSettingsDestination.Overview },
+            onPersist = ::persist,
+            contentPadding = contentPadding,
+        )
         DesktopSettingsDestination.LocalProxy -> DesktopLocalProxySettings(
             settings = currentSettings,
             message = message,
@@ -148,6 +167,20 @@ internal fun DesktopSettingsScreen(
             settings = currentSettings,
             message = message,
             onBack = { destination = DesktopSettingsDestination.Overview },
+            onPersist = ::persist,
+            onOpenPingSettings = { destination = DesktopSettingsDestination.SubscriptionPing },
+            onOpenUserAgents = { destination = DesktopSettingsDestination.SubscriptionUserAgents },
+            contentPadding = contentPadding,
+        )
+        DesktopSettingsDestination.SubscriptionPing -> DesktopSubscriptionPingSettings(
+            settings = currentSettings,
+            onBack = { destination = DesktopSettingsDestination.Subscriptions },
+            onPersist = ::persist,
+            contentPadding = contentPadding,
+        )
+        DesktopSettingsDestination.SubscriptionUserAgents -> DesktopSubscriptionUserAgents(
+            settings = currentSettings,
+            onBack = { destination = DesktopSettingsDestination.Subscriptions },
             onPersist = ::persist,
             contentPadding = contentPadding,
         )
@@ -192,6 +225,7 @@ private fun DesktopSettingsOverview(
             categoryIconColor = Color(0xFF5C6DB0),
             visibleDestinations = setOf(
                 SkipiSettingsDestination.Appearance,
+                SkipiSettingsDestination.General,
                 SkipiSettingsDestination.LocalProxy,
                 SkipiSettingsDestination.Subscriptions,
                 SkipiSettingsDestination.Integration,
@@ -203,6 +237,7 @@ private fun DesktopSettingsOverview(
         onNavigate = { selected ->
             when (selected) {
                 SkipiSettingsDestination.Appearance -> onNavigate(DesktopSettingsDestination.Appearance)
+                SkipiSettingsDestination.General -> onNavigate(DesktopSettingsDestination.General)
                 SkipiSettingsDestination.LocalProxy -> onNavigate(DesktopSettingsDestination.LocalProxy)
                 SkipiSettingsDestination.Subscriptions -> onNavigate(DesktopSettingsDestination.Subscriptions)
                 SkipiSettingsDestination.Integration -> onNavigate(DesktopSettingsDestination.Integration)
@@ -223,6 +258,86 @@ private fun DesktopSettingsOverview(
         }
     }
 }
+
+internal fun desktopAppearanceSettingsCapabilities() = AppearanceSettingsCapabilities(
+    systemTheme = false,
+    appIcon = false,
+    wallpaper = false,
+    dynamicColors = false,
+    customColors = true,
+    fonts = true,
+    bottomBarSize = false,
+)
+
+@Composable
+private fun DesktopGeneralSettings(
+    settings: DesktopAppSettings,
+    message: String,
+    onBack: () -> Unit,
+    onPersist: (DesktopAppSettings, String) -> Unit,
+    contentPadding: PaddingValues,
+) {
+    val locale = remember { DesktopApplicationLocale(Locale.getDefault(), Locale::setDefault) }
+    val languageMode = settings.languageTag.toGeneralLanguageMode()
+    val state = GeneralSettingsState(
+        languageMode = languageMode,
+        enableHaptics = settings.hapticsEnabled,
+        enableTrafficStatsNotification = false,
+        trafficStatsNotificationRefreshIntervalSeconds = GeneralSettingsValues.MinTrafficRefreshSeconds,
+        enableResourceFileNotifications = false,
+        enableDeletionConfirmation = settings.confirmDeletion,
+        enableBroadcastControl = false,
+    )
+    SkipiGeneralSettingsScreen(
+        state = state,
+        padding = contentPadding,
+        isWideScreen = true,
+        onSettingsChange = { transform ->
+            val updated = transform(state)
+            val languageChanged = updated.languageMode != state.languageMode
+            val languageTag = if (languageChanged) updated.languageMode.toDesktopLanguageTag() else settings.languageTag
+            if (languageChanged) locale.apply(languageTag)
+            val next = settings.copy(
+                languageTag = languageTag,
+                hapticsEnabled = updated.enableHaptics,
+                confirmDeletion = updated.enableDeletionConfirmation,
+            )
+            onPersist(next, "Общие настройки сохранены.")
+            next.toGeneralSettingsState()
+        },
+        onBack = onBack,
+        onOpenUrlSchemes = {},
+        onOpenBackupReset = {},
+        capabilities = GeneralSettingsCapabilities.Desktop,
+    )
+    if (message.isNotBlank()) SettingsStatusMessage(message)
+}
+
+private fun String?.toGeneralLanguageMode(): Int = when (this?.substringBefore('-')?.lowercase()) {
+    "en" -> GeneralSettingsValues.LanguageEnglish
+    "zh" -> GeneralSettingsValues.LanguageChinese
+    "ru" -> GeneralSettingsValues.LanguageRussian
+    "fa" -> GeneralSettingsValues.LanguagePersian
+    else -> GeneralSettingsValues.LanguageSystem
+}
+
+private fun Int.toDesktopLanguageTag(): String? = when (this) {
+    GeneralSettingsValues.LanguageEnglish -> "en"
+    GeneralSettingsValues.LanguageChinese -> "zh"
+    GeneralSettingsValues.LanguageRussian -> "ru"
+    GeneralSettingsValues.LanguagePersian -> "fa"
+    else -> null
+}
+
+private fun DesktopAppSettings.toGeneralSettingsState() = GeneralSettingsState(
+    languageMode = languageTag.toGeneralLanguageMode(),
+    enableHaptics = hapticsEnabled,
+    enableTrafficStatsNotification = false,
+    trafficStatsNotificationRefreshIntervalSeconds = GeneralSettingsValues.MinTrafficRefreshSeconds,
+    enableResourceFileNotifications = false,
+    enableDeletionConfirmation = confirmDeletion,
+    enableBroadcastControl = false,
+)
 
 @Composable
 private fun DesktopAppearanceSettings(
@@ -251,16 +366,8 @@ private fun DesktopAppearanceSettings(
         onChooseBackgroundPhoto = {},
         onRemoveBackgroundPhoto = {},
         onRequestAppIconSelection = {},
-        onColorsReset = {},
-        capabilities = AppearanceSettingsCapabilities(
-            systemTheme = false,
-            appIcon = false,
-            wallpaper = false,
-            dynamicColors = false,
-            customColors = false,
-            fonts = false,
-            bottomBarSize = false,
-        ),
+        onColorsReset = { message -> onPersist(draft, message) },
+        capabilities = desktopAppearanceSettingsCapabilities(),
         platformContent = { SettingsStatusMessage(message) },
     )
 }
@@ -276,7 +383,9 @@ private fun DesktopLocalProxySettings(
 ) {
     val supportsSystemProxy = isDesktopSystemProxySupported()
     var draft by remember(settings) { mutableStateOf(settings) }
-    var portText by remember(settings.localProxyPort) { mutableStateOf(settings.localProxyPort.toString()) }
+    var portText by remember(settings.localProxyPortRaw, settings.localProxyPort) {
+        mutableStateOf(settings.localProxyPortRaw ?: settings.localProxyPort.toString())
+    }
     var httpPortText by remember(settings.localHttpProxyPort) { mutableStateOf(settings.localHttpProxyPort.toString()) }
     var listenAddress by remember(settings.localProxyListenAddress) { mutableStateOf(settings.localProxyListenAddress) }
     var useSystemProxy by remember(settings.useSystemProxy) { mutableStateOf(settings.useSystemProxy) }
@@ -336,17 +445,37 @@ private fun DesktopLocalProxySettings(
         padding = contentPadding,
         isWideScreen = true,
         onBack = onBack,
-        onDynamicPortChange = {},
+        onDynamicPortChange = { enabled ->
+            val next = draft.copy(enableDynamicLocalProxyPort = enabled)
+            draft = next
+            onPersist(next, "Параметры локального прокси сохранены.")
+        },
         onPortChange = { portText = it },
         onListenAllInterfacesChange = { allow -> listenAddress = if (allow) "0.0.0.0" else "127.0.0.1" },
-        onAuthenticationChange = {},
-        onGenerateCredentials = {},
-        onCopy = { _, _ -> },
+        onAuthenticationChange = { enabled ->
+            val next = draft.copy(enableLocalProxyAuth = enabled)
+            draft = next
+            onPersist(next, "Параметры локального прокси сохранены.")
+        },
+        onGenerateCredentials = {
+            val next = draft.copy(
+                localProxyUsername = generateRandomProxyCredential(),
+                localProxyPassword = generateRandomProxyCredential(),
+            )
+            draft = next
+            onPersist(next, "Учётные данные созданы.")
+        },
+        onCopy = { text, label ->
+            copyToClipboard(text).fold(
+                onSuccess = { message = "$label скопировано." },
+                onFailure = { message = "Не удалось скопировать $label: ${it.message.orEmpty()}" },
+            )
+        },
         capabilities = LocalProxySettingsCapabilities(
-            dynamicPort = false,
+            dynamicPort = true,
             listenAllInterfaces = true,
-            authentication = false,
-            credentials = false,
+            authentication = true,
+            credentials = true,
             lanEndpoints = false,
         ),
         platformContent = {
@@ -406,6 +535,7 @@ private fun DesktopLocalProxySettings(
                         if (portError == null && httpPortError == null && addressError == null && port != null && httpPort != null) {
                             val next = draft.copy(
                                 localProxyPort = port,
+                                localProxyPortRaw = portText,
                                 localHttpProxyPort = httpPort,
                                 localProxyListenAddress = listenAddress.trim(),
                                 useSystemProxy = supportsSystemProxy && useSystemProxy,
@@ -437,6 +567,8 @@ private fun DesktopSubscriptionSettings(
     message: String,
     onBack: () -> Unit,
     onPersist: (DesktopAppSettings, String) -> Unit,
+    onOpenPingSettings: () -> Unit,
+    onOpenUserAgents: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     var draft by remember(settings) { mutableStateOf(settings) }
@@ -474,25 +606,39 @@ private fun DesktopSubscriptionSettings(
         isWideScreen = true,
         onBack = onBack,
         onFetchTimeoutChange = { seconds ->
-            draft = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(fetchTimeoutSeconds = seconds))
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(fetchTimeoutSeconds = seconds))
+            draft = next
+            onPersist(next, "Параметры подписок сохранены.")
         },
-        onOpenUserAgents = {},
+        onOpenUserAgents = onOpenUserAgents,
         onDeviceHeadersChange = { enabled ->
-            draft = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(deviceHeadersEnabled = enabled))
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(deviceHeadersEnabled = enabled))
+            draft = next
+            onPersist(next, "Параметры подписок сохранены.")
         },
         onDeletionConfirmationChange = { enabled ->
-            draft = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(deletionConfirmationEnabled = enabled))
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(deletionConfirmationEnabled = enabled))
+            draft = next
+            onPersist(next, "Параметры подписок сохранены.")
         },
-        onExpiryNotificationsChange = {},
-        onExpiryRemindersChange = {},
-        onOpenPingSettings = {},
+        onExpiryNotificationsChange = { enabled ->
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(expiryNotificationsEnabled = enabled))
+            draft = next
+            onPersist(next, "Параметры подписок сохранены.")
+        },
+        onExpiryRemindersChange = { reminders ->
+            val next = draft.withSubscriptionSettingsState(draft.toSubscriptionSettingsState().copy(expiryReminders = reminders))
+            draft = next
+            onPersist(next, "Параметры подписок сохранены.")
+        },
+        onOpenPingSettings = onOpenPingSettings,
         capabilities = SubscriptionSettingsCapabilities(
             fetchTimeout = true,
-            userAgents = false,
+            userAgents = true,
             deviceHeaders = true,
             deletionConfirmation = true,
             expiryNotifications = false,
-            pingSettings = false,
+            pingSettings = true,
         ),
         platformContent = {
             SettingsGroup(title = "ИДЕНТИФИКАЦИЯ УСТРОЙСТВА И USER-AGENT") {
@@ -536,6 +682,49 @@ private fun DesktopSubscriptionSettings(
                 SettingsStatusMessage(message)
             }
         },
+    )
+}
+
+@Composable
+private fun DesktopSubscriptionPingSettings(
+    settings: DesktopAppSettings,
+    onBack: () -> Unit,
+    onPersist: (DesktopAppSettings, String) -> Unit,
+    contentPadding: PaddingValues,
+) {
+    SkipiSubscriptionPingSettingsScreen(
+        state = SubscriptionPingPageState(
+            mode = settings.subscriptionPingMode,
+            concurrency = settings.subscriptionPingConcurrency,
+            timeoutMillis = settings.subscriptionPingTimeoutMillis,
+            url = settings.subscriptionPingUrl,
+        ),
+        padding = contentPadding,
+        isWideScreen = true,
+        onBack = onBack,
+        onModeChange = { value -> onPersist(settings.copy(subscriptionPingMode = value), "Параметры проверки ping сохранены.") },
+        onConcurrencyChange = { value -> onPersist(settings.copy(subscriptionPingConcurrency = value), "Параметры проверки ping сохранены.") },
+        onTimeoutMillisChange = { value -> onPersist(settings.copy(subscriptionPingTimeoutMillis = value), "Параметры проверки ping сохранены.") },
+        onUrlChange = { value -> onPersist(settings.copy(subscriptionPingUrl = value.trim()), "Параметры проверки ping сохранены.") },
+        onPresetSelected = {},
+    )
+}
+
+@Composable
+private fun DesktopSubscriptionUserAgents(
+    settings: DesktopAppSettings,
+    onBack: () -> Unit,
+    onPersist: (DesktopAppSettings, String) -> Unit,
+    contentPadding: PaddingValues,
+) {
+    SubscriptionUserAgentsScreen(
+        state = SubscriptionUserAgentsState(settings.subscriptionUserAgents),
+        padding = contentPadding,
+        isWideScreen = true,
+        onValuesChange = { values ->
+            onPersist(settings.copy(subscriptionUserAgents = values), "User-Agent сохранены.")
+        },
+        onBack = onBack,
     )
 }
 

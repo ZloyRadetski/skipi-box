@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeDisplayOptions
-import app.skipi.app.home.ProxyHomeGroupKind
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -28,10 +27,9 @@ import app.skipi.app.home.ProxyHomePresentation
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeServerTool
 import app.skipi.app.home.ProxyHomeSortMode
-import app.skipi.app.home.ProxyGroupSummary
+import app.skipi.app.home.proxyHomeSortModeFromAndroidValue
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyServerSummary
-import app.skipi.app.home.ProxySubscriptionSummary
 import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.subscription.SubscriptionEditorSaveResult
 import app.skipi.app.server.ProxyServerEditResult
@@ -59,6 +57,9 @@ import app.skipi.ui.resources.proxy_editor_strategy_group_select
 import app.skipi.ui.resources.proxy_server_list_chain_proxy_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary_with_filter
+import app.skipi.ui.resources.proxy_server_list_delete_all
+import app.skipi.ui.resources.proxy_server_list_delete_duplicates
+import app.skipi.ui.resources.proxy_server_list_delete_invalid
 import app.skipi.ui.resources.subscription_delete
 import app.skipi.ui.resources.subscription_default_group
 import app.skipi.ui.resources.subscription_invalid_url
@@ -71,7 +72,6 @@ import app.skipi.app.proxy.resolveStrategyGroupMembers
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.extractLeadingCountryFlagOrNull
-import features.proxy.server.model.getTransportDisplay
 import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.model.getUrlOrNull
 import features.proxy.server.model.stripLeadingCountryFlag
@@ -106,6 +106,7 @@ internal fun DesktopProxyHome(
     serverLink: String,
     subscriptionUrl: String,
     updatingSubscription: Boolean,
+    refreshingSubscriptionIds: Set<Int> = emptySet(),
     running: Boolean,
     connecting: Boolean = false,
     canToggleTunnel: Boolean,
@@ -130,9 +131,15 @@ internal fun DesktopProxyHome(
     onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit,
     onPingSubscriptionServers: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
     onUpdateSubscriptionById: (Int) -> Unit,
+    onRefreshAllSubscriptions: (() -> Unit)? = null,
+    onDeleteDuplicateServers: ((Set<Int>) -> Unit)? = null,
+    onDeleteInvalidServers: ((Set<Int>) -> Unit)? = null,
+    onRestartService: (() -> Unit)? = null,
+    onDeleteAllServers: ((Set<Int>) -> Unit)? = null,
+    onCancelLatencyTests: (() -> Unit)? = null,
     scheduledSubscriptionId: Int?,
     onScheduledSubscriptionConsumed: () -> Unit,
-    onPrepareSubscription: (DesktopSubscriptionInstallUri) -> Result<Int>,
+    onPrepareSubscription: suspend (DesktopSubscriptionInstallUri) -> Result<Int>,
     onImport: suspend (DesktopProxyImportInput) -> Result<String>,
     onSaveSubscriptionGroup: suspend (SubscriptionGroupUiState, Boolean, Boolean) -> SubscriptionEditorSaveResult,
     onSetSubscriptionEnabled: suspend (Int, Boolean) -> Unit,
@@ -140,7 +147,8 @@ internal fun DesktopProxyHome(
     contentPadding: PaddingValues,
     desktopSettings: DesktopAppSettings = DesktopAppSettings(),
     onMoveGroup: suspend (Int, Int) -> Unit,
-    onMoveServer: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    onMoveServer: (fromServerId: Int, toServerId: Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    onHomeSortModeChange: (ProxyHomeSortMode) -> Unit = {},
 ) {
     var addDialogVisible by remember { mutableStateOf(false) }
     var importDialogVisible by remember { mutableStateOf(false) }
@@ -148,6 +156,7 @@ internal fun DesktopProxyHome(
     var localMessage by remember { mutableStateOf("") }
     var pendingServerDeletion by remember { mutableStateOf<Int?>(null) }
     var pendingSubscriptionDeletion by remember { mutableStateOf<Int?>(null) }
+    var pendingToolDeletion by remember { mutableStateOf<ProxyHomeServerTool?>(null) }
     var editingServerId by remember { mutableStateOf<Int?>(null) }
     var subscriptionEditorVisible by remember { mutableStateOf(false) }
     var editingSubscriptionGroup by remember { mutableStateOf<SubscriptionGroupUiState?>(null) }
@@ -188,7 +197,9 @@ internal fun DesktopProxyHome(
 
     val selectedServer = decodedServers.firstOrNull { (stored, _) -> stored.id == serverLibrary.selectedServerId }?.second
     val selectedTitle = selectedServer?.getInfo()?.remarks.orEmpty().ifBlank { "Выберите сервер" }
-    var sortMode by remember { mutableStateOf(ProxyHomeSortMode.Default) }
+    var sortMode by remember(desktopSettings.proxyServerListSort) {
+        mutableStateOf(proxyHomeSortModeFromAndroidValue(desktopSettings.proxyServerListSort))
+    }
 
     val unknownGroupName = stringResource(Res.string.common_unknown_group)
     val defaultGroupName = stringResource(Res.string.subscription_default_group)
@@ -225,100 +236,44 @@ internal fun DesktopProxyHome(
         }
     }
 
-    val proxyGroups = remember(groupCatalog.groups, subscriptionLibrary, updatingSubscription, subscriptionUrl, pingingSubscriptionIds) {
-        groupCatalog.groups.map { group ->
-            val subscription = group.id.removePrefix("subscription:").toIntOrNull()
-                ?.let { id -> subscriptionLibrary.subscriptions.firstOrNull { it.id == id } }
-            val isPersistedGroup = subscription != null
-            val mappedKind = when (group.kind) {
-                DesktopProxyGroupKind.All -> ProxyHomeGroupKind.All
-                DesktopProxyGroupKind.Manual -> ProxyHomeGroupKind.Manual
-                DesktopProxyGroupKind.Subscription -> ProxyHomeGroupKind.Subscription
-                DesktopProxyGroupKind.AutoBalancer -> ProxyHomeGroupKind.AutoBalancer
-            }
-            ProxyGroupSummary(
-                id = group.id,
-                title = group.title,
-                serverCount = group.serverCount,
-                enabled = group.enabled,
-                serverIds = group.serverIds.map(Int::toString).toSet(),
-                canEdit = isPersistedGroup,
-                canDelete = isPersistedGroup,
-                canMove = isPersistedGroup,
-                kind = mappedKind,
-                subscription = if (subscription != null && subscription.url.isNotBlank()) {
-                    ProxySubscriptionSummary(
-                        id = subscription.id.toString(),
-                        title = subscription.name,
-                        serverCount = group.serverCount,
-                        enabled = subscription.enabled,
-                        refreshing = updatingSubscription && subscriptionUrl == subscription.url,
-                        pinging = subscription.id in pingingSubscriptionIds,
-                        updateIntervalHours = subscription.updateInterval,
-                        usedBytes = desktopSubscriptionUsedBytes(
-                            subscription.metadata.trafficUploadBytes,
-                            subscription.metadata.trafficDownloadBytes,
-                        ),
-                        totalBytes = subscription.metadata.trafficTotalBytes.takeIf { it >= 0 },
-                        expireAtSeconds = subscription.metadata.trafficExpireAtSeconds.takeIf { it > 0 },
-                        description = subscription.metadata.description.takeIf(String::isNotBlank),
-                        announcement = subscription.metadata.announce.takeIf(String::isNotBlank),
-                        announcementUrl = subscription.metadata.announceUrl.takeIf(String::isNotBlank),
-                        supportUrl = subscription.metadata.supportUrl.takeIf(String::isNotBlank)
-                            ?: subscription.metadata.supportEmail.takeIf(String::isNotBlank)?.let { "mailto:$it" },
-                        siteUrl = subscription.metadata.profileWebPageUrl.takeIf(String::isNotBlank),
-                        lastUpdatedAtMillis = subscription.metadata.lastUpdatedAtMillis.takeIf { it > 0 },
-                    )
-                } else null,
-            )
-        }
-    }
-
-    val allProxyServers = remember(
-        decodedServers,
+    val homeProjection = remember(
         groupCatalog,
+        decodedServers,
+        subscriptionLibrary,
         serverLibrary.selectedServerId,
         latencyByServerId,
         testingServerIds,
         presentationFormatter,
         presentationNodes,
+        refreshingSubscriptionIds,
+        pingingSubscriptionIds,
     ) {
-        decodedServers.mapNotNull { (stored, server) ->
-            server?.let { current ->
-                val info = current.getInfo()
-                val (flag, title) = splitFlagAndTitle(info.remarks)
-                val groupId = groupCatalog.groups.firstOrNull { group ->
-                    group.kind != DesktopProxyGroupKind.All && stored.id in group.serverIds
-                }?.id
-                val latencyResult = latencyByServerId[stored.id]
-                ProxyServerSummary(
-                    id = stored.id.toString(),
-                    title = title,
-                    address = presentationNodes.firstOrNull { node -> node.id == stored.id }
-                        ?.let { node -> presentationFormatter.displayOf(node, presentationNodes).summary }
-                        ?: info.address,
-                    protocol = info.protocol,
-                    transport = current.getTransportDisplay(),
-                    flag = flag,
-                    selected = stored.id == serverLibrary.selectedServerId,
-                    latencyMs = (latencyResult as? DesktopServerLatencyResult.Success)?.milliseconds,
-                    latencyTesting = stored.id in testingServerIds,
-                    latencyError = latencyResult is DesktopServerLatencyResult.Error || latencyResult is DesktopServerLatencyResult.Timeout,
-                    canTest = current.desktopTcpEndpointOrNull() != null,
-                    availableCopyFormats = buildSet {
-                        add(ProxyHomeCopyFormat.FullJson)
-                        if (current.getUrlOrNull() != null) add(ProxyHomeCopyFormat.Url)
-                    },
-                    isStrategyGroup = current is StrategyGroup,
-                    groupId = groupId,
-                    searchText = listOf(info.remarks, info.address, info.protocol).joinToString(" "),
-                    sortKey = info.remarks.ifBlank { title },
-                )
-            }
-        }
+        projectDesktopProxyHomeProjection(
+            groupCatalog = groupCatalog,
+            decodedServers = decodedServers,
+            subscriptionLibrary = subscriptionLibrary,
+            selectedServerId = serverLibrary.selectedServerId,
+            latencyByServerId = latencyByServerId,
+            testingServerIds = testingServerIds,
+            presentationFormatter = presentationFormatter,
+            presentationNodes = presentationNodes,
+            refreshingSubscriptionIds = refreshingSubscriptionIds,
+            pingingSubscriptionIds = pingingSubscriptionIds,
+        )
     }
+    val proxyGroups = homeProjection.groups
+    val allProxyServers = homeProjection.servers
 
+    val desktopCapabilities = desktopProxyHomeActionCapabilities(
+        subscriptions = subscriptionLibrary.subscriptions,
+        onRefreshAllSubscriptions = onRefreshAllSubscriptions,
+        onDeleteDuplicateServers = onDeleteDuplicateServers,
+        onDeleteInvalidServers = onDeleteInvalidServers,
+        onRestartService = onRestartService,
+        onDeleteAllServers = onDeleteAllServers,
+    )
     val availableActions = buildSet {
+        addAll(desktopCapabilities.actions)
         addAll(
             setOf(
                 ProxyHomeActionId.SelectServer,
@@ -333,6 +288,9 @@ internal fun DesktopProxyHome(
             add(ProxyHomeActionId.EditServer)
             add(ProxyHomeActionId.DeleteServer)
             add(ProxyHomeActionId.CopyServer)
+        }
+        if (testingServerIds.isNotEmpty() && onCancelLatencyTests != null) {
+            add(ProxyHomeActionId.CancelLatencyTests)
         }
         if (decodedServers.any { (_, server) -> server is StrategyGroup }) {
             add(ProxyHomeActionId.OpenStrategyMemberPicker)
@@ -406,12 +364,13 @@ internal fun DesktopProxyHome(
         ),
         availableCopyFormats = setOf(ProxyHomeCopyFormat.Url, ProxyHomeCopyFormat.FullJson),
         availableServerKinds = ProxyHomeServerKind.entries.toSet(),
-        availableServerTools = emptySet(),
+        availableServerTools = desktopCapabilities.serverTools,
     )
 
     val scope = rememberCoroutineScope()
+    val initialSelectedGroupId = remember { initialDesktopProxyHomeGroupId(serverLibrary) }
     var homePresentation by rememberSaveableProxyHomePresentation(
-        ProxyHomePresentation(selectedGroupId = groupCatalog.defaultGroupId),
+        ProxyHomePresentation(selectedGroupId = initialSelectedGroupId),
     )
     val effectContextState = remember { mutableStateOf<DesktopProxyHomeEffectContext?>(null) }
     val homeStore = remember {
@@ -489,6 +448,8 @@ internal fun DesktopProxyHome(
         decodedServers = decodedServers,
         groupCatalog = groupCatalog,
         subscriptions = subscriptionLibrary.subscriptions,
+        currentGroupServerIds = groupCatalog.select(homeUiState.selectedGroupId).serverIds.toSet(),
+        orderedVisibleServerIds = homeUiState.servers.mapNotNull { server -> server.id.toIntOrNull() },
         pingingSubscriptionIds = pingingSubscriptionIds,
         updatingSubscription = updatingSubscription,
         confirmDeletion = confirmDeletion,
@@ -498,6 +459,13 @@ internal fun DesktopProxyHome(
         onMeasureServers = onMeasureServers,
         onPingSubscription = onPingSubscriptionServers,
         onUpdateSubscriptionById = onUpdateSubscriptionById,
+        onRefreshAllSubscriptions = onRefreshAllSubscriptions,
+        onDeleteDuplicateServers = onDeleteDuplicateServers,
+        onDeleteInvalidServers = onDeleteInvalidServers,
+        onRestartService = onRestartService,
+        onDeleteAllServers = onDeleteAllServers,
+        onCancelLatencyTests = onCancelLatencyTests,
+        onConfirmToolDeletion = { tool -> pendingToolDeletion = tool },
         onSetSubscriptionEnabled = { id, enabled ->
             scope.launch {
                 runCatching { onSetSubscriptionEnabled(id, enabled) }
@@ -545,7 +513,10 @@ internal fun DesktopProxyHome(
                 subscriptionEditorVisible = true
             }
         },
-        onSetSortMode = { sortMode = it },
+        onSetSortMode = {
+            sortMode = it
+            onHomeSortModeChange(it)
+        },
         onSetLocalMessage = { localMessage = it },
         sortMode = sortMode,
         onOpenEditGroup = { groupId ->
@@ -567,10 +538,17 @@ internal fun DesktopProxyHome(
         },
         onDeleteSubscriptionConfirm = { id -> pendingSubscriptionDeletion = id },
         onDeleteSubscription = { id ->
-            scope.launch {
-                runCatching { onDeleteSubscription(id) }
-                    .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
-            }
+            requestDesktopProxyHomeSubscriptionDeletion(
+                subscriptionId = id,
+                selectedGroupId = homeUiState.selectedGroupId,
+                requestDelete = {
+                    scope.launch {
+                        runCatching { onDeleteSubscription(id) }
+                            .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+                    }
+                },
+                selectGroup = { groupId -> homeStore.dispatch(ProxyHomeAction.SelectGroup(groupId)) },
+            )
         },
         onMoveGroup = { id, offset ->
             scope.launch {
@@ -679,15 +657,17 @@ internal fun DesktopProxyHome(
             onSaveSubscription = { url ->
                 val uri = DesktopSubscriptionInstallUri.parseOrNull(url)
                 if (uri != null) {
-                    onPrepareSubscription(uri).fold(
-                        onSuccess = { subscriptionId ->
-                            onUpdateSubscriptionById(subscriptionId)
-                            addDialogVisible = false
-                        },
-                        onFailure = { error ->
-                            localMessage = error.message ?: "Не удалось подготовить подписку."
-                        },
-                    )
+                    scope.launch {
+                        onPrepareSubscription(uri).fold(
+                            onSuccess = { subscriptionId ->
+                                onUpdateSubscriptionById(subscriptionId)
+                                addDialogVisible = false
+                            },
+                            onFailure = { error ->
+                                localMessage = error.message ?: "Не удалось подготовить подписку."
+                            },
+                        )
+                    }
                 }
             },
             onClipboardImport = importFromClipboard,
@@ -766,10 +746,36 @@ internal fun DesktopProxyHome(
             onDismissRequest = { pendingSubscriptionDeletion = null },
             onConfirm = {
                 pendingSubscriptionDeletion = null
-                scope.launch {
-                    runCatching { onDeleteSubscription(subscriptionId) }
-                        .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
-                }
+                requestDesktopProxyHomeSubscriptionDeletion(
+                    subscriptionId = subscriptionId,
+                    selectedGroupId = homeUiState.selectedGroupId,
+                    requestDelete = {
+                        scope.launch {
+                            runCatching { onDeleteSubscription(subscriptionId) }
+                                .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+                        }
+                    },
+                    selectGroup = { groupId -> homeStore.dispatch(ProxyHomeAction.SelectGroup(groupId)) },
+                )
+            },
+        )
+    }
+
+    pendingToolDeletion?.let { tool ->
+        val title = when (tool) {
+            ProxyHomeServerTool.DeleteDuplicateServers -> stringResource(Res.string.proxy_server_list_delete_duplicates)
+            ProxyHomeServerTool.DeleteInvalidServers -> stringResource(Res.string.proxy_server_list_delete_invalid)
+            ProxyHomeServerTool.DeleteAllServers -> stringResource(Res.string.proxy_server_list_delete_all)
+            else -> stringResource(Res.string.common_delete)
+        }
+        DeleteConfirmationDialog(
+            show = true,
+            title = title,
+            onDismissRequest = { pendingToolDeletion = null },
+            onConfirm = {
+                pendingToolDeletion = null
+                effectContextState.value?.confirmToolDeletion(tool)
+                    ?.onFailure { error -> localMessage = error.message ?: "Не удалось выполнить действие." }
             },
         )
     }
@@ -806,16 +812,35 @@ internal fun DesktopProxyHome(
         },
         onDelete = { group ->
             subscriptionEditorVisible = false
-            scope.launch {
-                runCatching { onDeleteSubscription(group.id) }
-                    .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
-            }
+            requestDesktopProxyHomeSubscriptionDeletion(
+                subscriptionId = group.id,
+                selectedGroupId = homeUiState.selectedGroupId,
+                requestDelete = {
+                    scope.launch {
+                        runCatching { onDeleteSubscription(group.id) }
+                            .onFailure { error -> localMessage = error.message ?: "Не удалось удалить группу." }
+                    }
+                },
+                selectGroup = { groupId -> homeStore.dispatch(ProxyHomeAction.SelectGroup(groupId)) },
+            )
         },
         onInvalidUrl = { localMessage = invalidSubscriptionUrlMessage },
     )
 }
 
 private data class DesktopImportFile(val name: String, val content: String)
+
+internal fun requestDesktopProxyHomeSubscriptionDeletion(
+    subscriptionId: Int,
+    selectedGroupId: String,
+    requestDelete: () -> Unit,
+    selectGroup: (String) -> Unit,
+) {
+    requestDelete()
+    if (selectedGroupId == DesktopProxyGroupIds.subscription(subscriptionId)) {
+        selectGroup(DesktopProxyGroupIds.Manual)
+    }
+}
 
 private fun readDesktopClipboardText(): Result<String> = runCatching {
     val clipboard = Toolkit.getDefaultToolkit().systemClipboard
@@ -840,14 +865,6 @@ private fun chooseDesktopImportFile(): Result<DesktopImportFile?> = runCatching 
 }
 
 private const val MaxDesktopImportBytes = 8 * 1024 * 1024
-
-private fun splitFlagAndTitle(value: String): Pair<String?, String> {
-    val trimmed = value.trim().ifBlank { "Без названия" }
-    val prefix = trimmed.substringBefore(' ')
-    val looksLikeEmoji = prefix.any(Char::isSurrogate) || prefix == "⚡"
-    return if (looksLikeEmoji && prefix.length <= 5) prefix to trimmed.removePrefix(prefix).trim().ifBlank { trimmed }
-    else null to trimmed
-}
 
 private fun openExternalLink(value: String): Result<Unit> = runCatching {
     check(Desktop.isDesktopSupported()) { "Открытие ссылки не поддерживается системой." }
@@ -875,6 +892,8 @@ internal class DesktopProxyHomeEffectContext(
         DesktopSubscriptionLibrary(),
     ),
     val subscriptions: List<DesktopStoredSubscription> = emptyList(),
+    val currentGroupServerIds: Set<Int> = emptySet(),
+    val orderedVisibleServerIds: List<Int> = emptyList(),
     val pingingSubscriptionIds: Set<Int> = emptySet(),
     val updatingSubscription: Boolean = false,
     val confirmDeletion: Boolean = false,
@@ -885,6 +904,13 @@ internal class DesktopProxyHomeEffectContext(
     val onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit = {},
     val onPingSubscription: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
     val onUpdateSubscriptionById: (Int) -> Unit = {},
+    val onRefreshAllSubscriptions: (() -> Unit)? = null,
+    val onDeleteDuplicateServers: ((Set<Int>) -> Unit)? = null,
+    val onDeleteInvalidServers: ((Set<Int>) -> Unit)? = null,
+    val onRestartService: (() -> Unit)? = null,
+    val onDeleteAllServers: ((Set<Int>) -> Unit)? = null,
+    val onCancelLatencyTests: (() -> Unit)? = null,
+    val onConfirmToolDeletion: ((ProxyHomeServerTool) -> Unit)? = null,
     val onSetSubscriptionEnabled: (Int, Boolean) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     val onCreateServerDraft: (ProxyHomeServerKind) -> Unit = {},
     val onOpenAdd: (SkipiAddSourceMode) -> Unit = {},
@@ -900,7 +926,7 @@ internal class DesktopProxyHomeEffectContext(
     val onDeleteSubscriptionConfirm: (Int) -> Unit = {},
     val onDeleteSubscription: (Int) -> Unit = {},
     val onMoveGroup: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
-    val onMoveServer: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    val onMoveServer: (fromServerId: Int, toServerId: Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     val onOpenStrategyMemberPicker: (Int) -> Unit = {},
     val onSelectStrategyMember: (Int, Int) -> Unit = { _, _ -> },
 ) {
@@ -923,13 +949,14 @@ internal class DesktopProxyHomeEffectContext(
                     ?: unsupported("Группа подписки не найдена.")
             }
         } ?: unsupported("Некорректный идентификатор подписки.")
-        ProxyHomeEffect.CancelLatencyTests -> unsupported("Отмена TCP-проверок не поддерживается в Desktop.")
+        ProxyHomeEffect.CancelLatencyTests -> onCancelLatencyTests?.let(::invoke)
+            ?: unsupported("Отмена TCP-проверок не подключена в Desktop.")
         is ProxyHomeEffect.RefreshSubscription -> findSubscription(effect.id)?.let { subscription ->
             if (subscription.url.isBlank()) unsupported("Ручные группы не имеют URL для обновления.")
             else if (updatingSubscription) unsupported("Дождитесь завершения текущего обновления подписки.")
             else invoke { onUpdateSubscriptionById(subscription.id) }
         } ?: unsupported("Подписка не найдена.")
-        ProxyHomeEffect.RefreshAllSubscriptions -> unsupported("Массовое обновление подписок не поддерживается в Desktop.")
+        ProxyHomeEffect.RefreshAllSubscriptions -> refreshAllSubscriptions()
         is ProxyHomeEffect.ToggleSubscriptionEnabled -> findSubscription(effect.id)?.let { subscription ->
             onSetSubscriptionEnabled(subscription.id, !subscription.enabled)
         } ?: unsupported("Подписка не найдена.")
@@ -1004,18 +1031,12 @@ internal class DesktopProxyHomeEffectContext(
                 unsupported("Изменение порядка серверов возможно только в стандартной сортировке.")
             } else {
                 effect.serverId.toIntOrNull()?.let { id ->
-                    val stored = decodedServers.firstOrNull { it.first.id == id }?.first
-                    if (stored == null) {
-                        unsupported("Сервер не найден.")
+                    val fromIndex = orderedVisibleServerIds.indexOf(id)
+                    val toServerId = orderedVisibleServerIds.getOrNull(fromIndex + effect.offset)
+                    if (fromIndex == -1 || toServerId == null || effect.offset == 0) {
+                        unsupported("Невозможно переместить сервер за пределы группы.")
                     } else {
-                        val groupServers = decodedServers.map { it.first }.filter { it.subscriptionId == stored.subscriptionId }
-                        val fromIndex = groupServers.indexOfFirst { it.id == id }
-                        val toIndex = fromIndex + effect.offset
-                        if (fromIndex == -1 || toIndex !in groupServers.indices || effect.offset == 0) {
-                            unsupported("Невозможно переместить сервер за пределы группы.")
-                        } else {
-                            onMoveServer(id, effect.offset)
-                        }
+                        onMoveServer(id, toServerId)
                     }
                 } ?: unsupported("Некорректный идентификатор сервера.")
             }
@@ -1079,12 +1100,43 @@ internal class DesktopProxyHomeEffectContext(
     private fun findSubscription(id: String): DesktopStoredSubscription? =
         id.toIntOrNull()?.let { subscriptionId -> subscriptions.firstOrNull { it.id == subscriptionId } }
 
+    /** Completes a tool after the Home confirmation dialog has been accepted. */
+    fun confirmToolDeletion(tool: ProxyHomeServerTool): Result<Unit> = when (tool) {
+        ProxyHomeServerTool.DeleteDuplicateServers -> deleteCurrentGroup(onDeleteDuplicateServers)
+        ProxyHomeServerTool.DeleteInvalidServers -> deleteCurrentGroup(onDeleteInvalidServers)
+        ProxyHomeServerTool.DeleteAllServers -> deleteCurrentGroup(onDeleteAllServers)
+        else -> unsupported("Выбранная операция не требует подтверждения удаления.")
+    }
+
     private fun runServerTool(tool: ProxyHomeServerTool): Result<Unit> = when (tool) {
-        ProxyHomeServerTool.UpdateSubscriptions -> unsupported("Общее обновление подписок не поддерживается в Desktop.")
-        ProxyHomeServerTool.RestartService,
+        ProxyHomeServerTool.UpdateSubscriptions -> refreshAllSubscriptions()
+        ProxyHomeServerTool.RestartService -> onRestartService?.let(::invoke)
+            ?: unsupported("Перезапуск службы не подключён в Desktop.")
         ProxyHomeServerTool.DeleteDuplicateServers,
         ProxyHomeServerTool.DeleteInvalidServers,
-        ProxyHomeServerTool.DeleteAllServers -> unsupported("Эта операция не поддерживается в Desktop.")
+        ProxyHomeServerTool.DeleteAllServers -> if (confirmDeletion) {
+            onConfirmToolDeletion?.let { callback -> invoke { callback(tool) } }
+                ?: unsupported("Подтверждение удаления не подключено в Desktop.")
+        } else {
+            when (tool) {
+                ProxyHomeServerTool.DeleteDuplicateServers -> deleteCurrentGroup(onDeleteDuplicateServers)
+                ProxyHomeServerTool.DeleteInvalidServers -> deleteCurrentGroup(onDeleteInvalidServers)
+                ProxyHomeServerTool.DeleteAllServers -> deleteCurrentGroup(onDeleteAllServers)
+                else -> error("Unreachable server tool: $tool")
+            }
+        }
+    }
+
+    private fun deleteCurrentGroup(callback: ((Set<Int>) -> Unit)?): Result<Unit> = callback?.let { action ->
+        invoke { action(currentGroupServerIds) }
+    } ?: unsupported("Очистка списка серверов не подключена в Desktop.")
+
+    private fun refreshAllSubscriptions(): Result<Unit> {
+        val callback = onRefreshAllSubscriptions
+            ?: return Result.failure(
+                UnsupportedOperationException("Массовое обновление подписок не подключено в Desktop."),
+            )
+        return invoke(callback)
     }
 
     private fun invoke(action: () -> Unit): Result<Unit> = runCatching(action)

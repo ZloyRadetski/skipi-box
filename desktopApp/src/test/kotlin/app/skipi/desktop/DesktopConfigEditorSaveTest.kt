@@ -160,6 +160,69 @@ vendor-option = edited
     }
 
     @Test
+    fun newEditorSaveWithExistingSourceUrlCreatesANewProfileWithoutReplacingSource() {
+        val active = ConfigProfile(
+            id = 7,
+            name = "Active",
+            content = "[General]\nloglevel = warning\n",
+        )
+        val source = ConfigProfile(
+            id = 23,
+            name = "Remote",
+            content = """[General]
+loglevel = info
+
+[SKIPI]
+profile-name = Remote
+profile-update-url = https://example.test/remote
+profile-update-locked = true
+profile-auto-update = true
+profile-update-interval = 48
+resource-auto-update = false
+resource-update-interval = 72
+
+[Vendor]
+vendor-option = keep
+""",
+            sourceUrl = "https://example.test/remote",
+            updateLocked = true,
+            lastUpdatedAtMillis = 9_876L,
+        )
+        val originalLibrary = ConfigProfileLibrary(
+            selectedConfigId = active.id,
+            configs = listOf(active, source),
+        )
+
+        val result = applyDesktopConfigEditorSave(
+            library = originalLibrary,
+            id = null,
+            lastUpdatedAtMillis = 0L,
+            name = "Remote — копия",
+            content = source.content,
+            sourceUrl = source.sourceUrl,
+            updateLocked = source.updateLocked,
+        )
+
+        val duplicatedLibrary = assertIs<DesktopConfigEditorSaveResult.Saved>(result).library
+        val duplicate = duplicatedLibrary.configs.last()
+        val duplicateState = duplicate.toTrafficConfigState()
+
+        assertEquals(listOf(7, 23, 24), duplicatedLibrary.configs.map(ConfigProfile::id))
+        assertEquals(active.id, duplicatedLibrary.selectedConfigId)
+        assertEquals(active, duplicatedLibrary.configs[0])
+        assertEquals(source, duplicatedLibrary.configs[1])
+        assertEquals("Remote — копия", duplicate.name)
+        assertEquals(source.sourceUrl, duplicate.sourceUrl)
+        assertEquals(source.updateLocked, duplicate.updateLocked)
+        assertEquals(0L, duplicate.lastUpdatedAtMillis)
+        assertTrue(duplicate.content.contains("profile-name = Remote — копия"))
+        assertTrue(duplicate.content.contains("profile-update-interval = 48"))
+        assertFalse(duplicateState.resourceSettings.autoUpdate)
+        assertEquals("72", duplicateState.resourceSettings.updateInterval)
+        assertTrue(duplicate.content.contains("vendor-option = keep"))
+    }
+
+    @Test
     fun malformedEditorContentIsRejectedWithoutChangingTheLibrary() {
         val original = ConfigProfile(
             id = 10,

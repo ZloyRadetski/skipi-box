@@ -107,6 +107,56 @@ class ProxyServerGroupingTest {
         assertEquals(1, noManualGroup.selectedTabId)
     }
 
+    @Test
+    fun preservesAndroidGroupOrderIncludesEnabledEmptyGroupsAndHidesDisabledMembership() {
+        val request = request(
+            groups = listOf(
+                manualGroup(),
+                group(2, "First subscription", enabled = true),
+                group(3, "Disabled subscription", enabled = false),
+                group(4, "Empty subscription", enabled = true),
+            ),
+            servers = listOf(
+                server(10, groupId = 1, remarks = "Manual"),
+                server(20, groupId = 2, remarks = "Subscription"),
+                server(30, groupId = 3, remarks = "Disabled row"),
+                server(40, groupId = -2, remarks = "User balancer", strategy = true),
+                server(
+                    50,
+                    groupId = -2,
+                    remarks = "Inactive config balancer",
+                    strategy = true,
+                    sourceConfigId = 8,
+                    displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
+                ),
+                server(
+                    51,
+                    groupId = -2,
+                    remarks = "Active config balancer",
+                    strategy = true,
+                    sourceConfigId = 7,
+                    displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
+                ),
+            ),
+            activeConfigId = 7,
+            selectedGroupId = 3,
+            enableAllGroup = true,
+        )
+        val result = groupProxyServersForHome(request)
+        val allResult = groupProxyServersForHome(request.copy(selectedGroupId = 0))
+
+        assertEquals(listOf(-2, 2, 4, 1), result.visibleGroups.map { it.id })
+        assertEquals(listOf(0, -2, 2, 4, 1), result.groupTabs.map { it.id })
+        // Raw All tab count includes every visible row, while Home's All membership omits config-owned strategies.
+        assertEquals(listOf(4, 2, 1, 0, 1), result.groupTabs.map { it.serverCount })
+        assertEquals(listOf(10, 20, 40, 51), result.visibleServerIds)
+        assertEquals(listOf(40, 51), result.currentGroupServerIds)
+        assertEquals(-2, result.selectedGroupId)
+        assertEquals(-2, result.selectedTabId)
+        assertEquals(1, result.selectedTabIndex)
+        assertEquals(listOf(10, 20, 40), allResult.currentGroupServerIds)
+    }
+
     private fun request(
         groups: List<ProxyServerGroupInput>,
         servers: List<ProxyServerGroupServerInput>,

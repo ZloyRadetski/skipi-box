@@ -15,6 +15,7 @@ import kotlinx.coroutines.ensureActive
 internal class DesktopSubscriptionServerRemovalAdapter(
     private val readLibrary: () -> DesktopServerLibrary,
     private val proxyServerRepository: DesktopProxyServerRepository,
+    private val isTunnelRunning: () -> Boolean,
     private val stopSelectedServer: suspend () -> Unit,
 ) {
     suspend fun remove(subscriptionId: Int) {
@@ -26,7 +27,7 @@ internal class DesktopSubscriptionServerRemovalAdapter(
             }
         } == true
 
-        if (selectedServerWillBeRemoved) {
+        if (selectedServerWillBeRemoved && isTunnelRunning()) {
             currentCoroutineContext().ensureActive()
             stopSelectedServer()
         }

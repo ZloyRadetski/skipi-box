@@ -15,7 +15,7 @@ import org.junit.Test
 
 class SubscriptionWorkerRunnerTest {
     @Test
-    fun missingOrDisabledGroupCompletesWithoutFetching() = runBlocking {
+    fun disabledGroupCompletesWithoutFetching() = runBlocking {
         var fetchCount = 0
         val runner = SubscriptionWorkerRunner(
             stateProvider = {
@@ -28,6 +28,49 @@ class SubscriptionWorkerRunnerTest {
                             userAgent = "",
                             updateInterval = "24",
                             enabled = false,
+                        ),
+                    ),
+                )
+            },
+            update = {
+                fetchCount++
+                emptyResult()
+            },
+        )
+
+        assertEquals(SubscriptionWorkerResult.SUCCESS, runner.run(123))
+        assertEquals(0, fetchCount)
+    }
+
+    @Test
+    fun missingGroupCompletesWithoutFetching() = runBlocking {
+        var fetchCount = 0
+        val runner = SubscriptionWorkerRunner(
+            stateProvider = { AppState(subscriptionGroups = emptyList()) },
+            update = {
+                fetchCount++
+                emptyResult()
+            },
+        )
+
+        assertEquals(SubscriptionWorkerResult.SUCCESS, runner.run(123))
+        assertEquals(0, fetchCount)
+    }
+
+    @Test
+    fun blankUrlGroupCompletesWithoutFetching() = runBlocking {
+        var fetchCount = 0
+        val runner = SubscriptionWorkerRunner(
+            stateProvider = {
+                AppState(
+                    subscriptionGroups = listOf(
+                        SubscriptionGroupState(
+                            id = 123,
+                            name = "Blank URL",
+                            url = "",
+                            userAgent = "",
+                            updateInterval = "24",
+                            enabled = true,
                         ),
                     ),
                 )

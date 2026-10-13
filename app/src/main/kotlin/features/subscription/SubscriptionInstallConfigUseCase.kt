@@ -5,9 +5,10 @@ package features.subscription
 
 import android.content.Intent
 import android.net.Uri
-import app.AppState
 import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import app.SubscriptionGroupState
+import app.skipi.app.subscription.SubscriptionInstallOperations
+import app.skipi.app.subscription.SubscriptionInstallPreparation
 import data.AndroidAppStateStore
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
 import features.proxy.server.usecase.withUpdatedSubscriptionServers
@@ -111,52 +112,28 @@ private val SubscriptionInstallSource.androidUserAgent: String
         SubscriptionInstallSource.FlClashX -> FlClashXSubscriptionUserAgent
     }
 
-private fun AndroidAppStateStore.prepareSubscriptionInstallGroup(
+private suspend fun AndroidAppStateStore.prepareSubscriptionInstallGroup(
     config: SubscriptionInstallConfig,
 ): PreparedSubscriptionInstallGroup {
-    var preparedGroup: PreparedSubscriptionInstallGroup? = null
-    update { state ->
-        val existingGroup = state.existingSubscriptionGroupByUrl(config.url)
-        if (existingGroup != null) {
-            preparedGroup = PreparedSubscriptionInstallGroup(
-                group = existingGroup,
-                existingGroupName = existingGroup.name,
-            )
-            return@update state
-        }
-        // Group 1 is the permanent virtual "Manual servers" group.  A real
-        // subscription must never reuse it: otherwise an update could delete
-        // direct links that the user added by hand.
-        val group = state.newSubscriptionGroup(config)
-        preparedGroup = PreparedSubscriptionInstallGroup(
-            group = group,
-            existingGroupName = null,
-        )
-        state.copy(
-            subscriptionGroups = state.subscriptionGroups + group,
-            nextSubscriptionGroupId = state.nextSubscriptionGroupId + 1,
-        )
+    var preparation: SubscriptionInstallPreparation? = null
+    appRepositories.subscriptions.updateCatalog { catalog ->
+        SubscriptionInstallOperations.prepare(
+            catalog = catalog,
+            title = config.name,
+            url = config.url,
+            userAgent = config.userAgent,
+        ).also { result -> preparation = result }.catalog
     }
-    return checkNotNull(preparedGroup)
+    val prepared = checkNotNull(preparation)
+    val group = currentState.subscriptionGroups.firstOrNull { it.id == prepared.subscription.id }
+        ?: error("Prepared Android subscription group is missing")
+    return PreparedSubscriptionInstallGroup(
+        group = group,
+        existingGroupName = prepared.existingTitle,
+    )
 }
 
 private data class PreparedSubscriptionInstallGroup(
     val group: SubscriptionGroupState,
     val existingGroupName: String?,
 )
-
-private fun AppState.existingSubscriptionGroupByUrl(url: String): SubscriptionGroupState? {
-    return subscriptionGroups.firstOrNull { group -> group.url == url }
-}
-
-private fun AppState.newSubscriptionGroup(config: SubscriptionInstallConfig): SubscriptionGroupState {
-    return SubscriptionGroupState(
-        id = nextSubscriptionGroupId,
-        name = config.name,
-        url = config.url,
-        userAgent = config.userAgent,
-        updateInterval = "",
-        updateViaProxy = false,
-        enabled = true,
-    )
-}

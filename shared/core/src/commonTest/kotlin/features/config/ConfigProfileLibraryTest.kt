@@ -30,7 +30,7 @@ class ConfigProfileLibraryTest {
     }
 
     @Test
-    fun removeRepairsSelectionAndNormalizeRepairsMissingSelection() {
+    fun removeRepairsSelectionAndProtectsLastProfile() {
         val library = ConfigProfileLibrary(
             selectedConfigId = 9,
             configs = listOf(ConfigProfile(1, "One", "a"), ConfigProfile(2, "Two", "b")),
@@ -38,16 +38,49 @@ class ConfigProfileLibraryTest {
 
         assertEquals(1, ConfigProfileLibraries.normalize(library).selectedConfigId)
         assertEquals(2, ConfigProfileLibraries.remove(library.copy(selectedConfigId = 1), 1).selectedConfigId)
-        assertEquals(null, ConfigProfileLibraries.remove(ConfigProfileLibrary(configs = listOf(ConfigProfile(1, "One", "a"))), 1).selectedConfigId)
+        // Android oracle: deleteTrafficConfigProfile is a no-op when only one profile remains.
+        val onlyProfile = ConfigProfileLibrary(
+            selectedConfigId = 1,
+            configs = listOf(ConfigProfile(1, "One", "a")),
+        )
+        assertEquals(onlyProfile, ConfigProfileLibraries.remove(onlyProfile, 1))
     }
 
     @Test
-    fun rejectsEmptyContentAndUnknownSelection() {
+    fun rejectsEmptyContentAndIgnoresUnknownSelection() {
         assertFailsWith<IllegalArgumentException> {
             ConfigProfileLibraries.put(ConfigProfileLibrary(), "Empty", "  ")
         }
-        assertFailsWith<IllegalArgumentException> {
-            ConfigProfileLibraries.select(ConfigProfileLibrary(), 42)
-        }
+        // Android oracle: selectTrafficConfigProfile preserves the current ID for an unknown request.
+        val library = ConfigProfileLibrary(
+            selectedConfigId = 7,
+            configs = listOf(ConfigProfile(7, "Current", "[General]")),
+        )
+        assertEquals(library, ConfigProfileLibraries.select(library, 42))
     }
+
+    @Test
+    fun legacyLibraryDerivesAndRetainsNextIdHighWaterAcrossDeletion() {
+        val legacy = ConfigProfileLibrary(
+            selectedConfigId = 41,
+            configs = listOf(
+                ConfigProfile(30, "Legacy default", "[General]"),
+                ConfigProfile(41, "Work", "[Proxy]"),
+            ),
+        )
+
+        val normalized = ConfigProfileLibraries.normalize(legacy)
+        assertEquals(42, normalized.nextConfigId)
+
+        val firstNew = ConfigProfileLibraries.put(normalized, "New", "[General]")
+        assertEquals(42, firstNew.configs.last().id)
+        assertEquals(43, firstNew.nextConfigId)
+
+        val afterDelete = ConfigProfileLibraries.remove(firstNew, 42)
+        assertEquals(43, afterDelete.nextConfigId)
+        val secondNew = ConfigProfileLibraries.put(afterDelete, "Another", "[Rule]")
+        assertEquals(43, secondNew.configs.last().id)
+        assertEquals(44, secondNew.nextConfigId)
+    }
+
 }

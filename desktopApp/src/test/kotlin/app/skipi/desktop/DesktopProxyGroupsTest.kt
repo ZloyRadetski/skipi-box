@@ -7,19 +7,20 @@ import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.encodePersistedProxyServer
+import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class DesktopProxyGroupsTest {
     @Test
-    fun creates_android_like_groups_with_stable_ids_and_group_local_filtering() {
+    fun matches_android_group_order_empty_enabled_and_disabled_group_visibility() {
         val library = DesktopServerLibrary(
             servers = listOf(
                 storedServer(10, "Manual node"),
                 storedServer(11, "Fast Amsterdam", subscriptionId = 2),
                 storedServer(12, "Disabled provider", subscriptionId = 3),
-                storedStrategy(20, StrategyGroup(remarks = "Fastest", proxyServerIds = listOf(10, 11))),
+                storedStrategy(20, StrategyGroup(remarks = "Fastest", proxyServerIds = listOf(10, 11)), subscriptionId = -2),
                 storedStrategy(
                     21,
                     StrategyGroup(
@@ -27,13 +28,15 @@ class DesktopProxyGroupsTest {
                         sourceTrafficConfigId = 7,
                         displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
                     ),
+                    subscriptionId = -2,
                 ),
             ),
         )
         val subscriptions = DesktopSubscriptionLibrary(
             subscriptions = listOf(
                 DesktopStoredSubscription(id = 2, url = "https://one.example/sub", name = "Torvalds VPN"),
-                DesktopStoredSubscription(id = 3, url = "https://two.example/sub", name = "Disabled subscription"),
+                DesktopStoredSubscription(id = 3, url = "https://two.example/sub", name = "Disabled subscription", enabled = false),
+                DesktopStoredSubscription(id = 4, url = "https://four.example/sub", name = "Empty enabled subscription"),
             ),
         )
 
@@ -41,7 +44,6 @@ class DesktopProxyGroupsTest {
             serverLibrary = library,
             subscriptionLibrary = subscriptions,
             options = DesktopProxyGroupOptions(
-                subscriptionEnabledById = mapOf(3 to false),
                 activeTrafficConfigId = 7,
             ),
         )
@@ -51,7 +53,7 @@ class DesktopProxyGroupsTest {
                 DesktopProxyGroupIds.All,
                 DesktopProxyGroupIds.AutoBalancers,
                 DesktopProxyGroupIds.subscription(2),
-                DesktopProxyGroupIds.subscription(3),
+                DesktopProxyGroupIds.subscription(4),
                 DesktopProxyGroupIds.Manual,
             ),
             catalog.groups.map(DesktopProxyGroup::id),
@@ -62,13 +64,15 @@ class DesktopProxyGroupsTest {
         assertEquals(listOf(20, 21), catalog.group(DesktopProxyGroupIds.AutoBalancers)?.serverIds)
         assertEquals(1, catalog.group(DesktopProxyGroupIds.subscription(2))?.serverCount)
         assertEquals(true, catalog.group(DesktopProxyGroupIds.subscription(2))?.enabled)
-        assertEquals(false, catalog.group(DesktopProxyGroupIds.subscription(3))?.enabled)
-        assertEquals(1, catalog.group(DesktopProxyGroupIds.subscription(3))?.serverCount)
+        assertNull(catalog.group(DesktopProxyGroupIds.subscription(3)))
+        assertEquals(0, catalog.group(DesktopProxyGroupIds.subscription(4))?.serverCount)
         assertEquals(listOf(10), catalog.group(DesktopProxyGroupIds.Manual)?.serverIds)
+        assertEquals(DesktopProxyGroupIds.AutoBalancers, catalog.select("missing").group?.id)
+        assertEquals(listOf(10, 11, 20), catalog.select(DesktopProxyGroupIds.All).serverIds)
 
         assertEquals(
             listOf(11),
-            catalog.filter(DesktopProxyGroupIds.subscription(2), query = "amsterdam").serverIds,
+            catalog.filter(DesktopProxyGroupIds.subscription(2), query = " AMSTERDAM ").serverIds,
         )
         assertEquals(
             emptyList(),
@@ -77,7 +81,7 @@ class DesktopProxyGroupsTest {
     }
 
     @Test
-    fun hides_inactive_or_hidden_config_strategy_groups_and_keeps_manual_strategy_in_all() {
+    fun matches_android_config_display_modes_and_user_strategy_visibility() {
         val catalog = DesktopProxyGroups.create(
             serverLibrary = DesktopServerLibrary(
                 servers = listOf(
@@ -90,6 +94,7 @@ class DesktopProxyGroupsTest {
                             sourceTrafficConfigId = 8,
                             displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
                         ),
+                        subscriptionId = -2,
                     ),
                     storedStrategy(
                         4,
@@ -98,6 +103,7 @@ class DesktopProxyGroupsTest {
                             sourceTrafficConfigId = 9,
                             displayMode = StrategyGroupDisplayMode.ALWAYS,
                         ),
+                        subscriptionId = -2,
                     ),
                     storedStrategy(
                         5,
@@ -105,6 +111,7 @@ class DesktopProxyGroupsTest {
                             remarks = "Hidden group",
                             showInAutoBalancerList = false,
                         ),
+                        subscriptionId = -2,
                     ),
                 ),
             ),
@@ -115,13 +122,45 @@ class DesktopProxyGroupsTest {
         )
 
         assertEquals(
-            listOf(2, 4),
+            listOf(4, 5),
             catalog.group(DesktopProxyGroupIds.AutoBalancers)?.serverIds,
         )
         assertEquals(
-            listOf(1, 2),
+            listOf(1, 2, 5),
             catalog.group(DesktopProxyGroupIds.All)?.serverIds,
         )
+    }
+
+    @Test
+    fun usesPersistedGroupIdForStrategiesAndDropsRowsAndroidCannotDecode() {
+        val serverLibrary = DesktopServerLibrary(
+            servers = listOf(
+                storedServer(1, "Manual node"),
+                storedStrategy(
+                    2,
+                    StrategyGroup(remarks = "Auto strategy", showInAutoBalancerList = false),
+                    subscriptionId = -2,
+                ),
+                storedStrategy(3, StrategyGroup(remarks = "Manual strategy")),
+                storedStrategy(4, StrategyGroup(remarks = "Subscription strategy"), subscriptionId = 8),
+                DesktopStoredProxyServer(id = 5, serverJson = "{}"),
+            ),
+        )
+        val catalog = DesktopProxyGroups.create(
+            serverLibrary = serverLibrary,
+            subscriptionLibrary = DesktopSubscriptionLibrary(
+                subscriptions = listOf(
+                    DesktopStoredSubscription(id = 8, url = "https://eight.example/sub", name = "Eight"),
+                ),
+            ),
+        )
+
+        assertEquals(listOf(2), catalog.group(DesktopProxyGroupIds.AutoBalancers)?.serverIds)
+        assertEquals(listOf(1, 3), catalog.group(DesktopProxyGroupIds.Manual)?.serverIds)
+        assertEquals(listOf(4), catalog.group(DesktopProxyGroupIds.subscription(8))?.serverIds)
+        assertEquals(listOf(1, 2, 3, 4), catalog.group(DesktopProxyGroupIds.All)?.serverIds)
+        assertEquals(5, serverLibrary.servers.size)
+        assertEquals("{}", serverLibrary.servers.first { it.id == 5 }.serverJson)
     }
 
     @Test
@@ -174,6 +213,40 @@ class DesktopProxyGroupsTest {
         assertEquals(listOf(1, 2), enabledAll.group(DesktopProxyGroupIds.All)?.serverIds)
     }
 
+    @Test
+    fun preserves_persisted_subscription_group_order_after_reload() {
+        val directory = Files.createTempDirectory("skipi-proxy-group-order-")
+        val path = directory.resolve("subscriptions.json")
+        try {
+            val original = DesktopSubscriptionLibrary(
+                subscriptions = listOf(
+                    DesktopStoredSubscription(id = 9, url = "https://nine.example/sub", name = "Nine"),
+                    DesktopStoredSubscription(id = 2, url = "https://two.example/sub", name = "Two"),
+                ),
+            )
+            DesktopSubscriptionLibraries.save(path, original).getOrThrow()
+            val restored = DesktopSubscriptionLibraries.load(path).getOrThrow()
+
+            val catalog = DesktopProxyGroups.create(
+                serverLibrary = DesktopServerLibrary(servers = listOf(storedServer(1, "Manual node"))),
+                subscriptionLibrary = restored,
+            )
+
+            assertEquals(
+                listOf(
+                    DesktopProxyGroupIds.All,
+                    DesktopProxyGroupIds.subscription(9),
+                    DesktopProxyGroupIds.subscription(2),
+                    DesktopProxyGroupIds.Manual,
+                ),
+                catalog.groups.map(DesktopProxyGroup::id),
+            )
+        } finally {
+            Files.deleteIfExists(path)
+            Files.deleteIfExists(directory)
+        }
+    }
+
     private fun storedServer(id: Int, remarks: String, subscriptionId: Int? = null): DesktopStoredProxyServer =
         DesktopStoredProxyServer(
             id = id,
@@ -183,9 +256,14 @@ class DesktopProxyGroupsTest {
             ).encodePersistedProxyServer(),
         )
 
-    private fun storedStrategy(id: Int, strategy: StrategyGroup): DesktopStoredProxyServer =
+    private fun storedStrategy(
+        id: Int,
+        strategy: StrategyGroup,
+        subscriptionId: Int? = null,
+    ): DesktopStoredProxyServer =
         DesktopStoredProxyServer(
             id = id,
+            subscriptionId = subscriptionId,
             serverJson = strategy.encodePersistedProxyServer(),
         )
 }

@@ -65,6 +65,48 @@ object DesktopConfigLibraries {
         library, name, content, sourceUrl, updateLocked, lastUpdatedAtMillis,
     )
 
+    fun create(
+        library: DesktopConfigLibrary,
+        profile: ConfigProfile,
+        resourceUserAgentFallback: String = versionedDesktopProfileResourceUserAgent(app.ProjectInfo.VERSION_NAME),
+    ): DesktopConfigLibrary = TrafficConfigLibraryOperations.create(
+        library, profile, resourceUserAgentFallback,
+    )
+
+    fun importDocument(
+        library: DesktopConfigLibrary,
+        content: String,
+        activate: Boolean,
+        fallbackName: String = "Config",
+        sourceUrl: String = "",
+        resourceUserAgentFallback: String = versionedDesktopProfileResourceUserAgent(app.ProjectInfo.VERSION_NAME),
+    ): DesktopConfigLibrary = TrafficConfigLibraryOperations.importDocument(
+        library = library,
+        content = content,
+        activate = activate,
+        fallbackName = fallbackName,
+        sourceUrl = sourceUrl,
+        resourceUserAgentFallback = resourceUserAgentFallback,
+    )
+
+    fun duplicate(
+        library: DesktopConfigLibrary,
+        sourceProfileId: Int,
+        name: String,
+        resourceUserAgentFallback: String = versionedDesktopProfileResourceUserAgent(app.ProjectInfo.VERSION_NAME),
+    ): DesktopConfigLibrary = TrafficConfigLibraryOperations.duplicate(
+        library, sourceProfileId, name, resourceUserAgentFallback,
+    )
+
+    fun duplicate(
+        library: DesktopConfigLibrary,
+        sourceProfile: DesktopStoredConfig,
+        name: String,
+        resourceUserAgentFallback: String = versionedDesktopProfileResourceUserAgent(app.ProjectInfo.VERSION_NAME),
+    ): DesktopConfigLibrary = TrafficConfigLibraryOperations.duplicate(
+        library, sourceProfile, name, resourceUserAgentFallback,
+    )
+
     fun select(library: DesktopConfigLibrary, id: Int?): DesktopConfigLibrary =
         TrafficConfigLibraryOperations.select(library, id)
 

@@ -27,6 +27,9 @@ data class LocalProxyXrayConfigOptions(
     val httpProxyListenAddress: String = DefaultLocalHttpProxyListenAddress,
     val enableHttpProxy: Boolean = false,
     val listenAddress: String = "127.0.0.1",
+    /** Blank usernames retain Android's unauthenticated SOCKS settings. */
+    val username: String = "",
+    val password: String = "",
     val logLevel: String = "warning",
     val dnsServers: List<String> = emptyList(),
     val includeDefaultRouting: Boolean = false,
@@ -38,6 +41,41 @@ object LocalProxyXrayConfigFactory {
     const val HttpInboundTag = "skipi-http"
     const val DirectTag = "direct"
     const val BlockTag = "block"
+
+    /** Builds the SOCKS inbound with the exact fields used by Android's local listener. */
+    fun buildSocksInbound(
+        options: LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(),
+        tag: String = SocksInboundTag,
+    ) = buildJsonObject {
+        require(options.socksPort in 1..65_535) { "Local SOCKS port must be in 1..65535" }
+        require(options.listenAddress.isNotBlank()) { "Local SOCKS listen address must not be blank" }
+        put("tag", tag)
+        put("listen", options.listenAddress)
+        put("port", options.socksPort)
+        put("protocol", "socks")
+        put(
+            "settings",
+            buildJsonObject {
+                put("auth", if (options.username.isBlank()) "noauth" else "password")
+                put("udp", true)
+                put("userLevel", 0)
+                if (options.listenAddress == "127.0.0.1") put("ip", "127.0.0.1")
+                if (options.username.isNotBlank()) {
+                    put(
+                        "users",
+                        buildJsonArray {
+                            add(
+                                buildJsonObject {
+                                    put("user", options.username)
+                                    put("pass", options.password)
+                                },
+                            )
+                        },
+                    )
+                }
+            },
+        )
+    }
 
     fun build(
         server: ProxyServer<*>,
@@ -86,21 +124,7 @@ object LocalProxyXrayConfigFactory {
             put(
                 "inbounds",
                 buildJsonArray {
-                    add(
-                        buildJsonObject {
-                            put("tag", SocksInboundTag)
-                            put("listen", options.listenAddress)
-                            put("port", options.socksPort)
-                            put("protocol", "socks")
-                            put(
-                                "settings",
-                                buildJsonObject {
-                                    put("auth", "noauth")
-                                    put("udp", true)
-                                },
-                            )
-                        },
-                    )
+                    add(buildSocksInbound(options))
                     if (options.enableHttpProxy) {
                         add(
                             buildJsonObject {

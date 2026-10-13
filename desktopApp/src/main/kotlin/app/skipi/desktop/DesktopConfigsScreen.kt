@@ -63,6 +63,11 @@ import app.skipi.ui.config.SkipiTrafficConfigRawEditorLabels
 import app.skipi.ui.config.SkipiTrafficConfigRawEditorState
 import app.skipi.ui.config.SkipiTrafficConfigUrlImportDialog
 import app.skipi.ui.config.TrafficConfigCatalogProfileItem
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.configs_copy_name
+import app.skipi.ui.resources.configs_imported_name
+import app.skipi.ui.resources.configs_new_name
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -70,6 +75,7 @@ import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 import java.time.Duration
+import features.config.ConfigProfile
 
 private val ConfigBackground: Color
     @Composable get() = DesktopContentBackground
@@ -90,11 +96,13 @@ private data class DesktopConfigDraft(
     val lastUpdatedAtMillis: Long,
 )
 
+private class DesktopConfigEditorSaveRejected(message: String) : RuntimeException(message)
+
 /** Desktop counterpart of Android's TrafficConfigPage and raw configuration editor. */
 @Composable
 internal fun DesktopConfigsScreen(
     configLibrary: DesktopConfigLibrary,
-    onConfigLibraryChange: (DesktopConfigLibrary) -> Unit,
+    onTransformConfigLibrary: ((DesktopConfigLibrary) -> DesktopConfigLibrary) -> DesktopConfigLibrary,
     fetchUserAgent: String,
     fetchTimeoutSeconds: Int,
     contentPadding: PaddingValues,
@@ -109,6 +117,8 @@ internal fun DesktopConfigsScreen(
     var contextMenuConfig by remember { mutableStateOf<DesktopStoredConfig?>(null) }
     var message by remember { mutableStateOf("") }
     var updatingConfigIds by remember { mutableStateOf(emptySet<Int>()) }
+    val newProfileName = stringResource(Res.string.configs_new_name, configLibrary.nextConfigId)
+    val importedProfileName = stringResource(Res.string.configs_imported_name)
 
     fun openConfigEditor(config: DesktopStoredConfig) {
         editorDraft = DesktopConfigDraft(
@@ -121,54 +131,60 @@ internal fun DesktopConfigsScreen(
         )
     }
 
-    fun persist(updated: DesktopConfigLibrary, successMessage: String, afterSave: (() -> Unit)? = null): Boolean {
-        return DesktopConfigLibraries.saveDefault(updated).fold(
+    fun persist(
+        transform: (DesktopConfigLibrary) -> DesktopConfigLibrary,
+        successMessage: String,
+        failurePrefix: String = "Не удалось сохранить конфиги: ",
+        afterSave: (() -> Unit)? = null,
+    ): Boolean {
+        return runCatching { onTransformConfigLibrary(transform) }.fold(
             onSuccess = {
-                onConfigLibraryChange(updated)
                 message = successMessage
                 afterSave?.invoke()
                 true
             },
             onFailure = { error ->
-                message = "Не удалось сохранить конфиги: ${error.message.orEmpty()}"
+                message = if (error is DesktopConfigEditorSaveRejected) {
+                    "Конфиг не сохранён: ${error.message.orEmpty()}"
+                } else {
+                    "$failurePrefix${error.message.orEmpty()}"
+                }
                 false
             },
         )
     }
 
     fun importRawConfig(content: String, name: String, sourceUrl: String = "") {
-        val normalized = content.trimEnd().plus("\n")
-        val analysis = normalized.analyzeShadowrocketConfig()
-        val error = analysis.diagnostics.firstOrNull { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }
-        if (error != null) {
-            message = "Конфиг не импортирован: ${error.message}"
-            return
-        }
-        val profileMetadata = normalized.readDesktopSkipiProfileMetadata()
-        val updated = DesktopConfigLibraries.put(
-            library = configLibrary,
-            name = profileMetadata.name ?: name,
-            content = normalized,
-            sourceUrl = sourceUrl.trim().takeIf(String::isNotBlank) ?: profileMetadata.sourceUrl,
-            updateLocked = profileMetadata.updateLocked,
+        persist(
+            transform = { latest ->
+                DesktopConfigLibraries.importDocument(
+                    library = latest,
+                    content = content,
+                    activate = false,
+                    fallbackName = name,
+                    sourceUrl = sourceUrl,
+                )
+            },
+            successMessage = "Конфиг добавлен в библиотеку.",
+            failurePrefix = "Конфиг не импортирован: ",
         )
-        persist(updated, "Конфиг добавлен в библиотеку.")
     }
 
-    fun importFromUrl(url: String, existing: DesktopStoredConfig? = null) {
+    fun fetchConfigFromUrl(
+        url: String,
+        updatingConfigId: Int? = null,
+        onSuccess: (normalizedUrl: String, content: String) -> Unit,
+    ) {
         val normalizedUrl = url.trim()
-        val target = existing ?: configLibrary.configs.firstOrNull { config ->
-            config.sourceUrl.equals(normalizedUrl, ignoreCase = true)
-        }
-        if (target?.updateLocked == true) {
-            message = "Обновление «${target.name}» заблокировано. Разблокируйте его в редакторе профиля."
+        if (normalizedUrl.isBlank()) {
+            message = "Ссылка на источник пуста."
             return
         }
         scope.launch {
             message = "Загрузка конфига…"
-            target?.let { updatingConfigIds = updatingConfigIds + it.id }
+            updatingConfigId?.let { updatingConfigIds = updatingConfigIds + it }
             try {
-                runCatching {
+                val fetched = runCatching {
                     withContext(Dispatchers.IO) {
                         fetcher.fetch(
                             url = normalizedUrl,
@@ -176,44 +192,89 @@ internal fun DesktopConfigsScreen(
                             timeout = Duration.ofSeconds(fetchTimeoutSeconds.toLong()),
                         ).body
                     }
-                }.onSuccess { content ->
-                    val normalizedContent = content.trimEnd().plus("\n")
-                    val analysis = normalizedContent.analyzeShadowrocketConfig()
-                    val error = analysis.diagnostics.firstOrNull {
-                        it.severity == ShadowrocketConfigDiagnosticSeverity.Error
-                    }
-                    if (error != null) {
-                        message = "Конфиг не импортирован: ${error.message}"
-                        return@onSuccess
-                    }
-                    val profileMetadata = normalizedContent.readDesktopSkipiProfileMetadata()
-                    val updated = if (target == null) {
-                        DesktopConfigLibraries.put(
-                            library = configLibrary,
-                            name = profileMetadata.name ?: "Импортированный конфиг ${(configLibrary.configs.maxOfOrNull { it.id } ?: 0) + 1}",
-                            content = normalizedContent,
-                            sourceUrl = normalizedUrl,
-                            updateLocked = profileMetadata.updateLocked,
-                            lastUpdatedAtMillis = System.currentTimeMillis(),
-                        )
-                    } else {
-                        DesktopConfigLibraries.update(
-                            library = configLibrary,
-                            id = target.id,
-                            name = profileMetadata.name ?: target.name,
-                            content = normalizedContent,
-                            sourceUrl = normalizedUrl,
-                            updateLocked = profileMetadata.updateLocked ?: target.updateLocked,
-                            lastUpdatedAtMillis = System.currentTimeMillis(),
-                        )
-                    }
-                    persist(updated, if (target == null) "Конфиг импортирован." else "Конфиг обновлён.")
-                }.onFailure { error ->
-                    message = "Не удалось загрузить конфиг: ${error.message.orEmpty()}"
                 }
+                fetched.onSuccess { content -> onSuccess(normalizedUrl, content) }
+                    .onFailure { error -> message = "Не удалось загрузить конфиг: ${error.message.orEmpty()}" }
             } finally {
-                target?.let { updatingConfigIds = updatingConfigIds - it.id }
+                updatingConfigId?.let { updatingConfigIds = updatingConfigIds - it }
             }
+        }
+    }
+
+    fun importUrlFromClipboard(url: String) {
+        fetchConfigFromUrl(url) { normalizedUrl, content ->
+            persist(
+                transform = { latest ->
+                    DesktopConfigLibraries.importDocument(
+                        library = latest,
+                        content = content,
+                        activate = false,
+                        fallbackName = importedProfileName,
+                        sourceUrl = normalizedUrl,
+                    )
+                },
+                successMessage = "Конфиг импортирован.",
+                failurePrefix = "Конфиг не импортирован: ",
+            )
+        }
+    }
+
+    fun createConfigFromUrl(url: String) {
+        fetchConfigFromUrl(url) { normalizedUrl, content ->
+            val normalizedContent = content.trimEnd().plus("\n")
+            val error = normalizedContent.analyzeShadowrocketConfig().diagnostics.firstOrNull {
+                it.severity == ShadowrocketConfigDiagnosticSeverity.Error
+            }
+            if (error != null) {
+                message = "Конфиг не импортирован: ${error.message}"
+                return@fetchConfigFromUrl
+            }
+            val profile = ConfigProfile(
+                id = 0,
+                name = importedProfileName,
+                content = normalizedContent,
+                sourceUrl = normalizedUrl,
+                lastUpdatedAtMillis = System.currentTimeMillis(),
+            )
+            persist(
+                transform = { latest -> DesktopConfigLibraries.create(latest, profile) },
+                successMessage = "Конфиг импортирован.",
+                failurePrefix = "Конфиг не импортирован: ",
+            )
+        }
+    }
+
+    fun refreshConfigFromUrl(config: DesktopStoredConfig) {
+        if (config.updateLocked) {
+            message = "Обновление «${config.name}» заблокировано. Разблокируйте его в редакторе профиля."
+            return
+        }
+        fetchConfigFromUrl(config.sourceUrl, updatingConfigId = config.id) { normalizedUrl, content ->
+            val normalizedContent = content.trimEnd().plus("\n")
+            val error = normalizedContent.analyzeShadowrocketConfig().diagnostics.firstOrNull {
+                it.severity == ShadowrocketConfigDiagnosticSeverity.Error
+            }
+            if (error != null) {
+                message = "Конфиг не импортирован: ${error.message}"
+                return@fetchConfigFromUrl
+            }
+            val profileMetadata = normalizedContent.readDesktopSkipiProfileMetadata()
+            persist(
+                transform = { latest ->
+                    val current = latest.configs.firstOrNull { it.id == config.id } ?: return@persist latest
+                    DesktopConfigLibraries.update(
+                        library = latest,
+                        id = config.id,
+                        name = profileMetadata.name ?: current.name,
+                        content = normalizedContent,
+                        sourceUrl = normalizedUrl,
+                        updateLocked = profileMetadata.updateLocked ?: current.updateLocked,
+                        lastUpdatedAtMillis = System.currentTimeMillis(),
+                    )
+                },
+                successMessage = "Конфиг обновлён.",
+                failurePrefix = "Конфиг не обновлён: ",
+            )
         }
     }
 
@@ -224,25 +285,26 @@ internal fun DesktopConfigsScreen(
             onBack = { editorDraft = null },
             onSave = { name, content, sourceUrl, updateLocked ->
                 val draft = editorDraft ?: return@DesktopConfigEditor false
-                when (
-                    val save = applyDesktopConfigEditorSave(
-                        library = configLibrary,
-                        id = draft.id,
-                        lastUpdatedAtMillis = draft.lastUpdatedAtMillis,
-                        name = name,
-                        content = content,
-                        sourceUrl = sourceUrl,
-                        updateLocked = updateLocked,
-                    )
-                ) {
-                    is DesktopConfigEditorSaveResult.Rejected -> {
-                        message = "Конфиг не сохранён: ${save.message}"
-                        false
-                    }
-
-                    is DesktopConfigEditorSaveResult.Saved ->
-                        persist(save.library, "Конфиг сохранён.") { editorDraft = null }
-                }
+                persist(
+                    transform = { latest ->
+                        when (
+                            val save = applyDesktopConfigEditorSave(
+                                library = latest,
+                                id = draft.id,
+                                lastUpdatedAtMillis = draft.lastUpdatedAtMillis,
+                                name = name,
+                                content = content,
+                                sourceUrl = sourceUrl,
+                                updateLocked = updateLocked,
+                            )
+                        ) {
+                            is DesktopConfigEditorSaveResult.Rejected -> throw DesktopConfigEditorSaveRejected(save.message)
+                            is DesktopConfigEditorSaveResult.Saved -> save.library
+                        }
+                    },
+                    successMessage = "Конфиг сохранён.",
+                    afterSave = { editorDraft = null },
+                )
             },
         )
         return
@@ -282,10 +344,9 @@ internal fun DesktopConfigsScreen(
                             leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null) },
                             onClick = {
                                 showAddMenu = false
-                                val nextId = (configLibrary.configs.maxOfOrNull { it.id } ?: 0) + 1
                                 editorDraft = DesktopConfigDraft(
                                     id = null,
-                                    name = "Конфиг $nextId",
+                                    name = newProfileName,
                                     content = defaultShadowrocketConfig(),
                                     sourceUrl = "",
                                     updateLocked = false,
@@ -318,7 +379,7 @@ internal fun DesktopConfigsScreen(
                                         .toString()
                                 }.getOrDefault("").trim()
                                 when {
-                                    text.startsWith("http://", true) || text.startsWith("https://", true) -> importFromUrl(text)
+                                    text.startsWith("http://", true) || text.startsWith("https://", true) -> importUrlFromClipboard(text)
                                     text.isNotBlank() -> importRawConfig(text, "Конфиг из буфера")
                                     else -> message = "Буфер обмена пуст."
                                 }
@@ -337,10 +398,9 @@ internal fun DesktopConfigsScreen(
 
             if (configLibrary.configs.isEmpty()) {
                 EmptyConfigsCard(onCreate = {
-                    val nextId = (configLibrary.configs.maxOfOrNull { it.id } ?: 0) + 1
                     editorDraft = DesktopConfigDraft(
                         id = null,
-                        name = "Конфиг $nextId",
+                        name = newProfileName,
                         content = defaultShadowrocketConfig(),
                         sourceUrl = "",
                         updateLocked = false,
@@ -356,10 +416,13 @@ internal fun DesktopConfigsScreen(
                         updating = config.id in updatingConfigIds,
                         canDelete = configLibrary.configs.size > 1,
                         onSelect = {
-                            persist(DesktopConfigLibraries.select(configLibrary, config.id), "Выбран «${config.name}».")
+                            persist(
+                                transform = { latest -> DesktopConfigLibraries.select(latest, config.id) },
+                                successMessage = "Выбран «${config.name}».",
+                            )
                         },
                         onEdit = { openConfigEditor(config) },
-                        onRefresh = { importFromUrl(config.sourceUrl, config) },
+                        onRefresh = { refreshConfigFromUrl(config) },
                         onCopy = {
                             runCatching {
                                 Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(config.content), null)
@@ -388,12 +451,13 @@ internal fun DesktopConfigsScreen(
         onUrlChange = { importUrl = it },
         onDismissRequest = { importUrlDialog = false },
         onImport = { url ->
-                importUrl = ""
-                importUrlDialog = false
-                importFromUrl(url)
+            importUrl = ""
+            importUrlDialog = false
+            createConfigFromUrl(url)
         },
     )
     contextMenuConfig?.let { config ->
+        val duplicateName = stringResource(Res.string.configs_copy_name, config.name)
         SkipiTrafficConfigContextMenu(
             show = true,
             onDismissRequest = { contextMenuConfig = null },
@@ -405,19 +469,23 @@ internal fun DesktopConfigsScreen(
             showDelete = true,
             showEnable = true,
             onUpdate = if (config.sourceUrl.isNotBlank() && !config.updateLocked && config.id !in updatingConfigIds) {
-                { contextMenuConfig = null; importFromUrl(config.sourceUrl, config) }
+                { contextMenuConfig = null; refreshConfigFromUrl(config) }
             } else null,
             onRawEdit = { contextMenuConfig = null; openConfigEditor(config) },
             onUiEdit = { contextMenuConfig = null; openConfigEditor(config) },
             onDuplicate = {
                 contextMenuConfig = null
-                editorDraft = DesktopConfigDraft(
-                    id = null,
-                    name = "${config.name} — копия",
-                    content = config.content,
-                    sourceUrl = config.sourceUrl,
-                    updateLocked = config.updateLocked,
-                    lastUpdatedAtMillis = config.lastUpdatedAtMillis,
+                var copy: DesktopStoredConfig? = null
+                persist(
+                    transform = { latest ->
+                        DesktopConfigLibraries.duplicate(
+                            library = latest,
+                            sourceProfile = config,
+                            name = duplicateName,
+                        ).also { copy = it.configs.last() }
+                    },
+                    successMessage = "",
+                    afterSave = { copy?.let(::openConfigEditor) },
                 )
             },
             onExport = {
@@ -432,7 +500,10 @@ internal fun DesktopConfigsScreen(
             onDelete = { contextMenuConfig = null; pendingDeletion = config },
             onEnable = {
                 contextMenuConfig = null
-                persist(DesktopConfigLibraries.select(configLibrary, config.id), "Выбран «${config.name}».")
+                persist(
+                    transform = { latest -> DesktopConfigLibraries.select(latest, config.id) },
+                    successMessage = "Выбран «${config.name}».",
+                )
             },
         )
     }
@@ -443,8 +514,10 @@ internal fun DesktopConfigsScreen(
             text = { Text("«${config.name}» будет удалён из локальной библиотеки.") },
             confirmButton = {
                 Button(onClick = {
-                    val updated = DesktopConfigLibraries.remove(configLibrary, config.id)
-                    persist(updated, "Конфиг удалён.")
+                    persist(
+                        transform = { latest -> DesktopConfigLibraries.remove(latest, config.id) },
+                        successMessage = "Конфиг удалён.",
+                    )
                     pendingDeletion = null
                 }) { Text("Удалить") }
             },

@@ -20,12 +20,17 @@ import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.subscription.LoadedSubscriptionRefresh
 import app.skipi.app.subscription.ResolvedEmbeddedSubscriptionConfig
+import app.skipi.app.subscription.SubscriptionRefreshBatchCommitPort
+import app.skipi.app.subscription.SubscriptionRefreshBatchReconciliationResult
 import app.skipi.app.subscription.SubscriptionRefreshCommitPort
 import app.skipi.app.subscription.SubscriptionRefreshReconciliationResult
 import app.skipi.app.subscription.SubscriptionRefreshRequestIdentity
 import app.skipi.app.subscription.SubscriptionRefreshSnapshot
+import app.skipi.app.subscription.SubscriptionRefreshLoadRequest
+import app.skipi.app.subscription.commitSubscriptionRefreshBatch
 import app.skipi.app.subscription.commitSubscriptionRefresh
 import app.skipi.app.subscription.reconcileSubscriptionRefresh
+import app.skipi.app.subscription.eligibleSubscriptionRefreshRequests
 import app.skipi.app.subscription.withRefreshedMetadata
 import data.AndroidAppStateStore
 import data.repository.toAndroidGroup
@@ -314,6 +319,22 @@ private fun AppState.toSubscriptionRefreshSnapshot(): SubscriptionRefreshSnapsho
     selectedServerId = selectedProxyServerId,
 )
 
+private fun AppState.toSubscriptionRefreshSnapshot(
+    catalog: ProxyServerCatalog,
+): SubscriptionRefreshSnapshot = toSubscriptionRefreshSnapshot().copy(
+    servers = catalog.servers.map { server ->
+        ProxyServerRecord(
+            id = server.id,
+            groupId = server.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
+            server = server.server,
+            latency = proxyServers.firstOrNull { current -> current.id == server.id }?.latency.orEmpty(),
+        )
+    },
+    nextServerId = catalog.nextServerId,
+    selectedServerId = catalog.selectedServerId,
+    retainedServerIds = catalog.retainedServerIds,
+)
+
 private fun AppState.withSubscriptionRefreshSnapshot(snapshot: SubscriptionRefreshSnapshot): AppState = copy(
     subscriptionGroups = snapshot.subscriptions.map { record ->
         record.toAndroidGroup(subscriptionGroups.firstOrNull { existing -> existing.id == record.id })
@@ -416,28 +437,86 @@ private suspend fun applyProxySubscriptionUpdatesBatch(
     updatedAtMillis: Long,
     updateAppState: ((AppState) -> AppState) -> Unit,
 ) {
-    val previous = stateStore.currentState
-    stateStore.proxyServerRepository.updateCatalog { current ->
-        reconcileUpdatedSubscriptionProxyRecords(
-            servers = current.servers,
-            groups = stateStore.currentState.subscriptionGroups,
-            updates = updates,
-            nextServerId = current.nextServerId,
-            selectedServerId = current.selectedServerId,
-        )
+    val result = commitSubscriptionRefreshBatch(
+        loaded = updates.map(ProxyServerListSubscriptionUpdate::toLoadedSubscriptionRefresh),
+        refreshedAtMillis = updatedAtMillis,
+        singlePort = AndroidSubscriptionRefreshCommitPort(stateStore, updateAppState),
+        batchPort = AndroidSubscriptionRefreshBatchCommitPort(stateStore, updateAppState),
+    )
+    result.singleCommitResult?.failure?.let { failure -> throw failure.error }
+}
+
+private class AndroidSubscriptionRefreshBatchCommitPort(
+    private val stateStore: AndroidAppStateStore,
+    private val updateAppState: ((AppState) -> AppState) -> Unit,
+) : SubscriptionRefreshBatchCommitPort {
+    override suspend fun updateServers(
+        reconcileLatest: (SubscriptionRefreshSnapshot) -> SubscriptionRefreshBatchReconciliationResult,
+    ): SubscriptionRefreshBatchReconciliationResult {
+        var result: SubscriptionRefreshBatchReconciliationResult? = null
+        stateStore.proxyServerRepository.updateCatalog { current ->
+            val latestState = stateStore.currentState
+            val reconciled = reconcileLatest(latestState.toSubscriptionRefreshSnapshot(current))
+            result = reconciled
+            if (!reconciled.applicable) {
+                current
+            } else {
+                ProxyServerCatalog(
+                    servers = reconciled.snapshot.servers.map { server ->
+                        app.skipi.app.model.ProxyServerRecord(
+                            id = server.id,
+                            server = server.server,
+                            sourceSubscriptionId = server.groupId.takeIf { it != DefaultSubscriptionGroupId },
+                        )
+                    },
+                    nextServerId = reconciled.snapshot.nextServerId,
+                    selectedServerId = reconciled.snapshot.selectedServerId,
+                    retainedServerIds = current.retainedServerIds,
+                )
+            }
+        }
+        return checkNotNull(result)
     }
-    updateAppState { state ->
-        state.withUpdatedSubscriptionServers(updates, updatedAtMillis).copy(
-            proxyServers = state.proxyServers,
-            nextProxyServerId = state.nextProxyServerId,
-            selectedProxyServerId = state.selectedProxyServerId,
-        )
-    }
-    val updated = stateStore.currentState
-    if (previous.trafficConfigs != updated.trafficConfigs ||
-        previous.activeTrafficConfigId != updated.activeTrafficConfigId
-    ) {
-        stateStore.reconcileTrafficConfigProxyGroups()
+
+    override suspend fun updateMetadataAndProfiles(
+        applyLatest: (SubscriptionRefreshSnapshot) -> SubscriptionRefreshBatchReconciliationResult,
+    ): SubscriptionRefreshBatchReconciliationResult {
+        val previous = stateStore.currentState
+        var result: SubscriptionRefreshBatchReconciliationResult? = null
+        updateAppState { state ->
+            val reconciled = applyLatest(state.toSubscriptionRefreshSnapshot())
+            result = reconciled
+            if (!reconciled.applicable) {
+                state
+            } else {
+                var nextState = state.withSubscriptionRefreshSnapshot(reconciled.snapshot).copy(
+                    proxyServers = state.proxyServers,
+                    nextProxyServerId = state.nextProxyServerId,
+                    selectedProxyServerId = state.selectedProxyServerId,
+                )
+                reconciled.resolvedEmbeddedConfigs.forEach { config ->
+                    if (config.content.isNotBlank()) {
+                        nextState = runCatching {
+                            nextState.withImportedTrafficConfig(
+                                content = config.content,
+                                activate = config.activate,
+                                fallbackName = config.fallbackName,
+                                sourceUrl = config.sourceUrl,
+                            )
+                        }.getOrDefault(nextState)
+                    }
+                }
+                nextState
+            }
+        }
+        val reconciled = checkNotNull(result)
+        val updated = stateStore.currentState
+        if (previous.trafficConfigs != updated.trafficConfigs ||
+            previous.activeTrafficConfigId != updated.activeTrafficConfigId
+        ) {
+            stateStore.reconcileTrafficConfigProxyGroups()
+        }
+        return reconciled
     }
 }
 
@@ -528,9 +607,15 @@ private class AndroidSubscriptionRefreshCommitPort(
 }
 
 internal fun List<SubscriptionGroupState>.updatableSubscriptionGroups(): List<SubscriptionGroupState> {
-    return filter { group ->
-        group.enabled && group.url.isNotBlank()
-    }
+    val eligibleIds = eligibleSubscriptionRefreshRequests(
+        map { group ->
+            SubscriptionRefreshLoadRequest(
+                subscription = group.toSubscriptionRecord(),
+                fetchOptions = Unit,
+            )
+        },
+    ).mapTo(mutableSetOf()) { request -> request.subscription.id }
+    return filter { group -> group.id in eligibleIds }
 }
 
 internal fun List<ProxyServerState>.deleteDuplicateServersInGroup(

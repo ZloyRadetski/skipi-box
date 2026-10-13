@@ -9,6 +9,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import app.AppState
+import features.subscription.SubscriptionExpirySchedule
+import features.subscription.SubscriptionExpiryScheduleEntry
 
 internal object SubscriptionExpiryScheduler {
     const val ActionCheckExpiry = "com.radetski.skipi.action.CHECK_SUBSCRIPTION_EXPIRY"
@@ -21,24 +23,19 @@ internal object SubscriptionExpiryScheduler {
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
         val nowSeconds = System.currentTimeMillis() / 1000L
-
-        var nextTriggerSeconds: Long? = null
-
-        for (group in state.subscriptionGroups) {
-            if (!group.enabled || !group.notifyOnExpiry || group.trafficExpireAtSeconds <= 0L) continue
-            val expireSeconds = group.trafficExpireAtSeconds
-            val reminders = group.customExpiryReminders ?: state.subscriptionExpiryReminders
-            for (reminder in reminders) {
-                val triggerSeconds = expireSeconds - reminder.totalSeconds
-                if (triggerSeconds > nowSeconds) {
-                    if (nextTriggerSeconds == null || triggerSeconds < nextTriggerSeconds) {
-                        nextTriggerSeconds = triggerSeconds
-                    }
-                }
-            }
-        }
-
-        val targetSeconds = nextTriggerSeconds ?: return
+        val targetSeconds = SubscriptionExpirySchedule.nextTriggerSeconds(
+            notificationsEnabled = state.enableSubscriptionExpiryNotifications,
+            entries = state.subscriptionGroups.map { group ->
+                SubscriptionExpiryScheduleEntry(
+                    enabled = group.enabled,
+                    notifyOnExpiry = group.notifyOnExpiry,
+                    expireAtSeconds = group.trafficExpireAtSeconds,
+                    customReminders = group.customExpiryReminders,
+                )
+            },
+            defaultReminders = state.subscriptionExpiryReminders,
+            nowSeconds = nowSeconds,
+        ) ?: return
         val intent = Intent(context, SubscriptionExpiryReceiver::class.java).apply {
             action = ActionCheckExpiry
         }

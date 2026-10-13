@@ -11,6 +11,8 @@ import app.skipi.app.proxy.ProxyServerGroupServerInput
 import app.skipi.app.proxy.ProxyServerGroupingRequest
 import app.skipi.app.proxy.groupProxyServersForHome
 import app.skipi.app.proxy.isProxyServerGroupEntryVisible
+import app.skipi.app.home.ProxyHomeGroupMembership
+import app.skipi.app.home.proxyHomeGroupMemberships
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupDisplayMode
 import features.subscription.DefaultSubscriptionGroupId
@@ -35,6 +37,7 @@ internal data class ProxyServerListGroups(
     val visibleGroupIds: Set<Int>,
     val visibleServers: List<ProxyServerState>,
     val groupTabs: List<ProxyServerListGroupTabUi>,
+    val homeGroupMemberships: List<ProxyHomeGroupMembership>,
     val selectedTabIndex: Int,
     val currentGroupServers: List<ProxyServerState>,
     val currentFilteredServers: List<ProxyServerState>,
@@ -48,22 +51,21 @@ internal fun proxyServerListGroups(
     defaultGroupName: String,
     autoBalancerGroupName: String,
 ): ProxyServerListGroups {
-    val result = groupProxyServersForHome(
-        ProxyServerGroupingRequest(
-            groups = state.subscriptionGroups.map(SubscriptionGroupState::toGroupingInput),
-            servers = state.proxyServers.map(ProxyServerState::toGroupingInput),
-            activeTrafficConfigId = state.activeTrafficConfigId,
-            selectedGroupId = selectedGroupId,
-            searchQuery = searchValue,
-            enableAllGroup = state.enableAllProxyGroup,
-            allGroupName = allGroupName,
-            defaultGroupName = defaultGroupName,
-            autoBalancerGroupName = autoBalancerGroupName,
-            defaultGroupId = DefaultSubscriptionGroupId,
-            autoBalancerGroupId = AutoBalancerGroupId,
-            allGroupId = AllProxyGroupId,
-        ),
+    val request = ProxyServerGroupingRequest(
+        groups = state.subscriptionGroups.map(SubscriptionGroupState::toGroupingInput),
+        servers = state.proxyServers.map(ProxyServerState::toGroupingInput),
+        activeTrafficConfigId = state.activeTrafficConfigId,
+        selectedGroupId = selectedGroupId,
+        searchQuery = searchValue,
+        enableAllGroup = state.enableAllProxyGroup,
+        allGroupName = allGroupName,
+        defaultGroupName = defaultGroupName,
+        autoBalancerGroupName = autoBalancerGroupName,
+        defaultGroupId = DefaultSubscriptionGroupId,
+        autoBalancerGroupId = AutoBalancerGroupId,
+        allGroupId = AllProxyGroupId,
     )
+    val result = groupProxyServersForHome(request)
     val manualGroup = state.subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId }
     val visibleGroups = result.visibleGroups.map { group ->
         if (group.id == AutoBalancerGroupId) {
@@ -90,6 +92,7 @@ internal fun proxyServerListGroups(
         groupTabs = result.groupTabs.map { tab ->
             ProxyServerListGroupTabUi(tab.id, tab.name, tab.serverCount)
         },
+        homeGroupMemberships = proxyHomeGroupMemberships(request, result),
         selectedTabIndex = result.selectedTabIndex,
         currentGroupServers = result.currentGroupServerIds.mapNotNull(serversById::get),
         currentFilteredServers = result.currentFilteredServerIds.mapNotNull(serversById::get),

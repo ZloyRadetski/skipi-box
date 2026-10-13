@@ -26,6 +26,7 @@ import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,6 +35,159 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class DesktopApplicationRepositoriesTest {
+    @Test
+    fun trafficConfigTransformLatestReadsFreshCatalogAndPersistsLateResponseById() {
+        val path = Files.createTempDirectory("skipi-config-transform-latest").resolve("configs.json")
+        val active = ConfigProfile(7, "Active", "[General]\nloglevel = warning\n")
+        val target = ConfigProfile(
+            id = 9,
+            name = "Remote",
+            content = "[General]\nloglevel = warning\n",
+            sourceUrl = "https://example.test/remote",
+            updateLocked = true,
+            lastUpdatedAtMillis = 100L,
+        )
+        val initial = DesktopConfigLibrary(
+            selectedConfigId = active.id,
+            configs = listOf(active, target),
+            nextConfigId = 10,
+        )
+        DesktopConfigLibraries.save(path, initial).getOrThrow()
+        var latest = initial
+        val repository = DesktopTrafficConfigRepository(
+            initialLibrary = initial,
+            readLibrary = { latest },
+            saveLibrary = { DesktopConfigLibraries.save(path, it) },
+            publishLibrary = { latest = it },
+        )
+
+        // A different operation completes while this request is in flight. The same profile ID
+        // has newer local content and an unrelated profile has been added with a higher counter.
+        val lateCatalog = initial.copy(
+            configs = listOf(
+                active,
+                target.copy(content = "[General]\nloglevel = debug\n"),
+                ConfigProfile(30, "Added while fetching", "[General]\nloglevel = info\n"),
+            ),
+            nextConfigId = 41,
+        )
+        latest = lateCatalog
+        DesktopConfigLibraries.save(path, lateCatalog).getOrThrow()
+
+        val updated = repository.transformLatest { current ->
+            val currentTarget = requireNotNull(current.configs.firstOrNull { it.id == target.id })
+            DesktopConfigLibraries.update(
+                library = current,
+                id = target.id,
+                name = currentTarget.name,
+                content = "[General]\nloglevel = fetched\n",
+                sourceUrl = currentTarget.sourceUrl,
+                updateLocked = currentTarget.updateLocked,
+                lastUpdatedAtMillis = 300L,
+            )
+        }
+
+        assertEquals(listOf(7, 9, 30), updated.configs.map(ConfigProfile::id))
+        assertEquals(active.id, updated.selectedConfigId)
+        assertEquals(41, updated.nextConfigId)
+        assertEquals("[General]\nloglevel = fetched\n", updated.configs[1].content)
+        assertEquals(true, updated.configs[1].updateLocked)
+        assertEquals(300L, updated.configs[1].lastUpdatedAtMillis)
+        assertEquals("Added while fetching", updated.configs[2].name)
+        assertEquals(updated, latest)
+        assertEquals(updated, DesktopConfigLibraries.load(path).getOrThrow())
+    }
+
+    @Test
+    fun failedTrafficConfigTransformDoesNotPublishUnsavedCatalog() {
+        val initial = DesktopConfigLibrary(
+            selectedConfigId = 7,
+            configs = listOf(ConfigProfile(7, "Active", "[General]\nloglevel = warning\n")),
+            nextConfigId = 8,
+        )
+        var current = initial
+        var publishCalls = 0
+        val failure = IllegalStateException("disk write failed")
+        val repository = DesktopTrafficConfigRepository(
+            initialLibrary = initial,
+            readLibrary = { current },
+            saveLibrary = { Result.failure(failure) },
+            publishLibrary = { updated ->
+                publishCalls += 1
+                current = updated
+            },
+        )
+
+        val thrown = runCatching {
+            repository.transformLatest { latest ->
+                latest.copy(configs = latest.configs.map { it.copy(content = "[General]\nloglevel = debug\n") })
+            }
+        }.exceptionOrNull()
+
+        assertIs<IllegalStateException>(thrown)
+        assertEquals(0, publishCalls)
+        assertEquals(initial, current)
+    }
+
+    @Test
+    fun concurrentTrafficConfigRemoveAndCreateUseOneSerializedLatestCatalog() = runBlocking {
+        val initial = DesktopConfigLibrary(
+            selectedConfigId = 1,
+            configs = listOf(
+                ConfigProfile(1, "Active", "[General]\nloglevel = warning\n"),
+                ConfigProfile(2, "Remaining", "[General]\nloglevel = info\n"),
+            ),
+            nextConfigId = 3,
+        )
+        val latest = AtomicReference(initial)
+        val readCalls = AtomicInteger()
+        val saveCalls = AtomicInteger()
+        val firstSaveEntered = CountDownLatch(1)
+        val releaseFirstSave = CountDownLatch(1)
+        val secondReadEntered = CountDownLatch(1)
+        val secondCallStarted = CountDownLatch(1)
+        val repository = DesktopTrafficConfigRepository(
+            initialLibrary = initial,
+            readLibrary = {
+                if (readCalls.incrementAndGet() > 1) secondReadEntered.countDown()
+                latest.get()
+            },
+            saveLibrary = {
+                if (saveCalls.incrementAndGet() == 1) {
+                    firstSaveEntered.countDown()
+                    check(releaseFirstSave.await(5, TimeUnit.SECONDS))
+                }
+                Result.success(Unit)
+            },
+            publishLibrary = latest::set,
+        )
+
+        val removeActive = async(Dispatchers.IO) { repository.remove(1) }
+        try {
+            assertTrue(firstSaveEntered.await(5, TimeUnit.SECONDS))
+            val createAnother = async(Dispatchers.IO) {
+                secondCallStarted.countDown()
+                repository.transformLatest { current ->
+                    DesktopConfigLibraries.create(
+                        current,
+                        ConfigProfile(0, "Created after delete", "[General]\nloglevel = debug\n"),
+                    )
+                }
+            }
+            assertTrue(secondCallStarted.await(5, TimeUnit.SECONDS))
+            val secondReadOverlappedFirstSave = secondReadEntered.await(150, TimeUnit.MILLISECONDS)
+            releaseFirstSave.countDown()
+            removeActive.await()
+            createAnother.await()
+            assertFalse(secondReadOverlappedFirstSave)
+        } finally {
+            releaseFirstSave.countDown()
+        }
+        assertEquals(listOf(2, 3), latest.get().configs.map(ConfigProfile::id))
+        assertEquals(2, latest.get().selectedConfigId)
+        assertEquals(4, latest.get().nextConfigId)
+    }
+
     @Test
     fun trafficConfigRepositoryMapsAndPersistsWithoutChangingLibraryShape(): Unit = runBlocking {
         var library = DesktopConfigLibrary(

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.home.ProxyHomeGroupingProjectionTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-12T19:51:58.244Z" hostname="MAZAFAKA-PC" time="0.003">
+  <properties/>
+  <testcase name="homeMembershipUsesVisibleRowsButOmitsConfigOwnedStrategiesFromAll" classname="app.skipi.app.home.ProxyHomeGroupingProjectionTest" time="0.003"/>
+  <testcase name="serverSearchTextIncludesGroupTitleAndSortUsesRawRemarksWithTitleFallback" classname="app.skipi.app.home.ProxyHomeGroupingProjectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

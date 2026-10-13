@@ -48,6 +48,7 @@ class DesktopSubscriptionServerRemovalAdapterTest {
         val removalAdapter = DesktopSubscriptionServerRemovalAdapter(
             readLibrary = { visibleServers },
             proxyServerRepository = proxyRepository,
+            isTunnelRunning = { true },
             stopSelectedServer = {
                 assertTrue(visibleServers.servers.any { it.id == 99 })
                 events += "stop-proxy"
@@ -123,6 +124,7 @@ class DesktopSubscriptionServerRemovalAdapterTest {
         val removalAdapter = DesktopSubscriptionServerRemovalAdapter(
             readLibrary = { visibleServers },
             proxyServerRepository = proxyRepository,
+            isTunnelRunning = { true },
             stopSelectedServer = { events += "stop-proxy" },
         )
         val subscriptionRepository = DesktopSubscriptionRepository(
@@ -184,6 +186,7 @@ class DesktopSubscriptionServerRemovalAdapterTest {
         val removalAdapter = DesktopSubscriptionServerRemovalAdapter(
             readLibrary = { visibleServers },
             proxyServerRepository = proxyRepository,
+            isTunnelRunning = { true },
             stopSelectedServer = {
                 assertTrue(visibleServers.servers.any { it.id == 99 })
                 events += "stop-proxy"
@@ -242,6 +245,7 @@ class DesktopSubscriptionServerRemovalAdapterTest {
         val removalAdapter = DesktopSubscriptionServerRemovalAdapter(
             readLibrary = { visibleServers },
             proxyServerRepository = proxyRepository,
+            isTunnelRunning = { true },
             stopSelectedServer = { stopCount++ },
         )
         val subscriptionRepository = DesktopSubscriptionRepository(
@@ -258,6 +262,83 @@ class DesktopSubscriptionServerRemovalAdapterTest {
         assertEquals(11, visibleServers.selectedServerId)
         assertFalse(visibleServers.servers.any { it.id == 99 })
         assertTrue(subscriptions.subscriptions.isEmpty())
+    }
+
+    @Test
+    fun removingSelectedSubscriptionServersWhileTunnelIsStoppedDoesNotStopAgain() = runBlocking {
+        val subscriptionId = 10
+        val initialServers = DesktopServerLibrary(
+            selectedServerId = 99,
+            servers = listOf(
+                DesktopStoredProxyServer(
+                    id = 99,
+                    serverJson = "opaque target bytes",
+                    subscriptionId = subscriptionId,
+                ),
+            ),
+        )
+        var visibleServers = initialServers
+        var stopCount = 0
+        val proxyRepository = DesktopProxyServerRepository(
+            initialLibrary = initialServers,
+            readLibrary = { visibleServers },
+            saveLibrary = { Result.success(Unit) },
+            publishLibrary = { updated -> visibleServers = updated },
+        )
+        val removalAdapter = DesktopSubscriptionServerRemovalAdapter(
+            readLibrary = { visibleServers },
+            proxyServerRepository = proxyRepository,
+            isTunnelRunning = { false },
+            stopSelectedServer = { stopCount++ },
+        )
+
+        removalAdapter.remove(subscriptionId)
+
+        assertEquals(0, stopCount)
+        assertFalse(visibleServers.servers.any { it.id == 99 })
+    }
+
+    @Test
+    fun homeStopUsesLiveCoreStateToAvoidStoppingSelectedGroupTwice() = runBlocking {
+        val subscriptionId = 11
+        val initialServers = DesktopServerLibrary(
+            selectedServerId = 99,
+            servers = listOf(
+                DesktopStoredProxyServer(
+                    id = 99,
+                    serverJson = "opaque target bytes",
+                    subscriptionId = subscriptionId,
+                ),
+            ),
+        )
+        var visibleServers = initialServers
+        val cachedUiRunning = true
+        var actualCoreRunning = true
+        var stopCount = 0
+        val proxyRepository = DesktopProxyServerRepository(
+            initialLibrary = initialServers,
+            readLibrary = { visibleServers },
+            saveLibrary = { Result.success(Unit) },
+            publishLibrary = { updated -> visibleServers = updated },
+        )
+        val removalAdapter = DesktopSubscriptionServerRemovalAdapter(
+            readLibrary = { visibleServers },
+            proxyServerRepository = proxyRepository,
+            isTunnelRunning = { actualCoreRunning },
+            stopSelectedServer = {
+                stopCount += 1
+                actualCoreRunning = false
+            },
+        )
+
+        // The Home coordinator has already stopped the native Core, while its AppState callback
+        // has not yet published the stopped state. Repository cleanup must inspect the live Core.
+        actualCoreRunning = false
+        removalAdapter.remove(subscriptionId)
+
+        assertTrue(cachedUiRunning)
+        assertEquals(0, stopCount)
+        assertFalse(visibleServers.servers.any { it.id == 99 })
     }
 
     private fun proxyServer(host: String): ProxyServer<*> = ProxyServer.parse(

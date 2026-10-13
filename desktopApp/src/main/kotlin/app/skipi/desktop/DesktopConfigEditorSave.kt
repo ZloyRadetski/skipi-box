@@ -57,12 +57,10 @@ internal fun applyDesktopConfigEditorSave(
     }
 
     val updatedLibrary = if (id == null) {
-        DesktopConfigLibraries.put(
+        DesktopConfigLibraries.create(
             library = library,
-            name = profile.name,
-            content = profile.content,
-            sourceUrl = profile.sourceUrl,
-            updateLocked = profile.updateLocked,
+            profile = profile,
+            resourceUserAgentFallback = resourceUserAgentFallback,
         )
     } else {
         DesktopConfigLibraries.update(

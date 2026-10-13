@@ -78,6 +78,10 @@ data class PersistedSettings(
     val proxy: ProxySelectionSettings = ProxySelectionSettings(),
     val traffic: TrafficSelectionSettings = TrafficSelectionSettings(),
     val application: ApplicationPreferences = ApplicationPreferences(),
+    /** Null lets older host settings keep their existing local proxy defaults. */
+    val localProxy: LocalProxyPreferences? = null,
+    /** Null lets older host settings keep their existing subscription defaults. */
+    val subscriptions: SubscriptionPreferences? = null,
 )
 
 /** User-controlled Home presentation choices shared by the Android and Desktop UIs. */
@@ -89,6 +93,12 @@ data class HomeDisplaySettings(
     val showFloatingPowerButton: Boolean = false,
     val confirmDeletion: Boolean = true,
     val showServerSearch: Boolean = false,
+    /** Raw Android numeric setting; null preserves the host's current value. */
+    val proxyServerListSort: Int? = null,
+    /** Raw Android numeric setting; null preserves the host's current value. */
+    val proxyServerListLayout: Int? = null,
+    val enableAllProxyGroup: Boolean? = null,
+    val showTunnelMemoryOnHome: Boolean? = null,
 )
 
 /** Small set of portable preferences; platform-owned settings stay in host extensions. */
@@ -96,6 +106,29 @@ data class ApplicationPreferences(
     val languageTag: String? = null,
     val hapticsEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
+)
+
+/** Local SOCKS listener preferences in the same raw form used by Android storage. */
+data class LocalProxyPreferences(
+    val port: String,
+    val dynamicPort: Boolean,
+    val listenAllInterfaces: Boolean,
+    val authenticationEnabled: Boolean,
+    val username: String,
+    val password: String,
+)
+
+/** Subscription tester, fetch, identity, and expiry preferences from Android settings. */
+data class SubscriptionPreferences(
+    val pingMode: Int,
+    val pingUrl: String,
+    val pingTimeoutMillis: String,
+    val pingConcurrency: Int,
+    val userAgents: List<String>,
+    val deviceHeadersEnabled: Boolean,
+    val fetchTimeoutSeconds: Int,
+    val expiryNotificationsEnabled: Boolean,
+    val expiryReminders: List<SubscriptionExpiryReminder>,
 )
 
 /**

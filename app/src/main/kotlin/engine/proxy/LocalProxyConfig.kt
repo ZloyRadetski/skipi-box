@@ -9,12 +9,12 @@ import engine.network.findAvailableTcpPort
 import engine.network.NetworkDefaults
 import engine.network.toPortOrNull
 import engine.vpn.VpnDefaults
-import engine.xray.XrayProtocols
 import engine.xray.toJsonStringArray
 import engine.xray.xraySniffingDestOverrides
+import platform.LocalProxyXrayConfigFactory
+import platform.LocalProxyXrayConfigOptions
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -73,12 +73,17 @@ internal fun buildLocalSocksInbound(
     tag: String,
     options: LocalProxyOptions,
 ): JsonObject {
+    val socksInbound = LocalProxyXrayConfigFactory.buildSocksInbound(
+        options = LocalProxyXrayConfigOptions(
+            socksPort = options.port,
+            listenAddress = options.listenAddress,
+            username = options.username,
+            password = options.password,
+        ),
+        tag = tag,
+    )
     return buildJsonObject {
-        put("tag", tag)
-        put("listen", options.listenAddress)
-        put("port", options.port)
-        put("protocol", XrayProtocols.SOCKS)
-        put("settings", options.toSocksInboundSettings())
+        socksInbound.forEach { (key, value) -> put(key, value) }
         put(
             "sniffing",
             buildJsonObject {
@@ -101,30 +106,6 @@ private fun AppState.localProxyListenAddress(): String {
 private fun AppState.localProxyExcludedPorts(): Set<Int> {
     return buildSet {
         // SKIPI is VPN-only, so ROOT-mode inbound ports are never reserved.
-    }
-}
-
-private fun LocalProxyOptions.toSocksInboundSettings(): JsonObject {
-    return buildJsonObject {
-        put("auth", if (username.isBlank()) "noauth" else "password")
-        put("udp", true)
-        put("userLevel", 0)
-        if (listenAddress == LocalProxyLoopbackAddress) {
-            put("ip", LocalProxyLoopbackAddress)
-        }
-        if (username.isNotBlank()) {
-            put(
-                "users",
-                buildJsonArray {
-                    add(
-                        buildJsonObject {
-                            put("user", username)
-                            put("pass", password)
-                        },
-                    )
-                },
-            )
-        }
     }
 }
 

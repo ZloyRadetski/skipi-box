@@ -8,6 +8,7 @@ import app.SubscriptionGroupState
 import app.skipi.app.model.ApplicationPreferences
 import app.skipi.app.model.AppearanceSettings
 import app.skipi.app.model.HomeDisplaySettings
+import app.skipi.app.model.LocalProxyPreferences
 import app.skipi.app.model.ProxySelectionSettings
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ProxyServerRecord
@@ -15,6 +16,7 @@ import app.skipi.app.model.ResourceCatalogRecord
 import app.skipi.app.model.ResourceDefinition
 import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.model.SubscriptionCatalog
+import app.skipi.app.model.SubscriptionPreferences
 import app.skipi.app.model.SubscriptionRecord
 import app.skipi.app.model.ThemeMode
 import app.skipi.app.model.TrafficConfigRecord
@@ -330,6 +332,10 @@ internal fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSetti
         showFloatingPowerButton = classicShowFloatingPowerButton,
         confirmDeletion = enableDeletionConfirmation,
         showServerSearch = showServerSearch,
+        proxyServerListSort = proxyServerListSort,
+        proxyServerListLayout = proxyServerListLayout,
+        enableAllProxyGroup = enableAllProxyGroup,
+        showTunnelMemoryOnHome = showTunnelMemoryOnHome,
     ),
     traffic = TrafficSelectionSettings(activeConfigId = activeTrafficConfigId),
     application = ApplicationPreferences(
@@ -343,9 +349,28 @@ internal fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSetti
         hapticsEnabled = enableHaptics,
         onboardingCompleted = hasCompletedOnboarding,
     ),
+    localProxy = LocalProxyPreferences(
+        port = localProxyPort,
+        dynamicPort = enableDynamicLocalProxyPort,
+        listenAllInterfaces = localProxyListenAllInterfaces,
+        authenticationEnabled = enableLocalProxyAuth,
+        username = localProxyUsername,
+        password = localProxyPassword,
+    ),
+    subscriptions = SubscriptionPreferences(
+        pingMode = subscriptionPingMode,
+        pingUrl = subscriptionPingUrl,
+        pingTimeoutMillis = subscriptionPingTimeoutMillis,
+        pingConcurrency = subscriptionPingConcurrency,
+        userAgents = subscriptionUserAgents,
+        deviceHeadersEnabled = enableSubscriptionDeviceHeaders,
+        fetchTimeoutSeconds = subscriptionFetchTimeoutSeconds,
+        expiryNotificationsEnabled = enableSubscriptionExpiryNotifications,
+        expiryReminders = subscriptionExpiryReminders,
+    ),
 )
 
-/** Writes only fields represented without loss; Android-only preferences stay in AppState. */
+/** Applies shared settings while leaving host-only and absent persisted fields untouched. */
 internal fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSettings): AppState {
     val languageTag = settings.application.languageTag
     val nextActiveConfigId = settings.traffic.activeConfigId ?: activeTrafficConfigId
@@ -375,6 +400,10 @@ internal fun AppState.applyPersistedSettings(settings: app.skipi.app.model.Persi
         classicShowFloatingPowerButton = settings.home.showFloatingPowerButton,
         enableDeletionConfirmation = settings.home.confirmDeletion,
         showServerSearch = settings.home.showServerSearch,
+        proxyServerListSort = settings.home.proxyServerListSort ?: proxyServerListSort,
+        proxyServerListLayout = settings.home.proxyServerListLayout ?: proxyServerListLayout,
+        enableAllProxyGroup = settings.home.enableAllProxyGroup ?: enableAllProxyGroup,
+        showTunnelMemoryOnHome = settings.home.showTunnelMemoryOnHome ?: showTunnelMemoryOnHome,
         seedIndex = settings.appearance.seedIndex,
         customMaterialYouSeed = settings.appearance.customMaterialYouSeed,
         enableCustomColors = settings.appearance.customColorsEnabled,
@@ -411,6 +440,22 @@ internal fun AppState.applyPersistedSettings(settings: app.skipi.app.model.Persi
         enableHaptics = settings.application.hapticsEnabled,
         hasCompletedOnboarding = settings.application.onboardingCompleted,
         languageMode = nextLanguageMode,
+        localProxyPort = settings.localProxy?.port ?: localProxyPort,
+        enableDynamicLocalProxyPort = settings.localProxy?.dynamicPort ?: enableDynamicLocalProxyPort,
+        localProxyListenAllInterfaces = settings.localProxy?.listenAllInterfaces ?: localProxyListenAllInterfaces,
+        enableLocalProxyAuth = settings.localProxy?.authenticationEnabled ?: enableLocalProxyAuth,
+        localProxyUsername = settings.localProxy?.username ?: localProxyUsername,
+        localProxyPassword = settings.localProxy?.password ?: localProxyPassword,
+        subscriptionPingMode = settings.subscriptions?.pingMode ?: subscriptionPingMode,
+        subscriptionPingUrl = settings.subscriptions?.pingUrl ?: subscriptionPingUrl,
+        subscriptionPingTimeoutMillis = settings.subscriptions?.pingTimeoutMillis ?: subscriptionPingTimeoutMillis,
+        subscriptionPingConcurrency = settings.subscriptions?.pingConcurrency ?: subscriptionPingConcurrency,
+        subscriptionUserAgents = settings.subscriptions?.userAgents ?: subscriptionUserAgents,
+        enableSubscriptionDeviceHeaders = settings.subscriptions?.deviceHeadersEnabled ?: enableSubscriptionDeviceHeaders,
+        subscriptionFetchTimeoutSeconds = settings.subscriptions?.fetchTimeoutSeconds ?: subscriptionFetchTimeoutSeconds,
+        enableSubscriptionExpiryNotifications =
+            settings.subscriptions?.expiryNotificationsEnabled ?: enableSubscriptionExpiryNotifications,
+        subscriptionExpiryReminders = settings.subscriptions?.expiryReminders ?: subscriptionExpiryReminders,
     )
     return if (updated.activeTrafficConfigId == nextActiveConfigId) updated
     else updated.withActiveTrafficConfigProfile(nextActiveConfigId)
