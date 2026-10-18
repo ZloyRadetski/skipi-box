@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.usecase.AndroidSubscriptionRefreshBatchRunnerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-18T18:58:48.156Z" hostname="VQSeGo" time="0.117">
+  <properties/>
+  <testcase name="oneSuccessfulLoadUsesTheExistingSingleCommitPathAndKeepsFetchFailureSeparate" classname="features.subscription.usecase.AndroidSubscriptionRefreshBatchRunnerTest" time="0.056"/>
+  <testcase name="fetchOptionsAreDerivedOnlyAfterTheSharedPerSubscriptionLockIsAcquired" classname="features.subscription.usecase.AndroidSubscriptionRefreshBatchRunnerTest" time="0.018"/>
+  <testcase name="releaseCheckHookRunsBeforeEligibilityAndCaptureEvenWhenNoGroupIsEligible" classname="features.subscription.usecase.AndroidSubscriptionRefreshBatchRunnerTest" time="0.012"/>
+  <testcase name="retainedRunnerSerializesReentryAndKeepsProgressThroughAggregateAndroidCommit" classname="features.subscription.usecase.AndroidSubscriptionRefreshBatchRunnerTest" time="0.029"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
