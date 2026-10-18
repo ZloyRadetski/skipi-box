@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.proxy.LocalProxyStartRetryPolicy
 import platform.TunnelCapability
 import platform.TunnelConnectRequest
 import platform.TunnelController
@@ -14,6 +15,14 @@ import platform.TunnelOperationStage
 import platform.TunnelPhase
 import platform.TunnelSnapshot
 import platform.TunnelTraffic
+
+/** Immutable profile-start snapshot whose rebuild excludes failed dynamic listener ports. */
+data class DesktopTunnelStartPlan(
+    val configuration: String,
+    val dynamicPortEnabled: Boolean,
+    val localProxyPort: Int,
+    val rebuild: (Set<Int>) -> DesktopTunnelStartPlan,
+)
 
 /**
  * Desktop engine adapter for the shared tunnel contract. Both Android and
@@ -37,6 +46,7 @@ class DesktopTunnelController(
     /** Always called before stopping SKIPI Core, including after a settings change. */
     private val releaseSystemProxy: () -> Result<Unit> = { Result.success(Unit) },
     private val systemProxySupported: () -> Boolean = { false },
+    private val startPlanForProfile: ((String) -> Result<DesktopTunnelStartPlan>)? = null,
 ) : TunnelController {
     private var latestSnapshot = TunnelSnapshot()
 
@@ -54,13 +64,39 @@ class DesktopTunnelController(
         }
         var operationStage = TunnelOperationStage.PrepareConfiguration
         val result = runCatching {
-            val config = request.configuration?.let { configuration ->
+            var startPlan = if (request.configuration == null) {
+                startPlanForProfile?.invoke(request.profileId)?.getOrThrow()
+            } else {
+                null
+            }
+            var config = request.configuration?.let { configuration ->
                 require(configuration.content.isNotBlank()) { "Tunnel configuration must not be blank" }
                 configuration.content
-            } ?: configForProfile(request.profileId).getOrThrow()
+            } ?: startPlan?.configuration ?: configForProfile(request.profileId).getOrThrow()
             require(config.isNotBlank()) { "Tunnel configuration must not be blank" }
-            operationStage = TunnelOperationStage.Start
-            startCore(config).getOrThrow()
+            var completedAttempts = 0
+            while (true) {
+                operationStage = TunnelOperationStage.Start
+                val startResult = startCore(config)
+                completedAttempts += 1
+                if (startResult.isSuccess) break
+
+                val error = checkNotNull(startResult.exceptionOrNull())
+                val failedPlan = startPlan
+                if (failedPlan == null || !LocalProxyStartRetryPolicy.shouldRetry(
+                        dynamicPortEnabled = failedPlan.dynamicPortEnabled,
+                        completedAttempts = completedAttempts,
+                        failure = error,
+                    )
+                ) {
+                    throw error
+                }
+
+                operationStage = TunnelOperationStage.PrepareConfiguration
+                startPlan = failedPlan.rebuild(setOf(failedPlan.localProxyPort))
+                config = startPlan.configuration
+                require(config.isNotBlank()) { "Tunnel configuration must not be blank" }
+            }
             try {
                 operationStage = TunnelOperationStage.AcquireSystemProxy
                 awaitSystemProxyEndpoint().getOrThrow()

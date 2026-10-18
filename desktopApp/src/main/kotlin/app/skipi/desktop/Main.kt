@@ -49,6 +49,7 @@ import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.applyProxyServerEditResult
 import app.skipi.app.server.toProxyServerCopyTarget
 import app.skipi.app.home.toAndroidValue
+import app.skipi.app.home.resolveProxyHomeLatencyTimeoutMillis
 import app.skipi.app.proxy.deleteProxyServerRecords
 import app.skipi.app.proxy.ProxyServerStopOutcome
 import app.skipi.app.store.SharedApplicationAction
@@ -73,7 +74,9 @@ import app.skipi.ui.resources.proxy_server_list_no_duplicates
 import app.skipi.ui.resources.proxy_server_list_no_invalid
 import app.skipi.ui.resources.proxy_server_list_all_deleted
 import app.skipi.ui.resources.proxy_server_list_no_servers_to_delete
+import app.skipi.ui.resources.proxy_server_list_no_testable
 import app.skipi.ui.resources.proxy_server_list_no_subscription_updates
+import app.skipi.ui.resources.proxy_server_list_latency_done
 import app.skipi.ui.resources.proxy_server_list_subscription_update_result
 import app.skipi.ui.resources.proxy_server_list_subscription_update_result_with_failed
 import app.skipi.ui.text.formatTemplate
@@ -83,6 +86,7 @@ import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
@@ -96,6 +100,7 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.formatCustomXrayConfigJson
 import features.proxy.server.model.parseCustomXrayConfigJsonObject
+import features.proxy.server.model.stripLeadingCountryFlag
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -123,7 +128,10 @@ fun main() = application {
             mutableStateOf(DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
         }
                 val homeSortSaveMutex = remember { Mutex() }
-        CompositionLocalProvider(LocalDesktopThemeMode provides desktopSettings.themeMode) {
+        CompositionLocalProvider(
+            LocalDesktopThemeMode provides desktopSettings.themeMode,
+            LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
+        ) {
             DesktopAppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = DesktopContentBackground) {
                 val subscriptionScope = rememberCoroutineScope()
@@ -133,6 +141,8 @@ fun main() = application {
                 val noInvalidMessage = stringResource(Res.string.proxy_server_list_no_invalid)
                 val allDeletedTemplate = stringResource(Res.string.proxy_server_list_all_deleted)
                 val noServersToDeleteMessage = stringResource(Res.string.proxy_server_list_no_servers_to_delete)
+                val noTestableServersMessage = stringResource(Res.string.proxy_server_list_no_testable)
+                val latencyDoneTemplate = stringResource(Res.string.proxy_server_list_latency_done)
                 val noSubscriptionUpdatesMessage = stringResource(Res.string.proxy_server_list_no_subscription_updates)
                 val subscriptionRefreshSuccessTemplate =
                     stringResource(Res.string.proxy_server_list_subscription_update_result)
@@ -165,6 +175,13 @@ fun main() = application {
                         readLibrary = { serverLibrary },
                         saveLibrary = DesktopServerLibraries::saveDefault,
                         publishLibrary = { serverLibrary = it },
+                    )
+                }
+                val configProxyGroupReconciler = remember(proxyServerRepository) {
+                    DesktopTrafficConfigProxyGroupReconciler(
+                        serverRepository = proxyServerRepository,
+                        readConfigLibrary = { configLibrary },
+                        stripLeadingCountryFlag = { value -> value.stripLeadingCountryFlag() },
                     )
                 }
                 LaunchedEffect(serverLibrary) {
@@ -217,6 +234,7 @@ fun main() = application {
                 var desiredTunnelRunning by remember { mutableStateOf(coreState.isRunning) }
                 var tunnelIntentVersion by remember { mutableStateOf(0L) }
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
+                val desktopLocalProxyRuntime = remember { DesktopLocalProxyRuntime() }
 
                 fun requestTunnelReconnect(reason: String) {
                     pendingTunnelReconnectReason = reason
@@ -283,24 +301,10 @@ fun main() = application {
                             desktopSharedApplication.subscriptions.catalog.value.subscriptions.map { subscription ->
                                 SubscriptionRefreshLoadRequest(
                                     subscription = subscription,
-                                    fetchOptions = DesktopSubscriptionRefreshFetchOptions(
-                                        timeout = Duration.ofSeconds(
-                                            settings.subscriptionFetchTimeoutSeconds.toLong(),
-                                        ),
-                                        proxy = if (subscription.updateViaProxy && proxyRunning) {
-                                            DesktopSubscriptionSocksProxy(
-                                                host = settings.localProxyListenAddress,
-                                                port = settings.localProxyPort,
-                                                username = "",
-                                                password = "",
-                                            )
-                                        } else null,
-                                        deviceHeaders = if (settings.sendDeviceHeaders) {
-                                            DesktopDeviceIdentity.deviceHeaders(settings.installationUuid)
-                                        } else emptyMap(),
-                                        ageSecretKey = subscription.ageSecretKey,
-                                        fallbackUserAgent = settings.subscriptionUserAgent.trim()
-                                            .ifBlank { DefaultDesktopSubscriptionUserAgent },
+                                    fetchOptions = desktopLocalProxyRuntime.subscriptionFetchOptions(
+                                        settings = settings,
+                                        subscription = subscription,
+                                        coreRunning = proxyRunning,
                                     ),
                                 )
                             }
@@ -376,57 +380,69 @@ fun main() = application {
                     systemProxyRecoveryInProgress = false
                 }
                 val localProxyOptions = remember(desktopSettings) {
-                    LocalProxyXrayConfigOptions(
-                        socksPort = desktopSettings.localProxyPort,
-                        httpProxyPort = desktopSettings.localHttpProxyPort,
-                        enableHttpProxy = desktopSettings.useSystemProxy,
-                        listenAddress = desktopSettings.localProxyListenAddress,
-                        logLevel = desktopSettings.coreLogLevel,
-                    )
+                    desktopSettings.toLocalProxyXrayConfigOptions()
                 }
                 val selectedServerConfig = remember(serverLibrary, configLibrary, localProxyOptions) {
-                    val activeProfile = configLibrary.selectedConfigId
-                        ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
-                    val generated = if (activeProfile != null) {
-                        runCatching {
-                            DesktopTrafficProfileXrayConfigFactory.build(
-                                profile = activeProfile,
-                                serverLibrary = serverLibrary,
-                                options = localProxyOptions,
-                            )
-                        }
-                    } else {
-                        serverLibrary.selectedServerId
-                            ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
-                            ?.decode()
-                            ?.mapCatching { server ->
-                                if (server is Custom) {
-                                    buildDesktopCustomXrayConfig(server, localProxyOptions)
-                                } else {
-                                    LocalProxyXrayConfigFactory.build(
-                                        server = server,
-                                        options = localProxyOptions,
-                                    )
-                                }
-                            }
-                    }
-                    generated
+                    buildDesktopSelectedServerConfig(
+                        serverLibrary = serverLibrary,
+                        configLibrary = configLibrary,
+                        options = localProxyOptions,
+                    )
                 }
                 val activeProfileName = configLibrary.selectedConfigId
                     ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
                     ?.name
                 val latestSelectedServerConfig by rememberUpdatedState(selectedServerConfig)
                 val latestDesktopSettings by rememberUpdatedState(desktopSettings)
+                val latestServerLibrary by rememberUpdatedState(serverLibrary)
+                val latestConfigLibrary by rememberUpdatedState(configLibrary)
                 val desktopTunnelController = remember(coreController, systemProxyManager) {
                     DesktopTunnelController(
                         configForProfile = {
-                            latestSelectedServerConfig?.fold(
-                                onSuccess = { config -> Result.success(config) },
-                                onFailure = { error -> Result.failure(error) },
-                            ) ?: Result.failure(IllegalStateException("Select a working server before connecting"))
+                            runCatching {
+                                val options = desktopLocalProxyRuntime.prepareStart(latestDesktopSettings)
+                                buildDesktopSelectedServerConfig(
+                                    serverLibrary = latestServerLibrary,
+                                    configLibrary = latestConfigLibrary,
+                                    options = options,
+                                )?.getOrThrow()
+                                    ?: error("Select a working server before connecting")
+                            }
                         },
-                        startCore = coreController::start,
-                        stopCore = coreController::stop,
+                        startPlanForProfile = { _ ->
+                            runCatching {
+                                val settingsSnapshot = latestDesktopSettings
+                                val serverLibrarySnapshot = latestServerLibrary
+                                val configLibrarySnapshot = latestConfigLibrary
+
+                                fun buildStartPlan(excludedPorts: Set<Int>): DesktopTunnelStartPlan {
+                                    val options = desktopLocalProxyRuntime.prepareStart(
+                                        settings = settingsSnapshot,
+                                        excludedPorts = excludedPorts,
+                                    )
+                                    val configuration = buildDesktopSelectedServerConfig(
+                                        serverLibrary = serverLibrarySnapshot,
+                                        configLibrary = configLibrarySnapshot,
+                                        options = options,
+                                    )?.getOrThrow()
+                                        ?: error("Select a working server before connecting")
+                                    return DesktopTunnelStartPlan(
+                                        configuration = configuration,
+                                        dynamicPortEnabled = settingsSnapshot.enableDynamicLocalProxyPort,
+                                        localProxyPort = options.socksPort,
+                                        rebuild = { failedPorts -> buildStartPlan(failedPorts) },
+                                    )
+                                }
+
+                                buildStartPlan(emptySet())
+                            }
+                        },
+                        startCore = { config ->
+                            desktopLocalProxyRuntime.onCoreStarted(coreController.start(config))
+                        },
+                        stopCore = {
+                            desktopLocalProxyRuntime.onCoreStopped(coreController.stop())
+                        },
                         coreState = coreController::state,
                         readCoreTraffic = coreController::readTunnelTraffic,
                         awaitSystemProxyEndpoint = {
@@ -434,10 +450,19 @@ fun main() = application {
                             if (!settings.useSystemProxy || !systemProxyManager.isSupportedHost()) {
                                 Result.success(Unit)
                             } else {
-                                localProxyReadiness.awaitLoopbackHttpEndpoint(
-                                    port = settings.localHttpProxyPort,
-                                    coreState = coreController::state,
+                                val runningOptions = desktopLocalProxyRuntime.activeOptions(
+                                    coreRunning = coreController.state().isRunning,
                                 )
+                                if (runningOptions?.enableHttpProxy != true) {
+                                    Result.failure(
+                                        IllegalStateException("The running Core has no configured system-proxy HTTP inbound"),
+                                    )
+                                } else {
+                                    localProxyReadiness.awaitLoopbackHttpEndpoint(
+                                        port = runningOptions.httpProxyPort,
+                                        coreState = coreController::state,
+                                    )
+                                }
                             }
                         },
                         acquireSystemProxy = {
@@ -448,12 +473,23 @@ fun main() = application {
                                     IllegalStateException("Системный прокси не поддерживается на этой платформе"),
                                 )
 
-                                else -> systemProxyManager.acquire(
-                                    DesktopSystemProxyEndpoints(
-                                        httpPort = settings.localHttpProxyPort,
-                                        socksPort = settings.localProxyPort,
-                                    ),
-                                ).map { }
+                                else -> {
+                                    val runningOptions = desktopLocalProxyRuntime.activeOptions(
+                                        coreRunning = coreController.state().isRunning,
+                                    )
+                                    if (runningOptions?.enableHttpProxy != true) {
+                                        Result.failure(
+                                            IllegalStateException("The running Core has no configured system-proxy HTTP inbound"),
+                                        )
+                                    } else {
+                                        systemProxyManager.acquire(
+                                            DesktopSystemProxyEndpoints(
+                                                httpPort = runningOptions.httpProxyPort,
+                                                socksPort = runningOptions.socksPort,
+                                            ),
+                                        ).map { }
+                                    }
+                                }
                             }
                         },
                         releaseSystemProxy = {
@@ -638,54 +674,49 @@ fun main() = application {
                 fun startDesktopHomeLatencyTest(
                     targets: List<Pair<Int, features.proxy.server.model.ProxyServer<*>>>,
                     subscriptionId: Int? = null,
-                ) {
-                    if (subscriptionId != null && pingingSubscriptionIds.isNotEmpty()) return
-                    val eligible = targets
-                        .distinctBy { (serverId, _) -> serverId }
-                        .filter { (serverId, server) ->
-                            serverId !in testingServerIds && server.desktopTcpEndpointOrNull() != null
-                        }
-                        .take(MaxHomeLatencyChecks)
-                    if (eligible.isEmpty()) {
-                        serverLibraryMessage = "Нет доступных серверов для TCP-проверки."
-                        return
+                    onFinished: () -> Unit = {},
+                ): Job {
+                    if (subscriptionId != null && pingingSubscriptionIds.isNotEmpty()) {
+                        return subscriptionScope.launch(start = CoroutineStart.UNDISPATCHED) { }
                     }
                     if (subscriptionId != null) pingingSubscriptionIds = pingingSubscriptionIds + subscriptionId
-                    val testedIds = eligible.map { (serverId, _) -> serverId }.toSet()
-                    testingServerIds = testingServerIds + testedIds
-                    val job = subscriptionScope.launch(start = CoroutineStart.UNDISPATCHED) {
-                        try {
-                            val results = withContext(Dispatchers.IO) {
-                                eligible.map { (serverId, server) ->
-                                    async {
-                                        val result = server.desktopTcpEndpointOrNull()
-                                            ?.let { endpoint ->
-                                                latencyTester.measure(
-                                                    host = endpoint.host,
-                                                    port = endpoint.port,
-                                                    timeout = Duration.ofSeconds(2),
-                                                )
-                                            }
-                                            ?: DesktopServerLatencyResult.Error("No direct server endpoint")
-                                        serverId to result
-                                    }
-                                }.awaitAll()
+                    val latencyTimeout = Duration.ofMillis(
+                        resolveProxyHomeLatencyTimeoutMillis(
+                            desktopSettings.subscriptionPingTimeoutMillis,
+                        ).toLong(),
+                    )
+                    val runner = DesktopProxyHomeLatencyRunner(
+                        scope = subscriptionScope,
+                        subscriptionPingConcurrency = desktopSettings.subscriptionPingConcurrency,
+                        tcpTester = DesktopProxyHomeTcpTester { _, server ->
+                            val endpoint = server.desktopTcpEndpointOrNull()
+                            if (endpoint == null) {
+                                DesktopServerLatencyResult.Error("No direct server endpoint")
+                            } else {
+                                withContext(Dispatchers.IO) {
+                                    latencyTester.measure(
+                                        host = endpoint.host,
+                                        port = endpoint.port,
+                                        timeout = latencyTimeout,
+                                    )
+                                }
                             }
-                            latencyByServerId = latencyByServerId + results.toMap()
-                            val success = results.count { (_, result) -> result is DesktopServerLatencyResult.Success }
-                            val timeout = results.count { (_, result) -> result == DesktopServerLatencyResult.Timeout }
-                            val failed = results.size - success - timeout
-                            val skipped = (targets.size - eligible.size).coerceAtLeast(0)
-                            serverLibraryMessage = "TCP-проверка: $success доступны, $timeout тайм-аут, $failed ошибок." +
-                                if (skipped > 0) " Проверены первые $MaxHomeLatencyChecks доступных серверов." else ""
-                        } finally {
-                            testingServerIds = testingServerIds - testedIds
-                            if (subscriptionId != null) {
-                                pingingSubscriptionIds = pingingSubscriptionIds - subscriptionId
-                            }
+                        },
+                        jobOwner = desktopHomeLatencyJobOwner,
+                        readTestingServerIds = { testingServerIds },
+                        publishTestingServerIds = { testingServerIds = it },
+                        readLatencyByServerId = { latencyByServerId },
+                        publishLatencyByServerId = { latencyByServerId = it },
+                        latencyDoneTemplate = latencyDoneTemplate,
+                        noTestableServersMessage = noTestableServersMessage,
+                        publishMessage = { serverLibraryMessage = it },
+                    )
+                    return runner.start(targets) {
+                        if (subscriptionId != null) {
+                            pingingSubscriptionIds = pingingSubscriptionIds - subscriptionId
                         }
+                        onFinished()
                     }
-                    desktopHomeLatencyJobOwner.track(job)
                 }
 
                 suspend fun withHomeDeleteRuntime(
@@ -1061,6 +1092,9 @@ fun main() = application {
                                 }
                             },
                             onMeasureServers = { targets -> startDesktopHomeLatencyTest(targets) },
+                            onLaunchHomeLatencyTest = { targets, onFinished ->
+                                startDesktopHomeLatencyTest(targets, onFinished = onFinished)
+                            },
                             onPingSubscriptionServers = { subscriptionId, targets ->
                                 startDesktopHomeLatencyTest(targets, subscriptionId)
                             },
@@ -1317,7 +1351,7 @@ fun main() = application {
                                 val selectedServerId = serverLibrary.selectedServerId
                                 val groupServerIds = proxyServerRepository.servers.value
                                     .asSequence()
-                                    .filter { server -> server.groupId == subscriptionId }
+                                    .filter { server -> server.sourceSubscriptionId == subscriptionId }
                                     .mapTo(linkedSetOf()) { server -> server.id }
                                 val tunnelWasRunning = coreState.isRunning
                                 val serviceOperationIsInProgress = closeRequested || tunnelOperationInProgress ||
@@ -1371,22 +1405,10 @@ fun main() = application {
                                     return@updateSubscription
                                 }
 
-                                val fetchOptions = DesktopSubscriptionRefreshFetchOptions(
-                                    timeout = Duration.ofSeconds(desktopSettings.subscriptionFetchTimeoutSeconds.toLong()),
-                                    proxy = if (subscription.updateViaProxy && coreState.isRunning) {
-                                        DesktopSubscriptionSocksProxy(
-                                            host = desktopSettings.localProxyListenAddress,
-                                            port = desktopSettings.localProxyPort,
-                                            username = "",
-                                            password = "",
-                                        )
-                                    } else null,
-                                    deviceHeaders = if (desktopSettings.sendDeviceHeaders) {
-                                        DesktopDeviceIdentity.deviceHeaders(desktopSettings.installationUuid)
-                                    } else emptyMap(),
-                                    ageSecretKey = subscription.ageSecretKey,
-                                    fallbackUserAgent = desktopSettings.subscriptionUserAgent.trim()
-                                        .ifBlank { DefaultDesktopSubscriptionUserAgent },
+                                val fetchOptions = desktopLocalProxyRuntime.subscriptionFetchOptions(
+                                    settings = desktopSettings,
+                                    subscription = subscription,
+                                    coreRunning = coreState.isRunning,
                                 )
                                 subscriptionUrl = subscription.url
                                 subscriptionUpdateInProgress = true
@@ -1556,6 +1578,21 @@ fun main() = application {
                                 val activeAfter = result.updated.selectedConfigId
                                     ?.let { selectedId -> result.updated.configs.firstOrNull { profile -> profile.id == selectedId } }
                                 configLibrary = result.updated
+                            val proxyGroupInputsChanged =
+                                result.previous.configs != result.updated.configs ||
+                                    result.previous.selectedConfigId != result.updated.selectedConfigId
+                            if (proxyGroupInputsChanged) {
+                                subscriptionScope.launch {
+                                    try {
+                                        configProxyGroupReconciler.reconcile()
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (error: Throwable) {
+                                        serverLibraryMessage =
+                                            "Не удалось синхронизировать группы серверов: ${error.message.orEmpty()}"
+                                    }
+                                }
+                            }
                                 if (coreState.isRunning && (
                                     activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
                                     )) {
@@ -1625,8 +1662,6 @@ private fun DesktopBottomNavigation(
 
 private val SkipiBackground: Color
     @Composable get() = DesktopContentBackground
-private const val MaxHomeLatencyChecks = 24
-
 private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
 private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L
 
@@ -1634,6 +1669,35 @@ private class DesktopSubscriptionServerStopAction {
     var action: suspend () -> Unit = {}
 
     suspend fun run() = action()
+}
+
+private fun buildDesktopSelectedServerConfig(
+    serverLibrary: DesktopServerLibrary,
+    configLibrary: DesktopConfigLibrary,
+    options: LocalProxyXrayConfigOptions,
+): Result<String>? {
+    val activeProfile = configLibrary.selectedConfigId
+        ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
+    return if (activeProfile != null) {
+        runCatching {
+            DesktopTrafficProfileXrayConfigFactory.build(
+                profile = activeProfile,
+                serverLibrary = serverLibrary,
+                options = options,
+            )
+        }
+    } else {
+        serverLibrary.selectedServerId
+            ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
+            ?.decode()
+            ?.mapCatching { server ->
+                if (server is Custom) {
+                    buildDesktopCustomXrayConfig(server, options)
+                } else {
+                    LocalProxyXrayConfigFactory.build(server = server, options = options)
+                }
+            }
+    }
 }
 
 internal fun buildDesktopCustomXrayConfig(
@@ -1644,17 +1708,9 @@ internal fun buildDesktopCustomXrayConfig(
     val inbounds = buildJsonArray {
         add(
             buildJsonObject {
-                put("tag", LocalProxyXrayConfigFactory.SocksInboundTag)
-                put("listen", options.listenAddress)
-                put("port", options.socksPort)
-                put("protocol", "socks")
-                put(
-                    "settings",
-                    buildJsonObject {
-                        put("auth", "noauth")
-                        put("udp", true)
-                    },
-                )
+                LocalProxyXrayConfigFactory.buildSocksInbound(options).forEach { (key, value) ->
+                    put(key, value)
+                }
                 put(
                     "sniffing",
                     buildJsonObject {

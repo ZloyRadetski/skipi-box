@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.list.ProxyHomeAndroidDeletionBridgeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:33:01.345Z" hostname="MAZAFAKA-PC" time="0.484">
+  <properties/>
+  <testcase name="duplicateAndInvalidCleanupDispatchOnlyGroupRowsAndPruneCompositeReferences" classname="features.proxy.server.list.ProxyHomeAndroidDeletionBridgeTest" time="0.14"/>
+  <testcase name="stopFailureLeavesCatalogAloneAndMissingServiceStillRunsBulkDelete" classname="features.proxy.server.list.ProxyHomeAndroidDeletionBridgeTest" time="0.125"/>
+  <testcase name="cancelledBulkStopDoesNotDispatchOrChangeRoomCatalog" classname="features.proxy.server.list.ProxyHomeAndroidDeletionBridgeTest" time="0.098"/>
+  <testcase name="bulkStopAppliesRuntimeStateBeforeDeletingAgainstLatestRoomCatalog" classname="features.proxy.server.list.ProxyHomeAndroidDeletionBridgeTest" time="0.118"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

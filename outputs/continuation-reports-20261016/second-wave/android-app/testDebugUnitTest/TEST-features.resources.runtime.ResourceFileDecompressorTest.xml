@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.ResourceFileDecompressorTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:33:02.730Z" hostname="MAZAFAKA-PC" time="0.152">
+  <properties/>
+  <testcase name="testDecompressXzStreamWithNameHint" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.06"/>
+  <testcase name="testIsXzStreamDetection" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.031"/>
+  <testcase name="testRealBundledAssetDecompression" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.016"/>
+  <testcase name="testDecompressXzStreamByMagicBytesWithoutNameHint" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.044"/>
+  <testcase name="testPassThroughUncompressedStream" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

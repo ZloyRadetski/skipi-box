@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.settings_category_general
 import java.util.Locale
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.getString

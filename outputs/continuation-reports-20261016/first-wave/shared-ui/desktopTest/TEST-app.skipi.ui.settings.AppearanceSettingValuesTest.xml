@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="AppearanceSettingValuesTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:08:18.486Z" hostname="MAZAFAKA-PC" time="0.003">
+  <properties/>
+  <testcase name="photoAndCustomSeedKeepTheirPersistedSlots[desktop]" classname="app.skipi.ui.settings.AppearanceSettingValuesTest" time="0.001"/>
+  <testcase name="fontSizeKeepsLegacyIndicesAndValidSliderPercentages[desktop]" classname="app.skipi.ui.settings.AppearanceSettingValuesTest" time="0.0"/>
+  <testcase name="legacyAndCurrentAppearanceValuesStayCompatible[desktop]" classname="app.skipi.ui.settings.AppearanceSettingValuesTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

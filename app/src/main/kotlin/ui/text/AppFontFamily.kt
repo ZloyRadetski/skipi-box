@@ -7,16 +7,8 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import app.R
-import app.modes.FontFamilyModeClimateCrisis
-import app.modes.FontFamilyModeDefault
-import app.modes.FontFamilyModeGolosText
-import app.modes.FontFamilyModeInter
-import app.modes.FontFamilyModeJetBrainsMono
-import app.modes.FontFamilyModeManrope
-import app.modes.FontFamilyModeOnest
-import app.modes.FontFamilyModeUnbounded
+import app.skipi.ui.text.fontFamilyAssetName
 import app.skipi.ui.text.resolveFontWeight as sharedResolveFontWeight
-import app.modes.normalizeFontFamilyMode
 
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.FontVariation
@@ -52,14 +44,14 @@ val ClimateCrisisFontFamily = FontFamily(
 val UnboundedFontFamily = createVariableFontFamily(R.font.unbounded)
 val OnestFontFamily = createVariableFontFamily(R.font.onest)
 
-fun resolveFontFamily(fontFamilyMode: Int): FontFamily? = when (normalizeFontFamilyMode(fontFamilyMode)) {
-    FontFamilyModeInter -> InterFontFamily
-    FontFamilyModeGolosText -> GolosTextFontFamily
-    FontFamilyModeManrope -> ManropeFontFamily
-    FontFamilyModeJetBrainsMono -> JetBrainsMonoFontFamily
-    FontFamilyModeClimateCrisis -> ClimateCrisisFontFamily
-    FontFamilyModeUnbounded -> UnboundedFontFamily
-    FontFamilyModeOnest -> OnestFontFamily
+fun resolveFontFamily(fontFamilyMode: Int): FontFamily? = when (fontFamilyAssetName(fontFamilyMode)) {
+    "inter.ttf" -> InterFontFamily
+    "golos_text.ttf" -> GolosTextFontFamily
+    "manrope.ttf" -> ManropeFontFamily
+    "jetbrains_mono.ttf" -> JetBrainsMonoFontFamily
+    "climate_crisis.ttf" -> ClimateCrisisFontFamily
+    "unbounded.ttf" -> UnboundedFontFamily
+    "onest.ttf" -> OnestFontFamily
     else -> null
 }
 

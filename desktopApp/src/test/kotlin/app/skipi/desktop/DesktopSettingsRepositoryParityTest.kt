@@ -28,8 +28,8 @@ class DesktopSettingsRepositoryParityTest {
 
         assertEquals(4, fixture.repository.state.value.home.proxyServerListSort)
         assertEquals(2, fixture.repository.state.value.home.proxyServerListLayout)
-        assertTrue(fixture.repository.state.value.home.enableAllProxyGroup)
-        assertFalse(fixture.repository.state.value.home.showTunnelMemoryOnHome)
+        assertEquals(true, fixture.repository.state.value.home.enableAllProxyGroup)
+        assertEquals(false, fixture.repository.state.value.home.showTunnelMemoryOnHome)
 
         fixture.repository.update { current ->
             current.copy(
@@ -207,9 +207,9 @@ class DesktopSettingsRepositoryParityTest {
         private var configs = DesktopConfigLibrary()
 
         val repository = DesktopSettingsRepository(
-            readSettings = { settings },
-            saveSettings = { settings = it; Result.success(Unit) },
-            publishSettings = { settings = it },
+            readSettings = { this.settings },
+            saveSettings = { this.settings = it; Result.success(Unit) },
+            publishSettings = { this.settings = it },
             readServers = { servers },
             saveServers = { servers = it; Result.success(Unit) },
             publishServers = { servers = it },

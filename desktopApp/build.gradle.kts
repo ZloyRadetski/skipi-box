@@ -105,6 +105,14 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+// Desktop bundles the same font files already shipped by Android; keep the source assets canonical.
+tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {
+    from(rootProject.file("app/src/main/res/font")) {
+        include("*.ttf")
+        into("font")
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "app.skipi.desktop.MainKt"

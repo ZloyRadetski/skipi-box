@@ -3,7 +3,13 @@
 
 package app.skipi.desktop
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+import app.modes.FontSizeModeSmall
 import app.skipi.app.model.ThemeMode
+import app.skipi.ui.theme.AppColors
+import app.skipi.ui.theme.resolveAppearanceTypographyStyles
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,6 +22,33 @@ class DesktopAppearanceAdapterTest {
 
         assertTrue(capabilities.customColors)
         assertTrue(capabilities.fonts)
+    }
+
+    @Test
+    fun missingDesktopFontSizeUsesAndroidDefaultInSettingsAndTheme() {
+        val settings = DesktopAppSettings()
+        assertEquals(FontSizeModeSmall, settings.toAppearanceSettingsState().fontSizeMode)
+
+        val themeTypography = resolveAppearanceTypographyStyles(
+            baseStyles = listOf(TextStyle(fontSize = 20.sp)),
+            colors = AppColors(
+                background = Color.Black,
+                onBackground = Color.White,
+                accent = Color.Blue,
+                onAccent = Color.White,
+                surface = Color.DarkGray,
+                onSurface = Color.White,
+                surfaceVariant = Color.Gray,
+                onSurfaceVariant = Color.LightGray,
+                isDark = true,
+            ),
+            fontFamily = null,
+            fontSizeMode = settings.toSharedAppearanceSettings().fontSizeMode,
+            fontWeightMode = settings.toSharedAppearanceSettings().fontWeightMode,
+        )
+
+        assertEquals(FontSizeModeSmall / 100f, themeTypography.fontSizeScale)
+        assertEquals(20.sp * (FontSizeModeSmall / 100f), themeTypography.popup.single().fontSize)
     }
 
     @Test

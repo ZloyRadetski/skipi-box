@@ -10,6 +10,8 @@ import app.skipi.app.config.deleteTrafficConfigProfile
 import app.skipi.app.config.duplicateTrafficConfigProfile
 import app.skipi.app.config.selectTrafficConfigProfile
 import app.skipi.app.config.updateTrafficConfigProfile
+import app.skipi.app.config.TrafficConfigProfileRefreshMode
+import app.skipi.app.config.TrafficConfigProfileRefreshOperations
 import app.skipi.app.proxy.ProxyServerRecord as ReconciledProxyServerRecord
 import app.skipi.app.proxy.reconcileConfigProxyGroups
 import app.skipi.app.model.ProxyServerCatalog
@@ -109,6 +111,23 @@ internal fun AppState.withUpdatedTrafficConfigProfile(
     return copy(trafficConfigs = updatedConfigs)
 }
 
+/** Commits a fetched response against the latest profile row while keeping AppState metadata intact. */
+internal fun AppState.withCommittedTrafficConfigRefresh(
+    configId: Int,
+    normalizedDocument: String,
+    capturedUrl: String,
+    timestamp: Long,
+    mode: TrafficConfigProfileRefreshMode,
+): AppState = withUpdatedTrafficConfigProfile(configId) { current ->
+    TrafficConfigProfileRefreshOperations.apply(
+        current = current,
+        normalizedDocument = normalizedDocument,
+        capturedUrl = capturedUrl,
+        timestamp = timestamp,
+        mode = mode,
+    )
+}
+
 /**
  * Materializes only the `[Proxy Group]` entries explicitly marked for home
  * display. They keep a source reference, so their member set is resolved from
@@ -159,6 +178,7 @@ internal fun AppState.withConfigProxyGroupsReflected(catalog: ProxyServerCatalog
         selectedServerId = catalog.selectedServerId,
         autoBalancerGroupId = AutoBalancerGroupId,
         stripLeadingCountryFlag = CountryFlagUtils::stripLeadingCountryFlag,
+        retainedServerIds = catalog.retainedServerIds,
     )
     return catalog.copy(
         servers = result.servers.map { server ->

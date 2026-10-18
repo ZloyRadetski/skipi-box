@@ -61,13 +61,40 @@ import app.skipi.ui.config.SkipiTrafficConfigProfileCard
 import app.skipi.ui.config.SkipiTrafficConfigRawEditor
 import app.skipi.ui.config.SkipiTrafficConfigRawEditorLabels
 import app.skipi.ui.config.SkipiTrafficConfigRawEditorState
+import app.skipi.ui.config.SkipiTrafficConfigBasicsEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigGeneralEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigDnsEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigTunnelEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigNetworkActivationEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigEditorSectionAction
 import app.skipi.ui.config.SkipiTrafficConfigUrlImportDialog
 import app.skipi.ui.config.TrafficConfigCatalogProfileItem
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.configs_copy_name
 import app.skipi.ui.resources.configs_imported_name
 import app.skipi.ui.resources.configs_new_name
+import app.skipi.ui.resources.configs_edit
+import app.skipi.ui.resources.configs_editor_sections
+import app.skipi.ui.resources.configs_general_title
+import app.skipi.ui.resources.configs_general_summary
+import app.skipi.ui.resources.configs_dns_title
+import app.skipi.ui.resources.configs_dns_summary
+import app.skipi.ui.resources.configs_android_title
+import app.skipi.ui.resources.configs_tunnel_summary
+import app.skipi.ui.resources.configs_network_title
+import app.skipi.ui.resources.configs_network_summary
+import app.skipi.ui.resources.common_cancel
+import app.skipi.ui.resources.common_save
+import app.skipi.ui.resources.configs_update_locked_warning_title
+import app.skipi.ui.resources.configs_update_locked_warning_summary
+import app.skipi.ui.resources.configs_update_anyway
 import org.jetbrains.compose.resources.stringResource
+import app.ProjectInfo
+import app.skipi.app.config.TrafficConfigProfileRefreshOperations
+import app.skipi.app.config.TrafficConfigProfileRefreshRequest
+import app.skipi.app.config.TrafficConfigEditorController
+import app.skipi.app.config.TrafficConfigEditorProfileStore
+import app.skipi.app.config.toTrafficConfigState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -96,6 +123,19 @@ private data class DesktopConfigDraft(
     val lastUpdatedAtMillis: Long,
 )
 
+private enum class DesktopVisualEditorSection {
+    Basics,
+    General,
+    Dns,
+    Tunnel,
+    Network,
+}
+
+private data class DesktopVisualEditorSession(
+    val configId: Int,
+    val section: DesktopVisualEditorSection = DesktopVisualEditorSection.Basics,
+)
+
 private class DesktopConfigEditorSaveRejected(message: String) : RuntimeException(message)
 
 /** Desktop counterpart of Android's TrafficConfigPage and raw configuration editor. */
@@ -110,17 +150,47 @@ internal fun DesktopConfigsScreen(
     val scope = rememberCoroutineScope()
     val fetcher = remember { DesktopSubscriptionFetcher() }
     var editorDraft by remember { mutableStateOf<DesktopConfigDraft?>(null) }
+    var visualEditor by remember { mutableStateOf<DesktopVisualEditorSession?>(null) }
+    val resourceUserAgentFallback = remember { versionedDesktopProfileResourceUserAgent(ProjectInfo.VERSION_NAME) }
     var showAddMenu by remember { mutableStateOf(false) }
     var importUrlDialog by remember { mutableStateOf(false) }
     var importUrl by remember { mutableStateOf("") }
     var pendingDeletion by remember { mutableStateOf<DesktopStoredConfig?>(null) }
+    var pendingUnlockAndRefresh by remember {
+        mutableStateOf<TrafficConfigProfileRefreshRequest.ConfirmUnlockAndRefresh?>(null)
+    }
     var contextMenuConfig by remember { mutableStateOf<DesktopStoredConfig?>(null) }
     var message by remember { mutableStateOf("") }
+    var editorSaveError by remember { mutableStateOf<String?>(null) }
+    val desktopEditorProfileStore = remember(onTransformConfigLibrary, resourceUserAgentFallback) {
+        DesktopTrafficConfigEditorProfileStore(
+            resourceUserAgentFallback = resourceUserAgentFallback,
+            onTransformConfigLibrary = onTransformConfigLibrary,
+        )
+    }
+    val editorController = remember(desktopEditorProfileStore) {
+        TrafficConfigEditorController(
+            store = TrafficConfigEditorProfileStore { profileId, transform ->
+                val saved = desktopEditorProfileStore.update(profileId, transform)
+                if (saved) {
+                    editorSaveError = null
+                    message = "Конфиг сохранён."
+                }
+                saved
+            },
+            onSaveFailure = { error ->
+                val description = "Не удалось сохранить конфиги: ${error.message.orEmpty()}"
+                message = description
+                editorSaveError = description
+            },
+        )
+    }
     var updatingConfigIds by remember { mutableStateOf(emptySet<Int>()) }
     val newProfileName = stringResource(Res.string.configs_new_name, configLibrary.nextConfigId)
     val importedProfileName = stringResource(Res.string.configs_imported_name)
 
     fun openConfigEditor(config: DesktopStoredConfig) {
+        editorSaveError = null
         editorDraft = DesktopConfigDraft(
             id = config.id,
             name = config.name,
@@ -129,6 +199,12 @@ internal fun DesktopConfigsScreen(
             updateLocked = config.updateLocked,
             lastUpdatedAtMillis = config.lastUpdatedAtMillis,
         )
+    }
+
+    fun openVisualEditor(config: DesktopStoredConfig) {
+        editorSaveError = null
+        editorDraft = null
+        visualEditor = DesktopVisualEditorSession(configId = config.id)
     }
 
     fun persist(
@@ -173,6 +249,7 @@ internal fun DesktopConfigsScreen(
     fun fetchConfigFromUrl(
         url: String,
         updatingConfigId: Int? = null,
+        userAgent: String = fetchUserAgent,
         onSuccess: (normalizedUrl: String, content: String) -> Unit,
     ) {
         val normalizedUrl = url.trim()
@@ -188,7 +265,7 @@ internal fun DesktopConfigsScreen(
                     withContext(Dispatchers.IO) {
                         fetcher.fetch(
                             url = normalizedUrl,
-                            userAgent = fetchUserAgent,
+                            userAgent = userAgent,
                             timeout = Duration.ofSeconds(fetchTimeoutSeconds.toLong()),
                         ).body
                     }
@@ -244,12 +321,14 @@ internal fun DesktopConfigsScreen(
         }
     }
 
-    fun refreshConfigFromUrl(config: DesktopStoredConfig) {
-        if (config.updateLocked) {
-            message = "Обновление «${config.name}» заблокировано. Разблокируйте его в редакторе профиля."
-            return
-        }
-        fetchConfigFromUrl(config.sourceUrl, updatingConfigId = config.id) { normalizedUrl, content ->
+    fun startProfileRefresh(request: TrafficConfigProfileRefreshRequest.Refresh) {
+        val snapshot = request.snapshot
+        val capturedUrl = snapshot.sourceUrl.trim()
+        fetchConfigFromUrl(
+            url = capturedUrl,
+            updatingConfigId = snapshot.id,
+            userAgent = snapshot.resourceSettings.userAgent,
+        ) { normalizedUrl, content ->
             val normalizedContent = content.trimEnd().plus("\n")
             val error = normalizedContent.analyzeShadowrocketConfig().diagnostics.firstOrNull {
                 it.severity == ShadowrocketConfigDiagnosticSeverity.Error
@@ -258,18 +337,26 @@ internal fun DesktopConfigsScreen(
                 message = "Конфиг не импортирован: ${error.message}"
                 return@fetchConfigFromUrl
             }
-            val profileMetadata = normalizedContent.readDesktopSkipiProfileMetadata()
             persist(
                 transform = { latest ->
-                    val current = latest.configs.firstOrNull { it.id == config.id } ?: return@persist latest
+                    val current = latest.configs.firstOrNull { it.id == snapshot.id } ?: return@persist latest
+                    val refreshed = TrafficConfigProfileRefreshOperations.apply(
+                        current = current.toTrafficConfigState(
+                            versionedDesktopProfileResourceUserAgent(ProjectInfo.VERSION_NAME),
+                        ),
+                        normalizedDocument = normalizedContent,
+                        capturedUrl = normalizedUrl,
+                        timestamp = System.currentTimeMillis(),
+                        mode = request.mode,
+                    )
                     DesktopConfigLibraries.update(
                         library = latest,
-                        id = config.id,
-                        name = profileMetadata.name ?: current.name,
-                        content = normalizedContent,
-                        sourceUrl = normalizedUrl,
-                        updateLocked = profileMetadata.updateLocked ?: current.updateLocked,
-                        lastUpdatedAtMillis = System.currentTimeMillis(),
+                        id = snapshot.id,
+                        name = refreshed.name,
+                        content = refreshed.rawConfig,
+                        sourceUrl = refreshed.sourceUrl,
+                        updateLocked = refreshed.updateLocked,
+                        lastUpdatedAtMillis = refreshed.lastUpdatedAtMillis,
                     )
                 },
                 successMessage = "Конфиг обновлён.",
@@ -278,11 +365,159 @@ internal fun DesktopConfigsScreen(
         }
     }
 
+    fun refreshConfigFromUrl(config: DesktopStoredConfig) {
+        when (val request = requestDesktopConfigProfileRefresh(config)) {
+            is TrafficConfigProfileRefreshRequest.ConfirmUnlockAndRefresh -> {
+                pendingUnlockAndRefresh = request
+            }
+            is TrafficConfigProfileRefreshRequest.Refresh -> startProfileRefresh(request)
+        }
+    }
+
+    visualEditor?.let { session ->
+        val config = configLibrary.configs.firstOrNull { it.id == session.configId }
+        if (config != null) {
+            val profile = config.toTrafficConfigState(resourceUserAgentFallback)
+            when (session.section) {
+                DesktopVisualEditorSection.Basics -> SkipiTrafficConfigBasicsEditorScreen(
+                    title = stringResource(Res.string.configs_edit),
+                    sectionsTitle = stringResource(Res.string.configs_editor_sections),
+                    sections = listOf(
+                        SkipiTrafficConfigEditorSectionAction(
+                            key = "general",
+                            title = stringResource(Res.string.configs_general_title),
+                            summary = stringResource(Res.string.configs_general_summary),
+                            onNavigate = {
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.General)
+                            },
+                        ),
+                        SkipiTrafficConfigEditorSectionAction(
+                            key = "dns",
+                            title = stringResource(Res.string.configs_dns_title),
+                            summary = stringResource(Res.string.configs_dns_summary),
+                            onNavigate = {
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.Dns)
+                            },
+                        ),
+                        SkipiTrafficConfigEditorSectionAction(
+                            key = "tunnel",
+                            title = stringResource(Res.string.configs_android_title),
+                            summary = stringResource(Res.string.configs_tunnel_summary),
+                            onNavigate = {
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.Tunnel)
+                            },
+                        ),
+                        SkipiTrafficConfigEditorSectionAction(
+                            key = "network",
+                            title = stringResource(Res.string.configs_network_title),
+                            summary = stringResource(Res.string.configs_network_summary),
+                            onNavigate = {
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.Network)
+                            },
+                        ),
+                    ),
+                    profile = profile,
+                    controller = editorController,
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    saveLabel = stringResource(Res.string.common_save),
+                    onBack = {
+                        visualEditor = null
+                    },
+                    statusContent = editorSaveError?.let { error ->
+                        { DesktopEditorStatusContent(error) }
+                    },
+                )
+                DesktopVisualEditorSection.General -> SkipiTrafficConfigGeneralEditorScreen(
+                    title = stringResource(Res.string.configs_general_title),
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    saveLabel = stringResource(Res.string.common_save),
+                    profile = profile,
+                    controller = editorController,
+                    onBack = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    onSave = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    statusContent = editorSaveError?.let { error ->
+                        { DesktopEditorStatusContent(error) }
+                    },
+                )
+                DesktopVisualEditorSection.Dns -> SkipiTrafficConfigDnsEditorScreen(
+                    title = stringResource(Res.string.configs_dns_title),
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    saveLabel = stringResource(Res.string.common_save),
+                    profile = profile,
+                    controller = editorController,
+                    onBack = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    onSave = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    statusContent = editorSaveError?.let { error ->
+                        { DesktopEditorStatusContent(error) }
+                    },
+                )
+                DesktopVisualEditorSection.Tunnel -> SkipiTrafficConfigTunnelEditorScreen(
+                    title = stringResource(Res.string.configs_android_title),
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    saveLabel = stringResource(Res.string.common_save),
+                    profile = profile,
+                    controller = editorController,
+                    onBack = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    onSave = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    statusContent = editorSaveError?.let { error ->
+                        { DesktopEditorStatusContent(error) }
+                    },
+                )
+                DesktopVisualEditorSection.Network -> SkipiTrafficConfigNetworkActivationEditorScreen(
+                    title = stringResource(Res.string.configs_network_title),
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    saveLabel = stringResource(Res.string.common_save),
+                    profile = profile,
+                    controller = editorController,
+                    onBack = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    onSave = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    statusContent = editorSaveError?.let { error ->
+                        { DesktopEditorStatusContent(error) }
+                    },
+                )
+            }
+            return
+        }
+        visualEditor = null
+    }
+
     if (editorDraft != null) {
         DesktopConfigEditor(
             draft = editorDraft!!,
             contentPadding = contentPadding,
-            onBack = { editorDraft = null },
+            statusMessage = editorSaveError,
+            onBack = { content ->
+                val draft = editorDraft ?: return@DesktopConfigEditor
+                if (draft.id == null) {
+                    editorSaveError = null
+                    editorDraft = null
+                } else {
+                    editorController.leaveRaw(draft.id, content) {
+                        editorDraft = null
+                    }
+                }
+            },
             onSave = { name, content, sourceUrl, updateLocked ->
                 val draft = editorDraft ?: return@DesktopConfigEditor false
                 persist(
@@ -303,7 +538,10 @@ internal fun DesktopConfigsScreen(
                         }
                     },
                     successMessage = "Конфиг сохранён.",
-                    afterSave = { editorDraft = null },
+                    afterSave = {
+                        editorSaveError = null
+                        editorDraft = null
+                    },
                 )
             },
         )
@@ -421,7 +659,7 @@ internal fun DesktopConfigsScreen(
                                 successMessage = "Выбран «${config.name}».",
                             )
                         },
-                        onEdit = { openConfigEditor(config) },
+                        onEdit = { openVisualEditor(config) },
                         onRefresh = { refreshConfigFromUrl(config) },
                         onCopy = {
                             runCatching {
@@ -456,23 +694,51 @@ internal fun DesktopConfigsScreen(
             createConfigFromUrl(url)
         },
     )
+    pendingUnlockAndRefresh?.let { pending ->
+        AlertDialog(
+            onDismissRequest = {
+                TrafficConfigProfileRefreshOperations.dismissUnlockAndRefresh(pending)
+                pendingUnlockAndRefresh = null
+            },
+            title = { Text(stringResource(Res.string.configs_update_locked_warning_title)) },
+            text = { Text(stringResource(Res.string.configs_update_locked_warning_summary)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingUnlockAndRefresh = null
+                    startProfileRefresh(
+                        TrafficConfigProfileRefreshOperations.confirmUnlockAndRefresh(pending),
+                    )
+                }) {
+                    Text(stringResource(Res.string.configs_update_anyway))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    TrafficConfigProfileRefreshOperations.dismissUnlockAndRefresh(pending)
+                    pendingUnlockAndRefresh = null
+                }) {
+                    Text(stringResource(Res.string.common_cancel))
+                }
+            },
+        )
+    }
     contextMenuConfig?.let { config ->
         val duplicateName = stringResource(Res.string.configs_copy_name, config.name)
         SkipiTrafficConfigContextMenu(
             show = true,
             onDismissRequest = { contextMenuConfig = null },
             showRawEdit = true,
-            showUiEdit = false,
+            showUiEdit = true,
             showDuplicate = true,
             showExport = true,
             showExportBase64 = false,
             showDelete = true,
             showEnable = true,
-            onUpdate = if (config.sourceUrl.isNotBlank() && !config.updateLocked && config.id !in updatingConfigIds) {
+            onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
                 { contextMenuConfig = null; refreshConfigFromUrl(config) }
             } else null,
             onRawEdit = { contextMenuConfig = null; openConfigEditor(config) },
-            onUiEdit = { contextMenuConfig = null; openConfigEditor(config) },
+            onUiEdit = { contextMenuConfig = null; openVisualEditor(config) },
             onDuplicate = {
                 contextMenuConfig = null
                 var copy: DesktopStoredConfig? = null
@@ -606,7 +872,7 @@ private fun DesktopConfigProfileCard(
         onDelete = onDelete,
         onUpdate = onRefresh,
         onLongPress = { onOpenContextMenu() },
-        showUpdateAction = !config.updateLocked,
+        showUpdateAction = true,
         supportingContent = {
             Text(
                 config.sourceUrl.ifBlank { "Локальный профиль" },
@@ -645,10 +911,16 @@ private fun ConfigChip(text: String, accent: Color? = null) {
 }
 
 @Composable
+private fun DesktopEditorStatusContent(message: String) {
+    Text(message, color = ConfigMuted, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp))
+}
+
+@Composable
 private fun DesktopConfigEditor(
     draft: DesktopConfigDraft,
     contentPadding: PaddingValues,
-    onBack: () -> Unit,
+    statusMessage: String? = null,
+    onBack: (content: String) -> Unit,
     onSave: (name: String, content: String, sourceUrl: String, updateLocked: Boolean) -> Boolean,
 ) {
     var name by remember(draft.id) { mutableStateOf(draft.name) }
@@ -689,7 +961,10 @@ private fun DesktopConfigEditor(
         onSourceUrlChange = { sourceUrl = it },
         onUpdateLockedChange = { updateLocked = it },
         onContentChange = { content = it },
-        onBack = onBack,
+        onBack = { onBack(content) },
         onSave = { onSave(name, content, sourceUrl, updateLocked) },
+        statusContent = statusMessage?.let { message ->
+            { DesktopEditorStatusContent(message) }
+        },
     )
 }

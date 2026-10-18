@@ -1,0 +1,250 @@
+// Copyright 2026, Radetski
+// SPDX-License-Identifier: GPL-3.0
+// Draft only: promote after the parent opens the source-set test gate.
+
+package platform
+
+import engine.xray.XrayBalancerPlan
+import engine.xray.XrayFragmentOutboundOptions
+import engine.xray.XrayMuxOutboundOptions
+import engine.xray.XrayOutboundPlan
+import engine.xray.XrayOutboundRenderingOptions
+import engine.xray.XrayProxyOutboundServer
+import engine.xray.XrayRouteTarget
+import engine.xray.XrayRouteTargetKind
+import engine.xray.XrayTags
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.content
+import kotlinx.serialization.json.put
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class LocalProxyXrayConfigFactoryBuildFromPlanTest {
+    @Test
+    fun generatedPlanKeepsTheLocalListenerDnsAndNoDefaultRouteShape() {
+        val json = Json.parseToJsonElement(
+            LocalProxyXrayConfigFactory.buildFromPlan(
+                plan = outboundPlan(
+                    outbounds = listOf(proxyOutbound(XrayTags.PROXY)),
+                    proxyTargetKind = XrayRouteTargetKind.Outbound,
+                ),
+                options = LocalProxyXrayConfigOptions(
+                    socksPort = 18_080,
+                    httpProxyPort = 18_081,
+                    enableHttpProxy = true,
+                    listenAddress = "0.0.0.0",
+                    username = "desktop-user",
+                    password = "desktop-secret",
+                    logLevel = "debug",
+                    dnsServers = listOf("192.0.2.53", "2001:db8::53"),
+                ),
+                renderingOptions = renderingOptions(),
+            ),
+        ).jsonObject
+
+        assertEquals("debug", json.getValue("log").jsonObject.getValue("loglevel").jsonPrimitive.content)
+        val inbounds = json.getValue("inbounds").jsonArray
+        assertEquals(listOf("skipi-socks", "skipi-http"), inbounds.map { it.jsonObject.getValue("tag").jsonPrimitive.content })
+        val socksSettings = inbounds[0].jsonObject.getValue("settings").jsonObject
+        assertEquals("password", socksSettings.getValue("auth").jsonPrimitive.content)
+        assertEquals("desktop-user", socksSettings.getValue("users").jsonArray[0].jsonObject.getValue("user").jsonPrimitive.content)
+        assertEquals("desktop-secret", socksSettings.getValue("users").jsonArray[0].jsonObject.getValue("pass").jsonPrimitive.content)
+        assertEquals("0.0.0.0", inbounds[0].jsonObject.getValue("listen").jsonPrimitive.content)
+        assertEquals("http", inbounds[1].jsonObject.getValue("protocol").jsonPrimitive.content)
+        assertEquals("127.0.0.1", inbounds[1].jsonObject.getValue("listen").jsonPrimitive.content)
+
+        val dns = json.getValue("dns").jsonObject
+        assertEquals(
+            listOf("192.0.2.53", "2001:db8::53"),
+            dns.getValue("servers").jsonArray.map { it.jsonPrimitive.content },
+        )
+        assertEquals("UseIPv4", dns.getValue("queryStrategy").jsonPrimitive.content)
+        assertEquals(listOf("proxy", "direct", "block"), json.getValue("outbounds").jsonArray.tags())
+        assertNull(json["routing"])
+        assertNull(json["observatory"])
+        assertTrue(
+            LocalProxyXrayConfigFactory.buildFromPlan(
+                plan = outboundPlan(listOf(proxyOutbound(XrayTags.PROXY)), XrayRouteTargetKind.Outbound),
+                options = LocalProxyXrayConfigOptions(),
+                renderingOptions = renderingOptions(),
+            ).endsWith("\n"),
+        )
+    }
+
+    @Test
+    fun chainOutboundOrderAndDialerLinksSurviveLocalCompositionWithoutFragmentDialers() {
+        val json = build(
+            plan = outboundPlan(
+                outbounds = listOf(
+                    proxyOutbound("proxy", dialerProxyTag = "proxy-chain-1", allowFragment = false),
+                    proxyOutbound("proxy-chain-1", allowFragment = false),
+                ),
+                proxyTargetKind = XrayRouteTargetKind.Outbound,
+            ),
+            renderingOptions = renderingOptions(
+                mux = XrayMuxOutboundOptions(
+                    concurrency = "8",
+                    xudpConcurrency = "8",
+                    xudpProxyUdp443Mode = 0,
+                ),
+                fragment = XrayFragmentOutboundOptions(
+                    domainStrategy = "UseIPv4",
+                    packets = "tlshello",
+                    length = "10-20",
+                    interval = "1-2",
+                ),
+            ),
+        )
+
+        val outbounds = json.getValue("outbounds").jsonArray
+        assertEquals(listOf("proxy", "proxy-chain-1", "direct", "block", "fragment"), outbounds.tags())
+        val outer = outbounds[0].jsonObject
+        val outerSockopt = outer.getValue("streamSettings").jsonObject.getValue("sockopt").jsonObject
+        assertEquals("proxy-chain-1", outerSockopt.getValue("dialerProxy").jsonPrimitive.content)
+        assertEquals("true", outer.getValue("mux").jsonObject.getValue("enabled").jsonPrimitive.content)
+        assertEquals("fragment", outbounds.last().jsonObject.getValue("tag").jsonPrimitive.content)
+
+        val inner = outbounds[1].jsonObject
+        val innerSockopt = inner["streamSettings"]?.jsonObject?.get("sockopt")?.jsonObject
+        assertNull(innerSockopt?.get("dialerProxy"))
+        assertEquals("true", inner.getValue("mux").jsonObject.getValue("enabled").jsonPrimitive.content)
+        assertFalse(listOf(outer, inner).any { outbound ->
+            outbound["streamSettings"]?.jsonObject?.get("sockopt")?.jsonObject
+                ?.get("dialerProxy")?.jsonPrimitive?.content == XrayTags.FRAGMENT
+        })
+    }
+
+    @Test
+    fun balancerTargetGetsFinalTcpUdpRouteAndStandardObservatoryWithoutDefaultRouting() {
+        val plan = outboundPlan(
+            outbounds = listOf(
+                proxyOutbound("proxy-policy-10"),
+                proxyOutbound("proxy-policy-20"),
+            ),
+            proxyTargetKind = XrayRouteTargetKind.Balancer,
+            balancers = listOf(
+                XrayBalancerPlan(
+                    tag = XrayTags.PROXY,
+                    selector = "proxy-policy-",
+                    strategy = "leastPing",
+                    fallbackTag = "proxy-policy-20",
+                ),
+            ),
+            selectors = listOf("proxy-policy-"),
+            probeUrl = "http://127.0.0.1:18082/probe",
+            probeInterval = "17s",
+            // The existing regular Observatory renderer intentionally has no timeout field.
+            probeTimeout = "4s",
+        )
+
+        val json = build(
+            plan = plan,
+            options = LocalProxyXrayConfigOptions(includeDefaultRouting = false),
+            renderingOptions = renderingOptions(primaryOutboundTag = XrayTags.PROXY),
+        )
+
+        assertEquals(listOf("proxy-policy-10", "proxy-policy-20", "direct", "block"), json.getValue("outbounds").jsonArray.tags())
+        val routing = json.getValue("routing").jsonObject
+        val rules = routing.getValue("rules").jsonArray
+        val selectedRoute = rules.last().jsonObject
+        assertEquals("tcp,udp", selectedRoute.getValue("network").jsonPrimitive.content)
+        assertEquals(XrayTags.PROXY, selectedRoute.getValue("balancerTag").jsonPrimitive.content)
+        assertNull(selectedRoute["outboundTag"])
+
+        val balancer = routing.getValue("balancers").jsonArray.single().jsonObject
+        assertEquals("proxy-policy-20", balancer.getValue("fallbackTag").jsonPrimitive.content)
+        val observatory = json.getValue("observatory").jsonObject
+        assertEquals("http://127.0.0.1:18082/probe", observatory.getValue("probeURL").jsonPrimitive.content)
+        assertEquals("17s", observatory.getValue("probeInterval").jsonPrimitive.content)
+        assertEquals("true", observatory.getValue("enableConcurrency").jsonPrimitive.content)
+        assertEquals(listOf("proxy-policy-"), observatory.getValue("subjectSelector").jsonArray.map { it.jsonPrimitive.content })
+        assertNull(json["burstObservatory"])
+    }
+
+    @Test
+    fun localListenerValidationRemainsInForceForGeneratedPlans() {
+        assertFailsWith<IllegalArgumentException> {
+            LocalProxyXrayConfigFactory.buildFromPlan(
+                plan = outboundPlan(listOf(proxyOutbound(XrayTags.PROXY)), XrayRouteTargetKind.Outbound),
+                options = LocalProxyXrayConfigOptions(socksPort = 0),
+                renderingOptions = renderingOptions(),
+            )
+        }
+    }
+
+    private fun build(
+        plan: XrayOutboundPlan,
+        options: LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(),
+        renderingOptions: XrayOutboundRenderingOptions = renderingOptions(),
+    ) = Json.parseToJsonElement(
+        LocalProxyXrayConfigFactory.buildFromPlan(plan, options, renderingOptions),
+    ).jsonObject
+
+    private fun outboundPlan(
+        outbounds: List<XrayProxyOutboundServer>,
+        proxyTargetKind: XrayRouteTargetKind,
+        balancers: List<XrayBalancerPlan> = emptyList(),
+        selectors: List<String> = emptyList(),
+        probeUrl: String? = null,
+        probeInterval: String? = null,
+        probeTimeout: String? = null,
+    ) = XrayOutboundPlan(
+        proxyOutbounds = outbounds,
+        balancers = balancers,
+        observatorySelectors = selectors,
+        routeTargets = mapOf(
+            XrayTags.PROXY to XrayRouteTarget(XrayTags.PROXY, proxyTargetKind),
+        ),
+        dnsHostServers = emptyList(),
+        observatoryProbeUrl = probeUrl,
+        observatoryProbeInterval = probeInterval,
+        observatoryProbeTimeout = probeTimeout,
+    )
+
+    private fun proxyOutbound(
+        tag: String,
+        dialerProxyTag: String? = null,
+        allowFragment: Boolean = true,
+    ) = XrayProxyOutboundServer(
+        tag = tag,
+        customOutbound = buildJsonObject {
+            put("tag", tag)
+            put("protocol", "socks")
+            put("settings", buildJsonObject {
+                put("address", "127.0.0.1")
+                put("port", 10_000)
+            })
+        },
+        dialerProxyTag = dialerProxyTag,
+        allowFragment = allowFragment,
+    )
+
+    private fun renderingOptions(
+        primaryOutboundTag: String? = XrayTags.PROXY,
+        mux: XrayMuxOutboundOptions? = null,
+        fragment: XrayFragmentOutboundOptions? = null,
+    ) = XrayOutboundRenderingOptions(
+        primaryOutboundTag = primaryOutboundTag,
+        enableLocalDns = false,
+        dnsPlan = null,
+        dnsProxyOutboundTag = null,
+        transport = null,
+        mux = mux,
+        fragment = fragment,
+    )
+
+    private fun JsonArray.tags(): List<String> = map { item ->
+        item.jsonObject.getValue("tag").jsonPrimitive.content
+    }
+}

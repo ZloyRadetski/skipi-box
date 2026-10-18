@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopApplicationRepositoriesTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:32:31.291Z" hostname="MAZAFAKA-PC" time="0.528">
+  <properties/>
+  <testcase name="subscriptionRepositoryPreservesExplicitEmptyProfileTitle" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.005"/>
+  <testcase name="subscriptionRepositoryRoundTripsProviderOptionsAndDoesNotReserveDesktopIdOne" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.003"/>
+  <testcase name="concurrentSubscriptionCreatesUseLatestCounterWithoutLosingRows" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.205"/>
+  <testcase name="subscriptionUpsertEditsExistingRecordInPlaceWithoutChangingLibraryOrder" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.002"/>
+  <testcase name="subscriptionRepositoryPreservesHostOnlyFieldsAndRejectsUnconfiguredRefresh" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.009"/>
+  <testcase name="appearanceSettingsRoundTripThroughDesktopJsonModel" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.002"/>
+  <testcase name="desktopRepositoryMigratesMissingLegacyCounterAndPersistsCreateCounter" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.034"/>
+  <testcase name="desktopRemoveMigratesLegacyCounterBeforeTheNextCreate" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.008"/>
+  <testcase name="trafficConfigUpsertRetainsLegacyAppendOrderAndActiveId" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.003"/>
+  <testcase name="appearanceStateAdapterPreservesDesktopSettingsAndMapsSharedHomeOptions" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.002"/>
+  <testcase name="trafficConfigRepositoryMapsAndPersistsWithoutChangingLibraryShape" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.004"/>
+  <testcase name="desktopRepositoryRejectsRemovingBuiltInSubscriptionBeforeHostCleanup" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.002"/>
+  <testcase name="concurrentTrafficConfigRemoveAndCreateUseOneSerializedLatestCatalog" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.169"/>
+  <testcase name="failedTrafficConfigTransformDoesNotPublishUnsavedCatalog" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.001"/>
+  <testcase name="legacySettingsJsonLoadsWithDefaultsForNewAppearanceKeys" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.012"/>
+  <testcase name="settingsRepositoryMapsThemeAndSelectionsAndPreservesDesktopOnlySettings" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.057"/>
+  <testcase name="trafficConfigTransformLatestReadsFreshCatalogAndPersistsLateResponseById" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.007"/>
+  <testcase name="subscriptionRepositoryPreservesProfileTitleSeparatelyFromDisplayTitle" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

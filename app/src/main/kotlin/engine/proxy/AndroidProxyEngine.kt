@@ -11,6 +11,7 @@ import app.effects.resolveActiveNetworkConfig
 import app.withActiveTrafficConfigApplied
 import app.ProxyServerState
 import app.modes.RunModeVpnService
+import app.skipi.app.proxy.LocalProxyStartRetryPolicy
 import engine.stats.ProxyTrafficStatsRuntime
 import engine.stats.ProxyTrafficStatsRuntimeStore
 import engine.stats.ProxyTrafficStatsService
@@ -123,7 +124,7 @@ class AndroidProxyEngine(
             ProxyTrafficStatsService.reconcile(appContext, null)
         }
         val attemptedDynamicPorts = mutableSetOf<Int>()
-        repeat(DynamicPortStartAttempts) { attempt ->
+        repeat(LocalProxyStartRetryPolicy.MaxAttempts) { attempt ->
             val initialVpnState = request.appState
                 .resolveActiveNetworkConfig(appContext)
                 .withActiveTrafficConfigApplied()
@@ -223,9 +224,11 @@ class AndroidProxyEngine(
             }
 
             val error = checkNotNull(startResult.exceptionOrNull())
-            val canRetryWithAnotherPort = request.appState.enableDynamicLocalProxyPort &&
-                attempt + 1 < DynamicPortStartAttempts &&
-                error.isLocalPortBindFailure()
+            val canRetryWithAnotherPort = LocalProxyStartRetryPolicy.shouldRetry(
+                dynamicPortEnabled = request.appState.enableDynamicLocalProxyPort,
+                completedAttempts = attempt + 1,
+                failure = error,
+            )
             if (canRetryWithAnotherPort) {
                 vpnState.localProxyPort.toIntOrNull()?.let(attemptedDynamicPorts::add)
                 AndroidAppLogger.warn(
@@ -274,7 +277,6 @@ class AndroidProxyEngine(
 
     companion object {
         private const val LogTag = "AndroidProxyEngine"
-        private const val DynamicPortStartAttempts = 2
         private val globalOperationMutex = Mutex()
     }
 
@@ -286,14 +288,7 @@ class AndroidProxyEngine(
 }
 
 internal fun Throwable.isLocalPortBindFailure(): Boolean {
-    return generateSequence(this) { cause -> cause.cause }
-        .mapNotNull(Throwable::message)
-        .any { message ->
-            val normalized = message.lowercase()
-            "address already in use" in normalized ||
-                "failed to listen" in normalized ||
-                "listen tcp" in normalized
-        }
+    return LocalProxyStartRetryPolicy.isLocalProxyBindFailure(this)
 }
 
 private fun ProxyServerState.trafficStatsServerName(): String {

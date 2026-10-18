@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.NativeBridgePlanTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:32:59.954Z" hostname="MAZAFAKA-PC" time="0.096">
+  <properties/>
+  <testcase name="amneziaWgFinalMaskIsRejectedInsteadOfBeingSilentlyDropped" classname="engine.vpn.NativeBridgePlanTest" time="0.004"/>
+  <testcase name="nativeBridgesUseTunDnsAndOnlyRewriteTheirOwnOutbounds" classname="engine.vpn.NativeBridgePlanTest" time="0.027"/>
+  <testcase name="unresolvedHostnameEndpointIsDeferredToNativeAmneziaWgResolver" classname="engine.vpn.NativeBridgePlanTest" time="0.062"/>
+  <testcase name="hostnameEndpointIsResolvedBeforeNativeAmneziaWgConfiguration" classname="engine.vpn.NativeBridgePlanTest" time="0.001"/>
+  <testcase name="differentAmneziaWgRuntimesAreRejectedInsteadOfBeingSilentlyRewritten" classname="engine.vpn.NativeBridgePlanTest" time="0.0"/>
+  <testcase name="differentOlcRtcRuntimesAreRejectedInsteadOfBeingSilentlyRewritten" classname="engine.vpn.NativeBridgePlanTest" time="0.0"/>
+  <testcase name="unsafeAmneziaWgObfuscationIsRejectedBeforeTheNativeRunnerStarts" classname="engine.vpn.NativeBridgePlanTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

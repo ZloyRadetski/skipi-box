@@ -77,6 +77,7 @@ fun SkipiTrafficConfigRawEditor(
     onContentChange: (String) -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
+    statusContent: (@Composable () -> Unit)? = null,
 ) {
     key(state.configId) {
         SkipiTrafficConfigFullScreenScaffold(
@@ -97,6 +98,7 @@ fun SkipiTrafficConfigRawEditor(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(labels.subtitle, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                statusContent?.invoke()
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.defaultColors(color = SkipiTheme.colors.surface),

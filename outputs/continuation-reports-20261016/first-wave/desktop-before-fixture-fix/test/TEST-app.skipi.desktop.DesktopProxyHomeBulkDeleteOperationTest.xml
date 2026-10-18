@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyHomeBulkDeleteOperationTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:08:38.341Z" hostname="MAZAFAKA-PC" time="0.017">
+  <properties/>
+  <testcase name="serviceOperationBusySkipsAStopSensitiveDelete" classname="app.skipi.desktop.DesktopProxyHomeBulkDeleteOperationTest" time="0.004"/>
+  <testcase name="missingServiceStillDeletesWithoutApplyingStoppedState" classname="app.skipi.desktop.DesktopProxyHomeBulkDeleteOperationTest" time="0.005"/>
+  <testcase name="selectedServerIsStoppedBeforeCatalogDeleteAndStopStateIsAppliedFirst" classname="app.skipi.desktop.DesktopProxyHomeBulkDeleteOperationTest" time="0.002"/>
+  <testcase name="failedStopPreservesCatalogAndReportsStopFailure" classname="app.skipi.desktop.DesktopProxyHomeBulkDeleteOperationTest" time="0.003"/>
+  <testcase name="unselectedOrAlreadyStoppedServerDeletesWithoutStopping" classname="app.skipi.desktop.DesktopProxyHomeBulkDeleteOperationTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

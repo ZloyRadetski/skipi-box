@@ -59,6 +59,9 @@ import app.ProxyServerState
 import app.R
 import app.collectAppState
 import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.config.TrafficConfigProfileRefreshMode
+import app.skipi.app.config.TrafficConfigProfileRefreshOperations
+import app.skipi.app.config.TrafficConfigProfileRefreshRequest
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.applyProxyServerEditResult
 import app.skipi.ui.config.SkipiTrafficConfigScreen
@@ -140,7 +143,9 @@ fun TrafficConfigPage(
     }
     var contextMenuConfig by remember { mutableStateOf<TrafficConfigState?>(null) }
     var pendingConfigDeletion by remember { mutableStateOf<TrafficConfigState?>(null) }
-    var pendingUnlockAndUpdateConfig by remember { mutableStateOf<TrafficConfigState?>(null) }
+    var pendingUnlockAndUpdateConfig by remember {
+        mutableStateOf<TrafficConfigProfileRefreshRequest.ConfirmUnlockAndRefresh?>(null)
+    }
     var contextMenuAutoBalancer by remember { mutableStateOf<ProxyServerState?>(null) }
     var pendingAutoBalancerDeletion by remember { mutableStateOf<ProxyServerState?>(null) }
     var showAddMenu by remember { mutableStateOf(false) }
@@ -262,19 +267,13 @@ fun TrafficConfigPage(
                         analysis.diagnostics.first { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }.message
                     }
                     updateAppState { state ->
-                        state.withUpdatedTrafficConfigProfile(config.id) { current ->
-                            current.copy(
-                                rawConfig = normalized,
-                                sourceUrl = url,
-                                updateLocked = if (unlock) false else current.updateLocked,
-                                lastUpdatedAtMillis = System.currentTimeMillis(),
-                            ).withSkipiSettingsReadFromRawConfig().let { parsed ->
-                                parsed.copy(
-                                    sourceUrl = url.ifBlank { parsed.sourceUrl },
-                                    updateLocked = if (unlock) false else parsed.updateLocked,
-                                ).withSkipiSettingsInRawConfig()
-                            }
-                        }
+                        state.withCommittedTrafficConfigRefresh(
+                            configId = config.id,
+                            normalizedDocument = normalized,
+                            capturedUrl = url,
+                            timestamp = System.currentTimeMillis(),
+                            mode = TrafficConfigProfileRefreshMode.Manual(unlock),
+                        )
                     }
                 }.onSuccess {
                     services.tipNotifier.show(context.getString(R.string.configs_updated))
@@ -286,10 +285,13 @@ fun TrafficConfigPage(
     }
 
     fun onTriggerConfigUpdate(config: TrafficConfigState) {
-        if (config.updateLocked) {
-            pendingUnlockAndUpdateConfig = config
-        } else {
-            updateConfigFromUrl(config, unlock = false)
+        when (val request = TrafficConfigProfileRefreshOperations.requestManualRefresh(config)) {
+            is TrafficConfigProfileRefreshRequest.ConfirmUnlockAndRefresh -> {
+                pendingUnlockAndUpdateConfig = request
+            }
+            is TrafficConfigProfileRefreshRequest.Refresh -> {
+                updateConfigFromUrl(request.snapshot, unlock = request.mode.unlock)
+            }
         }
     }
 
@@ -583,10 +585,14 @@ fun TrafficConfigPage(
             summary = stringResource(R.string.configs_update_locked_warning_summary),
             confirmText = stringResource(R.string.configs_update_anyway),
             dismissText = stringResource(R.string.common_cancel),
-            onDismissRequest = { pendingUnlockAndUpdateConfig = null },
+            onDismissRequest = {
+                TrafficConfigProfileRefreshOperations.dismissUnlockAndRefresh(config)
+                pendingUnlockAndUpdateConfig = null
+            },
             onConfirm = {
                 pendingUnlockAndUpdateConfig = null
-                updateConfigFromUrl(config, unlock = true)
+                val request = TrafficConfigProfileRefreshOperations.confirmUnlockAndRefresh(config)
+                updateConfigFromUrl(request.snapshot, unlock = request.mode.unlock)
             },
         )
     }

@@ -6,13 +6,11 @@ package features.proxy.server.usecase
 import app.AppState
 import app.ProxyServerLatencyTesting
 import app.ProxyServerState
+import app.skipi.app.home.ProxyHomeLatencyRunner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
@@ -139,41 +137,41 @@ internal fun runProxyServerLatencyTest(
             val dnsCache = ConcurrentHashMap<String, java.net.InetAddress>()
             val failedDnsCache = ConcurrentHashMap<String, Boolean>()
 
-            coroutineScope {
-                targetServers.map { server ->
-                    async {
-                        val latency = runCatching {
-                            proxyLatencyTester.test(
-                                appState = stateSnapshot,
-                                server = server,
-                                mode = mode,
-                                sessionCache = sessionCache,
-                                semaphore = semaphore,
-                                dnsCache = dnsCache,
-                                failedDnsCache = failedDnsCache,
-                            )
-                        }.getOrElse {
-                            ProxyServerLatencyTestResult.Failed
-                        }.toLatencyText(latencyFailedMessage)
-                        stateStore.update(persist = false) { state ->
-                            state.copy(
-                                proxyServers = state.proxyServers.map {
-                                    if (it.id == server.id) it.copy(latency = latency) else it
-                                },
-                            )
-                        }
-                        if (showSingleResult) {
-                            val serverName = server.server.getInfo().remarks.ifBlank { server.server.getInfo().protocol }
-                            tipNotifier.show(
-                                latencyResultTemplate.formatTemplate(
-                                    "name" to serverName,
-                                    "latency" to latency,
-                                ),
-                            )
-                        }
+            ProxyHomeLatencyRunner<ProxyServerState, ProxyServerLatencyTestResult>(
+                concurrency = concurrency,
+                probe = { server ->
+                    proxyLatencyTester.test(
+                        appState = stateSnapshot,
+                        server = server,
+                        mode = mode,
+                        sessionCache = sessionCache,
+                        semaphore = semaphore,
+                        dnsCache = dnsCache,
+                        failedDnsCache = failedDnsCache,
+                    )
+                },
+                onProbeFailure = { ProxyServerLatencyTestResult.Failed },
+                onResult = { server, result ->
+                    val latency = result.toLatencyText(latencyFailedMessage)
+                    stateStore.update(persist = false) { state ->
+                        state.copy(
+                            proxyServers = state.proxyServers.map {
+                                if (it.id == server.id) it.copy(latency = latency) else it
+                            },
+                        )
                     }
-                }.awaitAll()
-            }
+                    if (showSingleResult) {
+                        val serverName = server.server.getInfo().remarks.ifBlank { server.server.getInfo().protocol }
+                        tipNotifier.show(
+                            latencyResultTemplate.formatTemplate(
+                                "name" to serverName,
+                                "latency" to latency,
+                            ),
+                        )
+                    }
+                },
+                probeLimiter = { runProbe -> runProbe() },
+            ).execute(targetServers)
 
             if (!showSingleResult) {
                 tipNotifier.show(doneTemplate.formatTemplate("count" to targetServers.size))

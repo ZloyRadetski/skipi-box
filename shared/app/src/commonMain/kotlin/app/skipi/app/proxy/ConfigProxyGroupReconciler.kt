@@ -34,6 +34,7 @@ fun reconcileConfigProxyGroups(
     selectedServerId: Int,
     autoBalancerGroupId: Int,
     stripLeadingCountryFlag: (String) -> String,
+    retainedServerIds: Set<Int> = emptySet(),
 ): ConfigProxyGroupReconciliation {
     val desired = trafficConfigs.flatMap { config ->
         val isConfigActive = config.id == activeTrafficConfigId
@@ -113,7 +114,7 @@ fun reconcileConfigProxyGroups(
     }
     val resolvedServers = regularServers + generatedServers
     val resolvedSelectedId = selectedServerId.takeIf { selectedId ->
-        resolvedServers.any { record -> record.id == selectedId }
+        resolvedServers.any { record -> record.id == selectedId } || selectedId in retainedServerIds
     } ?: resolvedServers.firstOrNull()?.id ?: selectedServerId
 
     return ConfigProxyGroupReconciliation(

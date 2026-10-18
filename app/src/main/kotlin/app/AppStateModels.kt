@@ -222,16 +222,7 @@ fun ResourceFilesStatus.statusOf(kind: ResourceFileKind): ResourceFileStatus {
 }
 
 fun sanitizeCustomResourceFileName(value: String, fallback: String): String {
-    val candidate = value
-        .trim()
-        .replace('\\', '/')
-        .substringAfterLast('/')
-        .map { char -> if (char.isResourceFileNameChar()) char else '_' }
-        .joinToString("")
-        .trim()
-    return candidate
-        .takeUnless { it.isBlank() || it == "." || it == ".." }
-        ?: fallback
+    return features.config.sanitizeCustomResourceFileName(value, fallback)
 }
 
 fun customResourceFileNameOrNull(value: String): String? {
@@ -239,8 +230,4 @@ fun customResourceFileNameOrNull(value: String): String? {
     if (value.any { char -> char.isWhitespace() || char == ':' }) return null
     return sanitizeCustomResourceFileName(value, fallback = "")
         .takeIf { sanitized -> sanitized == value }
-}
-
-private fun Char.isResourceFileNameChar(): Boolean {
-    return code >= 32 && this != '/' && this != '\\'
 }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTunnelStartRetryLifecycleTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:10:02.808Z" hostname="MAZAFAKA-PC" time="0.127">
+  <properties/>
+  <testcase name="dynamicBindFailureRebuildsFromOneSettingsSnapshotAndPublishesOnlyTheFinalEndpoint" classname="app.skipi.desktop.DesktopTunnelStartRetryLifecycleTest" time="0.115"/>
+  <testcase name="preparedConfigurationDoesNotEnterTheDynamicRetryPath" classname="app.skipi.desktop.DesktopTunnelStartRetryLifecycleTest" time="0.004"/>
+  <testcase name="staticOrNonBindFailureAndSuccessfulNonrunningStartDoNotRebuild" classname="app.skipi.desktop.DesktopTunnelStartRetryLifecycleTest" time="0.002"/>
+  <testcase name="secondBindFailureIsFinalAndRetryPlanFailureReportsPrepareConfigurationStage" classname="app.skipi.desktop.DesktopTunnelStartRetryLifecycleTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

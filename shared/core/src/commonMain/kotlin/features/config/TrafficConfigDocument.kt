@@ -289,24 +289,59 @@ private fun String.encodeProfileUriComponent(): String = buildString {
     }
 }
 
-private fun String.decodeProfileUriComponent(): String = buildString {
+private fun String.decodeProfileUriComponent(): String {
+    val input = this
+    val decoded = StringBuilder(input.length)
+    val escapedBytes = mutableListOf<Byte>()
+
+    fun flushEscapedBytes() {
+        if (escapedBytes.isEmpty()) return
+        decoded.append(escapedBytes.toByteArray().decodeToString())
+        escapedBytes.clear()
+    }
+
     var index = 0
-    while (index < length) {
-        if (this@decodeProfileUriComponent[index] == '%' && index + 2 < length &&
-            this@decodeProfileUriComponent[index + 1].digitToIntOrNull(16) != null &&
-            this@decodeProfileUriComponent[index + 2].digitToIntOrNull(16) != null
-        ) {
-            val bytes = mutableListOf<Byte>()
-            while (index + 2 < length && this@decodeProfileUriComponent[index] == '%') {
-                val high = this@decodeProfileUriComponent[index + 1].digitToIntOrNull(16) ?: break
-                val low = this@decodeProfileUriComponent[index + 2].digitToIntOrNull(16) ?: break
-                bytes += ((high shl 4) or low).toByte()
-                index += 3
+    while (index < input.length) {
+        val char = input[index++]
+        when (char) {
+            '+' -> {
+                flushEscapedBytes()
+                decoded.append('+')
             }
-            append(bytes.toByteArray().decodeToString())
-        } else {
-            append(this@decodeProfileUriComponent[index])
-            index++
+
+            '%' -> {
+                var encodedByte = 0
+                for (digitIndex in 0..1) {
+                    if (index >= input.length) {
+                        flushEscapedBytes()
+                        decoded.append('\uFFFD')
+                        return decoded.toString()
+                    }
+                    val digit = input[index++].profileUriHexDigitOrNull()
+                    if (digit == null) {
+                        flushEscapedBytes()
+                        decoded.append('\uFFFD')
+                        break
+                    }
+                    encodedByte = encodedByte * 16 + digit
+                }
+                escapedBytes += encodedByte.toByte()
+            }
+
+            else -> {
+                flushEscapedBytes()
+                decoded.append(char)
+            }
         }
     }
+
+    flushEscapedBytes()
+    return decoded.toString()
+}
+
+private fun Char.profileUriHexDigitOrNull(): Int? = when (this) {
+    in '0'..'9' -> this - '0'
+    in 'a'..'f' -> this - 'a' + 10
+    in 'A'..'F' -> this - 'A' + 10
+    else -> null
 }

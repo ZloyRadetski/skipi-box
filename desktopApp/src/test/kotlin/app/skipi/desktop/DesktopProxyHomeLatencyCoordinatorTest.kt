@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 
 class DesktopProxyHomeLatencyCoordinatorTest {
     @Test
-    fun groupTargetsFollowCurrentCatalogOrderAndASecondRunIsRejectedWhileTheFirstIsActive() = runBlocking {
+    fun groupTargetsFollowCurrentCatalogOrderAndASecondRunIsRejectedWhileTheFirstIsActive() = runBlocking<Unit> {
         val events = mutableListOf<String>()
         val started = CompletableDeferred<Unit>()
         val finish = CompletableDeferred<Unit>()
@@ -54,7 +54,7 @@ class DesktopProxyHomeLatencyCoordinatorTest {
     }
 
     @Test
-    fun cancelCancelsTheActiveHomeRunAndNotifiesTheHostOnce() = runBlocking {
+    fun cancelCancelsTheActiveHomeRunAndNotifiesTheHostOnce() = runBlocking<Unit> {
         val events = mutableListOf<String>()
         val started = CompletableDeferred<Unit>()
         val scope = CoroutineScope(coroutineContext + SupervisorJob())
@@ -74,14 +74,18 @@ class DesktopProxyHomeLatencyCoordinatorTest {
                     }
                 }.also { activeJob = it }
             },
-            onCancel = { events += "cancel-host" },
+            onCancel = {
+                assertTrue(activeJob?.isCancelled == true)
+                events += "cancel-host"
+            },
         )
 
         assertTrue(coordinator.testVisibleServers(listOf("7")).isSuccess)
         started.await()
         coordinator.cancel()
+        assertEquals(listOf("cancel-host"), events)
         activeJob?.join()
-        assertEquals(listOf("job-cleanup", "cancel-host"), events)
+        assertEquals(listOf("cancel-host", "job-cleanup"), events)
         assertFalse(coordinator.isBusy)
         scope.coroutineContext[kotlinx.coroutines.Job]?.cancelAndJoin()
     }

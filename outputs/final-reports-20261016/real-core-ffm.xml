@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopCoreFfmIntegrationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-16T08:41:38.406Z" hostname="MAZAFAKA-PC" time="0.592">
+  <properties/>
+  <testcase name="desktopRuntimeSnapshotStartsDynamicAuthenticatedInboundAndExposesItsFetchEndpoint" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.504"/>
+  <testcase name="startsAndStopsTheBundledCoreInsideTheDesktopJvm" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.076"/>
+  <testcase name="sharedAuthenticatedSocksInboundAcceptsTheConfiguredCredentialsInNativeCore" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.007"/>
+  <system-out><![CDATA[[2026-10-16 11:41:38.818] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 1)
+[2026-10-16 11:41:38.912] [INFO] [CoreController] Stopped in-process SKIPI Core session 1
+[2026-10-16 11:41:38.985] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 2)
+[2026-10-16 11:41:38.987] [INFO] [CoreController] Stopped in-process SKIPI Core session 2
+[2026-10-16 11:41:38.989] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 3)
+[2026-10-16 11:41:38.990] [INFO] [CoreController] Stopped in-process SKIPI Core session 3
+[2026-10-16 11:41:38.996] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 4)
+[2026-10-16 11:41:38.998] [INFO] [CoreController] Stopped in-process SKIPI Core session 4
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -382,6 +382,7 @@ private fun DesktopLocalProxySettings(
     contentPadding: PaddingValues,
 ) {
     val supportsSystemProxy = isDesktopSystemProxySupported()
+    var feedbackMessage by remember(message) { mutableStateOf(message) }
     var draft by remember(settings) { mutableStateOf(settings) }
     var portText by remember(settings.localProxyPortRaw, settings.localProxyPort) {
         mutableStateOf(settings.localProxyPortRaw ?: settings.localProxyPort.toString())
@@ -467,8 +468,8 @@ private fun DesktopLocalProxySettings(
         },
         onCopy = { text, label ->
             copyToClipboard(text).fold(
-                onSuccess = { message = "$label скопировано." },
-                onFailure = { message = "Не удалось скопировать $label: ${it.message.orEmpty()}" },
+                onSuccess = { feedbackMessage = "$label скопировано." },
+                onFailure = { feedbackMessage = "Не удалось скопировать $label: ${it.message.orEmpty()}" },
             )
         },
         capabilities = LocalProxySettingsCapabilities(
@@ -555,7 +556,7 @@ private fun DesktopLocalProxySettings(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                     ) { Text("Сбросить системный прокси") }
                 }
-                SettingsStatusMessage(message)
+                SettingsStatusMessage(feedbackMessage)
             }
         },
     )

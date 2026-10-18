@@ -147,7 +147,8 @@ object TrafficConfigLibraryOperations {
         ConfigProfileLibraries.remove(library, id)
 }
 
-private fun ConfigProfile.toTrafficConfigState(resourceUserAgentFallback: String): TrafficConfigState {
+/** Materializes a stored profile with host-provided typed defaults for absent SKIPI fields. */
+fun ConfigProfile.toTrafficConfigState(resourceUserAgentFallback: String = ""): TrafficConfigState {
     val parsed = TrafficConfigState(
         id = id,
         name = name,

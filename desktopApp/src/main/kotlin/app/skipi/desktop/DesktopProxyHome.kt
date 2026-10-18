@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeAction
@@ -91,6 +92,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import platform.TunnelPhase
 import platform.TunnelSnapshot
 
@@ -129,6 +131,7 @@ internal fun DesktopProxyHome(
     onDeleteServer: (Int) -> Unit,
     onSaveServer: (ProxyServerEditResult, (ProxyServerEditApplyOutcome) -> Unit) -> Unit,
     onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit,
+    onLaunchHomeLatencyTest: (List<Pair<Int, ProxyServer<*>>>, () -> Unit) -> Job,
     onPingSubscriptionServers: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
     onUpdateSubscriptionById: (Int) -> Unit,
     onRefreshAllSubscriptions: (() -> Unit)? = null,
@@ -444,6 +447,33 @@ internal fun DesktopProxyHome(
         }
     }
 
+    val currentDecodedServers by rememberUpdatedState(decodedServers)
+    val currentGroupCatalog by rememberUpdatedState(groupCatalog)
+    val currentTestingServerIds by rememberUpdatedState(testingServerIds)
+    val currentPingingSubscriptionIds by rememberUpdatedState(pingingSubscriptionIds)
+    val currentHomeLatencyLauncher by rememberUpdatedState(onLaunchHomeLatencyTest)
+    val currentLatencyCancel by rememberUpdatedState(onCancelLatencyTests)
+    val homeLatencyCoordinator = remember {
+        DesktopProxyHomeLatencyCoordinator(
+            getAllTargets = {
+                currentDecodedServers.mapNotNull { (stored, server) ->
+                    server
+                        ?.takeIf { it.desktopTcpEndpointOrNull() != null }
+                        ?.let { stored.id to it }
+                }
+            },
+            targetId = { target -> target.first.toString() },
+            getGroupMemberIds = { groupId ->
+                currentGroupCatalog.group(groupId)?.serverIds?.mapTo(linkedSetOf()) { it.toString() }
+            },
+            isHostBusy = {
+                currentTestingServerIds.isNotEmpty() || currentPingingSubscriptionIds.isNotEmpty()
+            },
+            launchTest = { targets, onFinished -> currentHomeLatencyLauncher(targets, onFinished) },
+            onCancel = { currentLatencyCancel?.invoke() },
+        )
+    }
+
     val effectContext = DesktopProxyHomeEffectContext(
         decodedServers = decodedServers,
         groupCatalog = groupCatalog,
@@ -457,6 +487,8 @@ internal fun DesktopProxyHome(
         onSelectServer = onSelectServer,
         onDeleteServer = onDeleteServer,
         onMeasureServers = onMeasureServers,
+        onTestVisibleServers = homeLatencyCoordinator::testVisibleServers,
+        onTestGroup = homeLatencyCoordinator::testGroup,
         onPingSubscription = onPingSubscriptionServers,
         onUpdateSubscriptionById = onUpdateSubscriptionById,
         onRefreshAllSubscriptions = onRefreshAllSubscriptions,
@@ -464,7 +496,7 @@ internal fun DesktopProxyHome(
         onDeleteInvalidServers = onDeleteInvalidServers,
         onRestartService = onRestartService,
         onDeleteAllServers = onDeleteAllServers,
-        onCancelLatencyTests = onCancelLatencyTests,
+        onCancelLatencyTests = { homeLatencyCoordinator.cancel() },
         onConfirmToolDeletion = { tool -> pendingToolDeletion = tool },
         onSetSubscriptionEnabled = { id, enabled ->
             scope.launch {
@@ -832,7 +864,7 @@ private data class DesktopImportFile(val name: String, val content: String)
 
 internal fun requestDesktopProxyHomeSubscriptionDeletion(
     subscriptionId: Int,
-    selectedGroupId: String,
+    selectedGroupId: String?,
     requestDelete: () -> Unit,
     selectGroup: (String) -> Unit,
 ) {
@@ -902,6 +934,8 @@ internal class DesktopProxyHomeEffectContext(
     val onSelectServer: (Int) -> Unit = {},
     val onDeleteServer: (Int) -> Unit = {},
     val onMeasureServers: (List<Pair<Int, ProxyServer<*>>>) -> Unit = {},
+    val onTestVisibleServers: ((List<String>) -> Result<Unit>)? = null,
+    val onTestGroup: ((String) -> Result<Unit>)? = null,
     val onPingSubscription: (Int, List<Pair<Int, ProxyServer<*>>>) -> Unit = { _, targets -> onMeasureServers(targets) },
     val onUpdateSubscriptionById: (Int) -> Unit = {},
     val onRefreshAllSubscriptions: (() -> Unit)? = null,
@@ -935,9 +969,11 @@ internal class DesktopProxyHomeEffectContext(
         is ProxyHomeEffect.SelectServer -> effect.serverId.toIntOrNull()?.let { id ->
             invoke { onSelectServer(id) }
         } ?: unsupported("Некорректный идентификатор сервера.")
-        is ProxyHomeEffect.TestServer -> testServers(listOf(effect.serverId))
-        is ProxyHomeEffect.TestVisibleServers -> testServers(effect.serverIds)
-        is ProxyHomeEffect.TestGroup -> groupCatalog.group(effect.groupId)?.let { group ->
+        is ProxyHomeEffect.TestServer -> testVisibleServers(listOf(effect.serverId))
+        is ProxyHomeEffect.TestVisibleServers -> testVisibleServers(effect.serverIds)
+        is ProxyHomeEffect.TestGroup -> onTestGroup?.let { callback ->
+            runCatching { callback(effect.groupId) }.getOrElse { Result.failure(it) }
+        } ?: groupCatalog.group(effect.groupId)?.let { group ->
             testServers(group.serverIds.map(Int::toString))
         } ?: unsupported("Группа серверов не найдена.")
         is ProxyHomeEffect.PingSubscription -> effect.id.toIntOrNull()?.let { id ->
@@ -1066,6 +1102,10 @@ internal class DesktopProxyHomeEffectContext(
         }
         return invoke { onMeasureServers(targets) }
     }
+
+    private fun testVisibleServers(serverIds: List<String>): Result<Unit> = onTestVisibleServers?.let { callback ->
+        runCatching { callback(serverIds) }.getOrElse { Result.failure(it) }
+    } ?: testServers(serverIds)
 
     private fun pingSubscription(subscriptionId: Int, serverIds: Iterable<String>): Result<Unit> {
         val targets = subscriptionTestTargets(serverIds)

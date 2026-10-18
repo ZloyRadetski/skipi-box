@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.importer.ProxyServerUrlImportTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:33:01.311Z" hostname="MAZAFAKA-PC" time="0.008">
+  <properties/>
+  <testcase name="unsafeAmneziaWgUrlIsRejectedBeforeItCanReachTheNativeRunner" classname="features.proxy.server.importer.ProxyServerUrlImportTest" time="0.005"/>
+  <testcase name="importOlcRtcUrlWithAngleBracketsPayload" classname="features.proxy.server.importer.ProxyServerUrlImportTest" time="0.002"/>
+  <testcase name="importOlcRtcUrlEmbeddedInText" classname="features.proxy.server.importer.ProxyServerUrlImportTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

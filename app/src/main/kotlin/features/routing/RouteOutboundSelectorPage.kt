@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.AppState
 import app.DefaultRouteOutboundTag
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -78,7 +79,7 @@ import androidx.compose.ui.graphics.Color
 import java.text.DateFormat
 import java.util.Date
 
-private sealed interface RouteOutboundItem {
+internal sealed interface RouteOutboundItem {
     val key: String
 
     data class Static(
@@ -105,12 +106,194 @@ private sealed interface RouteOutboundItem {
     }
 }
 
-private data class RouteOutboundPickerGroup(
+internal data class RouteOutboundPickerGroup(
     val key: String,
     val title: String,
     val subscriptionGroup: SubscriptionGroupState? = null,
     val items: List<RouteOutboundItem>,
 )
+
+internal data class RouteOutboundPickerLabels(
+    val defaultGroupName: String,
+    val autoBalancerName: String,
+    val systemTargetsName: String,
+    val proxyLabel: String,
+    val directLabel: String,
+    val blockLabel: String,
+    val proxyGroupsName: String,
+    val configTargetsName: String,
+)
+
+internal data class RouteOutboundPickerProjection(
+    val groups: List<RouteOutboundPickerGroup>,
+    val initiallyExpandedGroupKey: String?,
+)
+
+/** Pure Android-source projection used by the picker before its common extraction. */
+internal fun projectRouteOutboundPicker(
+    appState: AppState,
+    selectedTag: String,
+    trafficConfigId: Int?,
+    labels: RouteOutboundPickerLabels,
+): RouteOutboundPickerProjection {
+    val shadowrocketPolicyMode = trafficConfigId != null
+    val trafficConfig = trafficConfigId?.let { id -> appState.trafficConfigs.firstOrNull { it.id == id } }
+    val shadowrocketGroups = trafficConfig?.rawConfig?.analyzeShadowrocketConfig()?.proxyGroups.orEmpty()
+
+    val selectableServers = appState.proxyServers.filter { server ->
+        (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
+            (!shadowrocketPolicyMode || server.server.getInfo().remarks.isNotBlank())
+    }
+    val serversByGroup = selectableServers.groupBy(ProxyServerState::groupId)
+
+    val systemEntries = mutableListOf(
+        RouteOutboundItem.Static(
+            tag = if (shadowrocketPolicyMode) "PROXY" else DefaultRouteOutboundTag,
+            title = labels.proxyLabel,
+        ),
+        RouteOutboundItem.Static(
+            tag = if (shadowrocketPolicyMode) "DIRECT" else "direct",
+            title = labels.directLabel,
+        ),
+        RouteOutboundItem.Static(
+            tag = if (shadowrocketPolicyMode) "REJECT" else "block",
+            title = labels.blockLabel,
+        ),
+    )
+
+    val autoBalancerItems = serversByGroup[AutoBalancerGroupId].orEmpty()
+        .filter { server -> server.server is StrategyGroup && server.server.sourceTrafficConfigId == null }
+        .map { RouteOutboundItem.Server(it, shadowrocketPolicyMode) }
+
+    val subscriptionGroupItems = appState.subscriptionGroups
+        .filter { it.id != DefaultSubscriptionGroupId }
+        .map { group ->
+            RouteOutboundPickerGroup(
+                key = "routing-subscription-${group.id}",
+                title = group.displayName(labels.defaultGroupName),
+                subscriptionGroup = group,
+                items = serversByGroup[group.id].orEmpty().map {
+                    RouteOutboundItem.Server(it, shadowrocketPolicyMode)
+                },
+            )
+        }
+
+    val manualGroupItems = serversByGroup[DefaultSubscriptionGroupId].orEmpty().map {
+        RouteOutboundItem.Server(it, shadowrocketPolicyMode)
+    }
+
+    val configProxyGroups = shadowrocketGroups.map { group ->
+        RouteOutboundItem.Static(
+            tag = group.name,
+            title = group.name,
+            summary = group.type,
+        )
+    }
+
+    val otherConfigs = if (shadowrocketPolicyMode) {
+        appState.trafficConfigs
+            .filter { it.id != trafficConfigId }
+            .map { config ->
+                RouteOutboundItem.Static(
+                    tag = "CONFIG:${config.id}",
+                    title = config.name,
+                    summary = "CONFIG:${config.id}",
+                )
+            }
+    } else {
+        emptyList()
+    }
+
+    if (selectedTag.isNotBlank()) {
+        val isKnown = systemEntries.any { it.tag.equals(selectedTag, ignoreCase = true) } ||
+            configProxyGroups.any { it.tag == selectedTag } ||
+            otherConfigs.any { it.tag == selectedTag } ||
+            selectableServers.any { server ->
+                if (shadowrocketPolicyMode) {
+                    server.server.getInfo().remarks.trim() == selectedTag
+                } else {
+                    server.proxyServerOutboundTag() == selectedTag
+                }
+            }
+        if (!isKnown) {
+            systemEntries += RouteOutboundItem.Static(
+                tag = selectedTag,
+                title = selectedTag,
+            )
+        }
+    }
+
+    val groups = buildList {
+        add(
+            RouteOutboundPickerGroup(
+                key = "routing-system-targets",
+                title = labels.systemTargetsName,
+                subscriptionGroup = null,
+                items = systemEntries,
+            ),
+        )
+        add(
+            RouteOutboundPickerGroup(
+                key = "routing-auto-balancers",
+                title = labels.autoBalancerName,
+                subscriptionGroup = null,
+                items = autoBalancerItems,
+            ),
+        )
+        addAll(subscriptionGroupItems)
+        add(
+            RouteOutboundPickerGroup(
+                key = "routing-manual-servers",
+                title = labels.defaultGroupName,
+                subscriptionGroup = appState.subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId },
+                items = manualGroupItems,
+            ),
+        )
+        if (shadowrocketPolicyMode) {
+            add(
+                RouteOutboundPickerGroup(
+                    key = "routing-config-proxy-groups",
+                    title = labels.proxyGroupsName,
+                    subscriptionGroup = null,
+                    items = configProxyGroups,
+                ),
+            )
+            add(
+                RouteOutboundPickerGroup(
+                    key = "routing-config-targets",
+                    title = labels.configTargetsName,
+                    subscriptionGroup = null,
+                    items = otherConfigs,
+                ),
+            )
+        }
+    }
+
+    val initiallyExpandedGroupKey = run {
+        val matchingGroup = groups.firstOrNull { group ->
+            if (
+                selectedTag.isBlank() || selectedTag == "PROXY" || selectedTag == DefaultRouteOutboundTag ||
+                selectedTag.equals("DIRECT", ignoreCase = true) || selectedTag.equals("REJECT", ignoreCase = true) ||
+                selectedTag.equals("block", ignoreCase = true)
+            ) {
+                group.key == "routing-system-targets"
+            } else {
+                group.items.any { item ->
+                    when (item) {
+                        is RouteOutboundItem.Static -> item.tag == selectedTag
+                        is RouteOutboundItem.Server -> item.resolveTag() == selectedTag
+                    }
+                }
+            }
+        }
+        matchingGroup?.key ?: groups.firstOrNull()?.key
+    }
+
+    return RouteOutboundPickerProjection(
+        groups = groups,
+        initiallyExpandedGroupKey = initiallyExpandedGroupKey,
+    )
+}
 
 /** Full-screen, grouped target picker with lazy evaluations and instant opening. */
 @Composable

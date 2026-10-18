@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.onboarding.OnboardingStateTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:33:01.109Z" hostname="MAZAFAKA-PC" time="0.031">
+  <properties/>
+  <testcase name="testDefaultAppStateHasCompletedOnboardingIsFalse" classname="features.onboarding.OnboardingStateTest" time="0.0"/>
+  <testcase name="testOnboardingRouteIsDistinct" classname="features.onboarding.OnboardingStateTest" time="0.029"/>
+  <testcase name="testOnboardingStateMutation" classname="features.onboarding.OnboardingStateTest" time="0.001"/>
+  <testcase name="testBackupRestoreSetsHasCompletedOnboardingToTrue" classname="features.onboarding.OnboardingStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

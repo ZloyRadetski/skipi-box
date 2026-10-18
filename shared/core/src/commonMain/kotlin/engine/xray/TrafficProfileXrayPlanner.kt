@@ -6,12 +6,14 @@ import features.config.ShadowrocketConfigAnalysis
 import features.config.ShadowrocketPolicyGroup
 import features.config.ShadowrocketRule
 import features.config.analyzeShadowrocketConfig
+import features.config.toXrayRouteRule
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.model.stripLeadingCountryFlag
 import features.proxy.server.model.toXrayBalancerStrategy
+import features.routing.model.RouteRule
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.add
@@ -155,7 +157,7 @@ object TrafficProfileXrayPlanner {
 
         val routingRules = buildList {
             analysis.rules.filterNot(ShadowrocketRule::isFinal)
-                .mapNotNull { rule -> rule.toTrafficProfileXrayRule(policyTarget(rule.policy), capabilities) }
+                .mapNotNull { rule -> rule.toTrafficProfileXrayRule(::policyTarget, capabilities) }
                 .forEach(::add)
             val finalTarget = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
                 ?.let { rule -> policyTarget(rule.policy) }
@@ -185,50 +187,30 @@ private fun XrayRouteTarget.toFinalTrafficProfileRule(): JsonObject = buildJsonO
 }
 
 private fun ShadowrocketRule.toTrafficProfileXrayRule(
-    target: XrayRouteTarget,
+    resolveTarget: (String) -> XrayRouteTarget,
     capabilities: TrafficProfileXrayCapabilities,
 ): JsonObject? {
     val cleanValue = value.trim()
     val ruleType = type.trim().uppercase()
+
+    var target: XrayRouteTarget? = null
+    val route = toXrayRouteRule(id = 0) { policy ->
+        resolveTarget(policy).also { target = it }.tag
+    } ?: return null
+
     if (ruleType == "IP-ASN" && !capabilities.supportsIpAsnRules) {
         require(false) { capabilities.unsupportedIpAsnMessage(cleanValue) }
     }
-    if (ruleType == "RULE-SET" && '/' in cleanValue && !cleanValue.startsWith("geoip:", ignoreCase = true)) {
-        error(capabilities.externalRuleSetReferenceMessage(cleanValue))
-    }
-    val domain = when (ruleType) {
-        "DOMAIN" -> listOf("full:$cleanValue")
-        "DOMAIN-SUFFIX" -> listOf("domain:$cleanValue")
-        "DOMAIN-KEYWORD" -> listOf("keyword:$cleanValue")
-        "DOMAIN-WILDCARD" -> listOf("regexp:${cleanValue.toShadowrocketWildcardRegex()}")
-        "DOMAIN-SET", "GEOSITE" -> listOf(cleanValue.toTrafficProfileDomainSetValue(capabilities))
-        "RULE-SET" -> cleanValue.takeIf { !it.isTrafficProfileIpRuleSet() && '/' !in it }
-            ?.let { listOf(it.toTrafficProfileDomainSetValue(capabilities)) }.orEmpty()
-        else -> emptyList()
-    }
-    val ip = when (ruleType) {
-        "IP-CIDR", "IP-CIDR6" -> listOf(cleanValue)
-        "IP-ASN" -> cleanValue.removePrefix("AS").removePrefix("as").trim()
-            .takeIf { it.isNotEmpty() && it.all(Char::isDigit) }
-            ?.let { listOf("geoip:as$it") }.orEmpty()
-        "GEOIP" -> listOf(cleanValue.toTrafficProfileGeoIpValue(capabilities))
-        "RULE-SET" -> cleanValue.takeIf { it.isTrafficProfileIpRuleSet() || '/' in it }
-            ?.let { listOf(it.toTrafficProfileGeoIpValue(capabilities)) }.orEmpty()
-        else -> emptyList()
-    }
-    val process = cleanValue.takeIf { ruleType == "PROCESS-NAME" }?.let(::listOf).orEmpty()
-    val port = cleanValue.takeIf { ruleType == "DST-PORT" }.orEmpty()
-    val network = cleanValue.takeIf { ruleType == "NETWORK" }.orEmpty()
-    val protocol = cleanValue.takeIf { ruleType == "PROTOCOL" }.orEmpty()
-    if (domain.isEmpty() && ip.isEmpty() && process.isEmpty() && port.isBlank() && network.isBlank() && protocol.isBlank()) return null
+    route.validateTrafficProfileRuleSetResources(capabilities)
+
     return buildJsonObject {
-        if (domain.isNotEmpty()) putJsonArray("domain") { domain.forEach(::add) }
-        if (ip.isNotEmpty()) putJsonArray("ip") { ip.forEach(::add) }
-        if (process.isNotEmpty()) putJsonArray("process") { process.forEach(::add) }
-        if (port.isNotBlank()) put("port", port)
-        if (network.isNotBlank()) put("network", network)
-        if (protocol.isNotBlank()) putJsonArray("protocol") { add(protocol) }
-        target.applyTo(this)
+        if (route.domain.isNotEmpty()) putJsonArray("domain") { route.domain.forEach(::add) }
+        if (route.ip.isNotEmpty()) putJsonArray("ip") { route.ip.forEach(::add) }
+        if (route.process.isNotEmpty()) putJsonArray("process") { route.process.forEach(::add) }
+        if (route.port.isNotBlank()) put("port", route.port)
+        if (route.network.isNotBlank()) put("network", route.network)
+        if (route.protocol.isNotBlank()) putJsonArray("protocol") { add(route.protocol) }
+        requireNotNull(target).applyTo(this)
     }
 }
 
@@ -240,56 +222,26 @@ private fun String.matchesProfileGroupMember(member: String): Boolean {
         cleanRemarks.equals(cleanMember, ignoreCase = true) || remarks.equals(cleanMember, ignoreCase = true)
 }
 
-private fun String.toTrafficProfileDomainSetValue(capabilities: TrafficProfileXrayCapabilities): String {
-    val normalized = if (startsWith("ext-site:", ignoreCase = true)) "ext:${substringAfter(':')}" else this
-    return when {
-        normalized.startsWith("ext:", ignoreCase = true) -> normalized.requireTrafficProfileRuleSet("geosite.dat", "geosite", capabilities)
-        normalized.startsWith("geosite:", ignoreCase = true) || normalized.startsWith("domain:", ignoreCase = true) ||
-            normalized.startsWith("full:", ignoreCase = true) || normalized.startsWith("keyword:", ignoreCase = true) ||
-            normalized.startsWith("regexp:", ignoreCase = true) -> normalized
-        else -> "geosite:$normalized"
-    }
-}
-
-private fun String.toTrafficProfileGeoIpValue(capabilities: TrafficProfileXrayCapabilities): String {
-    val normalized = if (startsWith("ext-ip:", ignoreCase = true)) "ext:${substringAfter(':')}" else this
-    return when {
-        normalized.startsWith("ext:", ignoreCase = true) -> normalized.requireTrafficProfileRuleSet("geoip.dat", "geoip", capabilities)
-        normalized.startsWith("geoip:", ignoreCase = true) -> normalized
-        else -> "geoip:$normalized"
-    }
-}
-
-private fun String.requireTrafficProfileRuleSet(
-    expectedFileName: String,
-    dataName: String,
+private fun RouteRule.validateTrafficProfileRuleSetResources(
     capabilities: TrafficProfileXrayCapabilities,
-): String {
-    val source = substringAfter(':').substringBefore(':').trim()
-    require(
-        source.equals(expectedFileName, ignoreCase = true) &&
-            capabilities.supportedExternalRuleSetFiles.any { it.equals(source, ignoreCase = true) },
-    ) {
-        capabilities.unsupportedExternalRuleSetMessage(source, dataName)
-    }
-    return this
-}
+) {
+    // The converter's match fields determine whether a value is a resource reference.
+    val externalReferences = (domain + ip)
+        .mapNotNull(String::toTrafficProfileExternalRuleSetReference)
+        .distinctBy { (source, _) -> source.lowercase() }
 
-private fun String.isTrafficProfileIpRuleSet(): Boolean =
-    startsWith("geoip:", ignoreCase = true) || startsWith("ext-ip:", ignoreCase = true) ||
-        startsWith("ext:geoip.dat:", ignoreCase = true)
-
-private fun String.toShadowrocketWildcardRegex(): String = buildString {
-    append('^')
-    this@toShadowrocketWildcardRegex.forEach { character ->
-        when (character) {
-            '*' -> append(".*")
-            '?' -> append('.')
-            '.', '+', '(', ')', '[', ']', '{', '}', '^', '$', '|', '\\' -> append('\\').append(character)
-            else -> append(character)
+    externalReferences.forEach { (source, dataName) ->
+        require(capabilities.supportedExternalRuleSetFiles.any { it.equals(source, ignoreCase = true) }) {
+            capabilities.unsupportedExternalRuleSetMessage(source, dataName)
         }
     }
-    append('$')
+}
+
+private fun String.toTrafficProfileExternalRuleSetReference(): Pair<String, String>? {
+    if (!startsWith("ext:", ignoreCase = true)) return null
+    val source = substringAfter(':').substringBefore(':').trim().takeIf(String::isNotEmpty) ?: return null
+    val dataName = if (source.equals("geoip.dat", ignoreCase = true)) "geoip" else "geosite"
+    return source to dataName
 }
 
 private const val ProfileProxyTag = "skipi-proxy"

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopCoreFfmIntegrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:08:37.326Z" hostname="MAZAFAKA-PC" time="0.001">
+  <properties/>
+  <testcase name="desktopRuntimeSnapshotStartsDynamicAuthenticatedInboundAndExposesItsFetchEndpoint" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.001"/>
+  <testcase name="startsAndStopsTheBundledCoreInsideTheDesktopJvm" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.0"/>
+  <testcase name="sharedAuthenticatedSocksInboundAcceptsTheConfiguredCredentialsInNativeCore" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.0"/>
+  <testcase name="retriesNativeBindFailureWithExcludedPortAndPublishesOnlyTheAuthenticatedFinalEndpoint" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

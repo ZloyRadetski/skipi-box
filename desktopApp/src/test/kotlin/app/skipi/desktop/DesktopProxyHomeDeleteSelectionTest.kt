@@ -48,4 +48,18 @@ class DesktopProxyHomeDeleteSelectionTest {
 
         assertEquals(listOf("delete"), events)
     }
+
+    @Test
+    fun deletingWithNoSelectedGroupDoesNotSelectManual() {
+        val events = mutableListOf<String>()
+
+        requestDesktopProxyHomeSubscriptionDeletion(
+            subscriptionId = 5,
+            selectedGroupId = null,
+            requestDelete = { events += "delete" },
+            selectGroup = { events += "select:$it" },
+        )
+
+        assertEquals(listOf("delete"), events)
+    }
 }

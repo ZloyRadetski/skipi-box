@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,21 +45,20 @@ import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
+import app.AppState
 import app.collectAppState
-import app.skipi.app.config.withGeneralOptions
-import app.skipi.app.config.isConfigEditorBoolean
-import app.skipi.app.config.withNetworkActivation
+import app.skipi.app.config.TrafficConfigEditorController
+import app.skipi.app.config.TrafficConfigEditorProfileStore
 import app.skipi.app.config.withProfileBasics
-import app.skipi.app.config.withDnsOptions
-import app.skipi.app.config.withTunnelOptions
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
-import app.skipi.ui.config.SkipiTrafficConfigGeneralOptions
-import app.skipi.ui.config.SkipiTrafficConfigNetworkActivation
-import app.skipi.ui.config.SkipiTrafficConfigProfileBasics
-import app.skipi.ui.config.SkipiTrafficConfigDnsEditor
-import app.skipi.ui.config.SkipiTrafficConfigTunnelEditor
 import app.skipi.ui.config.SkipiTrafficConfigEditorGroupCard
+import app.skipi.ui.config.SkipiTrafficConfigEditorSectionAction
+import app.skipi.ui.config.SkipiTrafficConfigBasicsEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigGeneralEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigDnsEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigNetworkActivationEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigTunnelEditorScreen
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -105,144 +103,57 @@ fun TrafficConfigEditorPage(
         navigator.pop()
         return
     }
-    val listState = rememberLazyListState()
-    var name by remember(config.id) { mutableStateOf(config.name) }
-    var sourceUrl by remember(config.id) { mutableStateOf(config.sourceUrl) }
-    var updateLocked by remember(config.id) { mutableStateOf(config.updateLocked) }
-    var autoUpdate by remember(config.id) { mutableStateOf(config.autoUpdate) }
-    var updateInterval by remember(config.id) { mutableStateOf(config.updateInterval) }
-    var geoAutoUpdate by remember(config.id) { mutableStateOf(config.resourceSettings.autoUpdate) }
-    var geoUpdateInterval by remember(config.id) {
-        mutableStateOf(config.resourceSettings.updateInterval)
-    }
-
-    fun saveBasics() {
-        val updated = config.withProfileBasics(
-            name = name,
-            sourceUrl = sourceUrl,
-            updateLocked = updateLocked,
-            autoUpdate = autoUpdate,
-            updateInterval = updateInterval,
-            resourceAutoUpdate = geoAutoUpdate,
-            resourceUpdateInterval = geoUpdateInterval,
-        )
-        if (updated == config) return
-
-        updateAppState { state ->
-            state.withUpdatedTrafficConfig(config.id) { current ->
-                current.withProfileBasics(
-                    name = name,
-                    sourceUrl = sourceUrl,
-                    updateLocked = updateLocked,
-                    autoUpdate = autoUpdate,
-                    updateInterval = updateInterval,
-                    resourceAutoUpdate = geoAutoUpdate,
-                    resourceUpdateInterval = geoUpdateInterval,
-                )
-            }
-        }
-    }
-
-    TrafficConfigFullScreenScaffold(
+    val editor = rememberTrafficConfigEditorController(updateAppState)
+    val onBack = { navigator.pop() }
+    SkipiTrafficConfigBasicsEditorScreen(
         title = stringResource(R.string.configs_edit),
+        sectionsTitle = stringResource(R.string.configs_editor_sections),
+        sections = listOf(
+            SkipiTrafficConfigEditorSectionAction(
+                key = "general",
+                title = stringResource(R.string.configs_general_title),
+                summary = stringResource(R.string.configs_general_summary),
+                onNavigate = { navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.General)) },
+            ),
+            SkipiTrafficConfigEditorSectionAction(
+                key = "dns",
+                title = stringResource(R.string.configs_dns_title),
+                summary = stringResource(R.string.configs_dns_summary),
+                onNavigate = { navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Dns)) },
+            ),
+            SkipiTrafficConfigEditorSectionAction(
+                key = "tunnel",
+                title = stringResource(R.string.configs_android_title),
+                summary = stringResource(R.string.configs_tunnel_summary),
+                onNavigate = { navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Tunnel)) },
+            ),
+            SkipiTrafficConfigEditorSectionAction(
+                key = "network",
+                title = stringResource(R.string.configs_network_title),
+                summary = stringResource(R.string.configs_network_summary),
+                onNavigate = { navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Network)) },
+            ),
+            SkipiTrafficConfigEditorSectionAction(
+                key = "routing",
+                title = stringResource(R.string.configs_rules_title),
+                summary = stringResource(R.string.configs_routing_summary),
+                onNavigate = { navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Routing)) },
+            ),
+            SkipiTrafficConfigEditorSectionAction(
+                key = "per-app",
+                title = stringResource(R.string.configs_per_app),
+                summary = stringResource(R.string.configs_per_app_summary),
+                onNavigate = { navigator.push(Route.ProxyAppList(config.id)) },
+            ),
+        ),
+        profile = config,
+        controller = editor,
         padding = padding,
         isWideScreen = isWideScreen,
-        onBack = { saveBasics(); navigator.pop() },
-    ) { contentPadding, listPadding, scrollBehavior ->
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.pageScrollModifiers(scrollBehavior),
-                contentPadding = listPadding,
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                item(key = "profile_basics") {
-                    SkipiTrafficConfigProfileBasics(
-                        name = name,
-                        onNameChange = { name = it },
-                        sourceUrl = sourceUrl,
-                        onSourceUrlChange = { sourceUrl = it },
-                        updateLocked = updateLocked,
-                        onUpdateLockedChange = { updateLocked = it },
-                        autoUpdate = autoUpdate,
-                        onAutoUpdateChange = { autoUpdate = it },
-                        updateInterval = updateInterval,
-                        onUpdateIntervalChange = { updateInterval = it },
-                        resourceAutoUpdate = geoAutoUpdate,
-                        onResourceAutoUpdateChange = { geoAutoUpdate = it },
-                        resourceUpdateInterval = geoUpdateInterval,
-                        onResourceUpdateIntervalChange = { geoUpdateInterval = it },
-                    )
-                }
-                item(key = "sections_title") {
-                    SmallTitle(text = stringResource(R.string.configs_editor_sections))
-                }
-                item(key = "section_general") {
-                    ConfigEditorGroupCard(
-                        title = stringResource(R.string.configs_general_title),
-                        summary = stringResource(R.string.configs_general_summary),
-                        onClick = {
-                            saveBasics()
-                            navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.General))
-                        },
-                    )
-                }
-                item(key = "section_dns") {
-                    ConfigEditorGroupCard(
-                        title = stringResource(R.string.configs_dns_title),
-                        summary = stringResource(R.string.configs_dns_summary),
-                        onClick = {
-                            saveBasics()
-                            navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Dns))
-                        },
-                    )
-                }
-                item(key = "section_tunnel") {
-                    ConfigEditorGroupCard(
-                        title = stringResource(R.string.configs_android_title),
-                        summary = stringResource(R.string.configs_tunnel_summary),
-                        onClick = {
-                            saveBasics()
-                            navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Tunnel))
-                        },
-                    )
-                }
-                item(key = "section_network") {
-                    ConfigEditorGroupCard(
-                        title = stringResource(R.string.configs_network_title),
-                        summary = stringResource(R.string.configs_network_summary),
-                        onClick = {
-                            saveBasics()
-                            navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Network))
-                        },
-                    )
-                }
-                item(key = "section_routing") {
-                    ConfigEditorGroupCard(
-                        title = stringResource(R.string.configs_rules_title),
-                        summary = stringResource(R.string.configs_routing_summary),
-                        onClick = {
-                            saveBasics()
-                            navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.Routing))
-                        },
-                    )
-                }
-                item(key = "section_per_app") {
-                    ConfigEditorGroupCard(
-                        title = stringResource(R.string.configs_per_app),
-                        summary = stringResource(R.string.configs_per_app_summary),
-                        onClick = {
-                            saveBasics()
-                            navigator.push(Route.ProxyAppList(config.id))
-                        },
-                    )
-                }
-            }
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(listState),
-                modifier = Modifier.fillMaxHeight().align(Alignment.CenterEnd),
-                trackPadding = contentPadding,
-            )
-    }
+        saveLabel = stringResource(R.string.common_save),
+        onBack = onBack,
+        platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
+    )
 }
 
 @Composable
@@ -251,6 +162,34 @@ private fun ConfigEditorGroupCard(
     summary: String,
     onClick: () -> Unit,
 ) = SkipiTrafficConfigEditorGroupCard(title = title, summary = summary, onClick = onClick)
+
+@Composable
+private fun rememberTrafficConfigEditorController(
+    updateAppState: ((AppState) -> AppState) -> Unit,
+): TrafficConfigEditorController = remember(updateAppState) {
+    TrafficConfigEditorController(
+        TrafficConfigEditorProfileStore { profileId, transform ->
+            var found = false
+            updateAppState { state ->
+                if (state.trafficConfigs.none { it.id == profileId }) {
+                    state
+                } else {
+                    found = true
+                    state.withUpdatedTrafficConfig(profileId, transform)
+                }
+            }
+            found
+        },
+    )
+}
+
+@Composable
+private fun TrafficConfigEditorBackHandler(onBack: () -> Unit) {
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        onBackCompleted = onBack,
+    )
+}
 
 /** Full-screen raw editor for the complete portable Shadowrocket + SKIPI profile. */
 @Composable
@@ -273,25 +212,17 @@ fun TrafficConfigRawEditorPage(
         ConfCodeEditorState(config.withSkipiSettingsInRawConfig().rawConfig)
     }
     val copiedMessage = stringResource(R.string.common_copied)
-    fun save(): Boolean {
-        val currentText = rawEditorState.snapshotText()
-        if (currentText.isBlank()) return false
-        val analysis = currentText.analyzeShadowrocketConfig()
-        if (analysis.diagnostics.any { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) return false
-        updateAppState { state ->
-            state.withUpdatedTrafficConfig(config.id) { current ->
-                val normalized = currentText.trimEnd() + "\n"
-                current.copy(rawConfig = normalized)
-            }
-        }
-        return true
+    val editor = rememberTrafficConfigEditorController(updateAppState)
+    val onBack: () -> Unit = {
+        editor.leaveRaw(config.id, rawEditorState.snapshotText()) { navigator.pop() }
+        Unit
     }
 
     TrafficConfigFullScreenScaffold(
         title = config.name.ifBlank { stringResource(R.string.configs_raw_edit) },
         padding = padding,
         isWideScreen = isWideScreen,
-        onBack = { save(); navigator.pop() },
+        onBack = onBack,
         actions = {
             NavigationIcon(
                 onClick = {
@@ -345,41 +276,19 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
-    val general = remember(config.rawConfig) { config.rawConfig.analyzeShadowrocketConfig().general }
-    var ipv6 by remember(config.id, config.rawConfig) { mutableStateOf(general["ipv6"].isConfigEditorBoolean()) }
-    var preferIpv6 by remember(config.id, config.rawConfig) { mutableStateOf(general["prefer-ipv6"].isConfigEditorBoolean()) }
-    fun save() {
-        updateAppState { state ->
-            state.withUpdatedTrafficConfig(config.id) { current ->
-                current.withGeneralOptions(ipv6 = ipv6, preferIpv6 = preferIpv6)
-            }
-        }
-    }
-    TrafficConfigFullScreenScaffold(
+    val editor = rememberTrafficConfigEditorController(updateAppState)
+    val onBack = { navigator.pop() }
+    SkipiTrafficConfigGeneralEditorScreen(
         title = stringResource(R.string.configs_general_title),
         padding = padding,
         isWideScreen = isWideScreen,
-        onBack = { save(); navigator.pop() },
-        onSave = { save(); navigator.pop() },
-    ) { _, listPadding, scrollBehavior ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .pageScrollModifiers(scrollBehavior),
-            contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item {
-                SkipiTrafficConfigGeneralOptions(
-                    ipv6 = ipv6,
-                    preferIpv6 = preferIpv6,
-                    onIpv6Change = { ipv6 = it },
-                    onPreferIpv6Change = { preferIpv6 = it },
-                    modifier = Modifier.padding(bottom = 12.dp),
-                )
-            }
-        }
-    }
+        saveLabel = stringResource(R.string.common_save),
+        profile = config,
+        controller = editor,
+        onBack = onBack,
+        onSave = onBack,
+        platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
+    )
 }
 
 @Composable
@@ -389,27 +298,19 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
-    var settings by remember(config.id) { mutableStateOf(config.androidSettings) }
-    fun save() {
-        updateAppState { state -> state.withUpdatedTrafficConfig(config.id) { it.withDnsOptions(settings) } }
-    }
-    TrafficConfigFullScreenScaffold(
-        title = stringResource(R.string.configs_dns_title), padding = padding, isWideScreen = isWideScreen,
-        onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
-    ) { _, listPadding, scrollBehavior ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
-            contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item {
-                SkipiTrafficConfigDnsEditor(
-                    settings = settings,
-                    onSettingsChange = { settings = it },
-                )
-            }
-        }
-    }
+    val editor = rememberTrafficConfigEditorController(updateAppState)
+    val onBack = { navigator.pop() }
+    SkipiTrafficConfigDnsEditorScreen(
+        title = stringResource(R.string.configs_dns_title),
+        padding = padding,
+        isWideScreen = isWideScreen,
+        saveLabel = stringResource(R.string.common_save),
+        profile = config,
+        controller = editor,
+        onBack = onBack,
+        onSave = onBack,
+        platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
+    )
 }
 
 
@@ -420,34 +321,19 @@ private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfig
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
-    var settings by remember(config.id) { mutableStateOf(config.androidSettings) }
-    var muxConcurrency by remember(config.id) { mutableStateOf(settings.muxConcurrency) }
-    fun save() {
-        updateAppState { state ->
-            state.withUpdatedTrafficConfig(config.id) { current ->
-                current.withTunnelOptions(settings, muxConcurrency)
-            }
-        }
-    }
-    TrafficConfigFullScreenScaffold(
-        title = stringResource(R.string.configs_android_title), padding = padding, isWideScreen = isWideScreen,
-        onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
-    ) { _, listPadding, scrollBehavior ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
-            contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item {
-                SkipiTrafficConfigTunnelEditor(
-                    settings = settings,
-                    muxConcurrency = muxConcurrency,
-                    onSettingsChange = { settings = it },
-                    onMuxConcurrencyChange = { muxConcurrency = it },
-                )
-            }
-        }
-    }
+    val editor = rememberTrafficConfigEditorController(updateAppState)
+    val onBack: () -> Unit = { navigator.pop(); Unit }
+    SkipiTrafficConfigTunnelEditorScreen(
+        title = stringResource(R.string.configs_android_title),
+        padding = padding,
+        isWideScreen = isWideScreen,
+        saveLabel = stringResource(R.string.common_save),
+        profile = config,
+        controller = editor,
+        onBack = onBack,
+        onSave = onBack,
+        platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
+    )
 }
 
 
@@ -458,35 +344,19 @@ private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfi
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
-    var enabled by remember(config.id) { mutableStateOf(config.networkActivation.enabled) }
-    val transportLabels = listOf(stringResource(R.string.configs_network_wifi), stringResource(R.string.configs_network_cellular))
-    var transport by remember(config.id) { mutableIntStateOf(config.networkActivation.transport.coerceIn(transportLabels.indices)) }
-    fun save() = updateAppState { state ->
-        state.withUpdatedTrafficConfig(config.id) { current ->
-            current.withNetworkActivation(enabled = enabled, transport = transport)
-        }
-    }
-    TrafficConfigFullScreenScaffold(
-        title = stringResource(R.string.configs_network_title), padding = padding, isWideScreen = isWideScreen,
-        onBack = { save(); navigator.pop() }, onSave = { save(); navigator.pop() },
-    ) { _, listPadding, scrollBehavior ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .pageScrollModifiers(scrollBehavior),
-            contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item {
-                SkipiTrafficConfigNetworkActivation(
-                    enabled = enabled,
-                    transport = transport,
-                    onEnabledChange = { enabled = it },
-                    onTransportChange = { transport = it },
-                )
-            }
-        }
-    }
+    val editor = rememberTrafficConfigEditorController(updateAppState)
+    val onBack: () -> Unit = { navigator.pop(); Unit }
+    SkipiTrafficConfigNetworkActivationEditorScreen(
+        title = stringResource(R.string.configs_network_title),
+        padding = padding,
+        isWideScreen = isWideScreen,
+        saveLabel = stringResource(R.string.common_save),
+        profile = config,
+        controller = editor,
+        onBack = onBack,
+        onSave = onBack,
+        platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
+    )
 }
 
 @Composable

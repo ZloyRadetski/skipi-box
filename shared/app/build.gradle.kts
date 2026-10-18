@@ -26,6 +26,9 @@ kotlin {
             // their public API, so both dependencies are intentionally API.
             api(project(":shared:core"))
             api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+            // The shared Xray outbound planner reads and selects raw custom
+            // outbound JSON as part of its portable planning behavior.
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

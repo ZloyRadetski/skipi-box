@@ -5,131 +5,35 @@ package features.routing.usecase
 
 import android.content.Context
 import app.AppState
-import app.CustomResourceFileState
-import app.ResourceFileKind
-import app.sanitizeCustomResourceFileName
 import features.config.TrafficConfigState
 import features.resources.runtime.XrayResourceFileScope
 import features.resources.runtime.xrayResourceFilesDir
 import java.io.File
 
-data class GeoSuggestionItem(
-    val tag: String,
-    val fullRule: String,
-    val groupName: String,
-    val isCustom: Boolean = false,
-)
-
+/** Android file and profile-scope adapter for the portable routing suggestion rules. */
 object RoutingSuggestionsProvider {
-
-    val NetworkOptions = listOf("tcp", "udp", "tcp,udp")
-    val NetworkOptionsWithAny = listOf("", "tcp", "udp", "tcp,udp")
-
-    val ProtocolOptions = listOf(
-        "http",
-        "tls",
-        "bittorrent",
-        "quic",
-        "stun",
-        "dns",
-        "dtls",
-        "ssh",
-        "wireguard",
-    )
-
-    val PortPresets = listOf(
-        "80",
-        "443",
-        "80,443",
-        "53",
-        "22",
-        "8080",
-        "8443",
-        "1-65535",
-    )
-
-    val DomainPrefixes = listOf(
-        "geosite:",
-        "domain:",
-        "full:",
-        "keyword:",
-        "regexp:",
-    )
-
-    val PrivateIpPresets = listOf(
-        "10.0.0.0/8",
-        "172.16.0.0/12",
-        "192.168.0.0/16",
-        "127.0.0.0/8",
-        "::1/128",
-        "fc00::/7",
-        "fe80::/10",
-    )
-
-    val ShadowrocketUserAgentPresets = listOf(
-        "*Telegram*",
-        "*Twitter*",
-        "*Instagram*",
-        "*WhatsApp*",
-        "*Apple*",
-        "*MicroMessenger*",
-        "*YouTube*",
-        "*Google*",
-        "*Mozilla*",
-        "*Netflix*",
-        "*Spotify*",
-    )
-
-    val ShadowrocketNetworkOptions = listOf(
-        "tcp",
-        "udp",
-        "tcp,udp",
-        "udp,tcp",
-    )
-
-    val RuleSetPresets = listOf(
-        "geosite:google",
-        "geosite:cn",
-        "geosite:geolocation-!cn",
-        "geosite:category-ads-all",
-        "geosite:telegram",
-        "geosite:youtube",
-        "geosite:netflix",
-        "geosite:openai",
-        "geosite:github",
-        "geosite:twitter",
-        "geoip:cn",
-        "geoip:telegram",
-        "geoip:private",
-        "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/gfw.txt",
-        "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt",
-        "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt",
-        "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt",
-    )
-
-    val DomainSetPresets = listOf(
-        "geosite:google",
-        "geosite:cn",
-        "geosite:geolocation-!cn",
-        "geosite:category-ads-all",
-        "geosite:telegram",
-        "geosite:youtube",
-        "geosite:netflix",
-        "geosite:openai",
-        "geosite:github",
-        "geosite:twitter",
-        "geosite:apple",
-        "geosite:facebook",
-    )
+    val NetworkOptions get() = RoutingSuggestionPresets.NetworkOptions
+    val NetworkOptionsWithAny get() = RoutingSuggestionPresets.NetworkOptionsWithAny
+    val ProtocolOptions get() = RoutingSuggestionPresets.ProtocolOptions
+    val PortPresets get() = RoutingSuggestionPresets.PortPresets
+    val DomainPrefixes get() = RoutingSuggestionPresets.DomainPrefixes
+    val PrivateIpPresets get() = RoutingSuggestionPresets.PrivateIpPresets
+    val ShadowrocketUserAgentPresets get() = RoutingSuggestionPresets.ShadowrocketUserAgentPresets
+    val ShadowrocketNetworkOptions get() = RoutingSuggestionPresets.ShadowrocketNetworkOptions
+    val RuleSetPresets get() = RoutingSuggestionPresets.RuleSetPresets
+    val DomainSetPresets get() = RoutingSuggestionPresets.DomainSetPresets
 
     fun resolveRuleSetSuggestions(
         context: Context,
         appState: AppState,
         trafficConfigId: Int? = null,
     ): List<GeoSuggestionItem> {
-        val geoSite = resolveGeoSiteSuggestions(context, appState, trafficConfigId)
-        val geoIp = resolveGeoIpSuggestions(context, appState, trafficConfigId, forShadowrocket = false)
-        return (geoSite + geoIp).distinctBy { "${it.groupName}:${it.fullRule}" }
+        val profile = selectProfile(appState, trafficConfigId)
+        return features.routing.usecase.resolveRuleSetSuggestions(
+            profile = profile,
+            globalCustomFiles = appState.customResourceFiles,
+            fileTags = fileTagReader(context, profile),
+        )
     }
 
     fun resolveGeoSiteSuggestions(
@@ -137,70 +41,12 @@ object RoutingSuggestionsProvider {
         appState: AppState,
         trafficConfigId: Int? = null,
     ): List<GeoSuggestionItem> {
-        val result = mutableListOf<GeoSuggestionItem>()
-        val targetConfig = findTargetTrafficConfig(appState, trafficConfigId)
-        val dataDir = context.xrayResourceFilesDir(targetConfig.resourceFileScopeOrNull())
-
-        // 1. Standard geosite.dat
-        val standardGeoSiteFile = File(dataDir, ResourceFileKind.GeoSite.fileName)
-        val standardTags = if (standardGeoSiteFile.isFile && standardGeoSiteFile.length() > 0) {
-            GeoDatParser.parseTags(standardGeoSiteFile).ifEmpty { GeoDatParser.DefaultGeoSiteTags }
-        } else {
-            GeoDatParser.DefaultGeoSiteTags
-        }
-
-        standardTags.sorted().forEach { tag ->
-            val cleanTag = tag.lowercase()
-            result.add(
-                GeoSuggestionItem(
-                    tag = cleanTag,
-                    fullRule = "geosite:$cleanTag",
-                    groupName = "GeoSite",
-                    isCustom = false,
-                ),
-            )
-        }
-
-        // 2. Custom files from the target profile and global AppState
-        val customFiles = collectCustomFiles(targetConfig, appState)
-
-        customFiles.forEach { customFile ->
-            val fileName = sanitizeCustomResourceFileName(
-                value = customFile.name,
-                fallback = "custom-resource-${customFile.id}.dat",
-            )
-            val file = File(dataDir, fileName)
-            val parsedTags = if (file.isFile && file.length() > 0) {
-                GeoDatParser.parseTags(file)
-            } else {
-                emptyList()
-            }
-
-            if (parsedTags.isNotEmpty()) {
-                parsedTags.sorted().forEach { tag ->
-                    result.add(
-                        GeoSuggestionItem(
-                            tag = tag,
-                            fullRule = "ext:$fileName:$tag",
-                            groupName = customFile.name.ifBlank { fileName },
-                            isCustom = true,
-                        ),
-                    )
-                }
-            } else {
-                val fallbackTag = customFile.name.substringBeforeLast('.').ifBlank { "all" }
-                result.add(
-                    GeoSuggestionItem(
-                        tag = fallbackTag,
-                        fullRule = "ext:$fileName:$fallbackTag",
-                        groupName = customFile.name.ifBlank { fileName },
-                        isCustom = true,
-                    ),
-                )
-            }
-        }
-
-        return result
+        val profile = selectProfile(appState, trafficConfigId)
+        return features.routing.usecase.resolveGeoSiteSuggestions(
+            profile = profile,
+            globalCustomFiles = appState.customResourceFiles,
+            fileTags = fileTagReader(context, profile),
+        )
     }
 
     fun resolveGeoIpSuggestions(
@@ -209,113 +55,35 @@ object RoutingSuggestionsProvider {
         trafficConfigId: Int? = null,
         forShadowrocket: Boolean = false,
     ): List<GeoSuggestionItem> {
-        val result = mutableListOf<GeoSuggestionItem>()
-        val targetConfig = findTargetTrafficConfig(appState, trafficConfigId)
-        val dataDir = context.xrayResourceFilesDir(targetConfig.resourceFileScopeOrNull())
+        val profile = selectProfile(appState, trafficConfigId)
+        return features.routing.usecase.resolveGeoIpSuggestions(
+            profile = profile,
+            globalCustomFiles = appState.customResourceFiles,
+            fileTags = fileTagReader(context, profile),
+            forShadowrocket = forShadowrocket,
+        )
+    }
 
-        // 1. Standard geoip.dat
-        val standardGeoIpFile = File(dataDir, ResourceFileKind.GeoIp.fileName)
-        val standardTags = if (standardGeoIpFile.isFile && standardGeoIpFile.length() > 0) {
-            GeoDatParser.parseTags(standardGeoIpFile).ifEmpty { GeoDatParser.DefaultGeoIpTags }
-        } else {
-            GeoDatParser.DefaultGeoIpTags
-        }
+    private fun selectProfile(appState: AppState, trafficConfigId: Int?): TrafficConfigState? =
+        selectTrafficConfigForRoutingSuggestions(
+            configs = appState.trafficConfigs,
+            activeTrafficConfigId = appState.activeTrafficConfigId,
+            requestedTrafficConfigId = trafficConfigId,
+        )
 
-        standardTags.sorted().forEach { tag ->
-            val rule = if (forShadowrocket) tag.uppercase() else "geoip:${tag.lowercase()}"
-            result.add(
-                GeoSuggestionItem(
-                    tag = tag.uppercase(),
-                    fullRule = rule,
-                    groupName = "GeoIP",
-                    isCustom = false,
-                ),
-            )
-        }
-
-        // 2. Custom files
-        val customFiles = collectCustomFiles(targetConfig, appState)
-
-        customFiles.forEach { customFile ->
-            val fileName = sanitizeCustomResourceFileName(
-                value = customFile.name,
-                fallback = "custom-resource-${customFile.id}.dat",
-            )
+    private fun fileTagReader(context: Context, profile: TrafficConfigState?): (String) -> List<String> {
+        val dataDir = context.xrayResourceFilesDir(profile.resourceFileScopeOrNull())
+        return { fileName ->
             val file = File(dataDir, fileName)
-            val parsedTags = if (file.isFile && file.length() > 0) {
-                GeoDatParser.parseTags(file)
-            } else {
-                emptyList()
-            }
-
-            if (parsedTags.isNotEmpty()) {
-                parsedTags.sorted().forEach { tag ->
-                    val rule = if (forShadowrocket) tag.uppercase() else "ext:$fileName:$tag"
-                    result.add(
-                        GeoSuggestionItem(
-                            tag = tag,
-                            fullRule = rule,
-                            groupName = customFile.name.ifBlank { fileName },
-                            isCustom = true,
-                        ),
-                    )
-                }
-            } else {
-                val fallbackTag = customFile.name.substringBeforeLast('.').ifBlank { "all" }
-                val rule = if (forShadowrocket) fallbackTag.uppercase() else "ext:$fileName:$fallbackTag"
-                result.add(
-                    GeoSuggestionItem(
-                        tag = fallbackTag,
-                        fullRule = rule,
-                        groupName = customFile.name.ifBlank { fileName },
-                        isCustom = true,
-                    ),
-                )
-            }
+            if (file.isFile && file.length() > 0) GeoDatParser.parseTags(file) else emptyList()
         }
-
-        return result
     }
 
-    private fun findTargetTrafficConfig(
-        appState: AppState,
-        trafficConfigId: Int?,
-    ): TrafficConfigState? {
-        if (trafficConfigId != null) {
-            return appState.trafficConfigs.firstOrNull { it.id == trafficConfigId }
-        }
-        return appState.trafficConfigs.firstOrNull { it.id == appState.activeTrafficConfigId }
-            ?: appState.trafficConfigs.firstOrNull()
-    }
-
-    private fun collectCustomFiles(
-        targetConfig: TrafficConfigState?,
-        appState: AppState,
-    ): List<CustomResourceFileState> {
-        val list = mutableListOf<CustomResourceFileState>()
-        val seenNames = mutableSetOf<String>()
-
-        targetConfig?.resourceSettings?.customFiles?.forEach { customFile ->
-            if (customFile.name.isNotBlank() && seenNames.add(customFile.name.trim().lowercase())) {
-                list.add(customFile)
-            }
-        }
-
-        appState.customResourceFiles.forEach { customFile ->
-            if (customFile.name.isNotBlank() && seenNames.add(customFile.name.trim().lowercase())) {
-                list.add(customFile)
-            }
-        }
-
-        return list
-    }
-
-    private fun TrafficConfigState?.resourceFileScopeOrNull(): XrayResourceFileScope? {
-        return this?.let { config ->
+    private fun TrafficConfigState?.resourceFileScopeOrNull(): XrayResourceFileScope? =
+        this?.let { profile ->
             XrayResourceFileScope(
-                trafficConfigId = config.id,
-                resourceFileSource = config.resourceSettings.source,
+                trafficConfigId = profile.id,
+                resourceFileSource = profile.resourceSettings.source,
             )
         }
-    }
 }

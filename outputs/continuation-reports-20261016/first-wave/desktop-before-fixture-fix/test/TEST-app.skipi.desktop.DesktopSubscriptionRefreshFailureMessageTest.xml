@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshFailureMessageTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:08:40.572Z" hostname="MAZAFAKA-PC" time="0.001">
+  <properties/>
+  <testcase name="httpFailureKeepsTheExistingDesktopExceptionMessage" classname="app.skipi.desktop.DesktopSubscriptionRefreshFailureMessageTest" time="0.001"/>
+  <testcase name="unknownHostUsesAndroidDnsMessage" classname="app.skipi.desktop.DesktopSubscriptionRefreshFailureMessageTest" time="0.0"/>
+  <testcase name="timeoutUsesAndroidTimeoutMessageEvenWhenWrapped" classname="app.skipi.desktop.DesktopSubscriptionRefreshFailureMessageTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

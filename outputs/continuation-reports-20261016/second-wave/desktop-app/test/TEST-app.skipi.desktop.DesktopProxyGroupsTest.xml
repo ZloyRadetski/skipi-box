@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyGroupsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:32:32.519Z" hostname="MAZAFAKA-PC" time="0.017">
+  <properties/>
+  <testcase name="selection_falls_back_to_first_real_group_and_empty_catalog_is_safe" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.008"/>
+  <testcase name="usesPersistedGroupIdForStrategiesAndDropsRowsAndroidCannotDecode" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.002"/>
+  <testcase name="matches_android_group_order_empty_enabled_and_disabled_group_visibility" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.002"/>
+  <testcase name="matches_android_config_display_modes_and_user_strategy_visibility" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.001"/>
+  <testcase name="preserves_persisted_subscription_group_order_after_reload" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.003"/>
+  <testcase name="honors_enable_all_proxy_group_option_and_supports_blank_manual_groups" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

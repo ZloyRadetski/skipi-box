@@ -13,11 +13,14 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import app.R
+import app.skipi.app.model.AppearanceSettings
+import app.skipi.app.model.ThemeMode
 import app.modes.BackgroundStyleClassic
 import app.modes.ColorModeAmoled
 import app.modes.ColorModeAurora
@@ -32,20 +35,12 @@ import app.modes.explicitColorModeIsDark
 import app.modes.normalizeColorMode
 import app.modes.resolveFontSizeScale
 import app.skipi.ui.theme.ProvideSkipiTheme
+import app.skipi.ui.theme.applyAppearanceSettings
+import app.skipi.ui.theme.resolveBaseAppearanceColors
 import ui.text.resolveFontFamily
-import ui.text.resolveFontWeight
-import app.skipi.ui.text.applySkipiFontAndWeight
-import app.skipi.ui.text.scaleSkipiFontSize
 import app.skipi.ui.theme.NamedThemePalette as SharedNamedThemePalette
 import app.skipi.ui.theme.namedThemePaletteFor as sharedNamedThemePaletteFor
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.isSpecified
-import androidx.compose.runtime.Immutable
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemeController
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
@@ -127,76 +122,43 @@ fun AppTheme(
         }
     }
     val baseMiuixColors = controller.currentColors()
-    val activeAccentColor = when {
-        enableCustomColors && customAccentColor != null -> customAccentColor
-        namedThemePalette != null -> namedThemePalette.accent
-        !enableMaterialYou && customAccentColor != null -> customAccentColor
-        !enableMaterialYou -> DefaultAppAccentColor
-        else -> baseMiuixColors.primary
+    val baseAppColors = remember(resolvedDark, isAmoled, namedThemePalette, enableMaterialYou, baseMiuixColors.primary) {
+        resolveBaseAppearanceColors(
+            isDark = resolvedDark,
+            amoledBlack = isAmoled,
+            namedPalette = namedThemePalette,
+            dynamicAccent = baseMiuixColors.primary.takeIf { enableMaterialYou },
+        )
     }
-
     val appColors = remember(
-        resolvedDark,
-        colorMode,
+        baseAppColors,
         enableMaterialYou,
         namedThemePalette,
-        activeAccentColor,
         enableCustomColors,
+        customAccentColor,
         customBackgroundColor,
         customSurfaceColor,
         customSurfaceVariantColor,
         customTextColor,
         customTextSecondaryColor,
-        backgroundStyle,
     ) {
-        val baseBackground = when {
-            namedThemePalette != null -> namedThemePalette.background
-            isAmoled -> Color.Black
-            resolvedDark -> Color(0xFF16171A)
-            else -> Color(0xFFF5F6F8)
-        }
-        val baseOnBackground = namedThemePalette?.onBackground ?: if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
-        val baseSurface = when {
-            namedThemePalette != null -> namedThemePalette.surface
-            isAmoled -> Color(0xFF0A0A0A)
-            resolvedDark -> Color(0xFF202227)
-            else -> Color(0xFFFFFFFF)
-        }
-        val baseOnSurface = namedThemePalette?.onSurface ?: if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
-        val baseSurfaceVariant = when {
-            namedThemePalette != null -> namedThemePalette.surfaceVariant
-            isAmoled -> Color(0xFF141414)
-            resolvedDark -> Color(0xFF282A31)
-            else -> Color(0xFFE8EAEE)
-        }
-        val baseOnSurfaceVariant = namedThemePalette?.onSurfaceVariant ?: if (resolvedDark) Color(0xFF9EA3AE) else Color(0xFF6B7280)
-        val baseOnAccent = namedThemePalette?.onAccent ?: if (resolvedDark) Color(0xFFEDEDEF) else Color(0xFF1B1C1E)
-
-        // AMOLED provides true black defaults. An explicit user palette still wins,
-        // otherwise the custom background controls would appear to have no effect.
-        val finalBackground = if (enableCustomColors && customBackgroundColor != null) customBackgroundColor else baseBackground
-        val finalSurface = if (enableCustomColors && customSurfaceColor != null) customSurfaceColor else baseSurface
-        val finalSurfaceVariant = if (enableCustomColors && customSurfaceVariantColor != null) customSurfaceVariantColor else baseSurfaceVariant
-        val finalAccent = activeAccentColor
-        val finalOnBackground = if (enableCustomColors && customTextColor != null) customTextColor else baseOnBackground
-        val finalOnSurface = if (enableCustomColors && customTextColor != null) customTextColor else baseOnSurface
-        val finalOnAccent = if (enableCustomColors && customTextColor != null) customTextColor else baseOnAccent
-        val finalOnSurfaceVariant = if (enableCustomColors && customTextSecondaryColor != null) customTextSecondaryColor else baseOnSurfaceVariant
-
-        AppColors(
-            background = finalBackground,
-            onBackground = finalOnBackground,
-            accent = finalAccent,
-            onAccent = finalOnAccent,
-            surface = finalSurface,
-            onSurface = finalOnSurface,
-            surfaceVariant = finalSurfaceVariant,
-            onSurfaceVariant = finalOnSurfaceVariant,
-            isDark = resolvedDark,
+        applyAppearanceSettings(
+            base = baseAppColors,
+            appearance = AppearanceSettings(
+                themeMode = if (namedThemePalette != null) ThemeMode.Named else ThemeMode.System,
+                dynamicColors = enableMaterialYou,
+                customColorsEnabled = enableCustomColors,
+                customAccentColor = customAccentColor?.toAppearanceArgb(),
+                customBackgroundColor = customBackgroundColor?.toAppearanceArgb(),
+                customSurfaceColor = customSurfaceColor?.toAppearanceArgb(),
+                customSurfaceVariantColor = customSurfaceVariantColor?.toAppearanceArgb(),
+                customTextColor = customTextColor?.toAppearanceArgb(),
+                customTextSecondaryColor = customTextSecondaryColor?.toAppearanceArgb(),
+            ),
         )
     }
 
-    val miuixColors = remember(baseMiuixColors, appColors, namedThemePalette, enableCustomColors, enableMaterialYou, activeAccentColor, backgroundStyle) {
+    val miuixColors = remember(baseMiuixColors, appColors, namedThemePalette, enableCustomColors, enableMaterialYou, customAccentColor, backgroundStyle) {
         val overridePrimary = namedThemePalette != null || !enableMaterialYou || (enableCustomColors && customAccentColor != null)
         baseMiuixColors.copy(
             surface = appColors.surface,
@@ -210,8 +172,8 @@ fun AppTheme(
             onSurfaceContainer = appColors.onSurface,
             onSurfaceVariantSummary = appColors.onSurfaceVariant,
             onBackgroundVariant = appColors.onSurfaceVariant,
-            primary = if (overridePrimary) activeAccentColor else baseMiuixColors.primary,
-            primaryVariant = if (overridePrimary) activeAccentColor else baseMiuixColors.primaryVariant,
+            primary = if (overridePrimary) appColors.accent else baseMiuixColors.primary,
+            primaryVariant = if (overridePrimary) appColors.accent else baseMiuixColors.primaryVariant,
         )
     }
 
@@ -232,66 +194,18 @@ fun AppTheme(
     }
 
     val resolvedFontFamily = remember(fontFamilyMode) { resolveFontFamily(fontFamilyMode) }
-    val resolvedFontWeight = remember(fontWeightMode) { resolveFontWeight(fontWeightMode) }
-    val fontWeightShift = resolvedFontWeight?.weight?.minus(FontWeight.Normal.weight) ?: 0
-    val baseMiuixTextStyles = MiuixTheme.textStyles
-    val miuixTextStyles = remember(baseMiuixTextStyles, resolvedFontFamily, resolvedFontWeight, appColors.onSurface) {
-        baseMiuixTextStyles.copy(
-            main = baseMiuixTextStyles.main.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            headline1 = baseMiuixTextStyles.headline1.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            headline2 = baseMiuixTextStyles.headline2.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            title1 = baseMiuixTextStyles.title1.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            title2 = baseMiuixTextStyles.title2.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            title3 = baseMiuixTextStyles.title3.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            title4 = baseMiuixTextStyles.title4.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            body1 = baseMiuixTextStyles.body1.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            body2 = baseMiuixTextStyles.body2.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            footnote1 = baseMiuixTextStyles.footnote1.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            footnote2 = baseMiuixTextStyles.footnote2.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-            button = baseMiuixTextStyles.button.applySkipiFontAndWeight(resolvedFontFamily, resolvedFontWeight).copy(color = appColors.onSurface),
-        )
-    }
-    val popupMiuixTextStyles = remember(miuixTextStyles, fontScaleFactor) {
-        if (fontScaleFactor == 1.0f) {
-            miuixTextStyles
-        } else {
-            miuixTextStyles.copy(
-                main = miuixTextStyles.main.scaleSkipiFontSize(fontScaleFactor),
-                headline1 = miuixTextStyles.headline1.scaleSkipiFontSize(fontScaleFactor),
-                headline2 = miuixTextStyles.headline2.scaleSkipiFontSize(fontScaleFactor),
-                title1 = miuixTextStyles.title1.scaleSkipiFontSize(fontScaleFactor),
-                title2 = miuixTextStyles.title2.scaleSkipiFontSize(fontScaleFactor),
-                title3 = miuixTextStyles.title3.scaleSkipiFontSize(fontScaleFactor),
-                title4 = miuixTextStyles.title4.scaleSkipiFontSize(fontScaleFactor),
-                body1 = miuixTextStyles.body1.scaleSkipiFontSize(fontScaleFactor),
-                body2 = miuixTextStyles.body2.scaleSkipiFontSize(fontScaleFactor),
-                footnote1 = miuixTextStyles.footnote1.scaleSkipiFontSize(fontScaleFactor),
-                footnote2 = miuixTextStyles.footnote2.scaleSkipiFontSize(fontScaleFactor),
-                button = miuixTextStyles.button.scaleSkipiFontSize(fontScaleFactor),
-            )
-        }
-    }
-
-    val currentDensity = LocalDensity.current
-    val scaledDensity = remember(currentDensity.density, fontScaleFactor) {
-        Density(
-            density = currentDensity.density,
-            fontScale = fontScaleFactor,
-        )
-    }
 
     CompositionLocalProvider(
         LocalColorMode provides colorMode,
         LocalResolvedDarkTheme provides resolvedDark,
         LocalBackgroundStyle provides backgroundStyle,
-        LocalDensity provides scaledDensity,
     ) {
         ProvideSkipiTheme(
             colors = appColors,
             miuixColors = miuixColors,
-            miuixTextStyles = miuixTextStyles,
-            popupMiuixTextStyles = popupMiuixTextStyles,
-            fontWeightShift = fontWeightShift,
+            fontFamily = resolvedFontFamily,
+            fontSizeMode = fontSizeMode,
+            fontWeightMode = fontWeightMode,
         ) {
             SystemBarAppearance(
                 statusBarDark = resolvedDark,
@@ -348,6 +262,9 @@ internal fun namedThemePaletteFor(colorMode: Int): NamedThemePalette? = when (no
     ColorModeSunset -> sharedNamedThemePaletteFor("sunset")
     else -> null
 }
+
+private fun Color.toAppearanceArgb(): Long = toArgb().toLong() and 0xFFFFFFFFL
+
 val KeyColors: List<Color> = listOf(
     Color(0xFF3482FF),
     Color(0xFF36D167),

@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.SystemClock
 import app.AppState
 import app.ProxyServerState
+import app.skipi.app.home.resolveProxyHomeLatencyTimeoutMillis
 import app.activeTrafficConfig
 import features.logs.AndroidAppLogger
 import engine.xray.XrayConfigRequest
@@ -766,9 +767,6 @@ private const val CachedCandidateBudgetMillis = 800L
 private const val ColdCandidateBudgetMillis = 350L
 private const val CachedCandidateDnsTimeoutMillis = 400L
 private const val CachedCandidateConnectTimeoutMillis = 500
-private const val DefaultPingTimeoutMillis = 5_000
-private const val MinPingTimeoutMillis = 500
-private const val MaxPingTimeoutMillis = 60_000
 private val WhitespaceRegex = Regex("\\s+")
 private val IPv4Regex = Regex("^(\\d{1,3}\\.){3}\\d{1,3}$")
 private val IPv6Regex = Regex("^[0-9a-fA-F:]+$")
@@ -779,5 +777,5 @@ private fun String.resolvedPingUrl(): String {
 }
 
 private fun String.resolvedPingTimeoutMillis(): Int {
-    return trim().toIntOrNull()?.coerceIn(MinPingTimeoutMillis, MaxPingTimeoutMillis) ?: DefaultPingTimeoutMillis
+    return resolveProxyHomeLatencyTimeoutMillis(this)
 }

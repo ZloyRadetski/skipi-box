@@ -51,6 +51,52 @@ class TrafficConfigDocumentCustomResourceTest {
         )
     }
 
+    @Test
+    fun decodesMalformedCustomResourceComponentsLikeAndroidUri() {
+        val cases = listOf(
+            "%A" to "\uFFFD",
+            "%GG" to "\uFFFD\u0000G",
+            "%C3%28" to "\uFFFD(",
+        )
+
+        cases.forEachIndexed { index, (encoded, expectedDecoded) ->
+            val id = 20 + index
+            val restored = profileWithRaw(
+                """
+                    [SKIPI]
+                    resource-custom-file = $id,Name,https$encoded
+                """.trimIndent(),
+            ).withSkipiSettingsReadFromRawConfig()
+
+            assertEquals(
+                listOf(TrafficConfigCustomResourceFile(id, "Name", "https$expectedDecoded")),
+                restored.resourceSettings.customFiles,
+                "Android Uri.decode compatibility for $encoded",
+            )
+        }
+    }
+
+    @Test
+    fun filtersInvalidCustomResourceRowsAndKeepsTheFirstPositiveId() {
+        val raw = """
+            [SKIPI]
+            resource-custom-file = 0,Zero,https%3A%2F%2Fgeo.example%2Fzero.dat
+            resource-custom-file = -1,Negative,https%3A%2F%2Fgeo.example%2Fnegative.dat
+            resource-custom-file = 2,,https%3A%2F%2Fgeo.example%2Fblank-name.dat
+            resource-custom-file = 3,Blank URL,
+            resource-custom-file = 6,%20%20First%20name%20%20,%20%20https%3A%2F%2Fgeo.example%2Ffirst.dat%20%20
+            resource-custom-file = 6,Second%20name,https%3A%2F%2Fgeo.example%2Fsecond.dat
+        """.trimIndent()
+
+        val restored = profileWithRaw(raw).withSkipiSettingsReadFromRawConfig()
+
+        assertEquals(
+            listOf(TrafficConfigCustomResourceFile(6, "First name", "https://geo.example/first.dat")),
+            restored.resourceSettings.customFiles,
+        )
+        assertEquals(7, restored.resourceSettings.nextCustomFileId)
+    }
+
     private fun profileWith(file: TrafficConfigCustomResourceFile): TrafficConfigState =
         TrafficConfigState(
             id = 1,

@@ -8,12 +8,19 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.foundation.layout.BoxWithConstraints
+import app.modes.FontSizeModeSmall
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import app.skipi.ui.text.ThemedTypography
+import app.skipi.ui.text.applySkipiFontAndWeight
+import app.skipi.ui.text.resolveFontWeight
+import app.skipi.ui.text.scaleSkipiFontSize
+import app.modes.resolveFontSizeScale
 import top.yukonga.miuix.kmp.theme.Colors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.TextStyles
@@ -22,6 +29,9 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Shapes
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 
 /**
  * The common visual root for every SKIPI Compose surface.
@@ -51,12 +61,126 @@ fun ProvideSkipiTheme(
     )
 }
 
+/** Applies the persisted font rules for hosts that use the shared Miuix palette. */
+@Composable
+fun ProvideSkipiTheme(
+    colors: AppColors,
+    fontFamily: FontFamily?,
+    fontSizeMode: Int?,
+    fontWeightMode: Int?,
+    visualProfile: SkipiVisualProfile = SkipiVisualProfile.Android,
+    content: @Composable () -> Unit,
+) {
+    ProvideSkipiThemeWithAppearance(
+        colors = colors,
+        miuixColors = null,
+        fontFamily = fontFamily,
+        fontSizeMode = fontSizeMode,
+        fontWeightMode = fontWeightMode,
+        visualProfile = visualProfile,
+        content = content,
+    )
+}
+
+/** Same appearance typography path for Android hosts that supply dynamic Miuix colors. */
+@Composable
+fun ProvideSkipiTheme(
+    colors: AppColors,
+    miuixColors: Colors,
+    fontFamily: FontFamily?,
+    fontSizeMode: Int?,
+    fontWeightMode: Int?,
+    visualProfile: SkipiVisualProfile = SkipiVisualProfile.Android,
+    content: @Composable () -> Unit,
+) {
+    ProvideSkipiThemeWithAppearance(
+        colors = colors,
+        miuixColors = miuixColors,
+        fontFamily = fontFamily,
+        fontSizeMode = fontSizeMode,
+        fontWeightMode = fontWeightMode,
+        visualProfile = visualProfile,
+        content = content,
+    )
+}
+
+@Composable
+private fun ProvideSkipiThemeWithAppearance(
+    colors: AppColors,
+    miuixColors: Colors?,
+    fontFamily: FontFamily?,
+    fontSizeMode: Int?,
+    fontWeightMode: Int?,
+    visualProfile: SkipiVisualProfile,
+    content: @Composable () -> Unit,
+) {
+    val baseTextStyles = MiuixTheme.textStyles
+    val typography = remember(baseTextStyles, colors, fontFamily, fontSizeMode, fontWeightMode) {
+        resolveAppearanceTypographyStyles(
+            baseStyles = baseTextStyles.toStyleList(),
+            colors = colors,
+            fontFamily = fontFamily,
+            fontSizeMode = fontSizeMode,
+            fontWeightMode = fontWeightMode,
+        )
+    }
+    val miuixTextStyles = remember(baseTextStyles, typography.main) {
+        baseTextStyles.withStyleList(typography.main)
+    }
+    val popupMiuixTextStyles = remember(baseTextStyles, typography.popup) {
+        baseTextStyles.withStyleList(typography.popup)
+    }
+    val currentDensity = LocalDensity.current
+    val scaledDensity = remember(currentDensity.density, typography.fontSizeScale) {
+        Density(density = currentDensity.density, fontScale = typography.fontSizeScale)
+    }
+    val resolvedMiuixColors = miuixColors ?: remember(colors) { colors.toSkipiMiuixColors() }
+
+    CompositionLocalProvider(LocalDensity provides scaledDensity) {
+        ProvideSkipiTheme(
+            colors = colors,
+            miuixColors = resolvedMiuixColors,
+            miuixTextStyles = miuixTextStyles,
+            popupMiuixTextStyles = popupMiuixTextStyles,
+            fontWeightShift = typography.fontWeightShift,
+            visualProfile = visualProfile,
+            content = content,
+        )
+    }
+}
+
+data class AppearanceTypographyStyles(
+    val main: List<TextStyle>,
+    val popup: List<TextStyle>,
+    val fontWeightShift: Int,
+    val fontSizeScale: Float,
+)
+
+fun resolveAppearanceTypographyStyles(
+    baseStyles: List<TextStyle>,
+    colors: AppColors,
+    fontFamily: FontFamily?,
+    fontSizeMode: Int?,
+    fontWeightMode: Int?,
+): AppearanceTypographyStyles {
+    val resolvedWeight = fontWeightMode?.let(::resolveFontWeight)
+    val fontWeightShift = resolvedWeight?.weight?.minus(FontWeight.Normal.weight) ?: 0
+    val fontSizeScale = resolveFontSizeScale(fontSizeMode ?: FontSizeModeSmall)
+
+    fun TextStyle.withAppearanceFont() =
+        applySkipiFontAndWeight(fontFamily, resolvedWeight).copy(color = colors.onSurface)
+
+    val main = baseStyles.map { it.withAppearanceFont() }
+    val popup = if (fontSizeScale == 1.0f) main else main.map { it.scaleSkipiFontSize(fontSizeScale) }
+    return AppearanceTypographyStyles(main, popup, fontWeightShift, fontSizeScale)
+}
+
 /**
  * Advanced root for a host that derives Miuix colors or typography from its
  * own system palette. Desktop normally uses the simpler overload above.
  */
 @Composable
-fun ProvideSkipiTheme(
+private fun ProvideSkipiTheme(
     colors: AppColors,
     miuixColors: Colors,
     miuixTextStyles: TextStyles,
@@ -120,6 +244,39 @@ fun ProvideSkipiTheme(
             }
         }
     }
+}
+
+private fun TextStyles.toStyleList(): List<TextStyle> = listOf(
+    main,
+    headline1,
+    headline2,
+    title1,
+    title2,
+    title3,
+    title4,
+    body1,
+    body2,
+    footnote1,
+    footnote2,
+    button,
+)
+
+private fun TextStyles.withStyleList(styles: List<TextStyle>): TextStyles {
+    require(styles.size == 12) { "Miuix text styles require twelve appearance styles" }
+    return copy(
+        main = styles[0],
+        headline1 = styles[1],
+        headline2 = styles[2],
+        title1 = styles[3],
+        title2 = styles[4],
+        title3 = styles[5],
+        title4 = styles[6],
+        body1 = styles[7],
+        body2 = styles[8],
+        footnote1 = styles[9],
+        footnote2 = styles[10],
+        button = styles[11],
+    )
 }
 
 internal fun miuixBaseColorsFor(isDark: Boolean): Colors =

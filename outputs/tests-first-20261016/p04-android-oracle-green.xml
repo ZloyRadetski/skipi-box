@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.TrafficConfigEditorAndroidOracleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-15T21:11:06.110Z" hostname="MAZAFAKA-PC" time="0.082">
+  <properties/>
+  <testcase name="missingAndroidProfileUpdateDoesNotCreateARow" classname="features.config.TrafficConfigEditorAndroidOracleTest" time="0.069"/>
+  <testcase name="dnsEditorTransformUsesAndroidTypedSettingsAndRetainsProfileSections" classname="features.config.TrafficConfigEditorAndroidOracleTest" time="0.005"/>
+  <testcase name="visualEditTransformsTheCurrentProfileByIdAndPreservesOtherRowsAndState" classname="features.config.TrafficConfigEditorAndroidOracleTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

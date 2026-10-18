@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.TrafficProfileXrayPlannerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:31:39.102Z" hostname="MAZAFAKA-PC" time="0.046">
+  <properties/>
+  <testcase name="resolvesLocalProxyGroupsAndCompilesTheirRoutingTargets" classname="engine.xray.TrafficProfileXrayPlannerTest" time="0.038"/>
+  <testcase name="rejectsUnknownPoliciesAndDesktopUnsupportedRules" classname="engine.xray.TrafficProfileXrayPlannerTest" time="0.006"/>
+  <testcase name="domainRuleWithExtLookingValueIsNotAnExternalResourceReference" classname="engine.xray.TrafficProfileXrayPlannerTest" time="0.001"/>
+  <testcase name="omittedUrlRuleDoesNotResolveItsUnknownPolicy" classname="engine.xray.TrafficProfileXrayPlannerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

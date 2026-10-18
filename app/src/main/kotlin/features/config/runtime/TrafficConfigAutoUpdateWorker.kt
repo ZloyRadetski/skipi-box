@@ -10,10 +10,8 @@ import app.SkipiApplication
 import data.repository.reconcileTrafficConfigProxyGroups
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
-import features.config.withConfigProxyGroupsReflected
-import features.config.withSkipiSettingsInRawConfig
-import features.config.withSkipiSettingsReadFromRawConfig
-import features.config.withUpdatedTrafficConfigProfile
+import features.config.withCommittedTrafficConfigRefresh
+import app.skipi.app.config.TrafficConfigProfileRefreshMode
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.usecase.toSubscriptionFetchOptions
@@ -47,33 +45,13 @@ internal class TrafficConfigAutoUpdateWorker(
                 return@runCatching Result.retry()
             }
             application.stateStore.update { state ->
-                state.withUpdatedTrafficConfigProfile(config.id) { current ->
-                    current.copy(
-                        rawConfig = normalized,
-                        sourceUrl = url,
-                        lastUpdatedAtMillis = System.currentTimeMillis(),
-                    ).withSkipiSettingsReadFromRawConfig().let { parsed ->
-                        parsed.copy(
-                            sourceUrl = url.ifBlank { parsed.sourceUrl },
-                            updateLocked = current.updateLocked,
-                            autoUpdate = current.autoUpdate,
-                            updateInterval = current.updateInterval,
-                            resourceSettings = current.resourceSettings.copy(
-                                source = parsed.resourceSettings.source,
-                                customGeoIpUrl = parsed.resourceSettings.customGeoIpUrl,
-                                customGeoSiteUrl = parsed.resourceSettings.customGeoSiteUrl,
-                                customGeoIpOnlyCnPrivateUrl = parsed.resourceSettings.customGeoIpOnlyCnPrivateUrl,
-                                customDirectCidrIpv4Url = parsed.resourceSettings.customDirectCidrIpv4Url,
-                                customDirectCidrIpv6Url = parsed.resourceSettings.customDirectCidrIpv6Url,
-                                customFiles = parsed.resourceSettings.customFiles,
-                                nextCustomFileId = parsed.resourceSettings.nextCustomFileId,
-                                userAgent = parsed.resourceSettings.userAgent,
-                                autoUpdate = current.resourceSettings.autoUpdate,
-                                updateInterval = current.resourceSettings.updateInterval,
-                            ),
-                        ).withSkipiSettingsInRawConfig()
-                    }
-                }
+                state.withCommittedTrafficConfigRefresh(
+                    configId = config.id,
+                    normalizedDocument = normalized,
+                    capturedUrl = url,
+                    timestamp = System.currentTimeMillis(),
+                    mode = TrafficConfigProfileRefreshMode.Automatic,
+                )
             }
             application.stateStore.reconcileTrafficConfigProxyGroups()
             Result.success()

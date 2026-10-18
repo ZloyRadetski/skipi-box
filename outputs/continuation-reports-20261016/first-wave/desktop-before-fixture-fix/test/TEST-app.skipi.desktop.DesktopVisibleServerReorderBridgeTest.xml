@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopVisibleServerReorderBridgeTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:08:40.907Z" hostname="MAZAFAKA-PC" time="0.043">
+  <properties/>
+  <testcase name="visibleNeighborMovesLatestWholeLibraryAndPreservesOtherState" classname="app.skipi.desktop.DesktopVisibleServerReorderBridgeTest" time="0.043"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

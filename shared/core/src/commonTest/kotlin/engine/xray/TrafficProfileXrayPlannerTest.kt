@@ -63,6 +63,41 @@ class TrafficProfileXrayPlannerTest {
 
         assertFailsWith<IllegalStateException> { plan("DOMAIN,example.com,Missing") }
         assertFailsWith<IllegalArgumentException> { plan("IP-ASN,13335,PROXY") }
-        assertFailsWith<IllegalStateException> { plan("RULE-SET,https://example.com/rules,DIRECT") }
+    }
+
+    @Test
+    fun omittedUrlRuleDoesNotResolveItsUnknownPolicy() {
+        val server = TrafficProfileServerRecord(
+            1,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha"),
+        )
+        val result = TrafficProfileXrayPlanner.plan(
+            profileContent = "[Rule]\nRULE-SET,https://example.com/rules,Missing\nFINAL,PROXY\n",
+            servers = listOf(server),
+            selectedServerId = server.id,
+            capabilities = TrafficProfileXrayCapabilities(),
+        )
+
+        // Android's converter returns null before asking its caller to resolve a policy.
+        assertEquals(1, result.routingRules.size) // The remaining rule is Desktop's FINAL catch-all.
+    }
+
+    @Test
+    fun domainRuleWithExtLookingValueIsNotAnExternalResourceReference() {
+        val server = TrafficProfileServerRecord(
+            1,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha"),
+        )
+        val result = TrafficProfileXrayPlanner.plan(
+            profileContent = "[Rule]\nDOMAIN,ext:custom.dat:blocked,DIRECT\nFINAL,PROXY\n",
+            servers = listOf(server),
+            selectedServerId = server.id,
+        )
+        val domainRule = result.routingRules.first { "domain" in it }
+
+        assertEquals(
+            "full:ext:custom.dat:blocked",
+            domainRule.getValue("domain").jsonArray.single().jsonPrimitive.content,
+        )
     }
 }

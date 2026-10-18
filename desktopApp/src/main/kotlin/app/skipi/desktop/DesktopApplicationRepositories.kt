@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import app.skipi.app.config.TrafficConfigLibraryOperations
+import app.modes.FontSizeModeSmall
 import app.skipi.app.model.ApplicationPreferences
 import app.skipi.app.model.AppearanceSettings
 import app.skipi.app.model.LocalProxyPreferences
@@ -413,11 +414,7 @@ fun createDesktopSharedApplication(
     )
 }
 
-private fun DesktopAppSettings.toPersistedSettings(
-    servers: DesktopServerLibrary,
-    configs: DesktopConfigLibrary,
-) = PersistedSettings(
-    appearance = AppearanceSettings(
+internal fun DesktopAppSettings.toSharedAppearanceSettings() = AppearanceSettings(
         themeMode = when (themeMode) {
             DesktopThemeMode.Dark, DesktopThemeMode.Amoled -> ThemeMode.Dark
             DesktopThemeMode.Light -> ThemeMode.Light
@@ -464,7 +461,13 @@ private fun DesktopAppSettings.toPersistedSettings(
         backgroundStyle = backgroundStyle,
         backgroundPhotoDimPercent = backgroundPhotoDimPercent,
         bottomBarSize = bottomBarSize,
-    ),
+    )
+
+private fun DesktopAppSettings.toPersistedSettings(
+    servers: DesktopServerLibrary,
+    configs: DesktopConfigLibrary,
+) = PersistedSettings(
+    appearance = toSharedAppearanceSettings(),
     proxy = ProxySelectionSettings(selectedServerId = servers.selectedServerId),
     home = HomeDisplaySettings(
         connectionDisplayMode = connectionDisplayMode,
@@ -553,7 +556,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     enableMaterialYou = false,
     enableSubscriptionSwipe = enableSubscriptionSwipe,
     fontFamilyMode = fontFamilyMode ?: 0,
-    fontSizeMode = fontSizeMode ?: 100,
+    fontSizeMode = fontSizeMode ?: FontSizeModeSmall,
     fontWeightMode = fontWeightMode ?: 0,
     pinConnectionPanelOnHome = pinConnectionPanelOnHome,
     proxyServerListLayout = proxyServerListColumns,

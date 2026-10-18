@@ -3,48 +3,42 @@
 
 package features.config
 
-import features.routing.ui.RoutingRulesInfoBottomSheet
-import features.settings.SettingsIcons
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import app.AppState
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
-import app.skipi.ui.config.SkipiTrafficConfigRuleEditorForm
-import app.skipi.ui.config.SkipiTrafficConfigRulesList
-import app.skipi.ui.config.TrafficConfigRuleListItem
-import app.skipi.ui.config.TrafficConfigRuleTypes
 import app.navigation.Route
 import app.navigation.RouteOutboundSelectionResult
+import app.skipi.app.config.TrafficConfigEditorController
+import app.skipi.app.config.TrafficConfigEditorProfileStore
+import app.skipi.ui.config.SkipiTrafficConfigRuleEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigRulesEditorScreen
+import app.skipi.ui.config.TrafficConfigRuleTypes
+import app.skipi.ui.config.rememberSkipiTrafficConfigRuleEditorState
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
+import features.routing.ui.GeoAssetPickerDialog
+import features.routing.ui.RoutingRulesInfoBottomSheet
+import features.routing.usecase.RoutingSuggestionsProvider
+import features.settings.SettingsIcons
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import features.routing.ui.GeoAssetPickerDialog
-import features.routing.usecase.RoutingSuggestionsProvider
-import ui.layout.pageScrollModifiers
 
 /** Full-screen visual editor for the [Rule] section. Rules are evaluated from top to bottom. */
 @Composable
@@ -60,52 +54,23 @@ internal fun TrafficConfigRulesPage(
         navigator.pop()
         return
     }
-    var localRawConfig by remember(config.rawConfig) { mutableStateOf(config.rawConfig) }
-    val analysis = remember(localRawConfig) { localRawConfig.analyzeShadowrocketConfig() }
-    val normalRules = analysis.rules.filterNot(ShadowrocketRule::isFinal)
-    val finalRule = analysis.rules.firstOrNull(ShadowrocketRule::isFinal)
-
-    val rulesList = remember { mutableStateListOf<TrafficConfigRuleListItem>() }
-    var nextItemId by remember { mutableLongStateOf(1L) }
-
-    LaunchedEffect(normalRules) {
-        val isUnchanged = rulesList.size == normalRules.size &&
-            rulesList.indices.all { i -> rulesList[i].rule.raw == normalRules[i].raw }
-        if (!isUnchanged) {
-            rulesList.clear()
-            rulesList.addAll(
-                normalRules.map { rule ->
-                    TrafficConfigRuleListItem(id = nextItemId++, rule = rule)
-                },
-            )
-        }
-    }
-
-    fun updateRaw(raw: String) {
-        localRawConfig = raw
-        updateAppState { state -> state.withUpdatedTrafficConfig(config.id) { it.copy(rawConfig = raw) } }
-    }
-
-    val lazyListState = rememberLazyListState()
+    val editor = rememberTrafficConfigRuleEditorController(updateAppState)
+    var showInfoBottomSheet by rememberSaveable { mutableStateOf(false) }
     val hapticFeedback = LocalHapticFeedback.current
 
-    fun moveRules(fromIndex: Int, toIndex: Int) {
-        if (fromIndex in rulesList.indices && toIndex in rulesList.indices && fromIndex != toIndex) {
-            rulesList.add(toIndex, rulesList.removeAt(fromIndex))
-            val updatedRaw = localRawConfig.withShadowrocketRulesReordered(fromIndex, toIndex)
-            localRawConfig = updatedRaw
-            updateAppState { state -> state.withUpdatedTrafficConfig(config.id) { it.copy(rawConfig = updatedRaw) } }
-        }
-    }
-
-    var showInfoBottomSheet by rememberSaveable { mutableStateOf(false) }
-
-    TrafficConfigFullScreenScaffold(
+    SkipiTrafficConfigRulesEditorScreen(
         title = stringResource(R.string.configs_rules_title),
+        saveLabel = stringResource(R.string.common_save),
         padding = padding,
         isWideScreen = isWideScreen,
+        profile = config,
+        controller = editor,
         onBack = navigator::pop,
         onSave = navigator::pop,
+        onAdd = { navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId)) },
+        onEdit = { rule -> navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, rule.lineNumber)) },
+        onHapticFeedback = hapticFeedback::performHapticFeedback,
+        platformBackHandler = { onBack -> TrafficConfigRulesBackHandler(onBack) },
         actions = {
             IconButton(onClick = { showInfoBottomSheet = true }) {
                 Icon(
@@ -115,28 +80,7 @@ internal fun TrafficConfigRulesPage(
                 )
             }
         },
-    ) { _, listPadding, scrollBehavior ->
-        SkipiTrafficConfigRulesList(
-            rules = rulesList,
-            finalRule = finalRule,
-            listState = lazyListState,
-            contentPadding = listPadding,
-            reorderBottomPadding = padding.calculateBottomPadding(),
-            modifier = Modifier.pageScrollModifiers(scrollBehavior),
-            onAdd = { navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId)) },
-            onEdit = { rule -> navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, rule.lineNumber)) },
-            onDelete = { rule -> updateRaw(config.rawConfig.withoutShadowrocketRuleLine(rule.lineNumber)) },
-            onEditFinal = {
-                if (finalRule == null) {
-                    updateRaw(config.rawConfig.withShadowrocketRuleAdded("FINAL,PROXY"))
-                } else {
-                    navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, finalRule.lineNumber))
-                }
-            },
-            onMove = ::moveRules,
-            onHapticFeedback = hapticFeedback::performHapticFeedback,
-        )
-    }
+    )
 
     RoutingRulesInfoBottomSheet(
         show = showInfoBottomSheet,
@@ -166,24 +110,16 @@ fun TrafficConfigRuleEditorPage(
         navigator.pop()
         return
     }
+
     val isFinal = initialRule?.isFinal == true
     val typeOptions = remember { TrafficConfigRuleTypes }
     val editorIdentity = ruleLineNumber ?: config.id * -1
-    var typeIndex by rememberSaveable(editorIdentity) {
-        mutableIntStateOf(typeOptions.indexOf(initialRule?.type ?: "DOMAIN-SUFFIX").coerceAtLeast(0))
-    }
-    val selectedType = if (isFinal) "FINAL" else typeOptions[typeIndex]
-    var value by rememberSaveable(editorIdentity) { mutableStateOf(initialRule?.value.orEmpty()) }
-    var selectedPolicy by rememberSaveable(editorIdentity) {
-        mutableStateOf(initialRule?.policy?.trim()?.takeIf { it.isNotBlank() } ?: "PROXY")
-    }
-
-    val valueState = rememberTextFieldState(initialText = value)
-
-    fun updateValue(newValue: String) {
-        value = newValue
-        valueState.setTextAndPlaceCursorAtEnd(newValue)
-    }
+    val editorState = rememberSkipiTrafficConfigRuleEditorState(
+        editorIdentity = editorIdentity,
+        initialRule = initialRule,
+        typeOptions = typeOptions,
+    )
+    val selectedType = if (isFinal) "FINAL" else typeOptions[editorState.typeIndex]
 
     var showGeoSitePicker by rememberSaveable(editorIdentity) { mutableStateOf(false) }
     var showGeoIpPicker by rememberSaveable(editorIdentity) { mutableStateOf(false) }
@@ -204,34 +140,49 @@ fun TrafficConfigRuleEditorPage(
     }
     LaunchedEffect(navigator, policySelectorResultKey) {
         navigator.observeResult<RouteOutboundSelectionResult>(policySelectorResultKey).collect { result ->
-            selectedPolicy = result.tag
+            editorState.selectedPolicy = result.tag
             navigator.clearResult(policySelectorResultKey)
         }
     }
 
-    fun save() {
-        if (selectedPolicy.isBlank() || (!isFinal && value.isBlank())) return
-        val line = if (isFinal) "FINAL,$selectedPolicy" else "$selectedType,${value.trim()},$selectedPolicy"
-        updateAppState { state ->
-            state.withUpdatedTrafficConfig(trafficConfigId) { current ->
-                if (initialRule == null) {
-                    current.copy(rawConfig = current.rawConfig.withShadowrocketRuleAdded(line))
-                } else {
-                    current.copy(rawConfig = current.rawConfig.withShadowrocketRuleLine(initialRule.lineNumber, line))
-                }
-            }
-        }
-    }
-    var showInfoBottomSheet by rememberSaveable { mutableStateOf(false) }
+    val editor = rememberTrafficConfigRuleEditorController(updateAppState)
+    var showInfoBottomSheet by rememberSaveable(editorIdentity) { mutableStateOf(false) }
+    val back = { navigator.pop() }
 
-    TrafficConfigFullScreenScaffold(
+    SkipiTrafficConfigRuleEditorScreen(
         title = stringResource(if (initialRule == null) R.string.configs_rules_add else R.string.configs_rules_edit),
+        saveLabel = stringResource(R.string.common_save),
         padding = padding,
         isWideScreen = isWideScreen,
-        onBack = {
-            save()
-            navigator.pop()
+        profileId = trafficConfigId,
+        lineNumber = initialRule?.lineNumber,
+        isFinal = isFinal,
+        editorState = editorState,
+        controller = editor,
+        onBack = back,
+        onPolicyClick = {
+            navigator.navigateForResult(
+                route = Route.RouteOutboundSelector(
+                    selectedTag = editorState.selectedPolicy,
+                    resultKey = policySelectorResultKey,
+                    trafficConfigId = trafficConfigId,
+                ),
+                requestKey = policySelectorResultKey,
+            )
         },
+        networkOptions = RoutingSuggestionsProvider.ShadowrocketNetworkOptions,
+        geoSiteSuggestions = geoSiteSuggestions.map { it.tag },
+        geoIpSuggestions = geoIpSuggestions.map { it.tag },
+        ruleSetPresets = RoutingSuggestionsProvider.RuleSetPresets,
+        domainSetPresets = RoutingSuggestionsProvider.DomainSetPresets,
+        portPresets = RoutingSuggestionsProvider.PortPresets,
+        privateIpPresets = RoutingSuggestionsProvider.PrivateIpPresets,
+        userAgentPresets = RoutingSuggestionsProvider.ShadowrocketUserAgentPresets,
+        onGeoSitePicker = { showGeoSitePicker = true },
+        onGeoIpPicker = { showGeoIpPicker = true },
+        onRuleSetPicker = { showRuleSetPicker = true },
+        onInfoClick = { showInfoBottomSheet = true },
+        platformBackHandler = { onBack -> TrafficConfigRulesBackHandler(onBack) },
         actions = {
             IconButton(onClick = { showInfoBottomSheet = true }) {
                 Icon(
@@ -241,57 +192,13 @@ fun TrafficConfigRuleEditorPage(
                 )
             }
         },
-    ) { _, listPadding, scrollBehavior ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
-            contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item {
-                SkipiTrafficConfigRuleEditorForm(
-                    isFinal = isFinal,
-                    selectedType = selectedType,
-                    typeOptions = typeOptions,
-                    onTypeSelected = { typeIndex = it },
-                    value = value,
-                    valueState = valueState,
-                    onValueChange = { value = it },
-                    selectedPolicy = selectedPolicy,
-                    onPolicyClick = {
-                        navigator.navigateForResult(
-                            route = Route.RouteOutboundSelector(
-                                selectedTag = selectedPolicy,
-                                resultKey = policySelectorResultKey,
-                                trafficConfigId = trafficConfigId,
-                            ),
-                            requestKey = policySelectorResultKey,
-                        )
-                    },
-                    networkOptions = RoutingSuggestionsProvider.ShadowrocketNetworkOptions,
-                    geoSiteSuggestions = geoSiteSuggestions.map { it.tag },
-                    geoIpSuggestions = geoIpSuggestions.map { it.tag },
-                    ruleSetPresets = RoutingSuggestionsProvider.RuleSetPresets,
-                    domainSetPresets = RoutingSuggestionsProvider.DomainSetPresets,
-                    portPresets = RoutingSuggestionsProvider.PortPresets,
-                    privateIpPresets = RoutingSuggestionsProvider.PrivateIpPresets,
-                    userAgentPresets = RoutingSuggestionsProvider.ShadowrocketUserAgentPresets,
-                    onGeoSitePicker = { showGeoSitePicker = true },
-                    onGeoIpPicker = { showGeoIpPicker = true },
-                    onRuleSetPicker = { showRuleSetPicker = true },
-                    onInfoClick = { showInfoBottomSheet = true },
-                )
-            }
-        }
-    }
+    )
 
     GeoAssetPickerDialog(
         show = showGeoSitePicker,
         title = stringResource(R.string.routing_suggestions_geosite),
         items = geoSiteSuggestions,
-        onSelect = { item ->
-            val selected = if (selectedType == "DOMAIN-SET") item.fullRule else item.tag
-            updateValue(selected)
-        },
+        onSelect = { item -> editorState.updateValue(if (selectedType == "DOMAIN-SET") item.fullRule else item.tag) },
         onDismissRequest = { showGeoSitePicker = false },
     )
 
@@ -299,7 +206,7 @@ fun TrafficConfigRuleEditorPage(
         show = showGeoIpPicker,
         title = stringResource(R.string.routing_suggestions_geoip),
         items = geoIpSuggestions,
-        onSelect = { item -> updateValue(item.tag) },
+        onSelect = { item -> editorState.updateValue(item.tag) },
         onDismissRequest = { showGeoIpPicker = false },
     )
 
@@ -307,12 +214,40 @@ fun TrafficConfigRuleEditorPage(
         show = showRuleSetPicker,
         title = "RULE-SET",
         items = ruleSetSuggestions,
-        onSelect = { item -> updateValue(item.fullRule) },
+        onSelect = { item -> editorState.updateValue(item.fullRule) },
         onDismissRequest = { showRuleSetPicker = false },
     )
 
     RoutingRulesInfoBottomSheet(
         show = showInfoBottomSheet,
         onDismissRequest = { showInfoBottomSheet = false },
+    )
+}
+
+@Composable
+private fun rememberTrafficConfigRuleEditorController(
+    updateAppState: ((AppState) -> AppState) -> Unit,
+): TrafficConfigEditorController = remember(updateAppState) {
+    TrafficConfigEditorController(
+        TrafficConfigEditorProfileStore { profileId, transform ->
+            var found = false
+            updateAppState { state ->
+                if (state.trafficConfigs.none { it.id == profileId }) {
+                    state
+                } else {
+                    found = true
+                    state.withUpdatedTrafficConfig(profileId, transform)
+                }
+            }
+            found
+        },
+    )
+}
+
+@Composable
+private fun TrafficConfigRulesBackHandler(onBack: () -> Unit) {
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        onBackCompleted = onBack,
     )
 }

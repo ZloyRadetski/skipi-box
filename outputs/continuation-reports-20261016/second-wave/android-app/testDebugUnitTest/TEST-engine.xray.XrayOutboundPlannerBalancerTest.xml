@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayOutboundPlannerBalancerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:33:00.549Z" hostname="MAZAFAKA-PC" time="0.026">
+  <properties/>
+  <testcase name="testWithConfigProxyGroupsReflectedUpdatesMembersFromConf" classname="engine.xray.XrayOutboundPlannerBalancerTest" time="0.022"/>
+  <testcase name="testProbeTimeoutParsedAndSerializedCorrectly" classname="engine.xray.XrayOutboundPlannerBalancerTest" time="0.001"/>
+  <testcase name="testObservatoryProbeTimeoutInXrayOutboundPlan" classname="engine.xray.XrayOutboundPlannerBalancerTest" time="0.001"/>
+  <testcase name="testShadowrocketPolicyGroupRespectsCustomProxyServerIds" classname="engine.xray.XrayOutboundPlannerBalancerTest" time="0.001"/>
+  <testcase name="testWithConfigProxyGroupsReflectedExpandsWildcard" classname="engine.xray.XrayOutboundPlannerBalancerTest" time="0.0"/>
+  <testcase name="testUnconfiguredManualStrategyGroupDoesNotIncludeAllServers" classname="engine.xray.XrayOutboundPlannerBalancerTest" time="0.001"/>
+  <testcase name="strategyGroupMemberAdapterPreservesExplicitOrderAndSkipsCycles" classname="engine.xray.XrayOutboundPlannerBalancerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
