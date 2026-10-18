@@ -107,6 +107,7 @@ dependencies {
 
 // Desktop bundles the same font files already shipped by Android; keep the source assets canonical.
 tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") {
+    mustRunAfter(rootProject.tasks.named("updateResourceFileAssets"))
     from(rootProject.file("app/src/main/res/font")) {
         include("*.ttf")
         into("font")
