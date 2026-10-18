@@ -11,12 +11,10 @@ import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
 import app.CustomResourceFileState
-import app.CustomResourceFileStatus
-import app.ResourceFileStatus
 import app.ResourceFilesStatus
-import app.sanitizeCustomResourceFileName
 import features.resources.ResourceFileKind
 import features.resources.ResourceFileSourceLoyalsoldierGithub
+import features.resources.ResourceSnapshotFiles
 import features.resources.requiresBundledResourceSourceActivation
 import features.resources.resourceFileSourceAssetDir
 import features.resources.shouldRestoreBundledResourceFile
@@ -30,42 +28,28 @@ internal class AndroidResourceFileStore(
 ) {
     private val appContext = context.applicationContext
     private val legacyDataDir: File = appContext.xrayResourceFilesDir()
-    val dataDir: File = appContext.xrayResourceFilesDir(scope)
+    private val snapshotFiles = ResourceSnapshotFiles(
+        xrayRootDir = legacyDataDir,
+        scope = scope,
+        atomicWrite = ::writeAtomically,
+    )
+    val dataDir: File
+        get() = snapshotFiles.dataDir
 
     fun status(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus {
         return currentStatus(customResourceFiles)
     }
 
     fun currentStatus(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus {
-        return ResourceFilesStatus(
-            geoIp = file(ResourceFileKind.GeoIp).toStatus(),
-            geoSite = file(ResourceFileKind.GeoSite).toStatus(),
-            geoIpOnlyCnPrivate = file(ResourceFileKind.GeoIpOnlyCnPrivate).toStatus(),
-            directCidrIpv4 = file(ResourceFileKind.DirectCidrIpv4).toStatus(),
-            directCidrIpv6 = file(ResourceFileKind.DirectCidrIpv6).toStatus(),
-            xrayCore = file(ResourceFileKind.XrayCore).toStatus(),
-            customResourceFiles = customResourceFiles.map { customFile ->
-                CustomResourceFileStatus(
-                    file = customFile,
-                    status = file(customFile).toStatus(),
-                )
-            },
-        )
+        return snapshotFiles.currentStatus(customResourceFiles)
     }
 
     fun file(kind: ResourceFileKind): File {
-        val parent = if (kind == ResourceFileKind.XrayCore) legacyDataDir else dataDir
-        return File(parent, kind.fileName)
+        return snapshotFiles.file(kind)
     }
 
     fun file(customFile: CustomResourceFileState): File {
-        return File(
-            dataDir,
-            sanitizeCustomResourceFileName(
-                value = customFile.name,
-                fallback = "custom-resource-${customFile.id}.dat",
-            ),
-        )
+        return snapshotFiles.file(customFile)
     }
 
     fun synchronizeBundledFilesAfterPackageUpdate(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub) {
@@ -210,14 +194,9 @@ internal class AndroidResourceFileStore(
     }
 
     fun replace(kind: ResourceFileKind, uri: Uri) {
-        require(kind != ResourceFileKind.XrayCore) { "Xray core must be replaced through the locked publisher" }
-        dataDir.mkdirs()
-        val replaceTempFile = file(kind).resolveSibling("${kind.fileName}.replace.tmp")
-        appContext.contentResolver.openInputStream(uri)?.use { input ->
-            replaceTempFile.outputStream().use { output -> input.copyTo(output) }
-        } ?: throw FileNotFoundException(uri.toString())
-
-        replaceFile(replaceTempFile, file(kind))
+        snapshotFiles.replace(kind) {
+            appContext.contentResolver.openInputStream(uri) ?: throw FileNotFoundException(uri.toString())
+        }
         kind.applyPermissions(file(kind))
     }
 
@@ -274,15 +253,9 @@ internal class AndroidResourceFileStore(
     }
 
     fun replaceCustom(customFile: CustomResourceFileState, uri: Uri) {
-        val target = file(customFile)
-        if (ResourceFileKind.entries.any { kind -> kind.fileName == target.name }) return
-        dataDir.mkdirs()
-        val replaceTempFile = target.resolveSibling("${target.name}.replace.tmp")
-        appContext.contentResolver.openInputStream(uri)?.use { input ->
-            replaceTempFile.outputStream().use { output -> input.copyTo(output) }
-        } ?: throw FileNotFoundException(uri.toString())
-
-        replaceFile(replaceTempFile, target)
+        snapshotFiles.replaceCustom(customFile) {
+            appContext.contentResolver.openInputStream(uri) ?: throw FileNotFoundException(uri.toString())
+        }
     }
 
     fun applyPermissions(kind: ResourceFileKind) {
@@ -295,28 +268,11 @@ internal class AndroidResourceFileStore(
     }
 
     fun deleteCustom(customFile: CustomResourceFileState) {
-        val target = file(customFile)
-        if (ResourceFileKind.entries.any { kind -> kind.fileName == target.name }) return
-        target.delete()
+        snapshotFiles.deleteCustom(customFile)
     }
 
     fun renameCustom(previousFile: CustomResourceFileState, customFile: CustomResourceFileState) {
-        val source = file(previousFile)
-        val target = file(customFile)
-        if (ResourceFileKind.entries.any { kind -> kind.fileName == source.name || kind.fileName == target.name }) return
-        if (source.absolutePath == target.absolutePath) return
-        if (!source.isFile) return
-
-        dataDir.mkdirs()
-        if (target.exists()) {
-            target.delete()
-        }
-        if (!source.renameTo(target)) {
-            source.inputStream().use { input ->
-                writeAtomically(target) { output -> input.copyTo(output) }
-            }
-            source.delete()
-        }
+        snapshotFiles.renameCustom(previousFile, customFile)
     }
 
     fun preparePaths(
@@ -421,18 +377,14 @@ internal data class XrayResourceFilePaths(
 )
 
 /** Identifies one traffic profile's isolated Xray resource snapshot. */
-internal data class XrayResourceFileScope(
-    val trafficConfigId: Int,
-    val resourceFileSource: Int,
-) {
-    init {
-        require(trafficConfigId > 0) { "Traffic config id must be positive" }
-    }
-}
+internal typealias XrayResourceFileScope = features.resources.ResourceFileScope
 
 internal fun Context.xrayResourceFilesDir(scope: XrayResourceFileScope? = null): File {
-    val root = File(filesDir, "xray")
-    return scope?.let { File(File(root, XrayResourceProfilesDirName), it.trafficConfigId.toString()) } ?: root
+    return ResourceSnapshotFiles(
+        xrayRootDir = File(filesDir, "xray"),
+        scope = scope,
+        atomicWrite = ::writeAtomically,
+    ).dataDir
 }
 
 internal fun Context.prepareXrayResourceFilePaths(
@@ -493,7 +445,6 @@ private const val Arm64Abi = "arm64-v8a"
 private const val XrayCoreLibraryName = "libxray.so"
 private const val HevSocks5TunnelLibraryName = "libhev-socks5-tunnel-cli.so"
 private const val XrayBundledResourceFilesDir = "xray"
-private const val XrayResourceProfilesDirName = "profiles"
 private const val ResourceSourceMarkerFileName = ".resource-source"
 private const val LegacyMigrationMarkerFileName = ".profile-resources-migrated-v1"
 private const val LegacyMigrationMarkerValue = "done"
@@ -512,28 +463,6 @@ private fun syncDirectory(directory: File) {
         Os.fsync(descriptor)
     } finally {
         Os.close(descriptor)
-    }
-}
-
-private fun File.toStatus(): ResourceFileStatus {
-    return ResourceFileStatus(
-        exists = exists() && length() > 0,
-        sizeBytes = takeIf { exists() }?.length() ?: 0,
-        updatedAtMillis = takeIf { exists() }?.lastModified() ?: 0,
-    )
-}
-
-private fun replaceFile(source: File, target: File) {
-    if (source.length() <= 0) {
-        source.delete()
-        error("${target.name} is empty")
-    }
-    try {
-        source.inputStream().use { input ->
-            writeAtomically(target) { output -> input.copyTo(output) }
-        }
-    } finally {
-        source.delete()
     }
 }
 

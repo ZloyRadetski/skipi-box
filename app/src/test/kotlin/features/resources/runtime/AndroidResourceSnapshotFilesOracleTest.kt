@@ -6,11 +6,15 @@ package features.resources.runtime
 import android.content.Context
 import android.content.ContextWrapper
 import android.net.Uri
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
 import androidx.test.core.app.ApplicationProvider
 import app.ResourceFileKind
 import features.config.TrafficConfigCustomResourceFile
 import features.resources.ResourceFileSourceLoyalsoldierGithub
 import java.io.File
+import java.io.FileDescriptor
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -25,14 +29,16 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.Implementation
 import org.robolectric.annotation.Implements
-import org.robolectric.shadows.ShadowLinux
+import org.robolectric.shadows.ShadowOs
+import org.robolectric.util.ReflectionHelpers
+import org.robolectric.util.ReflectionHelpers.ClassParameter
 
 /** Android filesystem oracle for the profile-scoped snapshot operations moved to shared JVM code. */
 @RunWith(RobolectricTestRunner::class)
 @Config(
     sdk = [35],
     application = android.app.Application::class,
-    shadows = [RealLinuxRenameShadow::class],
+    shadows = [RealOsRenameShadow::class],
 )
 class AndroidResourceSnapshotFilesOracleTest {
 
@@ -196,15 +202,38 @@ class AndroidResourceSnapshotFilesOracleTest {
     }
 }
 
-/** Robolectric 4.16's instrumented Linux.rename is a no-op; model its POSIX same-directory rename. */
-@Implements(className = "libcore.io.Linux", minSdk = 26, isInAndroidSdk = false)
-class RealLinuxRenameShadow : ShadowLinux() {
-    @Implementation
-    fun rename(oldPath: String, newPath: String) {
-        try {
-            Files.move(Path.of(oldPath), Path.of(newPath), ATOMIC_MOVE, REPLACE_EXISTING)
-        } catch (error: IOException) {
-            throw IllegalStateException("Unable to rename $oldPath to $newPath", error)
+/** Keep ShadowOs' two explicit handlers and call through all other Os methods; replace only rename. */
+@Implements(Os::class, callThroughByDefault = true)
+class RealOsRenameShadow {
+    companion object {
+        @Implementation
+        @JvmStatic
+        fun rename(oldPath: String, newPath: String) {
+            try {
+                Files.move(Path.of(oldPath), Path.of(newPath), ATOMIC_MOVE, REPLACE_EXISTING)
+            } catch (error: IOException) {
+                throw ErrnoException("rename", OsConstants.EIO, error)
+            }
         }
+
+        @Implementation
+        @JvmStatic
+        fun sysconf(name: Int): Long = ReflectionHelpers.callStaticMethod<Long>(
+            ShadowOs::class.java,
+            "sysconf",
+            ClassParameter.from(Int::class.javaPrimitiveType!!, name),
+        )
+
+        @Implementation
+        @JvmStatic
+        @Throws(ErrnoException::class)
+        fun lseek(fileDescriptor: FileDescriptor, offset: Long, whence: Int): Long =
+            ReflectionHelpers.callStaticMethod<Long>(
+                ShadowOs::class.java,
+                "lseek",
+                ClassParameter.from(FileDescriptor::class.java, fileDescriptor),
+                ClassParameter.from(Long::class.javaPrimitiveType!!, offset),
+                ClassParameter.from(Int::class.javaPrimitiveType!!, whence),
+            )
     }
 }

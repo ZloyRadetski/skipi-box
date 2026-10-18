@@ -79,32 +79,14 @@ fun ProxyServerState.proxyServerOutboundTag(): String {
 
 typealias ResourceFileKind = features.resources.ResourceFileKind
 
-@Stable
-data class ResourceFileStatus(
-    val exists: Boolean = false,
-    val sizeBytes: Long = 0,
-    val updatedAtMillis: Long = 0,
-)
+typealias ResourceFileStatus = features.resources.ResourceFileStatus
 
 /** Android source-compatible name for the portable shared resource-file record. */
 typealias CustomResourceFileState = TrafficConfigCustomResourceFile
 
-@Stable
-data class CustomResourceFileStatus(
-    val file: CustomResourceFileState,
-    val status: ResourceFileStatus = ResourceFileStatus(),
-)
+typealias CustomResourceFileStatus = features.resources.CustomResourceFileStatus
 
-@Stable
-data class ResourceFilesStatus(
-    val geoIp: ResourceFileStatus = ResourceFileStatus(),
-    val geoSite: ResourceFileStatus = ResourceFileStatus(),
-    val geoIpOnlyCnPrivate: ResourceFileStatus = ResourceFileStatus(),
-    val directCidrIpv4: ResourceFileStatus = ResourceFileStatus(),
-    val directCidrIpv6: ResourceFileStatus = ResourceFileStatus(),
-    val xrayCore: ResourceFileStatus = ResourceFileStatus(),
-    val customResourceFiles: List<CustomResourceFileStatus> = emptyList(),
-)
+typealias ResourceFilesStatus = features.resources.ResourceFilesStatus
 
 data class ResourceFileUpdateSource(
     val id: Int,
