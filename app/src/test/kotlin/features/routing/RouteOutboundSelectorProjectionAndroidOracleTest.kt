@@ -6,6 +6,7 @@ import app.ProxyServerState
 import app.SubscriptionGroupState
 import features.config.TrafficConfigState
 import features.proxy.server.list.AutoBalancerGroupId
+import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.VLESS
 import features.subscription.DefaultSubscriptionGroupId
@@ -125,6 +126,130 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
         assertFalse(result.groups.any { it.key == "routing-config-proxy-groups" })
         assertFalse(result.groups.any { it.key == "routing-config-targets" })
         assertEquals("routing-subscription-7", result.initiallyExpandedGroupKey)
+    }
+
+    @Test
+    fun missingExplicitProfileIdStillUsesPolicyTargetsAndOtherConfigTags() {
+        val currentConfig = TrafficConfigState(
+            id = 42,
+            name = "Profile",
+            rawConfig = "",
+        )
+
+        val result = projectRouteOutboundPicker(
+            appState = stateWithCatalog(currentConfig),
+            selectedTag = "Provider Node",
+            trafficConfigId = 404,
+            labels = labels,
+        )
+
+        assertEquals(listOf("PROXY", "DIRECT", "REJECT"), result.groups[0].tags())
+        assertEquals(listOf("Provider Node"), result.groups[2].tags())
+        assertTrue(result.groups[5].items.isEmpty())
+        assertEquals(listOf("CONFIG:42", "CONFIG:99"), result.groups[6].tags())
+        assertEquals("routing-subscription-7", result.initiallyExpandedGroupKey)
+    }
+
+    @Test
+    fun profileModeFiltersUnsupportedCustomAndBlankRemarksButGlobalModeKeepsBlankServer() {
+        val profile = TrafficConfigState(id = 42, name = "Profile", rawConfig = "")
+        val state = stateWithCatalog(profile).copy(
+            proxyServers = listOf(
+                ProxyServerState(
+                    id = 70,
+                    groupId = 7,
+                    server = Custom(
+                        remarks = "Runnable Custom",
+                        configJson = """{"outbounds":[{"tag":"proxy","protocol":"socks","settings":{}}]}""",
+                    ),
+                ),
+                ProxyServerState(
+                    id = 71,
+                    groupId = 7,
+                    server = Custom(
+                        remarks = "Unsupported Custom",
+                        configJson = """{"outbounds":[{"tag":"direct","protocol":"freedom","settings":{}}]}""",
+                    ),
+                ),
+                ProxyServerState(
+                    id = 72,
+                    groupId = 7,
+                    server = VLESS(remarks = " \t ", id = "blank", server = "blank.example", port = "443"),
+                ),
+            ),
+        )
+
+        val profileResult = projectRouteOutboundPicker(
+            appState = state,
+            selectedTag = "Runnable Custom",
+            trafficConfigId = profile.id,
+            labels = labels,
+        )
+        val globalResult = projectRouteOutboundPicker(
+            appState = state,
+            selectedTag = "70",
+            trafficConfigId = null,
+            labels = labels,
+        )
+
+        assertEquals(listOf("Runnable Custom"), profileResult.groups[2].tags())
+        assertEquals(listOf("70", "72"), globalResult.groups[2].tags())
+    }
+
+    @Test
+    fun profileSystemTargetMatchingIgnoresCaseAndConfigGroupExpandsOnCurrentSelection() {
+        val profile = TrafficConfigState(
+            id = 42,
+            name = "Profile",
+            rawConfig = """
+                [Proxy Group]
+                Preferred = select, DIRECT
+            """.trimIndent(),
+        )
+        val state = stateWithCatalog(profile)
+
+        val direct = projectRouteOutboundPicker(
+            appState = state,
+            selectedTag = "direct",
+            trafficConfigId = profile.id,
+            labels = labels,
+        )
+        val selectedGroup = projectRouteOutboundPicker(
+            appState = state,
+            selectedTag = "Preferred",
+            trafficConfigId = profile.id,
+            labels = labels,
+        )
+
+        assertEquals(listOf("PROXY", "DIRECT", "REJECT"), direct.groups[0].tags())
+        assertEquals("routing-system-targets", direct.initiallyExpandedGroupKey)
+        assertEquals(listOf("Preferred"), selectedGroup.groups[5].tags())
+        assertEquals("routing-config-proxy-groups", selectedGroup.initiallyExpandedGroupKey)
+    }
+
+    @Test
+    fun knownServerOutsideRenderedGroupsIsNotAddedAsSystemOption() {
+        val profile = TrafficConfigState(id = 42, name = "Profile", rawConfig = "")
+        val state = stateWithCatalog(profile).copy(
+            proxyServers = listOf(
+                ProxyServerState(
+                    id = 44,
+                    groupId = 404,
+                    server = VLESS(remarks = "Unrendered server", id = "orphan", server = "orphan.example", port = "443"),
+                ),
+            ),
+        )
+
+        val result = projectRouteOutboundPicker(
+            appState = state,
+            selectedTag = "44",
+            trafficConfigId = null,
+            labels = labels,
+        )
+
+        assertEquals(listOf(DefaultRouteOutboundTag, "direct", "block"), result.groups[0].tags())
+        assertTrue(result.groups.none { group -> group.items.any { it is RouteOutboundItem.Server } })
+        assertEquals("routing-system-targets", result.initiallyExpandedGroupKey)
     }
 
     private fun RouteOutboundPickerGroup.tags(): List<String> = items.map { item ->
