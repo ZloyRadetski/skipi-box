@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyHomeStoreTest[desktop]" tests="26" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:48:57.895Z" hostname="VQSeGo" time="0.02">
+  <properties/>
+  <testcase name="globalSortingAndSearchFilterAppliedOnceAndPreservesOriginalOrderOnTies[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="operationBusyStateCoversSuspendedEffect[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="unavailableOperationIsRejectedAndDoesNotReachTheHandler[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="failedEffectSurfacesErrorAndDismissalHidesUnchangedSourceMessage[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="toggleSubscriptionExpandedIsLocalSurvivesUpdatesAndPrunesMissingGroups[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="serverSpecificCopyAndStrategyCapabilitiesAreEnforced[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="unsupportedVariantIsRejectedEvenWhenItsOperationIsAvailable[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="failedEffectWithoutPlatformMessageUsesTypedOperationError[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.002"/>
+  <testcase name="reusablePageConstructionHandlesOverlappingGroupsEmptyGroupsAndLegacyMembership[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="allVisibleIntentUsesLatestSearchAndDispatchesOneEffect[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="tunnelToggleRemainsReentrantDuringAReconnectEffect[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="nameSortingFallsBackToDisplayTitleWhenSortKeyIsNull[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="pagesCalculateMembershipInOriginalOrderAndApplySearchFilter[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="duplicateSelectionIsSuppressedImmediatelyWhileItsEffectIsBusy[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="nameSortingUsesCanonicalSortKeyAndDoesNotReorderByFlagStrippedDisplayTitle[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="explicitGroupMembershipTakesPriorityOverStaleServerGroupId[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="proxyGroupSummaryKindDefaultsToOther[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="displayOptionsRequestedColumnsAreNormalizedOnUiStateBoundary[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="inputRefreshesAuthoritativeTunnelSelectionAndStatus[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="inputCanKeepToggleAvailableDuringBusyDesktopReconnect[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="localSearchSurvivesInputUpdatesAndMissingGroupSelectionFallsBackWithoutRestoringStaleGroup[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="latencySortPlacesTestingServersBeforeUnmeasuredAndKeepsFailuresLast[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="tunnelActionIsDispatchedOnceAndDoesNotInventConnectionState[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <testcase name="serverSelectionFailureSurfacesErrorWithoutModifyingSelectedServer[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="serverSelectionIsNotOptimisticAndUpdatesOnlyFromInput[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.001"/>
+  <testcase name="sortingMaintainsStableNameTiesAndOrdersLatencyValues[desktop]" classname="app.skipi.app.home.ProxyHomeStoreTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

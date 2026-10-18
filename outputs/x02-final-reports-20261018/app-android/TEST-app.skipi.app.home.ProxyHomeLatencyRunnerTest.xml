@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.home.ProxyHomeLatencyRunnerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:49:03.412Z" hostname="VQSeGo" time="0.069">
+  <properties/>
+  <testcase name="androidSourceCancellationMapsProbeToFailureBeforeCancelledRunSkipsCompletion" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.047"/>
+  <testcase name="hostOwnedGateRemainsInsideProbeWithoutASecondOuterAcquire" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.002"/>
+  <testcase name="oneProbeFailureIsMappedWithoutDiscardingSuccessfulSiblingResults" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.002"/>
+  <testcase name="concurrencyUsesThePersistedValueClampedToOneThroughSixtyFour" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.01"/>
+  <testcase name="eachProbePublishesAsItCompletesWhileAnotherProbeRemainsPending" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.003"/>
+  <testcase name="cancellationMapsPendingProbeFailureAndRetainsCompletedPublication" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
