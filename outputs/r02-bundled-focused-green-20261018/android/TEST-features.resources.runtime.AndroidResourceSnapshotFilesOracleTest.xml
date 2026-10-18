@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-18T19:18:35.358Z" hostname="VQSeGo" time="0.157">
+  <properties/>
+  <testcase name="builtInReplacementReplacesOnlyTheScopedTarget" classname="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" time="0.023"/>
+  <testcase name="emptyReplacementFailsWithoutChangingExistingFile" classname="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" time="0.019"/>
+  <testcase name="xrayCoreReplacementIsRejectedBeforeOpeningThePickedUri" classname="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" time="0.018"/>
+  <testcase name="builtInFilesAreIsolatedByProfileWhileXrayCoreStaysGlobal" classname="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" time="0.018"/>
+  <testcase name="customReplacementCannotOverwriteBuiltInFile" classname="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" time="0.017"/>
+  <testcase name="statusTreatsEmptyFilesAsUnavailableAndReportsMetadataForExistingPaths" classname="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" time="0.021"/>
+  <testcase name="profileScopeRejectsNonPositiveTrafficConfigIds" classname="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" time="0.018"/>
+  <testcase name="customRenameReplacesExistingDestinationAndDeleteRemovesOnlyThatFile" classname="features.resources.runtime.AndroidResourceSnapshotFilesOracleTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

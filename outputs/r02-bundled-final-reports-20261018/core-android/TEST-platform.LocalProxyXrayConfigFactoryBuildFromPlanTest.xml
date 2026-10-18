@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="platform.LocalProxyXrayConfigFactoryBuildFromPlanTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-18T19:18:53.862Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="generatedPlanValidationMatchesTheExistingSingleServerFactoryOrder" classname="platform.LocalProxyXrayConfigFactoryBuildFromPlanTest" time="0.0"/>
+  <testcase name="fragmentIsAttachedOnlyToOutboundsAllowedByTheAndroidPlan" classname="platform.LocalProxyXrayConfigFactoryBuildFromPlanTest" time="0.001"/>
+  <testcase name="balancerKeepsAndroidFinalTcpUdpRouteAndObservatoryWithoutDefaultRouting" classname="platform.LocalProxyXrayConfigFactoryBuildFromPlanTest" time="0.001"/>
+  <testcase name="generatedPlanKeepsTheLocalListenerDnsAndNoDefaultRouteShape" classname="platform.LocalProxyXrayConfigFactoryBuildFromPlanTest" time="0.001"/>
+  <testcase name="chainOutboundOrderAndDialerLinksSurviveLocalCompositionWithMux" classname="platform.LocalProxyXrayConfigFactoryBuildFromPlanTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

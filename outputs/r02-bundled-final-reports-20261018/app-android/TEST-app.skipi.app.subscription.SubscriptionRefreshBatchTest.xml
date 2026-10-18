@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.subscription.SubscriptionRefreshBatchTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-18T19:18:55.130Z" hostname="VQSeGo" time="0.017">
+  <properties/>
+  <testcase name="aggregateCatalogWriteFailureStopsBeforeMetadataAndProfiles" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.002"/>
+  <testcase name="batchOperationLoadsConcurrentlyKeepsAllRefreshingIdsThroughAggregateCommitAndIsolatesFetchFailure" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.004"/>
+  <testcase name="aggregateReconciliationFiltersStaleAndDeletedSourcesAgainstLatestState" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="disabledOnlyUrlSetHasNoEligibleFetchOrCommit" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="batchCommitUsesOneAggregateCatalogThenOneMetadataAndOrderedProfileBoundary" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="batchReentryWaitsForFirstRunThenCapturesFreshEligibilityInsideTheMutex" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.002"/>
+  <testcase name="batchEligibilityUsesTheCapturedEnabledNonblankSubscriptionsInCatalogOrder" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="aggregatePersistenceFailurePropagatesOutsideFetchFailureListAndClearsProgress" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="aggregateCommitFailureAfterCatalogWritePropagatesAndLeavesCatalogApplied" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.0"/>
+  <testcase name="aggregateReconciliationMatchesAndroidIdsOrderReferencesSelectionAndProfiles" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="cancellingBatchClearsProgressWithoutCommitting" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="oneSuccessfulLoadUsesSingleCommitPathWhileMultipleUseAggregatePath" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
