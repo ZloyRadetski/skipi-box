@@ -111,6 +111,9 @@ tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") 
         include("*.ttf")
         into("font")
     }
+    from(rootProject.file("app/src/main/assets")) {
+        include("geo/**", "xray/**")
+    }
 }
 
 compose.desktop {
