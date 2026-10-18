@@ -1,5 +1,7 @@
 # Continuation: Android to shared, 16 October 2026
 
+> Новые результаты selected-server X02/X03 от 18 октября записаны в [актуальной контрольной точке](../shared-migration-20261018/x02-verification.md); эта запись сохраняет исторический срез на 16 октября.
+
 The user resumed the full migration. Luna agents are available again; the credit error in the earlier checkpoint is historical. Root coordinates and runs verification; GPT-6 Luna with reasoning max writes production and test code. Existing dirty work is preserved.
 
 ## P04 Tunnel and Network: tests-first gate
