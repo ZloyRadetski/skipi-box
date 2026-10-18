@@ -4,6 +4,9 @@ import app.AppState
 import app.DefaultRouteOutboundTag
 import app.ProxyServerState
 import app.SubscriptionGroupState
+import app.skipi.app.routing.RouteOutboundItem
+import app.skipi.app.routing.RouteOutboundPickerGroup
+import app.skipi.app.routing.RouteOutboundPickerLabels
 import features.config.TrafficConfigState
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.Custom
@@ -255,7 +258,7 @@ class RouteOutboundSelectorProjectionAndroidOracleTest {
     private fun RouteOutboundPickerGroup.tags(): List<String> = items.map { item ->
         when (item) {
             is RouteOutboundItem.Static -> item.tag
-            is RouteOutboundItem.Server -> item.resolveTag()
+            is RouteOutboundItem.Server -> item.tag
         }
     }
 
