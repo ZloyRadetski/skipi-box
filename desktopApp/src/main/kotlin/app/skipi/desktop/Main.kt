@@ -95,20 +95,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import features.proxy.server.model.Custom
-import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.formatCustomXrayConfigJson
-import features.proxy.server.model.parseCustomXrayConfigJsonObject
 import features.proxy.server.model.stripLeadingCountryFlag
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import platform.LocalProxyXrayConfigFactory
-import platform.LocalProxyXrayConfigOptions
 import platform.TunnelConnectRequest
 import java.time.Duration
 
@@ -382,11 +370,24 @@ fun main() = application {
                 val localProxyOptions = remember(desktopSettings) {
                     desktopSettings.toLocalProxyXrayConfigOptions()
                 }
-                val selectedServerConfig = remember(serverLibrary, configLibrary, localProxyOptions) {
+                val trafficConfigContentById = remember(configLibrary) {
+                    configLibrary.configs.associate { config -> config.id to config.content }
+                }
+                val selectedServerConfig = remember(
+                    serverLibrary,
+                    configLibrary,
+                    localProxyOptions,
+                    trafficConfigContentById,
+                    desktopSettings.subscriptionPingUrl,
+                    latencyByServerId,
+                ) {
                     buildDesktopSelectedServerConfig(
                         serverLibrary = serverLibrary,
                         configLibrary = configLibrary,
                         options = localProxyOptions,
+                        trafficConfigContentById = trafficConfigContentById,
+                        subscriptionPingUrl = desktopSettings.subscriptionPingUrl,
+                        latencyByServerId = latencyByServerId,
                     )
                 }
                 val activeProfileName = configLibrary.selectedConfigId
@@ -396,15 +397,25 @@ fun main() = application {
                 val latestDesktopSettings by rememberUpdatedState(desktopSettings)
                 val latestServerLibrary by rememberUpdatedState(serverLibrary)
                 val latestConfigLibrary by rememberUpdatedState(configLibrary)
+                val latestLatencyByServerId by rememberUpdatedState(latencyByServerId)
                 val desktopTunnelController = remember(coreController, systemProxyManager) {
                     DesktopTunnelController(
                         configForProfile = {
+                            val settingsSnapshot = latestDesktopSettings
+                            val serverLibrarySnapshot = latestServerLibrary
+                            val configLibrarySnapshot = latestConfigLibrary
+                            val trafficConfigContentSnapshot = configLibrarySnapshot.configs
+                                .associate { config -> config.id to config.content }
+                            val latencySnapshot = latestLatencyByServerId.toMap()
                             runCatching {
-                                val options = desktopLocalProxyRuntime.prepareStart(latestDesktopSettings)
+                                val options = desktopLocalProxyRuntime.prepareStart(settingsSnapshot)
                                 buildDesktopSelectedServerConfig(
-                                    serverLibrary = latestServerLibrary,
-                                    configLibrary = latestConfigLibrary,
+                                    serverLibrary = serverLibrarySnapshot,
+                                    configLibrary = configLibrarySnapshot,
                                     options = options,
+                                    trafficConfigContentById = trafficConfigContentSnapshot,
+                                    subscriptionPingUrl = settingsSnapshot.subscriptionPingUrl,
+                                    latencyByServerId = latencySnapshot,
                                 )?.getOrThrow()
                                     ?: error("Select a working server before connecting")
                             }
@@ -414,6 +425,10 @@ fun main() = application {
                                 val settingsSnapshot = latestDesktopSettings
                                 val serverLibrarySnapshot = latestServerLibrary
                                 val configLibrarySnapshot = latestConfigLibrary
+                                val trafficConfigContentSnapshot = configLibrarySnapshot.configs
+                                    .associate { config -> config.id to config.content }
+                                val subscriptionPingUrlSnapshot = settingsSnapshot.subscriptionPingUrl
+                                val latencySnapshot = latestLatencyByServerId.toMap()
 
                                 fun buildStartPlan(excludedPorts: Set<Int>): DesktopTunnelStartPlan {
                                     val options = desktopLocalProxyRuntime.prepareStart(
@@ -424,6 +439,9 @@ fun main() = application {
                                         serverLibrary = serverLibrarySnapshot,
                                         configLibrary = configLibrarySnapshot,
                                         options = options,
+                                        trafficConfigContentById = trafficConfigContentSnapshot,
+                                        subscriptionPingUrl = subscriptionPingUrlSnapshot,
+                                        latencyByServerId = latencySnapshot,
                                     )?.getOrThrow()
                                         ?: error("Select a working server before connecting")
                                     return DesktopTunnelStartPlan(
@@ -855,25 +873,27 @@ fun main() = application {
                             confirmDeletion = desktopSettings.confirmDeletion,
                             activeProfileName = activeProfileName,
                             activeTrafficConfigId = configLibrary.selectedConfigId,
-                            trafficConfigContentById = configLibrary.configs.associate { config -> config.id to config.content },
+                            trafficConfigContentById = trafficConfigContentById,
                             exportFullJson = { editResult ->
+                                val serverLibrarySnapshot = serverLibrary
+                                val configLibrarySnapshot = configLibrary
+                                val optionsSnapshot = localProxyOptions
+                                val trafficConfigContentSnapshot = trafficConfigContentById
+                                val subscriptionPingUrlSnapshot = desktopSettings.subscriptionPingUrl
+                                val latencySnapshot = latencyByServerId.toMap()
                                 withContext(Dispatchers.IO) {
                                     val copyTarget = editResult.toProxyServerCopyTarget(
                                         defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
                                     )
-                                    val tempServerLibrary = serverLibrary.withProxyServerCopyTarget(copyTarget)
-                                    val draft = copyTarget.server
-                                    val activeProfile = configLibrary.selectedConfigId
-                                        ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
-                                    if (activeProfile != null) {
-                                        DesktopTrafficProfileXrayConfigFactory.build(activeProfile, tempServerLibrary, localProxyOptions)
-                                    } else {
-                                        when (draft) {
-                                            is Custom -> buildDesktopCustomXrayConfig(draft, localProxyOptions)
-                                            is ChainProxy, is StrategyGroup -> error("Composite server export requires an active traffic profile")
-                                            else -> LocalProxyXrayConfigFactory.build(draft, localProxyOptions)
-                                        }
-                                    }
+                                    val tempServerLibrary = serverLibrarySnapshot.withProxyServerCopyTarget(copyTarget)
+                                    buildDesktopSelectedServerConfig(
+                                        serverLibrary = tempServerLibrary,
+                                        configLibrary = configLibrarySnapshot,
+                                        options = optionsSnapshot,
+                                        trafficConfigContentById = trafficConfigContentSnapshot,
+                                        subscriptionPingUrl = subscriptionPingUrlSnapshot,
+                                        latencyByServerId = latencySnapshot,
+                                    )?.getOrThrow() ?: error("Select a working server before exporting")
                                 }
                             },
                             latencyByServerId = latencyByServerId,
@@ -1669,94 +1689,4 @@ private class DesktopSubscriptionServerStopAction {
     var action: suspend () -> Unit = {}
 
     suspend fun run() = action()
-}
-
-private fun buildDesktopSelectedServerConfig(
-    serverLibrary: DesktopServerLibrary,
-    configLibrary: DesktopConfigLibrary,
-    options: LocalProxyXrayConfigOptions,
-): Result<String>? {
-    val activeProfile = configLibrary.selectedConfigId
-        ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
-    return if (activeProfile != null) {
-        runCatching {
-            DesktopTrafficProfileXrayConfigFactory.build(
-                profile = activeProfile,
-                serverLibrary = serverLibrary,
-                options = options,
-            )
-        }
-    } else {
-        serverLibrary.selectedServerId
-            ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
-            ?.decode()
-            ?.mapCatching { server ->
-                if (server is Custom) {
-                    buildDesktopCustomXrayConfig(server, options)
-                } else {
-                    LocalProxyXrayConfigFactory.build(server = server, options = options)
-                }
-            }
-    }
-}
-
-internal fun buildDesktopCustomXrayConfig(
-    server: Custom,
-    options: LocalProxyXrayConfigOptions,
-): String {
-    val customJson = parseCustomXrayConfigJsonObject(server.configJson)
-    val inbounds = buildJsonArray {
-        add(
-            buildJsonObject {
-                LocalProxyXrayConfigFactory.buildSocksInbound(options).forEach { (key, value) ->
-                    put(key, value)
-                }
-                put(
-                    "sniffing",
-                    buildJsonObject {
-                        put("enabled", true)
-                        put(
-                            "destOverride",
-                            buildJsonArray {
-                                add(JsonPrimitive("http"))
-                                add(JsonPrimitive("tls"))
-                                add(JsonPrimitive("fakedns"))
-                            },
-                        )
-                    },
-                )
-            },
-        )
-        if (options.enableHttpProxy) {
-            add(
-                buildJsonObject {
-                    put("tag", LocalProxyXrayConfigFactory.HttpInboundTag)
-                    put("listen", options.httpProxyListenAddress)
-                    put("port", options.httpProxyPort)
-                    put("protocol", "http")
-                    put(
-                        "settings",
-                        buildJsonObject {
-                            put("allowTransparent", false)
-                        },
-                    )
-                },
-            )
-        }
-    }
-    val cleanConfig = buildJsonObject {
-        put(
-            "log",
-            buildJsonObject {
-                put("loglevel", options.logLevel)
-            },
-        )
-        put("inbounds", inbounds)
-        customJson.forEach { (key, value) ->
-            if (key != "inbounds" && key != "log") {
-                put(key, value)
-            }
-        }
-    }
-    return formatCustomXrayConfigJson(cleanConfig)
 }
