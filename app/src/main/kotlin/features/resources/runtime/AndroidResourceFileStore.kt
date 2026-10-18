@@ -15,8 +15,6 @@ import app.ResourceFilesStatus
 import features.resources.ResourceFileKind
 import features.resources.ResourceFileSourceLoyalsoldierGithub
 import features.resources.ResourceSnapshotFiles
-import features.resources.requiresBundledResourceSourceActivation
-import features.resources.resourceFileSourceAssetDir
 import features.resources.shouldRestoreBundledResourceFile
 import java.io.File
 import java.io.FileNotFoundException
@@ -53,7 +51,7 @@ internal class AndroidResourceFileStore(
     }
 
     fun synchronizeBundledFilesAfterPackageUpdate(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub) {
-        migrateLegacyFilesIfNeeded(resourceFileSource)
+        snapshotFiles.migrateLegacyFilesIfNeeded(resourceFileSource)
         ensureBundledFiles(
             resourceFileSource = resourceFileSource,
             restoreAfterPackageUpdate = true,
@@ -64,77 +62,30 @@ internal class AndroidResourceFileStore(
         resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
         restoreAfterPackageUpdate: Boolean = false,
     ) {
-        val sourceChanged = requiresBundledResourceSourceActivation(
-            isProfileScoped = scope != null,
-            storedSource = storedResourceFileSource(),
-            requestedSource = resourceFileSource,
-        )
-        val bundledUpdatedAtMillis = appContext.packageUpdatedAtMillis()
-        var allOk = true
-        ResourceFileKind.entries.forEach { kind ->
-            if (kind == ResourceFileKind.XrayCore) return@forEach
-            val target = file(kind)
-            if (
-                !sourceChanged && !target.shouldRestoreBundled(
-                    kind = kind,
-                    resourceFileSource = resourceFileSource,
-                    bundledUpdatedAtMillis = bundledUpdatedAtMillis,
-                    restoreAfterPackageUpdate = restoreAfterPackageUpdate,
+        snapshotFiles.ensureBundledFiles(
+            resourceFileSource = resourceFileSource,
+            bundledUpdatedAtMillis = appContext.packageUpdatedAtMillis(),
+            restoreAfterPackageUpdate = restoreAfterPackageUpdate,
+            openAsset = { path -> appContext.assets.open(path) },
+            onRestoreFailure = { kind, error ->
+                AndroidResourceFileLogger.warn(
+                    "Failed to restore bundled resource file: ${kind.fileName}",
+                    error,
                 )
-            ) {
-                return@forEach
-            }
-            if (!sourceChanged && !kind.hasBundledAsset(resourceFileSource)) return@forEach
-            runCatching { restoreBundled(kind, resourceFileSource) }
-                .onFailure { error ->
-                    allOk = false
-                    AndroidResourceFileLogger.warn(
-                        "Failed to restore bundled resource file: ${kind.fileName}",
-                        error,
-                    )
-                }
-        }
-        if (allOk) {
-            storeResourceFileSource(resourceFileSource)
-        }
+            },
+        )
     }
 
     fun restoreBundled(
         kind: ResourceFileKind,
         resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub,
     ) {
-        require(kind != ResourceFileKind.XrayCore) { "Xray core must be restored through the locked publisher" }
-        val assetPath = kind.bundledAssetPathOrNull(resourceFileSource)
-            ?: kind.bundledAssetPathOrNull(ResourceFileSourceLoyalsoldierGithub)
-            ?: error("Bundled ${kind.fileName} is unavailable")
-        restoreBundledAsset(kind, assetPath)
-    }
-
-    private fun restoreBundledAsset(kind: ResourceFileKind, assetPath: String) {
-        val (rawStream, resolvedPath) = openBundledAssetStream(assetPath, kind.fileName)
-        rawStream.use { rawInput ->
-            openDecompressedStream(rawInput, resolvedPath).use { decompressedInput ->
-                dataDir.mkdirs()
-                writeAtomically(file(kind)) { output -> decompressedInput.copyTo(output) }
-            }
-        }
-        kind.applyPermissions(file(kind))
-    }
-
-    private fun openBundledAssetStream(assetPath: String, fallbackFileName: String): Pair<java.io.InputStream, String> {
-        val candidates = listOf(
-            "$assetPath.xz",
-            assetPath,
-            "$fallbackFileName.xz",
-            fallbackFileName,
+        snapshotFiles.restoreBundled(
+            kind = kind,
+            resourceFileSource = resourceFileSource,
+            openAsset = { path -> appContext.assets.open(path) },
         )
-        for (candidate in candidates) {
-            val stream = runCatching { appContext.assets.open(candidate) }.getOrNull()
-            if (stream != null) {
-                return stream to candidate
-            }
-        }
-        throw FileNotFoundException("Bundled asset unavailable: $assetPath (fallback: $fallbackFileName)")
+        kind.applyPermissions(file(kind))
     }
 
     fun stageBundledXrayCoreCandidate(): File {
@@ -264,7 +215,7 @@ internal class AndroidResourceFileStore(
 
     /** Records that this profile snapshot now contains files for [resourceFileSource]. */
     fun markResourceFileSource(resourceFileSource: Int) {
-        storeResourceFileSource(resourceFileSource)
+        snapshotFiles.markResourceFileSource(resourceFileSource)
     }
 
     fun deleteCustom(customFile: CustomResourceFileState) {
@@ -280,7 +231,7 @@ internal class AndroidResourceFileStore(
         restoreBundledFiles: Boolean = true,
     ): XrayResourceFilePaths {
         dataDir.mkdirs()
-        migrateLegacyFilesIfNeeded(resourceFileSource)
+        snapshotFiles.migrateLegacyFilesIfNeeded(resourceFileSource)
         if (restoreBundledFiles) {
             ensureBundledFiles(resourceFileSource = resourceFileSource)
         }
@@ -297,58 +248,6 @@ internal class AndroidResourceFileStore(
         )
     }
 
-    /**
-     * Old SKIPI versions kept every profile's files in one shared directory.
-     * Move that snapshot only once, into whichever profile is actually opened
-     * first after the migration. This preserves a user's downloaded data
-     * without letting a later profile inherit a different provider's files.
-     */
-    private fun migrateLegacyFilesIfNeeded(resourceFileSource: Int) {
-        if (scope == null || sourceMarkerFile().isFile || legacyMigrationMarkerFile().isFile) return
-        synchronized(writeLockFor(legacyMigrationMarkerFile())) {
-            if (sourceMarkerFile().isFile || legacyMigrationMarkerFile().isFile) return
-            dataDir.mkdirs()
-            legacyDataDir.listFiles()
-                .orEmpty()
-                .asSequence()
-                .filter { file ->
-                    file.isFile &&
-                        file.name != ResourceFileKind.XrayCore.fileName &&
-                        !file.name.startsWith('.')
-                }
-                .forEach { legacyFile ->
-                    val target = File(dataDir, legacyFile.name)
-                    if (!target.isFile || target.length() <= 0) {
-                        legacyFile.inputStream().use { input ->
-                            writeAtomically(target) { output -> input.copyTo(output) }
-                        }
-                    }
-                }
-            storeResourceFileSource(resourceFileSource)
-            writeAtomically(legacyMigrationMarkerFile()) { output ->
-                output.write(LegacyMigrationMarkerValue.toByteArray(Charsets.UTF_8))
-            }
-        }
-    }
-
-    private fun storedResourceFileSource(): Int? {
-        return sourceMarkerFile()
-            .takeIf(File::isFile)
-            ?.readText()
-            ?.trim()
-            ?.toIntOrNull()
-    }
-
-    private fun storeResourceFileSource(resourceFileSource: Int) {
-        if (scope == null) return
-        writeAtomically(sourceMarkerFile()) { output ->
-            output.write(resourceFileSource.toString().toByteArray(Charsets.UTF_8))
-        }
-    }
-
-    private fun sourceMarkerFile(): File = File(dataDir, ResourceSourceMarkerFileName)
-
-    private fun legacyMigrationMarkerFile(): File = File(legacyDataDir, LegacyMigrationMarkerFileName)
 }
 
 private fun File.shouldRestoreBundled(
@@ -401,22 +300,6 @@ internal fun Context.xrayResourceFilePaths(scope: XrayResourceFileScope? = null)
     return AndroidResourceFileStore(this, scope).currentPaths()
 }
 
-private fun ResourceFileKind.hasBundledAsset(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub): Boolean {
-    return this == ResourceFileKind.XrayCore || bundledAssetPathOrNull(resourceFileSource) != null
-}
-
-private fun ResourceFileKind.bundledAssetPathOrNull(resourceFileSource: Int = ResourceFileSourceLoyalsoldierGithub): String? {
-    val providerDir = resourceFileSourceAssetDir(resourceFileSource)
-    return when (this) {
-        ResourceFileKind.GeoIp -> if (providerDir != null) "$providerDir/$fileName" else fileName
-        ResourceFileKind.GeoSite -> if (providerDir != null) "$providerDir/$fileName" else fileName
-        ResourceFileKind.GeoIpOnlyCnPrivate -> if (providerDir != null) "$providerDir/$fileName" else fileName
-        ResourceFileKind.DirectCidrIpv4 -> "$XrayBundledResourceFilesDir/$fileName"
-        ResourceFileKind.DirectCidrIpv6 -> "$XrayBundledResourceFilesDir/$fileName"
-        ResourceFileKind.XrayCore -> error("Xray-core is restored from native libraries")
-    }
-}
-
 private fun currentRuntimeAbi(): String {
     return Build.SUPPORTED_ABIS.firstOrNull { abi -> abi in SupportedAndroidAbis }
         ?: error("Unsupported CPU ABI: ${Build.SUPPORTED_ABIS.joinToString()}")
@@ -444,10 +327,6 @@ private fun Context.packageUpdatedAtMillis(): Long {
 private const val Arm64Abi = "arm64-v8a"
 private const val XrayCoreLibraryName = "libxray.so"
 private const val HevSocks5TunnelLibraryName = "libhev-socks5-tunnel-cli.so"
-private const val XrayBundledResourceFilesDir = "xray"
-private const val ResourceSourceMarkerFileName = ".resource-source"
-private const val LegacyMigrationMarkerFileName = ".profile-resources-migrated-v1"
-private const val LegacyMigrationMarkerValue = "done"
 private const val XrayExecutableMode = 493
 
 private val SupportedAndroidAbis = setOf(Arm64Abi, "armeabi-v7a", "x86", "x86_64")

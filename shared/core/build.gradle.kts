@@ -50,6 +50,7 @@ kotlin {
         }
         sharedJvmMain.dependencies {
             implementation(libs.kage)
+            implementation(libs.tukaani.xz)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

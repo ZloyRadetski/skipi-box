@@ -5,7 +5,9 @@ package features.resources
 
 import features.config.TrafficConfigCustomResourceFile
 import features.config.sanitizeCustomResourceFileName
+import features.resources.runtime.openDecompressedStream
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -55,6 +57,104 @@ class ResourceSnapshotFiles(
                 )
             },
         )
+    }
+
+    fun ensureBundledFiles(
+        resourceFileSource: Int,
+        bundledUpdatedAtMillis: Long,
+        restoreAfterPackageUpdate: Boolean,
+        openAsset: (String) -> InputStream?,
+        onRestoreFailure: (ResourceFileKind, Throwable) -> Unit,
+    ) {
+        val sourceChanged = requiresBundledResourceSourceActivation(
+            isProfileScoped = scope != null,
+            storedSource = storedResourceFileSource(),
+            requestedSource = resourceFileSource,
+        )
+        var allOk = true
+        ResourceFileKind.entries.forEach { kind ->
+            if (kind == ResourceFileKind.XrayCore) return@forEach
+            val target = file(kind)
+            if (
+                !sourceChanged && !target.shouldRestoreBundled(
+                    kind = kind,
+                    resourceFileSource = resourceFileSource,
+                    bundledUpdatedAtMillis = bundledUpdatedAtMillis,
+                    restoreAfterPackageUpdate = restoreAfterPackageUpdate,
+                )
+            ) {
+                return@forEach
+            }
+            if (!sourceChanged && !kind.hasBundledAsset(resourceFileSource)) return@forEach
+            try {
+                restoreBundled(kind, resourceFileSource, openAsset)
+            } catch (error: Throwable) {
+                allOk = false
+                onRestoreFailure(kind, error)
+            }
+        }
+        if (allOk) {
+            markResourceFileSource(resourceFileSource)
+        }
+    }
+
+    fun restoreBundled(
+        kind: ResourceFileKind,
+        resourceFileSource: Int,
+        openAsset: (String) -> InputStream?,
+    ) {
+        require(kind != ResourceFileKind.XrayCore) { "Xray core must be restored through the locked publisher" }
+        val assetPath = kind.bundledAssetPathOrNull(resourceFileSource)
+            ?: kind.bundledAssetPathOrNull(ResourceFileSourceLoyalsoldierGithub)
+            ?: error("Bundled ${kind.fileName} is unavailable")
+        val (rawStream, resolvedPath) = openBundledAssetStream(assetPath, kind.fileName, openAsset)
+        rawStream.use { rawInput ->
+            openDecompressedStream(rawInput, resolvedPath).use { decompressedInput ->
+                dataDir.mkdirs()
+                atomicWrite(file(kind)) { output -> decompressedInput.copyTo(output) }
+            }
+        }
+    }
+
+    /**
+     * Migrates the pre-profile shared directory into the first opened profile once.
+     * The profile source marker is written before the global migration marker to preserve
+     * the existing retry behavior if publishing the global marker fails.
+     */
+    fun migrateLegacyFilesIfNeeded(resourceFileSource: Int) {
+        if (scope == null || sourceMarkerFile().isFile || legacyMigrationMarkerFile().isFile) return
+        val migrationMarker = legacyMigrationMarkerFile()
+        synchronized(migrationLockFor(migrationMarker)) {
+            if (sourceMarkerFile().isFile || migrationMarker.isFile) return
+            dataDir.mkdirs()
+            xrayRootDir.listFiles()
+                .orEmpty()
+                .asSequence()
+                .filter { legacyFile ->
+                    legacyFile.isFile &&
+                        legacyFile.name != ResourceFileKind.XrayCore.fileName &&
+                        !legacyFile.name.startsWith('.')
+                }
+                .forEach { legacyFile ->
+                    val target = File(dataDir, legacyFile.name)
+                    if (!target.isFile || target.length() <= 0) {
+                        legacyFile.inputStream().use { input ->
+                            atomicWrite(target) { output -> input.copyTo(output) }
+                        }
+                    }
+                }
+            markResourceFileSource(resourceFileSource)
+            atomicWrite(migrationMarker) { output ->
+                output.write(LegacyMigrationMarkerValue.toByteArray(Charsets.UTF_8))
+            }
+        }
+    }
+
+    fun markResourceFileSource(resourceFileSource: Int) {
+        if (scope == null) return
+        atomicWrite(sourceMarkerFile()) { output ->
+            output.write(resourceFileSource.toString().toByteArray(Charsets.UTF_8))
+        }
     }
 
     fun replace(kind: ResourceFileKind, openInput: () -> InputStream) {
@@ -119,6 +219,79 @@ class ResourceSnapshotFiles(
         return ResourceFileKind.entries.any { kind -> kind.fileName == file.name }
     }
 
+    private fun storedResourceFileSource(): Int? {
+        return sourceMarkerFile()
+            .takeIf(File::isFile)
+            ?.readText()
+            ?.trim()
+            ?.toIntOrNull()
+    }
+
+    private fun sourceMarkerFile(): File = File(dataDir, ResourceSourceMarkerFileName)
+
+    private fun legacyMigrationMarkerFile(): File = File(xrayRootDir, LegacyMigrationMarkerFileName)
+
+    private fun openBundledAssetStream(
+        assetPath: String,
+        fallbackFileName: String,
+        openAsset: (String) -> InputStream?,
+    ): Pair<InputStream, String> {
+        val candidates = listOf(
+            "$assetPath.xz",
+            assetPath,
+            "$fallbackFileName.xz",
+            fallbackFileName,
+        )
+        for (candidate in candidates) {
+            val stream = runCatching { openAsset(candidate) }.getOrNull()
+            if (stream != null) {
+                return stream to candidate
+            }
+        }
+        throw FileNotFoundException("Bundled asset unavailable: $assetPath (fallback: $fallbackFileName)")
+    }
+
+    private fun ResourceFileKind.hasBundledAsset(resourceFileSource: Int): Boolean {
+        return bundledAssetPathOrNull(resourceFileSource) != null
+    }
+
+    private fun ResourceFileKind.bundledAssetPathOrNull(resourceFileSource: Int): String? {
+        val providerDir = resourceFileSourceAssetDir(resourceFileSource)
+        return when (this) {
+            ResourceFileKind.GeoIp,
+            ResourceFileKind.GeoSite,
+            ResourceFileKind.GeoIpOnlyCnPrivate ->
+                if (providerDir != null) "$providerDir/$fileName" else fileName
+            ResourceFileKind.DirectCidrIpv4,
+            ResourceFileKind.DirectCidrIpv6 ->
+                "$XrayBundledResourceFilesDir/$fileName"
+            ResourceFileKind.XrayCore -> error("Xray core is restored from native libraries")
+        }
+    }
+
+    private fun File.shouldRestoreBundled(
+        kind: ResourceFileKind,
+        resourceFileSource: Int,
+        bundledUpdatedAtMillis: Long,
+        restoreAfterPackageUpdate: Boolean,
+    ): Boolean {
+        return shouldRestoreBundledResourceFile(
+            kind = kind,
+            resourceFileSource = resourceFileSource,
+            targetExists = exists(),
+            targetLength = takeIf { exists() }?.length() ?: 0L,
+            targetLastModifiedMillis = takeIf { exists() }?.lastModified() ?: 0L,
+            bundledUpdatedAtMillis = bundledUpdatedAtMillis,
+            restoreAfterPackageUpdate = restoreAfterPackageUpdate,
+        )
+    }
+
+    private fun migrationLockFor(marker: File): Any {
+        return synchronized(MigrationLocks) {
+            MigrationLocks.getOrPut(marker.absolutePath) { Any() }
+        }
+    }
+
     private fun File.toStatus(): ResourceFileStatus {
         return ResourceFileStatus(
             exists = exists() && length() > 0,
@@ -129,5 +302,10 @@ class ResourceSnapshotFiles(
 
     private companion object {
         const val ProfilesDirectoryName = "profiles"
+        const val XrayBundledResourceFilesDir = "xray"
+        const val ResourceSourceMarkerFileName = ".resource-source"
+        const val LegacyMigrationMarkerFileName = ".profile-resources-migrated-v1"
+        const val LegacyMigrationMarkerValue = "done"
+        val MigrationLocks = mutableMapOf<String, Any>()
     }
 }

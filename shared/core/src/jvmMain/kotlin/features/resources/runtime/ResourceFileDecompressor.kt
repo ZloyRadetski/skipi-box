@@ -19,7 +19,7 @@ private val XzHeaderMagic = byteArrayOf(
 /**
  * Checks if the given buffered input stream starts with XZ header magic bytes.
  */
-internal fun isXzStream(bufferedStream: BufferedInputStream): Boolean {
+fun isXzStream(bufferedStream: BufferedInputStream): Boolean {
     bufferedStream.mark(XzHeaderMagic.size)
     val header = ByteArray(XzHeaderMagic.size)
     var read = 0
@@ -36,7 +36,7 @@ internal fun isXzStream(bufferedStream: BufferedInputStream): Boolean {
  * Wraps [inputStream] in an [XZInputStream] if it has an `.xz` name hint or starts with
  * XZ header magic bytes. Otherwise returns the stream unchanged.
  */
-internal fun openDecompressedStream(
+fun openDecompressedStream(
     inputStream: InputStream,
     nameHint: String = "",
 ): InputStream {
