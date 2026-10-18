@@ -114,6 +114,117 @@ class AndroidResourceFileStoreTest {
     }
 
     @Test
+    fun testMissingAndEmptyFilesRestoreEvenForCustomSource() {
+        assertTrue(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.GeoIp,
+                resourceFileSource = ResourceFileSourceCustom,
+                targetExists = false,
+                targetLength = 0L,
+                targetLastModifiedMillis = 0L,
+                bundledUpdatedAtMillis = 0L,
+                restoreAfterPackageUpdate = false,
+            ),
+        )
+        assertTrue(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.GeoSite,
+                resourceFileSource = ResourceFileSourceCustom,
+                targetExists = true,
+                targetLength = 0L,
+                targetLastModifiedMillis = 500L,
+                bundledUpdatedAtMillis = 0L,
+                restoreAfterPackageUpdate = false,
+            ),
+        )
+    }
+
+    @Test
+    fun testPackageUpdateKeepsCustomFilesExceptXrayCore() {
+        assertFalse(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.GeoIp,
+                resourceFileSource = ResourceFileSourceCustom,
+                targetExists = true,
+                targetLength = 1024L,
+                targetLastModifiedMillis = 500L,
+                bundledUpdatedAtMillis = 1000L,
+                restoreAfterPackageUpdate = true,
+            ),
+        )
+        assertTrue(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.XrayCore,
+                resourceFileSource = ResourceFileSourceCustom,
+                targetExists = true,
+                targetLength = 1024L,
+                targetLastModifiedMillis = 500L,
+                bundledUpdatedAtMillis = 1000L,
+                restoreAfterPackageUpdate = true,
+            ),
+        )
+    }
+
+    @Test
+    fun testPackageUpdateRequiresKnownAndStrictlyNewerBundledTimestamp() {
+        assertFalse(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.GeoIp,
+                resourceFileSource = ResourceFileSourceLoyalsoldierGithub,
+                targetExists = true,
+                targetLength = 1024L,
+                targetLastModifiedMillis = 500L,
+                bundledUpdatedAtMillis = 1000L,
+                restoreAfterPackageUpdate = false,
+            ),
+        )
+        assertTrue(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.GeoIp,
+                resourceFileSource = ResourceFileSourceLoyalsoldierGithub,
+                targetExists = true,
+                targetLength = 1024L,
+                targetLastModifiedMillis = 0L,
+                bundledUpdatedAtMillis = 1000L,
+                restoreAfterPackageUpdate = true,
+            ),
+        )
+        assertFalse(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.GeoIp,
+                resourceFileSource = ResourceFileSourceLoyalsoldierGithub,
+                targetExists = true,
+                targetLength = 1024L,
+                targetLastModifiedMillis = 1000L,
+                bundledUpdatedAtMillis = 1000L,
+                restoreAfterPackageUpdate = true,
+            ),
+        )
+        assertFalse(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.GeoIp,
+                resourceFileSource = ResourceFileSourceLoyalsoldierGithub,
+                targetExists = true,
+                targetLength = 1024L,
+                targetLastModifiedMillis = 0L,
+                bundledUpdatedAtMillis = 0L,
+                restoreAfterPackageUpdate = true,
+            ),
+        )
+        assertFalse(
+            shouldRestoreBundledResourceFile(
+                kind = ResourceFileKind.GeoIp,
+                resourceFileSource = ResourceFileSourceLoyalsoldierGithub,
+                targetExists = true,
+                targetLength = 1024L,
+                targetLastModifiedMillis = 2000L,
+                bundledUpdatedAtMillis = 1000L,
+                restoreAfterPackageUpdate = true,
+            ),
+        )
+    }
+
+    @Test
     fun testProfileActivatesItsOwnBundledSnapshotWhenProviderChanges() {
         assertTrue(
             requiresBundledResourceSourceActivation(
