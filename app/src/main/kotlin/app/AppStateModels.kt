@@ -7,13 +7,8 @@ import androidx.compose.runtime.Stable
 import features.config.TrafficConfigCustomResourceFile
 import features.resources.ResourceFileChocolate4UGeoIpUrl
 import features.resources.ResourceFileChocolate4UGeoSiteUrl
-import features.resources.ResourceFileDirectCidrIpv4Name
 import features.resources.ResourceFileDirectCidrIpv4Url
-import features.resources.ResourceFileDirectCidrIpv6Name
 import features.resources.ResourceFileDirectCidrIpv6Url
-import features.resources.ResourceFileGeoIpName
-import features.resources.ResourceFileGeoIpOnlyCnPrivateName
-import features.resources.ResourceFileGeoSiteName
 import features.resources.ResourceFileLoyalsoldierGeoIpUrl
 import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
 import features.resources.ResourceFileRoscomvpnGeoIpUrl
@@ -29,8 +24,6 @@ import features.resources.ResourceFileSourceV2FlyGithub
 import features.resources.ResourceFileV2FlyGeoIpUrl
 import features.resources.ResourceFileV2FlyGeoIpOnlyCnPrivateUrl
 import features.resources.ResourceFileV2FlyGeoSiteUrl
-import features.resources.ResourceFileXrayCoreName
-import features.resources.XrayCoreVersion
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.Serializable
 
@@ -84,27 +77,7 @@ fun ProxyServerState.proxyServerOutboundTag(): String {
     return id.toString()
 }
 
-enum class ResourceFileKind(
-    val fileName: String,
-) {
-    GeoIp(ResourceFileGeoIpName),
-    GeoSite(ResourceFileGeoSiteName),
-    GeoIpOnlyCnPrivate(ResourceFileGeoIpOnlyCnPrivateName),
-    DirectCidrIpv4(ResourceFileDirectCidrIpv4Name),
-    DirectCidrIpv6(ResourceFileDirectCidrIpv6Name),
-    XrayCore(ResourceFileXrayCoreName),
-    ;
-
-    val displayName: String
-        get() = when (this) {
-            GeoIp,
-            GeoSite,
-            GeoIpOnlyCnPrivate,
-            DirectCidrIpv4,
-            DirectCidrIpv6 -> fileName
-            XrayCore -> "Xray-core $XrayCoreVersion"
-        }
-}
+typealias ResourceFileKind = features.resources.ResourceFileKind
 
 @Stable
 data class ResourceFileStatus(

@@ -12,13 +12,14 @@ import android.system.Os
 import android.system.OsConstants
 import app.CustomResourceFileState
 import app.CustomResourceFileStatus
-import app.ResourceFileKind
 import app.ResourceFileStatus
 import app.ResourceFilesStatus
 import app.sanitizeCustomResourceFileName
-import features.resources.ResourceFileSourceCustom
+import features.resources.ResourceFileKind
 import features.resources.ResourceFileSourceLoyalsoldierGithub
+import features.resources.requiresBundledResourceSourceActivation
 import features.resources.resourceFileSourceAssetDir
+import features.resources.shouldRestoreBundledResourceFile
 import java.io.File
 import java.io.FileNotFoundException
 import java.util.zip.ZipInputStream
@@ -411,23 +412,6 @@ private fun File.shouldRestoreBundled(
     )
 }
 
-internal fun shouldRestoreBundledResourceFile(
-    kind: ResourceFileKind,
-    resourceFileSource: Int,
-    targetExists: Boolean,
-    targetLength: Long,
-    targetLastModifiedMillis: Long,
-    bundledUpdatedAtMillis: Long,
-    restoreAfterPackageUpdate: Boolean,
-): Boolean {
-    if (!targetExists || targetLength <= 0) return true
-    if (!restoreAfterPackageUpdate) return false
-    if (kind != ResourceFileKind.XrayCore && resourceFileSource == ResourceFileSourceCustom) {
-        return false
-    }
-    return bundledUpdatedAtMillis > 0 && targetLastModifiedMillis < bundledUpdatedAtMillis
-}
-
 internal data class XrayResourceFilePaths(
     val dataDir: String,
     val xrayCorePath: String,
@@ -445,13 +429,6 @@ internal data class XrayResourceFileScope(
         require(trafficConfigId > 0) { "Traffic config id must be positive" }
     }
 }
-
-/** A profile must receive its own bundled snapshot when its selected provider changes. */
-internal fun requiresBundledResourceSourceActivation(
-    isProfileScoped: Boolean,
-    storedSource: Int?,
-    requestedSource: Int,
-): Boolean = isProfileScoped && storedSource != requestedSource
 
 internal fun Context.xrayResourceFilesDir(scope: XrayResourceFileScope? = null): File {
     val root = File(filesDir, "xray")

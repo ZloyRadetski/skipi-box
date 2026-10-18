@@ -10,7 +10,9 @@ import features.resources.ResourceFileSourceLoyalsoldierGithub
 import features.resources.ResourceFileSourceRoscomvpnGithub
 import features.resources.ResourceFileSourceRunetFreedomGithub
 import features.resources.ResourceFileSourceV2FlyGithub
+import features.resources.requiresBundledResourceSourceActivation
 import features.resources.resourceFileSourceAssetDir
+import features.resources.shouldRestoreBundledResourceFile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
