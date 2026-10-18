@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSelectedServerConfigEntryPointTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:21:17.017Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="selectedCompositeWithoutActiveProfileUsesGeneratedPlan" classname="app.skipi.desktop.DesktopSelectedServerConfigEntryPointTest" time="0.004"/>
+  <testcase name="selectedActiveConfStillOwnsItsRulesEvenWhenAStoredServerIsSelected" classname="app.skipi.desktop.DesktopSelectedServerConfigEntryPointTest" time="0.002"/>
+  <testcase name="selectedRawCustomStillUsesItsRawConfigAndDedicatedDesktopAdapter" classname="app.skipi.desktop.DesktopSelectedServerConfigEntryPointTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

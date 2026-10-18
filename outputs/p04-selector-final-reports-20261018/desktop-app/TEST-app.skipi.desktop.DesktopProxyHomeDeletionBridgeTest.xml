@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyHomeDeletionBridgeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:21:16.863Z" hostname="VQSeGo" time="0.024">
+  <properties/>
+  <testcase name="selectedAndUnselectedDeleteEffectsPersistFallbackAndHighWaterMark" classname="app.skipi.desktop.DesktopProxyHomeDeletionBridgeTest" time="0.008"/>
+  <testcase name="missingCleanupCallbackReportsUnsupportedAndDoesNotChangeLibrary" classname="app.skipi.desktop.DesktopProxyHomeDeletionBridgeTest" time="0.002"/>
+  <testcase name="invalidCleanupCallbackRemovesOnlyInvalidCurrentGroupRows" classname="app.skipi.desktop.DesktopProxyHomeDeletionBridgeTest" time="0.004"/>
+  <testcase name="duplicateCleanupReadsLatestCatalogAndPersistsReferencePruning" classname="app.skipi.desktop.DesktopProxyHomeDeletionBridgeTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
