@@ -9,6 +9,7 @@ import java.io.File
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -233,6 +234,62 @@ class AndroidResourceFileDownloaderOracleTest {
         assertEquals(50, overallProgress(fileIndex = 0, fileCount = 2, downloadedBytes = 20, totalBytes = 10))
     }
 
+    @Test
+    fun preCancelledDownloadDoesNotSendARequestOrReplaceTheTarget() = withTempDirectory { directory ->
+        val target = File(directory, "geoip.dat").apply { writeText("previous") }
+        val requests = AtomicInteger()
+        val error = withServer { server ->
+            server.createContext("/pre-cancelled") { exchange ->
+                requests.incrementAndGet()
+                exchange.respond(200, "must not be downloaded".encodeToByteArray())
+            }
+
+            AndroidResourceFileDownloadCancellation.cancel()
+            runCatching {
+                AndroidResourceFileDownloader(context = null).download(
+                    url = "http://127.0.0.1:${server.address.port}/pre-cancelled",
+                    target = target,
+                )
+            }.exceptionOrNull()
+        }
+
+        assertTrue("expected cancellation, got $error", error is AndroidResourceFileDownloadCancelledException)
+        assertEquals(0, requests.get())
+        assertEquals("previous", target.readText())
+        assertEquals(listOf(target), directory.listFiles()?.toList())
+    }
+
+    @Test
+    fun cancellationDuringProgressDoesNotReplaceTheTarget() = withTempDirectory { directory ->
+        val target = File(directory, "geosite.dat").apply { writeText("previous") }
+        val requests = AtomicInteger()
+        val cancellationSent = AtomicBoolean(false)
+        val body = ByteArray(32 * 1024) { 'x'.code.toByte() }
+        val error = withServer { server ->
+            server.createContext("/cancel-during-progress") { exchange ->
+                requests.incrementAndGet()
+                exchange.respond(200, body)
+            }
+
+            runCatching {
+                AndroidResourceFileDownloader(context = null).download(
+                    url = "http://127.0.0.1:${server.address.port}/cancel-during-progress",
+                    target = target,
+                    onProgress = { downloadedBytes, _ ->
+                        if (downloadedBytes > 0L && cancellationSent.compareAndSet(false, true)) {
+                            AndroidResourceFileDownloadCancellation.cancel()
+                        }
+                    },
+                )
+            }.exceptionOrNull()
+        }
+
+        assertTrue("expected cancellation, got $error", error is AndroidResourceFileDownloadCancelledException)
+        assertTrue(cancellationSent.get())
+        assertEquals(1, requests.get())
+        assertEquals("previous", target.readText())
+        assertEquals(listOf(target), directory.listFiles()?.toList())
+    }
 }
 
 private inline fun <T> withServer(block: (HttpServer) -> T): T {
