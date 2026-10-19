@@ -6,6 +6,7 @@ package app.skipi.desktop
 import features.config.TrafficConfigState
 import features.resources.ResourceFileScope
 import features.resources.ResourceSnapshotFiles
+import features.resources.runtime.withResourceFileWriteLock
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -63,18 +64,20 @@ internal class DesktopProfileResourceFiles(
     private fun writeAtomically(target: File, write: (OutputStream) -> Unit) {
         val parent = target.parentFile ?: error("Parent directory is unavailable for ${target.absolutePath}")
         Files.createDirectories(parent.toPath())
-        val prefix = "${target.name}.".let { value ->
-            if (value.length >= 3) value else value.padEnd(3, '_')
-        }
-        val temporary = File.createTempFile(prefix, ".tmp", parent)
-        try {
-            temporary.outputStream().use(write)
-            if (temporary.length() <= 0) {
-                error("${target.name} is empty")
+        withResourceFileWriteLock(target) {
+            val prefix = "${target.name}.".let { value ->
+                if (value.length >= 3) value else value.padEnd(3, '_')
             }
-            Files.move(temporary.toPath(), target.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
-        } finally {
-            temporary.delete()
+            val temporary = File.createTempFile(prefix, ".tmp", parent)
+            try {
+                temporary.outputStream().use(write)
+                if (temporary.length() <= 0) {
+                    error("${target.name} is empty")
+                }
+                Files.move(temporary.toPath(), target.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
+            } finally {
+                temporary.delete()
+            }
         }
     }
 }

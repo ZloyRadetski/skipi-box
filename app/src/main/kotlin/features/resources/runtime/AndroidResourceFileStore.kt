@@ -98,8 +98,8 @@ internal class AndroidResourceFileStore(
         require(candidate.isFile && candidate.length() > 0) { "Xray core candidate is empty" }
         require(dataDir.exists() || dataDir.mkdirs()) { "Failed to create ${dataDir.absolutePath}" }
         val target = file(ResourceFileKind.XrayCore)
-        return synchronized(writeLockFor(target)) {
-            if (target.exists()) return@synchronized false
+        return withResourceFileWriteLock(target) {
+            if (target.exists()) return@withResourceFileWriteLock false
             val temp = File.createTempFile(".xray-initial-", ".tmp", dataDir)
             try {
                 candidate.inputStream().use { input ->
@@ -114,7 +114,7 @@ internal class AndroidResourceFileStore(
                 try {
                     Os.link(temp.absolutePath, target.absolutePath)
                 } catch (error: ErrnoException) {
-                    if (error.errno == OsConstants.EEXIST) return@synchronized false
+                    if (error.errno == OsConstants.EEXIST) return@withResourceFileWriteLock false
                     throw error
                 }
                 syncDirectory(dataDir)
@@ -351,7 +351,7 @@ internal fun writeAtomically(
 ) {
     val parent = target.parentFile ?: error("Parent directory is unavailable for ${target.absolutePath}")
     parent.mkdirs()
-    synchronized(writeLockFor(target)) {
+    withResourceFileWriteLock(target) {
         val tempPrefix = "${target.name}.".let { prefix ->
             if (prefix.length >= 3) prefix else prefix.padEnd(3, '_')
         }
@@ -370,14 +370,6 @@ internal fun writeAtomically(
             tempFile.delete()
             throw error
         }
-    }
-}
-
-private val WriteLocks = mutableMapOf<String, Any>()
-
-private fun writeLockFor(target: File): Any {
-    return synchronized(WriteLocks) {
-        WriteLocks.getOrPut(target.absolutePath) { Any() }
     }
 }
 
