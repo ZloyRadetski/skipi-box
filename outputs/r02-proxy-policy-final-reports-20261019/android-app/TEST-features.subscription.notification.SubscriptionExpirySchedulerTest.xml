@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.notification.SubscriptionExpirySchedulerTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:33:11.742Z" hostname="VQSeGo" time="0.018">
+  <properties/>
+  <testcase name="android_baseline_schedules_earliest_future_trigger_from_eligible_groups_and_overrides" classname="features.subscription.notification.SubscriptionExpirySchedulerTest" time="0.017"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
