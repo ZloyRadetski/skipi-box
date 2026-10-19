@@ -5,6 +5,11 @@ package features.resources.runtime
 
 import android.content.Context
 import android.net.Network
+import engine.network.TunnelNetworks
+import features.resources.runtime.ResourceFileDownloadAttemptFactory
+import features.resources.runtime.ResourceFileDownloadConnection
+import features.resources.runtime.ResourceFileDownloadConnectionOpener
+import features.resources.runtime.ResourceFileDownloadTransfer
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -12,7 +17,6 @@ import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.SocketException
 import java.net.URI
-import engine.network.TunnelNetworks
 
 internal class AndroidResourceFileDownloader(
     private val context: Context? = null,
@@ -27,96 +31,36 @@ internal class AndroidResourceFileDownloader(
         if (proxy != null) {
             try {
                 proxy.withAuthenticator {
-                    downloadWithRetries(url, target, proxy, userAgent, onProgress)
+                    transfer(target, proxy, userAgent).download(url, onProgress)
                 }
                 return
             } catch (_: IOException) {
                 AndroidResourceFileLogger.info("Proxy download failed, falling back to direct connection")
             }
         }
-        downloadWithRetries(url, target, null, userAgent, onProgress)
+        transfer(target, null, userAgent).download(url, onProgress)
     }
 
-    private fun downloadWithRetries(
-        url: String,
+    private fun transfer(
         target: File,
         proxy: AndroidResourceFileDownloadProxy?,
         userAgent: String?,
-        onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit,
-    ) {
-        var lastError: Throwable? = null
-        repeat(MaxRetries) { attempt ->
-            try {
-                downloadWithRedirects(url, target, proxy, userAgent, onProgress)
-                return
-            } catch (error: Throwable) {
-                if (AndroidResourceFileDownloadCancellation.isCancelled()) {
-                    throw AndroidResourceFileDownloadCancelledException()
-                }
-                if (error is IOException && attempt < MaxRetries - 1) {
-                    lastError = error
-                    Thread.sleep(RetryBackoffMs * (1L shl attempt))
-                } else {
-                    throw error
-                }
+    ): ResourceFileDownloadTransfer = ResourceFileDownloadTransfer(
+        attempts = ResourceFileDownloadAttemptFactory {
+            val vpnNetwork = AndroidVpnNetworkSnapshot(TunnelNetworks.locateVpnNetwork(context))
+            ResourceFileDownloadConnectionOpener { uri ->
+                AndroidResourceFileDownloadConnection(
+                    uri = uri,
+                    proxy = proxy,
+                    userAgent = userAgent,
+                    vpnNetwork = vpnNetwork,
+                )
             }
-        }
-        throw lastError ?: error("Download failed")
-    }
-
-    private fun downloadWithRedirects(
-        url: String,
-        target: File,
-        proxy: AndroidResourceFileDownloadProxy?,
-        userAgent: String?,
-        onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit,
-    ) {
-        var vpnNetwork = TunnelNetworks.locateVpnNetwork(context)
-        var currentUrl = url
-        repeat(MaxRedirects) {
-            var connection = URI.create(currentUrl).toUrlConnection(proxy, userAgent, vpnNetwork)
-            try {
-                AndroidResourceFileDownloadCancellation.track(connection)
-                AndroidResourceFileDownloadCancellation.throwIfCancelled()
-                val code = try {
-                    connection.responseCode
-                } catch (error: SocketException) {
-                    if (vpnNetwork != null) {
-                        AndroidResourceFileLogger.info("VPN socket binding failed ($error), falling back to direct network")
-                        vpnNetwork = null
-                        AndroidResourceFileDownloadCancellation.untrack(connection)
-                        connection.disconnect()
-                        connection = URI.create(currentUrl).toUrlConnection(proxy, userAgent, null)
-                        AndroidResourceFileDownloadCancellation.track(connection)
-                        connection.responseCode
-                    } else {
-                        throw error
-                    }
-                }
-                AndroidResourceFileDownloadCancellation.throwIfCancelled()
-                if (code in 300..399) {
-                    val location = connection.getHeaderField("Location")
-                        ?: error("Redirect location missing")
-                    currentUrl = URI(currentUrl).resolve(location).toString()
-                    return@repeat
-                }
-                if (code !in 200..299) {
-                    error("HTTP $code")
-                }
-                val totalBytes = connection.contentLengthLong
-                connection.inputStream.use { input ->
-                    writeAtomically(target) { output ->
-                        input.copyToWithProgress(output, totalBytes, onProgress)
-                    }
-                }
-                return
-            } finally {
-                AndroidResourceFileDownloadCancellation.untrack(connection)
-                connection.disconnect()
-            }
-        }
-        error("Too many redirects")
-    }
+        },
+        publishAtomically = { write -> writeAtomically(target, write) },
+        isCancelled = AndroidResourceFileDownloadCancellation::isCancelled,
+        throwIfCancelled = AndroidResourceFileDownloadCancellation::throwIfCancelled,
+    )
 }
 
 internal data class AndroidResourceFileDownloadProxy(
@@ -125,6 +69,53 @@ internal data class AndroidResourceFileDownloadProxy(
     val username: String,
     val password: String,
 )
+
+private class AndroidVpnNetworkSnapshot(var network: Network?)
+
+/** Adapts a single Android HTTP connection to the shared transfer contract. */
+private class AndroidResourceFileDownloadConnection(
+    private val uri: URI,
+    private val proxy: AndroidResourceFileDownloadProxy?,
+    private val userAgent: String?,
+    private val vpnNetwork: AndroidVpnNetworkSnapshot,
+) : ResourceFileDownloadConnection {
+    private var connection = uri.toUrlConnection(proxy, userAgent, vpnNetwork.network)
+
+    override val responseCode: Int
+        get() {
+            AndroidResourceFileDownloadCancellation.track(connection)
+            AndroidResourceFileDownloadCancellation.throwIfCancelled()
+            return try {
+                connection.responseCode
+            } catch (error: SocketException) {
+                if (vpnNetwork.network != null) {
+                    AndroidResourceFileLogger.info("VPN socket binding failed ($error), falling back to direct network")
+                    vpnNetwork.network = null
+                    AndroidResourceFileDownloadCancellation.untrack(connection)
+                    connection.disconnect()
+                    connection = uri.toUrlConnection(proxy, userAgent, null)
+                    AndroidResourceFileDownloadCancellation.track(connection)
+                    connection.responseCode
+                } else {
+                    throw error
+                }
+            }
+        }
+
+    override val location: String?
+        get() = connection.getHeaderField("Location")
+
+    override val contentLength: Long
+        get() = connection.contentLengthLong
+
+    override val inputStream
+        get() = connection.inputStream
+
+    override fun disconnect() {
+        AndroidResourceFileDownloadCancellation.untrack(connection)
+        connection.disconnect()
+    }
+}
 
 private fun URI.toUrlConnection(
     proxy: AndroidResourceFileDownloadProxy?,
@@ -161,9 +152,6 @@ private fun <T> AndroidResourceFileDownloadProxy?.withAuthenticator(block: () ->
     )
 }
 
-private const val MaxRedirects = 5
-private const val MaxRetries = 3
-private const val RetryBackoffMs = 1000L
 private const val ResourceFileDefaultUserAgent = "SKIPI/1.0"
 
 internal fun overallProgress(
@@ -176,23 +164,4 @@ internal fun overallProgress(
     val completedFiles = fileIndex.coerceAtLeast(0).toDouble()
     val currentFileProgress = (downloadedBytes.toDouble() / totalBytes.toDouble()).coerceIn(0.0, 1.0)
     return (((completedFiles + currentFileProgress) / fileCount.toDouble()) * 100).toInt().coerceIn(0, 100)
-}
-
-private fun java.io.InputStream.copyToWithProgress(
-    output: java.io.OutputStream,
-    totalBytes: Long,
-    onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit,
-) {
-    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-    var downloadedBytes = 0L
-    onProgress(downloadedBytes, totalBytes)
-    while (true) {
-        AndroidResourceFileDownloadCancellation.throwIfCancelled()
-        val bytesRead = read(buffer)
-        if (bytesRead < 0) break
-        AndroidResourceFileDownloadCancellation.throwIfCancelled()
-        output.write(buffer, 0, bytesRead)
-        downloadedBytes += bytesRead
-        onProgress(downloadedBytes, totalBytes)
-    }
 }
