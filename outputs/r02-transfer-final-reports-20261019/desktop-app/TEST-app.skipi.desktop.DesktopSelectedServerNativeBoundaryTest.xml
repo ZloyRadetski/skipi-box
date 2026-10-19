@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSelectedServerNativeBoundaryTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:32:22.788Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="automaticGroupWithAmneziaWgMemberFailsWithoutADesktopNativeBridge" classname="app.skipi.desktop.DesktopSelectedServerNativeBoundaryTest" time="0.001"/>
+  <testcase name="selectedAmneziaWgFailsWithoutADesktopNativeBridge" classname="app.skipi.desktop.DesktopSelectedServerNativeBoundaryTest" time="0.0"/>
+  <testcase name="selectedOlcRtcFailsWithoutADesktopNativeBridge" classname="app.skipi.desktop.DesktopSelectedServerNativeBoundaryTest" time="0.001"/>
+  <testcase name="chainWithOlcRtcMemberFailsWithoutADesktopNativeBridge" classname="app.skipi.desktop.DesktopSelectedServerNativeBoundaryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

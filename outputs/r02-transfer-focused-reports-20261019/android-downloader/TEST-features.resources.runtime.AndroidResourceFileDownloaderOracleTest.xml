@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:31:13.493Z" hostname="VQSeGo" time="2.546">
+  <properties/>
+  <testcase name="getUsesDefaultUserAgentAndAtomicallyReplacesExistingTarget" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="2.12"/>
+  <testcase name="httpFailureIsNotRetriedAndLeavesExistingTargetIntact" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="0.026"/>
+  <testcase name="followsRelativeRedirectToResolvedPath" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="0.066"/>
+  <testcase name="preCancelledDownloadDoesNotSendARequestOrReplaceTheTarget" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="0.019"/>
+  <testcase name="progressReportsKnownAndUnknownContentLength" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="0.064"/>
+  <testcase name="permitsFourRedirectsAcrossFiveRequestHopsAndRejectsAFifthRedirect" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="0.068"/>
+  <testcase name="overallProgressKeepsItsExistingBoundsAndUnknownLengthRules" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="0.016"/>
+  <testcase name="emptySuccessBodyIsRejectedAndLeavesExistingTargetIntact" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="0.018"/>
+  <testcase name="cancellationDuringProgressDoesNotReplaceTheTarget" classname="features.resources.runtime.AndroidResourceFileDownloaderOracleTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.usecase.AndroidSubscriptionRefreshBatchCancellationParityTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:32:07.498Z" hostname="VQSeGo" time="0.042">
+  <properties/>
+  <testcase name="cancellationAfterCatalogWriteStillAppliesMetadataAndEmbeddedProfileWrite" classname="features.proxy.server.usecase.AndroidSubscriptionRefreshBatchCancellationParityTest" time="0.041"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
