@@ -30,6 +30,8 @@ internal class DesktopProfileResourceFiles(
         )
     }
 
+    fun createDownloader(): DesktopResourceFileDownloader = DesktopResourceFileDownloader(::writeAtomically)
+
     fun prepare(
         profile: TrafficConfigState,
         bundledUpdatedAtMillis: Long,
