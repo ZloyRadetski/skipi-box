@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTunnelStartAssetsPlannerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:20:43.446Z" hostname="VQSeGo" time="0.019">
+  <properties/>
+  <testcase name="selectedConfigProfileAndItsRawResourceSourceSupplyTheCoreAssetsPath" classname="app.skipi.desktop.DesktopTunnelStartAssetsPlannerTest" time="0.006"/>
+  <testcase name="dynamicPortRetryKeepsTheCapturedProfileConfigAndAssetsDirectory" classname="app.skipi.desktop.DesktopTunnelStartAssetsPlannerTest" time="0.008"/>
+  <testcase name="unresolvedSelectedConfigIdFallsBackToSelectedServerWithoutPreparingAnyProfile" classname="app.skipi.desktop.DesktopTunnelStartAssetsPlannerTest" time="0.002"/>
+  <testcase name="preparedConfigurationUsesGlobalAssetsFallbackWithoutPreparingAProfile" classname="app.skipi.desktop.DesktopTunnelStartAssetsPlannerTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
