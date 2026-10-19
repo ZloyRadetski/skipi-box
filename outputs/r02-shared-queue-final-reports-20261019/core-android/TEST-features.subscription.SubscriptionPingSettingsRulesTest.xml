@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionPingSettingsRulesTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:08:28.670Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="validatesHttpUrlsAndTimeoutBounds" classname="features.subscription.SubscriptionPingSettingsRulesTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

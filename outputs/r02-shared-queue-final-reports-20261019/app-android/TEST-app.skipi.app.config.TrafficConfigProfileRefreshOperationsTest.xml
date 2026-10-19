@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:08:30.376Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="automaticRefreshImportsFetchedSettingsButKeepsCurrentSchedulingAndLockPolicy" classname="app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest" time="0.002"/>
+  <testcase name="acknowledgingLockedRefreshUsesCapturedProfileAndExplicitUnlockMode" classname="app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest" time="0.001"/>
+  <testcase name="blankCapturedUrlFallsBackToFetchedDocumentUrl" classname="app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest" time="0.0"/>
+  <testcase name="manualRefreshDecisionRequestsConfirmationOnlyForLockedProfile" classname="app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest" time="0.0"/>
+  <testcase name="lateManualResponseTransformsLatestSameIdAndKeepsMissingNameAndUnrelatedRows" classname="app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest" time="0.002"/>
+  <testcase name="manualRefreshUsesFetchedPortableSettingsAndUnlockOverridesFetchedLock" classname="app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest" time="0.0"/>
+  <testcase name="dismissingLockedRefreshConfirmationProducesNoRefreshRequest" classname="app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

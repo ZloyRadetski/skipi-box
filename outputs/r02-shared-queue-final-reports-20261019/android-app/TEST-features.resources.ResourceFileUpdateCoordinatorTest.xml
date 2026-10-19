@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.ResourceFileUpdateCoordinatorTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-19T14:08:33.180Z" hostname="VQSeGo" time="0.01">
+  <properties/>
+  <testcase name="cancelAllClearsPendingWorkAndCallsTheRunningCancellationCallback" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.002"/>
+  <testcase name="downloadCancellationProducesCancelledResultAndContinuesQueue" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.002"/>
+  <testcase name="ordinaryFailureEmitsFailureThenQueueContinuesWithTheNextRequest" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>
+  <testcase name="updatesRunSeriallyInFifoOrderAndRejectOverlappingTargetsAcrossProfiles" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.002"/>
+  <testcase name="coroutineCancellationClearsQueueWithoutResultOrCompletionRevision" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>
+  <testcase name="allRequestIncludesFiveBuiltInsAndOnlyCustomFilesWithNonblankUrls" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>
+  <testcase name="allRequestIsRejectedWheneverAnyRequestIsRunningOrQueued" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.0"/>
+  <testcase name="requestKeepsItsCapturedScopeAndCopiesTheCustomFileList" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
