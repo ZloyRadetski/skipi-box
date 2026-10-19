@@ -5,25 +5,6 @@ package app
 
 import androidx.compose.runtime.Stable
 import features.config.TrafficConfigCustomResourceFile
-import features.resources.ResourceFileChocolate4UGeoIpUrl
-import features.resources.ResourceFileChocolate4UGeoSiteUrl
-import features.resources.ResourceFileDirectCidrIpv4Url
-import features.resources.ResourceFileDirectCidrIpv6Url
-import features.resources.ResourceFileLoyalsoldierGeoIpUrl
-import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
-import features.resources.ResourceFileRoscomvpnGeoIpUrl
-import features.resources.ResourceFileRoscomvpnGeoSiteUrl
-import features.resources.ResourceFileRunetFreedomGeoIpUrl
-import features.resources.ResourceFileRunetFreedomGeoSiteUrl
-import features.resources.ResourceFileSourceChocolate4UGithub
-import features.resources.ResourceFileSourceCustom
-import features.resources.ResourceFileSourceLoyalsoldierGithub
-import features.resources.ResourceFileSourceRoscomvpnGithub
-import features.resources.ResourceFileSourceRunetFreedomGithub
-import features.resources.ResourceFileSourceV2FlyGithub
-import features.resources.ResourceFileV2FlyGeoIpUrl
-import features.resources.ResourceFileV2FlyGeoIpOnlyCnPrivateUrl
-import features.resources.ResourceFileV2FlyGeoSiteUrl
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.Serializable
 
@@ -88,82 +69,22 @@ typealias CustomResourceFileStatus = features.resources.CustomResourceFileStatus
 
 typealias ResourceFilesStatus = features.resources.ResourceFilesStatus
 
-data class ResourceFileUpdateSource(
-    val id: Int,
-    val geoIpUrl: String,
-    val geoSiteUrl: String,
-    val geoIpOnlyCnPrivateUrl: String,
-    val directCidrIpv4Url: String,
-    val directCidrIpv6Url: String,
-)
+typealias ResourceFileUpdateSource = features.resources.ResourceFileUpdateSource
 
-val ResourceFileUpdateSources = listOf(
-    ResourceFileUpdateSource(
-        id = ResourceFileSourceLoyalsoldierGithub,
-        geoIpUrl = ResourceFileLoyalsoldierGeoIpUrl,
-        geoSiteUrl = ResourceFileLoyalsoldierGeoSiteUrl,
-        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
-        directCidrIpv4Url = ResourceFileDirectCidrIpv4Url,
-        directCidrIpv6Url = ResourceFileDirectCidrIpv6Url,
-    ),
-    ResourceFileUpdateSource(
-        id = ResourceFileSourceV2FlyGithub,
-        geoIpUrl = ResourceFileV2FlyGeoIpUrl,
-        geoSiteUrl = ResourceFileV2FlyGeoSiteUrl,
-        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
-        directCidrIpv4Url = ResourceFileDirectCidrIpv4Url,
-        directCidrIpv6Url = ResourceFileDirectCidrIpv6Url,
-    ),
-    ResourceFileUpdateSource(
-        id = ResourceFileSourceChocolate4UGithub,
-        geoIpUrl = ResourceFileChocolate4UGeoIpUrl,
-        geoSiteUrl = ResourceFileChocolate4UGeoSiteUrl,
-        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
-        directCidrIpv4Url = ResourceFileDirectCidrIpv4Url,
-        directCidrIpv6Url = ResourceFileDirectCidrIpv6Url,
-    ),
-    ResourceFileUpdateSource(
-        id = ResourceFileSourceRunetFreedomGithub,
-        geoIpUrl = ResourceFileRunetFreedomGeoIpUrl,
-        geoSiteUrl = ResourceFileRunetFreedomGeoSiteUrl,
-        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
-        directCidrIpv4Url = ResourceFileDirectCidrIpv4Url,
-        directCidrIpv6Url = ResourceFileDirectCidrIpv6Url,
-    ),
-    ResourceFileUpdateSource(
-        id = ResourceFileSourceRoscomvpnGithub,
-        geoIpUrl = ResourceFileRoscomvpnGeoIpUrl,
-        geoSiteUrl = ResourceFileRoscomvpnGeoSiteUrl,
-        geoIpOnlyCnPrivateUrl = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
-        directCidrIpv4Url = ResourceFileDirectCidrIpv4Url,
-        directCidrIpv6Url = ResourceFileDirectCidrIpv6Url,
-    ),
-)
+val ResourceFileUpdateSources = features.resources.ResourceFileUpdateSources
 
 fun resourceFileUpdateSourceAt(index: Int): ResourceFileUpdateSource {
-    return ResourceFileUpdateSources.getOrElse(index) { ResourceFileUpdateSources.first() }
+    return features.resources.resourceFileUpdateSourceAt(index)
 }
 
-fun AppState.resourceFileUpdateSource(): ResourceFileUpdateSource {
-    if (resourceFileSource != ResourceFileSourceCustom) {
-        return resourceFileUpdateSourceAt(resourceFileSource)
-    }
-    val fallback = ResourceFileUpdateSources.first()
-    return ResourceFileUpdateSource(
-        id = ResourceFileSourceCustom,
-        geoIpUrl = customResourceFileGeoIpUrl.trim().ifBlank { fallback.geoIpUrl },
-        geoSiteUrl = customResourceFileGeoSiteUrl.trim().ifBlank { fallback.geoSiteUrl },
-        geoIpOnlyCnPrivateUrl = customResourceFileGeoIpOnlyCnPrivateUrl.trim().ifBlank {
-            fallback.geoIpOnlyCnPrivateUrl
-        },
-        directCidrIpv4Url = customResourceFileDirectCidrIpv4Url.trim().ifBlank {
-            fallback.directCidrIpv4Url
-        },
-        directCidrIpv6Url = customResourceFileDirectCidrIpv6Url.trim().ifBlank {
-            fallback.directCidrIpv6Url
-        },
-    )
-}
+fun AppState.resourceFileUpdateSource(): ResourceFileUpdateSource = features.resources.resolveResourceFileUpdateSource(
+    source = resourceFileSource,
+    customGeoIpUrl = customResourceFileGeoIpUrl,
+    customGeoSiteUrl = customResourceFileGeoSiteUrl,
+    customGeoIpOnlyCnPrivateUrl = customResourceFileGeoIpOnlyCnPrivateUrl,
+    customDirectCidrIpv4Url = customResourceFileDirectCidrIpv4Url,
+    customDirectCidrIpv6Url = customResourceFileDirectCidrIpv6Url,
+)
 
 fun ResourceFilesStatus.statusOf(kind: ResourceFileKind): ResourceFileStatus {
     return when (kind) {

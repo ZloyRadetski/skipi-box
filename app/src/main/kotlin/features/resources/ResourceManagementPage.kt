@@ -44,8 +44,6 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.ResourceFileKind
-import app.ResourceFileUpdateSource
-import app.ResourceFileUpdateSources
 import app.ResourceFilesStatus
 import app.collectAppState
 import app.customResourceFileNameOrNull
@@ -580,21 +578,6 @@ internal fun AppState.resourceFileUpdateOptions(userAgent: String): ResourceFile
         fallbackProxyPassword = localProxyPassword,
         userAgent = userAgent,
         showNotifications = enableResourceFileNotifications,
-    )
-}
-
-internal fun TrafficConfigResourceSettings.resourceFileUpdateSource(): ResourceFileUpdateSource {
-    if (source != ResourceFileSourceCustom) {
-        return ResourceFileUpdateSources.getOrElse(source) { ResourceFileUpdateSources.first() }
-    }
-    val fallback = ResourceFileUpdateSources.first()
-    return ResourceFileUpdateSource(
-        id = ResourceFileSourceCustom,
-        geoIpUrl = customGeoIpUrl.trim().ifBlank { fallback.geoIpUrl },
-        geoSiteUrl = customGeoSiteUrl.trim().ifBlank { fallback.geoSiteUrl },
-        geoIpOnlyCnPrivateUrl = customGeoIpOnlyCnPrivateUrl.trim().ifBlank { fallback.geoIpOnlyCnPrivateUrl },
-        directCidrIpv4Url = customDirectCidrIpv4Url.trim().ifBlank { fallback.directCidrIpv4Url },
-        directCidrIpv6Url = customDirectCidrIpv6Url.trim().ifBlank { fallback.directCidrIpv6Url },
     )
 }
 
