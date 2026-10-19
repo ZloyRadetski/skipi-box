@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SettingsDraftsTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T13:51:10.189Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="fragmentSaveNormalizesRangesAndFallsBackToExistingDefaults[desktop]" classname="app.skipi.app.settings.SettingsDraftsTest" time="0.001"/>
+  <testcase name="muxSaveNormalizesWhitespaceMalformedValuesAndRetainsPersistedModeOrdinal[desktop]" classname="app.skipi.app.settings.SettingsDraftsTest" time="0.0"/>
+  <testcase name="openingSettingsPreservesEditableValuesAndAppliesEffectiveFakeDnsRule[desktop]" classname="app.skipi.app.settings.SettingsDraftsTest" time="0.001"/>
+  <testcase name="numericValidatorsTrimLikeExistingSettingsValidators[desktop]" classname="app.skipi.app.settings.SettingsDraftsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T13:40:19.435Z" hostname="VQSeGo" time="2.103">
+  <properties/>
+  <testcase name="generatedChainCarriesLoopbackTrafficThroughItsConfiguredHopOrder" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="1.082"/>
+  <testcase name="generatedAutomaticGroupStartsAndRoutesLoopbackTrafficThroughAMember" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="1.021"/>
+  <system-out><![CDATA[[2026-10-19 16:40:19.507] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 8)
+[2026-10-19 16:40:20.512] [INFO] [CoreController] Stopped in-process SKIPI Core session 8
+[2026-10-19 16:40:20.532] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 9)
+[2026-10-19 16:40:21.534] [INFO] [CoreController] Stopped in-process SKIPI Core session 9
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

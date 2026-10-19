@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.theme.AppearanceColorOverridesTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T13:51:18.870Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="enabledCustomColorsOverrideOnlyConfiguredRoles" classname="app.skipi.ui.theme.AppearanceColorOverridesTest" time="0.001"/>
+  <testcase name="enabledCustomColorsOverrideAndroidPaletteRoles" classname="app.skipi.ui.theme.AppearanceColorOverridesTest" time="0.0"/>
+  <testcase name="namedThemeAccentWinsOverDisabledCustomAccent" classname="app.skipi.ui.theme.AppearanceColorOverridesTest" time="0.0"/>
+  <testcase name="dynamicColorsPreventDisabledCustomAccentFallback" classname="app.skipi.ui.theme.AppearanceColorOverridesTest" time="0.001"/>
+  <testcase name="disabledCustomPaletteOnlyKeepsAndroidAccentFallback" classname="app.skipi.ui.theme.AppearanceColorOverridesTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
