@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyServerSingleDeleteCoordinatorTest[desktop]" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:26:57.231Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="serviceOperationBusyRejectsEvenAnUnselectedDelete[desktop]" classname="app.skipi.app.proxy.ProxyServerSingleDeleteCoordinatorTest" time="0.002"/>
+  <testcase name="concurrentRemovalAfterStopSkipsStopStateAndSuccessFeedback[desktop]" classname="app.skipi.app.proxy.ProxyServerSingleDeleteCoordinatorTest" time="0.001"/>
+  <testcase name="unselectedOrStoppedServerDispatchesWithoutStopping[desktop]" classname="app.skipi.app.proxy.ProxyServerSingleDeleteCoordinatorTest" time="0.001"/>
+  <testcase name="successfulSelectedRunningDeleteDispatchesBeforeApplyingStopState[desktop]" classname="app.skipi.app.proxy.ProxyServerSingleDeleteCoordinatorTest" time="0.001"/>
+  <testcase name="missingServerAndFailedStopKeepCatalogAndUseTheirDistinctCallbacks[desktop]" classname="app.skipi.app.proxy.ProxyServerSingleDeleteCoordinatorTest" time="0.001"/>
+  <testcase name="cancellationFromStopPropagatesWithoutDeleteOrFeedback[desktop]" classname="app.skipi.app.proxy.ProxyServerSingleDeleteCoordinatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

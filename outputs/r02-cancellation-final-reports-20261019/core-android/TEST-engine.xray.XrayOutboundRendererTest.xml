@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayOutboundRendererTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:26:51.469Z" hostname="VQSeGo" time="0.027">
+  <properties/>
+  <testcase name="localDnsUsesLoopbackOutboundsAndTheSuppliedDnsPlan" classname="engine.xray.XrayOutboundRendererTest" time="0.019"/>
+  <testcase name="disabledDnsOmitsLoopbacksAndDnsOutboundEvenWithAPlan" classname="engine.xray.XrayOutboundRendererTest" time="0.0"/>
+  <testcase name="rendersProxyOverlaysAndPrimaryOutboundOrder" classname="engine.xray.XrayOutboundRendererTest" time="0.003"/>
+  <testcase name="absentDesktopTransportAndOptionalFeaturesKeepLocalOutboundShape" classname="engine.xray.XrayOutboundRendererTest" time="0.0"/>
+  <testcase name="wireguardUsesSettingsOverlayAndKeepAliveWithoutSockoptOverlay" classname="engine.xray.XrayOutboundRendererTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

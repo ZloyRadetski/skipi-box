@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="data.RoomMigrationCompatibilityTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:27:25.873Z" hostname="VQSeGo" time="2.569">
+  <properties/>
+  <testcase name="exportedVersions4Through6MigrateTo7AndKeepHomeData" classname="data.RoomMigrationCompatibilityTest" time="2.385"/>
+  <testcase name="version1DatabaseOpensAtVersion7AndKeepsHomeData" classname="data.RoomMigrationCompatibilityTest" time="0.061"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
