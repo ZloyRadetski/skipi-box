@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.importer.ConfImportTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:46:10.092Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="unsafeAmneziaWireguardConfIsRejectedBeforeItCanReachTheNativeRunner" classname="features.proxy.server.importer.ConfImportTest" time="0.002"/>
+  <testcase name="amneziaWireguardConfImportsAsAmneziaWg" classname="features.proxy.server.importer.ConfImportTest" time="0.002"/>
+  <testcase name="standardWireguardConfImportsAsWireguard" classname="features.proxy.server.importer.ConfImportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

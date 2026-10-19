@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionRefreshBatchTest[desktop]" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:46:09.404Z" hostname="VQSeGo" time="0.021">
+  <properties/>
+  <testcase name="aggregateCatalogWriteFailureStopsBeforeMetadataAndProfiles[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.002"/>
+  <testcase name="batchOperationLoadsConcurrentlyKeepsAllRefreshingIdsThroughAggregateCommitAndIsolatesFetchFailure[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.004"/>
+  <testcase name="aggregateReconciliationFiltersStaleAndDeletedSourcesAgainstLatestState[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="disabledOnlyUrlSetHasNoEligibleFetchOrCommit[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="batchCommitUsesOneAggregateCatalogThenOneMetadataAndOrderedProfileBoundary[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="batchReentryWaitsForFirstRunThenCapturesFreshEligibilityInsideTheMutex[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.002"/>
+  <testcase name="batchEligibilityUsesTheCapturedEnabledNonblankSubscriptionsInCatalogOrder[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.002"/>
+  <testcase name="aggregatePersistenceFailurePropagatesOutsideFetchFailureListAndClearsProgress[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="aggregateCommitFailureAfterCatalogWritePropagatesAndLeavesCatalogApplied[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="aggregateReconciliationMatchesAndroidIdsOrderReferencesSelectionAndProfiles[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.001"/>
+  <testcase name="cancellingBatchClearsProgressWithoutCommitting[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.002"/>
+  <testcase name="oneSuccessfulLoadUsesSingleCommitPathWhileMultipleUseAggregatePath[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

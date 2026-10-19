@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopVisualThemeContractTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:46:27.318Z" hostname="VQSeGo" time="0.065">
+  <properties/>
+  <testcase name="desktopDarkLightAmoledAndNamedPalettesMatchAndroidBaseRoles" classname="app.skipi.desktop.DesktopVisualThemeContractTest" time="0.002"/>
+  <testcase name="eachAndroidCustomFontModeLoadsItsBundledFontOnDesktop" classname="app.skipi.desktop.DesktopVisualThemeContractTest" time="0.063"/>
+  <testcase name="desktopThemeAppliesTheSharedAndroidCustomPalettePolicy" classname="app.skipi.desktop.DesktopVisualThemeContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

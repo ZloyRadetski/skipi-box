@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.AndroidResourceFileUpdatePlanOracleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:46:17.786Z" hostname="VQSeGo" time="0.458">
+  <properties/>
+  <testcase name="allUpdateKeepsPublishedPrefixAndDoesNotMarkOrContinueAfterFailure" classname="features.resources.runtime.AndroidResourceFileUpdatePlanOracleTest" time="0.026"/>
+  <testcase name="singleBuiltInAndCustomDoNotMarkSourceAndCoreIsRejectedBeforeNetwork" classname="features.resources.runtime.AndroidResourceFileUpdatePlanOracleTest" time="0.07"/>
+  <testcase name="allUpdateDownloadsBuiltInsThenEligibleCustomsAndMarksRawScopeSource" classname="features.resources.runtime.AndroidResourceFileUpdatePlanOracleTest" time="0.36"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
