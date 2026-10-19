@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="XrayOutboundPlannerTest[desktop]" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-19T13:56:20.587Z" hostname="VQSeGo" time="0.016">
+  <properties/>
+  <testcase name="selectedAndReferencedOutboundsKeepAndroidOrderAndFixedTargets[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.003"/>
+  <testcase name="strategyGroupWithoutAvailableMembersFailsClearly[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="filteredStrategyGroupRebindsDuplicateIdToFirstSourceRecord[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <testcase name="customOutboundWithoutAProxyCandidateFailsClearly[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.009"/>
+  <testcase name="shadowrocketAliasWithoutAvailableMembersIsSkipped[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="chainReversesUsableMembersAndAssignsDialerTagsWithoutFragment[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <testcase name="customOutboundSelectsProxyAndContributesHostsOnlyWhenOverrideIsEnabled[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="selectGroupUsesSelectedMemberAndFallsBackToFirstConfiguredMember[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="chainRejectsFewerThanTwoUsableMembers[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="disabledShadowrocketRouteStillPlansItsMatchingStrategyAlias[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <testcase name="automaticGroupsKeepSelectedFallbackThenChooseLatencyAndFirstProbeSettings[desktop]" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

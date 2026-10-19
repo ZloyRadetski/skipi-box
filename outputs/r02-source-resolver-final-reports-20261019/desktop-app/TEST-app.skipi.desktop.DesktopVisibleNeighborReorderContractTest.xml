@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopVisibleNeighborReorderContractTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-19T13:56:37.967Z" hostname="VQSeGo" time="0.0">
+  <properties/>
+  <testcase name="movingToNextVisibleGroupRowMatchesAndroidWholeCatalogMove" classname="app.skipi.desktop.DesktopVisibleNeighborReorderContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
