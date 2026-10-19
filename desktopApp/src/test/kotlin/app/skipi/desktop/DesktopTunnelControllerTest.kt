@@ -52,8 +52,8 @@ class DesktopTunnelControllerTest {
                 resolvedProfile = true
                 Result.failure(IllegalStateException("should use provided config"))
             },
-            startCore = { config ->
-                startedConfiguration = config
+            startCore = { request ->
+                startedConfiguration = request.configuration
                 running = true
                 Result.success(DesktopCoreState(isRunning = true))
             },

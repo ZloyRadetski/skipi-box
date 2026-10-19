@@ -15,6 +15,13 @@ import platform.TunnelOperationStage
 import platform.TunnelPhase
 import platform.TunnelSnapshot
 import platform.TunnelTraffic
+import java.nio.file.Path
+
+/** The exact configuration and optional profile-scoped assets for one Core start attempt. */
+data class DesktopCoreStartRequest(
+    val configuration: String,
+    val assetsDirectory: Path? = null,
+)
 
 /** Immutable profile-start snapshot whose rebuild excludes failed dynamic listener ports. */
 data class DesktopTunnelStartPlan(
@@ -22,6 +29,7 @@ data class DesktopTunnelStartPlan(
     val dynamicPortEnabled: Boolean,
     val localProxyPort: Int,
     val rebuild: (Set<Int>) -> DesktopTunnelStartPlan,
+    val assetsDirectory: Path? = null,
 )
 
 /**
@@ -31,7 +39,7 @@ data class DesktopTunnelStartPlan(
  */
 class DesktopTunnelController(
     private val configForProfile: (String) -> Result<String>,
-    private val startCore: (String) -> Result<DesktopCoreState>,
+    private val startCore: (DesktopCoreStartRequest) -> Result<DesktopCoreState>,
     private val stopCore: () -> Result<DesktopCoreState>,
     private val coreState: () -> DesktopCoreState,
     private val readCoreTraffic: () -> Result<TunnelTraffic> = { Result.success(TunnelTraffic()) },
@@ -77,7 +85,12 @@ class DesktopTunnelController(
             var completedAttempts = 0
             while (true) {
                 operationStage = TunnelOperationStage.Start
-                val startResult = startCore(config)
+                val startResult = startCore(
+                    DesktopCoreStartRequest(
+                        configuration = config,
+                        assetsDirectory = startPlan?.assetsDirectory,
+                    ),
+                )
                 completedAttempts += 1
                 if (startResult.isSuccess) break
 

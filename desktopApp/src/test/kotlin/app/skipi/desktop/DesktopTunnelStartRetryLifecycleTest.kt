@@ -65,8 +65,8 @@ class DesktopTunnelStartRetryLifecycleTest {
                 // The plan closes over the settings/auth snapshot taken before the first start.
                 Result.success(buildPlan(latestSettings, emptySet()))
             },
-            startCore = { configuration ->
-                val port = configuration.substringAfter('=').toInt()
+            startCore = { request ->
+                val port = request.configuration.substringAfter('=').toInt()
                 startCalls += 1
                 startEvents += "start:$port"
                 if (startCalls == 1) {

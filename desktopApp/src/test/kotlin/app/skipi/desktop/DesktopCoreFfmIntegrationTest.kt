@@ -246,9 +246,9 @@ class DesktopCoreFfmIntegrationTest {
         val tunnelController = DesktopTunnelController(
             configForProfile = { error("dynamic start plan must be used") },
             startPlanForProfile = { _ -> Result.success(buildPlan(emptySet())) },
-            startCore = { configuration ->
+            startCore = { request ->
                 coreStartCalls += 1
-                val result = coreController.start(configuration)
+                val result = coreController.start(request.configuration, request.assetsDirectory)
                 if (coreStartCalls == 1) {
                     firstStartFailure = result.exceptionOrNull()
                     assertNotNull(firstStartFailure)

@@ -223,6 +223,7 @@ fun main() = application {
                 var tunnelIntentVersion by remember { mutableStateOf(0L) }
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
                 val desktopLocalProxyRuntime = remember { DesktopLocalProxyRuntime() }
+                val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
 
                 fun requestTunnelReconnect(reason: String) {
                     pendingTunnelReconnectReason = reason
@@ -425,38 +426,21 @@ fun main() = application {
                                 val settingsSnapshot = latestDesktopSettings
                                 val serverLibrarySnapshot = latestServerLibrary
                                 val configLibrarySnapshot = latestConfigLibrary
-                                val trafficConfigContentSnapshot = configLibrarySnapshot.configs
-                                    .associate { config -> config.id to config.content }
-                                val subscriptionPingUrlSnapshot = settingsSnapshot.subscriptionPingUrl
                                 val latencySnapshot = latestLatencyByServerId.toMap()
-
-                                fun buildStartPlan(excludedPorts: Set<Int>): DesktopTunnelStartPlan {
-                                    val options = desktopLocalProxyRuntime.prepareStart(
-                                        settings = settingsSnapshot,
-                                        excludedPorts = excludedPorts,
-                                    )
-                                    val configuration = buildDesktopSelectedServerConfig(
-                                        serverLibrary = serverLibrarySnapshot,
-                                        configLibrary = configLibrarySnapshot,
-                                        options = options,
-                                        trafficConfigContentById = trafficConfigContentSnapshot,
-                                        subscriptionPingUrl = subscriptionPingUrlSnapshot,
-                                        latencyByServerId = latencySnapshot,
-                                    )?.getOrThrow()
-                                        ?: error("Select a working server before connecting")
-                                    return DesktopTunnelStartPlan(
-                                        configuration = configuration,
-                                        dynamicPortEnabled = settingsSnapshot.enableDynamicLocalProxyPort,
-                                        localProxyPort = options.socksPort,
-                                        rebuild = { failedPorts -> buildStartPlan(failedPorts) },
-                                    )
-                                }
-
-                                buildStartPlan(emptySet())
+                                prepareDesktopTunnelStartPlan(
+                                    settings = settingsSnapshot,
+                                    serverLibrary = serverLibrarySnapshot,
+                                    configLibrary = configLibrarySnapshot,
+                                    latencyByServerId = latencySnapshot,
+                                    localProxyRuntime = desktopLocalProxyRuntime,
+                                    resourceFiles = desktopProfileResourceFiles,
+                                )
                             }
                         },
-                        startCore = { config ->
-                            desktopLocalProxyRuntime.onCoreStarted(coreController.start(config))
+                        startCore = { request ->
+                            desktopLocalProxyRuntime.onCoreStarted(
+                                coreController.start(request.configuration, request.assetsDirectory),
+                            )
                         },
                         stopCore = {
                             desktopLocalProxyRuntime.onCoreStopped(coreController.stop())
