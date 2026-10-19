@@ -8,7 +8,7 @@ This tests-first slice adds the Desktop HTTP host adapter for the shared resourc
 
 The adapter tracks the live `HttpURLConnection` in the shared cancellation object before reading the response and untracks/disconnects it in the shared transfer's `finally` path. `DesktopProfileResourceFiles.createDownloader()` supplies the Desktop atomic publisher. That publisher writes to a same-directory temporary file, rejects empty output, replaces the target with `ATOMIC_MOVE` and `REPLACE_EXISTING`, and removes staging on failure. It has no non-atomic move fallback.
 
-The adapter is low-level only. Desktop does not yet connect it to a resource-update runner or resource UI. A source-parity detail remains for the next tests-first slice: Android's atomic writer serializes writes by target path, while Desktop's publisher currently does not. Atomic replacement protects readers from partial files, but concurrent writes to one path can finish in either order. This does not block the low-level adapter result; resolve or explicitly cover the writer-lock parity before runner wiring.
+The adapter is low-level only. Desktop does not yet connect it to a resource-update runner or resource UI. At this checkpoint, Android's atomic writer serialized writes by target path while Desktop's publisher did not. The later tests-first slice closed that gap by applying the shared absolute-path lock around both writers; see the [writer-lock and progress checkpoint](r02-write-lock-and-progress-verification.md). The runner and resource UI remain pending.
 
 ## Test-first and regression evidence
 
