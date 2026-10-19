@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigDocumentImportTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T20:03:43.796Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="earlierProfileNameMatchWinsOverLaterSourceUrlMatch[desktop]" classname="app.skipi.app.config.TrafficConfigDocumentImportTest" time="0.003"/>
+  <testcase name="firstMatchingSourceUrlRowUpdatesInPlaceBeforeLaterNameMatch[desktop]" classname="app.skipi.app.config.TrafficConfigDocumentImportTest" time="0.0"/>
+  <testcase name="profileNameMatchUpdatesInPlaceAndDoesNotReactivateExistingProfile[desktop]" classname="app.skipi.app.config.TrafficConfigDocumentImportTest" time="0.001"/>
+  <testcase name="unmatchedDocumentAppendsAtNextIdAndActivatesOnlyWhenRequested[desktop]" classname="app.skipi.app.config.TrafficConfigDocumentImportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
