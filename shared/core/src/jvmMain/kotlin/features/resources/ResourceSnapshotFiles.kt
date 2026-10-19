@@ -4,7 +4,6 @@
 package features.resources
 
 import features.config.TrafficConfigCustomResourceFile
-import features.config.sanitizeCustomResourceFileName
 import features.resources.runtime.openDecompressedStream
 import java.io.File
 import java.io.FileNotFoundException
@@ -31,13 +30,7 @@ class ResourceSnapshotFiles(
     }
 
     fun file(customFile: TrafficConfigCustomResourceFile): File {
-        return File(
-            dataDir,
-            sanitizeCustomResourceFileName(
-                value = customFile.name,
-                fallback = "custom-resource-${customFile.id}.dat",
-            ),
-        )
+        return File(dataDir, resourceFileName(customFile))
     }
 
     fun currentStatus(

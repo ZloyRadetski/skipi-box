@@ -16,6 +16,11 @@ import engine.network.isPort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import features.resources.ResourceFileUpdateOptions
+import features.resources.ResourceFileUpdateDownload
+import features.resources.ResourceFileUpdateDownloadPlan
+import features.resources.planAllResourceFileDownloads
+import features.resources.planBuiltInResourceFileDownload
+import features.resources.planCustomResourceFileDownload
 
 internal class AndroidResourceFileRepository(
     context: Context,
@@ -68,13 +73,13 @@ internal class AndroidResourceFileRepository(
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
-            scope = scope,
-            downloads = UpdateableResourceFileKinds.map { kind ->
-                kind.toDownloadTarget(scope, source)
-            } + customResourceFiles.mapNotNull { customFile -> customFile.toDownloadTargetOrNull(scope) },
+            plan = planAllResourceFileDownloads(
+                scope = scope,
+                source = source,
+                customFiles = customResourceFiles,
+            ),
             options = options,
             customResourceFiles = customResourceFiles,
-            markSourceAfterUpdate = true,
         )
     }
 
@@ -86,11 +91,13 @@ internal class AndroidResourceFileRepository(
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
-            scope = scope,
-            downloads = listOf(kind.toDownloadTarget(scope, source)),
+            plan = planBuiltInResourceFileDownload(
+                scope = scope,
+                kind = kind,
+                source = source,
+            ),
             options = options,
             customResourceFiles = customResourceFiles,
-            markSourceAfterUpdate = false,
         )
     }
 
@@ -101,22 +108,23 @@ internal class AndroidResourceFileRepository(
         customResourceFiles: List<CustomResourceFileState> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
-            scope = scope,
-            downloads = listOfNotNull(customFile.toDownloadTargetOrNull(scope)),
+            plan = planCustomResourceFileDownload(
+                scope = scope,
+                file = customFile,
+            ),
             options = options,
             customResourceFiles = customResourceFiles,
-            markSourceAfterUpdate = false,
         )
     }
 
     private fun updateTargets(
-        scope: XrayResourceFileScope,
-        downloads: List<ResourceFileDownloadTarget>,
+        plan: ResourceFileUpdateDownloadPlan,
         options: ResourceFileUpdateOptions,
         customResourceFiles: List<CustomResourceFileState>,
-        markSourceAfterUpdate: Boolean,
     ): ResourceFilesStatus {
+        val scope = plan.scope
         val store = store(scope)
+        val downloads = plan.downloads.map { download -> download.toDownloadTarget(store) }
         if (downloads.isEmpty()) {
             return store.currentStatus(customResourceFiles)
         }
@@ -157,7 +165,7 @@ internal class AndroidResourceFileRepository(
             store.currentStatus(customResourceFiles)
         }
         result.onSuccess {
-            if (markSourceAfterUpdate) {
+            if (plan.markResourceFileSourceAfterSuccess) {
                 store.markResourceFileSource(scope.resourceFileSource)
             }
             runCatching { notifier.showComplete() }
@@ -180,35 +188,20 @@ internal class AndroidResourceFileRepository(
         }
     }
 
-    private fun CustomResourceFileState.toDownloadTargetOrNull(scope: XrayResourceFileScope): ResourceFileDownloadTarget? {
-        val target = store(scope).file(this)
-        if (ResourceFileKind.entries.any { kind -> kind.fileName == target.name }) return null
-        val updateUrl = url.trim()
-        if (updateUrl.isBlank()) return null
-        return ResourceFileDownloadTarget(
-            displayName = name,
-            url = updateUrl,
-            targetFile = target,
+    private fun ResourceFileUpdateDownload.toDownloadTarget(
+        store: AndroidResourceFileStore,
+    ): ResourceFileDownloadTarget = when (this) {
+        is ResourceFileUpdateDownload.BuiltIn -> ResourceFileDownloadTarget(
+            displayName = kind.displayName,
+            url = url,
+            targetFile = store.file(kind),
+            applyPermissions = { store.applyPermissions(kind) },
         )
-    }
 
-    private fun ResourceFileKind.toDownloadTarget(
-        scope: XrayResourceFileScope,
-        source: ResourceFileUpdateSource,
-    ): ResourceFileDownloadTarget {
-        val updateUrl = when (this) {
-            ResourceFileKind.GeoIp -> source.geoIpUrl
-            ResourceFileKind.GeoSite -> source.geoSiteUrl
-            ResourceFileKind.GeoIpOnlyCnPrivate -> source.geoIpOnlyCnPrivateUrl
-            ResourceFileKind.DirectCidrIpv4 -> source.directCidrIpv4Url
-            ResourceFileKind.DirectCidrIpv6 -> source.directCidrIpv6Url
-            ResourceFileKind.XrayCore -> error("${ResourceFileKind.XrayCore.displayName} cannot be updated from URL")
-        }
-        return ResourceFileDownloadTarget(
-            displayName = displayName,
-            url = updateUrl,
-            targetFile = store(scope).file(this),
-            applyPermissions = { store(scope).applyPermissions(this) },
+        is ResourceFileUpdateDownload.Custom -> ResourceFileDownloadTarget(
+            displayName = file.name,
+            url = url,
+            targetFile = store.file(file),
         )
     }
 
@@ -250,14 +243,6 @@ private data class ResourceFileDownloadTarget(
     val url: String,
     val targetFile: java.io.File,
     val applyPermissions: () -> Unit = {},
-)
-
-private val UpdateableResourceFileKinds = listOf(
-    ResourceFileKind.GeoIp,
-    ResourceFileKind.GeoSite,
-    ResourceFileKind.GeoIpOnlyCnPrivate,
-    ResourceFileKind.DirectCidrIpv4,
-    ResourceFileKind.DirectCidrIpv6,
 )
 
 private class ResourceFileDownloadFailedException(
