@@ -55,7 +55,7 @@ internal class DesktopCoreController(
     }
 
     @Synchronized
-    fun start(configJson: String): Result<DesktopCoreState> = runCatching {
+    fun start(configJson: String, assetsDirectory: Path? = null): Result<DesktopCoreState> = runCatching {
         require(configJson.isNotBlank()) { "SKIPI Core configuration must not be blank" }
         check(activeHandle == null) { "SKIPI Core is already running" }
 
@@ -64,7 +64,7 @@ internal class DesktopCoreController(
         check(core.apiVersion == DesktopCoreApiVersion) {
             "Unsupported SKIPI Core desktop ABI ${core.apiVersion}; expected $DesktopCoreApiVersion"
         }
-        core.initializeAssets(runtime.directory.toString())
+        core.initializeAssets(assetsDirectory?.toString() ?: runtime.directory.toString())
         val handle = core.createController()
         try {
             core.start(handle, configJson)
