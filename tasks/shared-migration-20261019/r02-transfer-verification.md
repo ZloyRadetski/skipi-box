@@ -1,0 +1,27 @@
+# R02 shared resource-file transfer checkpoint — 19 October 2026
+
+This checkpoint records the tests-first transfer slice. `ResourceFileDownloadTransfer` now owns the portable request/response transfer policy, while Android continues to provide connection creation, cancellation state, proxy/network behavior, atomic file publication, and aggregate progress. The Desktop download runner and resource UI are not wired yet; R02, P04, and R01 remain open.
+
+## Transfer behavior and host boundary
+
+The shared transfer handles URL parsing, relative redirects, a maximum of five request hops, and up to three attempts for `IOException` with the existing 1-second and 2-second backoffs. HTTP and redirect errors are not retried. It reports initial and per-chunk byte progress, preserves unknown content length as `-1`, and delegates final atomic publication and cancellation state to callbacks. The Android host publisher rejects an empty output before replacing the target. A new connection opener is created once per attempt, allowing Android to capture one VPN network snapshot per attempt and reuse it over that attempt's redirect chain.
+
+Android still owns the `AndroidResourceFileDownloadCancellation` singleton and its tracked `HttpURLConnection`; VPN and explicit SOCKS selection, proxy authentication, the existing proxy-failure fallback to a non-proxy transfer, GET, timeouts and user-agent configuration, filesystem staging and `Os.rename` publication, and `overallProgress` aggregation for an ordered batch. The separate `SocketException` fallback removes VPN network binding around response-code retrieval; if an explicit SOCKS proxy is selected, that proxy remains active. The adapter tracks the connection when the response-code getter is accessed, untracks and disconnects a VPN-bound connection before creating a replacement with VPN binding removed, and untracks/disconnects the current connection in the shared transfer's `finally` path. The cancellation state and proxy policy have not moved into shared code.
+
+The source review against Android commit `02ef519` found no behavior drift in retry/redirect/copy ordering, per-attempt VPN capture, connection tracking, fallback, or cleanup. The Android progress-callback cancellation test covers cooperative cancellation during copying and retaining the existing target. It does not cover cancellation from another thread while a real socket read is blocked. The separate source fake-connection latch baseline passed six cases (`960d10d`), and the mirrored shared API RED was captured before the cancellation-state object move; those tests prove that cancellation invokes disconnect and releases the fake read, but they do not establish real HTTP socket unblocking. This limitation is recorded without blocking the pure cancellation-state object move. If the real adapter's disconnect behavior changes later, verify that path against a local HTTP connection.
+
+## Test-first evidence
+
+| Gate | Result | Evidence |
+|---|---|---|
+| Android downloader oracle, original baseline | **7/7 GREEN** before transfer production. | Baseline commit `4e5b13c`; the seven-case oracle is included in the [ordered-plan focused log](../../outputs/r02-download-plan-and-downloader-focused-20261019.log). |
+| Android downloader oracle with cancellation cases | **9/9 GREEN**, 25 seconds, before transfer production. The two additions cover pre-cancel and synchronous cancellation from progress. | Commit `02ef519`; [baseline output](../../outputs/r02-transfer-android-baseline-20261019/). |
+| Shared transfer contract | Eight tests produced the expected missing-API **RED** in 4 seconds before production. | [API RED log](../../outputs/r02-transfer-shared-api-red-20261019.log). |
+| Focused transfer gate | **20/20 GREEN** in 27 seconds: 8 shared transfer tests, 9 Android downloader-oracle tests, and 3 Android ordered-plan tests. | [Focused log](../../outputs/r02-transfer-focused-green-20261019.log), [reports](../../outputs/r02-transfer-focused-reports-20261019/). |
+| Full regression | **2,375 executions in 23 seconds**, failures/errors/skips all 0: core 310 Desktop + 274 Android, app 317 Desktop + 309 Android, UI 94 Desktop + 94 Android, Android app 533, Desktop app 444. `:desktopApp:compileKotlin` and `:app:assembleDebug` passed. Seven actual native/Core tests ran with explicit `SKIPI_CORE_INTEGRATION_DIR`; XML timestamps were current at 14:32 UTC. | [Full log](../../outputs/r02-transfer-full-green-20261019.log), [suite counts and reports](../../outputs/r02-transfer-final-reports-20261019/suite-counts.json). |
+
+Transfer production/tests are commit `ce33463`; evidence is commit `d73ee56`. Native artifacts were not rebuilt, and physical Android/Desktop UI QA was not performed.
+
+## Remaining R02 work
+
+The transfer policy and Android adapter are verified for this slice. Four Android cases for the generic proxy-fallback policy are in draft/review; its common API RED has not yet been recorded. The cancellation-state object has a six-case Android fake-connection latch baseline (`960d10d`) and a mirrored shared API RED, so its production gate is open with the approved contract unchanged. Preserve current Android proxy/authentication behavior as the oracle. Desktop's resource download runner and resource UI still need implementation and host checks. Do not substitute global bundled geo files for profile-scoped resources; the broader R02 acceptance criteria remain open in [the migration plan](../plan.md#r02).
