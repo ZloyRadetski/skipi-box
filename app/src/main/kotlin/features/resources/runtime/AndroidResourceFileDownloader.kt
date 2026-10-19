@@ -11,7 +11,6 @@ import features.resources.runtime.ResourceFileDownloadConnection
 import features.resources.runtime.ResourceFileDownloadConnectionOpener
 import features.resources.runtime.ResourceFileDownloadTransfer
 import java.io.File
-import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Proxy
@@ -28,17 +27,27 @@ internal class AndroidResourceFileDownloader(
         userAgent: String? = null,
         onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
     ) {
-        if (proxy != null) {
-            try {
-                proxy.withAuthenticator {
-                    transfer(target, proxy, userAgent).download(url, onProgress)
-                }
-                return
-            } catch (_: IOException) {
+        runResourceFileDownloadWithProxyFallback(
+            proxy = proxy,
+            usernameOf = AndroidResourceFileDownloadProxy::username,
+            withAuthenticator = { selectedProxy, block ->
+                TunnelNetworks.withSocksProxyAuthenticator(
+                    port = selectedProxy.port,
+                    username = selectedProxy.username,
+                    password = selectedProxy.password,
+                    block = block,
+                )
+            },
+            onProxyFallback = {
                 AndroidResourceFileLogger.info("Proxy download failed, falling back to direct connection")
-            }
-        }
-        transfer(target, null, userAgent).download(url, onProgress)
+            },
+            downloadViaProxy = { selectedProxy ->
+                transfer(target, selectedProxy, userAgent).download(url, onProgress)
+            },
+            downloadDirect = {
+                transfer(target, null, userAgent).download(url, onProgress)
+            },
+        )
     }
 
     private fun transfer(
@@ -140,16 +149,6 @@ private fun URI.toUrlConnection(
 
 private fun AndroidResourceFileDownloadProxy.toJavaProxy(): Proxy {
     return Proxy(Proxy.Type.SOCKS, InetSocketAddress(host, port))
-}
-
-private fun <T> AndroidResourceFileDownloadProxy?.withAuthenticator(block: () -> T): T {
-    if (this == null || username.isBlank()) return block()
-    return TunnelNetworks.withSocksProxyAuthenticator(
-        port = port,
-        username = username,
-        password = password,
-        block = block,
-    )
 }
 
 private const val ResourceFileDefaultUserAgent = "SKIPI/1.0"
