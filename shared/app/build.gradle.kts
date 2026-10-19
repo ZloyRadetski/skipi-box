@@ -21,6 +21,12 @@ kotlin {
     jvm("desktop")
 
     sourceSets {
+        val sharedJvmMain = create("jvmMain") {
+            dependsOn(getByName("commonMain"))
+        }
+        getByName("androidMain").dependsOn(sharedJvmMain)
+        getByName("desktopMain").dependsOn(sharedJvmMain)
+
         commonMain.dependencies {
             // The application contracts expose core models and StateFlow in
             // their public API, so both dependencies are intentionally API.

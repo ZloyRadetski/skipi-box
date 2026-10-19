@@ -100,13 +100,3 @@ internal class ResourceFileUseCase(
         return repository.deleteCustom(scope, customFile, customResourceFiles)
     }
 }
-
-data class ResourceFileUpdateOptions(
-    val useRunningProxy: Boolean = false,
-    val fallbackProxyPort: Int? = null,
-    val fallbackProxyUsername: String = "",
-    val fallbackProxyPassword: String = "",
-    val userAgent: String = "",
-    /** Whether system notifications should be shown while files are updated. */
-    val showNotifications: Boolean = true,
-)

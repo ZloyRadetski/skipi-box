@@ -41,6 +41,5 @@ internal object AndroidResourceFileDownloadCancellation {
     }
 }
 
-internal class AndroidResourceFileDownloadCancelledException(
-    message: String = "Resource file update cancelled",
-) : RuntimeException(message)
+internal typealias AndroidResourceFileDownloadCancelledException =
+    features.resources.ResourceFileDownloadCancelledException
