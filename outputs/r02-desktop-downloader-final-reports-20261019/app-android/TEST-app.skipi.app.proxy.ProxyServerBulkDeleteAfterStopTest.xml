@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.proxy.ProxyServerBulkDeleteAfterStopTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T19:55:52.624Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="rejectedAndFailedStoreResultsKeepAndroidFeedbackExceptionTypes" classname="app.skipi.app.proxy.ProxyServerBulkDeleteAfterStopTest" time="0.001"/>
+  <testcase name="missingServiceStillDispatchesBulkDeleteWithoutApplyingStopState" classname="app.skipi.app.proxy.ProxyServerBulkDeleteAfterStopTest" time="0.001"/>
+  <testcase name="stopFailureLeavesDeleteAndSuccessFeedbackUntouched" classname="app.skipi.app.proxy.ProxyServerBulkDeleteAfterStopTest" time="0.002"/>
+  <testcase name="successfulStopAppliesStopStateBeforeAwaitedDeleteAndFeedback" classname="app.skipi.app.proxy.ProxyServerBulkDeleteAfterStopTest" time="0.001"/>
+  <testcase name="cancellationFromStopOrAwaitedDeletePropagatesWithoutSyntheticFeedback" classname="app.skipi.app.proxy.ProxyServerBulkDeleteAfterStopTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
