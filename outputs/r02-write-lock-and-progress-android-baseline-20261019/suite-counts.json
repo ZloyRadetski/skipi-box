@@ -1,0 +1,14 @@
+{
+  "AndroidResourceFileWriteLockOracleTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "AndroidResourceFileDownloaderOracleTest": {
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
