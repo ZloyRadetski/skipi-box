@@ -15,9 +15,10 @@ import engine.proxy.LocalProxyRuntime
 import engine.network.isPort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import features.resources.ResourceFileUpdateOptions
+import features.resources.ResourceFileDownloadCancelledException
 import features.resources.ResourceFileUpdateDownload
 import features.resources.ResourceFileUpdateDownloadPlan
+import features.resources.ResourceFileUpdateOptions
 import features.resources.planAllResourceFileDownloads
 import features.resources.planBuiltInResourceFileDownload
 import features.resources.planCustomResourceFileDownload
@@ -125,67 +126,59 @@ internal class AndroidResourceFileRepository(
         val scope = plan.scope
         val store = store(scope)
         val downloads = plan.downloads.map { download -> download.toDownloadTarget(store) }
-        if (downloads.isEmpty()) {
-            return store.currentStatus(customResourceFiles)
-        }
-        store.dataDir.mkdirs()
-        AndroidResourceFileDownloadCancellation.begin()
-        val notifier = AndroidResourceFileDownloadNotifier(
-            context = appContext,
-            notificationsEnabled = options.showNotifications,
-        )
-        val downloadProxy = options.toDownloadProxy()
-        if (downloadProxy != null) {
-            AndroidResourceFileLogger.info(
-                "Resource file update will use local proxy ${downloadProxy.host}:${downloadProxy.port}",
-            )
-        }
-        val userAgent = options.userAgent.ifBlank { null }
-        val result = runCatching {
-            downloads.forEachIndexed { index, download ->
-                try {
-                    notifier.showProgress(download.displayName, progress = null, force = true)
-                    downloader.download(download.url, download.targetFile, downloadProxy, userAgent) { downloadedBytes, totalBytes ->
-                        notifier.showProgress(
-                            fileName = download.displayName,
-                            progress = overallProgress(
-                                fileIndex = index,
-                                fileCount = downloads.size,
-                                downloadedBytes = downloadedBytes,
-                                totalBytes = totalBytes,
-                            ),
-                        )
-                    }
-                    download.applyPermissions()
-                } catch (error: Throwable) {
-                    if (error is AndroidResourceFileDownloadCancelledException) throw error
-                    throw ResourceFileDownloadFailedException(download.displayName, error)
+        return executeResourceFileUpdateBatch(
+            plan = plan,
+            currentStatus = { store.currentStatus(customResourceFiles) },
+            prepareSession = {
+                store.dataDir.mkdirs()
+                AndroidResourceFileDownloadCancellation.begin()
+                val notifier = AndroidResourceFileDownloadNotifier(
+                    context = appContext,
+                    notificationsEnabled = options.showNotifications,
+                )
+                val downloadProxy = options.toDownloadProxy()
+                if (downloadProxy != null) {
+                    AndroidResourceFileLogger.info(
+                        "Resource file update will use local proxy ${downloadProxy.host}:${downloadProxy.port}",
+                    )
                 }
-            }
-            store.currentStatus(customResourceFiles)
-        }
-        result.onSuccess {
-            if (plan.markResourceFileSourceAfterSuccess) {
-                store.markResourceFileSource(scope.resourceFileSource)
-            }
-            runCatching { notifier.showComplete() }
-        }.onFailure { error ->
-            if (error is AndroidResourceFileDownloadCancelledException) {
-                AndroidResourceFileLogger.info("Resource file update cancelled")
-                runCatching { notifier.showCancelled() }
-            } else {
-                AndroidResourceFileLogger.error("Failed to update resource files", error)
-                runCatching { notifier.showFailed(error.message ?: error::class.simpleName.orEmpty()) }
-            }
-        }
-        return result.getOrElse { error ->
-            if (error is AndroidResourceFileDownloadCancelledException) {
-                throw AndroidResourceFileDownloadCancelledException(
+                val userAgent = options.userAgent.ifBlank { null }
+                ResourceFileUpdateBatchSession(
+                    updateFile = { _, index, count ->
+                        val download = downloads[index]
+                        notifier.showProgress(download.displayName, progress = null, force = true)
+                        downloader.download(download.url, download.targetFile, downloadProxy, userAgent) { downloadedBytes, totalBytes ->
+                            notifier.showProgress(
+                                fileName = download.displayName,
+                                progress = overallProgress(
+                                    fileIndex = index,
+                                    fileCount = count,
+                                    downloadedBytes = downloadedBytes,
+                                    totalBytes = totalBytes,
+                                ),
+                            )
+                        }
+                        download.applyPermissions()
+                    },
+                    notifyComplete = { notifier.showComplete() },
+                    reportFailure = { error ->
+                        if (error is ResourceFileDownloadCancelledException) {
+                            AndroidResourceFileLogger.info("Resource file update cancelled")
+                            runCatching { notifier.showCancelled() }
+                        } else {
+                            AndroidResourceFileLogger.error("Failed to update resource files", error)
+                            runCatching { notifier.showFailed(error.message ?: error::class.simpleName.orEmpty()) }
+                        }
+                    },
+                )
+            },
+            markSource = { source -> store.markResourceFileSource(source) },
+            mapCancellationError = {
+                AndroidResourceFileDownloadCancelledException(
                     appContext.getString(R.string.resource_file_download_notification_cancelled),
                 )
-            }
-            throw error
-        }
+            },
+        )
     }
 
     private fun ResourceFileUpdateDownload.toDownloadTarget(
@@ -244,11 +237,6 @@ private data class ResourceFileDownloadTarget(
     val targetFile: java.io.File,
     val applyPermissions: () -> Unit = {},
 )
-
-private class ResourceFileDownloadFailedException(
-    fileName: String,
-    cause: Throwable,
-) : RuntimeException("$fileName: ${cause.message ?: cause::class.simpleName.orEmpty()}", cause)
 
 private fun ResourceFileUpdateOptions.toDownloadProxy(): AndroidResourceFileDownloadProxy? {
     if (!useRunningProxy) return null
