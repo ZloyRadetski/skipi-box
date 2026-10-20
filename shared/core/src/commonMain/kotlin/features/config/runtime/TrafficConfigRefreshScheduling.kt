@@ -118,8 +118,19 @@ fun TrafficConfigRefreshTarget.geoRefreshWorkSpecOrNull(): TrafficConfigWorkSpec
  * Attempts follow WorkManager's one-based retry count.
  */
 fun trafficConfigGeoRetryDelayMillis(runAttemptCount: Int): Long {
+    return workManagerExponentialBackoffDelayMillis(
+        runAttemptCount = runAttemptCount,
+        baseDelayMillis = MinimumConfigBackoffMillis,
+    )
+}
+
+internal fun workManagerExponentialBackoffDelayMillis(
+    runAttemptCount: Int,
+    baseDelayMillis: Long,
+): Long {
     require(runAttemptCount >= 1) { "Retry attempt count must be positive" }
-    var delayMillis = MinimumConfigBackoffMillis
+    require(baseDelayMillis in 1..MaximumWorkBackoffMillis) { "Backoff base must be within the WorkManager range" }
+    var delayMillis = baseDelayMillis
     var doublingsRemaining = runAttemptCount - 1
     while (doublingsRemaining > 0 && delayMillis < MaximumWorkBackoffMillis) {
         delayMillis = if (delayMillis > MaximumWorkBackoffMillis / 2) {

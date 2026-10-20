@@ -1,0 +1,20 @@
+{
+  "ResourceGeoAutoRefreshSchedulingTest": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "TrafficConfigGeoRefreshPolicyTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "TrafficConfigRefreshSchedulingTest": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
