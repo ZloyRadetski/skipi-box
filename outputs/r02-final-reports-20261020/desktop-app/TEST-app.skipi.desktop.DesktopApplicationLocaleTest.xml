@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopApplicationLocaleTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:01.705Z" hostname="VQSeGo" time="0.087">
+  <properties/>
+  <testcase name="languageChangesSelectLocalizedComposeResourcesAndNullRestoresStartupLocale" classname="app.skipi.desktop.DesktopApplicationLocaleTest" time="0.086"/>
+  <testcase name="languageAdapterRestoresTheCapturedSystemLocaleAfterLaterChanges" classname="app.skipi.desktop.DesktopApplicationLocaleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

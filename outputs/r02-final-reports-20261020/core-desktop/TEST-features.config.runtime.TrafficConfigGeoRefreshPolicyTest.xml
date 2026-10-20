@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigGeoRefreshPolicyTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.618Z" hostname="VQSeGo" time="0.0">
+  <properties/>
+  <testcase name="resource_schedule_is_independent_of_profile_refresh_fields[desktop]" classname="features.config.runtime.TrafficConfigGeoRefreshPolicyTest" time="0.0"/>
+  <testcase name="disabled_or_invalid_resource_schedule_has_no_periodic_spec[desktop]" classname="features.config.runtime.TrafficConfigGeoRefreshPolicyTest" time="0.0"/>
+  <testcase name="resource_retry_delay_matches_workmanager_exponential_backoff_and_cap[desktop]" classname="features.config.runtime.TrafficConfigGeoRefreshPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

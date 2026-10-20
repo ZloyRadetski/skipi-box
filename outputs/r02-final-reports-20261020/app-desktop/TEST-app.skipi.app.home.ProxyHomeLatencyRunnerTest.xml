@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyHomeLatencyRunnerTest[desktop]" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.175Z" hostname="VQSeGo" time="0.055">
+  <properties/>
+  <testcase name="androidSourceCancellationMapsProbeToFailureBeforeCancelledRunSkipsCompletion[desktop]" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.036"/>
+  <testcase name="hostOwnedGateRemainsInsideProbeWithoutASecondOuterAcquire[desktop]" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.002"/>
+  <testcase name="oneProbeFailureIsMappedWithoutDiscardingSuccessfulSiblingResults[desktop]" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.002"/>
+  <testcase name="concurrencyUsesThePersistedValueClampedToOneThroughSixtyFour[desktop]" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.009"/>
+  <testcase name="eachProbePublishesAsItCompletesWhileAnotherProbeRemainsPending[desktop]" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.003"/>
+  <testcase name="cancellationMapsPendingProbeFailureAndRetainsCompletedPublication[desktop]" classname="app.skipi.app.home.ProxyHomeLatencyRunnerTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

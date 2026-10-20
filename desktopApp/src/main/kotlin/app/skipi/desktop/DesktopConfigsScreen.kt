@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,6 +70,8 @@ import app.skipi.ui.config.SkipiTrafficConfigNetworkActivationEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigEditorSectionAction
 import app.skipi.ui.config.SkipiTrafficConfigUrlImportDialog
 import app.skipi.ui.config.TrafficConfigCatalogProfileItem
+import app.skipi.ui.resourcefiles.ResourceManagementScreen
+import app.skipi.ui.layout.shouldShowSplitPane
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.configs_copy_name
 import app.skipi.ui.resources.configs_imported_name
@@ -83,8 +86,11 @@ import app.skipi.ui.resources.configs_android_title
 import app.skipi.ui.resources.configs_tunnel_summary
 import app.skipi.ui.resources.configs_network_title
 import app.skipi.ui.resources.configs_network_summary
+import app.skipi.ui.resources.configs_resources
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_save
+import app.skipi.ui.resources.resource_file_download_notification_failed
+import app.skipi.ui.resources.settings_resource_files_update
 import app.skipi.ui.resources.configs_update_locked_warning_title
 import app.skipi.ui.resources.configs_update_locked_warning_summary
 import app.skipi.ui.resources.configs_update_anyway
@@ -95,13 +101,17 @@ import app.skipi.app.config.TrafficConfigProfileRefreshRequest
 import app.skipi.app.config.TrafficConfigEditorController
 import app.skipi.app.config.TrafficConfigEditorProfileStore
 import app.skipi.app.config.toTrafficConfigState
+import features.config.withSkipiSettingsInRawConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
+import java.text.DateFormat
 import java.time.Duration
+import java.util.Date
 import features.config.ConfigProfile
 
 private val ConfigBackground: Color
@@ -129,6 +139,7 @@ private enum class DesktopVisualEditorSection {
     Dns,
     Tunnel,
     Network,
+    Resources,
 }
 
 private data class DesktopVisualEditorSession(
@@ -146,6 +157,11 @@ internal fun DesktopConfigsScreen(
     fetchUserAgent: String,
     fetchTimeoutSeconds: Int,
     contentPadding: PaddingValues,
+    resourceActionScope: CoroutineScope,
+    onResourceFileStatusMessage: (String) -> Unit,
+    desktopSettings: DesktopAppSettings,
+    resourceServices: DesktopResourceFileServices,
+    resourceFileStatusMessage: String,
 ) {
     val scope = rememberCoroutineScope()
     val fetcher = remember { DesktopSubscriptionFetcher() }
@@ -162,6 +178,8 @@ internal fun DesktopConfigsScreen(
     var contextMenuConfig by remember { mutableStateOf<DesktopStoredConfig?>(null) }
     var message by remember { mutableStateOf("") }
     var editorSaveError by remember { mutableStateOf<String?>(null) }
+    val resourceDateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
+    val resourceFailureFallback = stringResource(Res.string.resource_file_download_notification_failed, "")
     val desktopEditorProfileStore = remember(onTransformConfigLibrary, resourceUserAgentFallback) {
         DesktopTrafficConfigEditorProfileStore(
             resourceUserAgentFallback = resourceUserAgentFallback,
@@ -415,6 +433,14 @@ internal fun DesktopConfigsScreen(
                                 visualEditor = session.copy(section = DesktopVisualEditorSection.Network)
                             },
                         ),
+                        SkipiTrafficConfigEditorSectionAction(
+                            key = "resources",
+                            title = stringResource(Res.string.configs_resources),
+                            summary = stringResource(Res.string.settings_resource_files_update),
+                            onNavigate = {
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.Resources)
+                            },
+                        ),
                     ),
                     profile = profile,
                     controller = editorController,
@@ -496,6 +522,56 @@ internal fun DesktopConfigsScreen(
                         { DesktopEditorStatusContent(error) }
                     },
                 )
+                DesktopVisualEditorSection.Resources -> Box(Modifier.fillMaxSize()) {
+                    key(config.id) {
+                        ResourceManagementScreen(
+                            profile = profile,
+                            padding = contentPadding,
+                            isWideScreen = shouldShowSplitPane(),
+                            queue = resourceServices.queue,
+                            operations = resourceServices.operations,
+                            updateOptionsForUserAgent = resourceServices::optionsForUserAgent,
+                            userAgentPresets = desktopSettings.subscriptionUserAgents,
+                            deletionConfirmationEnabled = desktopSettings.confirmDeletion,
+                            actionScope = resourceActionScope,
+                            onBack = {
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                            },
+                            updateSettings = { transform ->
+                                check(desktopEditorProfileStore.update(config.id) { current ->
+                                    current.copy(
+                                        resourceSettings = transform(current.resourceSettings),
+                                    ).withSkipiSettingsInRawConfig()
+                                }) { "Traffic config profile ${config.id} no longer exists" }
+                            },
+                            formatTimestamp = { timestamp ->
+                                if (timestamp > 0L) resourceDateFormat.format(Date(timestamp)) else "-"
+                            },
+                            onTip = onResourceFileStatusMessage,
+                            onError = { error ->
+                                onResourceFileStatusMessage(
+                                    error.message?.takeIf(String::isNotBlank) ?: resourceFailureFallback,
+                                )
+                                DesktopLogger.error("ResourceFiles", "Resource-file screen action failed", error)
+                            },
+                        )
+                    }
+                    if (resourceFileStatusMessage.isNotBlank()) {
+                        Surface(
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+                            color = ConfigSurface,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, ConfigBorder),
+                        ) {
+                            Text(
+                                resourceFileStatusMessage,
+                                color = ConfigText,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                            )
+                        }
+                    }
+                }
             }
             return
         }

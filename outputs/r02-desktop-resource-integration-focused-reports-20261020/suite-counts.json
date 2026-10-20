@@ -1,0 +1,90 @@
+{
+  "suites": [
+    {
+      "class": "app.skipi.desktop.DesktopResourceAutoUpdateLoopTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:34:56.976Z"
+    },
+    {
+      "class": "app.skipi.desktop.DesktopResourceAutoUpdaterTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:34:57.046Z"
+    },
+    {
+      "class": "app.skipi.desktop.DesktopResourceFileDownloaderTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:34:57.063Z"
+    },
+    {
+      "class": "app.skipi.desktop.DesktopResourceFileOperationsTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:35:00.131Z"
+    },
+    {
+      "class": "app.skipi.desktop.DesktopResourceFilePickerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:35:00.631Z"
+    },
+    {
+      "class": "app.skipi.desktop.DesktopResourceFileServicesTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:35:00.900Z"
+    },
+    {
+      "class": "app.skipi.desktop.DesktopResourceFileUpdateOptionsTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:35:01.582Z"
+    },
+    {
+      "class": "app.skipi.desktop.DesktopResourceFileUpdateRunnerTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:35:01.585Z"
+    },
+    {
+      "class": "app.skipi.desktop.DesktopResourceFileWriteLockTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:35:04.618Z"
+    },
+    {
+      "class": "app.skipi.desktop.ResourceManagementScreenRenderTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-20T09:35:04.879Z"
+    }
+  ],
+  "total": {
+    "tests": 44,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

@@ -79,6 +79,10 @@ import app.skipi.ui.resources.proxy_server_list_no_subscription_updates
 import app.skipi.ui.resources.proxy_server_list_latency_done
 import app.skipi.ui.resources.proxy_server_list_subscription_update_result
 import app.skipi.ui.resources.proxy_server_list_subscription_update_result_with_failed
+import app.skipi.ui.resources.resource_file_download_notification_cancelled
+import app.skipi.ui.resources.resource_file_download_notification_failed
+import app.skipi.ui.resources.settings_resource_file_updating
+import app.skipi.ui.resources.settings_resource_files_updated
 import app.skipi.ui.text.formatTemplate
 import features.proxy.server.usecase.ProxyServerGroupCleanup
 import features.proxy.server.usecase.ProxyServerGroupCleanupRecord
@@ -91,13 +95,20 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.stripLeadingCountryFlag
 import platform.TunnelConnectRequest
+import features.config.runtime.ActiveGeoResourceRefreshTrigger
+import features.config.runtime.TrafficConfigRefreshTarget
+import features.config.TrafficConfigState
+import features.resources.ResourceFileDownloadCancelledException
+import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,6 +147,13 @@ fun main() = application {
                     stringResource(Res.string.proxy_server_list_subscription_update_result)
                 val subscriptionRefreshFailedTemplate =
                     stringResource(Res.string.proxy_server_list_subscription_update_result_with_failed)
+                val resourceUpdatingTemplate = stringResource(Res.string.settings_resource_file_updating)
+                val resourceUpdatedMessage = stringResource(Res.string.settings_resource_files_updated)
+                val resourceCancelledMessage = stringResource(Res.string.resource_file_download_notification_cancelled)
+                val resourceFailureTemplate = stringResource(
+                    Res.string.resource_file_download_notification_failed,
+                    "{message}",
+                )
                 val subscriptionFetcher = remember { DesktopSubscriptionFetcher() }
                 val subscriptionPayloadParsers = remember {
                     listOf(DesktopMihomoPayloadImporter.subscriptionPayloadParser())
@@ -213,6 +231,8 @@ fun main() = application {
                 val desktopHomeLatencyJobOwner = remember { DesktopProxyHomeLatencyJobOwner() }
                 var coreState by remember { mutableStateOf(coreController.state()) }
                 var coreMessage by remember { mutableStateOf("") }
+                val resourceFileFeedback = remember { MutableStateFlow("") }
+                val resourceFileStatusMessage by resourceFileFeedback.collectAsState()
                 var pendingTunnelReconnectReason by remember { mutableStateOf<String?>(null) }
                 // The reason is user-facing text; the revision is the actual event
                 // identity, so two successive edits with identical text still restart.
@@ -399,6 +419,115 @@ fun main() = application {
                 val latestServerLibrary by rememberUpdatedState(serverLibrary)
                 val latestConfigLibrary by rememberUpdatedState(configLibrary)
                 val latestLatencyByServerId by rememberUpdatedState(latencyByServerId)
+                val latestResourceUpdatingTemplate by rememberUpdatedState(resourceUpdatingTemplate)
+                val latestResourceUpdatedMessage by rememberUpdatedState(resourceUpdatedMessage)
+                val latestResourceCancelledMessage by rememberUpdatedState(resourceCancelledMessage)
+                val latestResourceFailureTemplate by rememberUpdatedState(resourceFailureTemplate)
+                val desktopResourceFileServices = remember(subscriptionScope, desktopProfileResourceFiles) {
+                    DesktopResourceFileServices(
+                        scope = subscriptionScope,
+                        resourceFiles = desktopProfileResourceFiles,
+                        readSettings = { latestDesktopSettings },
+                        readProfile = { profileId ->
+                            latestConfigLibrary.configs.firstOrNull { it.id == profileId }
+                                ?.toTrafficConfigState(desktopResourceProfileFallbackUserAgent())
+                        },
+                        activeProxy = {
+                            desktopLocalProxyRuntime.activeOptions(
+                                coreRunning = coreController.state().isRunning,
+                            )
+                        },
+                        prepareFeedback = {
+                            DesktopResourceFileUpdateFeedback(
+                                onProgress = { displayName, progress, _ ->
+                                    val progressText = progress?.let { " ($it%)" }.orEmpty()
+                                    resourceFileFeedback.value =
+                                        "${latestResourceUpdatingTemplate}: $displayName$progressText"
+                                },
+                                onComplete = {
+                                    resourceFileFeedback.value = latestResourceUpdatedMessage
+                                },
+                                onFailure = { error ->
+                                    val failureText = error.message ?: error::class.simpleName.orEmpty()
+                                    resourceFileFeedback.value = if (
+                                        error is ResourceFileDownloadCancelledException
+                                    ) {
+                                        latestResourceCancelledMessage
+                                    } else {
+                                        latestResourceFailureTemplate.replace("{message}", failureText)
+                                    }
+                                },
+                                mapCancellationError = { _ ->
+                                    ResourceFileDownloadCancelledException(latestResourceCancelledMessage)
+                                },
+                            )
+                        },
+                        pickFile = { chooseDesktopResourceFile() },
+                    )
+                }
+                val resourceAutoUpdater = remember(desktopResourceFileServices) {
+                    DesktopResourceAutoUpdater(
+                        readLatestTargets = {
+                            latestConfigLibrary.configs
+                                .map { it.toTrafficConfigState(desktopResourceProfileFallbackUserAgent()) }
+                                .map(TrafficConfigState::toDesktopResourceRefreshTarget)
+                        },
+                        isNetworkConnected = ::isDesktopNetworkConnected,
+                        updateAutomatically = desktopResourceFileServices::updateAutomatically,
+                        nowMillis = System::currentTimeMillis,
+                    )
+                }
+                val resourceAutoUpdateWakeups = remember { Channel<Unit>(Channel.CONFLATED) }
+
+                LaunchedEffect(desktopResourceFileServices) {
+                    val startupLibrary = latestConfigLibrary
+                    val activeOrFirst = startupLibrary.configs.firstOrNull { profile ->
+                        profile.id == startupLibrary.selectedConfigId
+                    } ?: startupLibrary.configs.firstOrNull()
+                    val profile = activeOrFirst?.toTrafficConfigState(desktopResourceProfileFallbackUserAgent())
+                    try {
+                        desktopResourceFileServices.synchronizeBundledFilesAfterPackageUpdate(profile)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Throwable) {
+                        DesktopLogger.warn(
+                            "ResourceFiles",
+                            "Failed to synchronize bundled resource files at startup",
+                            error,
+                        )
+                    }
+                }
+
+                LaunchedEffect(resourceAutoUpdater, latestConfigLibrary) {
+                    val library = latestConfigLibrary
+                    val profiles = library.configs.map { profile ->
+                        profile.toTrafficConfigState(desktopResourceProfileFallbackUserAgent())
+                    }
+                    resourceAutoUpdater.observeTargets(
+                        profiles.map(TrafficConfigState::toDesktopResourceRefreshTarget),
+                    )
+                    val activeOrFirst = profiles.firstOrNull { profile ->
+                        profile.id == library.selectedConfigId
+                    } ?: profiles.firstOrNull()
+                    resourceAutoUpdater.observeActiveProfile(
+                        ActiveGeoResourceRefreshTrigger(
+                            profileId = activeOrFirst?.id ?: 0,
+                            customGeoIpUrl = activeOrFirst?.resourceSettings?.customGeoIpUrl.orEmpty(),
+                            customGeoSiteUrl = activeOrFirst?.resourceSettings?.customGeoSiteUrl.orEmpty(),
+                        ),
+                    )
+                    resourceAutoUpdateWakeups.trySend(Unit)
+                }
+
+                LaunchedEffect(resourceAutoUpdater) {
+                    runDesktopResourceAutoUpdateLoop(
+                        updater = resourceAutoUpdater,
+                        wakeups = resourceAutoUpdateWakeups,
+                        nowMillis = System::currentTimeMillis,
+                        minimumDelayMillis = DesktopSubscriptionSchedulerMinimumDelayMillis,
+                        idleDelayMillis = DesktopSubscriptionSchedulerIdleDelayMillis,
+                    )
+                }
                 val desktopTunnelController = remember(coreController, systemProxyManager) {
                     DesktopTunnelController(
                         configForProfile = {
@@ -1607,6 +1736,13 @@ fun main() = application {
                             fetchUserAgent = desktopSettings.subscriptionUserAgent,
                             fetchTimeoutSeconds = desktopSettings.subscriptionFetchTimeoutSeconds,
                             contentPadding = contentPadding,
+                            resourceActionScope = subscriptionScope,
+                            onResourceFileStatusMessage = { message ->
+                                resourceFileFeedback.value = message
+                            },
+                            desktopSettings = desktopSettings,
+                            resourceServices = desktopResourceFileServices,
+                            resourceFileStatusMessage = resourceFileStatusMessage,
                         )
 
                         SkipiMainDestination.Settings -> DesktopSettingsScreen(
@@ -1668,6 +1804,15 @@ private val SkipiBackground: Color
     @Composable get() = DesktopContentBackground
 private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
 private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L
+private fun TrafficConfigState.toDesktopResourceRefreshTarget() = TrafficConfigRefreshTarget(
+    id = id,
+    sourceUrl = sourceUrl,
+    autoUpdate = autoUpdate,
+    updateLocked = updateLocked,
+    updateInterval = updateInterval,
+    resourceAutoUpdate = resourceSettings.autoUpdate,
+    resourceUpdateInterval = resourceSettings.updateInterval,
+)
 
 private class DesktopSubscriptionServerStopAction {
     var action: suspend () -> Unit = {}

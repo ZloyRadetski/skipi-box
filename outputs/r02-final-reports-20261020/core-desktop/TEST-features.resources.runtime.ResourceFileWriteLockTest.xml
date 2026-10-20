@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ResourceFileWriteLockTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.928Z" hostname="VQSeGo" time="0.308">
+  <properties/>
+  <testcase name="throwingFromTheCallbackReleasesTheTargetLock[desktop]" classname="features.resources.runtime.ResourceFileWriteLockTest" time="0.004"/>
+  <testcase name="callbacksForTheSameAbsolutePathAreSerialized[desktop]" classname="features.resources.runtime.ResourceFileWriteLockTest" time="0.302"/>
+  <testcase name="differentAbsolutePathsCanProceedIndependently[desktop]" classname="features.resources.runtime.ResourceFileWriteLockTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

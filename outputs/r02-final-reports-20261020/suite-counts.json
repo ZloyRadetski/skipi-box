@@ -1,0 +1,92 @@
+{
+  "suites": [
+    {
+      "suite": "core-desktop",
+      "tests": 347,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "core-android",
+      "tests": 298,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app-desktop",
+      "tests": 327,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app-android",
+      "tests": 319,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "ui-desktop",
+      "tests": 107,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "ui-android",
+      "tests": 107,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "android-app",
+      "tests": 548,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "desktop-app",
+      "tests": 488,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "total": {
+    "tests": 2541,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "native": [
+    {
+      "class": "app.skipi.desktop.DesktopCoreFfmIntegrationTest",
+      "timestamp": "2026-10-20T09:38:02.268Z",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "app.skipi.desktop.DesktopProfileAssetsFfmIntegrationTest",
+      "timestamp": "2026-10-20T09:38:02.765Z",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest",
+      "timestamp": "2026-10-20T09:38:10.911Z",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ]
+}

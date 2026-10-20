@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="BaseAppearancePaletteTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:51.529Z" hostname="VQSeGo" time="0.01">
+  <properties/>
+  <testcase name="hostDynamicPrimaryIsUsedForNonNamedBasePalette[desktop]" classname="app.skipi.ui.theme.BaseAppearancePaletteTest" time="0.001"/>
+  <testcase name="defaultLightPaletteMatchesAndroidTheme[desktop]" classname="app.skipi.ui.theme.BaseAppearancePaletteTest" time="0.005"/>
+  <testcase name="amoledPaletteMatchesAndroidBlackSurfaces[desktop]" classname="app.skipi.ui.theme.BaseAppearancePaletteTest" time="0.0"/>
+  <testcase name="defaultDarkPaletteMatchesAndroidTheme[desktop]" classname="app.skipi.ui.theme.BaseAppearancePaletteTest" time="0.003"/>
+  <testcase name="namedPaletteUsesAndroidSharedRolesAndAccent[desktop]" classname="app.skipi.ui.theme.BaseAppearancePaletteTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
