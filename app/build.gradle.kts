@@ -19,6 +19,10 @@ plugins {
 val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val androidTestJavaHome = providers.gradleProperty("skipiAndroidTestJavaHome").orNull
+val releaseStoreFile = providers.environmentVariable("SKIPI_RELEASE_STORE_FILE").orNull
+val releaseStorePassword = providers.environmentVariable("SKIPI_RELEASE_STORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("SKIPI_RELEASE_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("SKIPI_RELEASE_KEY_PASSWORD").orNull
 
 android {
     namespace = "app"
@@ -40,6 +44,15 @@ android {
     bundle {
         language {
             enableSplit = false
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = releaseStoreFile?.let(::File)
+            storePassword = releaseStorePassword
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
         }
     }
 
@@ -71,8 +84,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            // Добавлена подпись тестовым debug-ключом для локального запуска:
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
