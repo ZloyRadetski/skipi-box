@@ -22,7 +22,7 @@
 - Desktop редактор серверов ограничен Custom; визуальный редактор профиля не подключён. Не все отсутствующие возможности объясняются платформой.
 - Алгоритмы группировки, Shadowrocket translation и Xray composition имеют параллельные пути. Desktop SKIPI-настройки DNS/Mux/Fragment применяются неполно; FullJson возвращает persisted JSON вместо Android Xray export.
 - Android новый черновик получает предполагаемый ID слишком рано: статически подтверждён риск перезаписи сервера после конкурентного импорта/refresh. Риск существовал до текущего переноса. Порядок вставки также требует восстановления прежней prepend-семантики.
-- Routing/resource contracts общие, но Desktop composition root их не подключает полностью. Settings save, profile lifecycle, диагностика, backup и другие области ещё содержат переносимую host-логику.
+- На момент исходного аудита routing/resource contracts уже были общими, но Desktop composition root ещё не был к ним полностью подключён. **Область ресурсов R02 теперь завершена** ([итоговый отчёт](shared-migration-20261020/r02-verification.md)); интеграция routing по R01, сохранение настроек, lifecycle профиля, диагностика, backup и другие области остаются в плане.
 
 В аудите успешно выполнены shared/core, shared/app, shared/ui на Android и Desktop, полный desktopApp:test и app:testDebugUnitTest: **1302 исполнения тестов, без ошибок и пропусков в JUnit-отчётах**. Общие тесты считаются для двух платформ отдельно. Нативная FFM-проверка без заданного `SKIPI_CORE_INTEGRATION_DIR` возвращается досрочно: этот baseline не доказывает запуск реального Core. APK/native rebuild и ручная UI-проверка не выполнялись. Лог предыдущего запуска: `/tmp/skipi-shared-audit-20261007-gradle.log`.
 
@@ -604,6 +604,8 @@
 
 **Зависимости:** [P03](#p03), [R01](#r01).
 
+**Статус:** завершена 20 октября 2026 года. Итоговая проверка и ограничения записаны в [R02 verification report](shared-migration-20261020/r02-verification.md). Общий экран и профильные операции Android/Desktop подключены, загрузка ресурсов и обновления работают через общие сценарии, а refresh hosts используют общую политику. Остальные карточки миграции остаются открыты.
+
 **Работа:** Модель, CRUD, validation, выбор источника, очередь/статусы и pure update/retention decisions перенести в shared. Загрузка/replace/file paths/geo asset validation реализуются host adapter на основе существующего Android поведения. Сначала свести фактический profile resourceSettings из Android UI и отдельный AppState mapping репозитория: источник/UA/очередь берутся из того же активного профиля, без второго независимого каталога настроек.
 
 **Критерии приёмки:**
@@ -612,7 +614,7 @@
 - Ресурсный каталог/экран используют common state; Desktop resource adapter подключён для переносимых операций.
 - Файл публикуется/заменяется только после прежних проверок; platform paths и notifications не проникают в доменные операции.
 
-**Проверки:** Resource coordinator/repository queue/cancel/atomic-replace tests, routing resource validation, Desktop staged assets compatibility и ручной sample update.
+**Проверки:** Resource coordinator/repository queue/cancel/atomic-replace tests, routing resource validation, Desktop staged assets compatibility, and a UI-driven local-HTTP sample update. Final suite inventory: **2,542 tests**, failures/errors/skips 0; the post-sample revalidation refreshed the 489-test Desktop suite and seven configured native/Core cases while reusing the other seven suite reports from the immediately preceding full GREEN. Desktop compilation and Android APK assembly passed. The sample used rendered-screen pointer events; physical Desktop/Android device QA was not performed. See the linked report for per-suite counts, timestamps, and artifacts.
 
 **Проверенные точки входа/каталоги:** [shared/core/src/commonMain/kotlin/features/resources](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonMain/kotlin/features/resources); [shared/app/src/commonMain/kotlin/app/skipi/app/repository/RepositoryContracts.kt](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonMain/kotlin/app/skipi/app/repository/RepositoryContracts.kt); [app/src/main/kotlin/features/resources](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/main/kotlin/features/resources); [desktopApp/src/main/kotlin/app/skipi/desktop/DesktopCoreRuntime.kt](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/DesktopCoreRuntime.kt); [desktopApp/src/main/kotlin/app/skipi/desktop/DesktopApplicationRepositories.kt](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/DesktopApplicationRepositories.kt). Это ориентиры существующего кода; точный набор изменённых файлов определяется малым срезом.
 
