@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshOptionsAdapterTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:13.321Z" hostname="VQSeGo" time="0.001">
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshOptionsAdapterTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:59.977Z" hostname="VQSeGo" time="0.001">
   <properties/>
-  <testcase name="refreshOptionsSkipProxyUnlessSubscriptionRequestsItAndCoreIsRunning" classname="app.skipi.desktop.DesktopSubscriptionRefreshOptionsAdapterTest" time="0.0"/>
+  <testcase name="refreshOptionsSkipProxyUnlessSubscriptionRequestsItAndCoreIsRunning" classname="app.skipi.desktop.DesktopSubscriptionRefreshOptionsAdapterTest" time="0.001"/>
   <testcase name="disabledAuthAndDeviceHeadersDoNotLeakCredentialsOrIdentity" classname="app.skipi.desktop.DesktopSubscriptionRefreshOptionsAdapterTest" time="0.0"/>
-  <testcase name="refreshOptionsUseAndroidProxyEligibilityAndTheRunningEndpointSnapshot" classname="app.skipi.desktop.DesktopSubscriptionRefreshOptionsAdapterTest" time="0.001"/>
+  <testcase name="refreshOptionsUseAndroidProxyEligibilityAndTheRunningEndpointSnapshot" classname="app.skipi.desktop.DesktopSubscriptionRefreshOptionsAdapterTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

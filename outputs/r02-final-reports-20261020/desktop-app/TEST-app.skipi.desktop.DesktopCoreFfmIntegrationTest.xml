@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopCoreFfmIntegrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:02.268Z" hostname="VQSeGo" time="0.359">
+<testsuite name="app.skipi.desktop.DesktopCoreFfmIntegrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:48.443Z" hostname="VQSeGo" time="0.227">
   <properties/>
-  <testcase name="desktopRuntimeSnapshotStartsDynamicAuthenticatedInboundAndExposesItsFetchEndpoint" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.221"/>
-  <testcase name="startsAndStopsTheBundledCoreInsideTheDesktopJvm" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.041"/>
+  <testcase name="desktopRuntimeSnapshotStartsDynamicAuthenticatedInboundAndExposesItsFetchEndpoint" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.1"/>
+  <testcase name="startsAndStopsTheBundledCoreInsideTheDesktopJvm" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.032"/>
   <testcase name="sharedAuthenticatedSocksInboundAcceptsTheConfiguredCredentialsInNativeCore" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.042"/>
   <testcase name="retriesNativeBindFailureWithExcludedPortAndPublishesOnlyTheAuthenticatedFinalEndpoint" classname="app.skipi.desktop.DesktopCoreFfmIntegrationTest" time="0.053"/>
-  <system-out><![CDATA[[2026-10-20 12:38:02.433] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 1)
-[2026-10-20 12:38:02.489] [INFO] [CoreController] Stopped in-process SKIPI Core session 1
-[2026-10-20 12:38:02.528] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 2)
-[2026-10-20 12:38:02.529] [INFO] [CoreController] Stopped in-process SKIPI Core session 2
-[2026-10-20 12:38:02.530] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 3)
-[2026-10-20 12:38:02.531] [INFO] [CoreController] Stopped in-process SKIPI Core session 3
-[2026-10-20 12:38:02.532] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 4)
-[2026-10-20 12:38:02.573] [INFO] [CoreController] Stopped in-process SKIPI Core session 4
-[2026-10-20 12:38:02.580] [ERROR] [CoreController] Failed to start in-process SKIPI Core
-java.lang.IllegalStateException: SKIPI Core could not start controller: start SKIPI Core desktop controller 5: failed to start xray instance: app/proxyman/inbound: failed to listen TCP on 38543 > transport/internet: failed to listen on address: 127.0.0.1:38543 > transport/internet/tcp: failed to listen TCP on 127.0.0.1:38543 > listen tcp 127.0.0.1:38543: bind: address already in use
+  <system-out><![CDATA[[2026-10-20 12:49:48.488] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 1)
+[2026-10-20 12:49:48.543] [INFO] [CoreController] Stopped in-process SKIPI Core session 1
+[2026-10-20 12:49:48.573] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 2)
+[2026-10-20 12:49:48.574] [INFO] [CoreController] Stopped in-process SKIPI Core session 2
+[2026-10-20 12:49:48.575] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 3)
+[2026-10-20 12:49:48.575] [INFO] [CoreController] Stopped in-process SKIPI Core session 3
+[2026-10-20 12:49:48.577] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 4)
+[2026-10-20 12:49:48.617] [INFO] [CoreController] Stopped in-process SKIPI Core session 4
+[2026-10-20 12:49:48.623] [ERROR] [CoreController] Failed to start in-process SKIPI Core
+java.lang.IllegalStateException: SKIPI Core could not start controller: start SKIPI Core desktop controller 5: failed to start xray instance: app/proxyman/inbound: failed to listen TCP on 43341 > transport/internet: failed to listen on address: 127.0.0.1:43341 > transport/internet/tcp: failed to listen TCP on 127.0.0.1:43341 > listen tcp 127.0.0.1:43341: bind: address already in use
 	at app.skipi.desktop.DesktopCoreFfmNative.failure(DesktopCoreNative.kt:255)
 	at app.skipi.desktop.DesktopCoreFfmNative.errorResult(DesktopCoreNative.kt:232)
 	at app.skipi.desktop.DesktopCoreFfmNative.start$lambda$0(DesktopCoreNative.kt:163)
@@ -80,8 +80,8 @@ java.lang.IllegalStateException: SKIPI Core could not start controller: start SK
 	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
 	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
 	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
-[2026-10-20 12:38:02.584] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 6)
-[2026-10-20 12:38:02.627] [INFO] [CoreController] Stopped in-process SKIPI Core session 6
+[2026-10-20 12:49:48.626] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 6)
+[2026-10-20 12:49:48.670] [INFO] [CoreController] Stopped in-process SKIPI Core session 6
 ]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

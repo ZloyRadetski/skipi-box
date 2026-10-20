@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ResourceSnapshotFilesBundledFilesTest[desktop]" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.760Z" hostname="VQSeGo" time="0.063">
+<testsuite name="ResourceSnapshotFilesBundledFilesTest[desktop]" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:08.631Z" hostname="VQSeGo" time="0.081">
   <properties/>
-  <testcase name="changedProviderKeepsSuccessfulPartialRestoresAndRetriesUntilTheMarkerCanCommit[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.013"/>
-  <testcase name="nonemptyCustomFilesStayProtectedButMissingOrEmptyCustomFilesStillTryRootFallbacks[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.002"/>
-  <testcase name="firstFoundCorruptXzAssetFailsWithoutTryingItsRawFallback[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.003"/>
-  <testcase name="globalMigrationMarkerFailureLeavesTheProfileMarkerAndOnlyAnotherProfileCanRetry[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.002"/>
-  <testcase name="markerWriteFailureLeavesRestoredFilesAndAnUncommittedSourceForRetry[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.003"/>
-  <testcase name="firstScopedActivationRestoresEveryV2FlyAssetAndCommitsTheSourceMarker[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.002"/>
-  <testcase name="firstProfileMigratesVisibleLegacyFilesOnceAndPreservesExistingProfileFiles[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.001"/>
+  <testcase name="changedProviderKeepsSuccessfulPartialRestoresAndRetriesUntilTheMarkerCanCommit[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.026"/>
+  <testcase name="nonemptyCustomFilesStayProtectedButMissingOrEmptyCustomFilesStillTryRootFallbacks[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.004"/>
+  <testcase name="firstFoundCorruptXzAssetFailsWithoutTryingItsRawFallback[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.004"/>
+  <testcase name="globalMigrationMarkerFailureLeavesTheProfileMarkerAndOnlyAnotherProfileCanRetry[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.007"/>
+  <testcase name="markerWriteFailureLeavesRestoredFilesAndAnUncommittedSourceForRetry[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.005"/>
+  <testcase name="firstScopedActivationRestoresEveryV2FlyAssetAndCommitsTheSourceMarker[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.003"/>
+  <testcase name="firstProfileMigratesVisibleLegacyFilesOnceAndPreservesExistingProfileFiles[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.004"/>
   <testcase name="restoringXrayCoreIsRejectedBeforeAnyAssetIsOpened[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.001"/>
   <testcase name="unscopedSourceMismatchDoesNotForceBundledActivationOrWriteAProfileMarker[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.001"/>
-  <testcase name="aValidFirstFoundXzAssetIsDecompressedBeforeAtomicReplacement[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.035"/>
+  <testcase name="aValidFirstFoundXzAssetIsDecompressedBeforeAtomicReplacement[desktop]" classname="features.resources.ResourceSnapshotFilesBundledFilesTest" time="0.025"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

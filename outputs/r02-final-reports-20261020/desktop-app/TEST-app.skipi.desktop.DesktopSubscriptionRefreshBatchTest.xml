@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshBatchTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:13.256Z" hostname="VQSeGo" time="0.001">
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshBatchTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:59.948Z" hostname="VQSeGo" time="0.0">
   <properties/>
   <testcase name="serverToolAndHomeEffectUseTheSameBatchRefreshCallback" classname="app.skipi.desktop.DesktopSubscriptionRefreshBatchTest" time="0.0"/>
   <testcase name="refreshAllEffectCallsTheConfiguredBatchRefreshExactlyOnce" classname="app.skipi.desktop.DesktopSubscriptionRefreshBatchTest" time="0.0"/>

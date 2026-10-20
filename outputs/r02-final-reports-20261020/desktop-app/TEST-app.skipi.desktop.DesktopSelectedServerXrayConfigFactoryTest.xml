@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:12.992Z" hostname="VQSeGo" time="0.005">
+<testsuite name="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:59.706Z" hostname="VQSeGo" time="0.005">
   <properties/>
   <testcase name="selectedAutomaticGroupUsesTheLatestLatencyAndSubscriptionProbeSnapshot" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.001"/>
   <testcase name="configOwnedStrategyGroupUsesTheReferencedConfContent" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.001"/>

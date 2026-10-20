@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopLocalProxyPortSelectionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:02.671Z" hostname="VQSeGo" time="0.001">
+<testsuite name="app.skipi.desktop.DesktopLocalProxyPortSelectionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:48.710Z" hostname="VQSeGo" time="0.001">
   <properties/>
   <testcase name="dynamicPortForwardsTheListenerAndExcludedPortsToTheHostAllocator" classname="app.skipi.desktop.DesktopLocalProxyPortSelectionTest" time="0.0"/>
   <testcase name="failedDynamicAllocationDoesNotSilentlyReuseTheConfiguredPort" classname="app.skipi.desktop.DesktopLocalProxyPortSelectionTest" time="0.0"/>

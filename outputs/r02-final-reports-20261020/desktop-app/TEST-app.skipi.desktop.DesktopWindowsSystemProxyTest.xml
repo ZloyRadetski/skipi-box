@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopWindowsSystemProxyTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:13.443Z" hostname="VQSeGo" time="0.011">
+<testsuite name="app.skipi.desktop.DesktopWindowsSystemProxyTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:50:00.066Z" hostname="VQSeGo" time="0.011">
   <properties/>
   <testcase name="release_never_overwrites_proxy_changed_outside_skipi" classname="app.skipi.desktop.DesktopWindowsSystemProxyTest" time="0.008"/>
   <testcase name="stale_file_without_skipi_marker_is_discarded_without_changing_windows_proxy" classname="app.skipi.desktop.DesktopWindowsSystemProxyTest" time="0.001"/>

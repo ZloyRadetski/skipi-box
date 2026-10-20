@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.updater.GitHubReleaseCheckerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:33.315Z" hostname="VQSeGo" time="0.001">
+<testsuite name="features.updater.GitHubReleaseCheckerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:42.799Z" hostname="VQSeGo" time="0.001">
   <properties/>
   <testcase name="isVersionNewer_handles_v_prefix" classname="features.updater.GitHubReleaseCheckerTest" time="0.001"/>
   <testcase name="isVersionNewer_detects_older_test_build_against_current_release" classname="features.updater.GitHubReleaseCheckerTest" time="0.0"/>

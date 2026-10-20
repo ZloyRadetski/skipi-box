@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopProxyGroupsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:03.119Z" hostname="VQSeGo" time="0.007">
+<testsuite name="app.skipi.desktop.DesktopProxyGroupsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:49.131Z" hostname="VQSeGo" time="0.007">
   <properties/>
   <testcase name="selection_falls_back_to_first_real_group_and_empty_catalog_is_safe" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.003"/>
   <testcase name="usesPersistedGroupIdForStrategiesAndDropsRowsAndroidCannotDecode" classname="app.skipi.desktop.DesktopProxyGroupsTest" time="0.001"/>

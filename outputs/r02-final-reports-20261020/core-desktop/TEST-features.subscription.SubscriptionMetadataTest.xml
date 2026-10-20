@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="SubscriptionMetadataTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.419Z" hostname="VQSeGo" time="0.002">
+<testsuite name="SubscriptionMetadataTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:09.284Z" hostname="VQSeGo" time="0.003">
   <properties/>
-  <testcase name="parse_embedded_config_from_routing_header_with_direct_url[desktop]" classname="features.subscription.SubscriptionMetadataTest" time="0.001"/>
+  <testcase name="parse_embedded_config_from_routing_header_with_direct_url[desktop]" classname="features.subscription.SubscriptionMetadataTest" time="0.002"/>
   <testcase name="parse_embedded_config_from_autorouting_header[desktop]" classname="features.subscription.SubscriptionMetadataTest" time="0.0"/>
   <testcase name="parse_headers_with_provider_urls_and_userinfo[desktop]" classname="features.subscription.SubscriptionMetadataTest" time="0.0"/>
   <testcase name="parse_embedded_config_from_body_skipi_conf_links[desktop]" classname="features.subscription.SubscriptionMetadataTest" time="0.0"/>

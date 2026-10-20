@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.config.TrafficConfigDocumentCustomResourceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:57.798Z" hostname="VQSeGo" time="0.006">
+<testsuite name="features.config.TrafficConfigDocumentCustomResourceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:07.618Z" hostname="VQSeGo" time="0.005">
   <properties/>
-  <testcase name="filtersInvalidCustomResourceRowsAndKeepsTheFirstPositiveId" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.002"/>
-  <testcase name="decodesMalformedCustomResourceComponentsLikeAndroidUri" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.002"/>
+  <testcase name="filtersInvalidCustomResourceRowsAndKeepsTheFirstPositiveId" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.001"/>
+  <testcase name="decodesMalformedCustomResourceComponentsLikeAndroidUri" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.001"/>
   <testcase name="roundTripsAnAsciiCustomResourceFileThroughTheProfileDocument" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.001"/>
   <testcase name="decodesPercentEncodedUtf8AndLeavesLiteralPlusAsUriDecodeDoes" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.001"/>
   <testcase name="malformedTrailingEscapeUsesAndroidUriDecodeReplacementCharacter" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.0"/>

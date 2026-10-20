@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="SkipiProfileMetadataTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.597Z" hostname="VQSeGo" time="0.001">
+<testsuite name="SkipiProfileMetadataTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:08.511Z" hostname="VQSeGo" time="0.0">
   <properties/>
   <testcase name="round_trip_updates_owned_keys_without_dropping_other_profile_data[desktop]" classname="features.config.SkipiProfileMetadataTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>

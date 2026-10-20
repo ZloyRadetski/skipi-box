@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:07.602Z" hostname="VQSeGo" time="3.038">
+<testsuite name="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:54.363Z" hostname="VQSeGo" time="3.029">
   <properties/>
-  <testcase name="allPlanDownloadsBuiltInsThenCustomInCapturedScopeAndMarksRawSourceAfterSuccess" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.007"/>
+  <testcase name="allPlanDownloadsBuiltInsThenCustomInCapturedScopeAndMarksRawSourceAfterSuccess" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.005"/>
   <testcase name="emptyCustomPlanReturnsStatusWithoutPreparingRuntimeOrClearingCancellation" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.001"/>
   <testcase name="singleBuiltInUsesDefaultUserAgentSkipsProxyResolutionAndDoesNotMarkSource" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.002"/>
-  <testcase name="cancellationReportsOriginalThenThrowsMappedErrorAndPreservesCurrentTarget" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.017"/>
-  <testcase name="allPlanFailureOnSecondFileKeepsPublishedPrefixStopsLaterTargetsAndDoesNotMarkSource" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.004"/>
-  <testcase name="selectedProxyFromResolverIsUsedAndIoFailureFallsBackToOneDirectRequest" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="3.006"/>
-  <system-out><![CDATA[[2026-10-20 12:38:07.604] [INFO] [ResourceFiles] Resource file update will use local proxy 127.0.0.1:42755
-[2026-10-20 12:38:07.629] [INFO] [ResourceFiles] Resource file update cancelled
-[2026-10-20 12:38:07.633] [ERROR] [ResourceFiles] Failed to update resource files
+  <testcase name="cancellationReportsOriginalThenThrowsMappedErrorAndPreservesCurrentTarget" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.013"/>
+  <testcase name="allPlanFailureOnSecondFileKeepsPublishedPrefixStopsLaterTargetsAndDoesNotMarkSource" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.003"/>
+  <testcase name="selectedProxyFromResolverIsUsedAndIoFailureFallsBackToOneDirectRequest" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="3.004"/>
+  <system-out><![CDATA[[2026-10-20 12:49:54.365] [INFO] [ResourceFiles] Resource file update will use local proxy 127.0.0.1:44531
+[2026-10-20 12:49:54.384] [INFO] [ResourceFiles] Resource file update cancelled
+[2026-10-20 12:49:54.388] [ERROR] [ResourceFiles] Failed to update resource files
 features.resources.runtime.ResourceFileDownloadFailedException: geosite.dat: HTTP 500
 	at features.resources.runtime.ResourceFileUpdateBatchExecutorKt.executeResourceFileUpdateBatch(ResourceFileUpdateBatchExecutor.kt:43)
 	at app.skipi.desktop.DesktopResourceFileUpdateRunner.executeOnIo(DesktopResourceFileUpdateRunner.kt:63)
@@ -32,8 +32,8 @@ Caused by: java.lang.IllegalStateException: HTTP 500
 	at app.skipi.desktop.DesktopResourceFileUpdateRunner.executeOnIo$lambda$2$1(DesktopResourceFileUpdateRunner.kt:84)
 	at features.resources.runtime.ResourceFileUpdateBatchExecutorKt.executeResourceFileUpdateBatch(ResourceFileUpdateBatchExecutor.kt:39)
 	... 11 more
-[2026-10-20 12:38:07.636] [INFO] [ResourceFiles] Resource file update will use local proxy 127.0.0.1:36979
-[2026-10-20 12:38:10.638] [INFO] [ResourceFiles] Proxy download failed, falling back to direct connection
+[2026-10-20 12:49:54.390] [INFO] [ResourceFiles] Resource file update will use local proxy 127.0.0.1:44609
+[2026-10-20 12:49:57.391] [INFO] [ResourceFiles] Proxy download failed, falling back to direct connection
 ]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

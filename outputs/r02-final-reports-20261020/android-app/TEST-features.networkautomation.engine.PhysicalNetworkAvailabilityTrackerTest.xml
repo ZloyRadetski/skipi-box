@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.networkautomation.engine.PhysicalNetworkAvailabilityTrackerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:23.657Z" hostname="VQSeGo" time="0.0">
+<testsuite name="features.networkautomation.engine.PhysicalNetworkAvailabilityTrackerTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:34.186Z" hostname="VQSeGo" time="0.0">
   <properties/>
   <testcase name="clear removes state from a previous observer lifecycle" classname="features.networkautomation.engine.PhysicalNetworkAvailabilityTrackerTest" time="0.0"/>
   <testcase name="network remains available until the last callback loss" classname="features.networkautomation.engine.PhysicalNetworkAvailabilityTrackerTest" time="0.0"/>

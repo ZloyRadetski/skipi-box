@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:00.247Z" hostname="VQSeGo" time="0.006">
+<testsuite name="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:11.873Z" hostname="VQSeGo" time="0.008">
   <properties/>
-  <testcase name="singleRefreshCapturesBeforeLoadAndCommitsWithThatSnapshot" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
+  <testcase name="singleRefreshCapturesBeforeLoadAndCommitsWithThatSnapshot" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.002"/>
   <testcase name="commitPolicyAllowsUnchangedTargetAndProfile" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.0"/>
   <testcase name="singleRefreshDoesNotCommitAfterLoadFailure" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
   <testcase name="commitPolicyRejectsProfileEditedDuringFetch" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.0"/>
   <testcase name="failedBatchLoadProducesNoUpdateForTheHostApplyStep" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
   <testcase name="cancellingBatchCancelsEveryOutstandingLoadAndDoesNotSampleCompletionTime" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
-  <testcase name="batchStartsEveryLoadBeforeWaitingForResponsesAndKeepsRequestOrder" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
-  <testcase name="singleRefreshPropagatesCancellationWithoutCommit" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.001"/>
+  <testcase name="batchStartsEveryLoadBeforeWaitingForResponsesAndKeepsRequestOrder" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.002"/>
+  <testcase name="singleRefreshPropagatesCancellationWithoutCommit" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.0"/>
   <testcase name="refreshLoadsRequestsAndKeepsFailuresIsolated" classname="app.skipi.app.subscription.SubscriptionRefreshUseCaseTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

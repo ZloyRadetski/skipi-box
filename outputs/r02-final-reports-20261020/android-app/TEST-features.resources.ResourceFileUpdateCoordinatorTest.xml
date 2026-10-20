@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.resources.ResourceFileUpdateCoordinatorTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:24.213Z" hostname="VQSeGo" time="0.011">
+<testsuite name="features.resources.ResourceFileUpdateCoordinatorTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:34.748Z" hostname="VQSeGo" time="0.011">
   <properties/>
   <testcase name="cancelAllClearsPendingWorkAndCallsTheRunningCancellationCallback" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.003"/>
   <testcase name="downloadCancellationProducesCancelledResultAndContinuesQueue" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>

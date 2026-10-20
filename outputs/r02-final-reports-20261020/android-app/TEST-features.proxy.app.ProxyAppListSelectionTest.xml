@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.proxy.app.ProxyAppListSelectionTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:23.661Z" hostname="VQSeGo" time="0.001">
+<testsuite name="features.proxy.app.ProxyAppListSelectionTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:34.190Z" hostname="VQSeGo" time="0.001">
   <properties/>
   <testcase name="editing_installed_apps_keeps_packages_that_are_only_present_in_the_config" classname="features.proxy.app.ProxyAppListSelectionTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>

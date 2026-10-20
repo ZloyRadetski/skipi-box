@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopProxyHomeLatencyCoordinatorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:03.174Z" hostname="VQSeGo" time="0.003">
+<testsuite name="app.skipi.desktop.DesktopProxyHomeLatencyCoordinatorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:49.180Z" hostname="VQSeGo" time="0.003">
   <properties/>
   <testcase name="groupTargetsFollowCurrentCatalogOrderAndASecondRunIsRejectedWhileTheFirstIsActive" classname="app.skipi.desktop.DesktopProxyHomeLatencyCoordinatorTest" time="0.002"/>
   <testcase name="cancelCancelsTheActiveHomeRunAndNotifiesTheHostOnce" classname="app.skipi.desktop.DesktopProxyHomeLatencyCoordinatorTest" time="0.001"/>

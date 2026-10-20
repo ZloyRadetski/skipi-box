@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="AppearanceSettingValuesTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:51.433Z" hostname="VQSeGo" time="0.0">
+<testsuite name="AppearanceSettingValuesTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:19.373Z" hostname="VQSeGo" time="0.0">
   <properties/>
   <testcase name="photoAndCustomSeedKeepTheirPersistedSlots[desktop]" classname="app.skipi.ui.settings.AppearanceSettingValuesTest" time="0.0"/>
   <testcase name="fontSizeKeepsLegacyIndicesAndValidSliderPercentages[desktop]" classname="app.skipi.ui.settings.AppearanceSettingValuesTest" time="0.0"/>

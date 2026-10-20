@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ResourceSnapshotFilesTest[desktop]" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.825Z" hostname="VQSeGo" time="0.009">
+<testsuite name="ResourceSnapshotFilesTest[desktop]" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:08.714Z" hostname="VQSeGo" time="0.009">
   <properties/>
   <testcase name="customPathsUseTheSanitizedFilenameAndIdBasedFallback[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
-  <testcase name="customRenameOverwritesAnExistingDestinationAndDeleteIsScoped[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.0"/>
-  <testcase name="profileFilesAreIsolatedAndCorePathRemainsAtTheGlobalRoot[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.003"/>
-  <testcase name="xrayCoreAndReservedCustomNamesAreGuardedBeforeInputIsOpened[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.0"/>
-  <testcase name="replacementConsumesTheInputOnceAndWritesIntoTheCapturedProfile[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
-  <testcase name="replacementRejectsEmptyInputAndLeavesPreviousContentsIntact[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.0"/>
+  <testcase name="customRenameOverwritesAnExistingDestinationAndDeleteIsScoped[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="profileFilesAreIsolatedAndCorePathRemainsAtTheGlobalRoot[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.002"/>
+  <testcase name="xrayCoreAndReservedCustomNamesAreGuardedBeforeInputIsOpened[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="replacementConsumesTheInputOnceAndWritesIntoTheCapturedProfile[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.0"/>
+  <testcase name="replacementRejectsEmptyInputAndLeavesPreviousContentsIntact[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
   <testcase name="atomicWriteFailurePreservesOldTargetAndCleansReplacementStagingFile[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.0"/>
   <testcase name="customRenameIgnoresReservedNamesAndSamePath[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
   <testcase name="inputOpenFailureLeavesExistingReplacementStagingFileUntouched[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.0"/>

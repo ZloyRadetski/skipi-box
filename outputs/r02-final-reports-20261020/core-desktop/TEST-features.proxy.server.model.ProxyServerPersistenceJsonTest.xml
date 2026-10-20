@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ProxyServerPersistenceJsonTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.653Z" hostname="VQSeGo" time="0.002">
+<testsuite name="ProxyServerPersistenceJsonTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:08.560Z" hostname="VQSeGo" time="0.002">
   <properties/>
   <testcase name="persistedServerRoundTripsItsProtocolAndFields[desktop]" classname="features.proxy.server.model.ProxyServerPersistenceJsonTest" time="0.002"/>
   <system-out><![CDATA[]]></system-out>

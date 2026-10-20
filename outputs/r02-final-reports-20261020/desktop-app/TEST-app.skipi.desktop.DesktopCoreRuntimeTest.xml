@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopCoreRuntimeTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:02.633Z" hostname="VQSeGo" time="0.01">
+<testsuite name="app.skipi.desktop.DesktopCoreRuntimeTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:48.676Z" hostname="VQSeGo" time="0.007">
   <properties/>
-  <testcase name="closeStopsTheCoreAndReleasesTheLoadedLibrary" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.002"/>
-  <testcase name="controllerRejectsAnIncompatibleDesktopAbiBeforeStarting" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.002"/>
+  <testcase name="closeStopsTheCoreAndReleasesTheLoadedLibrary" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.001"/>
+  <testcase name="controllerRejectsAnIncompatibleDesktopAbiBeforeStarting" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.001"/>
   <testcase name="controllerMapsCoreCountersToTheSharedTunnelTrafficModel" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.003"/>
   <testcase name="controllerStartsAndStopsOneInProcessCoreSession" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.0"/>
-  <testcase name="runtimeRequiresNativeLibraryAndGeoAssets" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.001"/>
+  <testcase name="runtimeRequiresNativeLibraryAndGeoAssets" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.0"/>
   <testcase name="failedStartReleasesTheAllocatedCoreHandle" classname="app.skipi.desktop.DesktopCoreRuntimeTest" time="0.001"/>
-  <system-out><![CDATA[[2026-10-20 12:38:02.636] [INFO] [CoreController] Started in-process SKIPI Core xray-test (session 41)
-[2026-10-20 12:38:02.636] [INFO] [CoreController] Stopped in-process SKIPI Core session 41
-[2026-10-20 12:38:02.637] [ERROR] [CoreController] Failed to start in-process SKIPI Core
+  <system-out><![CDATA[[2026-10-20 12:49:48.677] [INFO] [CoreController] Started in-process SKIPI Core xray-test (session 41)
+[2026-10-20 12:49:48.677] [INFO] [CoreController] Stopped in-process SKIPI Core session 41
+[2026-10-20 12:49:48.677] [ERROR] [CoreController] Failed to start in-process SKIPI Core
 java.lang.IllegalStateException: Unsupported SKIPI Core desktop ABI 999; expected 1
 	at app.skipi.desktop.DesktopCoreController.start-gIAlu-s(DesktopCoreController.kt:64)
 	at app.skipi.desktop.DesktopCoreController.start-gIAlu-s$default(DesktopCoreController.kt:58)
@@ -56,10 +56,10 @@ java.lang.IllegalStateException: Unsupported SKIPI Core desktop ABI 999; expecte
 	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
 	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
 	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
-[2026-10-20 12:38:02.639] [INFO] [CoreController] Started in-process SKIPI Core xray-test (session 41)
-[2026-10-20 12:38:02.641] [INFO] [CoreController] Started in-process SKIPI Core xray-test (session 41)
-[2026-10-20 12:38:02.642] [INFO] [CoreController] Stopped in-process SKIPI Core session 41
-[2026-10-20 12:38:02.643] [ERROR] [CoreController] Failed to start in-process SKIPI Core
+[2026-10-20 12:49:48.679] [INFO] [CoreController] Started in-process SKIPI Core xray-test (session 41)
+[2026-10-20 12:49:48.681] [INFO] [CoreController] Started in-process SKIPI Core xray-test (session 41)
+[2026-10-20 12:49:48.681] [INFO] [CoreController] Stopped in-process SKIPI Core session 41
+[2026-10-20 12:49:48.683] [ERROR] [CoreController] Failed to start in-process SKIPI Core
 java.lang.IllegalStateException: invalid Xray JSON
 	at app.skipi.desktop.DesktopCoreRuntimeTest.failedStartReleasesTheAllocatedCoreHandle(DesktopCoreRuntimeTest.kt:63)
 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)

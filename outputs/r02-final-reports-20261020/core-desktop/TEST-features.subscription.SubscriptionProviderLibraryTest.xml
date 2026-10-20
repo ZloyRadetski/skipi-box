@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="SubscriptionProviderLibraryTest[desktop]" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.422Z" hostname="VQSeGo" time="0.004">
+<testsuite name="SubscriptionProviderLibraryTest[desktop]" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:09.290Z" hostname="VQSeGo" time="0.004">
   <properties/>
   <testcase name="addOrReplaceKeepsStableIdAndProviderOptionsWhileMergingFetchedMetadata[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.002"/>
   <testcase name="addManualGroupAssignsSequentialIdsPreservesOrderAndLeavesExistingEntriesIntact[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
-  <testcase name="updateProviderRejectsInvalidNonEmptyUrlAndDuplicateNonEmptyUrl[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
+  <testcase name="updateProviderRejectsInvalidNonEmptyUrlAndDuplicateNonEmptyUrl[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.001"/>
   <testcase name="providerEditRetainsFetchedMetadataAndRejectsUnsafeOrDuplicateValues[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
   <testcase name="updateProviderAllowsEmptyUrlAndMultipleGroupsWithEmptyUrl[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>
   <testcase name="updateProviderRetainsMetadataWhenEditingToEmptyUrl[desktop]" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>

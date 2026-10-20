@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:06.799Z" hostname="VQSeGo" time="0.009">
+<testsuite name="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:18.885Z" hostname="VQSeGo" time="0.01">
   <properties/>
   <testcase name="editableCopy_custom" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.001"/>
-  <testcase name="editableCopy_olcRtc" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.005"/>
+  <testcase name="editableCopy_olcRtc" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.006"/>
   <testcase name="editableCopy_vmessClonesParms" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.0"/>
   <testcase name="editableCopy_wireguard" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.001"/>
-  <testcase name="editableCopy_amneziaWg" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.001"/>
+  <testcase name="editableCopy_amneziaWg" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.0"/>
   <testcase name="editableCopy_hysteria2" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.0"/>
   <testcase name="editableCopy_strategyGroup" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.0"/>
   <testcase name="editableCopy_chainProxy" classname="app.skipi.ui.server.editor.ProxyServerEditorRegistryTest" time="0.001"/>

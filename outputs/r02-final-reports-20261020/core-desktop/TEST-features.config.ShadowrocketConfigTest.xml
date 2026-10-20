@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ShadowrocketConfigTest[desktop]" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.576Z" hostname="VQSeGo" time="0.003">
+<testsuite name="ShadowrocketConfigTest[desktop]" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:08.491Z" hostname="VQSeGo" time="0.003">
   <properties/>
   <testcase name="decodesPortableInlineSkipiConfigPayload[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.001"/>
   <testcase name="withoutShadowrocketProxyGroupLineRemovesExpectedGroup[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.0"/>
-  <testcase name="parserReportsMoreThanOneFinalRuleWithoutDiscardingThem[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.001"/>
+  <testcase name="parserReportsMoreThanOneFinalRuleWithoutDiscardingThem[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.0"/>
   <testcase name="portableSectionValueEditKeepsAndroidSpecificMetadataAndComments[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.001"/>
   <testcase name="parserReadsPortableProfileGroupExtensions[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.0"/>
   <testcase name="generalEditPreservesUnsupportedSectionsAndComments[desktop]" classname="features.config.ShadowrocketConfigTest" time="0.0"/>

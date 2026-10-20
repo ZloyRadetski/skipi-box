@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="engine.network.NetworkValidatorsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:57.605Z" hostname="VQSeGo" time="0.023">
+<testsuite name="engine.network.NetworkValidatorsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:07.431Z" hostname="VQSeGo" time="0.034">
   <properties/>
-  <testcase name="rejectsInvalidPortableNetworkSettings" classname="engine.network.NetworkValidatorsTest" time="0.017"/>
-  <testcase name="acceptsValidPortFormsWithoutPlatformApis" classname="engine.network.NetworkValidatorsTest" time="0.0"/>
-  <testcase name="parsesValidIpv4AndIpv6Cidrs" classname="engine.network.NetworkValidatorsTest" time="0.0"/>
+  <testcase name="rejectsInvalidPortableNetworkSettings" classname="engine.network.NetworkValidatorsTest" time="0.021"/>
+  <testcase name="acceptsValidPortFormsWithoutPlatformApis" classname="engine.network.NetworkValidatorsTest" time="0.001"/>
+  <testcase name="parsesValidIpv4AndIpv6Cidrs" classname="engine.network.NetworkValidatorsTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

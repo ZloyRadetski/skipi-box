@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.config.TrafficConfigProxyGroupPersistenceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:23.636Z" hostname="VQSeGo" time="0.001">
+<testsuite name="features.config.TrafficConfigProxyGroupPersistenceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:34.163Z" hostname="VQSeGo" time="0.002">
   <properties/>
-  <testcase name="editingExistingConfigGroup_keepsAllBalancerSettings" classname="features.config.TrafficConfigProxyGroupPersistenceTest" time="0.0"/>
+  <testcase name="editingExistingConfigGroup_keepsAllBalancerSettings" classname="features.config.TrafficConfigProxyGroupPersistenceTest" time="0.001"/>
   <testcase name="configProxyGroup_roundTripsBalancerHealthSettings" classname="features.config.TrafficConfigProxyGroupPersistenceTest" time="0.0"/>
   <testcase name="configProxyGroup_preservesDisabledBurstProbe" classname="features.config.TrafficConfigProxyGroupPersistenceTest" time="0.0"/>
   <testcase name="editorReconciliationUsesSharedCatalogAndPreservesIdsOrderAndSelection" classname="features.config.TrafficConfigProxyGroupPersistenceTest" time="0.0"/>

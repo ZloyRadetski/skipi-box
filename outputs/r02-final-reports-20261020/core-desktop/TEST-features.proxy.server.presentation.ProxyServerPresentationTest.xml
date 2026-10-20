@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ProxyServerPresentationTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.668Z" hostname="VQSeGo" time="0.013">
+<testsuite name="ProxyServerPresentationTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:08.569Z" hostname="VQSeGo" time="0.004">
   <properties/>
-  <testcase name="automaticStrategyIncludesLocalizedSourceAndFilterAndChainUsesMemberNames[desktop]" classname="features.proxy.server.presentation.ProxyServerPresentationTest" time="0.005"/>
-  <testcase name="selectStrategyDoesNotPresentTheFirstConfiguredMemberAsActive[desktop]" classname="features.proxy.server.presentation.ProxyServerPresentationTest" time="0.001"/>
-  <testcase name="selectStrategyUsesTheActiveMemberAndExplicitMemberCount[desktop]" classname="features.proxy.server.presentation.ProxyServerPresentationTest" time="0.003"/>
+  <testcase name="automaticStrategyIncludesLocalizedSourceAndFilterAndChainUsesMemberNames[desktop]" classname="features.proxy.server.presentation.ProxyServerPresentationTest" time="0.002"/>
+  <testcase name="selectStrategyDoesNotPresentTheFirstConfiguredMemberAsActive[desktop]" classname="features.proxy.server.presentation.ProxyServerPresentationTest" time="0.0"/>
+  <testcase name="selectStrategyUsesTheActiveMemberAndExplicitMemberCount[desktop]" classname="features.proxy.server.presentation.ProxyServerPresentationTest" time="0.001"/>
   <testcase name="chainFallsBackToTheLocalizedCountWhenMembersAreUnavailable[desktop]" classname="features.proxy.server.presentation.ProxyServerPresentationTest" time="0.0"/>
   <testcase name="presentationTitleSeparatesFlagsWithoutDestroyingFlagOnlyNames[desktop]" classname="features.proxy.server.presentation.ProxyServerPresentationTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>

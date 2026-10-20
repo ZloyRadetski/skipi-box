@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.proxy.server.parser.ProxyServerParserTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:23.923Z" hostname="VQSeGo" time="0.002">
+<testsuite name="features.proxy.server.parser.ProxyServerParserTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:34.474Z" hostname="VQSeGo" time="0.002">
   <properties/>
   <testcase name="testParseHysteria2Url" classname="features.proxy.server.parser.ProxyServerParserTest" time="0.0"/>
   <testcase name="testParseVlessMkcpUrlAndStreamSettings" classname="features.proxy.server.parser.ProxyServerParserTest" time="0.001"/>
-  <testcase name="testGetTransportDisplay" classname="features.proxy.server.parser.ProxyServerParserTest" time="0.0"/>
+  <testcase name="testGetTransportDisplay" classname="features.proxy.server.parser.ProxyServerParserTest" time="0.001"/>
   <testcase name="testParseShadowsocksUrl" classname="features.proxy.server.parser.ProxyServerParserTest" time="0.0"/>
   <testcase name="testParseVlessUrl" classname="features.proxy.server.parser.ProxyServerParserTest" time="0.0"/>
   <testcase name="testParseTrojanUrl" classname="features.proxy.server.parser.ProxyServerParserTest" time="0.0"/>

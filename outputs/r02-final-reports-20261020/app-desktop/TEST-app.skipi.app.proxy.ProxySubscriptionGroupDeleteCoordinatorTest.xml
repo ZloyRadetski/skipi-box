@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ProxySubscriptionGroupDeleteCoordinatorTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.348Z" hostname="VQSeGo" time="0.012">
+<testsuite name="ProxySubscriptionGroupDeleteCoordinatorTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:10.807Z" hostname="VQSeGo" time="0.025">
   <properties/>
-  <testcase name="stopMissingFailureAndCancellationKeepGroupAndStopStateContract[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.003"/>
-  <testcase name="runningSelectedMemberIsStoppedAndGroupRemovalCompletesBeforeStatePublication[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.002"/>
-  <testcase name="disappearedGroupAndDeleteFailureDoNotPublishStopStateOrSuccess[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.002"/>
-  <testcase name="stoppedOrUnselectedGroupRemovalDoesNotStopAndAwaitsDelete[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.001"/>
+  <testcase name="stopMissingFailureAndCancellationKeepGroupAndStopStateContract[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.009"/>
+  <testcase name="runningSelectedMemberIsStoppedAndGroupRemovalCompletesBeforeStatePublication[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.003"/>
+  <testcase name="disappearedGroupAndDeleteFailureDoNotPublishStopStateOrSuccess[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.003"/>
+  <testcase name="stoppedOrUnselectedGroupRemovalDoesNotStopAndAwaitsDelete[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.007"/>
   <testcase name="builtInAndBusyGroupDeletesDoNothing[desktop]" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.002"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

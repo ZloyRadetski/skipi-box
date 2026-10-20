@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.routing.RouteOutboundSelectorProjectionAndroidOracleTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:32.914Z" hostname="VQSeGo" time="0.007">
+<testsuite name="features.routing.RouteOutboundSelectorProjectionAndroidOracleTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:42.454Z" hostname="VQSeGo" time="0.003">
   <properties/>
   <testcase name="knownServerOutsideRenderedGroupsIsNotAddedAsSystemOption" classname="features.routing.RouteOutboundSelectorProjectionAndroidOracleTest" time="0.002"/>
   <testcase name="missingExplicitProfileIdStillUsesPolicyTargetsAndOtherConfigTags" classname="features.routing.RouteOutboundSelectorProjectionAndroidOracleTest" time="0.0"/>

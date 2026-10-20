@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ProxyServerCopyTargetTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.396Z" hostname="VQSeGo" time="0.001">
+<testsuite name="ProxyServerCopyTargetTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:10.892Z" hostname="VQSeGo" time="0.001">
   <properties/>
-  <testcase name="copyTargetForAnAbsentIdIsAppendedWithoutChangingTheInput[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.0"/>
+  <testcase name="copyTargetForAnAbsentIdIsAppendedWithoutChangingTheInput[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.001"/>
   <testcase name="capturedServerIdAndSourceGroupAreKeptInsteadOfTheReturnGroup[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.0"/>
   <testcase name="newDraftUsesTemporaryIdAndManualGroupWhenNoGroupWasCaptured[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.0"/>
   <testcase name="copyTargetReplacesMatchingRowAtItsOriginalPositionWithoutChangingTheInput[desktop]" classname="app.skipi.app.server.ProxyServerCopyTargetTest" time="0.0"/>

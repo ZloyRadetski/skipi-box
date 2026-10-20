@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopResourceFileServicesTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:06.870Z" hostname="VQSeGo" time="0.729">
+<testsuite name="app.skipi.desktop.DesktopResourceFileServicesTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:53.717Z" hostname="VQSeGo" time="0.644">
   <properties/>
-  <testcase name="cancellingTheQueueDisconnectsTheRunningDownloadAndDropsPendingWork" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.016"/>
-  <testcase name="automaticUpdateRechecksLatestProfileAndRunsOutsideTheManualQueue" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.007"/>
-  <testcase name="startupSynchronizationUsesProfileOneAndSourceZeroWhenThereIsNoProfile" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.307"/>
-  <testcase name="packageUpdateSynchronizationRestoresOnlyOldProfileAssets" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.389"/>
-  <testcase name="queuedManualRequestsUseCapturedProfilesAndRunFifoAfterLatestSelectionChanges" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.006"/>
+  <testcase name="cancellingTheQueueDisconnectsTheRunningDownloadAndDropsPendingWork" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.006"/>
+  <testcase name="automaticUpdateRechecksLatestProfileAndRunsOutsideTheManualQueue" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.005"/>
+  <testcase name="startupSynchronizationUsesProfileOneAndSourceZeroWhenThereIsNoProfile" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.272"/>
+  <testcase name="packageUpdateSynchronizationRestoresOnlyOldProfileAssets" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.353"/>
+  <testcase name="queuedManualRequestsUseCapturedProfilesAndRunFifoAfterLatestSelectionChanges" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.005"/>
   <testcase name="resourceSettingsPersistThroughTheLatestEditorStoreAndReload" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.003"/>
-  <system-out><![CDATA[[2026-10-20 12:38:06.884] [INFO] [ResourceFiles] Resource file update cancelled
-[2026-10-20 12:38:07.194] [WARN] [ResourceFiles] Failed to restore bundled resource file: geoip-only-cn-private.dat
+  <system-out><![CDATA[[2026-10-20 12:49:53.722] [INFO] [ResourceFiles] Resource file update cancelled
+[2026-10-20 12:49:53.994] [WARN] [ResourceFiles] Failed to restore bundled resource file: geoip-only-cn-private.dat
 java.io.FileNotFoundException: Bundled asset unavailable: geo/loyalsoldier/geoip-only-cn-private.dat (fallback: geoip-only-cn-private.dat)
 	at features.resources.ResourceSnapshotFiles.openBundledAssetStream(ResourceSnapshotFiles.kt:244)
 	at features.resources.ResourceSnapshotFiles.restoreBundled(ResourceSnapshotFiles.kt:103)

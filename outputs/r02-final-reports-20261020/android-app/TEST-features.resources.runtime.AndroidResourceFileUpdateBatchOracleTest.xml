@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.resources.runtime.AndroidResourceFileUpdateBatchOracleTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:31.905Z" hostname="VQSeGo" time="0.09">
+<testsuite name="features.resources.runtime.AndroidResourceFileUpdateBatchOracleTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:41.468Z" hostname="VQSeGo" time="0.089">
   <properties/>
-  <testcase name="cancellationOnSecondAllDownloadKeepsPublishedPrefixAndDoesNotMarkSource" classname="features.resources.runtime.AndroidResourceFileUpdateBatchOracleTest" time="0.074"/>
-  <testcase name="emptyCustomUpdateDoesNotCreateDirectoryResetCancellationOrResolveProxy" classname="features.resources.runtime.AndroidResourceFileUpdateBatchOracleTest" time="0.015"/>
+  <testcase name="cancellationOnSecondAllDownloadKeepsPublishedPrefixAndDoesNotMarkSource" classname="features.resources.runtime.AndroidResourceFileUpdateBatchOracleTest" time="0.073"/>
+  <testcase name="emptyCustomUpdateDoesNotCreateDirectoryResetCancellationOrResolveProxy" classname="features.resources.runtime.AndroidResourceFileUpdateBatchOracleTest" time="0.014"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.subscription.SubscriptionProviderLibraryTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:57.983Z" hostname="VQSeGo" time="0.004">
+<testsuite name="features.subscription.SubscriptionProviderLibraryTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:07.812Z" hostname="VQSeGo" time="0.005">
   <properties/>
   <testcase name="addOrReplaceKeepsStableIdAndProviderOptionsWhileMergingFetchedMetadata" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.003"/>
   <testcase name="addManualGroupAssignsSequentialIdsPreservesOrderAndLeavesExistingEntriesIntact" classname="features.subscription.SubscriptionProviderLibraryTest" time="0.0"/>

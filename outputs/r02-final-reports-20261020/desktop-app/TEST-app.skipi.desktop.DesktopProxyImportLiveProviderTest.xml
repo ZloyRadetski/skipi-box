@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopProxyImportLiveProviderTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:03.221Z" hostname="VQSeGo" time="0.01">
+<testsuite name="app.skipi.desktop.DesktopProxyImportLiveProviderTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:49.221Z" hostname="VQSeGo" time="0.009">
   <properties/>
   <testcase name="cancellingLivePlannerDuringProviderFetchDoesNotReachCommit" classname="app.skipi.desktop.DesktopProxyImportLiveProviderTest" time="0.002"/>
   <testcase name="liveFileImportDecodesBase64RootAndProviderPayloads" classname="app.skipi.desktop.DesktopProxyImportLiveProviderTest" time="0.002"/>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.networkautomation.model.NetworkAutomationRuleSerializationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:23.657Z" hostname="VQSeGo" time="0.001">
+<testsuite name="features.networkautomation.model.NetworkAutomationRuleSerializationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:34.187Z" hostname="VQSeGo" time="0.0">
   <properties/>
-  <testcase name="testSerializeAndDeserializeDisconnectRule" classname="features.networkautomation.model.NetworkAutomationRuleSerializationTest" time="0.001"/>
+  <testcase name="testSerializeAndDeserializeDisconnectRule" classname="features.networkautomation.model.NetworkAutomationRuleSerializationTest" time="0.0"/>
   <testcase name="testSerializeAndDeserializeSwitchIfConnectedRule" classname="features.networkautomation.model.NetworkAutomationRuleSerializationTest" time="0.0"/>
   <testcase name="testSerializeAndDeserializeSwitchServerRule" classname="features.networkautomation.model.NetworkAutomationRuleSerializationTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>

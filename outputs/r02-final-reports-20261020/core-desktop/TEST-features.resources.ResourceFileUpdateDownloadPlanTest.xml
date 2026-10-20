@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ResourceFileUpdateDownloadPlanTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:52.755Z" hostname="VQSeGo" time="0.001">
+<testsuite name="ResourceFileUpdateDownloadPlanTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:08.624Z" hostname="VQSeGo" time="0.002">
   <properties/>
-  <testcase name="builtInPlanPreservesUrlAndRejectsXrayCoreWithItsCurrentDisplayName[desktop]" classname="features.resources.ResourceFileUpdateDownloadPlanTest" time="0.0"/>
+  <testcase name="builtInPlanPreservesUrlAndRejectsXrayCoreWithItsCurrentDisplayName[desktop]" classname="features.resources.ResourceFileUpdateDownloadPlanTest" time="0.001"/>
   <testcase name="customPlanTrimsUrlPreservesOriginalMetadataAndSkipsReservedOrBlankEntries[desktop]" classname="features.resources.ResourceFileUpdateDownloadPlanTest" time="0.001"/>
   <testcase name="allPlanKeepsBuiltInsFirstAndEligibleCustomFilesInProfileOrder[desktop]" classname="features.resources.ResourceFileUpdateDownloadPlanTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>

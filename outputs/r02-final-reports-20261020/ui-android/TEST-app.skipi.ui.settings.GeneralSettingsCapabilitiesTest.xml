@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.ui.settings.GeneralSettingsCapabilitiesTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:06.812Z" hostname="VQSeGo" time="0.002">
+<testsuite name="app.skipi.ui.settings.GeneralSettingsCapabilitiesTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:18.898Z" hostname="VQSeGo" time="0.002">
   <properties/>
   <testcase name="desktopShowsLanguageAndWorkingDeletionConfirmationOnly" classname="app.skipi.ui.settings.GeneralSettingsCapabilitiesTest" time="0.002"/>
   <testcase name="defaultsExposeEveryExistingAndroidGeneralSettingsControl" classname="app.skipi.ui.settings.GeneralSettingsCapabilitiesTest" time="0.0"/>

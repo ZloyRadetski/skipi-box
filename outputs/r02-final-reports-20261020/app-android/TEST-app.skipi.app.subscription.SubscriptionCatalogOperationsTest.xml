@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:00.185Z" hostname="VQSeGo" time="0.002">
+<testsuite name="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:11.812Z" hostname="VQSeGo" time="0.002">
   <properties/>
-  <testcase name="movePreservesFixedAndBuiltinSlotsAndDesktopCanMoveOrdinaryIdOne" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
+  <testcase name="movePreservesFixedAndBuiltinSlotsAndDesktopCanMoveOrdinaryIdOne" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.001"/>
   <testcase name="removeRejectsBuiltinButCleansLinkedRowsAndCompositeReferencesForOrdinaryIdOne" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.001"/>
   <testcase name="builtInManualEditorKeepsIdentityTitleEnabledAndBuiltInWhileSavingOptions" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
   <testcase name="editorSaveCopiesLatestMetadataAndUpdatesOnlyLinkedCustomOverrides" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
   <testcase name="upsertReplacesInPlaceAndAllowsRefreshToUpdateBuiltinTitle" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
-  <testcase name="twoDraftsWithTheSameDisplayedIdAllocateDistinctIdsFromLatestCatalog" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.001"/>
+  <testcase name="twoDraftsWithTheSameDisplayedIdAllocateDistinctIdsFromLatestCatalog" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
   <testcase name="editorSaveDoesNotRecreateAGroupDeletedWhileTheEditorWasOpen" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
   <testcase name="manualGroupCreationUsesLatestHighWaterCounterAndKeepsBlankUrl" classname="app.skipi.app.subscription.SubscriptionCatalogOperationsTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>

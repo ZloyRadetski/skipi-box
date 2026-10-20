@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="SpeedTestMetricsTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.440Z" hostname="VQSeGo" time="0.0">
+<testsuite name="SpeedTestMetricsTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:09.320Z" hostname="VQSeGo" time="0.0">
   <properties/>
   <testcase name="computesJitterAndMedianWithoutChangingExistingSemantics[desktop]" classname="features.tools.speedtest.SpeedTestMetricsTest" time="0.0"/>
   <testcase name="smoothsThroughputInMegabitsAndHandlesZeroDuration[desktop]" classname="features.tools.speedtest.SpeedTestMetricsTest" time="0.0"/>

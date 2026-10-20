@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:13.329Z" hostname="VQSeGo" time="0.007">
+<testsuite name="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:59.985Z" hostname="VQSeGo" time="0.007">
   <properties/>
-  <testcase name="failedServerSaveAfterStoppingSelectedServerKeepsRowsAndSubscription" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.002"/>
-  <testcase name="failingToStopSelectedServerLeavesServersAndSubscriptionUntouched" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.001"/>
-  <testcase name="homeStopUsesLiveCoreStateToAvoidStoppingSelectedGroupTwice" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.001"/>
+  <testcase name="failedServerSaveAfterStoppingSelectedServerKeepsRowsAndSubscription" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.001"/>
+  <testcase name="failingToStopSelectedServerLeavesServersAndSubscriptionUntouched" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.002"/>
+  <testcase name="homeStopUsesLiveCoreStateToAvoidStoppingSelectedGroupTwice" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.0"/>
   <testcase name="removingSelectedSubscriptionServersWhileTunnelIsStoppedDoesNotStopAgain" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.001"/>
-  <testcase name="selectedOpaqueSubscriptionServerStopsBeforeDeletingLatestRows" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.001"/>
+  <testcase name="selectedOpaqueSubscriptionServerStopsBeforeDeletingLatestRows" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.002"/>
   <testcase name="removingUnselectedSubscriptionServersDoesNotStopProxy" classname="app.skipi.desktop.DesktopSubscriptionServerRemovalAdapterTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

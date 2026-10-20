@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:10.911Z" hostname="VQSeGo" time="2.071">
+<testsuite name="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:57.661Z" hostname="VQSeGo" time="2.041">
   <properties/>
-  <testcase name="generatedChainCarriesLoopbackTrafficThroughItsConfiguredHopOrder" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="1.052"/>
-  <testcase name="generatedAutomaticGroupStartsAndRoutesLoopbackTrafficThroughAMember" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="1.019"/>
-  <system-out><![CDATA[[2026-10-20 12:38:10.953] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 8)
-[2026-10-20 12:38:11.959] [INFO] [CoreController] Stopped in-process SKIPI Core session 8
-[2026-10-20 12:38:11.976] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 9)
-[2026-10-20 12:38:12.979] [INFO] [CoreController] Stopped in-process SKIPI Core session 9
+  <testcase name="generatedChainCarriesLoopbackTrafficThroughItsConfiguredHopOrder" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="1.02"/>
+  <testcase name="generatedAutomaticGroupStartsAndRoutesLoopbackTrafficThroughAMember" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="1.021"/>
+  <system-out><![CDATA[[2026-10-20 12:49:57.674] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 8)
+[2026-10-20 12:49:58.678] [INFO] [CoreController] Stopped in-process SKIPI Core session 8
+[2026-10-20 12:49:58.696] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 9)
+[2026-10-20 12:49:59.699] [INFO] [CoreController] Stopped in-process SKIPI Core session 9
 ]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

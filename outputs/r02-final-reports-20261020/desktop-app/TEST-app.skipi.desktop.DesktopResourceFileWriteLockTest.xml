@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopResourceFileWriteLockTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:10.641Z" hostname="VQSeGo" time="0.26">
+<testsuite name="app.skipi.desktop.DesktopResourceFileWriteLockTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:57.394Z" hostname="VQSeGo" time="0.257">
   <properties/>
-  <testcase name="separateHostsCanWriteDistinctAbsoluteTargetsConcurrently" classname="app.skipi.desktop.DesktopResourceFileWriteLockTest" time="0.006"/>
-  <testcase name="separateHostsSerializeOneAbsoluteTargetAndReleaseItsLockAfterWriterFailure" classname="app.skipi.desktop.DesktopResourceFileWriteLockTest" time="0.254"/>
+  <testcase name="separateHostsCanWriteDistinctAbsoluteTargetsConcurrently" classname="app.skipi.desktop.DesktopResourceFileWriteLockTest" time="0.004"/>
+  <testcase name="separateHostsSerializeOneAbsoluteTargetAndReleaseItsLockAfterWriterFailure" classname="app.skipi.desktop.DesktopResourceFileWriteLockTest" time="0.253"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopProxyHomeLatencyJobOwnerTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:03.180Z" hostname="VQSeGo" time="0.001">
+<testsuite name="app.skipi.desktop.DesktopProxyHomeLatencyJobOwnerTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:49.185Z" hostname="VQSeGo" time="0.001">
   <properties/>
   <testcase name="cancelLatencyEffectCancelsTheRetainedHostJobAndRunsItsCleanup" classname="app.skipi.desktop.DesktopProxyHomeLatencyJobOwnerTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>

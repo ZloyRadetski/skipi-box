@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="PersistedRuntimePreferencesContractTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.263Z" hostname="VQSeGo" time="0.003">
+<testsuite name="PersistedRuntimePreferencesContractTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:10.753Z" hostname="VQSeGo" time="0.002">
   <properties/>
   <testcase name="absentRuntimePreferenceSectionsStayAbsent[desktop]" classname="app.skipi.app.model.PersistedRuntimePreferencesContractTest" time="0.001"/>
-  <testcase name="runtimePreferenceContractsPreserveAndroidRawStringsAndLists[desktop]" classname="app.skipi.app.model.PersistedRuntimePreferencesContractTest" time="0.002"/>
+  <testcase name="runtimePreferenceContractsPreserveAndroidRawStringsAndLists[desktop]" classname="app.skipi.app.model.PersistedRuntimePreferencesContractTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

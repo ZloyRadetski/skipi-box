@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ProxyHomeLatencyOperationTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.169Z" hostname="VQSeGo" time="0.005">
+<testsuite name="ProxyHomeLatencyOperationTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:10.673Z" hostname="VQSeGo" time="0.005">
   <properties/>
   <testcase name="staleCompletionCannotClearTheNextRunAndCancelInvalidatesItsRunId[desktop]" classname="app.skipi.app.home.ProxyHomeLatencyOperationTest" time="0.003"/>
   <testcase name="synchronousCompletionBeforeLauncherReturnsDoesNotLeaveTheOperationBusy[desktop]" classname="app.skipi.app.home.ProxyHomeLatencyOperationTest" time="0.001"/>

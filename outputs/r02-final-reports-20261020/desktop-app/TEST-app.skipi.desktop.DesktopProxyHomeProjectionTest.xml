@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopProxyHomeProjectionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:03.201Z" hostname="VQSeGo" time="0.007">
+<testsuite name="app.skipi.desktop.DesktopProxyHomeProjectionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:49.205Z" hostname="VQSeGo" time="0.006">
   <properties/>
-  <testcase name="projectionMatchesAndroidHeadlineFallbackAndCountryFlagRules" classname="app.skipi.desktop.DesktopProxyHomeProjectionTest" time="0.005"/>
+  <testcase name="projectionMatchesAndroidHeadlineFallbackAndCountryFlagRules" classname="app.skipi.desktop.DesktopProxyHomeProjectionTest" time="0.004"/>
   <testcase name="retainedBatchProgressMarksEverySubscriptionRowById" classname="app.skipi.desktop.DesktopProxyHomeProjectionTest" time="0.001"/>
   <testcase name="projectionMatchesAndroidAllMembershipAndServerSearchAndSortFields" classname="app.skipi.desktop.DesktopProxyHomeProjectionTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>

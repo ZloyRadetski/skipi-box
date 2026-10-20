@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="TrafficConfigCollectionOperationsTest[desktop]" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.097Z" hostname="VQSeGo" time="0.006">
+<testsuite name="TrafficConfigCollectionOperationsTest[desktop]" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:10.598Z" hostname="VQSeGo" time="0.006">
   <properties/>
   <testcase name="duplicateUsesCurrentTypedProfileEnvelopeWhenSerializedBasicsAreStale[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
   <testcase name="updateReadsSettingsFromChangedDocumentAndKeepsOtherProfileOrder[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
@@ -8,9 +8,9 @@
   <testcase name="updatePersistsSettingsIntoDocumentWithoutChangingProfileIdentity[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
   <testcase name="committedRawEditRewritesKnownSkipiValuesAndKeepsExternalSectionsAndNeighbors[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
   <testcase name="duplicateStillAppendsClickedSnapshotAfterSourceWasRemoved[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.0"/>
-  <testcase name="unchangedOrUnknownUpdatePreservesOriginalCollection[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
+  <testcase name="unchangedOrUnknownUpdatePreservesOriginalCollection[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.0"/>
   <testcase name="duplicateUsesClickedSnapshotWhenCurrentListHasNewerRecordWithSameId[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.0"/>
-  <testcase name="duplicateAppendsFreshIdCopiesPortableProfileAndResetsRefreshTimestamp[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.0"/>
+  <testcase name="duplicateAppendsFreshIdCopiesPortableProfileAndResetsRefreshTimestamp[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
   <testcase name="selectionAcceptsExistingIdAndIgnoresUnknownId[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.0"/>
   <testcase name="readingAndProjectingProfileLeavesUntouchedRawDocumentAlone[desktop]" classname="app.skipi.app.config.TrafficConfigCollectionOperationsTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>

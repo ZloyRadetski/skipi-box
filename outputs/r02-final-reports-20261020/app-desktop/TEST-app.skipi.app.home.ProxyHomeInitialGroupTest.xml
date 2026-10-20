@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ProxyHomeInitialGroupTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.153Z" hostname="VQSeGo" time="0.012">
+<testsuite name="ProxyHomeInitialGroupTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:10.656Z" hostname="VQSeGo" time="0.013">
   <properties/>
-  <testcase name="missingSelectionOrMissingDecodedRecordUsesTheHostDefault[desktop]" classname="app.skipi.app.home.ProxyHomeInitialGroupTest" time="0.0"/>
+  <testcase name="missingSelectionOrMissingDecodedRecordUsesTheHostDefault[desktop]" classname="app.skipi.app.home.ProxyHomeInitialGroupTest" time="0.001"/>
   <testcase name="unknownRawGroupIsPassedToExistingStoreFallbackAndValidRestoredGroupWins[desktop]" classname="app.skipi.app.home.ProxyHomeInitialGroupTest" time="0.012"/>
   <testcase name="initialSeedUsesTheDecodedSelectedRecordRawGroupId[desktop]" classname="app.skipi.app.home.ProxyHomeInitialGroupTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.proxy.ConnectionDisplayModeTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:23.660Z" hostname="VQSeGo" time="0.0">
+<testsuite name="features.proxy.ConnectionDisplayModeTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:34.189Z" hostname="VQSeGo" time="0.0">
   <properties/>
   <testcase name="testClassicModeWithFloatingPowerButtonDisabled" classname="features.proxy.ConnectionDisplayModeTest" time="0.0"/>
   <testcase name="testSubscriptionSwipeResolution" classname="features.proxy.ConnectionDisplayModeTest" time="0.0"/>

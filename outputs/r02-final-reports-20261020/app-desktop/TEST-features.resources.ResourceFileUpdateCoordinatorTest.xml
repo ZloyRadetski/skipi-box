@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ResourceFileUpdateCoordinatorTest[desktop]" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:53.635Z" hostname="VQSeGo" time="0.015">
+<testsuite name="ResourceFileUpdateCoordinatorTest[desktop]" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:11.109Z" hostname="VQSeGo" time="0.012">
   <properties/>
-  <testcase name="cancelAllClearsPendingWorkAndCallsTheRunningCancellationCallback[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.005"/>
+  <testcase name="cancelAllClearsPendingWorkAndCallsTheRunningCancellationCallback[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.004"/>
   <testcase name="downloadCancellationProducesCancelledResultAndContinuesQueue[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.002"/>
-  <testcase name="ordinaryFailureEmitsFailureThenQueueContinuesWithTheNextRequest[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.002"/>
+  <testcase name="ordinaryFailureEmitsFailureThenQueueContinuesWithTheNextRequest[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>
   <testcase name="updatesRunSeriallyInFifoOrderAndRejectOverlappingTargetsAcrossProfiles[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>
   <testcase name="coroutineCancellationClearsQueueWithoutResultOrCompletionRevision[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.002"/>
   <testcase name="allRequestIncludesFiveBuiltInsAndOnlyCustomFilesWithNonblankUrls[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.0"/>
   <testcase name="allRequestIsRejectedWheneverAnyRequestIsRunningOrQueued[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>
-  <testcase name="requestKeepsItsCapturedScopeAndCopiesTheCustomFileList[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.002"/>
+  <testcase name="requestKeepsItsCapturedScopeAndCopiesTheCustomFileList[desktop]" classname="features.resources.ResourceFileUpdateCoordinatorTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.app.home.ProxyHomeLatencyOperationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:37:59.850Z" hostname="VQSeGo" time="0.006">
+<testsuite name="app.skipi.app.home.ProxyHomeLatencyOperationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:11.526Z" hostname="VQSeGo" time="0.005">
   <properties/>
   <testcase name="staleCompletionCannotClearTheNextRunAndCancelInvalidatesItsRunId" classname="app.skipi.app.home.ProxyHomeLatencyOperationTest" time="0.004"/>
   <testcase name="synchronousCompletionBeforeLauncherReturnsDoesNotLeaveTheOperationBusy" classname="app.skipi.app.home.ProxyHomeLatencyOperationTest" time="0.001"/>
-  <testcase name="groupSelectionIntersectsCurrentTargetsInCatalogOrder" classname="app.skipi.app.home.ProxyHomeLatencyOperationTest" time="0.001"/>
+  <testcase name="groupSelectionIntersectsCurrentTargetsInCatalogOrder" classname="app.skipi.app.home.ProxyHomeLatencyOperationTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

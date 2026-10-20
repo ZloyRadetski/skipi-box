@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="engine.vpn.PhysicalNetworkHandoverTrackerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:23.427Z" hostname="VQSeGo" time="0.0">
+<testsuite name="engine.vpn.PhysicalNetworkHandoverTrackerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:47:33.952Z" hostname="VQSeGo" time="0.001">
   <properties/>
   <testcase name="network loss waits for a replacement before reload" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>
   <testcase name="losing an upstream clears a deferred recovery" classname="engine.vpn.PhysicalNetworkHandoverTrackerTest" time="0.0"/>

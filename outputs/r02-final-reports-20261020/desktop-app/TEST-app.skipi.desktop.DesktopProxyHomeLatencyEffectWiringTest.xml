@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopProxyHomeLatencyEffectWiringTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:38:03.178Z" hostname="VQSeGo" time="0.002">
+<testsuite name="app.skipi.desktop.DesktopProxyHomeLatencyEffectWiringTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T09:49:49.183Z" hostname="VQSeGo" time="0.002">
   <properties/>
   <testcase name="coordinatorRejectionIsReturnedWithoutStartingTheOldDirectMeasurementPath" classname="app.skipi.desktop.DesktopProxyHomeLatencyEffectWiringTest" time="0.001"/>
   <testcase name="homeServerAndGroupLatencyEffectsUseTheSharedCoordinatorCallbacks" classname="app.skipi.desktop.DesktopProxyHomeLatencyEffectWiringTest" time="0.001"/>
