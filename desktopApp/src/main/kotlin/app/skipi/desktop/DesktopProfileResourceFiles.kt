@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import features.config.TrafficConfigState
+import features.resources.ResourceFileKind
 import features.resources.ResourceFileScope
 import features.resources.ResourceSnapshotFiles
 import features.resources.runtime.withResourceFileWriteLock
@@ -39,16 +40,37 @@ internal class DesktopProfileResourceFiles(
 
     fun createDownloader(): DesktopResourceFileDownloader = DesktopResourceFileDownloader(::writeAtomically)
 
+    fun restoreBundled(scope: ResourceFileScope, kind: ResourceFileKind) {
+        snapshot(scope).restoreBundled(
+            kind = kind,
+            resourceFileSource = scope.resourceFileSource,
+            openAsset = ::openBundledAsset,
+        )
+    }
+
     fun prepare(
         profile: TrafficConfigState,
         bundledUpdatedAtMillis: Long,
         restoreAfterPackageUpdate: Boolean = false,
-    ): ResourceSnapshotFiles {
-        val snapshot = snapshot(profile)
-        snapshot.dataDir.mkdirs()
-        snapshot.migrateLegacyFilesIfNeeded(profile.resourceSettings.source)
-        snapshot.ensureBundledFiles(
+    ): ResourceSnapshotFiles = prepare(
+        scope = ResourceFileScope(
+            trafficConfigId = profile.id,
             resourceFileSource = profile.resourceSettings.source,
+        ),
+        bundledUpdatedAtMillis = bundledUpdatedAtMillis,
+        restoreAfterPackageUpdate = restoreAfterPackageUpdate,
+    )
+
+    fun prepare(
+        scope: ResourceFileScope,
+        bundledUpdatedAtMillis: Long,
+        restoreAfterPackageUpdate: Boolean = false,
+    ): ResourceSnapshotFiles {
+        val snapshot = snapshot(scope)
+        snapshot.dataDir.mkdirs()
+        snapshot.migrateLegacyFilesIfNeeded(scope.resourceFileSource)
+        snapshot.ensureBundledFiles(
+            resourceFileSource = scope.resourceFileSource,
             bundledUpdatedAtMillis = bundledUpdatedAtMillis,
             restoreAfterPackageUpdate = restoreAfterPackageUpdate,
             openAsset = ::openBundledAsset,
