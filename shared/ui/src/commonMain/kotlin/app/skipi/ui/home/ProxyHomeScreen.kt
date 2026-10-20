@@ -265,6 +265,9 @@ fun ProxyHomeScreenContent(
 
     val selectedServer = state.selectedServer
     val hasTestableVisibleServers = state.servers.any { it.canTest }
+    val testableSelectedServer = selectedServer?.takeIf { server ->
+        server.canTest && canUseHomeAction(state, ProxyHomeActionId.TestServer)
+    }
     val refreshSubscriptionTitle = stringResource(Res.string.home_action_refresh_subscription)
     val refreshingSubscriptionTitle = stringResource(Res.string.home_action_refreshing)
     val searchActionTitle = stringResource(Res.string.home_action_search)
@@ -675,6 +678,8 @@ fun ProxyHomeScreenContent(
                         canToggleTunnel = state.canToggleTunnel && canUseHomeAction(state, ProxyHomeActionId.ToggleTunnel, allowBusy = true),
                         canTestLatency = if (state.isTestingLatency) {
                             canUseHomeAction(state, ProxyHomeActionId.CancelLatencyTests, allowBusy = true)
+                        } else if (state.isRunning) {
+                            testableSelectedServer != null
                         } else {
                             hasTestableVisibleServers && canUseHomeAction(state, ProxyHomeActionId.TestVisibleServers)
                         },
@@ -683,7 +688,13 @@ fun ProxyHomeScreenContent(
                         onToggleRunning = { send(ProxyHomeAction.ToggleTunnel) },
                         onTestLatency = {
                             if (state.isTestingLatency) send(ProxyHomeAction.CancelLatencyTests)
-                            else send(ProxyHomeAction.TestAllVisibleServers)
+                            else if (state.isRunning) {
+                                testableSelectedServer?.let { server ->
+                                    send(ProxyHomeAction.TestServer(server.id))
+                                }
+                            } else {
+                                send(ProxyHomeAction.TestAllVisibleServers)
+                            }
                         },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
