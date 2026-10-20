@@ -8,7 +8,7 @@ import java.io.File
 import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
 
-/** Android file/stream adapter for the portable GeoSite/GeoIP tag parser. */
+/** JVM file/stream adapter for the portable GeoSite/GeoIP tag parser. */
 object GeoDatParser {
     private val cache = ConcurrentHashMap<String, CachedGeoTags>()
 

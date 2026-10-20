@@ -1,0 +1,50 @@
+[
+  {
+    "group": "core-desktop",
+    "name": "features.routing.usecase.GeoDatParserFileTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "group": "core-desktop",
+    "name": "features.routing.usecase.GeoDatTagParserTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "group": "core-desktop",
+    "name": "features.routing.usecase.RoutingSuggestionsTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "group": "desktop-app",
+    "name": "app.skipi.desktop.DesktopRoutingSuggestionsProviderTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "group": "android-app",
+    "name": "features.routing.usecase.RoutingSuggestionsProviderAndroidOracleTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "group": "android-app",
+    "name": "features.config.TrafficConfigRulesAndroidOracleTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]
