@@ -17,6 +17,14 @@ fun sanitizeCustomResourceFileName(value: String, fallback: String): String {
         ?: fallback
 }
 
+/** Returns the value when it passes the Android custom-resource filename checks. */
+fun customResourceFileNameOrNull(value: String): String? {
+    if (value.isBlank() || value != value.trim()) return null
+    if (value.any { char -> char.isWhitespace() || char == ':' }) return null
+    return sanitizeCustomResourceFileName(value, fallback = "")
+        .takeIf { sanitized -> sanitized == value }
+}
+
 private fun Char.isResourceFileNameChar(): Boolean {
     return code >= 32 && this != '/' && this != '\\'
 }

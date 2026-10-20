@@ -4,6 +4,8 @@
 package features.resources
 
 import features.config.TrafficConfigCustomResourceFile
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 private val UpdateableResourceFileKinds = setOf(
     ResourceFileKind.GeoIp,
@@ -118,4 +120,14 @@ sealed interface ResourceFileUpdateResult {
     data class Cancelled(
         override val entry: ResourceFileUpdateQueueEntry,
     ) : ResourceFileUpdateResult
+}
+
+/** Queue state and update outcomes exposed without depending on the queue implementation. */
+interface ResourceFileUpdateQueue {
+    val state: StateFlow<ResourceFileUpdateQueueState>
+    val results: Flow<ResourceFileUpdateResult>
+
+    fun enqueue(request: ResourceFileUpdateRequest): Boolean
+
+    fun cancelAll()
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ResourceFileEditorOperationsTest[desktop]" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-20T05:17:19.907Z" hostname="VQSeGo" time="0.029">
+  <properties/>
+  <testcase name="addingAllocatesFromLatestSettingsAndRequestsBlankUrlReplacementAfterCommit[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.021"/>
+  <testcase name="addingRemoteCustomFileTrimsUrlWithoutOpeningReplacementPicker[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="editingAnotherCustomFilesNameIsRejectedWithoutMetadataOrRename[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="customSourceDraftUsesResolvedProviderAndSaveTrimsWithPerFieldFallback[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <testcase name="selectingBuiltInProviderChangesOnlySourceAndDoesNotOpenOrRewriteCustomDraft[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="everyBuiltInFilenameIsReservedForCustomFiles[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <testcase name="deleteRemovesOnlyTheMatchingIdAndDispatchesAfterMetadataCommit[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="editingKeepsIdAndDispatchesRenameOnlyAfterLatestSettingsCommit[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="invalidAddDoesNotCommitMetadataOrDispatchStorageWork[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <testcase name="customNamesKeepTheAndroidValidationAndCaseSensitiveDuplicateRules[desktop]" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

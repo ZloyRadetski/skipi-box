@@ -102,8 +102,5 @@ fun sanitizeCustomResourceFileName(value: String, fallback: String): String {
 }
 
 fun customResourceFileNameOrNull(value: String): String? {
-    if (value.isBlank() || value != value.trim()) return null
-    if (value.any { char -> char.isWhitespace() || char == ':' }) return null
-    return sanitizeCustomResourceFileName(value, fallback = "")
-        .takeIf { sanitized -> sanitized == value }
+    return features.config.customResourceFileNameOrNull(value)
 }

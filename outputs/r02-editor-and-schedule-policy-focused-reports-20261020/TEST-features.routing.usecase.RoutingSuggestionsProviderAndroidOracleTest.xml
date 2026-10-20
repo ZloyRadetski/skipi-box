@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.routing.usecase.RoutingSuggestionsProviderAndroidOracleTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-20T05:17:44.200Z" hostname="VQSeGo" time="6.804">
+  <properties/>
+  <testcase name="shadowrocketGeoIpAndRuleSetCallersUseTheirDistinctRuleSpellings" classname="features.routing.usecase.RoutingSuggestionsProviderAndroidOracleTest" time="6.564"/>
+  <testcase name="androidFilenameSanitizerRetainsItsLiteralSafeSetAndSeparateValidatorRestrictions" classname="features.routing.usecase.RoutingSuggestionsProviderAndroidOracleTest" time="0.023"/>
+  <testcase name="omittedIdUsesActiveProfileAndUnknownExplicitIdUsesGlobalDirectory" classname="features.routing.usecase.RoutingSuggestionsProviderAndroidOracleTest" time="0.023"/>
+  <testcase name="explicitProfileUsesItsScopedFilesAndKeepsProfileThenGlobalCustomOrder" classname="features.routing.usecase.RoutingSuggestionsProviderAndroidOracleTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

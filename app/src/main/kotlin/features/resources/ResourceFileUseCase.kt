@@ -11,16 +11,17 @@ import app.ResourceFilesStatus
 import app.ResourceFileUpdateSource
 import features.resources.runtime.AndroidResourceFileRepository
 import features.resources.runtime.XrayResourceFileScope
+import features.resources.ResourceFileOperations
 
 internal class ResourceFileUseCase(
     context: Context,
     private val resourceFilePicker: suspend () -> Uri?,
-) {
+) : ResourceFileOperations {
     private val repository = AndroidResourceFileRepository(context.applicationContext)
 
-    suspend fun status(
+    override suspend fun status(
         scope: XrayResourceFileScope,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<CustomResourceFileState>,
     ): ResourceFilesStatus {
         return repository.status(scope, customResourceFiles)
     }
@@ -57,45 +58,45 @@ internal class ResourceFileUseCase(
         return repository.updateCustom(scope, customFile, options, customResourceFiles)
     }
 
-    suspend fun renameCustom(
+    override suspend fun renameCustom(
         scope: XrayResourceFileScope,
         previousFile: CustomResourceFileState,
         customFile: CustomResourceFileState,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<CustomResourceFileState>,
     ): ResourceFilesStatus {
         return repository.renameCustom(scope, previousFile, customFile, customResourceFiles)
     }
 
-    suspend fun replace(
+    override suspend fun replace(
         scope: XrayResourceFileScope,
         kind: ResourceFileKind,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<CustomResourceFileState>,
     ): ResourceFilesStatus? {
         val uri = resourceFilePicker() ?: return null
         return repository.replace(scope, kind, uri, customResourceFiles)
     }
 
-    suspend fun replaceCustom(
+    override suspend fun replaceCustom(
         scope: XrayResourceFileScope,
         customFile: CustomResourceFileState,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<CustomResourceFileState>,
     ): ResourceFilesStatus? {
         val uri = resourceFilePicker() ?: return null
         return repository.replaceCustom(scope, customFile, uri, customResourceFiles)
     }
 
-    suspend fun restoreBundled(
+    override suspend fun restoreBundled(
         scope: XrayResourceFileScope,
         kind: ResourceFileKind,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<CustomResourceFileState>,
     ): ResourceFilesStatus {
         return repository.restoreBundled(scope, kind, customResourceFiles)
     }
 
-    suspend fun deleteCustom(
+    override suspend fun deleteCustom(
         scope: XrayResourceFileScope,
         customFile: CustomResourceFileState,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<CustomResourceFileState>,
     ): ResourceFilesStatus {
         return repository.deleteCustom(scope, customFile, customResourceFiles)
     }

@@ -18,7 +18,7 @@ class ResourceFileUpdateCoordinator(
     private val scope: CoroutineScope,
     private val execute: suspend (ResourceFileUpdateRequest) -> ResourceFilesStatus,
     private val cancelRunning: () -> Unit,
-) {
+) : ResourceFileUpdateQueue {
     private val lock = Any()
     private val pending = ArrayDeque<ResourceFileUpdateQueueEntry>()
     private var running: ResourceFileUpdateQueueEntry? = null
@@ -27,12 +27,12 @@ class ResourceFileUpdateCoordinator(
     private var worker: Job? = null
 
     private val mutableState = MutableStateFlow(ResourceFileUpdateQueueState())
-    val state: StateFlow<ResourceFileUpdateQueueState> = mutableState.asStateFlow()
+    override val state: StateFlow<ResourceFileUpdateQueueState> = mutableState.asStateFlow()
 
     private val mutableResults = MutableSharedFlow<ResourceFileUpdateResult>(extraBufferCapacity = 16)
-    val results: SharedFlow<ResourceFileUpdateResult> = mutableResults.asSharedFlow()
+    override val results: SharedFlow<ResourceFileUpdateResult> = mutableResults.asSharedFlow()
 
-    fun enqueue(request: ResourceFileUpdateRequest): Boolean = synchronized(lock) {
+    override fun enqueue(request: ResourceFileUpdateRequest): Boolean = synchronized(lock) {
         if (request.targets.isEmpty()) return false
         if (request is ResourceFileUpdateRequest.All && mutableState.value.isBusy) return false
         val busyTargets = buildSet {
@@ -54,7 +54,7 @@ class ResourceFileUpdateCoordinator(
         true
     }
 
-    fun cancelAll() {
+    override fun cancelAll() {
         val hasRunningRequest = synchronized(lock) {
             pending.clear()
             publishStateLocked()

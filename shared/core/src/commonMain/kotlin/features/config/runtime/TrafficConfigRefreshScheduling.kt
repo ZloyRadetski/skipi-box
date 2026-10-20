@@ -74,18 +74,7 @@ class TrafficConfigScheduler(
         desiredConfigs.forEach(gateway::enqueueConfig)
         gateway.storeScheduledConfigIds(desiredConfigIds)
 
-        val desiredGeoConfigs = targets.mapNotNull { target ->
-            val schedule = target.geoRefreshIntervalMillisOrNull() ?: return@mapNotNull null
-            TrafficConfigWorkSpec(
-                id = target.id,
-                uniqueName = trafficConfigGeoWorkName(target.id),
-                repeatIntervalMillis = schedule,
-                requiresConnectedNetwork = true,
-                policy = TrafficConfigExistingWorkPolicy.UPDATE,
-                backoffMillis = MinimumConfigBackoffMillis,
-                isGeo = true,
-            )
-        }
+        val desiredGeoConfigs = targets.mapNotNull(TrafficConfigRefreshTarget::geoRefreshWorkSpecOrNull)
         val desiredGeoConfigIds = desiredGeoConfigs.mapTo(mutableSetOf()) { it.id }
         (gateway.scheduledGeoConfigIds() - desiredGeoConfigIds).forEach(gateway::cancelGeo)
         desiredGeoConfigs.forEach(gateway::enqueueGeo)
@@ -109,4 +98,39 @@ private fun TrafficConfigRefreshTarget.geoRefreshIntervalMillisOrNull(): Long? {
         ?.repeatIntervalMillis
 }
 
+/** Returns this profile's periodic resource refresh work, independently of profile refresh eligibility. */
+fun TrafficConfigRefreshTarget.geoRefreshWorkSpecOrNull(): TrafficConfigWorkSpec? {
+    val schedule = geoRefreshIntervalMillisOrNull() ?: return null
+    return TrafficConfigWorkSpec(
+        id = id,
+        uniqueName = trafficConfigGeoWorkName(id),
+        repeatIntervalMillis = schedule,
+        requiresConnectedNetwork = true,
+        policy = TrafficConfigExistingWorkPolicy.UPDATE,
+        backoffMillis = MinimumConfigBackoffMillis,
+        isGeo = true,
+    )
+}
+
+/**
+ * Exponential retry delay for the Desktop resource refresh host, matching the geo WorkManager
+ * request: 15-minute base, doubling by attempt, capped at WorkManager's 5-hour maximum.
+ * Attempts follow WorkManager's one-based retry count.
+ */
+fun trafficConfigGeoRetryDelayMillis(runAttemptCount: Int): Long {
+    require(runAttemptCount >= 1) { "Retry attempt count must be positive" }
+    var delayMillis = MinimumConfigBackoffMillis
+    var doublingsRemaining = runAttemptCount - 1
+    while (doublingsRemaining > 0 && delayMillis < MaximumWorkBackoffMillis) {
+        delayMillis = if (delayMillis > MaximumWorkBackoffMillis / 2) {
+            MaximumWorkBackoffMillis
+        } else {
+            delayMillis * 2
+        }
+        doublingsRemaining -= 1
+    }
+    return delayMillis
+}
+
 private const val MinimumConfigBackoffMillis = 15 * 60 * 1_000L
+private const val MaximumWorkBackoffMillis = 5 * 60 * 60 * 1_000L
