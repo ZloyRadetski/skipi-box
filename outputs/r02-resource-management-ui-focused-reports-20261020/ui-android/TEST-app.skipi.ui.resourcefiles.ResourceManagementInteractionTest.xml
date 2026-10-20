@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T05:45:42.110Z" hostname="VQSeGo" time="0.043">
+  <properties/>
+  <testcase name="editorDialogStaysOpenAfterRejectedSaveAndClosesAfterSavedResult" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.009"/>
+  <testcase name="runningOrOneOffActionKeepsRowControlsDisabled" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.016"/>
+  <testcase name="rowActionsPreserveBuiltInAndCustomRules" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.001"/>
+  <testcase name="choosingBuiltInProviderPersistsOnlyItsId" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.003"/>
+  <testcase name="deleteConfirmationDefersAndClearsThePendingFile" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.001"/>
+  <testcase name="choosingCustomOpensAnUncommittedDraftUsingCurrentProviderFallbacks" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.007"/>
+  <testcase name="deleteRunsImmediatelyWhenConfirmationIsDisabled" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.0"/>
+  <testcase name="invalidStoredSourceShowsFirstOptionWithoutChangingStoredValue" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.0"/>
+  <testcase name="sourceUpdateSwitchesToEnabledCancelWhileQueueIsBusy" classname="app.skipi.ui.resourcefiles.ResourceManagementInteractionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

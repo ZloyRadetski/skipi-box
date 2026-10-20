@@ -1,11 +1,13 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.resources
+package app.skipi.ui.resourcefiles
 
+import app.skipi.ui.components.AppWindowDialog
+import app.skipi.ui.resources.*
+import app.skipi.ui.text.formatTemplate
+import app.skipi.ui.text.themedFontWeight
 import androidx.compose.foundation.background
-import ui.text.themedFontWeight
-import ui.components.AppWindowDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,18 +34,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.CustomResourceFileState
-import app.CustomResourceFileStatus
-import app.R
-import app.ResourceFileStatus
-import app.ResourceFileUpdateSource
+import features.config.TrafficConfigCustomResourceFile
+import features.config.TrafficConfigResourceSettings
+import features.resources.CustomResourceFileStatus
+import features.resources.ResourceFileKind
+import features.resources.ResourceFileSourceCustom
+import features.resources.ResourceFileSourceDraft
+import features.resources.ResourceFileStatus
+import features.resources.ResourceFileUpdateDisplayState
+import features.resources.ResourceFileUpdateSource
+import kotlin.math.round
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -61,72 +68,51 @@ import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.icon.extended.Reset
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
-import ui.AppTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
-import ui.text.formatTemplate
-import java.text.DateFormat
-import java.util.Date
 
 @Composable
-internal fun settingsResourceFileSourceOptions() = listOf(
-    stringResource(R.string.settings_resource_files_source_loyalsoldier_github),
-    stringResource(R.string.settings_resource_files_source_v2fly_github),
-    stringResource(R.string.settings_resource_files_source_chocolate4u_github),
-    stringResource(R.string.settings_resource_files_source_runetfreedom_github),
-    stringResource(R.string.settings_resource_files_source_roscomvpn_github),
-    stringResource(R.string.settings_resource_files_source_custom),
+internal fun resourceFileSourceOptions(): List<String> = listOf(
+    stringResource(Res.string.settings_resource_files_source_loyalsoldier_github),
+    stringResource(Res.string.settings_resource_files_source_v2fly_github),
+    stringResource(Res.string.settings_resource_files_source_chocolate4u_github),
+    stringResource(Res.string.settings_resource_files_source_runetfreedom_github),
+    stringResource(Res.string.settings_resource_files_source_roscomvpn_github),
+    stringResource(Res.string.settings_resource_files_source_custom),
 )
 
 @Composable
 internal fun ResourceFileSourceCard(
     sourceOptions: List<String>,
-    selectedSource: Int,
+    settings: TrafficConfigResourceSettings,
     selectedUpdateSource: ResourceFileUpdateSource,
-    customGeoIpUrl: String,
-    customGeoSiteUrl: String,
-    customGeoIpOnlyCnPrivateUrl: String,
-    customDirectCidrIpv4Url: String,
-    customDirectCidrIpv6Url: String,
-    userAgent: String,
+    sourceDraft: ResourceFileSourceDraft?,
     userAgentPresets: List<String>,
-    updating: Boolean,
-    onSourceChange: (Int) -> Unit,
-    onCustomSourceChange: (
-        geoIpUrl: String,
-        geoSiteUrl: String,
-        geoIpOnlyCnPrivateUrl: String,
-        directCidrIpv4Url: String,
-        directCidrIpv6Url: String,
-    ) -> Unit,
+    queueBusy: Boolean,
+    actionsEnabled: Boolean,
+    onSourceSelected: (Int) -> Unit,
+    onOpenCustomSource: (ResourceFileSourceDraft) -> Unit,
+    onDismissCustomSource: () -> Unit,
+    onCustomSourceChange: (ResourceFileSourceDraft) -> Unit,
     onUserAgentChange: (String) -> Unit,
     onUpdate: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
-    actionsEnabled: Boolean = true,
 ) {
-    var showCustomSourceDialog by remember { mutableStateOf(false) }
-    val geoIpUrlDraftState = rememberTextFieldState(initialText = customGeoIpUrl)
-    val geoSiteUrlDraftState = rememberTextFieldState(initialText = customGeoSiteUrl)
-    val geoIpOnlyCnPrivateUrlDraftState = rememberTextFieldState(initialText = customGeoIpOnlyCnPrivateUrl)
-    val directCidrIpv4UrlDraftState = rememberTextFieldState(initialText = customDirectCidrIpv4Url)
-    val directCidrIpv6UrlDraftState = rememberTextFieldState(initialText = customDirectCidrIpv6Url)
-    val selectedIndex = selectedSource.takeIf { it in sourceOptions.indices } ?: 0
-    val sourceItems = sourceOptions.map { option ->
-        DropdownItem(
-            text = option,
-        )
-    }
-    // Routing resource downloads must use the same editable identifiers as
-    // subscriptions.  This prevents a second, hidden preset list from drifting.
+    val geoIpUrlDraftState = rememberTextFieldState(initialText = settings.customGeoIpUrl)
+    val geoSiteUrlDraftState = rememberTextFieldState(initialText = settings.customGeoSiteUrl)
+    val geoIpOnlyCnPrivateUrlDraftState = rememberTextFieldState(initialText = settings.customGeoIpOnlyCnPrivateUrl)
+    val directCidrIpv4UrlDraftState = rememberTextFieldState(initialText = settings.customDirectCidrIpv4Url)
+    val directCidrIpv6UrlDraftState = rememberTextFieldState(initialText = settings.customDirectCidrIpv6Url)
+    val selectedIndex = resourceFileSourceDisplayIndex(settings.source, sourceOptions.size)
+    val sourceItems = sourceOptions.map { option -> DropdownItem(text = option) }
     val effectiveUserAgentPresets = userAgentPresets
         .map(String::trim)
         .filter(String::isNotBlank)
         .distinct()
-        .ifEmpty { listOf(userAgent) }
+        .ifEmpty { listOf(settings.userAgent) }
     val userAgentItems = effectiveUserAgentPresets.map { preset -> DropdownItem(text = preset) }
-    val selectedUserAgentIndex = effectiveUserAgentPresets.indexOf(userAgent)
-        .coerceAtLeast(0)
+    val selectedUserAgentIndex = effectiveUserAgentPresets.indexOf(settings.userAgent).coerceAtLeast(0)
+    val sourceAction = resourceFileSourceAction(queueBusy, actionsEnabled)
 
     Card(
         modifier = modifier
@@ -134,63 +120,59 @@ internal fun ResourceFileSourceCard(
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
         colors = CardDefaults.defaultColors(
-            color = AppTheme.colors.surface,
-            contentColor = AppTheme.colors.onSurface,
+            color = app.skipi.ui.theme.SkipiTheme.colors.surface,
+            contentColor = app.skipi.ui.theme.SkipiTheme.colors.onSurface,
         ),
     ) {
         OverlaySpinnerPreference(
-            title = stringResource(R.string.settings_resource_files_source),
+            title = stringResource(Res.string.settings_resource_files_source),
             items = sourceItems,
             selectedIndex = selectedIndex,
             onSelectedIndexChange = { index ->
-                if (index == ResourceFileSourceCustom) {
-                    geoIpUrlDraftState.setTextAndPlaceCursorAtEnd(
-                        customGeoIpUrl.ifBlank { selectedUpdateSource.geoIpUrl },
+                when (
+                    val selection = selectResourceFileSourceForUi(
+                        settings = settings,
+                        selectedSourceId = index,
+                        resolvedSelectedSource = selectedUpdateSource,
                     )
-                    geoSiteUrlDraftState.setTextAndPlaceCursorAtEnd(
-                        customGeoSiteUrl.ifBlank { selectedUpdateSource.geoSiteUrl },
-                    )
-                    geoIpOnlyCnPrivateUrlDraftState.setTextAndPlaceCursorAtEnd(
-                        customGeoIpOnlyCnPrivateUrl.ifBlank { selectedUpdateSource.geoIpOnlyCnPrivateUrl },
-                    )
-                    directCidrIpv4UrlDraftState.setTextAndPlaceCursorAtEnd(
-                        customDirectCidrIpv4Url.ifBlank { selectedUpdateSource.directCidrIpv4Url },
-                    )
-                    directCidrIpv6UrlDraftState.setTextAndPlaceCursorAtEnd(
-                        customDirectCidrIpv6Url.ifBlank { selectedUpdateSource.directCidrIpv6Url },
-                    )
-                    showCustomSourceDialog = true
-                } else {
-                    onSourceChange(index)
+                ) {
+                    is ResourceFileSourceSelection.PersistSource -> onSourceSelected(selection.sourceId)
+                    is ResourceFileSourceSelection.OpenCustomEditor -> {
+                        geoIpUrlDraftState.setTextAndPlaceCursorAtEnd(selection.draft.geoIpUrl)
+                        geoSiteUrlDraftState.setTextAndPlaceCursorAtEnd(selection.draft.geoSiteUrl)
+                        geoIpOnlyCnPrivateUrlDraftState.setTextAndPlaceCursorAtEnd(selection.draft.geoIpOnlyCnPrivateUrl)
+                        directCidrIpv4UrlDraftState.setTextAndPlaceCursorAtEnd(selection.draft.directCidrIpv4Url)
+                        directCidrIpv6UrlDraftState.setTextAndPlaceCursorAtEnd(selection.draft.directCidrIpv6Url)
+                        onOpenCustomSource(selection.draft)
+                    }
                 }
             },
         )
         CustomResourceFileSourceDialog(
-            show = showCustomSourceDialog,
+            show = sourceDraft != null,
             geoIpUrlState = geoIpUrlDraftState,
             geoSiteUrlState = geoSiteUrlDraftState,
             geoIpOnlyCnPrivateUrlState = geoIpOnlyCnPrivateUrlDraftState,
             directCidrIpv4UrlState = directCidrIpv4UrlDraftState,
             directCidrIpv6UrlState = directCidrIpv6UrlDraftState,
-            onDismissRequest = { showCustomSourceDialog = false },
+            onDismissRequest = onDismissCustomSource,
             onSave = {
                 onCustomSourceChange(
-                    geoIpUrlDraftState.text.toString().trim().ifBlank { selectedUpdateSource.geoIpUrl },
-                    geoSiteUrlDraftState.text.toString().trim().ifBlank { selectedUpdateSource.geoSiteUrl },
-                    geoIpOnlyCnPrivateUrlDraftState.text.toString().trim()
-                        .ifBlank { selectedUpdateSource.geoIpOnlyCnPrivateUrl },
-                    directCidrIpv4UrlDraftState.text.toString().trim()
-                        .ifBlank { selectedUpdateSource.directCidrIpv4Url },
-                    directCidrIpv6UrlDraftState.text.toString().trim()
-                        .ifBlank { selectedUpdateSource.directCidrIpv6Url },
+                    ResourceFileSourceDraft(
+                        geoIpUrl = geoIpUrlDraftState.text.toString(),
+                        geoSiteUrl = geoSiteUrlDraftState.text.toString(),
+                        geoIpOnlyCnPrivateUrl = geoIpOnlyCnPrivateUrlDraftState.text.toString(),
+                        directCidrIpv4Url = directCidrIpv4UrlDraftState.text.toString(),
+                        directCidrIpv6Url = directCidrIpv6UrlDraftState.text.toString(),
+                    ),
                 )
-                onSourceChange(ResourceFileSourceCustom)
-                showCustomSourceDialog = false
+                onSourceSelected(ResourceFileSourceCustom)
+                onDismissCustomSource()
             },
         )
         OverlaySpinnerPreference(
-            title = stringResource(R.string.subscription_user_agent),
-            summary = userAgent,
+            title = stringResource(Res.string.subscription_user_agent),
+            summary = settings.userAgent,
             items = userAgentItems,
             selectedIndex = selectedUserAgentIndex,
             onSelectedIndexChange = { index ->
@@ -199,10 +181,16 @@ internal fun ResourceFileSourceCard(
         )
         ArrowPreference(
             title = stringResource(
-                if (updating) R.string.common_cancel else R.string.settings_resource_files_update,
+                if (sourceAction.kind == ResourceFileSourceActionKind.Cancel) {
+                    Res.string.common_cancel
+                } else {
+                    Res.string.settings_resource_files_update
+                },
             ),
-            onClick = { if (updating) onCancel() else onUpdate() },
-            enabled = updating || actionsEnabled,
+            onClick = {
+                if (sourceAction.kind == ResourceFileSourceActionKind.Cancel) onCancel() else onUpdate()
+            },
+            enabled = sourceAction.enabled,
         )
     }
 }
@@ -220,7 +208,7 @@ private fun CustomResourceFileSourceDialog(
 ) {
     AppWindowDialog(
         show = show,
-        title = stringResource(R.string.settings_resource_files_source_custom_title),
+        title = stringResource(Res.string.settings_resource_files_source_custom_title),
         onDismissRequest = onDismissRequest,
         content = {
             Column(
@@ -230,31 +218,31 @@ private fun CustomResourceFileSourceDialog(
             ) {
                 TextField(
                     state = geoIpUrlState,
-                    label = ResourceFileGeoIpName,
+                    label = ResourceFileKind.GeoIp.fileName,
                     lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 )
                 TextField(
                     state = geoSiteUrlState,
-                    label = ResourceFileGeoSiteName,
+                    label = ResourceFileKind.GeoSite.fileName,
                     lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 )
                 TextField(
                     state = geoIpOnlyCnPrivateUrlState,
-                    label = ResourceFileGeoIpOnlyCnPrivateName,
+                    label = ResourceFileKind.GeoIpOnlyCnPrivate.fileName,
                     lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 )
                 TextField(
                     state = directCidrIpv4UrlState,
-                    label = ResourceFileDirectCidrIpv4Name,
+                    label = ResourceFileKind.DirectCidrIpv4.fileName,
                     lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 )
                 TextField(
                     state = directCidrIpv6UrlState,
-                    label = ResourceFileDirectCidrIpv6Name,
+                    label = ResourceFileKind.DirectCidrIpv6.fileName,
                     lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 )
@@ -263,13 +251,13 @@ private fun CustomResourceFileSourceDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     TextButton(
-                        text = stringResource(R.string.common_cancel),
+                        text = stringResource(Res.string.common_cancel),
                         onClick = onDismissRequest,
                         modifier = Modifier.weight(1f),
                     )
                     Spacer(Modifier.width(20.dp))
                     TextButton(
-                        text = stringResource(R.string.common_save),
+                        text = stringResource(Res.string.common_save),
                         onClick = onSave,
                         modifier = Modifier.weight(1f),
                     )
@@ -283,6 +271,7 @@ private fun CustomResourceFileSourceDialog(
 internal fun ResourceFileCard(
     fileName: String,
     status: ResourceFileStatus,
+    formatTimestamp: (Long) -> String,
     onReplace: () -> Unit,
     onRestore: () -> Unit,
     modifier: Modifier = Modifier,
@@ -291,47 +280,40 @@ internal fun ResourceFileCard(
     description: String? = null,
     actionsEnabled: Boolean = true,
 ) {
-    val cardActionsEnabled = actionsEnabled && updateState == ResourceFileUpdateDisplayState.Idle
+    val rowActions = resourceFileRowActions(
+        isCustom = false,
+        url = "",
+        updateDisplayState = updateState,
+        actionsEnabled = actionsEnabled,
+    ).filter { action -> action.kind != ResourceFileRowActionKind.Update || onUpdate != null }
     ResourceFileCardSurface(
         fileName = fileName,
         status = status,
+        formatTimestamp = formatTimestamp,
         description = description,
         modifier = modifier,
     ) {
-        if (onUpdate != null) {
-            ResourceFileUpdateAction(
-                updateState = updateState,
-                enabled = actionsEnabled,
-                onClick = onUpdate,
-            )
-        }
-        IconButton(
-            enabled = cardActionsEnabled,
-            onClick = onReplace,
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Replace,
-                contentDescription = stringResource(R.string.common_replace),
-                tint = if (!cardActionsEnabled) {
-                    MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                } else {
-                    MiuixTheme.colorScheme.onSurface
-                },
-            )
-        }
-        IconButton(
-            enabled = cardActionsEnabled,
-            onClick = onRestore,
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Reset,
-                contentDescription = stringResource(R.string.common_restore),
-                tint = if (!cardActionsEnabled) {
-                    MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                } else {
-                    MiuixTheme.colorScheme.onSurface
-                },
-            )
+        rowActions.forEach { action ->
+            when (action.kind) {
+                ResourceFileRowActionKind.Update -> ResourceFileUpdateAction(
+                    updateState = updateState,
+                    enabled = action.enabled,
+                    onClick = requireNotNull(onUpdate),
+                )
+                ResourceFileRowActionKind.Replace -> ResourceFileIconAction(
+                    kind = action.kind,
+                    enabled = action.enabled,
+                    onClick = onReplace,
+                )
+                ResourceFileRowActionKind.Restore -> ResourceFileIconAction(
+                    kind = action.kind,
+                    enabled = action.enabled,
+                    onClick = onRestore,
+                )
+                ResourceFileRowActionKind.Edit,
+                ResourceFileRowActionKind.Delete,
+                -> Unit
+            }
         }
     }
 }
@@ -340,6 +322,7 @@ internal fun ResourceFileCard(
 private fun ResourceFileCardSurface(
     fileName: String,
     status: ResourceFileStatus,
+    formatTimestamp: (Long) -> String,
     modifier: Modifier = Modifier,
     description: String? = null,
     actions: @Composable () -> Unit,
@@ -350,14 +333,12 @@ private fun ResourceFileCardSurface(
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
         colors = CardDefaults.defaultColors(
-            color = AppTheme.colors.surface,
-            contentColor = AppTheme.colors.onSurface,
+            color = app.skipi.ui.theme.SkipiTheme.colors.surface,
+            contentColor = app.skipi.ui.theme.SkipiTheme.colors.onSurface,
         ),
         insideMargin = PaddingValues(16.dp),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -382,15 +363,22 @@ private fun ResourceFileCardSurface(
                         )
                     }
                     if (status.exists) {
+                        val updatedAt = if (status.updatedAtMillis > 0L) {
+                            formatTimestamp(status.updatedAtMillis)
+                        } else {
+                            "-"
+                        }
                         Text(
-                            text = status.sizeText(),
+                            text = stringResource(Res.string.settings_resource_files_size)
+                                .formatTemplate("size" to status.sizeBytes.sizeText()),
                             style = MiuixTheme.textStyles.body2,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            text = status.updatedAtText(),
+                            text = stringResource(Res.string.settings_resource_files_updated_at)
+                                .formatTemplate("time" to updatedAt),
                             style = MiuixTheme.textStyles.body2,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,
@@ -400,11 +388,9 @@ private fun ResourceFileCardSurface(
                 }
                 Spacer(Modifier.width(12.dp))
                 ResourceFileStatusChip(
-                    text = if (status.exists) {
-                        stringResource(R.string.settings_resource_files_ready)
-                    } else {
-                        stringResource(R.string.settings_resource_files_missing)
-                    },
+                    text = stringResource(
+                        if (status.exists) Res.string.settings_resource_files_ready else Res.string.settings_resource_files_missing,
+                    ),
                     ready = status.exists,
                 )
             }
@@ -426,11 +412,11 @@ internal fun CustomResourceFileEditorDialog(
     nameState: TextFieldState,
     urlState: TextFieldState,
     onDismissRequest: () -> Unit,
-    onSave: (name: String, url: String) -> Boolean,
+    onSave: (name: String, url: String) -> Unit,
 ) {
     AppWindowDialog(
         show = show,
-        title = stringResource(R.string.settings_resource_files_custom_file),
+        title = stringResource(Res.string.settings_resource_files_custom_file),
         onDismissRequest = onDismissRequest,
         content = {
             Column(
@@ -440,13 +426,13 @@ internal fun CustomResourceFileEditorDialog(
             ) {
                 TextField(
                     state = nameState,
-                    label = stringResource(R.string.settings_resource_files_custom_name),
+                    label = stringResource(Res.string.settings_resource_files_custom_name),
                     lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 )
                 TextField(
                     state = urlState,
-                    label = stringResource(R.string.settings_resource_files_custom_url),
+                    label = stringResource(Res.string.settings_resource_files_custom_url),
                     lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 )
@@ -455,20 +441,14 @@ internal fun CustomResourceFileEditorDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     TextButton(
-                        text = stringResource(R.string.common_cancel),
+                        text = stringResource(Res.string.common_cancel),
                         onClick = onDismissRequest,
                         modifier = Modifier.weight(1f),
                     )
                     Spacer(Modifier.width(20.dp))
                     TextButton(
-                        text = stringResource(R.string.common_save),
-                        onClick = {
-                            val name = nameState.text.toString()
-                            val url = urlState.text.toString()
-                            if (onSave(name, url)) {
-                                onDismissRequest()
-                            }
-                        },
+                        text = stringResource(Res.string.common_save),
+                        onClick = { onSave(nameState.text.toString(), urlState.text.toString()) },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -480,69 +460,81 @@ internal fun CustomResourceFileEditorDialog(
 @Composable
 internal fun CustomResourceFileCard(
     fileStatus: CustomResourceFileStatus,
-    onUpdate: (CustomResourceFileState) -> Unit,
-    onReplace: (CustomResourceFileState) -> Unit,
-    onEdit: (CustomResourceFileState) -> Unit,
-    onDelete: (CustomResourceFileState) -> Unit,
+    formatTimestamp: (Long) -> String,
+    onUpdate: (TrafficConfigCustomResourceFile) -> Unit,
+    onReplace: (TrafficConfigCustomResourceFile) -> Unit,
+    onEdit: (TrafficConfigCustomResourceFile) -> Unit,
+    onDelete: (TrafficConfigCustomResourceFile) -> Unit,
     modifier: Modifier = Modifier,
     updateState: ResourceFileUpdateDisplayState = ResourceFileUpdateDisplayState.Idle,
     actionsEnabled: Boolean = true,
 ) {
-    val cardActionsEnabled = actionsEnabled && updateState == ResourceFileUpdateDisplayState.Idle
+    val rowActions = resourceFileRowActions(
+        isCustom = true,
+        url = fileStatus.file.url,
+        updateDisplayState = updateState,
+        actionsEnabled = actionsEnabled,
+    )
     ResourceFileCardSurface(
         fileName = fileStatus.file.name,
         status = fileStatus.status,
+        formatTimestamp = formatTimestamp,
         modifier = modifier,
     ) {
-        if (fileStatus.file.url.isNotBlank()) {
-            ResourceFileUpdateAction(
-                updateState = updateState,
-                enabled = actionsEnabled,
-                onClick = { onUpdate(fileStatus.file) },
-            )
+        rowActions.forEach { action ->
+            when (action.kind) {
+                ResourceFileRowActionKind.Update -> ResourceFileUpdateAction(
+                    updateState = updateState,
+                    enabled = action.enabled,
+                    onClick = { onUpdate(fileStatus.file) },
+                )
+                ResourceFileRowActionKind.Replace -> ResourceFileIconAction(
+                    kind = action.kind,
+                    enabled = action.enabled,
+                    onClick = { onReplace(fileStatus.file) },
+                )
+                ResourceFileRowActionKind.Edit -> ResourceFileIconAction(
+                    kind = action.kind,
+                    enabled = action.enabled,
+                    onClick = { onEdit(fileStatus.file) },
+                )
+                ResourceFileRowActionKind.Delete -> ResourceFileIconAction(
+                    kind = action.kind,
+                    enabled = action.enabled,
+                    onClick = { onDelete(fileStatus.file) },
+                )
+                ResourceFileRowActionKind.Restore -> Unit
+            }
         }
-        IconButton(
-            enabled = cardActionsEnabled,
-            onClick = { onReplace(fileStatus.file) },
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Replace,
-                contentDescription = stringResource(R.string.common_replace),
-                tint = if (!cardActionsEnabled) {
-                    MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                } else {
-                    MiuixTheme.colorScheme.onSurface
-                },
-            )
-        }
-        IconButton(
-            enabled = cardActionsEnabled,
-            onClick = { onEdit(fileStatus.file) },
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Edit,
-                contentDescription = stringResource(R.string.common_edit),
-                tint = if (!cardActionsEnabled) {
-                    MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                } else {
-                    MiuixTheme.colorScheme.onSurface
-                },
-            )
-        }
-        IconButton(
-            enabled = cardActionsEnabled,
-            onClick = { onDelete(fileStatus.file) },
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Delete,
-                contentDescription = stringResource(R.string.common_delete),
-                tint = if (!cardActionsEnabled) {
-                    MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                } else {
-                    MiuixTheme.colorScheme.onSurface
-                },
-            )
-        }
+    }
+}
+
+@Composable
+private fun ResourceFileIconAction(
+    kind: ResourceFileRowActionKind,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val imageVector = when (kind) {
+        ResourceFileRowActionKind.Replace -> MiuixIcons.Replace
+        ResourceFileRowActionKind.Restore -> MiuixIcons.Reset
+        ResourceFileRowActionKind.Edit -> MiuixIcons.Edit
+        ResourceFileRowActionKind.Delete -> MiuixIcons.Delete
+        ResourceFileRowActionKind.Update -> MiuixIcons.Refresh
+    }
+    val description = when (kind) {
+        ResourceFileRowActionKind.Replace -> stringResource(Res.string.common_replace)
+        ResourceFileRowActionKind.Restore -> stringResource(Res.string.common_restore)
+        ResourceFileRowActionKind.Edit -> stringResource(Res.string.common_edit)
+        ResourceFileRowActionKind.Delete -> stringResource(Res.string.common_delete)
+        ResourceFileRowActionKind.Update -> stringResource(Res.string.common_update)
+    }
+    IconButton(enabled = enabled, onClick = onClick) {
+        Icon(
+            imageVector = imageVector,
+            contentDescription = description,
+            tint = if (enabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+        )
     }
 }
 
@@ -559,31 +551,25 @@ private fun ResourceFileUpdateAction(
         ) {
             Icon(
                 imageVector = MiuixIcons.Refresh,
-                contentDescription = stringResource(R.string.common_update),
-                tint = if (enabled) {
-                    MiuixTheme.colorScheme.onSurface
-                } else {
-                    MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                },
+                contentDescription = stringResource(Res.string.common_update),
+                tint = if (enabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
             )
         }
-
         ResourceFileUpdateDisplayState.Queued -> IconButton(
             enabled = false,
             onClick = {},
         ) {
             Icon(
                 imageVector = MiuixIcons.Refresh,
-                contentDescription = stringResource(R.string.settings_resource_file_update_queued),
+                contentDescription = stringResource(Res.string.settings_resource_file_update_queued),
                 tint = MiuixTheme.colorScheme.primary,
             )
         }
-
         ResourceFileUpdateDisplayState.Running -> IconButton(
             enabled = false,
             onClick = {},
         ) {
-            val updatingDescription = stringResource(R.string.settings_resource_file_updating)
+            val updatingDescription = stringResource(Res.string.settings_resource_file_updating)
             Box(
                 modifier = Modifier
                     .size(24.dp)
@@ -601,19 +587,13 @@ private fun ResourceFileUpdateAction(
 }
 
 @Composable
-private fun ResourceFileStatusChip(
-    text: String,
-    ready: Boolean,
-) {
+private fun ResourceFileStatusChip(text: String, ready: Boolean) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(
-                if (ready) {
-                    MiuixTheme.colorScheme.primary.copy(alpha = 0.14f)
-                } else {
-                    MiuixTheme.colorScheme.error.copy(alpha = 0.12f)
-                },
+                if (ready) MiuixTheme.colorScheme.primary.copy(alpha = 0.14f)
+                else MiuixTheme.colorScheme.error.copy(alpha = 0.12f),
             )
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
@@ -626,18 +606,7 @@ private fun ResourceFileStatusChip(
     }
 }
 
-@Composable
-private fun ResourceFileStatus.updatedAtText(): String {
-    return stringResource(R.string.settings_resource_files_updated_at)
-        .formatTemplate("time" to updatedAtMillis.toReadableDateTime())
-}
-
-@Composable
-private fun ResourceFileStatus.sizeText(): String {
-    return stringResource(R.string.settings_resource_files_size).formatTemplate("size" to sizeBytes.toReadableSize())
-}
-
-private fun Long.toReadableSize(): String {
+private fun Long.sizeText(): String {
     if (this < 1024) return "$this B"
     val kib = this / 1024.0
     if (kib < 1024) return "${kib.formatOneDecimal()} KiB"
@@ -645,13 +614,6 @@ private fun Long.toReadableSize(): String {
     return "${mib.formatOneDecimal()} MiB"
 }
 
-private fun Double.formatOneDecimal(): String {
-    val rounded = kotlin.math.round(this * 10.0) / 10.0
-    val text = rounded.toString()
-    return text.removeSuffix(".0")
-}
-
-private fun Long.toReadableDateTime(): String {
-    if (this <= 0L) return "-"
-    return DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(this))
-}
+private fun Double.formatOneDecimal(): String = (round(this * 10.0) / 10.0)
+    .toString()
+    .removeSuffix(".0")
