@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopResourceFileDownloaderTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T05:14:54.839Z" hostname="VQSeGo" time="3.018">
+  <properties/>
+  <testcase name="ioFailureThroughSocksFallsBackToOneDirectRequest" classname="app.skipi.desktop.DesktopResourceFileDownloaderTest" time="3.006"/>
+  <testcase name="directDownloadUsesGetUserAgentAndForwardsKnownLengthProgressThroughPublisher" classname="app.skipi.desktop.DesktopResourceFileDownloaderTest" time="0.003"/>
+  <testcase name="cancellingWhileHttpResponseHeadersAreBlockedDisconnectsAndKeepsExistingTarget" classname="app.skipi.desktop.DesktopResourceFileDownloaderTest" time="0.003"/>
+  <testcase name="authenticatedSocksDownloadRestoresThePreviousGlobalAuthenticator" classname="app.skipi.desktop.DesktopResourceFileDownloaderTest" time="0.002"/>
+  <testcase name="strictProfileWriterRejectsEmptyBodyAndPreservesTargetAndSibling" classname="app.skipi.desktop.DesktopResourceFileDownloaderTest" time="0.003"/>
+  <testcase name="preCancelledDownloadMakesNoHttpRequestAndDoesNotPublish" classname="app.skipi.desktop.DesktopResourceFileDownloaderTest" time="0.001"/>
+  <system-out><![CDATA[[2026-10-20 08:14:57.843] [INFO] [ResourceFiles] Proxy download failed, falling back to direct connection
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

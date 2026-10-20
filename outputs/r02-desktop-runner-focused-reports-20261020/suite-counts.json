@@ -1,0 +1,20 @@
+{
+  "DesktopResourceFileUpdateRunnerTest": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "DesktopResourceFileDownloaderTest": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "DesktopResourceFileWriteLockTest": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

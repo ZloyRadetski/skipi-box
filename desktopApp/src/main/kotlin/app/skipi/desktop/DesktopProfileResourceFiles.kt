@@ -21,12 +21,18 @@ internal class DesktopProfileResourceFiles(
         ?: error("Desktop settings path must have a parent"),
 ) {
     fun snapshot(profile: TrafficConfigState): ResourceSnapshotFiles {
-        return ResourceSnapshotFiles(
-            xrayRootDir = xrayRootDir,
-            scope = ResourceFileScope(
+        return snapshot(
+            ResourceFileScope(
                 trafficConfigId = profile.id,
                 resourceFileSource = profile.resourceSettings.source,
             ),
+        )
+    }
+
+    fun snapshot(scope: ResourceFileScope): ResourceSnapshotFiles {
+        return ResourceSnapshotFiles(
+            xrayRootDir = xrayRootDir,
+            scope = scope,
             atomicWrite = ::writeAtomically,
         )
     }
