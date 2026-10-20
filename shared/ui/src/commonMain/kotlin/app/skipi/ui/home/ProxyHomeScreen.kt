@@ -343,12 +343,10 @@ fun ProxyHomeScreenContent(
     val pinConnection = state.displayOptions.pinConnectionPanel
     val showFloatingPower = state.displayOptions.connectionMode == ProxyHomeConnectionMode.Compact ||
         state.displayOptions.classicFloatingPowerButton
-    val showFloatingToolbar = showFloatingPower ||
-        (state.isRunning && state.displayOptions.connectionMode == ProxyHomeConnectionMode.Classic)
     val bottomInsetTreatment = proxyHomeBottomInsetTreatment(
         contentPadding = contentPadding,
         bottomOverlayInset = floatingNavigationBottomInset,
-        listReservedBottom = if (showFloatingToolbar) 88.dp else SkipiTheme.spacing.large,
+        listReservedBottom = if (showFloatingPower) 88.dp else SkipiTheme.spacing.large,
         layoutDirection = LocalLayoutDirection.current,
     )
     val listBottomPadding = bottomInsetTreatment.listBottomPadding
@@ -684,7 +682,7 @@ fun ProxyHomeScreenContent(
                             hasTestableVisibleServers && canUseHomeAction(state, ProxyHomeActionId.TestVisibleServers)
                         },
                         showToggleAction = showFloatingPower,
-                        showPingAction = true,
+                        showPingAction = showFloatingPower,
                         onToggleRunning = { send(ProxyHomeAction.ToggleTunnel) },
                         onTestLatency = {
                             if (state.isTestingLatency) send(ProxyHomeAction.CancelLatencyTests)

@@ -10,6 +10,8 @@ import androidx.compose.ui.input.pointer.PointerButtons
 import androidx.compose.ui.input.pointer.PointerEventType
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeActionId
+import app.skipi.app.home.ProxyHomeConnectionMode
+import app.skipi.app.home.ProxyHomeDisplayOptions
 import app.skipi.app.home.ProxyHomeEffect
 import app.skipi.app.home.ProxyHomeEffectHandler
 import app.skipi.app.home.ProxyHomeGroupKind
@@ -99,6 +101,65 @@ class DesktopProxyHomeLatencyFabTest {
         assertEquals(listOf(ProxyHomeEffect.CancelLatencyTests), effects)
     }
 
+    @Test
+    fun classicConnectionWithoutFloatingPowerButtonHidesConnectedLatencyToolbar() {
+        val effects = renderAndClick(
+            input = connectedInput(
+                selectedServerId = "selected",
+                displayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = false),
+            ),
+            position = Offset(318f, 790f),
+            screenshotName = "classic-floating-off.png",
+        )
+
+        assertEquals(emptyList(), effects)
+    }
+
+    @Test
+    fun classicConnectionWithFloatingPowerButtonShowsToolbarAndTestsSelectedServer() {
+        val effects = renderAndClick(
+            input = connectedInput(
+                selectedServerId = "selected",
+                displayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = true),
+            ),
+            position = Offset(258f, 790f),
+            screenshotName = "classic-floating-on.png",
+        )
+
+        assertEquals(listOf(ProxyHomeEffect.TestServer("selected")), effects)
+    }
+
+    @Test
+    fun compactConnectionShowsToolbarEvenWhenClassicFloatingPowerButtonIsOff() {
+        val effects = renderAndClick(
+            input = connectedInput(
+                selectedServerId = "selected",
+                displayOptions = ProxyHomeDisplayOptions(
+                    connectionMode = ProxyHomeConnectionMode.Compact,
+                    classicFloatingPowerButton = false,
+                ),
+            ),
+            position = Offset(258f, 790f),
+            screenshotName = "compact-floating-off.png",
+        )
+
+        assertEquals(listOf(ProxyHomeEffect.TestServer("selected")), effects)
+    }
+
+    @Test
+    fun classicConnectionWithoutFloatingPowerButtonKeepsCardPowerControlUsable() {
+        val effects = renderAndClick(
+            input = connectedInput(
+                selectedServerId = "selected",
+                displayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = false),
+                canToggleTunnel = true,
+            ),
+            position = Offset(72f, 160f),
+        )
+
+        assertEquals(listOf(ProxyHomeEffect.ToggleTunnel), effects)
+    }
+
     private fun clickConnectedLatencyFab(
         selectedServerId: String?,
         isTestingLatency: Boolean = false,
@@ -106,7 +167,7 @@ class DesktopProxyHomeLatencyFabTest {
         prepareStore: (ProxyHomeStore) -> Unit = {},
     ) = renderAndClick(
         input = connectedInput(selectedServerId, isTestingLatency, selectedServerCanTest),
-        position = Offset(334f, 790f),
+        position = Offset(258f, 790f),
         prepareStore = prepareStore,
     )
 
@@ -150,7 +211,7 @@ class DesktopProxyHomeLatencyFabTest {
                 image.close()
             }
 
-            // The connected phone layout places its sole latency FAB at the lower right.
+            // The connected layout places the ping control on the left of the floating toolbar.
             scene.sendPointerEvent(
                 eventType = PointerEventType.Move,
                 position = position,
@@ -189,11 +250,14 @@ class DesktopProxyHomeLatencyFabTest {
 
     private fun connectedInput(
         selectedServerId: String?,
-        isTestingLatency: Boolean,
-        selectedServerCanTest: Boolean,
+        isTestingLatency: Boolean = false,
+        selectedServerCanTest: Boolean = true,
+        displayOptions: ProxyHomeDisplayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = true),
+        canToggleTunnel: Boolean = false,
     ) = ProxyHomeInput(
         tunnelSnapshot = TunnelSnapshot(phase = TunnelPhase.Connected),
         selectedServerId = selectedServerId,
+        canToggleTunnel = canToggleTunnel,
         servers = listOf(
             ProxyServerSummary(
                 id = "selected",
@@ -232,11 +296,12 @@ class DesktopProxyHomeLatencyFabTest {
             ),
         ),
         isTestingLatency = isTestingLatency,
+        displayOptions = displayOptions,
         availableActions = setOf(
             ProxyHomeActionId.TestServer,
             ProxyHomeActionId.TestVisibleServers,
             ProxyHomeActionId.CancelLatencyTests,
-        ),
+        ) + if (canToggleTunnel) setOf(ProxyHomeActionId.ToggleTunnel) else emptySet(),
     )
 
     private fun connectedSubscriptionInput(): ProxyHomeInput {
