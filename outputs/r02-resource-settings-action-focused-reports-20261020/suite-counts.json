@@ -1,0 +1,16 @@
+[
+  {
+    "suite": "ui-desktop",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "ui-android",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

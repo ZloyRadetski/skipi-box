@@ -167,6 +167,12 @@ fun ResourceManagementScreen(
         actionScope.launch { onTip(message) }
     }
 
+    fun runSettingsAction(action: () -> Unit) {
+        runResourceFileSettingsAction(action) { error ->
+            actionScope.launch { onError(error) }
+        }
+    }
+
     suspend fun performEditorEffect(effect: ResourceFileEditorEffect): ResourceFilesStatus? = when (effect) {
         is ResourceFileEditorEffect.ReplaceCustom -> operations.replaceCustom(
             scope = resourceScope,
@@ -194,57 +200,65 @@ fun ResourceManagementScreen(
     }
 
     fun updateSource(sourceId: Int) {
-        updateSettings { settings -> selectResourceFileSource(settings, sourceId.coerceIn(sourceOptions.indices)) }
+        runSettingsAction {
+            updateSettings { settings -> selectResourceFileSource(settings, sourceId.coerceIn(sourceOptions.indices)) }
+        }
     }
 
-    fun updateCustomSource(draft: ResourceFileSourceDraft) {
+    fun saveCustomSource(draft: ResourceFileSourceDraft) {
         val selectedSource = resourceSettings.resourceFileUpdateSource()
-        updateSettings { settings ->
-            applyCustomResourceFileSourceDraft(settings, draft, selectedSource)
+        runSettingsAction {
+            updateSettings { settings ->
+                applyCustomResourceFileSourceDraft(settings, draft, selectedSource)
+            }
+            updateSettings { settings -> selectResourceFileSource(settings, ResourceFileSourceCustom) }
+            dialogs = dialogs.copy(sourceDraft = null)
         }
     }
 
     fun updateCustomFileFromEditor(name: String, url: String, editingFile: TrafficConfigCustomResourceFile?) {
-        val result = if (editingFile == null) {
-            addCustomResourceFile(
-                displayedSettings = resourceSettings,
-                name = name,
-                url = url,
-                updateSettings = updateSettings,
-                afterCommit = { effect ->
-                    runEditorEffect(
-                        effect,
-                        successMessage = (effect as? ResourceFileEditorEffect.ReplaceCustom)?.let {
-                            replacedMessage.formatTemplate("name" to it.file.name)
-                        },
-                    )
-                },
-            )
-        } else {
-            editCustomResourceFile(
-                displayedSettings = resourceSettings,
-                previousFile = editingFile,
-                name = name,
-                url = url,
-                updateSettings = updateSettings,
-                afterCommit = { effect -> runEditorEffect(effect, successMessage = null) },
-            )
-        }
+        runSettingsAction {
+            val result = if (editingFile == null) {
+                addCustomResourceFile(
+                    displayedSettings = resourceSettings,
+                    name = name,
+                    url = url,
+                    updateSettings = updateSettings,
+                    afterCommit = { effect ->
+                        runEditorEffect(
+                            effect,
+                            successMessage = (effect as? ResourceFileEditorEffect.ReplaceCustom)?.let {
+                                replacedMessage.formatTemplate("name" to it.file.name)
+                            },
+                        )
+                    },
+                )
+            } else {
+                editCustomResourceFile(
+                    displayedSettings = resourceSettings,
+                    previousFile = editingFile,
+                    name = name,
+                    url = url,
+                    updateSettings = updateSettings,
+                    afterCommit = { effect -> runEditorEffect(effect, successMessage = null) },
+                )
+            }
 
-        if (result is ResourceFileEditorResult.Rejected) {
-            showEditorError(
-                when (result.reason) {
-                    ResourceFileNameValidation.Invalid -> invalidNameMessage
-                    ResourceFileNameValidation.Duplicate -> duplicateNameMessage
-                    is ResourceFileNameValidation.Valid -> error("A valid name cannot be rejected")
-                },
+            if (result is ResourceFileEditorResult.Rejected) {
+                showEditorError(
+                    when (result.reason) {
+                        ResourceFileNameValidation.Invalid -> invalidNameMessage
+                        ResourceFileNameValidation.Duplicate -> duplicateNameMessage
+                        is ResourceFileNameValidation.Valid -> error("A valid name cannot be rejected")
+                    },
+                )
+            }
+            dialogs = acceptResourceFileEditorResult(
+                state = dialogs,
+                result = result,
+                editing = editingFile != null,
             )
         }
-        dialogs = acceptResourceFileEditorResult(
-            state = dialogs,
-            result = result,
-            editing = editingFile != null,
-        )
     }
 
     fun deleteCustomFile(file: TrafficConfigCustomResourceFile) {
@@ -346,9 +360,11 @@ fun ResourceManagementScreen(
                         onSourceSelected = ::updateSource,
                         onOpenCustomSource = { draft -> dialogs = dialogs.copy(sourceDraft = draft) },
                         onDismissCustomSource = { dialogs = dialogs.copy(sourceDraft = null) },
-                        onCustomSourceChange = ::updateCustomSource,
+                        onSaveCustomSource = ::saveCustomSource,
                         onUserAgentChange = { userAgent ->
-                            updateSettings { settings -> settings.copy(userAgent = userAgent) }
+                            runSettingsAction {
+                                updateSettings { settings -> settings.copy(userAgent = userAgent) }
+                            }
                         },
                         onUpdate = {
                             queue.enqueue(
@@ -380,7 +396,9 @@ fun ResourceManagementScreen(
                                 summary = stringResource(Res.string.configs_geo_auto_update_summary),
                                 checked = resourceSettings.autoUpdate,
                                 onCheckedChange = { checked ->
-                                    updateSettings { settings -> settings.copy(autoUpdate = checked) }
+                                    runSettingsAction {
+                                        updateSettings { settings -> settings.copy(autoUpdate = checked) }
+                                    }
                                 },
                             )
                             if (resourceSettings.autoUpdate) {
@@ -390,7 +408,9 @@ fun ResourceManagementScreen(
                                         .byValue { _, proposed -> sanitizeSubscriptionIntervalInput(proposed.toString()) }
                                         .then {
                                             val nextInterval = asCharSequence().toString()
-                                            updateSettings { settings -> settings.copy(updateInterval = nextInterval) }
+                                            runSettingsAction {
+                                                updateSettings { settings -> settings.copy(updateInterval = nextInterval) }
+                                            }
                                         },
                                     label = stringResource(Res.string.configs_geo_auto_update_interval),
                                     lineLimits = TextFieldLineLimits.SingleLine,

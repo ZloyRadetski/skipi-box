@@ -44,7 +44,6 @@ import features.config.TrafficConfigCustomResourceFile
 import features.config.TrafficConfigResourceSettings
 import features.resources.CustomResourceFileStatus
 import features.resources.ResourceFileKind
-import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileSourceDraft
 import features.resources.ResourceFileStatus
 import features.resources.ResourceFileUpdateDisplayState
@@ -92,7 +91,7 @@ internal fun ResourceFileSourceCard(
     onSourceSelected: (Int) -> Unit,
     onOpenCustomSource: (ResourceFileSourceDraft) -> Unit,
     onDismissCustomSource: () -> Unit,
-    onCustomSourceChange: (ResourceFileSourceDraft) -> Unit,
+    onSaveCustomSource: (ResourceFileSourceDraft) -> Unit,
     onUserAgentChange: (String) -> Unit,
     onUpdate: () -> Unit,
     onCancel: () -> Unit,
@@ -157,7 +156,7 @@ internal fun ResourceFileSourceCard(
             directCidrIpv6UrlState = directCidrIpv6UrlDraftState,
             onDismissRequest = onDismissCustomSource,
             onSave = {
-                onCustomSourceChange(
+                onSaveCustomSource(
                     ResourceFileSourceDraft(
                         geoIpUrl = geoIpUrlDraftState.text.toString(),
                         geoSiteUrl = geoSiteUrlDraftState.text.toString(),
@@ -166,8 +165,6 @@ internal fun ResourceFileSourceCard(
                         directCidrIpv6Url = directCidrIpv6UrlDraftState.text.toString(),
                     ),
                 )
-                onSourceSelected(ResourceFileSourceCustom)
-                onDismissCustomSource()
             },
         )
         OverlaySpinnerPreference(

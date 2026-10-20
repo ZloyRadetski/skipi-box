@@ -12,6 +12,18 @@ import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileUpdateSource
 import features.resources.beginCustomResourceFileSourceEdit
 
+/** Reports synchronous host settings-write failures without continuing the enclosing UI action. */
+internal fun runResourceFileSettingsAction(
+    action: () -> Unit,
+    onFailure: (Throwable) -> Unit,
+): Boolean = try {
+    action()
+    true
+} catch (error: Throwable) {
+    onFailure(error)
+    false
+}
+
 enum class ResourceFileRowActionKind {
     Update,
     Replace,
