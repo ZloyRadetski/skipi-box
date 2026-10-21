@@ -44,6 +44,7 @@ fun SkipiTrafficConfigProxyGroups(
     onEditGroup: (ShadowrocketPolicyGroup) -> Unit,
     onDeleteGroup: (ShadowrocketPolicyGroup) -> Unit,
     modifier: Modifier = Modifier,
+    statusContent: (@Composable () -> Unit)? = null,
 ) {
     LazyColumn(
         modifier = modifier,
@@ -105,6 +106,9 @@ fun SkipiTrafficConfigProxyGroups(
                     }
                 }
             }
+        }
+        statusContent?.let { content ->
+            item(key = "editor_status") { content() }
         }
     }
 }

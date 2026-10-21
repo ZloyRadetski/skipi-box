@@ -4,26 +4,21 @@
 package features.config
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import app.AppState
-import androidx.compose.ui.res.stringResource
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.LocalUpdateAppState
-import app.R
 import app.collectAppState
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
 import app.skipi.app.config.TrafficConfigEditorController
 import app.skipi.app.config.TrafficConfigEditorProfileStore
-import app.skipi.ui.config.SkipiTrafficConfigProxyGroups
-import ui.layout.pageScrollModifiers
+import app.skipi.ui.config.SkipiTrafficConfigProxyGroupsEditorScreen
 
 /** Full-screen editor for standard Shadowrocket [Proxy Group] aliases. */
 @Composable
@@ -40,7 +35,6 @@ internal fun TrafficConfigProxyGroupsPage(
         navigator.pop()
         return
     }
-    val groups = remember(config.rawConfig) { config.rawConfig.analyzeShadowrocketConfig().proxyGroups }
     val serverChoices = remember(appState.proxyServers) {
         trafficConfigProxyGroupServerChoices(
             appState.proxyServers.map { state ->
@@ -90,29 +84,16 @@ internal fun TrafficConfigProxyGroupsPage(
         )
     }
 
-    TrafficConfigFullScreenScaffold(
-        title = stringResource(R.string.configs_proxy_groups_title),
+    SkipiTrafficConfigProxyGroupsEditorScreen(
+        profile = config,
+        controller = editor,
         padding = padding,
         isWideScreen = isWideScreen,
         onBack = navigator::pop,
-        onSave = navigator::pop,
-    ) { _, listPadding, scrollBehavior ->
-        SkipiTrafficConfigProxyGroups(
-            groups = groups,
-            contentPadding = listPadding,
-            modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
-            summary = stringResource(R.string.configs_proxy_groups_summary),
-            addLabel = stringResource(R.string.configs_proxy_groups_add),
-            emptyLabel = stringResource(R.string.configs_proxy_groups_empty),
-            editContentDescription = stringResource(R.string.configs_edit),
-            deleteContentDescription = stringResource(R.string.common_delete),
-            onAddGroup = ::openNewGroup,
-            onEditGroup = ::openEditGroup,
-            onDeleteGroup = { group ->
-                editor.deleteProxyGroup(config, group.lineNumber)
-            },
-        )
-    }
+        onAdd = ::openNewGroup,
+        onEdit = ::openEditGroup,
+        platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
+    )
 }
 
 @Composable

@@ -52,13 +52,13 @@ import app.skipi.app.config.TrafficConfigEditorProfileStore
 import app.skipi.app.config.withProfileBasics
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
-import app.skipi.ui.config.SkipiTrafficConfigEditorGroupCard
 import app.skipi.ui.config.SkipiTrafficConfigEditorSectionAction
 import app.skipi.ui.config.SkipiTrafficConfigBasicsEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigGeneralEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigDnsEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigNetworkActivationEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigTunnelEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigRoutingSectionScreen
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -157,13 +157,6 @@ fun TrafficConfigEditorPage(
 }
 
 @Composable
-private fun ConfigEditorGroupCard(
-    title: String,
-    summary: String,
-    onClick: () -> Unit,
-) = SkipiTrafficConfigEditorGroupCard(title = title, summary = summary, onClick = onClick)
-
-@Composable
 private fun rememberTrafficConfigEditorController(
     updateAppState: ((AppState) -> AppState) -> Unit,
 ): TrafficConfigEditorController = remember(updateAppState) {
@@ -184,7 +177,7 @@ private fun rememberTrafficConfigEditorController(
 }
 
 @Composable
-private fun TrafficConfigEditorBackHandler(onBack: () -> Unit) {
+internal fun TrafficConfigEditorBackHandler(onBack: () -> Unit) {
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
         onBackCompleted = onBack,
@@ -365,45 +358,20 @@ private fun TrafficConfigRoutingSectionPage(padding: PaddingValues, trafficConfi
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run { navigator.pop(); return }
-    val analysis = remember(config.rawConfig) { config.rawConfig.analyzeShadowrocketConfig() }
-    TrafficConfigFullScreenScaffold(
-        title = stringResource(R.string.configs_rules_title), padding = padding, isWideScreen = isWideScreen,
-        onBack = navigator::pop, onSave = navigator::pop,
-    ) { _, listPadding, scrollBehavior ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .pageScrollModifiers(scrollBehavior),
-            contentPadding = listPadding,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item("resources") {
-                ConfigEditorGroupCard(
-                    title = stringResource(R.string.configs_resources),
-                    summary = stringResource(R.string.configs_resources_summary),
-                    onClick = { navigator.push(Route.ResourceManagement(config.id)) },
-                )
-            }
-            item("rules") {
-                ConfigEditorGroupCard(
-                    title = stringResource(R.string.configs_rules_title),
-                    summary = stringResource(R.string.configs_rule_summary, analysis.rules.count { !it.isFinal }),
-                    onClick = {
-                        navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.RoutingRules))
-                    },
-                )
-            }
-            item("groups") {
-                ConfigEditorGroupCard(
-                    title = stringResource(R.string.configs_proxy_groups_title),
-                    summary = stringResource(R.string.configs_proxy_groups_summary),
-                    onClick = {
-                        navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.ProxyGroups))
-                    },
-                )
-            }
-        }
-    }
+    SkipiTrafficConfigRoutingSectionScreen(
+        profile = config,
+        padding = padding,
+        isWideScreen = isWideScreen,
+        onBack = navigator::pop,
+        onResources = { navigator.push(Route.ResourceManagement(config.id)) },
+        onRules = {
+            navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.RoutingRules))
+        },
+        onProxyGroups = {
+            navigator.push(Route.TrafficConfigSection(config.id, TrafficConfigEditorSection.ProxyGroups))
+        },
+        platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
+    )
 }
 
 @Composable
