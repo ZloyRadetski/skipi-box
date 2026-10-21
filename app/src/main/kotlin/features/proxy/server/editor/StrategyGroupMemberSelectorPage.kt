@@ -20,19 +20,15 @@ import app.R
 import app.SubscriptionGroupState
 import app.collectAppState
 import app.navigation.StrategyGroupMemberSelectionResult
+import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.StrategyMemberSelectorSubscription
+import app.skipi.app.proxy.projectStrategyGroupMemberGroups as projectSharedStrategyGroupMemberGroups
 import app.skipi.ui.server.editor.ServerPickerSubscriptionSummary
 import app.skipi.ui.server.editor.SkipiStrategyGroupMemberSelectorScreen
 import app.skipi.ui.server.editor.StrategyMemberSelectorGroup as SharedStrategyMemberSelectorGroup
 import app.skipi.ui.server.editor.StrategyMemberSelectorItem
 import features.proxy.server.display.CountryFlagUtils
-import features.proxy.server.display.displayName
-import features.proxy.server.list.AutoBalancerGroupId
-import features.proxy.server.model.ChainProxy
-import features.proxy.server.model.Custom
-import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import features.proxy.server.model.getTransportDisplay
-import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.subscriptionExpirySummary
 import features.subscription.subscriptionTrafficProgress
 import features.subscription.subscriptionTrafficSummary
@@ -57,40 +53,44 @@ internal fun projectStrategyGroupMemberGroups(
     defaultGroupName: String,
     autoBalancerName: String,
 ): List<StrategyMemberSelectorGroup> {
-    val selectableServers = appState.proxyServers.filter { server ->
-        server.id != excludedServerId &&
-            server.server !is ChainProxy &&
-            (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
-            (!requireServerRemarks || server.server.getInfo().remarks.isNotBlank()) &&
-            (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
+    val subscriptionInputs = appState.subscriptionGroups.map { group ->
+        StrategyMemberSelectorSubscription(
+            id = group.id,
+            name = group.name,
+            profileTitle = group.profileTitle,
+        )
     }
-    val serversByGroup = selectableServers.groupBy(ProxyServerState::groupId)
-    return buildList {
-        val autoBalancerServers = serversByGroup[AutoBalancerGroupId].orEmpty().filter { it.server is StrategyGroup }
-        if (autoBalancerServers.isNotEmpty()) {
-            add(StrategyMemberSelectorGroup("auto-balancers", autoBalancerName, servers = autoBalancerServers))
-        }
-        appState.subscriptionGroups.filter { it.id != DefaultSubscriptionGroupId }.forEach { group ->
-            add(
-                StrategyMemberSelectorGroup(
-                    "subscription-${group.id}",
-                    group.profileTitle.ifBlank { group.displayName(defaultGroupName) },
-                    group,
-                    serversByGroup[group.id].orEmpty(),
-                ),
+    val projection = projectSharedStrategyGroupMemberGroups(
+        servers = appState.proxyServers.map { server ->
+            ProxyServerRecord(
+                id = server.id,
+                groupId = server.groupId,
+                server = server.server,
+                latency = server.latency,
             )
-        }
-        val manualServers = serversByGroup[DefaultSubscriptionGroupId].orEmpty()
-        if (manualServers.isNotEmpty() || appState.subscriptionGroups.none { it.id != DefaultSubscriptionGroupId }) {
-            add(
-                StrategyMemberSelectorGroup(
-                    "manual-servers",
-                    defaultGroupName,
-                    appState.subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId },
-                    manualServers,
-                ),
-            )
-        }
+        },
+        subscriptionGroups = subscriptionInputs,
+        defaultGroupName = defaultGroupName,
+        autoBalancerName = autoBalancerName,
+        excludedServerId = excludedServerId,
+        requireServerRemarks = requireServerRemarks,
+    )
+    return projection.map { group ->
+        StrategyMemberSelectorGroup(
+            key = group.key,
+            title = group.title,
+            subscriptionGroup = group.subscriptionGroupId?.let { id ->
+                appState.subscriptionGroups.firstOrNull { it.id == id }
+            },
+            servers = group.servers.map { server ->
+                ProxyServerState(
+                    id = server.id,
+                    server = server.server,
+                    groupId = server.groupId,
+                    latency = server.latency,
+                )
+            },
+        )
     }
 }
 
