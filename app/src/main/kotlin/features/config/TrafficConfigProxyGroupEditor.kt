@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import app.AppState
 import androidx.compose.ui.res.stringResource
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
@@ -19,8 +20,9 @@ import app.R
 import app.collectAppState
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
+import app.skipi.app.config.TrafficConfigEditorController
+import app.skipi.app.config.TrafficConfigEditorProfileStore
 import app.skipi.ui.config.SkipiTrafficConfigProxyGroups
-import features.proxy.server.model.StrategyGroup
 import ui.layout.pageScrollModifiers
 
 /** Full-screen editor for standard Shadowrocket [Proxy Group] aliases. */
@@ -33,6 +35,7 @@ internal fun TrafficConfigProxyGroupsPage(
     val updateAppState = LocalUpdateAppState.current
     val navigator = LocalNavigator.current
     val isWideScreen = LocalIsWideScreen.current
+    val editor = rememberTrafficConfigProxyGroupEditorController(updateAppState)
     val config = appState.trafficConfigs.firstOrNull { it.id == trafficConfigId } ?: run {
         navigator.pop()
         return
@@ -49,12 +52,6 @@ internal fun TrafficConfigProxyGroupsPage(
         )
     }
 
-    fun updateRaw(raw: String) {
-        updateAppState { state ->
-            state.withUpdatedTrafficConfig(config.id) { it.copy(rawConfig = raw) }
-        }
-    }
-
     val proxyGroupResultKey = remember(config.id) {
         "traffic-config-proxy-group-result-${config.id}"
     }
@@ -62,22 +59,7 @@ internal fun TrafficConfigProxyGroupsPage(
     LaunchedEffect(navigator, proxyGroupResultKey, serverChoices) {
         navigator.observeResult<ProxyServerEditResult>(proxyGroupResultKey).collect { result ->
             navigator.clearResult(proxyGroupResultKey)
-            if (result.deleted) {
-                val serverId = result.serverId
-                if (serverId != null && serverId > 0) {
-                    updateRaw(config.rawConfig.withoutShadowrocketProxyGroupLine(serverId))
-                }
-                return@collect
-            }
-            val strategy = result.server as? StrategyGroup ?: return@collect
-            if (strategy.remarks.isBlank()) return@collect
-            val line = strategy.toShadowrocketLine(serverChoices)
-            val serverId = result.serverId
-            if (serverId != null && serverId > 0) {
-                updateRaw(config.rawConfig.withShadowrocketProxyGroupLine(serverId, line))
-            } else {
-                updateRaw(config.rawConfig.withShadowrocketProxyGroupAdded(line))
-            }
+            editor.saveProxyGroupResult(config, result, serverChoices)
         }
     }
 
@@ -127,8 +109,28 @@ internal fun TrafficConfigProxyGroupsPage(
             onAddGroup = ::openNewGroup,
             onEditGroup = ::openEditGroup,
             onDeleteGroup = { group ->
-                updateRaw(config.rawConfig.withoutShadowrocketProxyGroupLine(group.lineNumber))
+                editor.deleteProxyGroup(config, group.lineNumber)
             },
         )
     }
+}
+
+@Composable
+private fun rememberTrafficConfigProxyGroupEditorController(
+    updateAppState: ((AppState) -> AppState) -> Unit,
+): TrafficConfigEditorController = remember(updateAppState) {
+    TrafficConfigEditorController(
+        TrafficConfigEditorProfileStore { profileId, transform ->
+            var found = false
+            updateAppState { state ->
+                if (state.trafficConfigs.none { it.id == profileId }) {
+                    state
+                } else {
+                    found = true
+                    state.withUpdatedTrafficConfig(profileId, transform)
+                }
+            }
+            found
+        },
+    )
 }

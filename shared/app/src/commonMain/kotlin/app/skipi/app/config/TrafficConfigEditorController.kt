@@ -3,12 +3,19 @@
 
 package app.skipi.app.config
 
+import app.skipi.app.server.ProxyServerEditResult
+import features.config.ProxyGroupServerChoice
 import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigState
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
+import features.config.toShadowrocketLine
+import features.config.withShadowrocketProxyGroupAdded
+import features.config.withShadowrocketProxyGroupLine
 import features.config.withShadowrocketRuleAdded
 import features.config.withShadowrocketRuleLine
+import features.config.withoutShadowrocketProxyGroupLine
+import features.proxy.server.model.StrategyGroup
 
 /** Host-owned latest-profile update port for the visual traffic-config editor. */
 fun interface TrafficConfigEditorProfileStore {
@@ -102,6 +109,38 @@ class TrafficConfigEditorController(
         document: String,
     ): TrafficConfigEditorResult = update(profileId) { current ->
         current.copy(rawConfig = document)
+    }
+
+    /** Removes one profile proxy-group line from the document captured by the list screen. */
+    fun deleteProxyGroup(
+        profile: TrafficConfigState,
+        lineNumber: Int,
+    ): TrafficConfigEditorResult {
+        val document = profile.rawConfig.withoutShadowrocketProxyGroupLine(lineNumber)
+        return update(profile.id) { current -> current.copy(rawConfig = document) }
+    }
+
+    /** Applies an Android profile-group editor result to the captured document and latest profile row. */
+    fun saveProxyGroupResult(
+        profile: TrafficConfigState,
+        result: ProxyServerEditResult,
+        serverChoices: List<ProxyGroupServerChoice>,
+    ): TrafficConfigEditorResult {
+        if (result.deleted) {
+            val lineNumber = result.serverId?.takeIf { it > 0 }
+                ?: return TrafficConfigEditorResult.Skipped
+            return deleteProxyGroup(profile, lineNumber)
+        }
+
+        val strategy = result.server as? StrategyGroup ?: return TrafficConfigEditorResult.Skipped
+        if (strategy.remarks.isBlank()) return TrafficConfigEditorResult.Skipped
+
+        val line = strategy.toShadowrocketLine(serverChoices)
+        val document = result.serverId
+            ?.takeIf { it > 0 }
+            ?.let { lineNumber -> profile.rawConfig.withShadowrocketProxyGroupLine(lineNumber, line) }
+            ?: profile.rawConfig.withShadowrocketProxyGroupAdded(line)
+        return update(profile.id) { current -> current.copy(rawConfig = document) }
     }
 
     /** Saves an add/edit draft against the latest same-ID profile's raw document. */
