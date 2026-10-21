@@ -1,0 +1,21 @@
+{
+  "suites": [
+    {
+      "name": "SubscriptionProviderPresentationTest[desktop]",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-21T12:27:34.978Z"
+    },
+    {
+      "name": "features.subscription.SubscriptionProviderTrafficPresentationAndroidOracleTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-21T12:28:09.065Z"
+    }
+  ],
+  "note": "Both metadata suites passed within p04-rules-resume-focused-20261021.log; the combined Gradle run failed on three separate Desktop Rules UI tests."
+}

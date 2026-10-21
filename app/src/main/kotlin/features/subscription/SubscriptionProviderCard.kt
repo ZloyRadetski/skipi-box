@@ -14,7 +14,6 @@ import app.skipi.ui.subscription.SubscriptionProviderBody as SharedSubscriptionP
 import app.skipi.ui.subscription.SubscriptionProviderHeader as SharedSubscriptionProviderHeader
 import app.skipi.ui.subscription.SubscriptionProviderPresentation
 import features.proxy.server.display.displayName
-import java.util.Locale
 
 @Composable
 internal fun SubscriptionProviderHeader(
@@ -81,45 +80,23 @@ internal fun SubscriptionProviderBody(
 )
 
 internal fun SubscriptionGroupState.subscriptionTrafficSummary(): String? {
-    if (trafficUploadBytes < 0L && trafficDownloadBytes < 0L && trafficTotalBytes < 0L) return null
-    val used = subscriptionUsedTrafficBytes()
-    return if (trafficTotalBytes > 0L && trafficTotalBytes < UnlimitedSubscriptionTrafficThreshold) {
-        "${used.formatSubscriptionBytes()} / ${trafficTotalBytes.formatSubscriptionBytes()}"
-    } else {
-        "${used.formatSubscriptionBytes()} / ∞"
-    }
+    return features.subscription.subscriptionTrafficSummary(
+        trafficUploadBytes,
+        trafficDownloadBytes,
+        trafficTotalBytes,
+    )
 }
 
 internal fun SubscriptionGroupState.subscriptionTrafficProgress(): Float? {
-    if (trafficTotalBytes <= 0L || trafficTotalBytes >= UnlimitedSubscriptionTrafficThreshold) return null
-    return (subscriptionUsedTrafficBytes().toDouble() / trafficTotalBytes.toDouble()).toFloat().coerceIn(0f, 1f)
+    return features.subscription.subscriptionTrafficProgress(
+        trafficUploadBytes,
+        trafficDownloadBytes,
+        trafficTotalBytes,
+    )
 }
 
 @Composable
 internal fun SubscriptionGroupState.subscriptionExpirySummary(): String? {
-    if (trafficExpireAtSeconds <= 0L) return null
-    val days = ((trafficExpireAtSeconds * 1_000L - System.currentTimeMillis()).coerceAtLeast(0L) / MillisPerDay)
+    val days = subscriptionExpiryDays(trafficExpireAtSeconds, System.currentTimeMillis()) ?: return null
     return stringResource(R.string.subscription_provider_days_remaining, days)
 }
-
-private fun SubscriptionGroupState.subscriptionUsedTrafficBytes(): Long {
-    val upload = trafficUploadBytes.coerceAtLeast(0L)
-    val download = trafficDownloadBytes.coerceAtLeast(0L)
-    return if (Long.MAX_VALUE - upload < download) Long.MAX_VALUE else upload + download
-}
-
-private fun Long.formatSubscriptionBytes(): String {
-    val units = arrayOf("B", "KB", "MB", "GB", "TB")
-    var value = toDouble()
-    var unitIndex = 0
-    while (value >= 1024.0 && unitIndex < units.lastIndex) {
-        value /= 1024.0
-        unitIndex++
-    }
-    return if (unitIndex == 0) "$value ${units[unitIndex]}" else {
-        String.format(Locale.getDefault(), "%.2f %s", value, units[unitIndex])
-    }
-}
-
-private const val MillisPerDay = 24L * 60L * 60L * 1_000L
-private const val UnlimitedSubscriptionTrafficThreshold = Long.MAX_VALUE / 2L
