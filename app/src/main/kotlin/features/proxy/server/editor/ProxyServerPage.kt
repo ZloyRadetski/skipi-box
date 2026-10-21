@@ -27,10 +27,10 @@ import app.navigation.StrategyGroupMemberSelectionResult
 import app.skipi.app.server.ProxyServerEditorController
 import app.skipi.app.server.ProxyServerEditorSaveDecision
 import app.skipi.ui.server.editor.ProxyServerEditorDialogText
+import app.skipi.ui.server.editor.projectProxyServerEditorGroupOptions
 import app.skipi.ui.server.editor.rememberProxyServerEditorUiState
 import app.skipi.ui.server.editor.rememberSaveableProxyServerEditorDraft
 import app.skipi.ui.server.editor.SkipiProxyServerEditorScreen
-import features.proxy.server.display.displayName
 import features.proxy.server.display.displayNameById
 import features.proxy.server.display.displayNameWithGroup
 import features.proxy.server.model.Custom
@@ -41,7 +41,7 @@ import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.usecase.ProxyServerCopyTextResult
 import features.proxy.server.usecase.proxyServerCopyText
 import features.proxy.server.validation.rememberProxyServerValidationMessageResolver
-import features.subscription.DefaultSubscriptionGroupId
+import features.subscription.toSubscriptionGroupUiState
 import kotlinx.coroutines.launch
 import ui.clipboard.setPlainText
 import androidx.navigationevent.NavigationEventInfo
@@ -177,10 +177,11 @@ fun ProxyServerPage(
     )
 
     val groupOptions = remember(appState.subscriptionGroups, allGroupsLabel, defaultGroupName) {
-        listOf(ProxyServerEditorGroupOption(null, allGroupsLabel)) +
-            appState.subscriptionGroups
-                .filter { group -> group.enabled || group.builtIn || group.id == DefaultSubscriptionGroupId }
-                .map { group -> ProxyServerEditorGroupOption(group.id, group.displayName(defaultGroupName).ifBlank { defaultGroupName }) }
+        projectProxyServerEditorGroupOptions(
+            groups = appState.subscriptionGroups.map { it.toSubscriptionGroupUiState(defaultGroupName) },
+            allGroupsLabel = allGroupsLabel,
+            defaultGroupName = defaultGroupName,
+        )
     }
     val memberOptions = remember(appState.proxyServers, appState.subscriptionGroups, serverId, unknownGroupName, defaultGroupName) {
         val groupNames = appState.subscriptionGroups.displayNameById(defaultGroupName)
