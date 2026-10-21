@@ -103,3 +103,7 @@ The Rules slice is complete: Android/Desktop use the shared list/form/help/resou
 ## Scope and gate
 
 This continuation adds no per-app routing flow, new global resource store, new native/runtime behavior, or changes to user resource data. Per-app selection remains a separate platform-backed flow. Stage 1 API RED/GREEN, Stage 2 actual-screen behavioral RED and reviewed input API RED, final host GREEN, independent review, and rendered verification are recorded above. Only this Rules slice is verified; P04/R01 remain open.
+
+### Follow-up source navigation audit (21 October)
+
+During the ProxyGroups continuation, source review identified an omitted intermediate Android Routing section: Basics opens `TrafficConfigRoutingSectionPage`, which then offers Resources, Rules, and ProxyGroups. The preceding checkpoint verified the implemented Desktop direct Rules entry and its save/selector/resource behavior; it did not verify that intermediate navigation. Tests are being corrected against the Android source before the follow-up production change. See `tasks/shared-migration-20261021/p04-proxy-groups-verification.md`; P04 remains open.

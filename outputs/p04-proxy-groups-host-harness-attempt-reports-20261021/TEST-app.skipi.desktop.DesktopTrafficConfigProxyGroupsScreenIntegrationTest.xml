@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" tests="3" skipped="0" failures="3" errors="0" timestamp="2026-10-21T13:14:51.074Z" hostname="VQSeGo" time="2.242">
+  <properties/>
+  <testcase name="editingParsedGroupKeepsNameAndMembersWhenMemberPickerBacksOut" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="1.207">
+    <failure message="java.lang.AssertionError: Expected an accessible control labeled 'Edit through UI'" type="java.lang.AssertionError">java.lang.AssertionError: Expected an accessible control labeled 'Edit through UI'
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at kotlin.test.junit.JUnitAsserter.assertNotNull(JUnitSupport.kt:48)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertNotNull(Assertions.kt:147)
+	at kotlin.test.AssertionsKt.assertNotNull(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.clickContentDescription(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:356)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.access$clickContentDescription(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:58)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest$editingParsedGroupKeepsNameAndMembersWhenMemberPickerBacksOut$1.invokeSuspend$lambda$0(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:176)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.withDesktopScreen(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:320)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.access$withDesktopScreen(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:58)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest$editingParsedGroupKeepsNameAndMembersWhenMemberPickerBacksOut$1.invokeSuspend(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:164)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)
+	at kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)
+	at kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:22)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:20)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.editingParsedGroupKeepsNameAndMembersWhenMemberPickerBacksOut(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:154)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:174)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="addingProfileGroupSavesActiveConfigLineWithoutChangingGlobalCatalog" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="0.51">
+    <failure message="java.lang.AssertionError: Expected an accessible control labeled 'Edit through UI'" type="java.lang.AssertionError">java.lang.AssertionError: Expected an accessible control labeled 'Edit through UI'
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at kotlin.test.junit.JUnitAsserter.assertNotNull(JUnitSupport.kt:48)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertNotNull(Assertions.kt:147)
+	at kotlin.test.AssertionsKt.assertNotNull(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.clickContentDescription(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:356)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.access$clickContentDescription(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:58)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest$addingProfileGroupSavesActiveConfigLineWithoutChangingGlobalCatalog$1.invokeSuspend$lambda$0(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:125)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.withDesktopScreen(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:320)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.access$withDesktopScreen(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:58)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest$addingProfileGroupSavesActiveConfigLineWithoutChangingGlobalCatalog$1.invokeSuspend(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:116)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)
+	at kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)
+	at kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:22)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:20)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.addingProfileGroupSavesActiveConfigLineWithoutChangingGlobalCatalog(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:109)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:174)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="proxyGroupsSectionDeletesOnlyTheInactiveTargetProfileDocument" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="0.522">
+    <failure message="java.lang.AssertionError: Expected an accessible control labeled 'Edit through UI'" type="java.lang.AssertionError">java.lang.AssertionError: Expected an accessible control labeled 'Edit through UI'
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at kotlin.test.junit.JUnitAsserter.assertNotNull(JUnitSupport.kt:48)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertNotNull(Assertions.kt:147)
+	at kotlin.test.AssertionsKt.assertNotNull(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.clickContentDescription(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:356)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.access$clickContentDescription(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:58)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest$proxyGroupsSectionDeletesOnlyTheInactiveTargetProfileDocument$1.invokeSuspend$lambda$0(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:82)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.withDesktopScreen(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:320)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.access$withDesktopScreen(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:58)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest$proxyGroupsSectionDeletesOnlyTheInactiveTargetProfileDocument$1.invokeSuspend(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:68)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)
+	at kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)
+	at kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:22)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:20)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.proxyGroupsSectionDeletesOnlyTheInactiveTargetProfileDocument(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:62)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:174)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Timed out waiting for visible clickable 'Edit through UI'. Visible semantics:
+owner=0 id=1 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=4 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=5 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=8 bounds=Rect.fromLTRB(28.0, 22.0, 130.0, 51.0) click=false text='Конфиги' description='' editable=''
+owner=0 id=9 bounds=Rect.fromLTRB(28.0, 51.0, 174.0, 72.0) click=false text='Профили трафика SKIPI' description='' editable=''
+owner=0 id=11 bounds=Rect.fromLTRB(1428.0, 27.0, 1468.0, 67.0) click=true text='' description='' editable=''
+owner=0 id=12 bounds=Rect.fromLTRB(1432.0, 31.0, 1464.0, 63.0) click=false text='' description='Добавить конфиг' editable=''
+owner=0 id=13 bounds=Rect.fromLTRB(28.0, 88.0, 1472.0, 164.0) click=false text='' description='' editable=''
+owner=0 id=16 bounds=Rect.fromLTRB(48.0, 104.0, 92.0, 148.0) click=false text='' description='' editable=''
+owner=0 id=20 bounds=Rect.fromLTRB(106.0, 106.0, 214.0, 126.0) click=false text='Active profile' description='' editable=''
+owner=0 id=21 bounds=Rect.fromLTRB(106.0, 126.0, 409.0, 147.0) click=false text='Применяется при следующем подключении Xray' description='' editable=''
+owner=0 id=22 bounds=Rect.fromLTRB(1403.0, 110.0, 1452.0, 142.0) click=false text='' description='' editable=''
+owner=0 id=23 bounds=Rect.fromLTRB(1413.0, 116.0, 1442.0, 136.0) click=false text='SKIPI' description='' editable=''
+owner=0 id=24 bounds=Rect.fromLTRB(28.0, 178.0, 113.0, 199.0) click=false text='Профили' description='' editable=''
+owner=0 id=25 bounds=Rect.fromLTRB(28.0, 213.0, 1472.0, 284.0) click=false text='' description='' editable=''
+owner=0 id=26 bounds=Rect.fromLTRB(28.0, 213.0, 1472.0, 284.0) click=true text='' description='' editable=''
+owner=0 id=29 bounds=Rect.fromLTRB(42.0, 219.0, 187.0, 238.0) click=false text='Inactive target profile' description='' editable=''
+owner=0 id=30 bounds=Rect.fromLTRB(42.0, 238.0, 184.0, 258.0) click=false text='https://example.test/7.conf' description='' editable=''
+owner=0 id=32 bounds=Rect.fromLTRB(42.0, 258.0, 161.0, 278.0) click=false text='Правила: 0 · Группы: 1' description='' editable=''
+owner=0 id=33 bounds=Rect.fromLTRB(161.0, 258.0, 322.0, 278.0) click=false text=' · Обновление заблокировано' description='' editable=''
+owner=0 id=35 bounds=Rect.fromLTRB(1242.0, 229.0, 1282.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=36 bounds=Rect.fromLTRB(1250.0, 237.0, 1274.0, 261.0) click=false text='' description='Refresh' editable=''
+owner=0 id=37 bounds=Rect.fromLTRB(1282.0, 229.0, 1322.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=38 bounds=Rect.fromLTRB(1290.0, 237.0, 1314.0, 261.0) click=false text='' description='Edit through UI' editable=''
+owner=0 id=39 bounds=Rect.fromLTRB(1322.0, 229.0, 1362.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=40 bounds=Rect.fromLTRB(1330.0, 237.0, 1354.0, 261.0) click=false text='' description='Delete' editable=''
+owner=0 id=41 bounds=Rect.fromLTRB(1366.0, 229.0, 1406.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=42 bounds=Rect.fromLTRB(1374.0, 237.0, 1398.0, 261.0) click=false text='' description='Копировать содержимое' editable=''
+owner=0 id=43 bounds=Rect.fromLTRB(1414.0, 229.0, 1454.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=44 bounds=Rect.fromLTRB(1422.0, 237.0, 1446.0, 261.0) click=false text='' description='Ещё' editable=''
+owner=0 id=45 bounds=Rect.fromLTRB(28.0, 298.0, 1472.0, 369.0) click=false text='' description='' editable=''
+owner=0 id=46 bounds=Rect.fromLTRB(28.0, 298.0, 1472.0, 369.0) click=true text='' description='' editable=''
+Timed out waiting for visible clickable 'Edit through UI'. Visible semantics:
+owner=0 id=86 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=89 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=90 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=93 bounds=Rect.fromLTRB(28.0, 22.0, 130.0, 51.0) click=false text='Конфиги' description='' editable=''
+owner=0 id=94 bounds=Rect.fromLTRB(28.0, 51.0, 174.0, 72.0) click=false text='Профили трафика SKIPI' description='' editable=''
+owner=0 id=96 bounds=Rect.fromLTRB(1428.0, 27.0, 1468.0, 67.0) click=true text='' description='' editable=''
+owner=0 id=97 bounds=Rect.fromLTRB(1432.0, 31.0, 1464.0, 63.0) click=false text='' description='Добавить конфиг' editable=''
+owner=0 id=98 bounds=Rect.fromLTRB(28.0, 88.0, 1472.0, 164.0) click=false text='' description='' editable=''
+owner=0 id=101 bounds=Rect.fromLTRB(48.0, 104.0, 92.0, 148.0) click=false text='' description='' editable=''
+owner=0 id=105 bounds=Rect.fromLTRB(106.0, 106.0, 214.0, 126.0) click=false text='Active profile' description='' editable=''
+owner=0 id=106 bounds=Rect.fromLTRB(106.0, 126.0, 409.0, 147.0) click=false text='Применяется при следующем подключении Xray' description='' editable=''
+owner=0 id=107 bounds=Rect.fromLTRB(1403.0, 110.0, 1452.0, 142.0) click=false text='' description='' editable=''
+owner=0 id=108 bounds=Rect.fromLTRB(1413.0, 116.0, 1442.0, 136.0) click=false text='SKIPI' description='' editable=''
+owner=0 id=109 bounds=Rect.fromLTRB(28.0, 178.0, 113.0, 199.0) click=false text='Профили' description='' editable=''
+owner=0 id=110 bounds=Rect.fromLTRB(28.0, 213.0, 1472.0, 284.0) click=false text='' description='' editable=''
+owner=0 id=111 bounds=Rect.fromLTRB(28.0, 213.0, 1472.0, 284.0) click=true text='' description='' editable=''
+owner=0 id=114 bounds=Rect.fromLTRB(42.0, 219.0, 187.0, 238.0) click=false text='Inactive target profile' description='' editable=''
+owner=0 id=115 bounds=Rect.fromLTRB(42.0, 238.0, 184.0, 258.0) click=false text='https://example.test/7.conf' description='' editable=''
+owner=0 id=117 bounds=Rect.fromLTRB(42.0, 258.0, 161.0, 278.0) click=false text='Правила: 0 · Группы: 0' description='' editable=''
+owner=0 id=118 bounds=Rect.fromLTRB(161.0, 258.0, 322.0, 278.0) click=false text=' · Обновление заблокировано' description='' editable=''
+owner=0 id=120 bounds=Rect.fromLTRB(1242.0, 229.0, 1282.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=121 bounds=Rect.fromLTRB(1250.0, 237.0, 1274.0, 261.0) click=false text='' description='Refresh' editable=''
+owner=0 id=122 bounds=Rect.fromLTRB(1282.0, 229.0, 1322.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=123 bounds=Rect.fromLTRB(1290.0, 237.0, 1314.0, 261.0) click=false text='' description='Edit through UI' editable=''
+owner=0 id=124 bounds=Rect.fromLTRB(1322.0, 229.0, 1362.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=125 bounds=Rect.fromLTRB(1330.0, 237.0, 1354.0, 261.0) click=false text='' description='Delete' editable=''
+owner=0 id=126 bounds=Rect.fromLTRB(1366.0, 229.0, 1406.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=127 bounds=Rect.fromLTRB(1374.0, 237.0, 1398.0, 261.0) click=false text='' description='Копировать содержимое' editable=''
+owner=0 id=128 bounds=Rect.fromLTRB(1414.0, 229.0, 1454.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=129 bounds=Rect.fromLTRB(1422.0, 237.0, 1446.0, 261.0) click=false text='' description='Ещё' editable=''
+owner=0 id=130 bounds=Rect.fromLTRB(28.0, 298.0, 1472.0, 369.0) click=false text='' description='' editable=''
+owner=0 id=131 bounds=Rect.fromLTRB(28.0, 298.0, 1472.0, 369.0) click=true text='' description='' editable=''
+Timed out waiting for visible clickable 'Edit through UI'. Visible semantics:
+owner=0 id=171 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=174 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=175 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=178 bounds=Rect.fromLTRB(28.0, 22.0, 130.0, 51.0) click=false text='Конфиги' description='' editable=''
+owner=0 id=179 bounds=Rect.fromLTRB(28.0, 51.0, 174.0, 72.0) click=false text='Профили трафика SKIPI' description='' editable=''
+owner=0 id=181 bounds=Rect.fromLTRB(1428.0, 27.0, 1468.0, 67.0) click=true text='' description='' editable=''
+owner=0 id=182 bounds=Rect.fromLTRB(1432.0, 31.0, 1464.0, 63.0) click=false text='' description='Добавить конфиг' editable=''
+owner=0 id=183 bounds=Rect.fromLTRB(28.0, 88.0, 1472.0, 164.0) click=false text='' description='' editable=''
+owner=0 id=186 bounds=Rect.fromLTRB(48.0, 104.0, 92.0, 148.0) click=false text='' description='' editable=''
+owner=0 id=190 bounds=Rect.fromLTRB(106.0, 106.0, 214.0, 126.0) click=false text='Active profile' description='' editable=''
+owner=0 id=191 bounds=Rect.fromLTRB(106.0, 126.0, 409.0, 147.0) click=false text='Применяется при следующем подключении Xray' description='' editable=''
+owner=0 id=192 bounds=Rect.fromLTRB(1403.0, 110.0, 1452.0, 142.0) click=false text='' description='' editable=''
+owner=0 id=193 bounds=Rect.fromLTRB(1413.0, 116.0, 1442.0, 136.0) click=false text='SKIPI' description='' editable=''
+owner=0 id=194 bounds=Rect.fromLTRB(28.0, 178.0, 113.0, 199.0) click=false text='Профили' description='' editable=''
+owner=0 id=195 bounds=Rect.fromLTRB(28.0, 213.0, 1472.0, 284.0) click=false text='' description='' editable=''
+owner=0 id=196 bounds=Rect.fromLTRB(28.0, 213.0, 1472.0, 284.0) click=true text='' description='' editable=''
+owner=0 id=199 bounds=Rect.fromLTRB(42.0, 219.0, 187.0, 238.0) click=false text='Inactive target profile' description='' editable=''
+owner=0 id=200 bounds=Rect.fromLTRB(42.0, 238.0, 184.0, 258.0) click=false text='https://example.test/7.conf' description='' editable=''
+owner=0 id=202 bounds=Rect.fromLTRB(42.0, 258.0, 161.0, 278.0) click=false text='Правила: 0 · Группы: 2' description='' editable=''
+owner=0 id=203 bounds=Rect.fromLTRB(161.0, 258.0, 322.0, 278.0) click=false text=' · Обновление заблокировано' description='' editable=''
+owner=0 id=205 bounds=Rect.fromLTRB(1242.0, 229.0, 1282.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=206 bounds=Rect.fromLTRB(1250.0, 237.0, 1274.0, 261.0) click=false text='' description='Refresh' editable=''
+owner=0 id=207 bounds=Rect.fromLTRB(1282.0, 229.0, 1322.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=208 bounds=Rect.fromLTRB(1290.0, 237.0, 1314.0, 261.0) click=false text='' description='Edit through UI' editable=''
+owner=0 id=209 bounds=Rect.fromLTRB(1322.0, 229.0, 1362.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=210 bounds=Rect.fromLTRB(1330.0, 237.0, 1354.0, 261.0) click=false text='' description='Delete' editable=''
+owner=0 id=211 bounds=Rect.fromLTRB(1366.0, 229.0, 1406.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=212 bounds=Rect.fromLTRB(1374.0, 237.0, 1398.0, 261.0) click=false text='' description='Копировать содержимое' editable=''
+owner=0 id=213 bounds=Rect.fromLTRB(1414.0, 229.0, 1454.0, 269.0) click=true text='' description='' editable=''
+owner=0 id=214 bounds=Rect.fromLTRB(1422.0, 237.0, 1446.0, 261.0) click=false text='' description='Ещё' editable=''
+owner=0 id=215 bounds=Rect.fromLTRB(28.0, 298.0, 1472.0, 369.0) click=false text='' description='' editable=''
+owner=0 id=216 bounds=Rect.fromLTRB(28.0, 298.0, 1472.0, 369.0) click=true text='' description='' editable=''
+]]></system-err>
+</testsuite>

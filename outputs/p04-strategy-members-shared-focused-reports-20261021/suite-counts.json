@@ -1,0 +1,26 @@
+{
+  "app-desktop": {
+    "tests": 339,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app-android": {
+    "tests": 331,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "android-oracle": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "total": {
+    "tests": 674,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

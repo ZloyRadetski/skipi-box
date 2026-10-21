@@ -176,3 +176,6 @@ S01/S02 acceptance завершена 8 октября 2026: HEAD `1edad1e`, д�
 
 
 21 октября 2026, P04 ProxyGroups persistence: source oracle `2f03ca9` 3/3 GREEN до кода; семь common controller tests получили missing-API RED, затем общий save/delete и Android adapter перенесены в `4873225`. Релевантный gate **676/676 GREEN** (shared/app 334 Desktop + 326 Android, Android profile-group tests 16), APK assemble GREEN, source review без required findings. [Отчёт](shared-migration-20261021/p04-proxy-groups-verification.md). Далее Android member-selector baseline → shared projection → Desktop group editor integration. P04/R01 остаются открытыми.
+
+
+21 октября 2026, P04 member/source group projections: Android selector baseline 4/4 GREEN после тестируемого извлечения исходного блока (`4ea194b`), shared missing-API RED → **674/674 GREEN** (`4c4ee64`, shared/app 339+331 и Android 4). Source-group dropdown: 3 новых common UI tests до кода, missing-helper RED1s → **227/227 GREEN** (UI110+110, Android7), `b26ab2c`. Подробности: [ProxyGroups report](shared-migration-20261021/p04-proxy-groups-verification.md). Desktop UI ещё не подключён; actual-parent исходный RED 3/3 зафиксирован. Source audit уточнил обязательный путь Basics→Routing→Resources/Rules/ProxyGroups; прежний прямой Desktop Rules entry будет заменён под исправленным до кода тестовым контрактом. Крупные P04/R01 открыты.

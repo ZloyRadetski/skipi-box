@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="StrategyGroupMemberSelectorProjectionTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-21T13:13:21.632Z" hostname="VQSeGo" time="0.012">
+  <properties/>
+  <testcase name="autoBalancerGroupContainsOnlyEligibleStrategyGroupsAndIsOmittedWhenEmpty[desktop]" classname="app.skipi.app.proxy.StrategyGroupMemberSelectorProjectionTest" time="0.0"/>
+  <testcase name="eligibilityAndOptionalRemarkRequirementMatchAndroidSelector[desktop]" classname="app.skipi.app.proxy.StrategyGroupMemberSelectorProjectionTest" time="0.011"/>
+  <testcase name="explicitExcludedServerIdRemovesTheCurrentProfileLineFromMembershipChoices[desktop]" classname="app.skipi.app.proxy.StrategyGroupMemberSelectorProjectionTest" time="0.0"/>
+  <testcase name="subscriptionGroupsKeepInputOrderAndIncludeEmptyGroupsWithProfileTitleFallback[desktop]" classname="app.skipi.app.proxy.StrategyGroupMemberSelectorProjectionTest" time="0.0"/>
+  <testcase name="manualGroupAppearsWhenPopulatedOrWhenThereAreNoNonDefaultGroups[desktop]" classname="app.skipi.app.proxy.StrategyGroupMemberSelectorProjectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
