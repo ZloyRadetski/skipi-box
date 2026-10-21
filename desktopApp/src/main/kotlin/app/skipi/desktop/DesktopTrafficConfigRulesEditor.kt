@@ -42,7 +42,6 @@ import app.skipi.ui.subscription.toSubscriptionGroupUiState
 import app.skipi.ui.text.formatTemplate
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
-import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.subscriptionExpiryDays
 import features.subscription.subscriptionTrafficProgress
 import features.subscription.subscriptionTrafficSummary
@@ -145,7 +144,7 @@ internal fun DesktopTrafficConfigRulesEditor(
                 proxyServers.map { server ->
                     RouteProxyServerRecord(
                         id = server.id,
-                        groupId = server.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
+                        groupId = server.sourceSubscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
                         server = server.server,
                         latency = (latencyByServerId[server.id] as? DesktopServerLatencyResult.Success)
                             ?.milliseconds
@@ -178,6 +177,7 @@ internal fun DesktopTrafficConfigRulesEditor(
                     selectedTag = editorState.selectedPolicy,
                     trafficConfigId = profile.id,
                     labels = labels,
+                    defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
                 )
             }
             val subscriptionDetails = subscriptionCatalog.subscriptions.associate { subscription ->

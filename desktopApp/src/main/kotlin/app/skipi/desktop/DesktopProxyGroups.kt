@@ -74,8 +74,8 @@ class DesktopProxyGroupCatalog internal constructor(
 }
 
 object DesktopProxyGroupIds {
-    /** Manual server rows retain the long-standing integer ID used by profile adapters. */
-    const val DefaultManualSubscriptionId = 1
+    /** Desktop keeps manual servers outside the positive subscription ID namespace. */
+    const val DefaultManualSubscriptionId = -1
     const val All = "all"
     const val Manual = "manual"
     const val AutoBalancers = "auto-balancers"
@@ -86,7 +86,7 @@ object DesktopProxyGroupIds {
     }
 }
 
-private const val SharedDesktopManualGroupId = -1
+private const val SharedDesktopManualGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId
 
 private fun sharedGroupId(desktopGroupId: String): Int? = when (desktopGroupId) {
     DesktopProxyGroupIds.All -> 0

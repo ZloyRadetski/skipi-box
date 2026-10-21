@@ -15,12 +15,74 @@ import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.encodePersistedProxyServer
 import kotlinx.coroutines.runBlocking
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.Comparator
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class DesktopTrafficConfigProxyGroupReconcilerTest {
+    @Test
+    fun reconciliationKeepsManualAndSubscriptionOneDistinctAcrossDiskReloads() = runBlocking {
+        val manual = stored(
+            5,
+            VLESS(remarks = "Manual node", id = "manual", server = "manual.example", port = "443"),
+            subscriptionId = null,
+        )
+        val subscriptionOne = stored(
+            9,
+            VLESS(remarks = "Provider one node", id = "provider-one", server = "provider-one.example", port = "443"),
+            subscriptionId = 1,
+        )
+        val initialLibrary = DesktopServerLibrary(
+            selectedServerId = subscriptionOne.id,
+            servers = listOf(manual, subscriptionOne),
+            nextServerId = 10,
+        )
+        val emptyConfigLibrary = DesktopConfigLibrary()
+
+        withTemporaryRoot { root ->
+            val serverLibraryPath = root.resolve("servers.json")
+            assertTrue(DesktopServerLibraries.save(serverLibraryPath, initialLibrary).isSuccess)
+
+            suspend fun reconcileFromPersistedSnapshot() {
+                val loadedLibrary = DesktopServerLibraries.load(serverLibraryPath).getOrThrow()
+                val repository = DesktopProxyServerRepository(
+                    initialLibrary = loadedLibrary,
+                    readLibrary = { DesktopServerLibraries.load(serverLibraryPath).getOrThrow() },
+                    saveLibrary = { updated -> DesktopServerLibraries.save(serverLibraryPath, updated) },
+                    publishLibrary = {},
+                )
+                DesktopTrafficConfigProxyGroupReconciler(
+                    serverRepository = repository,
+                    readConfigLibrary = { emptyConfigLibrary },
+                    stripLeadingCountryFlag = { it },
+                ).reconcile()
+            }
+
+            reconcileFromPersistedSnapshot()
+            val afterFirstReconcile = DesktopServerLibraries.load(serverLibraryPath).getOrThrow()
+            assertEquals(
+                listOf(null, 1),
+                afterFirstReconcile.servers.map(DesktopStoredProxyServer::subscriptionId),
+                "The stored catalog must keep a manual node distinct from a real subscription whose ID is 1",
+            )
+            assertEquals(subscriptionOne.id, afterFirstReconcile.selectedServerId)
+
+            // A new repository models process reload; the second reconcile must retain the on-disk identities.
+            reconcileFromPersistedSnapshot()
+            val afterReloadAndSecondReconcile = DesktopServerLibraries.load(serverLibraryPath).getOrThrow()
+            assertEquals(
+                listOf(null, 1),
+                afterReloadAndSecondReconcile.servers.map(DesktopStoredProxyServer::subscriptionId),
+            )
+            assertEquals(subscriptionOne.id, afterReloadAndSecondReconcile.selectedServerId)
+            assertEquals(initialLibrary.nextServerId, afterReloadAndSecondReconcile.nextServerId)
+        }
+    }
+
     @Test
     fun latestRefreshAndCatalogReconcilePreserveGroupIdentityOpaqueSelectionAndLibraries() = runBlocking {
         val initialProfile = ConfigProfile(
@@ -222,6 +284,17 @@ class DesktopTrafficConfigProxyGroupReconcilerTest {
         serverJson = server.encodePersistedProxyServer(),
         subscriptionId = subscriptionId,
     )
+
+    private inline fun <T> withTemporaryRoot(block: (Path) -> T): T {
+        val root = Files.createTempDirectory("desktop-proxy-group-reconcile-")
+        return try {
+            block(root)
+        } finally {
+            Files.walk(root).use { paths ->
+                paths.sorted(Comparator.reverseOrder<Path>()).forEach { path -> Files.deleteIfExists(path) }
+            }
+        }
+    }
 
     private companion object {
         fun groupDocument(first: String, second: String): String = """[Proxy Group]

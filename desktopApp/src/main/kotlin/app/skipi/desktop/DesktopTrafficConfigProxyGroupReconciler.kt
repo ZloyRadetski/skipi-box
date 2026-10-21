@@ -8,7 +8,6 @@ import app.skipi.app.proxy.DefaultAutoBalancerGroupId
 import app.skipi.app.proxy.ProxyServerRecord as ReconciledProxyServerRecord
 import app.skipi.app.proxy.reconcileConfigProxyGroups
 import app.skipi.app.config.toTrafficConfigState
-import features.subscription.DefaultSubscriptionGroupId
 
 /** Bridges the latest Desktop config library into the shared generated-group catalogue operation. */
 class DesktopTrafficConfigProxyGroupReconciler(
@@ -27,7 +26,7 @@ class DesktopTrafficConfigProxyGroupReconciler(
                 servers = catalog.servers.map { server ->
                     ReconciledProxyServerRecord(
                         id = server.id,
-                        groupId = server.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
+                        groupId = server.sourceSubscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
                         server = server.server,
                     )
                 },
@@ -42,7 +41,9 @@ class DesktopTrafficConfigProxyGroupReconciler(
                     CatalogProxyServerRecord(
                         id = server.id,
                         server = server.server,
-                        sourceSubscriptionId = server.groupId.takeIf { it != DefaultSubscriptionGroupId },
+                        sourceSubscriptionId = server.groupId.takeIf {
+                            it != DesktopProxyGroupIds.DefaultManualSubscriptionId
+                        },
                         enabled = existingById[server.id]?.enabled ?: true,
                     )
                 },
