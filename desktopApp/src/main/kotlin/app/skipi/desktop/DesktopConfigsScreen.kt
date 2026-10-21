@@ -78,6 +78,8 @@ import app.skipi.ui.resources.configs_imported_name
 import app.skipi.ui.resources.configs_new_name
 import app.skipi.ui.resources.configs_edit
 import app.skipi.ui.resources.configs_editor_sections
+import app.skipi.ui.resources.configs_rules_title
+import app.skipi.ui.resources.configs_routing_summary
 import app.skipi.ui.resources.configs_general_title
 import app.skipi.ui.resources.configs_general_summary
 import app.skipi.ui.resources.configs_dns_title
@@ -135,6 +137,7 @@ private data class DesktopConfigDraft(
 
 private enum class DesktopVisualEditorSection {
     Basics,
+    Routing,
     General,
     Dns,
     Tunnel,
@@ -160,6 +163,10 @@ internal fun DesktopConfigsScreen(
     resourceActionScope: CoroutineScope,
     onResourceFileStatusMessage: (String) -> Unit,
     desktopSettings: DesktopAppSettings,
+    proxyServers: List<app.skipi.app.model.ProxyServerRecord>,
+    subscriptionCatalog: app.skipi.app.model.SubscriptionCatalog,
+    resourceFiles: DesktopProfileResourceFiles,
+    latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     resourceServices: DesktopResourceFileServices,
     resourceFileStatusMessage: String,
 ) {
@@ -402,6 +409,14 @@ internal fun DesktopConfigsScreen(
                     sectionsTitle = stringResource(Res.string.configs_editor_sections),
                     sections = listOf(
                         SkipiTrafficConfigEditorSectionAction(
+                            key = "routing",
+                            title = stringResource(Res.string.configs_rules_title),
+                            summary = stringResource(Res.string.configs_routing_summary),
+                            onNavigate = {
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
+                            },
+                        ),
+                        SkipiTrafficConfigEditorSectionAction(
                             key = "general",
                             title = stringResource(Res.string.configs_general_title),
                             summary = stringResource(Res.string.configs_general_summary),
@@ -449,6 +464,25 @@ internal fun DesktopConfigsScreen(
                     saveLabel = stringResource(Res.string.common_save),
                     onBack = {
                         visualEditor = null
+                    },
+                    statusContent = editorSaveError?.let { error ->
+                        { DesktopEditorStatusContent(error) }
+                    },
+                )
+                DesktopVisualEditorSection.Routing -> DesktopTrafficConfigRulesEditor(
+                    profile = profile,
+                    trafficConfigs = configLibrary.configs.map { config ->
+                        config.toTrafficConfigState(resourceUserAgentFallback)
+                    },
+                    controller = editorController,
+                    proxyServers = proxyServers,
+                    subscriptionCatalog = subscriptionCatalog,
+                    resourceFiles = resourceFiles,
+                    latencyByServerId = latencyByServerId,
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    onBack = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
                     },
                     statusContent = editorSaveError?.let { error ->
                         { DesktopEditorStatusContent(error) }

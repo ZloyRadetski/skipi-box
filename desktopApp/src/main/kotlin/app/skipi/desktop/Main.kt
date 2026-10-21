@@ -302,6 +302,8 @@ fun main() = application {
                         runtime = runtimeRepository,
                     )
                 }
+                val routeProxyServers by desktopSharedApplication.proxyServers.servers.collectAsState()
+                val routeSubscriptionCatalog by desktopSharedApplication.subscriptions.catalog.collectAsState()
                 val desktopSubscriptionRefreshBatchRunner = remember(desktopSharedApplication, subscriptionFetcher) {
                     DesktopSubscriptionRefreshBatchRunner(
                         captureRequests = {
@@ -1741,6 +1743,10 @@ fun main() = application {
                                 resourceFileFeedback.value = message
                             },
                             desktopSettings = desktopSettings,
+                            proxyServers = routeProxyServers,
+                            subscriptionCatalog = routeSubscriptionCatalog,
+                            resourceFiles = desktopProfileResourceFiles,
+                            latencyByServerId = latencyByServerId,
                             resourceServices = desktopResourceFileServices,
                             resourceFileStatusMessage = resourceFileStatusMessage,
                         )
