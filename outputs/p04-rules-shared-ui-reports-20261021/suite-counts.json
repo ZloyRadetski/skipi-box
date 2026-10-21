@@ -1,0 +1,16 @@
+[
+  {
+    "target": "testAndroidHostTest",
+    "tests": 107,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "target": "desktopTest",
+    "tests": 107,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

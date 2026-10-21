@@ -30,6 +30,10 @@ import androidx.compose.ui.unit.dp
 import app.skipi.app.config.TrafficConfigEditorController
 import app.skipi.app.config.TrafficConfigRuleDraft
 import app.skipi.ui.layout.pageScrollModifiers
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.routing_info_title
+import app.skipi.ui.routing.SkipiRoutingRulesInfoBottomSheet
+import app.skipi.ui.settings.SkipiSettingsIcons
 import features.config.ShadowrocketRule
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
@@ -37,8 +41,12 @@ import features.config.withShadowrocketRuleAdded
 import features.config.withShadowrocketRuleLine
 import features.config.withShadowrocketRulesReordered
 import features.config.withoutShadowrocketRuleLine
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** Shared state for the editable fields; the host still owns async route results and asset pickers. */
+/** Shared state for editable fields; hosts own async policy results and suggestion data. */
 class SkipiTrafficConfigRuleEditorState internal constructor(
     private val typeIndexState: MutableIntState,
     private val valueState: MutableState<String>,
@@ -104,6 +112,7 @@ fun SkipiTrafficConfigRulesEditorScreen(
     val analysis = remember(localRawConfig) { localRawConfig.analyzeShadowrocketConfig() }
     val normalRules = analysis.rules.filterNot(ShadowrocketRule::isFinal)
     val finalRule = analysis.rules.firstOrNull(ShadowrocketRule::isFinal)
+    var showInfoBottomSheet by rememberSaveable(profile.id) { mutableStateOf(false) }
 
     val rulesList = remember { mutableStateListOf<TrafficConfigRuleListItem>() }
     var nextItemId by remember { mutableLongStateOf(1L) }
@@ -139,7 +148,16 @@ fun SkipiTrafficConfigRulesEditorScreen(
         saveLabel = saveLabel,
         onBack = onBack,
         onSave = onSave,
-        actions = actions,
+        actions = {
+            actions?.invoke()
+            IconButton(onClick = { showInfoBottomSheet = true }) {
+                Icon(
+                    imageVector = SkipiSettingsIcons.Info,
+                    contentDescription = stringResource(Res.string.routing_info_title),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+        },
     ) { _, listPadding, scrollBehavior ->
         SkipiTrafficConfigRulesList(
             rules = rulesList,
@@ -164,9 +182,13 @@ fun SkipiTrafficConfigRulesEditorScreen(
             onHapticFeedback = onHapticFeedback,
         )
     }
+    SkipiRoutingRulesInfoBottomSheet(
+        show = showInfoBottomSheet,
+        onDismissRequest = { showInfoBottomSheet = false },
+    )
 }
 
-/** Shared rule form and save-on-Back behavior; selectors, suggestions, and file-backed pickers stay host supplied. */
+/** Shared rule form and save-on-Back behavior; hosts supply suggestions and platform Back handling. */
 @Composable
 fun SkipiTrafficConfigRuleEditorScreen(
     title: String,
@@ -194,6 +216,7 @@ fun SkipiTrafficConfigRuleEditorScreen(
     onInfoClick: () -> Unit,
     platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
     actions: (@Composable () -> Unit)? = null,
+    statusContent: (@Composable () -> Unit)? = null,
 ) {
     val typeOptions = TrafficConfigRuleTypes
     val selectedType = if (isFinal) "FINAL" else typeOptions[editorState.typeIndex]
@@ -249,6 +272,9 @@ fun SkipiTrafficConfigRuleEditorScreen(
                     onRuleSetPicker = onRuleSetPicker,
                     onInfoClick = onInfoClick,
                 )
+            }
+            statusContent?.let { content ->
+                item(key = "rule_editor_status") { content() }
             }
         }
     }

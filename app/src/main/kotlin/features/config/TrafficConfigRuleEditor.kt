@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -25,20 +22,13 @@ import app.navigation.Route
 import app.navigation.RouteOutboundSelectionResult
 import app.skipi.app.config.TrafficConfigEditorController
 import app.skipi.app.config.TrafficConfigEditorProfileStore
-import app.skipi.ui.config.SkipiTrafficConfigRuleEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigRuleEditorPage
 import app.skipi.ui.config.SkipiTrafficConfigRulesEditorScreen
-import app.skipi.ui.config.TrafficConfigRuleTypes
 import app.skipi.ui.config.rememberSkipiTrafficConfigRuleEditorState
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import features.routing.ui.GeoAssetPickerDialog
-import features.routing.ui.RoutingRulesInfoBottomSheet
 import features.routing.usecase.RoutingSuggestionsProvider
-import features.settings.SettingsIcons
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Full-screen visual editor for the [Rule] section. Rules are evaluated from top to bottom. */
 @Composable
@@ -55,7 +45,6 @@ internal fun TrafficConfigRulesPage(
         return
     }
     val editor = rememberTrafficConfigRuleEditorController(updateAppState)
-    var showInfoBottomSheet by rememberSaveable { mutableStateOf(false) }
     val hapticFeedback = LocalHapticFeedback.current
 
     SkipiTrafficConfigRulesEditorScreen(
@@ -71,20 +60,6 @@ internal fun TrafficConfigRulesPage(
         onEdit = { rule -> navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, rule.lineNumber)) },
         onHapticFeedback = hapticFeedback::performHapticFeedback,
         platformBackHandler = { onBack -> TrafficConfigRulesBackHandler(onBack) },
-        actions = {
-            IconButton(onClick = { showInfoBottomSheet = true }) {
-                Icon(
-                    imageVector = SettingsIcons.Info,
-                    contentDescription = stringResource(R.string.routing_info_title),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-        },
-    )
-
-    RoutingRulesInfoBottomSheet(
-        show = showInfoBottomSheet,
-        onDismissRequest = { showInfoBottomSheet = false },
     )
 }
 
@@ -111,19 +86,11 @@ fun TrafficConfigRuleEditorPage(
         return
     }
 
-    val isFinal = initialRule?.isFinal == true
-    val typeOptions = remember { TrafficConfigRuleTypes }
     val editorIdentity = ruleLineNumber ?: config.id * -1
     val editorState = rememberSkipiTrafficConfigRuleEditorState(
         editorIdentity = editorIdentity,
         initialRule = initialRule,
-        typeOptions = typeOptions,
     )
-    val selectedType = if (isFinal) "FINAL" else typeOptions[editorState.typeIndex]
-
-    var showGeoSitePicker by rememberSaveable(editorIdentity) { mutableStateOf(false) }
-    var showGeoIpPicker by rememberSaveable(editorIdentity) { mutableStateOf(false) }
-    var showRuleSetPicker by rememberSaveable(editorIdentity) { mutableStateOf(false) }
 
     val geoSiteSuggestions = remember(appState, trafficConfigId) {
         RoutingSuggestionsProvider.resolveGeoSiteSuggestions(context, appState, trafficConfigId)
@@ -146,17 +113,14 @@ fun TrafficConfigRuleEditorPage(
     }
 
     val editor = rememberTrafficConfigRuleEditorController(updateAppState)
-    var showInfoBottomSheet by rememberSaveable(editorIdentity) { mutableStateOf(false) }
     val back = { navigator.pop() }
 
-    SkipiTrafficConfigRuleEditorScreen(
-        title = stringResource(if (initialRule == null) R.string.configs_rules_add else R.string.configs_rules_edit),
-        saveLabel = stringResource(R.string.common_save),
+    SkipiTrafficConfigRuleEditorPage(
         padding = padding,
         isWideScreen = isWideScreen,
         profileId = trafficConfigId,
-        lineNumber = initialRule?.lineNumber,
-        isFinal = isFinal,
+        editorIdentity = editorIdentity,
+        initialRule = initialRule,
         editorState = editorState,
         controller = editor,
         onBack = back,
@@ -170,57 +134,10 @@ fun TrafficConfigRuleEditorPage(
                 requestKey = policySelectorResultKey,
             )
         },
-        networkOptions = RoutingSuggestionsProvider.ShadowrocketNetworkOptions,
-        geoSiteSuggestions = geoSiteSuggestions.map { it.tag },
-        geoIpSuggestions = geoIpSuggestions.map { it.tag },
-        ruleSetPresets = RoutingSuggestionsProvider.RuleSetPresets,
-        domainSetPresets = RoutingSuggestionsProvider.DomainSetPresets,
-        portPresets = RoutingSuggestionsProvider.PortPresets,
-        privateIpPresets = RoutingSuggestionsProvider.PrivateIpPresets,
-        userAgentPresets = RoutingSuggestionsProvider.ShadowrocketUserAgentPresets,
-        onGeoSitePicker = { showGeoSitePicker = true },
-        onGeoIpPicker = { showGeoIpPicker = true },
-        onRuleSetPicker = { showRuleSetPicker = true },
-        onInfoClick = { showInfoBottomSheet = true },
+        geoSiteSuggestions = geoSiteSuggestions,
+        geoIpSuggestions = geoIpSuggestions,
+        ruleSetSuggestions = ruleSetSuggestions,
         platformBackHandler = { onBack -> TrafficConfigRulesBackHandler(onBack) },
-        actions = {
-            IconButton(onClick = { showInfoBottomSheet = true }) {
-                Icon(
-                    imageVector = SettingsIcons.Info,
-                    contentDescription = stringResource(R.string.routing_info_title),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-        },
-    )
-
-    GeoAssetPickerDialog(
-        show = showGeoSitePicker,
-        title = stringResource(R.string.routing_suggestions_geosite),
-        items = geoSiteSuggestions,
-        onSelect = { item -> editorState.updateValue(if (selectedType == "DOMAIN-SET") item.fullRule else item.tag) },
-        onDismissRequest = { showGeoSitePicker = false },
-    )
-
-    GeoAssetPickerDialog(
-        show = showGeoIpPicker,
-        title = stringResource(R.string.routing_suggestions_geoip),
-        items = geoIpSuggestions,
-        onSelect = { item -> editorState.updateValue(item.tag) },
-        onDismissRequest = { showGeoIpPicker = false },
-    )
-
-    GeoAssetPickerDialog(
-        show = showRuleSetPicker,
-        title = "RULE-SET",
-        items = ruleSetSuggestions,
-        onSelect = { item -> editorState.updateValue(item.fullRule) },
-        onDismissRequest = { showRuleSetPicker = false },
-    )
-
-    RoutingRulesInfoBottomSheet(
-        show = showInfoBottomSheet,
-        onDismissRequest = { showInfoBottomSheet = false },
     )
 }
 
