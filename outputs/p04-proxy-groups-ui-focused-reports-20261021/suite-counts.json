@@ -1,0 +1,50 @@
+{
+  "app.skipi.desktop.DesktopTrafficConfigRulesScreenIntegrationTest": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopManualGroupNamespaceTest": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopProxyServerEditorProjectionTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopTrafficConfigProxyGroupsResponsiveRenderTest": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopTrafficConfigRulesResponsiveRenderTest": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopTrafficConfigProxyGroupReconcilerTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

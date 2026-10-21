@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopResourceAutoUpdaterTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:09:58.679Z" hostname="VQSeGo" time="0.009">
+  <properties/>
+  <testcase name="changed_active_source_cancels_running_one_time_work_without_overwriting_replacement" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.002"/>
+  <testcase name="one_time_failure_uses_default_backoff_and_latest_profile_guard_skips_a_removed_profile" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.0"/>
+  <testcase name="removing_periodic_eligibility_cancels_running_work_and_reenable_runs_immediately" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.002"/>
+  <testcase name="removing_periodic_eligibility_does_not_cancel_distinct_running_one_time_work" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.001"/>
+  <testcase name="changed_active_source_replaces_a_pending_one_time_retry" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.0"/>
+  <testcase name="active_source_change_queues_one_time_work_separately_from_periodic_work" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.001"/>
+  <testcase name="new_periodic_profiles_run_immediately_through_the_direct_callback" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.001"/>
+  <testcase name="a_due_profile_waits_offline_and_latest_profile_guard_is_checked_on_wakeup" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.0"/>
+  <testcase name="periodic_failure_retries_after_source_backoff_and_success_reanchors_the_interval" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.001"/>
+  <testcase name="cancelling_the_app_scoped_caller_propagates_without_recording_retry" classname="app.skipi.desktop.DesktopResourceAutoUpdaterTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

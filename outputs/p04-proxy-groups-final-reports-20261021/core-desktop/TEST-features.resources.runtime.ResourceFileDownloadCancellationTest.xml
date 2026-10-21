@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ResourceFileDownloadCancellationTest[desktop]" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:07:58.383Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="trackingAfterCancellationStoresConnectionBeforeThrowing[desktop]" classname="features.resources.runtime.ResourceFileDownloadCancellationTest" time="0.003"/>
+  <testcase name="cancelDisconnectsTheMostRecentlyTrackedConnection[desktop]" classname="features.resources.runtime.ResourceFileDownloadCancellationTest" time="0.0"/>
+  <testcase name="beginClearsCancelledFlagAndTrackedReferenceWithoutDisconnectingItAgain[desktop]" classname="features.resources.runtime.ResourceFileDownloadCancellationTest" time="0.0"/>
+  <testcase name="throwIfCancelledUsesTheExistingDefaultMessage[desktop]" classname="features.resources.runtime.ResourceFileDownloadCancellationTest" time="0.0"/>
+  <testcase name="cancelDisconnectsAConnectionWhoseFakeReadIsBlocked[desktop]" classname="features.resources.runtime.ResourceFileDownloadCancellationTest" time="0.002"/>
+  <testcase name="untrackingAnOlderConnectionDoesNotClearTheNewerTrackedConnection[desktop]" classname="features.resources.runtime.ResourceFileDownloadCancellationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

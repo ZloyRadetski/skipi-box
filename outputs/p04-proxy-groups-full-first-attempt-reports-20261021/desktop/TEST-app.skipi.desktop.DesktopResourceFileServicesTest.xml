@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopResourceFileServicesTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:08:04.529Z" hostname="VQSeGo" time="0.708">
+  <properties/>
+  <testcase name="cancellingTheQueueDisconnectsTheRunningDownloadAndDropsPendingWork" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.007"/>
+  <testcase name="automaticUpdateRechecksLatestProfileAndRunsOutsideTheManualQueue" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.006"/>
+  <testcase name="startupSynchronizationUsesProfileOneAndSourceZeroWhenThereIsNoProfile" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.298"/>
+  <testcase name="packageUpdateSynchronizationRestoresOnlyOldProfileAssets" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.388"/>
+  <testcase name="queuedManualRequestsUseCapturedProfilesAndRunFifoAfterLatestSelectionChanges" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.006"/>
+  <testcase name="resourceSettingsPersistThroughTheLatestEditorStoreAndReload" classname="app.skipi.desktop.DesktopResourceFileServicesTest" time="0.003"/>
+  <system-out><![CDATA[[2026-10-21 22:08:04.536] [INFO] [ResourceFiles] Resource file update cancelled
+[2026-10-21 22:08:04.827] [WARN] [ResourceFiles] Failed to restore bundled resource file: geoip-only-cn-private.dat
+java.io.FileNotFoundException: Bundled asset unavailable: geo/loyalsoldier/geoip-only-cn-private.dat (fallback: geoip-only-cn-private.dat)
+	at features.resources.ResourceSnapshotFiles.openBundledAssetStream(ResourceSnapshotFiles.kt:244)
+	at features.resources.ResourceSnapshotFiles.restoreBundled(ResourceSnapshotFiles.kt:103)
+	at features.resources.ResourceSnapshotFiles.ensureBundledFiles(ResourceSnapshotFiles.kt:83)
+	at app.skipi.desktop.DesktopProfileResourceFiles.prepare(DesktopProfileResourceFiles.kt:72)
+	at app.skipi.desktop.DesktopResourceFileServices$synchronizeBundledFilesAfterPackageUpdate$2.invokeSuspend(DesktopResourceFileServices.kt:86)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:798)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

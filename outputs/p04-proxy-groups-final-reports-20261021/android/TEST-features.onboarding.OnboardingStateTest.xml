@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.onboarding.OnboardingStateTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:08:29.977Z" hostname="VQSeGo" time="0.17">
+  <properties/>
+  <testcase name="testDefaultAppStateHasCompletedOnboardingIsFalse" classname="features.onboarding.OnboardingStateTest" time="0.0"/>
+  <testcase name="testOnboardingRouteIsDistinct" classname="features.onboarding.OnboardingStateTest" time="0.17"/>
+  <testcase name="testOnboardingStateMutation" classname="features.onboarding.OnboardingStateTest" time="0.0"/>
+  <testcase name="testBackupRestoreSetsHasCompletedOnboardingToTrue" classname="features.onboarding.OnboardingStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

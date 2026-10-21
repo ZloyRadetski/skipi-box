@@ -1,0 +1,26 @@
+{
+  "ui-desktop": {
+    "tests": 110,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ui-android": {
+    "tests": 110,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "android-configs": {
+    "tests": 57,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "total": {
+    "tests": 277,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

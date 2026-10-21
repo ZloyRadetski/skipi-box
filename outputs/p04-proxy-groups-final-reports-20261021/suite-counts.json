@@ -1,0 +1,66 @@
+{
+  "core-desktop": {
+    "tests": 354,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T19:07:57.921Z",
+    "lastTimestamp": "2026-10-21T19:07:59.005Z"
+  },
+  "core-android": {
+    "tests": 298,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T19:08:01.799Z",
+    "lastTimestamp": "2026-10-21T19:08:02.249Z"
+  },
+  "app-desktop": {
+    "tests": 341,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T19:07:58.452Z",
+    "lastTimestamp": "2026-10-21T19:07:59.127Z"
+  },
+  "app-android": {
+    "tests": 333,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T19:08:03.904Z",
+    "lastTimestamp": "2026-10-21T19:08:04.431Z"
+  },
+  "ui-desktop": {
+    "tests": 111,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T19:07:56.645Z",
+    "lastTimestamp": "2026-10-21T19:07:56.902Z"
+  },
+  "ui-android": {
+    "tests": 111,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T19:08:12.013Z",
+    "lastTimestamp": "2026-10-21T19:08:12.173Z"
+  },
+  "desktop": {
+    "tests": 526,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T19:09:55.708Z",
+    "lastTimestamp": "2026-10-21T19:10:24.669Z"
+  },
+  "android": {
+    "tests": 560,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T19:08:25.505Z",
+    "lastTimestamp": "2026-10-21T19:08:41.126Z"
+  }
+}

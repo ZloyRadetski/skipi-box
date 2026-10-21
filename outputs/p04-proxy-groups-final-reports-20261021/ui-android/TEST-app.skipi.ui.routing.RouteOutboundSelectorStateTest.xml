@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.routing.RouteOutboundSelectorStateTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:08:12.100Z" hostname="VQSeGo" time="0.011">
+  <properties/>
+  <testcase name="selectingRowsChangesOnlyThePendingTargetAndExternalTagChangeResetsIt" classname="app.skipi.ui.routing.RouteOutboundSelectorStateTest" time="0.009"/>
+  <testcase name="explicitExpansionOverridesSurviveSelectedTagAndProjectionChanges" classname="app.skipi.ui.routing.RouteOutboundSelectorStateTest" time="0.0"/>
+  <testcase name="projectedInitialGroupControlsUnmodifiedExpansion" classname="app.skipi.ui.routing.RouteOutboundSelectorStateTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

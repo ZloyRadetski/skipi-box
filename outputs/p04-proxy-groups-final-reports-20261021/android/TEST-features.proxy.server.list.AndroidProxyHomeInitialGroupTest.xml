@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.list.AndroidProxyHomeInitialGroupTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:08:30.217Z" hostname="VQSeGo" time="0.0">
+  <properties/>
+  <testcase name="absentPersistedServerUsesTheAndroidManualGroupDefault" classname="features.proxy.server.list.AndroidProxyHomeInitialGroupTest" time="0.0"/>
+  <testcase name="selectedPersistedServerSeedsItsRawNumericGroupId" classname="features.proxy.server.list.AndroidProxyHomeInitialGroupTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

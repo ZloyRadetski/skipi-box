@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigProxyGroupReconcilerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:06:19.629Z" hostname="VQSeGo" time="0.022">
+  <properties/>
+  <testcase name="reconciliationKeepsManualAndSubscriptionOneDistinctAcrossDiskReloads" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupReconcilerTest" time="0.011"/>
+  <testcase name="failedServerSaveDoesNotPublishReconciledCatalog" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupReconcilerTest" time="0.003"/>
+  <testcase name="latestRefreshAndCatalogReconcilePreserveGroupIdentityOpaqueSelectionAndLibraries" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupReconcilerTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

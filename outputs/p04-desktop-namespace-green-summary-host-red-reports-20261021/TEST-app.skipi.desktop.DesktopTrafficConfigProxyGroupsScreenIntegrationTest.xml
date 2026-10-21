@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-21T18:54:04.746Z" hostname="VQSeGo" time="1.467">
+  <properties/>
+  <testcase name="memberPickerShowsSubscriptionOneMetadataAndLeavesCatalogsUntouched" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="1.467">
+    <failure message="java.lang.AssertionError: The selector should show the provider traffic summary" type="java.lang.AssertionError">java.lang.AssertionError: The selector should show the provider traffic summary
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at kotlin.test.junit.JUnitAsserter.assertNotNull(JUnitSupport.kt:48)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertNotNull(Assertions.kt:147)
+	at kotlin.test.AssertionsKt.assertNotNull(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest$memberPickerShowsSubscriptionOneMetadataAndLeavesCatalogsUntouched$1.invokeSuspend$lambda$0(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:388)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.withDesktopScreen(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:609)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.withDesktopScreen$default(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:512)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest$memberPickerShowsSubscriptionOneMetadataAndLeavesCatalogsUntouched$1.invokeSuspend(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:375)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)
+	at kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)
+	at kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:22)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:20)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest.memberPickerShowsSubscriptionOneMetadataAndLeavesCatalogsUntouched(DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:314)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:174)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Timed out waiting for visible text 'Traffic: 1.50 KB / 2.00 KB'. Visible semantics:
+owner=0 id=1 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=405 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=434 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=435 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 1600.0) click=false text='' description='' editable=''
+owner=0 id=438 bounds=Rect.fromLTRB(12.0, 70.0, 1488.0, 134.0) click=false text='' description='' editable=''
+owner=0 id=440 bounds=Rect.fromLTRB(28.0, 80.0, 1472.0, 124.0) click=true text='' description='' editable=''
+owner=0 id=441 bounds=Rect.fromLTRB(28.0, 82.0, 68.0, 122.0) click=true text='' description='' editable=''
+owner=0 id=445 bounds=Rect.fromLTRB(72.0, 85.0, 205.0, 104.0) click=false text='Provider profile title' description='' editable=''
+owner=0 id=446 bounds=Rect.fromLTRB(72.0, 104.0, 123.0, 120.0) click=false text='1 servers' description='' editable=''
+owner=0 id=447 bounds=Rect.fromLTRB(1446.0, 89.0, 1472.0, 115.0) click=true text='' description='' editable=''
+owner=0 id=449 bounds=Rect.fromLTRB(12.0, 134.0, 1488.0, 187.0) click=false text='' description='' editable=''
+owner=0 id=451 bounds=Rect.fromLTRB(12.0, 134.0, 1488.0, 187.0) click=true text='' description='' editable=''
+owner=0 id=452 bounds=Rect.fromLTRB(28.0, 145.0, 60.0, 177.0) click=false text='' description='' editable=''
+owner=0 id=453 bounds=Rect.fromLTRB(38.0, 151.0, 50.0, 172.0) click=false text='⚡' description='' editable=''
+owner=0 id=456 bounds=Rect.fromLTRB(72.0, 144.0, 231.0, 161.0) click=false text='Subscription one member' description='' editable=''
+owner=0 id=457 bounds=Rect.fromLTRB(72.0, 161.0, 137.0, 177.0) click=false text='VLESS • TCP' description='' editable=''
+owner=0 id=459 bounds=Rect.fromLTRB(1446.0, 148.0, 1472.0, 174.0) click=true text='' description='' editable=''
+owner=0 id=411 bounds=Rect.fromLTRB(0.0, 0.0, 1500.0, 60.0) click=false text='' description='' editable=''
+owner=0 id=413 bounds=Rect.fromLTRB(16.0, 5.0, 56.0, 45.0) click=true text='' description='' editable=''
+owner=0 id=414 bounds=Rect.fromLTRB(24.0, 13.0, 48.0, 37.0) click=false text='' description='' editable=''
+owner=0 id=416 bounds=Rect.fromLTRB(701.0, 14.0, 798.0, 37.0) click=false text='Add servers' description='' editable=''
+owner=0 id=419 bounds=Rect.fromLTRB(1444.0, 5.0, 1484.0, 45.0) click=true text='' description='' editable=''
+owner=0 id=420 bounds=Rect.fromLTRB(1452.0, 13.0, 1476.0, 37.0) click=false text='' description='Save' editable=''
+owner=0 id=422 bounds=Rect.fromLTRB(700.0, 36.0, 800.0, 52.0) click=false text='1 servers selected' description='' editable=''
+]]></system-err>
+</testsuite>

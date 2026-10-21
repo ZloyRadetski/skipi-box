@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:06:11.749Z" hostname="VQSeGo" time="6.506">
+  <properties/>
+  <testcase name="copyingEditedProfileGroupExportsItsProfileLineAndDraftWithoutPersistence" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="1.479"/>
+  <testcase name="memberPickerShowsSubscriptionOneMetadataAndLeavesCatalogsUntouched" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="0.39"/>
+  <testcase name="editingParsedGroupKeepsNameAndMembersWhenMemberPickerBacksOut" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="0.615"/>
+  <testcase name="addingProfileGroupSavesActiveConfigLineWithoutChangingGlobalCatalog" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="0.358"/>
+  <testcase name="deletingNewDraftConfirmsThenReturnsToListWithoutPersistedChanges" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="1.811"/>
+  <testcase name="proxyGroupsSectionDeletesOnlyTheInactiveTargetProfileDocument" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="0.195"/>
+  <testcase name="innerEditorDeleteConfirmsAndRemovesOnlyTheSelectedProfileGroup" classname="app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest" time="1.654"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

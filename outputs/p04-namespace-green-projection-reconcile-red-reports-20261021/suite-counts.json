@@ -1,0 +1,32 @@
+{
+  "shared-app-desktop": {
+    "tests": 341,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared-app-android": {
+    "tests": 333,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared-ui-desktop": {
+    "tests": 111,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared-ui-android": {
+    "tests": 111,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "desktop-focused": {
+    "tests": 9,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  }
+}
