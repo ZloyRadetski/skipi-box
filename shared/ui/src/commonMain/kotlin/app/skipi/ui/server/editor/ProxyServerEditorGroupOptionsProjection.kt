@@ -11,10 +11,11 @@ fun projectProxyServerEditorGroupOptions(
     groups: List<SubscriptionGroupUiState>,
     allGroupsLabel: String,
     defaultGroupName: String,
+    defaultGroupId: Int = DefaultSubscriptionGroupId,
 ): List<ProxyServerEditorGroupOption> =
     listOf(ProxyServerEditorGroupOption(id = null, label = allGroupsLabel)) +
         groups
-            .filter { group -> group.enabled || group.builtIn || group.id == DefaultSubscriptionGroupId }
+            .filter { group -> group.enabled || group.builtIn || group.id == defaultGroupId }
             .map { group ->
                 ProxyServerEditorGroupOption(
                     id = group.id,

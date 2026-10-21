@@ -35,6 +35,7 @@ fun projectStrategyGroupMemberGroups(
     autoBalancerName: String,
     excludedServerId: Int?,
     requireServerRemarks: Boolean = false,
+    defaultGroupId: Int = DefaultSubscriptionGroupId,
 ): List<StrategyMemberSelectorGroupProjection> {
     val selectableServers = servers.filter { server ->
         server.id != excludedServerId &&
@@ -60,7 +61,7 @@ fun projectStrategyGroupMemberGroups(
         }
 
         subscriptionGroups.forEach { group ->
-            if (group.id != DefaultSubscriptionGroupId) {
+            if (group.id != defaultGroupId) {
                 add(
                     StrategyMemberSelectorGroupProjection(
                         key = "subscription-${group.id}",
@@ -72,9 +73,9 @@ fun projectStrategyGroupMemberGroups(
             }
         }
 
-        val manualServers = serversByGroup[DefaultSubscriptionGroupId].orEmpty()
-        if (manualServers.isNotEmpty() || subscriptionGroups.none { it.id != DefaultSubscriptionGroupId }) {
-            val manualGroupId = subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId }?.id
+        val manualServers = serversByGroup[defaultGroupId].orEmpty()
+        if (manualServers.isNotEmpty() || subscriptionGroups.none { it.id != defaultGroupId }) {
+            val manualGroupId = subscriptionGroups.firstOrNull { it.id == defaultGroupId }?.id
             add(
                 StrategyMemberSelectorGroupProjection(
                     key = "manual-servers",

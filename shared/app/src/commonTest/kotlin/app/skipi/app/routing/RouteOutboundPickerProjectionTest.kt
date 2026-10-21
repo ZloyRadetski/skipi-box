@@ -235,6 +235,44 @@ class RouteOutboundPickerProjectionTest {
         assertEquals("routing-system-targets", result.initiallyExpandedGroupKey)
     }
 
+    @Test
+    fun customDefaultGroupIdKeepsSubscriptionOneSeparateFromManualMinusOne() {
+        val result = projectRouteOutboundPicker(
+            servers = listOf(
+                server(101, groupId = 1, VLESS(remarks = "Subscription one node")),
+                server(202, groupId = -1, VLESS(remarks = "Manual node")),
+            ),
+            subscriptionGroups = listOf(
+                RouteOutboundPickerSubscription(id = 1, name = "Subscription one"),
+                RouteOutboundPickerSubscription(id = -1, name = "Manual source", builtIn = true),
+            ),
+            trafficConfigs = emptyList(),
+            selectedTag = "101",
+            trafficConfigId = null,
+            labels = labels,
+            defaultGroupId = -1,
+        )
+
+        assertEquals(
+            listOf(
+                "routing-system-targets",
+                "routing-auto-balancers",
+                "routing-subscription-1",
+                "routing-manual-servers",
+            ),
+            result.groups.map { it.key },
+        )
+        val subscriptionOne = result.groups[2]
+        val manualServers = result.groups[3]
+        assertEquals(1, subscriptionOne.subscriptionGroupId)
+        assertEquals(listOf("101"), subscriptionOne.tags())
+        assertEquals(1, (subscriptionOne.items.single() as RouteOutboundItem.Server).server.groupId)
+        assertEquals(-1, manualServers.subscriptionGroupId)
+        assertEquals(listOf("202"), manualServers.tags())
+        assertEquals(-1, (manualServers.items.single() as RouteOutboundItem.Server).server.groupId)
+        assertEquals("routing-subscription-1", result.initiallyExpandedGroupKey)
+    }
+
     private fun projectOutbound(
         servers: List<ProxyServerRecord> = emptyList(),
         selectedTag: String,

@@ -181,6 +181,30 @@ class StrategyGroupMemberSelectorProjectionTest {
         assertNull(emptyWithoutAnyGroup.single().subscriptionGroupId)
     }
 
+    @Test
+    fun customDefaultGroupIdKeepsSubscriptionOneSeparateFromManualMinusOne() {
+        val groups = projectStrategyGroupMemberGroups(
+            servers = listOf(
+                record(101, 1, VLESS(remarks = "Subscription one node")),
+                record(202, -1, VLESS(remarks = "Manual node")),
+            ),
+            subscriptionGroups = listOf(
+                StrategyMemberSelectorSubscription(id = 1, name = "Subscription one"),
+                StrategyMemberSelectorSubscription(id = -1, name = "Manual source"),
+            ),
+            defaultGroupName = "Manual servers",
+            autoBalancerName = "Auto balancers",
+            excludedServerId = null,
+            defaultGroupId = -1,
+        )
+
+        assertEquals(listOf("subscription-1", "manual-servers"), groups.map { it.key })
+        assertEquals(listOf("Subscription one", "Manual servers"), groups.map { it.title })
+        assertEquals(listOf(1, -1), groups.map { it.subscriptionGroupId })
+        assertEquals(listOf(listOf(101), listOf(202)), groups.map { group -> group.servers.map(ProxyServerRecord::id) })
+        assertEquals(listOf(1, -1), groups.map { group -> group.servers.single().groupId })
+    }
+
     private fun record(id: Int, groupId: Int, server: features.proxy.server.model.ProxyServer<*>) =
         ProxyServerRecord(id = id, groupId = groupId, server = server)
 }

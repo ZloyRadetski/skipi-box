@@ -66,6 +66,27 @@ class ProxyServerEditorGroupOptionsProjectionTest {
         )
     }
 
+    @Test
+    fun customDefaultGroupIdIncludesDisabledManualGroupButNotDisabledSubscriptionOne() {
+        val groups = listOf(
+            group(id = 1, name = "Subscription one", enabled = false),
+            group(id = -1, name = "Manual servers", enabled = false),
+        )
+
+        assertEquals(
+            listOf(
+                ProxyServerEditorGroupOption(id = null, label = "All"),
+                ProxyServerEditorGroupOption(id = -1, label = "Manual servers"),
+            ),
+            projectProxyServerEditorGroupOptions(
+                groups = groups,
+                allGroupsLabel = "All",
+                defaultGroupName = "Default group",
+                defaultGroupId = -1,
+            ),
+        )
+    }
+
     private fun group(
         id: Int,
         name: String,

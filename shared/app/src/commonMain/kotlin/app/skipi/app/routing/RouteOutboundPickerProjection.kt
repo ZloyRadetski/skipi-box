@@ -76,6 +76,7 @@ fun projectRouteOutboundPicker(
     selectedTag: String,
     trafficConfigId: Int?,
     labels: RouteOutboundPickerLabels,
+    defaultGroupId: Int = DefaultSubscriptionGroupId,
 ): RouteOutboundPickerProjection {
     val shadowrocketPolicyMode = trafficConfigId != null
     val trafficConfig = trafficConfigId?.let { id -> trafficConfigs.firstOrNull { it.id == id } }
@@ -107,11 +108,11 @@ fun projectRouteOutboundPicker(
         .map { server -> RouteOutboundItem.Server(server, resolveTag(server, shadowrocketPolicyMode)) }
 
     val subscriptionGroupItems = subscriptionGroups
-        .filter { it.id != DefaultSubscriptionGroupId }
+        .filter { it.id != defaultGroupId }
         .map { group ->
             RouteOutboundPickerGroup(
                 key = "routing-subscription-${group.id}",
-                title = group.displayName(labels.defaultGroupName),
+                title = group.displayName(labels.defaultGroupName, defaultGroupId),
                 subscriptionGroupId = group.id,
                 items = serversByGroup[group.id].orEmpty().map { server ->
                     RouteOutboundItem.Server(server, resolveTag(server, shadowrocketPolicyMode))
@@ -119,7 +120,7 @@ fun projectRouteOutboundPicker(
             )
         }
 
-    val manualGroupItems = serversByGroup[DefaultSubscriptionGroupId].orEmpty().map { server ->
+    val manualGroupItems = serversByGroup[defaultGroupId].orEmpty().map { server ->
         RouteOutboundItem.Server(server, resolveTag(server, shadowrocketPolicyMode))
     }
 
@@ -180,7 +181,7 @@ fun projectRouteOutboundPicker(
             RouteOutboundPickerGroup(
                 key = ManualServersGroupKey,
                 title = labels.defaultGroupName,
-                subscriptionGroupId = subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId }?.id,
+                subscriptionGroupId = subscriptionGroups.firstOrNull { it.id == defaultGroupId }?.id,
                 items = manualGroupItems,
             ),
         )
@@ -218,8 +219,10 @@ fun projectRouteOutboundPicker(
     )
 }
 
-private fun RouteOutboundPickerSubscription.displayName(defaultGroupName: String): String =
-    if (builtIn && id == DefaultSubscriptionGroupId) defaultGroupName else name
+private fun RouteOutboundPickerSubscription.displayName(
+    defaultGroupName: String,
+    defaultGroupId: Int = DefaultSubscriptionGroupId,
+): String = if (builtIn && id == defaultGroupId) defaultGroupName else name
 
 private fun resolveTag(server: ProxyServerRecord, shadowrocketPolicyMode: Boolean): String =
     if (shadowrocketPolicyMode) server.server.getInfo().remarks.trim() else server.id.toString()
