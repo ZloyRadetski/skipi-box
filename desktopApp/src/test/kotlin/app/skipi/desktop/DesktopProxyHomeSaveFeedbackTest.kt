@@ -11,7 +11,8 @@ import kotlin.test.assertNull
 class DesktopProxyHomeSaveFeedbackTest {
     @Test
     fun successfulSaveMapsServerGroupIdsToHomeGroupIds() {
-        assertEquals("manual", savedGroup(1))
+        assertEquals("manual", savedGroup(DesktopProxyGroupIds.DefaultManualSubscriptionId))
+        assertEquals("subscription:1", savedGroup(1))
         assertEquals("auto-balancers", savedGroup(-2))
         assertEquals("all", savedGroup(0))
         assertEquals("subscription:73", savedGroup(73))
@@ -19,9 +20,10 @@ class DesktopProxyHomeSaveFeedbackTest {
 
     @Test
     fun currentHomeGroupCanBeCapturedForTheEditorReturnRoute() {
-        assertEquals(1, desktopProxyServerGroupIdForHomeGroup("manual"))
+        assertEquals(-1, desktopProxyServerGroupIdForHomeGroup("manual"))
         assertEquals(-2, desktopProxyServerGroupIdForHomeGroup("auto-balancers"))
         assertEquals(0, desktopProxyServerGroupIdForHomeGroup("all"))
+        assertEquals(1, desktopProxyServerGroupIdForHomeGroup("subscription:1"))
         assertEquals(73, desktopProxyServerGroupIdForHomeGroup("subscription:73"))
         assertNull(desktopProxyServerGroupIdForHomeGroup(null))
         assertNull(desktopProxyServerGroupIdForHomeGroup("subscription:0"))
@@ -46,7 +48,7 @@ class DesktopProxyHomeSaveFeedbackTest {
     @Test
     fun unavailableSavedGroupStaysPendingUntilItAppearsThenSelectsOnce() {
         val firstResolution = resolvePendingDesktopProxyHomeGroupSelection(
-            pendingGroupId = savedGroup(1),
+            pendingGroupId = savedGroup(DesktopProxyGroupIds.DefaultManualSubscriptionId),
             availableGroupIds = setOf("all"),
         )
 
