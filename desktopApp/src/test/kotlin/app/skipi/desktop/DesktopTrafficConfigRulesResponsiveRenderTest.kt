@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerButtons
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -21,6 +22,7 @@ import app.skipi.app.model.ProxyServerRecord as PersistedProxyServerRecord
 import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_delete
+import app.skipi.ui.resources.configs_name
 import app.skipi.ui.resources.configs_rules_add
 import app.skipi.ui.resources.configs_rules_policy
 import app.skipi.ui.resources.configs_rules_title
@@ -50,10 +52,13 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopTrafficConfigRulesResponsiveRenderTest {
+    private var frameTimeNanos = 1_000_000_000L
+
     @Test
     fun rendersRulesListFormAndPolicyPickerAtNarrowAndWideDesktopViewports() = runBlocking {
         val labels = Labels(
             uiEdit = getString(Res.string.configs_ui_edit),
+            scrollAnchor = getString(Res.string.configs_name),
             rulesTitle = getString(Res.string.configs_rules_title),
             addRule = getString(Res.string.configs_rules_add),
             value = getString(Res.string.configs_rules_value),
@@ -127,6 +132,8 @@ FINAL,PROXY
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
+                            copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),
                             subscriptionCatalog = SubscriptionCatalog(),
                             resourceFiles = resourceFiles,
@@ -145,7 +152,15 @@ FINAL,PROXY
                 render(scene)
 
                 clickContentDescription(scene, labels.uiEdit, width, height)
-                clickText(scene, labels.rulesTitle, width, height)
+                scrollUntilClickableTextFromVisibleAnchor(
+                    scene = scene,
+                    anchorLabel = labels.scrollAnchor,
+                    targetLabel = labels.rulesTitle,
+                    width = width,
+                    height = height,
+                )
+                clickClickableText(scene, labels.rulesTitle, width, height)
+                clickClickableText(scene, labels.rulesTitle, width, height)
                 assertNotNull(awaitVisibleText(scene, labels.rulesTitle, width, height))
                 assertNotNull(awaitVisibleText(scene, labels.addRule, width, height))
                 assertNotNull(awaitVisibleContentDescription(scene, labels.delete, width, height))
@@ -186,6 +201,98 @@ FINAL,PROXY
         }
         click(scene, node)
     }
+
+    private fun clickClickableText(scene: ImageComposeScene, label: String, width: Int, height: Int) {
+        val node = requireNotNull(awaitVisibleNode(scene, width, height) { candidate ->
+            candidate.config.getOrElse(SemanticsProperties.Text) { emptyList() }
+                .any { text -> text.text.equals(label, ignoreCase = true) } &&
+                candidate.ancestorsIncludingSelf().any { ancestor ->
+                    ancestor.config.contains(SemanticsActions.OnClick)
+                }
+        }) {
+            "Expected rendered action text '$label' with a clickable card ancestor at ${width}x$height"
+        }
+        val clickable = requireNotNull(
+            node.ancestorsIncludingSelf().firstOrNull { candidate ->
+                candidate.config.contains(SemanticsActions.OnClick)
+            },
+        ) { "Expected '$label' to have a clickable card ancestor" }
+        val onClick = requireNotNull(clickable.config[SemanticsActions.OnClick].action) {
+            "Expected '$label' to expose its public OnClick action"
+        }
+        assertTrue(onClick(), "The '$label' OnClick action should succeed")
+        render(scene)
+    }
+
+    @OptIn(ExperimentalComposeUiApi::class)
+    private fun scrollUntilClickableTextFromVisibleAnchor(
+        scene: ImageComposeScene,
+        anchorLabel: String,
+        targetLabel: String,
+        width: Int,
+        height: Int,
+    ) {
+        val anchor = requireNotNull(awaitVisibleText(scene, anchorLabel, width, height)) {
+            "Expected the visible '$anchorLabel' field before scrolling to the Routing card"
+        }
+        val scrollableRoot = requireNotNull(
+            allNodes(scene)
+                .filter { candidate ->
+                    candidate.config.contains(SemanticsActions.ScrollBy) &&
+                        candidate.config.contains(SemanticsProperties.VerticalScrollAxisRange)
+                }
+                .maxByOrNull { candidate -> candidate.boundsInRoot.width * candidate.boundsInRoot.height },
+        ) {
+            "Expected the Basics page's public vertical ScrollBy container; anchor bounds=${anchor.boundsInRoot}"
+        }
+        val scrollBy = requireNotNull(scrollableRoot.config[SemanticsActions.ScrollBy].action) {
+            "Expected the Basics page's root LazyColumn to expose public ScrollBy"
+        }
+
+        val deadline = System.nanoTime() + 3_000_000_000L
+        var scrollSteps = 0
+        var previousTarget: Pair<Int, Rect>? = null
+        var stableTargetFrames = 0
+        do {
+            render(scene)
+            val target = allNodes(scene).firstOrNull { candidate ->
+                candidate.config.getOrElse(SemanticsProperties.Text) { emptyList() }
+                    .any { text -> text.text.equals(targetLabel, ignoreCase = true) } &&
+                    candidate.ancestorsIncludingSelf().any { ancestor ->
+                        ancestor.config.contains(SemanticsActions.OnClick)
+                    } && isCenterOnScreen(candidate, width, height)
+            }
+            val sample = target?.let { it.id to it.boundsInRoot }
+            if (sample != null && sample == previousTarget) {
+                stableTargetFrames++
+                if (stableTargetFrames >= 1) return
+            } else {
+                stableTargetFrames = 0
+            }
+            previousTarget = sample
+
+            if (sample == null && scrollSteps < 12) {
+                scrollBy(0f, height * 0.65f)
+                scrollSteps++
+            }
+            Thread.sleep(16L)
+        } while (System.nanoTime() < deadline)
+
+        assertTrue(
+            hasVisibleClickableText(scene, targetLabel, width, height),
+            "The Basics page's public root LazyColumn ScrollBy should bring '$targetLabel' on screen " +
+                "at ${width}x$height after $scrollSteps steps; scroll root bounds=${scrollableRoot.boundsInRoot}",
+        )
+    }
+
+    private fun hasVisibleClickableText(scene: ImageComposeScene, label: String, width: Int, height: Int): Boolean =
+        allNodes(scene).any { candidate ->
+            candidate.config.getOrElse(SemanticsProperties.Text) { emptyList() }
+                .any { text -> text.text.equals(label, ignoreCase = true) } &&
+                candidate.ancestorsIncludingSelf().any { ancestor ->
+                    ancestor.config.contains(SemanticsActions.OnClick)
+                } && isCenterOnScreen(candidate, width, height)
+        }
 
     private fun awaitVisibleContentDescription(
         scene: ImageComposeScene,
@@ -250,6 +357,16 @@ FINAL,PROXY
         children.forEach { child -> yieldAll(child.descendants()) }
     }
 
+    private fun SemanticsNode.ancestorsIncludingSelf(): Sequence<SemanticsNode> = sequence {
+        var current: SemanticsNode? = this@ancestorsIncludingSelf
+        var remaining = 8
+        while (current != null && remaining > 0) {
+            yield(current)
+            current = current.parent
+            remaining--
+        }
+    }
+
     private fun isCenterOnScreen(node: SemanticsNode, width: Int, height: Int): Boolean {
         val center = node.boundsInRoot.center
         return center.x in 0f..width.toFloat() && center.y in 0f..height.toFloat()
@@ -278,11 +395,16 @@ FINAL,PROXY
     }
 
     private fun render(scene: ImageComposeScene) {
-        scene.render().close()
+        scene.render(advancingSystemNanoTime()).close()
+    }
+
+    private fun advancingSystemNanoTime(): Long {
+        frameTimeNanos += 16_666_667L
+        return frameTimeNanos
     }
 
     private fun saveSnapshot(scene: ImageComposeScene, page: String, width: Int, height: Int) {
-        val image = scene.render()
+        val image = scene.render(advancingSystemNanoTime())
         try {
             assertEquals(width, image.width)
             assertEquals(height, image.height)
@@ -343,6 +465,7 @@ FINAL,PROXY
 
     private data class Labels(
         val uiEdit: String,
+        val scrollAnchor: String,
         val rulesTitle: String,
         val addRule: String,
         val value: String,

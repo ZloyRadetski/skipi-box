@@ -46,6 +46,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import app.skipi.app.server.ProxyServerEditApplyOutcome
+import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.app.server.applyProxyServerEditResult
 import app.skipi.app.server.toProxyServerCopyTarget
 import app.skipi.app.home.toAndroidValue
@@ -416,6 +417,28 @@ fun main() = application {
                 val activeProfileName = configLibrary.selectedConfigId
                     ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
                     ?.name
+                val exportProxyServerFullJson: suspend (ProxyServerEditResult) -> String = { editResult ->
+                    val serverLibrarySnapshot = serverLibrary
+                    val configLibrarySnapshot = configLibrary
+                    val optionsSnapshot = localProxyOptions
+                    val trafficConfigContentSnapshot = trafficConfigContentById
+                    val subscriptionPingUrlSnapshot = desktopSettings.subscriptionPingUrl
+                    val latencySnapshot = latencyByServerId.toMap()
+                    withContext(Dispatchers.IO) {
+                        val copyTarget = editResult.toProxyServerCopyTarget(
+                            defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                        )
+                        val tempServerLibrary = serverLibrarySnapshot.withProxyServerCopyTarget(copyTarget)
+                        buildDesktopSelectedServerConfig(
+                            serverLibrary = tempServerLibrary,
+                            configLibrary = configLibrarySnapshot,
+                            options = optionsSnapshot,
+                            trafficConfigContentById = trafficConfigContentSnapshot,
+                            subscriptionPingUrl = subscriptionPingUrlSnapshot,
+                            latencyByServerId = latencySnapshot,
+                        )?.getOrThrow() ?: error("Select a working server before exporting")
+                    }
+                }
                 val latestSelectedServerConfig by rememberUpdatedState(selectedServerConfig)
                 val latestDesktopSettings by rememberUpdatedState(desktopSettings)
                 val latestServerLibrary by rememberUpdatedState(serverLibrary)
@@ -989,28 +1012,7 @@ fun main() = application {
                             activeProfileName = activeProfileName,
                             activeTrafficConfigId = configLibrary.selectedConfigId,
                             trafficConfigContentById = trafficConfigContentById,
-                            exportFullJson = { editResult ->
-                                val serverLibrarySnapshot = serverLibrary
-                                val configLibrarySnapshot = configLibrary
-                                val optionsSnapshot = localProxyOptions
-                                val trafficConfigContentSnapshot = trafficConfigContentById
-                                val subscriptionPingUrlSnapshot = desktopSettings.subscriptionPingUrl
-                                val latencySnapshot = latencyByServerId.toMap()
-                                withContext(Dispatchers.IO) {
-                                    val copyTarget = editResult.toProxyServerCopyTarget(
-                                        defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
-                                    )
-                                    val tempServerLibrary = serverLibrarySnapshot.withProxyServerCopyTarget(copyTarget)
-                                    buildDesktopSelectedServerConfig(
-                                        serverLibrary = tempServerLibrary,
-                                        configLibrary = configLibrarySnapshot,
-                                        options = optionsSnapshot,
-                                        trafficConfigContentById = trafficConfigContentSnapshot,
-                                        subscriptionPingUrl = subscriptionPingUrlSnapshot,
-                                        latencyByServerId = latencySnapshot,
-                                    )?.getOrThrow() ?: error("Select a working server before exporting")
-                                }
-                            },
+                            exportFullJson = exportProxyServerFullJson,
                             latencyByServerId = latencyByServerId,
                             testingServerIds = testingServerIds,
                             pingingSubscriptionIds = pingingSubscriptionIds,
@@ -1743,6 +1745,7 @@ fun main() = application {
                                 resourceFileFeedback.value = message
                             },
                             desktopSettings = desktopSettings,
+                            exportProxyServerFullJson = exportProxyServerFullJson,
                             proxyServers = routeProxyServers,
                             subscriptionCatalog = routeSubscriptionCatalog,
                             resourceFiles = desktopProfileResourceFiles,

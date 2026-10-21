@@ -63,6 +63,7 @@ import app.skipi.ui.config.SkipiTrafficConfigRawEditor
 import app.skipi.ui.config.SkipiTrafficConfigRawEditorLabels
 import app.skipi.ui.config.SkipiTrafficConfigRawEditorState
 import app.skipi.ui.config.SkipiTrafficConfigBasicsEditorScreen
+import app.skipi.ui.config.SkipiTrafficConfigRoutingSectionScreen
 import app.skipi.ui.config.SkipiTrafficConfigGeneralEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigDnsEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigTunnelEditorScreen
@@ -88,11 +89,9 @@ import app.skipi.ui.resources.configs_android_title
 import app.skipi.ui.resources.configs_tunnel_summary
 import app.skipi.ui.resources.configs_network_title
 import app.skipi.ui.resources.configs_network_summary
-import app.skipi.ui.resources.configs_resources
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_save
 import app.skipi.ui.resources.resource_file_download_notification_failed
-import app.skipi.ui.resources.settings_resource_files_update
 import app.skipi.ui.resources.configs_update_locked_warning_title
 import app.skipi.ui.resources.configs_update_locked_warning_summary
 import app.skipi.ui.resources.configs_update_anyway
@@ -102,6 +101,7 @@ import app.skipi.app.config.TrafficConfigProfileRefreshOperations
 import app.skipi.app.config.TrafficConfigProfileRefreshRequest
 import app.skipi.app.config.TrafficConfigEditorController
 import app.skipi.app.config.TrafficConfigEditorProfileStore
+import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.app.config.toTrafficConfigState
 import features.config.withSkipiSettingsInRawConfig
 import kotlinx.coroutines.Dispatchers
@@ -138,6 +138,8 @@ private data class DesktopConfigDraft(
 private enum class DesktopVisualEditorSection {
     Basics,
     Routing,
+    Rules,
+    ProxyGroups,
     General,
     Dns,
     Tunnel,
@@ -163,6 +165,8 @@ internal fun DesktopConfigsScreen(
     resourceActionScope: CoroutineScope,
     onResourceFileStatusMessage: (String) -> Unit,
     desktopSettings: DesktopAppSettings,
+    exportProxyServerFullJson: suspend (ProxyServerEditResult) -> String,
+    copyTextToClipboard: (String) -> Unit = ::copyTextToDesktopClipboard,
     proxyServers: List<app.skipi.app.model.ProxyServerRecord>,
     subscriptionCatalog: app.skipi.app.model.SubscriptionCatalog,
     resourceFiles: DesktopProfileResourceFiles,
@@ -409,14 +413,6 @@ internal fun DesktopConfigsScreen(
                     sectionsTitle = stringResource(Res.string.configs_editor_sections),
                     sections = listOf(
                         SkipiTrafficConfigEditorSectionAction(
-                            key = "routing",
-                            title = stringResource(Res.string.configs_rules_title),
-                            summary = stringResource(Res.string.configs_routing_summary),
-                            onNavigate = {
-                                visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
-                            },
-                        ),
-                        SkipiTrafficConfigEditorSectionAction(
                             key = "general",
                             title = stringResource(Res.string.configs_general_title),
                             summary = stringResource(Res.string.configs_general_summary),
@@ -449,11 +445,11 @@ internal fun DesktopConfigsScreen(
                             },
                         ),
                         SkipiTrafficConfigEditorSectionAction(
-                            key = "resources",
-                            title = stringResource(Res.string.configs_resources),
-                            summary = stringResource(Res.string.settings_resource_files_update),
+                            key = "routing",
+                            title = stringResource(Res.string.configs_rules_title),
+                            summary = stringResource(Res.string.configs_routing_summary),
                             onNavigate = {
-                                visualEditor = session.copy(section = DesktopVisualEditorSection.Resources)
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
                             },
                         ),
                     ),
@@ -469,7 +465,24 @@ internal fun DesktopConfigsScreen(
                         { DesktopEditorStatusContent(error) }
                     },
                 )
-                DesktopVisualEditorSection.Routing -> DesktopTrafficConfigRulesEditor(
+                DesktopVisualEditorSection.Routing -> SkipiTrafficConfigRoutingSectionScreen(
+                    profile = profile,
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    onBack = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    onResources = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Resources)
+                    },
+                    onRules = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Rules)
+                    },
+                    onProxyGroups = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.ProxyGroups)
+                    },
+                )
+                DesktopVisualEditorSection.Rules -> DesktopTrafficConfigRulesEditor(
                     profile = profile,
                     trafficConfigs = configLibrary.configs.map { config ->
                         config.toTrafficConfigState(resourceUserAgentFallback)
@@ -482,7 +495,24 @@ internal fun DesktopConfigsScreen(
                     padding = contentPadding,
                     isWideScreen = true,
                     onBack = {
-                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
+                    },
+                    statusContent = editorSaveError?.let { error ->
+                        { DesktopEditorStatusContent(error) }
+                    },
+                )
+                DesktopVisualEditorSection.ProxyGroups -> DesktopTrafficConfigProxyGroupsEditor(
+                    profile = profile,
+                    controller = editorController,
+                    proxyServers = proxyServers,
+                    subscriptionCatalog = subscriptionCatalog,
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    confirmDeletion = desktopSettings.confirmDeletion,
+                    exportProxyServerFullJson = exportProxyServerFullJson,
+                    copyTextToClipboard = copyTextToClipboard,
+                    onBack = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
                     },
                     statusContent = editorSaveError?.let { error ->
                         { DesktopEditorStatusContent(error) }
@@ -569,7 +599,7 @@ internal fun DesktopConfigsScreen(
                             deletionConfirmationEnabled = desktopSettings.confirmDeletion,
                             actionScope = resourceActionScope,
                             onBack = {
-                                visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
                             },
                             updateSettings = { transform ->
                                 check(desktopEditorProfileStore.update(config.id) { current ->

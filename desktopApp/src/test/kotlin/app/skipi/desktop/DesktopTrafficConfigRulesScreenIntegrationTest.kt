@@ -150,6 +150,8 @@ FINAL,PROXY
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
+                            copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),
                             subscriptionCatalog = SubscriptionCatalog(),
                             resourceFiles = resourceFiles,
@@ -174,7 +176,8 @@ FINAL,PROXY
                     rulesSection,
                     "Desktop's visual profile editor should expose the profile's routing-rules section",
                 )
-                click(scene, rulesSection)
+                clickClickableText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
 
                 clickContentDescription(scene, deleteLabel)
                 clickContentDescription(scene, saveLabel)
@@ -278,6 +281,8 @@ vendor-option = keep-me
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
+                            copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),
                             subscriptionCatalog = SubscriptionCatalog(),
                             resourceFiles = resourceFiles,
@@ -296,7 +301,8 @@ vendor-option = keep-me
                 render(scene)
 
                 clickContentDescription(scene, uiEditLabel)
-                clickText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
                 clickText(scene, addRuleLabel)
                 setEditableText(scene, typedValue)
                 assertEquals(typedValue, awaitEditableText(scene, typedValue))
@@ -409,6 +415,8 @@ vendor-option = keep-me
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
+                            copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),
                             subscriptionCatalog = SubscriptionCatalog(),
                             resourceFiles = resourceFiles,
@@ -427,7 +435,8 @@ vendor-option = keep-me
                 render(scene)
 
                 clickContentDescription(scene, uiEditLabel)
-                clickText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
                 clickText(scene, addRuleLabel)
                 setEditableText(scene, ruleValue)
                 assertEquals(ruleValue, awaitEditableText(scene, ruleValue))
@@ -542,6 +551,8 @@ FINAL,PROXY
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
+                            copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),
                             subscriptionCatalog = SubscriptionCatalog(),
                             resourceFiles = resourceFiles,
@@ -560,7 +571,8 @@ FINAL,PROXY
                 render(scene)
 
                 clickContentDescription(scene, uiEditLabel)
-                clickText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
                 clickText(scene, addRuleLabel)
                 setEditableText(scene, typedValue)
                 assertEquals(typedValue, awaitEditableText(scene, typedValue))
@@ -594,6 +606,29 @@ FINAL,PROXY
         val node = awaitText(scene, label)
         assertNotNull(node, "Expected rendered text '$label'")
         click(scene, node)
+    }
+
+    private fun clickClickableText(scene: ImageComposeScene, label: String) {
+        val node = awaitNode(scene, description = "clickable text '$label'") { candidate ->
+            candidate.config.getOrElse(SemanticsProperties.Text) { emptyList() }
+                .any { text -> text.text.equals(label, ignoreCase = true) } &&
+                candidate.ancestorsIncludingSelf().any { ancestor ->
+                    ancestor.config.contains(SemanticsActions.OnClick)
+                }
+        }
+        assertNotNull(node, "Expected rendered action text '$label'")
+        val clickable = assertNotNull(
+            node.ancestorsIncludingSelf().firstOrNull { candidate ->
+                candidate.config.contains(SemanticsActions.OnClick)
+            },
+            "Expected '$label' to have a clickable card ancestor",
+        )
+        val onClick = assertNotNull(
+            clickable.config[SemanticsActions.OnClick].action,
+            "Expected '$label' to expose its public OnClick action",
+        )
+        assertTrue(onClick(), "The '$label' OnClick action should succeed")
+        render(scene)
     }
 
     private fun setEditableText(scene: ImageComposeScene, value: String) {
@@ -710,6 +745,16 @@ FINAL,PROXY
     private fun SemanticsNode.descendants(): Sequence<SemanticsNode> = sequence {
         yield(this@descendants)
         children.forEach { child -> yieldAll(child.descendants()) }
+    }
+
+    private fun SemanticsNode.ancestorsIncludingSelf(): Sequence<SemanticsNode> = sequence {
+        var current: SemanticsNode? = this@ancestorsIncludingSelf
+        var remaining = 8
+        while (current != null && remaining > 0) {
+            yield(current)
+            current = current.parent
+            remaining--
+        }
     }
 
     private fun click(scene: ImageComposeScene, node: SemanticsNode) {

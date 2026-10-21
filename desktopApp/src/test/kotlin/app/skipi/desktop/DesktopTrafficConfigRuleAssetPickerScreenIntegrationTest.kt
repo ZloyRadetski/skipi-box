@@ -164,6 +164,8 @@ FINAL,PROXY
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
+                            copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             fetchUserAgent = "Desktop rule asset integration test",
                             fetchTimeoutSeconds = 5,
                             contentPadding = PaddingValues(),
@@ -183,7 +185,8 @@ FINAL,PROXY
 
                 // The target profile is first in library order, while another profile remains selected.
                 clickContentDescription(scene, uiEditLabel)
-                clickText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
+                clickClickableText(scene, rulesTitle)
 
                 addRuleAndSelectSuggestion(
                     scene = scene,
@@ -296,6 +299,29 @@ FINAL,PROXY
             )
         }
         click(scene, node)
+    }
+
+    private fun clickClickableText(scene: ImageComposeScene, label: String) {
+        val node = awaitNode(scene) { candidate ->
+            candidate.config.getOrElse(SemanticsProperties.Text) { emptyList() }
+                .any { text -> text.text.equals(label, ignoreCase = true) } &&
+                candidate.ancestorsIncludingSelf().any { ancestor ->
+                    ancestor.config.contains(SemanticsActions.OnClick)
+                }
+        }
+        assertNotNull(node, "Expected rendered action text '$label'")
+        val clickable = assertNotNull(
+            node.ancestorsIncludingSelf().firstOrNull { candidate ->
+                candidate.config.contains(SemanticsActions.OnClick)
+            },
+            "Expected '$label' to have a clickable card ancestor",
+        )
+        val onClick = assertNotNull(
+            clickable.config[SemanticsActions.OnClick].action,
+            "Expected '$label' to expose its public OnClick action",
+        )
+        assertTrue(onClick(), "The '$label' OnClick action should succeed")
+        render(scene)
     }
 
     private fun clickRuleTypeOption(scene: ImageComposeScene, selectedType: String) {
