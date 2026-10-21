@@ -22,6 +22,16 @@ internal fun buildDesktopSelectedServerConfig(
     subscriptionPingUrl: String,
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
 ): Result<String>? {
+    val selectedStored = serverLibrary.selectedServerId
+        ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
+    val selectedServerResult = selectedStored?.decode()
+    val selectedServer = selectedServerResult?.getOrNull()
+    if (selectedServer is Custom) {
+        return checkNotNull(selectedServerResult).mapCatching {
+            buildDesktopCustomXrayConfig(selectedServer, options)
+        }
+    }
+
     val activeProfile = configLibrary.selectedConfigId
         ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
     if (activeProfile != null) {
@@ -34,22 +44,16 @@ internal fun buildDesktopSelectedServerConfig(
         }
     }
 
-    val selectedStored = serverLibrary.selectedServerId
-        ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
-        ?: return null
-    return selectedStored.decode().mapCatching { server ->
-        if (server is Custom) {
-            buildDesktopCustomXrayConfig(server, options)
-        } else {
-            DesktopSelectedServerXrayConfigFactory.build(
-                serverLibrary = serverLibrary,
-                trafficConfigContentById = trafficConfigContentById,
-                options = options,
-                subscriptionPingUrl = subscriptionPingUrl,
-                latencyByServerId = latencyByServerId,
-            )?.getOrThrow()
-                ?: error("Select a working server before connecting")
-        }
+    if (selectedStored == null) return null
+    return checkNotNull(selectedServerResult).mapCatching {
+        DesktopSelectedServerXrayConfigFactory.build(
+            serverLibrary = serverLibrary,
+            trafficConfigContentById = trafficConfigContentById,
+            options = options,
+            subscriptionPingUrl = subscriptionPingUrl,
+            latencyByServerId = latencyByServerId,
+        )?.getOrThrow()
+            ?: error("Select a working server before connecting")
     }
 }
 

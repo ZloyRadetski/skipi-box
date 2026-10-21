@@ -13,6 +13,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import platform.LocalProxyXrayConfigOptions
@@ -92,6 +93,95 @@ class DesktopSelectedServerConfigEntryPointTest {
             .getValue("rules").jsonArray.single().jsonObject.getValue("domain").jsonArray.single().jsonPrimitive.content)
         assertEquals("skipi-socks", root.getValue("inbounds").jsonArray.single().jsonObject
             .getValue("tag").jsonPrimitive.content)
+    }
+
+    @Test
+    fun selectedRawCustomKeepsPrecedenceOverAnActiveTrafficProfile() {
+        val custom = Custom(
+            remarks = "Raw custom",
+            configJson = """
+                {
+                  "log": { "loglevel": "none" },
+                  "inbounds": [
+                    { "tag": "raw-custom-in", "protocol": "socks" }
+                  ],
+                  "outbounds": [
+                    { "tag": "raw-custom-out", "protocol": "freedom" }
+                  ],
+                  "routing": {
+                    "domainStrategy": "AsIs",
+                    "rules": [
+                      {
+                        "type": "field",
+                        "domain": ["raw-only.example"],
+                        "outboundTag": "raw-custom-out"
+                      }
+                    ]
+                  }
+                }
+            """.trimIndent(),
+        )
+        val library = DesktopServerLibrary(
+            selectedServerId = 8,
+            servers = listOf(DesktopStoredProxyServer(8, custom.encodePersistedProxyServer())),
+        )
+        val profile = DesktopStoredConfig(
+            id = 17,
+            name = "Active routing profile",
+            content = """
+                [Rule]
+                DOMAIN,profile-only.example,DIRECT
+                FINAL,missing-from-local-profile
+                [SKIPI]
+                route-domain-strategy = IPOnDemand
+            """.trimIndent(),
+        )
+        val configLibrary = ConfigProfileLibrary(selectedConfigId = profile.id, configs = listOf(profile))
+        val serverLibraryBefore = library.copy(servers = library.servers.toList())
+        val configLibraryBefore = configLibrary.copy(configs = configLibrary.configs.toList())
+
+        val result = buildDesktopSelectedServerConfig(
+            serverLibrary = library,
+            configLibrary = configLibrary,
+            options = LocalProxyXrayConfigOptions(
+                socksPort = 19_084,
+                httpProxyPort = 19_085,
+                enableHttpProxy = true,
+                logLevel = "error",
+            ),
+            trafficConfigContentById = mapOf(profile.id to profile.content),
+            subscriptionPingUrl = "http://127.0.0.1:18086/probe",
+            latencyByServerId = emptyMap(),
+        )
+
+        val config = assertNotNull(result).getOrThrow()
+        val root = Json.parseToJsonElement(config).jsonObject
+        val outbounds = root.getValue("outbounds").jsonArray.map { it.jsonObject }
+        assertEquals(
+            listOf("raw-custom-out"),
+            outbounds.map { it.getValue("tag").jsonPrimitive.content },
+        )
+        val routing = root.getValue("routing").jsonObject
+        assertEquals("AsIs", routing.getValue("domainStrategy").jsonPrimitive.content)
+        assertEquals(
+            "raw-only.example",
+            routing.getValue("rules").jsonArray.single().jsonObject
+                .getValue("domain").jsonArray.single().jsonPrimitive.content,
+        )
+        assertFalse(config.contains("profile-only.example"))
+        assertFalse(config.contains("missing-from-local-profile"))
+
+        val inbounds = root.getValue("inbounds").jsonArray.map { it.jsonObject }
+        assertEquals(listOf("skipi-socks", "skipi-http"), inbounds.map {
+            it.getValue("tag").jsonPrimitive.content
+        })
+        assertEquals(listOf(19_084, 19_085), inbounds.map {
+            it.getValue("port").jsonPrimitive.content.toInt()
+        })
+        assertFalse(inbounds.any { it.getValue("tag").jsonPrimitive.content == "raw-custom-in" })
+        assertEquals("error", root.getValue("log").jsonObject.getValue("loglevel").jsonPrimitive.content)
+        assertEquals(serverLibraryBefore, library)
+        assertEquals(configLibraryBefore, configLibrary)
     }
 
     @Test

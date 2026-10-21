@@ -1,0 +1,58 @@
+{
+  "suites": [
+    {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "app.skipi.desktop.DesktopProxyHomeLatencyFabTest",
+      "timestamp": "2026-10-21T11:47:01.066Z"
+    },
+    {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "app.skipi.desktop.DesktopSelectedServerConfigEntryPointTest",
+      "timestamp": "2026-10-21T11:47:00.976Z"
+    },
+    {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "app.skipi.desktop.DesktopSelectedServerNativeBoundaryTest",
+      "timestamp": "2026-10-21T11:47:02.627Z"
+    },
+    {
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest",
+      "timestamp": "2026-10-21T11:47:02.642Z"
+    },
+    {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "app.skipi.desktop.DesktopTrafficProfileXrayConfigTest",
+      "timestamp": "2026-10-21T11:47:02.653Z"
+    },
+    {
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "app.skipi.desktop.DesktopTunnelControllerTest",
+      "timestamp": "2026-10-21T11:47:02.664Z"
+    }
+  ],
+  "totals": {
+    "tests": 45,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
