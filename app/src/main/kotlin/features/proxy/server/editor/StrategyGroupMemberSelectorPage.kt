@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import app.AppState
 import app.LocalAppStateStore
 import app.LocalIsWideScreen
 import app.LocalNavigator
@@ -41,12 +42,57 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.text.formatTemplate
 
-private data class StrategyMemberSelectorGroup(
+internal data class StrategyMemberSelectorGroup(
     val key: String,
     val title: String,
     val subscriptionGroup: SubscriptionGroupState? = null,
     val servers: List<ProxyServerState>,
 )
+
+/** Keeps the Android member-picker catalog policy independently testable. */
+internal fun projectStrategyGroupMemberGroups(
+    appState: AppState,
+    excludedServerId: Int?,
+    requireServerRemarks: Boolean,
+    defaultGroupName: String,
+    autoBalancerName: String,
+): List<StrategyMemberSelectorGroup> {
+    val selectableServers = appState.proxyServers.filter { server ->
+        server.id != excludedServerId &&
+            server.server !is ChainProxy &&
+            (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
+            (!requireServerRemarks || server.server.getInfo().remarks.isNotBlank()) &&
+            (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
+    }
+    val serversByGroup = selectableServers.groupBy(ProxyServerState::groupId)
+    return buildList {
+        val autoBalancerServers = serversByGroup[AutoBalancerGroupId].orEmpty().filter { it.server is StrategyGroup }
+        if (autoBalancerServers.isNotEmpty()) {
+            add(StrategyMemberSelectorGroup("auto-balancers", autoBalancerName, servers = autoBalancerServers))
+        }
+        appState.subscriptionGroups.filter { it.id != DefaultSubscriptionGroupId }.forEach { group ->
+            add(
+                StrategyMemberSelectorGroup(
+                    "subscription-${group.id}",
+                    group.profileTitle.ifBlank { group.displayName(defaultGroupName) },
+                    group,
+                    serversByGroup[group.id].orEmpty(),
+                ),
+            )
+        }
+        val manualServers = serversByGroup[DefaultSubscriptionGroupId].orEmpty()
+        if (manualServers.isNotEmpty() || appState.subscriptionGroups.none { it.id != DefaultSubscriptionGroupId }) {
+            add(
+                StrategyMemberSelectorGroup(
+                    "manual-servers",
+                    defaultGroupName,
+                    appState.subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId },
+                    manualServers,
+                ),
+            )
+        }
+    }
+}
 
 /** Explicit strategy-group membership includes auto-balancers; planners expand them later. */
 @Composable
@@ -65,28 +111,21 @@ fun StrategyGroupMemberSelectorPage(
     val defaultProxyServerTemplate = stringResource(R.string.routing_default_proxy_server)
     val trafficSummaryTemplate = stringResource(R.string.subscription_provider_traffic)
     val lastUpdatedTemplate = stringResource(R.string.subscription_provider_updated)
-    val selectableServers = remember(appState.proxyServers, excludedServerId, requireServerRemarks) {
-        appState.proxyServers.filter { server ->
-            server.id != excludedServerId &&
-                server.server !is ChainProxy &&
-                (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
-                (!requireServerRemarks || server.server.getInfo().remarks.isNotBlank()) &&
-                (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
-        }
-    }
-    val groups = remember(appState.subscriptionGroups, selectableServers, defaultGroupName, autoBalancersName) {
-        val serversByGroup = selectableServers.groupBy(ProxyServerState::groupId)
-        buildList {
-            val autoBalancerServers = serversByGroup[AutoBalancerGroupId].orEmpty().filter { it.server is StrategyGroup }
-            if (autoBalancerServers.isNotEmpty()) add(StrategyMemberSelectorGroup("auto-balancers", autoBalancersName, servers = autoBalancerServers))
-            appState.subscriptionGroups.filter { it.id != DefaultSubscriptionGroupId }.forEach { group ->
-                add(StrategyMemberSelectorGroup("subscription-${group.id}", group.profileTitle.ifBlank { group.displayName(defaultGroupName) }, group, serversByGroup[group.id].orEmpty()))
-            }
-            val manualServers = serversByGroup[DefaultSubscriptionGroupId].orEmpty()
-            if (manualServers.isNotEmpty() || appState.subscriptionGroups.none { it.id != DefaultSubscriptionGroupId }) {
-                add(StrategyMemberSelectorGroup("manual-servers", defaultGroupName, appState.subscriptionGroups.firstOrNull { it.id == DefaultSubscriptionGroupId }, manualServers))
-            }
-        }
+    val groups = remember(
+        appState.proxyServers,
+        appState.subscriptionGroups,
+        excludedServerId,
+        requireServerRemarks,
+        defaultGroupName,
+        autoBalancersName,
+    ) {
+        projectStrategyGroupMemberGroups(
+            appState = appState,
+            excludedServerId = excludedServerId,
+            requireServerRemarks = requireServerRemarks,
+            defaultGroupName = defaultGroupName,
+            autoBalancerName = autoBalancersName,
+        )
     }
     val subscriptionSummaries = groups.associate { group ->
         val sub = group.subscriptionGroup
