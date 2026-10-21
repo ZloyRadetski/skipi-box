@@ -1,0 +1,88 @@
+{
+  "core-android": {
+    "suites": 88,
+    "tests": 298,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T12:49:18.177Z",
+    "lastTimestamp": "2026-10-21T12:49:18.958Z",
+    "run": "p04-rules-checkpoint-20261021.log"
+  },
+  "core-desktop": {
+    "suites": 98,
+    "tests": 354,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T12:49:12.971Z",
+    "lastTimestamp": "2026-10-21T12:49:14.387Z",
+    "run": "p04-rules-checkpoint-20261021.log"
+  },
+  "app-android": {
+    "suites": 55,
+    "tests": 319,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T12:49:21.292Z",
+    "lastTimestamp": "2026-10-21T12:49:22.004Z",
+    "run": "p04-rules-checkpoint-20261021.log"
+  },
+  "app-desktop": {
+    "suites": 56,
+    "tests": 327,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T12:49:13.952Z",
+    "lastTimestamp": "2026-10-21T12:49:14.795Z",
+    "run": "p04-rules-checkpoint-20261021.log"
+  },
+  "ui-android": {
+    "suites": 30,
+    "tests": 107,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T12:49:31.286Z",
+    "lastTimestamp": "2026-10-21T12:49:31.549Z",
+    "run": "p04-rules-checkpoint-20261021.log"
+  },
+  "ui-desktop": {
+    "suites": 30,
+    "tests": 107,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T12:49:11.886Z",
+    "lastTimestamp": "2026-10-21T12:49:12.396Z",
+    "run": "p04-rules-checkpoint-20261021.log"
+  },
+  "desktop": {
+    "suites": 106,
+    "tests": 510,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T12:54:28.739Z",
+    "lastTimestamp": "2026-10-21T12:55:19.286Z",
+    "run": "p04-rules-host-checkpoint-final-20261021.log"
+  },
+  "android": {
+    "suites": 132,
+    "tests": 556,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-21T12:54:39.078Z",
+    "lastTimestamp": "2026-10-21T12:55:19.274Z",
+    "run": "p04-rules-host-checkpoint-final-20261021.log"
+  },
+  "total": {
+    "tests": 2578,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

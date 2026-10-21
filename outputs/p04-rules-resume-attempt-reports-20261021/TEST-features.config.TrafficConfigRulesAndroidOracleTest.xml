@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.TrafficConfigRulesAndroidOracleTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-21T12:28:02.480Z" hostname="VQSeGo" time="0.243">
+  <properties/>
+  <testcase name="editorAddUsesLatestRawWhileEditUsesCapturedLineNumberOnLatestRawAndDropsOption" classname="features.config.TrafficConfigRulesAndroidOracleTest" time="0.238"/>
+  <testcase name="absentFinalRuleIsAddedFromListSnapshotAndCreatesRuleSectionAtEndWhenMissing" classname="features.config.TrafficConfigRulesAndroidOracleTest" time="0.001"/>
+  <testcase name="blankRuleDraftSkipsTheAndroidUpdaterButBackStillLeaves" classname="features.config.TrafficConfigRulesAndroidOracleTest" time="0.001"/>
+  <testcase name="missingProfileUpdateDoesNotResurrectItAndBackStillLeaves" classname="features.config.TrafficConfigRulesAndroidOracleTest" time="0.0"/>
+  <testcase name="listDeleteCommitsTheCompositionSnapshotToTheLatestProfileRow" classname="features.config.TrafficConfigRulesAndroidOracleTest" time="0.0"/>
+  <testcase name="listReorderUsesLocalRawAndKeepsCommentsAtTheirOriginalLineSlots" classname="features.config.TrafficConfigRulesAndroidOracleTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopResourceFileOperationsTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-21T12:55:08.614Z" hostname="VQSeGo" time="0.455">
+  <properties/>
+  <testcase name="selectingAnEmptyFileFailsWithoutReplacingTheExistingResource" classname="app.skipi.desktop.DesktopResourceFileOperationsTest" time="0.005"/>
+  <testcase name="statusAndReplaceStayInTheCapturedProfileWhenThePickerChangesSelection" classname="app.skipi.desktop.DesktopResourceFileOperationsTest" time="0.006"/>
+  <testcase name="customRenameAndDeleteChangeOnlyTheCapturedProfile" classname="app.skipi.desktop.DesktopResourceFileOperationsTest" time="0.003"/>
+  <testcase name="cancelledPickerReturnsNullAndLeavesTheSelectedProfileFileUntouched" classname="app.skipi.desktop.DesktopResourceFileOperationsTest" time="0.002"/>
+  <testcase name="restoreUsesThePackagedProviderAssetForTheCapturedProfileAndLeavesCoreAlone" classname="app.skipi.desktop.DesktopResourceFileOperationsTest" time="0.439"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

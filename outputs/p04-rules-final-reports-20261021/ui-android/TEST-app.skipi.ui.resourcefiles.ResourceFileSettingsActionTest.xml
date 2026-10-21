@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.resourcefiles.ResourceFileSettingsActionTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-21T12:49:31.365Z" hostname="VQSeGo" time="0.012">
+  <properties/>
+  <testcase name="failedSecondSourceCommitIsReportedOnceAndDoesNotDismissEditor" classname="app.skipi.ui.resourcefiles.ResourceFileSettingsActionTest" time="0.005"/>
+  <testcase name="failedMetadataSaveDoesNotDispatchBlankCustomFileReplacementOrCloseEditor" classname="app.skipi.ui.resourcefiles.ResourceFileSettingsActionTest" time="0.004"/>
+  <testcase name="successfulSourceSaveKeepsUrlThenSourceThenDismissOrder" classname="app.skipi.ui.resourcefiles.ResourceFileSettingsActionTest" time="0.001"/>
+  <testcase name="validationRejectionRemainsACompletedActionAndKeepsEditorOpen" classname="app.skipi.ui.resourcefiles.ResourceFileSettingsActionTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

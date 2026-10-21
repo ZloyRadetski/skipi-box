@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-21T12:49:21.458Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="editedRuleReplacesItsOriginalLineOnLatestRawAndDropsParsedOption" classname="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" time="0.002"/>
+  <testcase name="addedRuleUsesLatestRawDocumentAndPreservesPolicyTextBeforeLineNormalization" classname="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" time="0.001"/>
+  <testcase name="missingProfileDoesNotResurrectButRuleBackStillNavigates" classname="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" time="0.0"/>
+  <testcase name="finalRuleIgnoresBlankValueAndSavesBeforeBackNavigation" classname="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" time="0.0"/>
+  <testcase name="ruleSaveFailureDoesNotNavigateWithOrWithoutDesktopHandler" classname="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" time="0.001"/>
+  <testcase name="blankPolicyOrNonFinalValueSkipsStoreButStillNavigatesBack" classname="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" time="0.001"/>
+  <testcase name="listDocumentHelpersKeepFinalCommentsAndOtherSectionsInAndroidPositions" classname="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" time="0.0"/>
+  <testcase name="listDocumentCommitUsesThePassedSnapshotOnLatestSameIdRow" classname="app.skipi.app.config.TrafficConfigRuleEditorControllerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

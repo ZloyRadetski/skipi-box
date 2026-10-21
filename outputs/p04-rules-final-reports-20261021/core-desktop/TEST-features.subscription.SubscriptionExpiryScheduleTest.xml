@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionExpiryScheduleTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-21T12:49:14.322Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="global_disable_and_triggers_at_or_before_now_produce_no_schedule[desktop]" classname="features.subscription.SubscriptionExpiryScheduleTest" time="0.001"/>
+  <testcase name="chooses_earliest_future_trigger_from_android_scheduler_fixture[desktop]" classname="features.subscription.SubscriptionExpiryScheduleTest" time="0.0"/>
+  <testcase name="non_positive_expiration_is_ineligible_even_when_its_trigger_is_future[desktop]" classname="features.subscription.SubscriptionExpiryScheduleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

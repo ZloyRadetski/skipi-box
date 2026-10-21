@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="SubscriptionRefreshBatchCancellationTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-21T12:49:14.666Z" hostname="VQSeGo" time="0.012">
+  <properties/>
+  <testcase name="cancellationAfterCatalogWriteDoesNotSkipAndroidMetadataWriteBoundary[desktop]" classname="app.skipi.app.subscription.SubscriptionRefreshBatchCancellationTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

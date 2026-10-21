@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.components.StringListEditorStateTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-21T12:49:31.286Z" hostname="VQSeGo" time="0.026">
+  <properties/>
+  <testcase name="testHasPendingStringListEdit" classname="app.skipi.ui.components.StringListEditorStateTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

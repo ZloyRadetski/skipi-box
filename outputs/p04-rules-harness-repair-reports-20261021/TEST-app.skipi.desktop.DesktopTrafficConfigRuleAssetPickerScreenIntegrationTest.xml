@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-21T12:38:37.451Z" hostname="VQSeGo" time="3.495">
+  <properties/>
+  <testcase name="ruleAssetPickersInsertAndroidValuesFromTheInactiveProfilesOwnCustomDatFile" classname="app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest" time="3.492">
+    <failure message="java.lang.AssertionError: Expected rendered text 'DOMAIN-SET'.&#10;Text, content-description, and editable-text semantics:&#10;Rect.fromLTRB(28.0, 80.0, 94.0, 97.0): Text=Match type&#10;Rect.fromLTRB(1375.0, 81.0, 1454.0, 95.0): Text=DOMAIN-SUFFIX&#10;Rect.fromLTRB(1449.0, 122.0, 1484.0, 140.0): Text=Help&#10;Rect.fromLTRB(12.0, 148.0, 1488.0, 200.0): EditableText=&#10;Rect.fromLTRB(28.0, 164.0, 67.0, 184.0): Text=Value&#10;Rect.fromLTRB(22.0, 215.0, 61.0, 229.0): Text=GeoSite&#10;Rect.fromLTRB(87.0, 215.0, 122.0, 229.0): Text=alibaba&#10;Rect.fromLTRB(148.0, 215.0, 187.0, 229.0): Text=amazon&#10;Rect.fromLTRB(213.0, 215.0, 240.0, 229.0): Text=apple&#10;Rect.fromLTRB(266.0, 215.0, 294.0, 229.0): Text=baidu&#10;Rect.fromLTRB(320.0, 215.0, 349.0, 229.0): Text=bilibili&#10;Rect.fromLTRB(375.0, 215.0, 425.0, 229.0): Text=bytedance&#10;Rect.fromLTRB(451.0, 215.0, 528.0, 229.0): Text=category-ads-all&#10;Rect.fromLTRB(554.0, 215.0, 633.0, 229.0): Text=category-anti-ad&#10;Rect.fromLTRB(659.0, 215.0, 722.0, 229.0): Text=category-dev&#10;Rect.fromLTRB(748.0, 215.0, 841.0, 229.0): Text=category-education&#10;Rect.fromLTRB(867.0, 215.0, 948.0, 229.0): Text=category-finance&#10;Rect.fromLTRB(974.0, 215.0, 1052.0, 229.0): Text=category-games&#10;Rect.fromLTRB(28.0, 264.0, 123.0, 284.0): Text=Send through&#10;Rect.fromLTRB(28.0, 284.0, 66.0, 300.0): Text=PROXY&#10;Rect.fromLTRB(715.0, 14.0, 784.0, 37.0): Text=Add rule&#10;Rect.fromLTRB(1452.0, 13.0, 1476.0, 37.0): ContentDescription=Help&#10;Rect.fromLTRB(1445.0, 107.3, 1452.4, 109.7): Text=DOMAIN&#10;Rect.fromLTRB(1445.0, 113.9, 1458.7, 116.3): Text=DOMAIN-SUFFIX&#10;Rect.fromLTRB(1445.0, 120.5, 1461.4, 122.9): Text=DOMAIN-KEYWORD&#10;Rect.fromLTRB(1445.0, 127.1, 1462.0, 129.5): Text=DOMAIN-WILDCARD&#10;Rect.fromLTRB(1445.0, 133.7, 1451.3, 136.1): Text=IP-CIDR&#10;Rect.fromLTRB(1445.0, 140.3, 1450.4, 142.7): Text=GEOIP&#10;Rect.fromLTRB(1445.0, 146.9, 1453.3, 149.3): Text=DST-PORT&#10;Rect.fromLTRB(1445.0, 153.5, 1453.6, 155.9): Text=NETWORK&#10;Rect.fromLTRB(0.0, 0.0, 0.0, 0.0): Text=RULE-SET&#10;Rect.fromLTRB(0.0, 0.0, 0.0, 0.0): Text=DOMAIN-SET&#10;Rect.fromLTRB(0.0, 0.0, 0.0, 0.0): Text=USER-AGENT&#10;Rect.fromLTRB(0.0, 0.0, 0.0, 0.0): Text=URL-REGEX&#10;Rendered screenshot: /home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/build/reports/desktop-rule-asset-failure/missing-text.png" type="java.lang.AssertionError">java.lang.AssertionError: Expected rendered text 'DOMAIN-SET'.
+Text, content-description, and editable-text semantics:
+Rect.fromLTRB(28.0, 80.0, 94.0, 97.0): Text=Match type
+Rect.fromLTRB(1375.0, 81.0, 1454.0, 95.0): Text=DOMAIN-SUFFIX
+Rect.fromLTRB(1449.0, 122.0, 1484.0, 140.0): Text=Help
+Rect.fromLTRB(12.0, 148.0, 1488.0, 200.0): EditableText=
+Rect.fromLTRB(28.0, 164.0, 67.0, 184.0): Text=Value
+Rect.fromLTRB(22.0, 215.0, 61.0, 229.0): Text=GeoSite
+Rect.fromLTRB(87.0, 215.0, 122.0, 229.0): Text=alibaba
+Rect.fromLTRB(148.0, 215.0, 187.0, 229.0): Text=amazon
+Rect.fromLTRB(213.0, 215.0, 240.0, 229.0): Text=apple
+Rect.fromLTRB(266.0, 215.0, 294.0, 229.0): Text=baidu
+Rect.fromLTRB(320.0, 215.0, 349.0, 229.0): Text=bilibili
+Rect.fromLTRB(375.0, 215.0, 425.0, 229.0): Text=bytedance
+Rect.fromLTRB(451.0, 215.0, 528.0, 229.0): Text=category-ads-all
+Rect.fromLTRB(554.0, 215.0, 633.0, 229.0): Text=category-anti-ad
+Rect.fromLTRB(659.0, 215.0, 722.0, 229.0): Text=category-dev
+Rect.fromLTRB(748.0, 215.0, 841.0, 229.0): Text=category-education
+Rect.fromLTRB(867.0, 215.0, 948.0, 229.0): Text=category-finance
+Rect.fromLTRB(974.0, 215.0, 1052.0, 229.0): Text=category-games
+Rect.fromLTRB(28.0, 264.0, 123.0, 284.0): Text=Send through
+Rect.fromLTRB(28.0, 284.0, 66.0, 300.0): Text=PROXY
+Rect.fromLTRB(715.0, 14.0, 784.0, 37.0): Text=Add rule
+Rect.fromLTRB(1452.0, 13.0, 1476.0, 37.0): ContentDescription=Help
+Rect.fromLTRB(1445.0, 107.3, 1452.4, 109.7): Text=DOMAIN
+Rect.fromLTRB(1445.0, 113.9, 1458.7, 116.3): Text=DOMAIN-SUFFIX
+Rect.fromLTRB(1445.0, 120.5, 1461.4, 122.9): Text=DOMAIN-KEYWORD
+Rect.fromLTRB(1445.0, 127.1, 1462.0, 129.5): Text=DOMAIN-WILDCARD
+Rect.fromLTRB(1445.0, 133.7, 1451.3, 136.1): Text=IP-CIDR
+Rect.fromLTRB(1445.0, 140.3, 1450.4, 142.7): Text=GEOIP
+Rect.fromLTRB(1445.0, 146.9, 1453.3, 149.3): Text=DST-PORT
+Rect.fromLTRB(1445.0, 153.5, 1453.6, 155.9): Text=NETWORK
+Rect.fromLTRB(0.0, 0.0, 0.0, 0.0): Text=RULE-SET
+Rect.fromLTRB(0.0, 0.0, 0.0, 0.0): Text=DOMAIN-SET
+Rect.fromLTRB(0.0, 0.0, 0.0, 0.0): Text=USER-AGENT
+Rect.fromLTRB(0.0, 0.0, 0.0, 0.0): Text=URL-REGEX
+Rendered screenshot: /home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/build/reports/desktop-rule-asset-failure/missing-text.png
+	at app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.clickText(DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.kt:280)
+	at app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.addRuleAndSelectSuggestion(DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.kt:256)
+	at app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.access$addRuleAndSelectSuggestion(DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.kt:59)
+	at app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest$ruleAssetPickersInsertAndroidValuesFromTheInactiveProfilesOwnCustomDatFile$1.invokeSuspend(DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.kt:184)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)
+	at kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)
+	at kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:22)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:20)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.ruleAssetPickersInsertAndroidValuesFromTheInactiveProfilesOwnCustomDatFile(DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest.kt:69)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:174)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

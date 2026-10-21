@@ -1,0 +1,58 @@
+{
+  "ui-android": {
+    "tests": 107,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executedInThisRun": true
+  },
+  "app-android": {
+    "tests": 319,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executedInThisRun": true
+  },
+  "ui-desktop": {
+    "tests": 107,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executedInThisRun": true
+  },
+  "core-android": {
+    "tests": 298,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executedInThisRun": true
+  },
+  "desktop": {
+    "tests": 510,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "executedInThisRun": true
+  },
+  "app-desktop": {
+    "tests": 327,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executedInThisRun": true
+  },
+  "core-desktop": {
+    "tests": 354,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executedInThisRun": true
+  },
+  "android": {
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executedInThisRun": false
+  }
+}
