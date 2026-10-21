@@ -5,6 +5,11 @@ package app.skipi.desktop
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +18,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import app.skipi.ui.components.DeleteConfirmationDialog
+import app.skipi.ui.server.editor.ProxyServerEditorGroupOption
+import app.skipi.ui.server.editor.ProxyServerEditorMemberOption
 import app.skipi.app.proxy.ProxyServerTextCopyFormat
 import app.skipi.app.proxy.ProxyServerTextCopyResult
 import app.skipi.app.proxy.copyProxyServerText
@@ -22,8 +33,8 @@ import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_copied
 import app.skipi.ui.resources.common_save
-import app.skipi.ui.resources.common_unknown_group
 import app.skipi.ui.resources.common_unsupported
+import app.skipi.ui.resources.deletion_confirmation_delete_proxy_server
 import app.skipi.ui.resources.proxy_editor_custom_format_json
 import app.skipi.ui.resources.proxy_editor_custom_json_invalid
 import app.skipi.ui.resources.proxy_editor_discard
@@ -33,37 +44,22 @@ import app.skipi.ui.resources.proxy_editor_continue_save
 import app.skipi.ui.resources.proxy_editor_full_validation_warning_summary
 import app.skipi.ui.resources.proxy_editor_full_validation_warning_title
 import app.skipi.ui.resources.proxy_editor_return_edit
-import app.skipi.ui.resources.proxy_editor_strategy_group_all_groups
 import app.skipi.ui.resources.proxy_editor_strategy_group_no_servers
 import app.skipi.ui.resources.proxy_editor_strategy_group_select_servers
 import app.skipi.ui.resources.proxy_editor_strategy_group_selected_servers_summary
 import app.skipi.ui.resources.proxy_server_config_invalid
-import app.skipi.ui.resources.routing_default_proxy_server
 import app.skipi.ui.server.editor.ProxyServerEditorDialogText
-import app.skipi.ui.server.editor.ProxyServerEditorGroupOption
-import app.skipi.ui.server.editor.ProxyServerEditorMemberOption
 import app.skipi.ui.server.editor.ProxyServerEditorOptions
-import app.skipi.ui.server.editor.ServerPickerSubscriptionSummary
 import app.skipi.ui.server.editor.SkipiCustomProxyServerEditorPresentation
 import app.skipi.ui.server.editor.SkipiProxyServerEditorScreen
 import app.skipi.ui.server.editor.SkipiStrategyGroupMemberSelectorScreen
 import app.skipi.ui.server.editor.StrategyMemberSelectorGroup
-import app.skipi.ui.server.editor.StrategyMemberSelectorItem
 import app.skipi.ui.server.editor.editorTitle
 import app.skipi.ui.server.editor.rememberProxyServerEditorUiState
 import app.skipi.ui.server.editor.rememberSaveableProxyServerEditorDraft
 import app.skipi.ui.server.validation.rememberProxyServerValidationMessageResolver
-import features.proxy.server.model.ChainProxy
-import features.proxy.server.model.Custom
-import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
-import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
-import features.proxy.server.model.extractLeadingCountryFlagOrNull
 import features.proxy.server.model.formatCustomXrayConfigJson
-import features.proxy.server.model.getTransportDisplay
-import features.proxy.server.model.stripLeadingCountryFlag
-import features.proxy.server.presentation.ProxyServerPresentationFormatter
-import features.proxy.server.presentation.ProxyServerPresentationNode
 import org.jetbrains.compose.resources.stringResource
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
@@ -74,11 +70,13 @@ import kotlinx.coroutines.launch
 internal fun DesktopProxyServerEditorHost(
     contentPadding: PaddingValues,
     editResult: ProxyServerEditResult,
-    decodedServers: List<Pair<DesktopStoredProxyServer, ProxyServer<*>?>>,
-    groupCatalog: DesktopProxyGroupCatalog,
-    presentationNodes: List<ProxyServerPresentationNode>,
-    presentationFormatter: ProxyServerPresentationFormatter,
+    groupOptions: List<ProxyServerEditorGroupOption>,
+    memberOptions: List<ProxyServerEditorMemberOption>,
+    memberGroups: List<StrategyMemberSelectorGroup>,
+    confirmDeletion: Boolean,
     exportFullJson: suspend (ProxyServerEditResult) -> String,
+    copyTextToClipboard: (String) -> Unit = ::copyTextToDesktopClipboard,
+    statusMessage: String? = null,
     onSave: (ProxyServerEditResult) -> Unit,
     onDismiss: () -> Unit,
     onMessage: (String) -> Unit,
@@ -93,36 +91,13 @@ internal fun DesktopProxyServerEditorHost(
     val unsupportedMessage = stringResource(Res.string.common_unsupported)
     val invalidConfigMessage = stringResource(Res.string.proxy_server_config_invalid)
     val invalidJsonMessage = stringResource(Res.string.proxy_editor_custom_json_invalid)
+    val deleteTitle = stringResource(Res.string.deletion_confirmation_delete_proxy_server)
     var strategyGroupMemberIds by remember(serverId, serverEdit) {
         mutableStateOf((serverEdit as? StrategyGroup)?.proxyServerIds.orEmpty())
     }
     var selectingMembers by remember(serverId) { mutableStateOf(false) }
-    val unknownGroupName = stringResource(Res.string.common_unknown_group)
-    val allGroupsName = stringResource(Res.string.proxy_editor_strategy_group_all_groups)
     val noServersMessage = stringResource(Res.string.proxy_editor_strategy_group_no_servers)
-    val defaultProxyServerTemplate = stringResource(Res.string.routing_default_proxy_server)
-
-    val groupOptions = remember(groupCatalog, allGroupsName) {
-        buildList {
-            add(ProxyServerEditorGroupOption(null, allGroupsName))
-            groupCatalog.groups.filter { it.kind == DesktopProxyGroupKind.Subscription }.forEach { group ->
-                group.id.removePrefix("subscription:").toIntOrNull()?.let { id -> add(ProxyServerEditorGroupOption(id, group.title)) }
-            }
-        }
-    }
-    val memberOptions = remember(decodedServers, presentationNodes, presentationFormatter, serverId, unknownGroupName) {
-        decodedServers.mapNotNull { (stored, candidate) ->
-            val member = candidate ?: return@mapNotNull null
-            if (stored.id == serverId || member is ChainProxy || member is Custom && !member.canBeUsedInGeneratedProxyPlan()) return@mapNotNull null
-            if (member is StrategyGroup && member.sourceTrafficConfigId != null) return@mapNotNull null
-            val node = presentationNodes.firstOrNull { it.id == stored.id }
-            ProxyServerEditorMemberOption(
-                id = stored.id,
-                label = node?.let { presentationFormatter.displayOf(it, presentationNodes).summary }
-                    ?: member.getInfo().remarks.ifBlank { unknownGroupName },
-            )
-        }
-    }
+    var showDeleteConfirmation by remember(serverId) { mutableStateOf(false) }
     val editorOptions = remember(groupOptions, memberOptions, strategyGroupMemberIds, serverEdit, selectingMembers) {
         ProxyServerEditorOptions(
             groupOptions = groupOptions,
@@ -152,6 +127,22 @@ internal fun DesktopProxyServerEditorHost(
         onDismiss()
     }
 
+    fun deleteDraft() {
+        onSave(editResult.copy(server = serverEdit, deleted = true))
+        editorUiState.dismissDiscardConfirmation()
+        onDismiss()
+    }
+
+    fun requestDelete() {
+        if (serverId != null && confirmDeletion) {
+            showDeleteConfirmation = true
+        } else if (serverId == null) {
+            onDismiss()
+        } else {
+            deleteDraft()
+        }
+    }
+
     fun copyDraft() {
         val basicIssue = serverEdit.validateBasic().firstOrNull()
         if (basicIssue != null) {
@@ -163,7 +154,7 @@ internal fun DesktopProxyServerEditorHost(
                 exportFullJson(editResult.copy(server = serverEdit))
             }) {
                 is ProxyServerTextCopyResult.Success -> runCatching {
-                    Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(result.text), null)
+                    copyTextToClipboard(result.text)
                 }.onSuccess { onMessage(copiedMessage) }.onFailure { onMessage(it.message.orEmpty()) }
                 ProxyServerTextCopyResult.Unsupported -> onMessage(unsupportedMessage)
                 ProxyServerTextCopyResult.InvalidConfig -> onMessage(invalidConfigMessage)
@@ -172,31 +163,9 @@ internal fun DesktopProxyServerEditorHost(
     }
 
     if (selectingMembers && serverEdit is StrategyGroup) {
-        val groups = remember(groupCatalog, decodedServers, serverId, defaultProxyServerTemplate) {
-            groupCatalog.groups.filter { it.kind != DesktopProxyGroupKind.All }.map { group ->
-                val items = group.serverIds.mapNotNull { id ->
-                    if (id == serverId) return@mapNotNull null
-                    val server = decodedServers.firstOrNull { it.first.id == id }?.second ?: return@mapNotNull null
-                    if (server is ChainProxy || server is Custom && !server.canBeUsedInGeneratedProxyPlan()) return@mapNotNull null
-                    if (server is StrategyGroup && server.sourceTrafficConfigId != null) return@mapNotNull null
-                    val remarks = server.getInfo().remarks
-                    val flag = remarks.extractLeadingCountryFlagOrNull()
-                    val name = remarks.stripLeadingCountryFlag().ifBlank { defaultProxyServerTemplate.replace("{id}", id.toString()) }
-                    val transport = server.getTransportDisplay()
-                    val protocol = server.getInfo().protocol
-                    StrategyMemberSelectorItem(id, name, flag, if (!transport.isNullOrBlank()) "$protocol • $transport" else protocol)
-                }
-                StrategyMemberSelectorGroup(
-                    key = group.id,
-                    title = group.title,
-                    summary = ServerPickerSubscriptionSummary(),
-                    items = items,
-                )
-            }
-        }
         SkipiStrategyGroupMemberSelectorScreen(
             padding = contentPadding,
-            groups = groups,
+            groups = memberGroups,
             selectedServerIds = strategyGroupMemberIds,
             title = stringResource(Res.string.proxy_editor_strategy_group_select_servers),
             isWideScreen = true,
@@ -222,54 +191,87 @@ internal fun DesktopProxyServerEditorHost(
         discardSummary = stringResource(Res.string.proxy_editor_discard_changes_summary),
         discard = stringResource(Res.string.proxy_editor_discard),
     )
-    SkipiProxyServerEditorScreen(
-        padding = contentPadding,
-        serverEdit = serverEdit,
-        title = serverEdit.editorTitle(),
-        isWideScreen = true,
-        options = editorOptions,
-        hasChanges = { ProxyServerEditorController.hasChanges(original, serverEdit) },
-        messages = editorMessages,
-        fullValidationMessages = editorUiState.pendingSaveIssues.map(validationMessageOf),
-        showDiscardConfirmation = editorUiState.showDiscardConfirmation,
-        showFullValidationWarning = editorUiState.showFullValidationWarning,
-        onRequestBack = onDismiss,
-        onRequestDiscardConfirmation = editorUiState::requestDiscardConfirmation,
-        onConfirmDiscard = {
-            editorUiState.dismissDiscardConfirmation()
-            onDismiss()
-        },
-        onDismissDiscard = editorUiState::dismissDiscardConfirmation,
-        onCopy = ::copyDraft,
-        onSave = ::saveDraft,
-        onDismissFullValidation = editorUiState::dismissFullValidationWarning,
-        onContinueFullValidation = ::continueSaveAfterWarning,
-        customEditor = { custom, editorPadding ->
-            SkipiCustomProxyServerEditorPresentation(
-                draftIdentity = custom,
-                remarks = custom.remarks,
-                onRemarksChange = { custom.remarks = it },
-                overrideInboundAndDns = custom.overrideInboundAndDns,
-                onOverrideChange = { custom.overrideInboundAndDns = it },
-                contentPadding = editorPadding,
-                formatJsonContentDescription = stringResource(Res.string.proxy_editor_custom_format_json),
-                formatButtonBackground = MaterialTheme.colorScheme.surfaceVariant,
-                formatButtonTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                onFormatJson = {
-                    runCatching { formatCustomXrayConfigJson(custom.configJson) }
-                        .onSuccess { custom.configJson = it }
-                        .onFailure { onMessage(invalidJsonMessage) }
-                },
-                jsonEditor = { jsonModifier ->
-                    OutlinedTextField(
-                        value = custom.configJson,
-                        onValueChange = { custom.configJson = it },
-                        modifier = jsonModifier,
-                        textStyle = MaterialTheme.typography.bodySmall,
-                        singleLine = false,
-                    )
-                },
-            )
-        },
-    )
+    Box(Modifier.fillMaxSize()) {
+        SkipiProxyServerEditorScreen(
+            padding = contentPadding,
+            serverEdit = serverEdit,
+            title = serverEdit.editorTitle(),
+            isWideScreen = true,
+            options = editorOptions,
+            hasChanges = { ProxyServerEditorController.hasChanges(original, serverEdit) },
+            messages = editorMessages,
+            fullValidationMessages = editorUiState.pendingSaveIssues.map(validationMessageOf),
+            showDiscardConfirmation = editorUiState.showDiscardConfirmation,
+            showFullValidationWarning = editorUiState.showFullValidationWarning,
+            onRequestBack = onDismiss,
+            onRequestDiscardConfirmation = editorUiState::requestDiscardConfirmation,
+            onConfirmDiscard = {
+                editorUiState.dismissDiscardConfirmation()
+                onDismiss()
+            },
+            onDismissDiscard = editorUiState::dismissDiscardConfirmation,
+            onCopy = ::copyDraft,
+            onSave = ::saveDraft,
+            onDismissFullValidation = editorUiState::dismissFullValidationWarning,
+            onContinueFullValidation = ::continueSaveAfterWarning,
+            onDelete = if (serverEdit is StrategyGroup) ::requestDelete else null,
+            customEditor = { custom, editorPadding ->
+                SkipiCustomProxyServerEditorPresentation(
+                    draftIdentity = custom,
+                    remarks = custom.remarks,
+                    onRemarksChange = { custom.remarks = it },
+                    overrideInboundAndDns = custom.overrideInboundAndDns,
+                    onOverrideChange = { custom.overrideInboundAndDns = it },
+                    contentPadding = editorPadding,
+                    formatJsonContentDescription = stringResource(Res.string.proxy_editor_custom_format_json),
+                    formatButtonBackground = MaterialTheme.colorScheme.surfaceVariant,
+                    formatButtonTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    onFormatJson = {
+                        runCatching { formatCustomXrayConfigJson(custom.configJson) }
+                            .onSuccess { custom.configJson = it }
+                            .onFailure { onMessage(invalidJsonMessage) }
+                    },
+                    jsonEditor = { jsonModifier ->
+                        OutlinedTextField(
+                            value = custom.configJson,
+                            onValueChange = { custom.configJson = it },
+                            modifier = jsonModifier,
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            singleLine = false,
+                        )
+                    },
+                )
+            },
+        )
+        statusMessage?.takeIf(String::isNotBlank)?.let { message ->
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(10.dp),
+                tonalElevation = 4.dp,
+            ) {
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                )
+            }
+        }
+    }
+
+    if (showDeleteConfirmation) {
+        DeleteConfirmationDialog(
+            show = true,
+            title = deleteTitle,
+            onDismissRequest = { showDeleteConfirmation = false },
+            onConfirm = {
+                showDeleteConfirmation = false
+                deleteDraft()
+            },
+        )
+    }
+}
+
+internal fun copyTextToDesktopClipboard(text: String) {
+    Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
 }

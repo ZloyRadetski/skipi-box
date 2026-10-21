@@ -32,21 +32,12 @@ import app.skipi.ui.resources.routing_outbound_direct
 import app.skipi.ui.resources.routing_outbound_proxy
 import app.skipi.ui.resources.routing_system_targets
 import app.skipi.ui.resources.subscription_default_group
-import app.skipi.ui.resources.subscription_provider_days_remaining
-import app.skipi.ui.resources.subscription_provider_traffic
-import app.skipi.ui.resources.subscription_provider_updated
 import app.skipi.ui.routing.SkipiRouteOutboundSelectorScreen
 import app.skipi.ui.routing.SkipiRoutingOutboundGroupDetails
 import app.skipi.ui.subscription.SubscriptionGroupUiState
 import app.skipi.ui.subscription.toSubscriptionGroupUiState
-import app.skipi.ui.text.formatTemplate
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
-import features.subscription.subscriptionExpiryDays
-import features.subscription.subscriptionTrafficProgress
-import features.subscription.subscriptionTrafficSummary
-import java.text.DateFormat
-import java.util.Date
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -232,29 +223,12 @@ private data class DesktopRuleEditorSession(
 
 @Composable
 private fun SubscriptionGroupUiState.toOutboundGroupDetails(): SkipiRoutingOutboundGroupDetails {
-    val trafficSummary = subscriptionTrafficSummary(
-        trafficUploadBytes,
-        trafficDownloadBytes,
-        trafficTotalBytes,
-    )
-        ?.let { value -> stringResource(Res.string.subscription_provider_traffic).formatTemplate("value" to value) }
-    val expirySummary = subscriptionExpiryDays(trafficExpireAtSeconds, System.currentTimeMillis())?.let { days ->
-        stringResource(Res.string.subscription_provider_days_remaining, days)
-    }
-    val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
-    val updatedLabel = lastUpdatedAtMillis.takeIf { it > 0L }?.let { timestamp ->
-        stringResource(Res.string.subscription_provider_updated)
-            .formatTemplate("value" to dateFormat.format(Date(timestamp)))
-    }
+    val summary = toServerPickerSubscriptionSummary()
     return SkipiRoutingOutboundGroupDetails(
-        traffic = trafficSummary,
-        expiry = expirySummary,
-        trafficProgress = subscriptionTrafficProgress(
-            trafficUploadBytes,
-            trafficDownloadBytes,
-            trafficTotalBytes,
-        ),
-        announcement = announce,
-        updatedLabel = updatedLabel,
+        traffic = summary.traffic,
+        expiry = summary.expiry,
+        trafficProgress = summary.trafficProgress,
+        announcement = summary.announce.orEmpty(),
+        updatedLabel = summary.lastUpdated,
     )
 }

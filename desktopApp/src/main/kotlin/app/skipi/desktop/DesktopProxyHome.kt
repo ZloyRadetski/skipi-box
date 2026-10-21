@@ -66,12 +66,18 @@ import app.skipi.ui.resources.subscription_default_group
 import app.skipi.ui.resources.subscription_invalid_url
 import app.skipi.ui.resources.proxy_group_select_active_server
 import app.skipi.ui.resources.proxy_editor_strategy_group_no_servers
+import app.skipi.ui.resources.proxy_server_list_auto_balancers
+import app.skipi.ui.resources.routing_default_proxy_server
 import app.skipi.ui.server.editor.GroupMemberChoice
+import app.skipi.ui.server.editor.ProxyServerEditorMemberOption
 import app.skipi.ui.server.editor.SkipiSelectGroupMemberDialog
 import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.resolveStrategyGroupMembers
 import features.proxy.server.model.ProxyServer
+import features.proxy.server.model.ChainProxy
+import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import features.proxy.server.model.extractLeadingCountryFlagOrNull
 import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.model.getUrlOrNull
@@ -206,10 +212,17 @@ internal fun DesktopProxyHome(
 
     val unknownGroupName = stringResource(Res.string.common_unknown_group)
     val defaultGroupName = stringResource(Res.string.subscription_default_group)
+    val allGroupsLabel = stringResource(Res.string.proxy_editor_strategy_group_all_groups)
+    val autoBalancerName = stringResource(Res.string.proxy_server_list_auto_balancers)
+    val defaultProxyServerTemplate = stringResource(Res.string.routing_default_proxy_server)
+    val subscriptionSummaries = subscriptionCatalog.subscriptions.associate { subscription ->
+        val group = subscription.toSubscriptionGroupUiState(defaultGroupName)
+        group.id to group.toServerPickerSubscriptionSummary()
+    }
     val invalidSubscriptionUrlMessage = stringResource(Res.string.subscription_invalid_url)
     val presentationLabels = ProxyServerPresentationLabels(
         unknownGroupName = unknownGroupName,
-        allGroupsName = stringResource(Res.string.proxy_editor_strategy_group_all_groups),
+        allGroupsName = allGroupsLabel,
         selectName = stringResource(Res.string.proxy_editor_strategy_group_select),
         leastPingName = stringResource(Res.string.proxy_editor_strategy_group_least_ping),
         leastLoadName = stringResource(Res.string.proxy_editor_strategy_group_least_load),
@@ -237,6 +250,38 @@ internal fun DesktopProxyHome(
                 )
             }
         }
+    }
+    val editorProxyServers = remember(decodedServers) {
+        decodedServers.mapNotNull { (stored, server) ->
+            server?.let { current ->
+                ProxyServerRecord(
+                    id = stored.id,
+                    groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                    server = current,
+                )
+            }
+        }
+    }
+    val editorInputs = remember(
+        editorProxyServers,
+        subscriptionCatalog,
+        subscriptionSummaries,
+        editingServerModel?.serverId,
+        allGroupsLabel,
+        defaultGroupName,
+        autoBalancerName,
+        defaultProxyServerTemplate,
+    ) {
+        projectDesktopProxyServerEditorInputs(
+            proxyServers = editorProxyServers,
+            subscriptionCatalog = subscriptionCatalog,
+            subscriptionSummaries = subscriptionSummaries,
+            allGroupsLabel = allGroupsLabel,
+            defaultGroupName = defaultGroupName,
+            autoBalancerName = autoBalancerName,
+            defaultProxyServerTemplate = defaultProxyServerTemplate,
+            excludedServerId = editingServerModel?.serverId,
+        )
     }
 
     val homeProjection = remember(
@@ -739,13 +784,28 @@ internal fun DesktopProxyHome(
     }
 
     editingServerModel?.let { editResult ->
+        val memberOptions = remember(decodedServers, presentationNodes, presentationFormatter, editResult.serverId, unknownGroupName) {
+            decodedServers.mapNotNull { (stored, candidate) ->
+                val member = candidate ?: return@mapNotNull null
+                if (stored.id == editResult.serverId || member is ChainProxy || member is Custom && !member.canBeUsedInGeneratedProxyPlan()) {
+                    return@mapNotNull null
+                }
+                if (member is StrategyGroup && member.sourceTrafficConfigId != null) return@mapNotNull null
+                val node = presentationNodes.firstOrNull { it.id == stored.id }
+                ProxyServerEditorMemberOption(
+                    id = stored.id,
+                    label = node?.let { presentationFormatter.displayOf(it, presentationNodes).summary }
+                        ?: member.getInfo().remarks.ifBlank { unknownGroupName },
+                )
+            }
+        }
         DesktopProxyServerEditorHost(
             contentPadding = contentPadding,
             editResult = editResult,
-            decodedServers = decodedServers,
-            groupCatalog = groupCatalog,
-            presentationNodes = presentationNodes,
-            presentationFormatter = presentationFormatter,
+            groupOptions = editorInputs.groupOptions,
+            memberOptions = memberOptions,
+            memberGroups = editorInputs.memberGroups,
+            confirmDeletion = confirmDeletion,
             onSave = { result ->
                 onSaveServer(result) { outcome ->
                     outcome.toDesktopProxyHomeGroupId()?.let { groupId ->
