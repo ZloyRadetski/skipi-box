@@ -1,0 +1,26 @@
+{
+  "shared-app-desktop": {
+    "tests": 334,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "shared-app-android": {
+    "tests": 326,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "android-groups": {
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "total": {
+    "tests": 676,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

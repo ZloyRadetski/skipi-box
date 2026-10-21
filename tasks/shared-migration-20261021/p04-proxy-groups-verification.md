@@ -1,0 +1,25 @@
+# P04 profile ProxyGroups continuation
+
+Status: in progress. The preceding Rules slice is verified in `tasks/shared-migration-20261020/p04-rules-verification.md` (2578 executions across the documented shared and host runs, builds and seven real Core cases GREEN). P04/R01 remain open.
+
+## Android contract and first persistence slice
+
+Canonical source: `app/src/main/kotlin/features/config/TrafficConfigProxyGroupEditor.kt`, supported by `features/config/TrafficConfigState.kt`, `shared/core/.../TrafficConfigProxyGroupEditorPlan.kt`, and existing Shadowrocket raw group helpers. The list uses parsed group line numbers, Add/Edit/Delete, with no reorder controls. New groups carry their profile source ID and ACTIVE_CONFIG display mode. The result path is profile-only and must not persist to the global catalog.
+
+Deletion and editor results derive a replacement document from the captured profile raw text and write that exact document into the latest same-ID row, preserving its latest envelope metadata and siblings. Positive editor result IDs are absolute profile group line numbers. A deleted result without a positive ID is skipped. Non-StrategyGroup results and blank group names are skipped. A null or nonpositive normal result ID adds the group. Store failure is reported through the existing controller; a removed profile is not recreated. These are existing Android semantics rather than a new concurrency policy.
+
+Android currently also passes the profile line number to the member picker as an excluded catalog ID. The source call chain is `TrafficConfigProxyGroupsPage.openEditGroup` → `Route.ProxyServerEditor.serverId` → `ProxyServerPage.memberOptions` and `Route.StrategyGroupMemberSelector.excludedServerId` → `StrategyGroupMemberSelectorPage`. Preserve this value flow in the transfer. A correction to that existing exclusion behavior is separate from this migration. Persisting by the profile line number still must never edit the similarly numbered catalog record.
+
+Before production, `TrafficConfigProxyGroupAndroidOracleTest` passed **3/3**, zero failures/errors/skips, as part of `outputs/p04-rules-host-checkpoint-final-20261021.log`; its XML timestamp is `2026-10-21T12:55:09.612Z` and an isolated copy is in `outputs/p04-proxy-groups-android-baseline-reports-20261021/`. These are source-derived document/AppState adapter oracles, not Compose navigation tests. Baseline commit: `2f03ca9`.
+
+The reviewed `TrafficConfigProxyGroupEditorControllerTest` adds seven behavior cases against the proposed shared controller APIs `deleteProxyGroup(profile, lineNumber)` and `saveProxyGroupResult(profile, result, serverChoices)`. Before implementation it stopped at `:shared:app:compileTestKotlinDesktop` with only the two missing APIs and consequent type-inference errors: **expected API RED in 7 seconds**, `outputs/p04-proxy-groups-controller-api-red-20261021.log`. No test cases executed in that RED. Root and a second Luna reviewed the expectations against Android before opening the implementation gate. The controller collision test intentionally supplies an arbitrary editor result; it does not claim that Android's member picker offers that colliding ID as a new selection.
+
+Scope of this small slice: transfer result/delete branching to the shared editor controller and replace the Android callback logic with a narrow adapter. Desktop group UI and the shared member projection require their own tests before production. Global catalog behavior, member exclusion, editor validation/navigation, and native/runtime mechanisms are not changed by this slice.
+
+## Persistence result
+
+Implementation `4873225` adds the two shared controller operations and connects Android's existing result and delete callbacks. The original host branching was removed. Independent Luna source review found no required changes: captured effect keys/snapshot, result-clear order, profile-only writes, positive line semantics, and existing failure behavior are preserved. A supplied controller failure handler receives the exception and returns Failed; without a handler the existing controller rethrows.
+
+The postimplementation command passed **676/676** with zero failures/errors/skips in **35 seconds**: shared/app Desktop **334**, shared/app Android **326**, and the relevant Android profile group test classes **16**. The seven new common tests are counted once per target within those module totals. `:app:assembleDebug` also passed with existing HevTun artifacts. Log: `outputs/p04-proxy-groups-persistence-green-20261021.log`; immutable XML/counts: `outputs/p04-proxy-groups-persistence-reports-20261021/`. This is the scoped persistence gate rather than a new whole-application baseline. No user data or running app was changed.
+
+The next step is the member-selector projection. Its exact Android eligibility/order will first be tested through an extracted Android helper, then moved to shared/app under the same tests, before Desktop profile group UI is connected. No complete ProxyGroups UI or P04 closure is claimed yet.

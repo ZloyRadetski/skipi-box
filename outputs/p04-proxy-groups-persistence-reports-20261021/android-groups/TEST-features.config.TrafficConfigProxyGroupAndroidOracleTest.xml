@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.TrafficConfigProxyGroupAndroidOracleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-21T13:01:01.500Z" hostname="VQSeGo" time="0.059">
+  <properties/>
+  <testcase name="deletingGroupUsesCapturedDocumentAndUpdatesLatestSameIdProfileEnvelope" classname="features.config.TrafficConfigProxyGroupAndroidOracleTest" time="0.049"/>
+  <testcase name="editingGroupUsesItsProfileLineNumberEvenWhenItMatchesAGlobalServerId" classname="features.config.TrafficConfigProxyGroupAndroidOracleTest" time="0.006"/>
+  <testcase name="newProfileGroupIsActiveConfigOwnedAndIsSavedOnlyToTheProfileDocument" classname="features.config.TrafficConfigProxyGroupAndroidOracleTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
