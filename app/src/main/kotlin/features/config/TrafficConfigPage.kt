@@ -131,15 +131,7 @@ fun TrafficConfigPage(
     val clipboard = LocalClipboard.current
     val listState = rememberLazyListState()
     val configProxyGroups = remember(appState.trafficConfigs) {
-        appState.trafficConfigs.flatMap { config ->
-            config.rawConfig.analyzeShadowrocketConfig().proxyGroups.map { group ->
-                TrafficConfigProxyGroupListItem(
-                    configId = config.id,
-                    configName = config.name,
-                    group = group,
-                )
-            }
-        }
+        projectTrafficConfigSourcedProxyGroups(appState.trafficConfigs)
     }
     var contextMenuConfig by remember { mutableStateOf<TrafficConfigState?>(null) }
     var pendingConfigDeletion by remember { mutableStateOf<TrafficConfigState?>(null) }
@@ -412,25 +404,8 @@ fun TrafficConfigPage(
                     hasUnsupportedSections = config.rawConfig.analyzeShadowrocketConfig().unsupportedSections.isNotEmpty(),
                 )
             },
-            globalProxyGroups = appState.proxyServers.filter { state ->
-                state.groupId == AutoBalancerGroupId &&
-                    (state.server as? StrategyGroup)?.sourceTrafficConfigId == null
-            }.map { state ->
-                TrafficConfigProxyGroupItem(
-                    key = "global:${state.id}",
-                    name = state.server.getInfo().remarks.ifBlank { state.server.getInfo().protocol },
-                    subtitle = state.server.getInfo().address.ifBlank { "Auto-Balancer" },
-                    badge = "StrategyGroup",
-                )
-            },
-            sourcedProxyGroups = configProxyGroups.map { item ->
-                TrafficConfigProxyGroupItem(
-                    key = "source:${item.configId}:${item.group.lineNumber}",
-                    name = item.group.name,
-                    subtitle = item.configName,
-                    badge = item.group.type,
-                )
-            },
+            globalProxyGroups = projectTrafficConfigGlobalProxyGroups(appState.proxyServers),
+            sourcedProxyGroups = configProxyGroups,
             contentPadding = listPadding,
             onAddConfig = { showAddMenu = true },
             onAddGlobalProxyGroup = ::createProxyGroup,
@@ -615,8 +590,29 @@ fun TrafficConfigPage(
 
 private const val ConfigProxyGroupEditResultKey = "traffic-config-global-proxy-group"
 
-private data class TrafficConfigProxyGroupListItem(
-    val configId: Int,
-    val configName: String,
-    val group: ShadowrocketPolicyGroup,
-)
+internal fun projectTrafficConfigSourcedProxyGroups(
+    trafficConfigs: List<TrafficConfigState>,
+): List<TrafficConfigProxyGroupItem> = trafficConfigs.flatMap { config ->
+    config.rawConfig.analyzeShadowrocketConfig().proxyGroups.map { group ->
+        TrafficConfigProxyGroupItem(
+            key = "source:${config.id}:${group.lineNumber}",
+            name = group.name,
+            subtitle = config.name,
+            badge = group.type,
+        )
+    }
+}
+
+internal fun projectTrafficConfigGlobalProxyGroups(
+    proxyServers: List<ProxyServerState>,
+): List<TrafficConfigProxyGroupItem> = proxyServers.filter { state ->
+    state.groupId == AutoBalancerGroupId &&
+        (state.server as? StrategyGroup)?.sourceTrafficConfigId == null
+}.map { state ->
+    TrafficConfigProxyGroupItem(
+        key = "global:${state.id}",
+        name = state.server.getInfo().remarks.ifBlank { state.server.getInfo().protocol },
+        subtitle = state.server.getInfo().address.ifBlank { "Auto-Balancer" },
+        badge = "StrategyGroup",
+    )
+}
