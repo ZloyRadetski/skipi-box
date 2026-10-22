@@ -123,7 +123,6 @@ internal class DesktopSubscriptionRefreshBatchCommitAdapter(
     override suspend fun updateMetadataAndProfiles(
         applyLatest: (SubscriptionRefreshSnapshot) -> SubscriptionRefreshBatchReconciliationResult,
     ): SubscriptionRefreshBatchReconciliationResult {
-        currentCoroutineContext().ensureActive()
         val serverSnapshot = checkNotNull(serverResult) {
             "Desktop batch metadata cannot be applied before its server catalog"
         }.snapshot
@@ -152,7 +151,6 @@ internal class DesktopSubscriptionRefreshBatchCommitAdapter(
         val original = readConfigs()
         var updated = original
         configs.forEach { config ->
-            currentCoroutineContext().ensureActive()
             updated = try {
                 updated.withImportedSubscriptionConfig(config)
             } catch (cancelled: CancellationException) {
@@ -164,7 +162,6 @@ internal class DesktopSubscriptionRefreshBatchCommitAdapter(
         }
         if (updated == original) return
 
-        currentCoroutineContext().ensureActive()
         val activeBefore = original.selectedConfigId
             ?.let { selectedId -> original.configs.firstOrNull { profile -> profile.id == selectedId } }
         val activeAfter = updated.selectedConfigId

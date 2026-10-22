@@ -1,0 +1,63 @@
+{
+  "suites": [
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:49:00.061Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionRefreshBatchCommitAdapterTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:49:00.223Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionRefreshBatchRunnerCallbackTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:49:00.252Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionRefreshBatchTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:49:00.271Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:49:00.282Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigProxyGroupReconcilerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:49:00.320Z"
+    }
+  ],
+  "totals": {
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "build": "BUILD SUCCESSFUL in 11s",
+  "sourceSha256": {
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionProfileGroupReconciliationTest.kt": "5327fda60cd2623295bcc10d5f8d8bd0aeaa2e93f73f0ddc3a199679fbf3678d",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshBatchRunnerCallbackTest.kt": "b84158d3ba857365b54f5edd535c585f9f3e5944392ee2f2111d8f9ce7f5d951"
+  }
+}

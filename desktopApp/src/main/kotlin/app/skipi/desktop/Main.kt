@@ -342,6 +342,11 @@ fun main() = application {
                         publishConfigs = { configLibrary = it },
                         readLatencyByServerId = { latencyByServerId },
                         publishLatencyByServerId = { latencyByServerId = it },
+                        onCommittedLibrariesChanged = {
+                            if (coreController.state().isRunning) {
+                                requestTunnelReconnect("Подписки обновлены.")
+                            }
+                        },
                     )
                 }
                 LaunchedEffect(desktopSubscriptionRefreshBatchRunner) {
@@ -1724,13 +1729,6 @@ fun main() = application {
                                                     successTemplate = subscriptionRefreshSuccessTemplate,
                                                     failedTemplate = subscriptionRefreshFailedTemplate,
                                                 )
-                                            }
-                                            if (
-                                                (desktopSubscriptionRefreshBatchRunner.serverLibraryChanged ||
-                                                    desktopSubscriptionRefreshBatchRunner.profileLibraryChanged) &&
-                                                coreState.isRunning
-                                            ) {
-                                                requestTunnelReconnect("Подписки обновлены.")
                                             }
                                         } catch (cancelled: CancellationException) {
                                             throw cancelled

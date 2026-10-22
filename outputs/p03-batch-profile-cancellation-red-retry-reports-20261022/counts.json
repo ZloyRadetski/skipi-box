@@ -1,0 +1,13 @@
+{
+  "tests": "6",
+  "failures": "1",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-22T20:44:13.396Z",
+  "build": "BUILD FAILED in 5s",
+  "sourceSha256": "5327fda60cd2623295bcc10d5f8d8bd0aeaa2e93f73f0ddc3a199679fbf3678d",
+  "failure": {
+    "test": "lateBatchCancellationStillCommitsMetadataProfilesAndGeneratedGroups",
+    "message": "java.lang.AssertionError: expected:<[Updated Four title, Updated Five title]> but was:<[Provider 4, Provider 5]>"
+  }
+}

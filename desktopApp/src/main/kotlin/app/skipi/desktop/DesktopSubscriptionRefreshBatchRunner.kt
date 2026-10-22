@@ -25,6 +25,8 @@ internal class DesktopSubscriptionRefreshBatchRunner<FetchOptions>(
     private val publishConfigs: (DesktopConfigLibrary) -> Unit,
     private val readLatencyByServerId: () -> Map<Int, DesktopServerLatencyResult>,
     private val publishLatencyByServerId: (Map<Int, DesktopServerLatencyResult>) -> Unit,
+    /** Signals captured persisted changes, including partial failure; the host callback must not throw. */
+    private val onCommittedLibrariesChanged: () -> Unit = {},
 ) {
     private var mutableServerLibraryChanged = false
     private var mutableProfileLibraryChanged = false
@@ -87,6 +89,9 @@ internal class DesktopSubscriptionRefreshBatchRunner<FetchOptions>(
         } finally {
             mutableServerLibraryChanged = singleAdapter.serverLibraryChanged || batchAdapter.serverLibraryChanged
             mutableProfileLibraryChanged = singleAdapter.profileLibraryChanged || batchAdapter.profileLibraryChanged
+            if (mutableServerLibraryChanged || mutableProfileLibraryChanged) {
+                onCommittedLibrariesChanged()
+            }
         }
     }
 }

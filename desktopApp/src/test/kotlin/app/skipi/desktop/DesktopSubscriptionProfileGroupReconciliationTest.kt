@@ -16,12 +16,17 @@ import features.proxy.server.model.VLESS
 import features.proxy.server.model.encodePersistedProxyServer
 import features.subscription.StoredSubscription
 import features.subscription.SubscriptionMetadata
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Comparator
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -198,6 +203,153 @@ class DesktopSubscriptionProfileGroupReconciliationTest {
             assertEquals("Provider Five Group", secondGroup.sourcePolicyGroupName)
             assertEquals(listOf(11, 12), secondGroup.proxyServerIds)
             assertEquals(52, savedServers.nextServerId)
+        }
+    }
+
+    @Test
+    fun lateBatchCancellationStillCommitsMetadataProfilesAndGeneratedGroups() = runBlocking {
+        val initialConfigs = DesktopConfigLibrary(
+            selectedConfigId = 6,
+            configs = listOf(
+                ConfigProfile(5, "Base one", "[Rule]\nFINAL,DIRECT\n"),
+                ConfigProfile(6, "Base two", "[Rule]\nFINAL,DIRECT\n"),
+            ),
+            nextConfigId = 100,
+        )
+        val initialServers = DesktopServerLibrary(
+            selectedServerId = 12,
+            servers = listOf(
+                stored(10, vless("Node A", "a.example")),
+                stored(11, vless("Node B", "b.example")),
+                stored(12, vless("Node C", "c.example")),
+            ),
+            nextServerId = 50,
+        )
+
+        withFixture(
+            subscriptions = listOf(provider(4), provider(5)),
+            configs = initialConfigs,
+            servers = initialServers,
+        ) { fixture ->
+            val loadedUpdates = fixture.subscriptionRepository.catalog.value.subscriptions.map { subscription ->
+                when (subscription.id) {
+                    4 -> loaded(
+                        subscription = subscription,
+                        servers = listOf(vless("Refreshed Four", "provider-four.example")),
+                        embedded = embedded(
+                            sourceUrl = "subscription://4",
+                            fallbackName = "Provider Four",
+                            activate = true,
+                            content = profileDocument(
+                                "Provider Four",
+                                "Provider Four Group",
+                                listOf("Node A", "Node B"),
+                            ),
+                        ),
+                    ).copy(metadata = SubscriptionMetadata(profileTitle = "Updated Four title"))
+                    5 -> loaded(
+                        subscription = subscription,
+                        servers = listOf(vless("Refreshed Five", "provider-five.example")),
+                        embedded = embedded(
+                            sourceUrl = "subscription://5",
+                            fallbackName = "Provider Five",
+                            activate = false,
+                            content = profileDocument(
+                                "Provider Five",
+                                "Provider Five Group",
+                                listOf("Node B", "Node C"),
+                            ),
+                        ),
+                    ).copy(metadata = SubscriptionMetadata(profileTitle = "Updated Five title"))
+                    else -> error("Unexpected subscription ${subscription.id}")
+                }
+            }
+
+            var childJob: Job? = null
+            var serverLibraryAtCancellation: DesktopServerLibrary? = null
+            fixture.afterSuccessfulServerSave = { savedLibrary ->
+                // This hook runs only after DesktopServerLibraries.save has returned success.
+                serverLibraryAtCancellation = fixture.readServers()
+                assertEquals(savedLibrary, serverLibraryAtCancellation)
+                checkNotNull(childJob).cancel(
+                    CancellationException("cancelled after the batch server-library write"),
+                )
+            }
+            val batchAdapter = fixture.batchPort(loadedUpdates)
+            val singleAdapter = fixture.singlePort(subscriptionId = 4)
+            val commit = async(start = CoroutineStart.LAZY) {
+                childJob = coroutineContext[Job]
+                commitSubscriptionRefreshBatch(
+                    loaded = loadedUpdates,
+                    refreshedAtMillis = 17_000L,
+                    singlePort = singleAdapter,
+                    batchPort = batchAdapter,
+                )
+            }
+
+            commit.start()
+            assertFailsWith<CancellationException> { commit.await() }
+
+            assertEquals(1, fixture.afterSuccessfulServerSaveCount)
+            val writtenAtCancellation = checkNotNull(serverLibraryAtCancellation)
+            assertEquals(listOf(50, 51, 10, 11, 12), writtenAtCancellation.servers.map(DesktopStoredProxyServer::id))
+            assertEquals(
+                listOf(4, 5, null, null, null),
+                writtenAtCancellation.servers.map(DesktopStoredProxyServer::subscriptionId),
+            )
+            assertTrue(writtenAtCancellation.servers.none { it.isGeneratedProfileGroup() })
+            assertEquals(12, writtenAtCancellation.selectedServerId)
+            assertEquals(52, writtenAtCancellation.nextServerId)
+
+            val refreshedSubscriptions = fixture.subscriptionRepository.catalog.value.subscriptions
+            assertEquals(listOf(4, 5), refreshedSubscriptions.map(SubscriptionRecord::id))
+            assertEquals(
+                listOf("Updated Four title", "Updated Five title"),
+                refreshedSubscriptions.map(SubscriptionRecord::title),
+            )
+            assertEquals(
+                listOf(17_000L, 17_000L),
+                refreshedSubscriptions.map(SubscriptionRecord::lastUpdatedAtMillis),
+            )
+            assertEquals(
+                listOf("Updated Four title", "Updated Five title"),
+                refreshedSubscriptions.map { it.metadata?.profileTitle },
+            )
+
+            val savedConfigs = fixture.readConfigs()
+            assertEquals(listOf(5, 6, 100, 101), savedConfigs.configs.map(ConfigProfile::id))
+            assertEquals(100, savedConfigs.selectedConfigId)
+            assertEquals(102, savedConfigs.nextConfigId)
+            assertEquals(
+                listOf("Provider Four", "Provider Five"),
+                savedConfigs.configs.takeLast(2).map(ConfigProfile::name),
+            )
+            assertEquals(savedConfigs, fixture.publishedConfigs)
+            assertTrue(batchAdapter.profileLibraryChanged)
+            assertTrue(batchAdapter.serverLibraryChanged)
+            assertEquals(1, fixture.profilePublishCount)
+            assertEquals(1, fixture.profileWriteAttempts)
+
+            val savedServers = fixture.readServers()
+            val generatedGroups = savedServers.servers.mapNotNull { stored ->
+                (stored.decode().getOrNull() as? StrategyGroup)
+                    ?.takeIf { it.sourceTrafficConfigId != null }
+                    ?.let { stored.id to it }
+            }.toMap()
+            assertEquals(setOf(52, 53), generatedGroups.keys)
+            assertEquals(100, generatedGroups.getValue(52).sourceTrafficConfigId)
+            assertEquals("Provider Four Group", generatedGroups.getValue(52).sourcePolicyGroupName)
+            assertEquals(listOf(10, 11), generatedGroups.getValue(52).proxyServerIds)
+            assertEquals(10, generatedGroups.getValue(52).selectedMemberId)
+            assertEquals(101, generatedGroups.getValue(53).sourceTrafficConfigId)
+            assertEquals("Provider Five Group", generatedGroups.getValue(53).sourcePolicyGroupName)
+            assertEquals(listOf(11, 12), generatedGroups.getValue(53).proxyServerIds)
+            assertEquals(11, generatedGroups.getValue(53).selectedMemberId)
+            assertEquals(12, savedServers.selectedServerId)
+            assertEquals(54, savedServers.nextServerId)
+            assertEquals(savedServers, fixture.publishedServers)
+            assertEquals(2, fixture.successfulServerWriteCount)
+            assertEquals(1, fixture.generatedGroupSaveAttempts)
         }
     }
 
@@ -406,6 +558,9 @@ class DesktopSubscriptionProfileGroupReconciliationTest {
             private set
         var generatedGroupSaveAttempts = 0
             private set
+        var afterSuccessfulServerSave: ((DesktopServerLibrary) -> Unit)? = null
+        var afterSuccessfulServerSaveCount = 0
+            private set
 
         init {
             DesktopConfigLibraries.save(configPath, initialConfigs).getOrThrow()
@@ -477,7 +632,15 @@ class DesktopSubscriptionProfileGroupReconciliationTest {
                 }
             }
             return DesktopServerLibraries.save(serverPath, updated).also { result ->
-                if (result.isSuccess) successfulServerWriteCount += 1
+                if (result.isSuccess) {
+                    successfulServerWriteCount += 1
+                    val hook = afterSuccessfulServerSave
+                    afterSuccessfulServerSave = null
+                    if (hook != null) {
+                        afterSuccessfulServerSaveCount += 1
+                        hook(updated)
+                    }
+                }
             }
         }
     }

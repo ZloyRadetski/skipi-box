@@ -1,0 +1,13 @@
+{
+  "tests": "6",
+  "failures": "1",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-22T20:42:15.710Z",
+  "build": "BUILD FAILED in 23s",
+  "sourceSha256": "c445874f45e70ae8ef7f465ab917d987a1732c6a665851585eeee148c5f40c97",
+  "failure": {
+    "test": "lateBatchCancellationStillCommitsMetadataProfilesAndGeneratedGroups",
+    "message": "java.lang.AssertionError: expected:<[10, 11, 12, 50, 51]> but was:<[50, 51, 10, 11, 12]>"
+  }
+}

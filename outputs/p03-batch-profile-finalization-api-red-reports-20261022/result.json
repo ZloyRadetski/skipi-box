@@ -1,0 +1,9 @@
+{
+  "result": "API RED before production callback API",
+  "testsExecuted": 0,
+  "build": "BUILD FAILED in 2s",
+  "errors": [
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshBatchRunnerCallbackTest.kt:335:13 No parameter with name 'onCommittedLibrariesChanged' found."
+  ],
+  "sourceSha256": "b84158d3ba857365b54f5edd535c585f9f3e5944392ee2f2111d8f9ce7f5d951"
+}
