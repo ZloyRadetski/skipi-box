@@ -1,0 +1,16 @@
+{
+  "tests": "4",
+  "failures": "0",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-22T21:07:34.860Z",
+  "cases": [
+    "profileMenuDeleteUsesLatestLibraryAndFallsBackToFirstRemainingProfile",
+    "profileMenuDeleteKeepsTheOnlyProfileAndItsSelectionAndCounter",
+    "profileMenuEnableChangesOnlyThePersistedSelection",
+    "profileMenuDuplicateUsesClickedSnapshotAndKeepsEditorChangesLocalUntilSave"
+  ],
+  "build": "BUILD SUCCESSFUL in 10s",
+  "productionChanged": false,
+  "sourceSha256": "00186880de06b04a6feecd1ef6e985bed411976fef4ebb9d6aa5fcf79fef6136"
+}

@@ -1045,9 +1045,15 @@ internal fun DesktopConfigsScreen(
             text = { Text("«${config.name}» будет удалён из локальной библиотеки.") },
             confirmButton = {
                 Button(onClick = {
+                    var removed = false
                     persist(
-                        transform = { latest -> DesktopConfigLibraries.remove(latest, config.id) },
-                        successMessage = "Конфиг удалён.",
+                        transform = { latest ->
+                            val updated = DesktopConfigLibraries.remove(latest, config.id)
+                            removed = updated.configs != latest.configs
+                            updated
+                        },
+                        successMessage = "",
+                        afterSave = { if (removed) message = "Конфиг удалён." },
                     )
                     pendingDeletion = null
                 }) { Text("Удалить") }

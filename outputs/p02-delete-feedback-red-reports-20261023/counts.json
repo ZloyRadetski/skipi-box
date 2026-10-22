@@ -1,0 +1,27 @@
+{
+  "tests": "4",
+  "failures": "1",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-22T21:18:29.112Z",
+  "cases": [
+    {
+      "name": "profileMenuDeleteUsesLatestLibraryAndFallsBackToFirstRemainingProfile",
+      "failure": null
+    },
+    {
+      "name": "profileMenuDeleteKeepsTheOnlyProfileAndItsSelectionAndCounter",
+      "failure": "java.lang.AssertionError: The last-profile guard must not show the deletion success message"
+    },
+    {
+      "name": "profileMenuEnableChangesOnlyThePersistedSelection",
+      "failure": null
+    },
+    {
+      "name": "profileMenuDuplicateUsesClickedSnapshotAndKeepsEditorChangesLocalUntilSave",
+      "failure": null
+    }
+  ],
+  "sourceSha256": "6f8190ced66d11be1f9ffc148437c82369de8ea0e6f318f1b0548062bd9d9116",
+  "build": "BUILD FAILED in 10s"
+}

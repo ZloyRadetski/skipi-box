@@ -1,0 +1,23 @@
+{
+  "tests": "4",
+  "failures": "3",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-22T21:05:32.947Z",
+  "build": "BUILD FAILED in 30s",
+  "sourceSha256": "df0f9ed1d5f673278bf2c1c49ef68de1729a5cef62e37c3789c754b5e898686b",
+  "failuresDetail": [
+    {
+      "test": "profileMenuDeleteUsesLatestLibraryAndFallsBackToFirstRemainingProfile",
+      "message": "java.lang.AssertionError: Expected 'Delete' inside dialog '\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u043a\u043e\u043d\u0444\u0438\u0433?'"
+    },
+    {
+      "test": "profileMenuDeleteKeepsTheOnlyProfileAndItsSelectionAndCounter",
+      "message": "java.lang.AssertionError: Expected 'Delete' inside dialog '\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u043a\u043e\u043d\u0444\u0438\u0433?'"
+    },
+    {
+      "test": "profileMenuDuplicateUsesClickedSnapshotAndKeepsEditorChangesLocalUntilSave",
+      "message": "java.lang.AssertionError: Expected rendered text 'Save'"
+    }
+  ]
+}

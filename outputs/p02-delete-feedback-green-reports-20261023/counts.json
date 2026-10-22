@@ -1,0 +1,45 @@
+{
+  "suites": [
+    {
+      "name": "app.skipi.desktop.DesktopConfigEditorSaveTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-22T21:19:29.288Z"
+    },
+    {
+      "name": "app.skipi.desktop.DesktopConfigLibraryTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-22T21:19:29.293Z"
+    },
+    {
+      "name": "app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest",
+      "tests": "26",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-22T21:19:12.403Z"
+    },
+    {
+      "name": "app.skipi.desktop.DesktopTrafficConfigEditorProfileStoreTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-22T21:19:29.297Z"
+    }
+  ],
+  "totals": {
+    "tests": 44,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "build": "BUILD SUCCESSFUL in 23s",
+  "testSourceSha256": "6f8190ced66d11be1f9ffc148437c82369de8ea0e6f318f1b0548062bd9d9116",
+  "productionSourceSha256": "8d25977e93369d4ecdc4157e34d0209941dc1ef418d3eab4e577cbe40ed48d0c"
+}

@@ -26,6 +26,7 @@ import app.skipi.ui.resources.common_edit
 import app.skipi.ui.resources.common_refresh
 import app.skipi.ui.resources.common_save
 import app.skipi.ui.resources.configs_add
+import app.skipi.ui.resources.configs_activate
 import app.skipi.ui.resources.configs_copy_name
 import app.skipi.ui.resources.configs_duplicate
 import app.skipi.ui.resources.configs_global_proxy_groups
@@ -641,6 +642,311 @@ loglevel = debug
             )
             assertEquals(screen.initialLibrary, screen.persistedLibrary())
             assertEquals(0, screen.libraryTransformCount())
+        }
+    }
+
+    @Test
+    fun profileMenuDuplicateUsesClickedSnapshotAndKeepsEditorChangesLocalUntilSave() = runBlocking {
+        val clicked = normalizedProfile(
+            id = 7,
+            name = "Clicked snapshot profile",
+            sourceUrl = "https://clicked.example/profile.conf",
+            updateLocked = true,
+            content = """[General]
+loglevel = warning
+
+[Vendor]
+revision = clicked
+""",
+        )
+        val active = normalizedProfile(
+            id = 3,
+            name = "Active sibling profile",
+            sourceUrl = "https://active.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = debug
+""",
+        )
+        val initialLibrary = DesktopConfigLibrary(
+            selectedConfigId = active.id,
+            configs = listOf(clicked, active),
+            nextConfigId = 29,
+        )
+        val latestClicked = normalizedProfile(
+            id = clicked.id,
+            name = "Newer same-ID profile",
+            sourceUrl = "https://newer.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = error
+
+[Vendor]
+revision = newer
+""",
+        ).copy(lastUpdatedAtMillis = 700L)
+        val latestSibling = normalizedProfile(
+            id = 15,
+            name = "Added while menu is open",
+            sourceUrl = "https://late.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = info
+""",
+        )
+        val duplicateLabel = getString(Res.string.configs_duplicate)
+        val copyName = getString(Res.string.configs_copy_name, clicked.name)
+        val editedCopyName = "Edited duplicate draft"
+        val saveLabel = "Сохранить"
+        lateinit var configRepository: DesktopTrafficConfigRepository
+        lateinit var configFile: File
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = clicked,
+            activeProfile = active,
+            initialLibraryOverride = initialLibrary,
+            libraryTransformHooksFactory = fileBackedConfigLibraryHooks { repository, file ->
+                configRepository = repository
+                configFile = file
+            },
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, clicked.name, "Ещё")
+            assertNotNull(awaitText(screen.scene, duplicateLabel), "The profile More menu should expose Duplicate")
+
+            val lateLibrary = configRepository.transformLatest { latest ->
+                latest.copy(
+                    configs = listOf(latestClicked, active, latestSibling),
+                    nextConfigId = 40,
+                )
+            }
+            screen.replaceLatestLibrary(lateLibrary)
+            assertNotNull(awaitText(screen.scene, duplicateLabel), "The clicked profile menu should remain open after a newer library render")
+            clickTextAction(screen.scene, duplicateLabel)
+            assertNotNull(awaitText(screen.scene, "Редактор конфига"), "Duplicate should open the new profile in the editor")
+            assertEquals(copyName, awaitEditableText(screen.scene, copyName))
+
+            val duplicated = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
+            assertEquals(listOf(7, 3, 15, 40), duplicated.configs.map(ConfigProfile::id))
+            assertEquals(active.id, duplicated.selectedConfigId, "Creating a duplicate must keep the previously active profile")
+            assertEquals(41, duplicated.nextConfigId)
+            assertEquals(latestClicked, duplicated.configs.single { it.id == clicked.id })
+            assertEquals(active, duplicated.configs.single { it.id == active.id })
+            assertEquals(latestSibling, duplicated.configs.single { it.id == latestSibling.id })
+            val copy = duplicated.configs.single { it.id == 40 }
+            assertEquals(copyName, copy.name)
+            assertEquals(clicked.sourceUrl, copy.sourceUrl)
+            assertEquals(clicked.updateLocked, copy.updateLocked)
+            assertEquals(0L, copy.lastUpdatedAtMillis)
+            assertEquals(copyName, copy.content.skipiSectionValues()["profile-name"]?.single())
+            assertTrue(copy.content.contains("[Vendor]\nrevision = clicked"))
+            assertFalse(copy.content.contains("revision = newer"))
+            assertEquals(1, screen.libraryTransformCount(), "The Duplicate menu action should commit exactly one new profile")
+
+            setEditableTextByCurrentValue(screen.scene, copyName, editedCopyName)
+            assertEquals(
+                copyName,
+                DesktopConfigLibraries.load(configFile.toPath()).getOrThrow().configs.single { it.id == copy.id }.name,
+                "Changing the editor field should remain a local draft until Save",
+            )
+            assertEquals(1, screen.libraryTransformCount())
+
+            clickTextAction(screen.scene, saveLabel)
+            assertNotNull(awaitText(screen.scene, editedCopyName), "Saving the duplicate draft should return to the profile collection")
+            val saved = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
+            assertEquals(listOf(7, 3, 15, 40), saved.configs.map(ConfigProfile::id))
+            assertEquals(active.id, saved.selectedConfigId)
+            assertEquals(41, saved.nextConfigId)
+            assertEquals(latestClicked, saved.configs.single { it.id == clicked.id })
+            assertEquals(active, saved.configs.single { it.id == active.id })
+            assertEquals(latestSibling, saved.configs.single { it.id == latestSibling.id })
+            val savedCopy = saved.configs.single { it.id == copy.id }
+            assertEquals(editedCopyName, savedCopy.name)
+            assertEquals(clicked.sourceUrl, savedCopy.sourceUrl)
+            assertEquals(clicked.updateLocked, savedCopy.updateLocked)
+            assertEquals(0L, savedCopy.lastUpdatedAtMillis)
+            assertEquals(editedCopyName, savedCopy.content.skipiSectionValues()["profile-name"]?.single())
+            assertTrue(savedCopy.content.contains("[Vendor]\nrevision = clicked"))
+            assertEquals(2, screen.libraryTransformCount(), "Saving the editor draft should be a separate library transform")
+        }
+    }
+
+    @Test
+    fun profileMenuEnableChangesOnlyThePersistedSelection() = runBlocking {
+        val target = normalizedProfile(
+            id = 7,
+            name = "Inactive profile to activate",
+            sourceUrl = "https://inactive.example/profile.conf",
+            updateLocked = true,
+            content = """[General]
+loglevel = warning
+""",
+        )
+        val active = normalizedProfile(
+            id = 3,
+            name = "Currently active profile",
+            sourceUrl = "https://active.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = debug
+""",
+        )
+        val initialLibrary = DesktopConfigLibrary(
+            selectedConfigId = active.id,
+            configs = listOf(target, active),
+            nextConfigId = 29,
+        )
+        val activateLabel = getString(Res.string.configs_activate)
+        lateinit var configFile: File
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = target,
+            activeProfile = active,
+            initialLibraryOverride = initialLibrary,
+            libraryTransformHooksFactory = fileBackedConfigLibraryHooks { _, file -> configFile = file },
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, target.name, "Ещё")
+            assertNotNull(awaitText(screen.scene, activateLabel), "The profile More menu should expose Activate")
+            clickTextAction(screen.scene, activateLabel)
+
+            val saved = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
+            assertEquals(target.id, saved.selectedConfigId)
+            assertEquals(initialLibrary.configs, saved.configs, "Activation must preserve every profile and its order")
+            assertEquals(initialLibrary.nextConfigId, saved.nextConfigId, "Activation must not allocate a profile ID")
+            assertEquals(1, screen.libraryTransformCount())
+        }
+    }
+
+    @Test
+    fun profileMenuDeleteUsesLatestLibraryAndFallsBackToFirstRemainingProfile() = runBlocking {
+        val first = normalizedProfile(
+            id = 3,
+            name = "First remaining profile",
+            sourceUrl = "https://first.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = debug
+""",
+        )
+        val active = normalizedProfile(
+            id = 7,
+            name = "Active profile to delete",
+            sourceUrl = "https://delete.example/profile.conf",
+            updateLocked = true,
+            content = """[General]
+loglevel = warning
+""",
+        )
+        val next = normalizedProfile(
+            id = 12,
+            name = "Second remaining profile",
+            sourceUrl = "https://second.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = info
+""",
+        )
+        val latestAdded = normalizedProfile(
+            id = 40,
+            name = "Added while confirmation is open",
+            sourceUrl = "https://latest.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = error
+""",
+        )
+        val initialLibrary = DesktopConfigLibrary(
+            selectedConfigId = active.id,
+            configs = listOf(first, active, next),
+            nextConfigId = 29,
+        )
+        val deleteLabel = getString(Res.string.common_delete)
+        lateinit var configRepository: DesktopTrafficConfigRepository
+        lateinit var configFile: File
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = active,
+            activeProfile = active,
+            initialLibraryOverride = initialLibrary,
+            libraryTransformHooksFactory = fileBackedConfigLibraryHooks { repository, file ->
+                configRepository = repository
+                configFile = file
+            },
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, active.name, "Ещё")
+            assertNotNull(awaitText(screen.scene, deleteLabel), "The profile More menu should expose Delete")
+            clickTextAction(screen.scene, deleteLabel)
+            assertNotNull(awaitText(screen.scene, "Удалить конфиг?"), "Delete should wait for confirmation")
+
+            val latestLibrary = configRepository.transformLatest { latest ->
+                latest.copy(
+                    configs = latest.configs + latestAdded,
+                    nextConfigId = 41,
+                )
+            }
+            screen.replaceLatestLibrary(latestLibrary)
+            assertNotNull(awaitText(screen.scene, "Удалить конфиг?"), "The pending confirmation should survive a newer library render")
+            clickDialogTextAction(screen.scene, "Удалить конфиг?", "Удалить")
+
+            val saved = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
+            assertEquals(listOf(3, 12, 40), saved.configs.map(ConfigProfile::id))
+            assertEquals(first, saved.configs[0])
+            assertEquals(next, saved.configs[1])
+            assertEquals(latestAdded, saved.configs[2])
+            assertEquals(first.id, saved.selectedConfigId, "Deleting the active profile should select the first remaining profile")
+            assertEquals(41, saved.nextConfigId, "Deleting a profile must preserve the latest ID high-water mark")
+            assertEquals(1, screen.libraryTransformCount())
+            assertNotNull(
+                awaitText(screen.scene, "Конфиг удалён."),
+                "Deleting an active profile should show the success message",
+            )
+        }
+    }
+
+    @Test
+    fun profileMenuDeleteKeepsTheOnlyProfileAndItsSelectionAndCounter() = runBlocking {
+        val only = normalizedProfile(
+            id = 8,
+            name = "Only profile",
+            sourceUrl = "https://only.example/profile.conf",
+            updateLocked = true,
+            content = """[General]
+loglevel = warning
+""",
+        )
+        val initialLibrary = DesktopConfigLibrary(
+            selectedConfigId = only.id,
+            configs = listOf(only),
+            nextConfigId = 17,
+        )
+        val deleteLabel = getString(Res.string.common_delete)
+        lateinit var configFile: File
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = only,
+            activeProfile = only,
+            initialLibraryOverride = initialLibrary,
+            libraryTransformHooksFactory = fileBackedConfigLibraryHooks { _, file -> configFile = file },
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, only.name, "Ещё")
+            assertNotNull(awaitText(screen.scene, deleteLabel), "The public More menu should expose Delete for the last profile")
+            clickTextAction(screen.scene, deleteLabel)
+            assertNotNull(awaitText(screen.scene, "Удалить конфиг?"))
+            clickDialogTextAction(screen.scene, "Удалить конфиг?", "Удалить")
+
+            val saved = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
+            assertEquals(initialLibrary, saved, "The last-profile guard must preserve the complete stored library")
+            assertEquals(only.id, saved.selectedConfigId)
+            assertEquals(17, saved.nextConfigId)
+            assertEquals(1, screen.libraryTransformCount(), "The confirmed menu action makes one guarded transform attempt")
+            assertNotNull(awaitText(screen.scene, only.name), "The only profile should remain visible after the guard")
+            assertFalse(
+                hasVisibleText(screen.scene, "Конфиг удалён."),
+                "The last-profile guard must not show the deletion success message",
+            )
         }
     }
 
@@ -1480,6 +1786,25 @@ FINAL,DIRECT
         val transformLatestWithPrevious: ((DesktopConfigLibrary) -> DesktopConfigLibrary) -> DesktopConfigLibraryTransformResult,
         val afterTransform: (DesktopConfigLibraryTransformResult) -> Unit,
     )
+
+    private fun fileBackedConfigLibraryHooks(
+        onRepositoryReady: (DesktopTrafficConfigRepository, File) -> Unit,
+    ): (File, DesktopConfigLibrary, CoroutineScope) -> DesktopScreenLibraryTransformHooks = { root, initial, _ ->
+        val configFile = File(root, "configs.json")
+        DesktopConfigLibraries.save(configFile.toPath(), initial).getOrThrow()
+        val readLibrary = { DesktopConfigLibraries.load(configFile.toPath()).getOrThrow() }
+        val repository = DesktopTrafficConfigRepository(
+            initialLibrary = initial,
+            readLibrary = readLibrary,
+            saveLibrary = { updated -> DesktopConfigLibraries.save(configFile.toPath(), updated) },
+            publishLibrary = {},
+        )
+        onRepositoryReady(repository, configFile)
+        DesktopScreenLibraryTransformHooks(
+            transformLatestWithPrevious = repository::transformLatestWithPrevious,
+            afterTransform = {},
+        )
+    }
 
     private suspend fun withDesktopScreen(
         proxyServers: List<CatalogProxyServerRecord>,

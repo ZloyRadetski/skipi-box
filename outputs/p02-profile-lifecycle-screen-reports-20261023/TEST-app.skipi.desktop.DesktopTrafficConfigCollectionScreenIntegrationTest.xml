@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-22T21:07:34.860Z" hostname="VQSeGo" time="4.557">
+  <properties/>
+  <testcase name="profileMenuDeleteUsesLatestLibraryAndFallsBackToFirstRemainingProfile" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="1.545"/>
+  <testcase name="profileMenuDeleteKeepsTheOnlyProfileAndItsSelectionAndCounter" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.695"/>
+  <testcase name="profileMenuEnableChangesOnlyThePersistedSelection" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.624"/>
+  <testcase name="profileMenuDuplicateUsesClickedSnapshotAndKeepsEditorChangesLocalUntilSave" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="1.69"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
