@@ -78,6 +78,7 @@ import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
 import features.proxy.server.editor.editableCopy
 import features.proxy.server.list.AutoBalancerGroupId
+import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.subscription.DefaultSubscriptionUserAgent
 import features.subscription.DefaultSubscriptionGroupId
@@ -304,15 +305,16 @@ fun TrafficConfigPage(
     }
 
     fun openProxyGroupEditor(
-        server: StrategyGroup,
+        server: ProxyServer<*>,
         serverId: Int?,
     ) {
+        val result = trafficConfigGlobalProxyGroupEditResult(server, serverId) ?: return
         navigator.navigateForResult(
             route = Route.ProxyServerEditor(
-                ps = server,
-                serverId = serverId,
-                groupId = AutoBalancerGroupId,
-                returnGroupId = AutoBalancerGroupId,
+                ps = result.server,
+                serverId = result.serverId,
+                groupId = result.groupId,
+                returnGroupId = result.returnGroupId,
                 resultKey = ConfigProxyGroupEditResultKey,
             ),
             requestKey = ConfigProxyGroupEditResultKey,
@@ -524,7 +526,7 @@ fun TrafficConfigPage(
             onDismissRequest = { contextMenuAutoBalancer = null },
             onEdit = {
                 contextMenuAutoBalancer = null
-                openProxyGroupEditor(proxyGroup.server as StrategyGroup, proxyGroup.id)
+                openProxyGroupEditor(proxyGroup.server, proxyGroup.id)
             },
             onDuplicate = {
                 contextMenuAutoBalancer = null
@@ -609,3 +611,17 @@ internal fun projectTrafficConfigGlobalProxyGroups(
         )
     },
 )
+
+internal fun trafficConfigGlobalProxyGroupEditResult(
+    server: ProxyServer<*>,
+    serverId: Int?,
+): ProxyServerEditResult? {
+    val strategyGroup = server as? StrategyGroup ?: return null
+    return ProxyServerEditResult(
+        serverId = serverId,
+        server = strategyGroup,
+        groupId = AutoBalancerGroupId,
+        returnGroupId = AutoBalancerGroupId,
+        deleted = false,
+    )
+}

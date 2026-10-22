@@ -1,0 +1,18 @@
+[
+  {
+    "name": "features.config.TrafficConfigGlobalGroupEditResultAndroidTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "timestamp": "2026-10-22T04:57:39.926Z"
+  },
+  {
+    "name": "features.config.TrafficConfigProxyGroupListAndroidOracleTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "timestamp": "2026-10-22T04:57:39.940Z"
+  }
+]
