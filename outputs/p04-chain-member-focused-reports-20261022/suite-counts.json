@@ -1,0 +1,26 @@
+{
+  "app.skipi.desktop.DesktopProxyServerEditorProjectionTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopProxyHomeSaveFeedbackTest": {
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app.skipi.desktop.DesktopChainMemberEligibilityScreenIntegrationTest": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
