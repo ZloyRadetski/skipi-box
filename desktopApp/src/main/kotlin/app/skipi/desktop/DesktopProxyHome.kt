@@ -74,10 +74,10 @@ import app.skipi.ui.server.editor.SkipiSelectGroupMemberDialog
 import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.resolveStrategyGroupMembers
 import features.proxy.server.model.ProxyServer
-import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
+import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.model.extractLeadingCountryFlagOrNull
 import features.proxy.server.model.encodePersistedProxyServer
 import features.proxy.server.model.getUrlOrNull
@@ -787,10 +787,9 @@ internal fun DesktopProxyHome(
         val memberOptions = remember(decodedServers, presentationNodes, presentationFormatter, editResult.serverId, unknownGroupName) {
             decodedServers.mapNotNull { (stored, candidate) ->
                 val member = candidate ?: return@mapNotNull null
-                if (stored.id == editResult.serverId || member is ChainProxy || member is Custom && !member.canBeUsedInGeneratedProxyPlan()) {
+                if (stored.id == editResult.serverId || member.isCompositeProxyServer() || member is Custom && !member.canBeUsedInGeneratedProxyPlan()) {
                     return@mapNotNull null
                 }
-                if (member is StrategyGroup && member.sourceTrafficConfigId != null) return@mapNotNull null
                 val node = presentationNodes.firstOrNull { it.id == stored.id }
                 ProxyServerEditorMemberOption(
                     id = stored.id,
