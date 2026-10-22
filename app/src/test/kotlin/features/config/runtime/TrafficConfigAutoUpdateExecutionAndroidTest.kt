@@ -1,10 +1,12 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-// Source-derived baseline for the planned portable worker execution helper. Once added,
-// these tests call that helper directly, not WorkManager/context/input/UA/options integration.
+// Android source-derived baseline retained against the shared worker execution helper. These tests
+// call that helper directly, not WorkManager/context/input/UA/options integration.
 package features.config.runtime
 
+import app.skipi.app.config.TrafficConfigAutoUpdateExecutionResult
+import app.skipi.app.config.executeTrafficConfigAutoUpdate
 import features.config.TrafficConfigState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking

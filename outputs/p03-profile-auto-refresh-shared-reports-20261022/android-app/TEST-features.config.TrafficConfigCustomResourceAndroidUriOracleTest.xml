@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.TrafficConfigCustomResourceAndroidUriOracleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:49:13.482Z" hostname="VQSeGo" time="0.06">
+  <properties/>
+  <testcase name="androidUriEncodingUsesItsDefaultSafeSetAndUtf8PercentEscapes" classname="features.config.TrafficConfigCustomResourceAndroidUriOracleTest" time="0.02"/>
+  <testcase name="androidUriDecodeKeepsPlusAndMatchesMalformedEscapeReplacement" classname="features.config.TrafficConfigCustomResourceAndroidUriOracleTest" time="0.016"/>
+  <testcase name="profileRowsKeepAndroidIdNameUrlAndFirstDuplicateRules" classname="features.config.TrafficConfigCustomResourceAndroidUriOracleTest" time="0.022"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

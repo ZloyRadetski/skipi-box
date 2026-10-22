@@ -1,0 +1,23 @@
+{
+  "features.config.TrafficConfigProfileRefreshAndroidBaselineTest": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timestamp": "2026-10-22T11:46:15.446Z"
+  },
+  "features.config.TrafficConfigProfileRefreshAndroidCommitAdapterTest": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timestamp": "2026-10-22T11:46:15.494Z"
+  },
+  "features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timestamp": "2026-10-22T11:46:15.500Z"
+  }
+}

@@ -9,7 +9,9 @@ import androidx.work.WorkerParameters
 import app.SkipiApplication
 import data.repository.reconcileTrafficConfigProxyGroups
 import features.config.withCommittedTrafficConfigRefresh
+import app.skipi.app.config.TrafficConfigAutoUpdateExecutionResult
 import app.skipi.app.config.TrafficConfigProfileRefreshMode
+import app.skipi.app.config.executeTrafficConfigAutoUpdate
 import features.subscription.normalizeSkipiUserAgent
 import features.subscription.usecase.toSubscriptionFetchOptions
 

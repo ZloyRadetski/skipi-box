@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayOutboundJsonAndroidOracleTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:49:13.441Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="localDnsUsesBothLoopbackOutboundsAndTheSuppliedDnsPlan" classname="engine.xray.XrayOutboundJsonAndroidOracleTest" time="0.001"/>
+  <testcase name="proxyOverlaysKeepFragmentPrecedenceMuxAndPrimaryReorder" classname="engine.xray.XrayOutboundJsonAndroidOracleTest" time="0.0"/>
+  <testcase name="disabledLocalDnsOmitsLoopsAndDnsOutboundEvenWhenGivenAPlan" classname="engine.xray.XrayOutboundJsonAndroidOracleTest" time="0.0"/>
+  <testcase name="wireguardReceivesItsSettingsOverlayAndNoSockoptOverlay" classname="engine.xray.XrayOutboundJsonAndroidOracleTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

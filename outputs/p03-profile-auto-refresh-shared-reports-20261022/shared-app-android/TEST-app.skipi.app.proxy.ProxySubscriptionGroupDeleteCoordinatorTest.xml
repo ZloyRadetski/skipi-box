@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:48:48.792Z" hostname="VQSeGo" time="0.008">
+  <properties/>
+  <testcase name="stopMissingFailureAndCancellationKeepGroupAndStopStateContract" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.003"/>
+  <testcase name="runningSelectedMemberIsStoppedAndGroupRemovalCompletesBeforeStatePublication" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.002"/>
+  <testcase name="disappearedGroupAndDeleteFailureDoNotPublishStopStateOrSuccess" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.001"/>
+  <testcase name="stoppedOrUnselectedGroupRemovalDoesNotStopAndAwaitsDelete" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.001"/>
+  <testcase name="builtInAndBusyGroupDeletesDoNothing" classname="app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

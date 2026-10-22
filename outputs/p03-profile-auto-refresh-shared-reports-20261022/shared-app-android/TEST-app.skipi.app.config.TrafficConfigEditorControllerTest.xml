@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.config.TrafficConfigEditorControllerTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:48:48.610Z" hostname="VQSeGo" time="0.016">
+  <properties/>
+  <testcase name="dnsBackAndSaveNavigationHappenAfterCommitAndMissingStillLeaves" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.003"/>
+  <testcase name="changedCapturedBasicsStillTransformsLatestRowBeforeNavigation" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.002"/>
+  <testcase name="rejectedRawBackLeavesWithoutChangingTheProfile" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.001"/>
+  <testcase name="basicsSaveTransformsTheLatestProfileAndKeepsOtherProfileUntouched" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.001"/>
+  <testcase name="saveFailureWithoutHandlerPropagatesAndSkipsNavigation" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.001"/>
+  <testcase name="validRawBackSavesNormalizedTextBeforeLeaving" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.002"/>
+  <testcase name="generalAndDnsSaveUseExistingPortableTransformsAndRetainUnrelatedDocumentData" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.001"/>
+  <testcase name="basicsCommitCompletesBeforeEnteringSectionAndBeforeBackNavigation" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.001"/>
+  <testcase name="generalBackAndSaveNavigationHappenAfterCommit" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.001"/>
+  <testcase name="handledSaveFailureReturnsFailedReportsCauseAndSkipsNavigation" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.001"/>
+  <testcase name="rejectedRawBackStillLeavesWhenSaveFailureHandlerIsInstalled" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.0"/>
+  <testcase name="missingProfileIsReportedWithoutCreatingOrResurrectingIt" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.0"/>
+  <testcase name="unchangedCapturedBasicsSkipStoreUpdateButStillNavigate" classname="app.skipi.app.config.TrafficConfigEditorControllerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

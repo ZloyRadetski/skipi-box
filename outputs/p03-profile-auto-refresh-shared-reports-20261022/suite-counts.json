@@ -1,0 +1,26 @@
+{
+  "shared-app-desktop": {
+    "tests": 348,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-22T11:48:43.506Z",
+    "lastTimestamp": "2026-10-22T11:48:44.061Z"
+  },
+  "shared-app-android": {
+    "tests": 340,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-22T11:48:48.476Z",
+    "lastTimestamp": "2026-10-22T11:48:49.059Z"
+  },
+  "android-app": {
+    "tests": 574,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-22T11:49:10.198Z",
+    "lastTimestamp": "2026-10-22T11:49:22.312Z"
+  }
+}
