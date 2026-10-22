@@ -34,6 +34,7 @@ import app.skipi.ui.resources.configs_proxy_groups_title
 import app.skipi.ui.resources.configs_preserved_unsupported
 import app.skipi.ui.resources.configs_resources
 import app.skipi.ui.resources.configs_rules_title
+import app.skipi.ui.resources.configs_raw_edit
 import app.skipi.ui.resources.configs_ui_edit
 import app.skipi.ui.resources.configs_update_anyway
 import app.skipi.ui.resources.configs_update_locked_warning_title
@@ -46,6 +47,8 @@ import app.skipi.ui.theme.SkipiVisualProfile
 import app.skipi.ui.theme.resolveBaseAppearanceColors
 import features.config.ConfigProfile
 import features.config.TrafficConfigState
+import features.config.analyzeShadowrocketConfig
+import features.config.skipiSectionValues
 import features.config.withSkipiSettingsInRawConfig
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
@@ -638,6 +641,195 @@ loglevel = debug
             )
             assertEquals(screen.initialLibrary, screen.persistedLibrary())
             assertEquals(0, screen.libraryTransformCount())
+        }
+    }
+
+    private data class RawEditorLibraryFixture(
+        val target: ConfigProfile,
+        val sibling: ConfigProfile,
+        val library: DesktopConfigLibrary,
+    )
+
+    private fun rawEditorLibraryFixture(): RawEditorLibraryFixture {
+        val target = normalizedProfile(
+            id = 7,
+            name = "Raw editor target",
+            sourceUrl = "https://old.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = warning
+
+[Proxy]
+server = old.example:443
+""",
+        )
+        val sibling = normalizedProfile(
+            id = 3,
+            name = "Selected sibling remains unchanged",
+            sourceUrl = "https://sibling.example/profile.conf",
+            updateLocked = false,
+            content = """[General]
+loglevel = error
+
+[Proxy]
+server = sibling.example:443
+""",
+        )
+        return RawEditorLibraryFixture(
+            target = target,
+            sibling = sibling,
+            library = DesktopConfigLibrary(
+                selectedConfigId = sibling.id,
+                configs = listOf(target, sibling),
+                nextConfigId = 29,
+            ),
+        )
+    }
+
+    @Test
+    fun rawEditMenuBackSavesValidAndroidDocumentAndPreservesLibraryEnvelope() = runBlocking {
+        val fixture = rawEditorLibraryFixture()
+        val rawEditLabel = getString(Res.string.configs_raw_edit)
+        // Kept byte-for-byte aligned with TrafficConfigEditorAndroidOracleTest's
+        // Android raw-save fixture (including its General, Proxy, SKIPI, Vendor data).
+        val rawDraft = """# edited in Android raw editor
+[General]
+loglevel = debug
+
+[Proxy]
+server = raw.example:443
+
+[SKIPI]
+profile-name = Raw editor name
+profile-update-url = https://raw.example/profile.conf
+profile-update-locked = true
+profile-auto-update = false
+profile-update-interval = 48
+resource-auto-update = false
+resource-update-interval = 96
+
+[Vendor]
+vendor-option = keep-on-raw-save"""
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = fixture.target,
+            activeProfile = fixture.sibling,
+            initialLibraryOverride = fixture.library,
+        ) { screen ->
+            // Scope More to the actual profile row so a duplicate profile/group label
+            // cannot route the test through the sourced-group row.
+            clickRowContentDescriptionAction(screen.scene, fixture.target.name, "Ещё")
+            clickTextAction(screen.scene, rawEditLabel)
+            assertNotNull(awaitText(screen.scene, "Редактор конфига"))
+            setEditableTextByCurrentValue(screen.scene, fixture.target.content, rawDraft)
+            clickTopBarBack(screen.scene)
+
+            assertNotNull(awaitText(screen.scene, "Raw editor name"), "Back should return to the collection after a valid raw save")
+            assertEquals(1, screen.libraryTransformCount())
+            val committed = screen.persistedLibrary()
+            val saved = committed.configs.single { it.id == fixture.target.id }
+            assertEquals(listOf(7, 3), committed.configs.map(ConfigProfile::id))
+            assertEquals(3, committed.selectedConfigId)
+            assertEquals(29, committed.nextConfigId)
+            assertEquals(fixture.sibling, committed.configs.single { it.id == fixture.sibling.id })
+
+            assertEquals(7, saved.id)
+            assertEquals("Raw editor name", saved.name)
+            assertEquals("https://raw.example/profile.conf", saved.sourceUrl)
+            assertTrue(saved.updateLocked)
+            assertEquals(456L, saved.lastUpdatedAtMillis)
+            val skipi = saved.content.skipiSectionValues()
+            assertEquals("Raw editor name", skipi["profile-name"]?.single())
+            assertEquals("https://raw.example/profile.conf", skipi["profile-update-url"]?.single())
+            assertEquals("true", skipi["profile-update-locked"]?.single())
+            assertEquals("false", skipi["profile-auto-update"]?.single())
+            assertEquals("48", skipi["profile-update-interval"]?.single())
+            assertEquals("false", skipi["resource-auto-update"]?.single())
+            assertEquals("96", skipi["resource-update-interval"]?.single())
+            assertEquals("debug", saved.content.analyzeShadowrocketConfig().general["loglevel"])
+            assertTrue(saved.content.startsWith("# edited in Android raw editor\n"))
+            assertTrue(saved.content.contains("[Proxy]\nserver = raw.example:443"))
+            assertTrue(saved.content.contains("[Vendor]\nvendor-option = keep-on-raw-save"))
+            assertTrue(saved.content.endsWith("\n"))
+            assertFalse(saved.content.endsWith("\n\n"))
+        }
+    }
+
+    @Test
+    fun rawEditMenuExplicitDesktopSaveKeepsPortableMetadataAndLibraryEnvelope() = runBlocking {
+        val fixture = rawEditorLibraryFixture()
+        val rawEditLabel = getString(Res.string.configs_raw_edit)
+        val editedDocument = fixture.target.content.replace("loglevel = warning", "loglevel = debug")
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = fixture.target,
+            activeProfile = fixture.sibling,
+            initialLibraryOverride = fixture.library,
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, fixture.target.name, "Ещё")
+            clickTextAction(screen.scene, rawEditLabel)
+            assertNotNull(awaitText(screen.scene, "Редактор конфига"))
+
+            setEditableTextByCurrentValue(screen.scene, fixture.target.name, "Saved from raw form")
+            setEditableTextByCurrentValue(
+                screen.scene,
+                fixture.target.sourceUrl,
+                "https://saved.example/profile.conf",
+            )
+            clickTextAction(screen.scene, "Блокировать обновление")
+            setEditableTextByCurrentValue(screen.scene, fixture.target.content, editedDocument)
+            clickTextAction(screen.scene, "Сохранить")
+
+            assertNotNull(awaitText(screen.scene, "Saved from raw form"), "Save should return to the profile collection")
+            assertEquals(1, screen.libraryTransformCount())
+            val committed = screen.persistedLibrary()
+            val saved = committed.configs.single { it.id == fixture.target.id }
+            assertEquals(listOf(7, 3), committed.configs.map(ConfigProfile::id))
+            assertEquals(3, committed.selectedConfigId)
+            assertEquals(29, committed.nextConfigId)
+            assertEquals(fixture.sibling, committed.configs.single { it.id == fixture.sibling.id })
+
+            assertEquals(7, saved.id)
+            assertEquals("Saved from raw form", saved.name)
+            assertEquals("https://saved.example/profile.conf", saved.sourceUrl)
+            assertTrue(saved.updateLocked)
+            assertEquals(456L, saved.lastUpdatedAtMillis)
+            val skipi = saved.content.skipiSectionValues()
+            assertEquals("Saved from raw form", skipi["profile-name"]?.single())
+            assertEquals("https://saved.example/profile.conf", skipi["profile-update-url"]?.single())
+            assertEquals("true", skipi["profile-update-locked"]?.single())
+            assertEquals("debug", saved.content.analyzeShadowrocketConfig().general["loglevel"])
+            assertTrue(saved.content.endsWith("\n"))
+            assertFalse(saved.content.endsWith("\n\n"))
+        }
+    }
+
+    @Test
+    fun rawEditMenuBackRejectsInvalidDocumentAndLeavesLibraryUnchanged() = runBlocking {
+        val fixture = rawEditorLibraryFixture()
+        val rawEditLabel = getString(Res.string.configs_raw_edit)
+        val invalidDocument = """[Rule]
+FINAL,PROXY
+FINAL,DIRECT"""
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = fixture.target,
+            activeProfile = fixture.sibling,
+            initialLibraryOverride = fixture.library,
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, fixture.target.name, "Ещё")
+            clickTextAction(screen.scene, rawEditLabel)
+            assertNotNull(awaitText(screen.scene, "Редактор конфига"))
+            setEditableTextByCurrentValue(screen.scene, fixture.target.content, invalidDocument)
+            assertNotNull(awaitText(screen.scene, "В конфиге есть ошибки"))
+            clickTopBarBack(screen.scene)
+
+            assertNotNull(awaitText(screen.scene, fixture.target.name), "Rejected raw content should still leave the editor")
+            assertEquals(0, screen.libraryTransformCount(), "An Error diagnostic must reject the document before persistence")
+            assertEquals(fixture.library, screen.persistedLibrary())
         }
     }
 
@@ -1626,6 +1818,25 @@ $ActiveProfileGroupName = select, DIRECT
         )
         assertTrue(onClick(), "$description should succeed")
         render(scene)
+    }
+
+    private fun setEditableTextByCurrentValue(
+        scene: ImageComposeScene,
+        currentValue: String,
+        newValue: String,
+    ) {
+        val field = assertNotNull(
+            awaitNode(scene) { candidate ->
+                candidate.config.contains(SemanticsActions.SetText) &&
+                    candidate.config.contains(SemanticsProperties.EditableText) &&
+                    candidate.config[SemanticsProperties.EditableText].text == currentValue
+            },
+            "Expected an editable field with the exact current value",
+        )
+        val setTextAction = assertNotNull(field.config[SemanticsActions.SetText].action)
+        assertTrue(setTextAction(AnnotatedString(newValue)), "The matching field should accept the requested text")
+        render(scene)
+        assertEquals(newValue, awaitEditableText(scene, newValue))
     }
 
     private fun setFirstEditableText(scene: ImageComposeScene, value: String) {

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:58:04.673Z" hostname="VQSeGo" time="4.433">
+  <properties/>
+  <testcase name="rawEditMenuBackRejectsInvalidDocumentAndLeavesLibraryUnchanged" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="1.741"/>
+  <testcase name="rawEditMenuExplicitDesktopSaveKeepsPortableMetadataAndLibraryEnvelope" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="1.909"/>
+  <testcase name="rawEditMenuBackSavesValidAndroidDocumentAndPreservesLibraryEnvelope" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.779"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

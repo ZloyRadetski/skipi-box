@@ -1,0 +1,15 @@
+{
+  "tests": "3",
+  "failures": "0",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-22T20:58:04.673Z",
+  "cases": [
+    "rawEditMenuBackRejectsInvalidDocumentAndLeavesLibraryUnchanged",
+    "rawEditMenuExplicitDesktopSaveKeepsPortableMetadataAndLibraryEnvelope",
+    "rawEditMenuBackSavesValidAndroidDocumentAndPreservesLibraryEnvelope"
+  ],
+  "build": "BUILD SUCCESSFUL in 27s",
+  "productionChanged": false,
+  "sourceSha256": "173305e4c8997d701d17b663d68dce01c2a2c4e90efdf932633916735705c0d5"
+}
