@@ -3,32 +3,8 @@
 
 package features.config.runtime
 
-/** In-process periodic schedule state for the resource-only Desktop refresh host. */
-data class GeoResourcePeriodicSchedule(
-    val profileId: Int,
-    val intervalMillis: Long,
-    val periodAnchorMillis: Long,
-    val completedPeriods: Long = 0,
-    val runAttemptCount: Int = 0,
-    val retryAtMillis: Long? = null,
-) {
-    init {
-        require(intervalMillis > 0) { "Resource refresh interval must be positive" }
-        require(completedPeriods >= 0) { "Completed periods cannot be negative" }
-        require(runAttemptCount >= 0) { "Run attempt count cannot be negative" }
-    }
-
-    /** The next due time uses the latest enqueue anchor, including retry enqueues. */
-    val nextRunAtMillis: Long
-        get() = retryAtMillis ?: if (completedPeriods == 0L) {
-            periodAnchorMillis
-        } else {
-            periodAnchorMillis + intervalMillis
-        }
-}
-
 data class GeoResourcePeriodicScheduleState(
-    val schedulesByProfileId: Map<Int, GeoResourcePeriodicSchedule> = emptyMap(),
+    val schedulesByProfileId: Map<Int, TrafficConfigPeriodicWorkState> = emptyMap(),
 ) {
     /**
      * Reconcile only resource-auto-update eligibility. A new schedule is due
@@ -39,18 +15,17 @@ data class GeoResourcePeriodicScheduleState(
         targets: List<TrafficConfigRefreshTarget>,
         nowMillis: Long,
     ): GeoResourcePeriodicScheduleReconciliation {
-        val nextSchedules = mutableMapOf<Int, GeoResourcePeriodicSchedule>()
+        val nextSchedules = mutableMapOf<Int, TrafficConfigPeriodicWorkState>()
         targets.forEach { target ->
             val workSpec = target.geoRefreshWorkSpecOrNull() ?: return@forEach
             val existing = schedulesByProfileId[workSpec.id]
             nextSchedules[workSpec.id] = if (existing == null) {
-                GeoResourcePeriodicSchedule(
-                    profileId = workSpec.id,
-                    intervalMillis = workSpec.repeatIntervalMillis,
+                TrafficConfigPeriodicWorkState(
+                    spec = workSpec,
                     periodAnchorMillis = nowMillis,
                 )
             } else {
-                existing.copy(intervalMillis = workSpec.repeatIntervalMillis)
+                existing.withUpdatedSpec(workSpec)
             }
         }
 
@@ -69,22 +44,7 @@ data class GeoResourcePeriodicScheduleState(
         atMillis: Long,
     ): GeoResourcePeriodicScheduleState {
         val schedule = schedulesByProfileId[profileId] ?: return this
-        val updated = if (succeeded) {
-            schedule.copy(
-                periodAnchorMillis = atMillis,
-                completedPeriods = incrementSaturated(schedule.completedPeriods),
-                runAttemptCount = 0,
-                retryAtMillis = null,
-            )
-        } else {
-            val nextAttempt = incrementSaturated(schedule.runAttemptCount)
-            val retryDelayMillis = trafficConfigGeoRetryDelayMillis(nextAttempt)
-            schedule.copy(
-                periodAnchorMillis = atMillis,
-                runAttemptCount = nextAttempt,
-                retryAtMillis = atMillis + retryDelayMillis,
-            )
-        }
+        val updated = schedule.recordAttemptResult(succeeded = succeeded, atMillis = atMillis)
         return copy(schedulesByProfileId = schedulesByProfileId + (profileId to updated))
     }
 }
@@ -137,10 +97,6 @@ fun trafficConfigGeoOnceRetryDelayMillis(runAttemptCount: Int): Long =
         runAttemptCount = runAttemptCount,
         baseDelayMillis = WorkManagerDefaultBackoffMillis,
     )
-
-private fun incrementSaturated(value: Int): Int = if (value == Int.MAX_VALUE) value else value + 1
-
-private fun incrementSaturated(value: Long): Long = if (value == Long.MAX_VALUE) value else value + 1
 
 private const val MissingTrafficConfigId = -1
 private const val WorkManagerDefaultBackoffMillis = 30_000L

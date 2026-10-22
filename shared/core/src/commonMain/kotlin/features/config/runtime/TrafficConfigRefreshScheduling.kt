@@ -34,6 +34,59 @@ data class TrafficConfigWorkSpec(
     val isGeo: Boolean = false,
 )
 
+/** In-process state for one periodic WorkManager-compatible schedule. */
+data class TrafficConfigPeriodicWorkState(
+    val spec: TrafficConfigWorkSpec,
+    val periodAnchorMillis: Long,
+    val completedPeriods: Long = 0L,
+    val runAttemptCount: Int = 0,
+    val retryAtMillis: Long? = null,
+) {
+    init {
+        require(spec.repeatIntervalMillis > 0L) { "Periodic work interval must be positive" }
+        require(completedPeriods >= 0L) { "Completed periods cannot be negative" }
+        require(runAttemptCount >= 0) { "Run attempt count cannot be negative" }
+    }
+
+    val profileId: Int get() = spec.id
+    val intervalMillis: Long get() = spec.repeatIntervalMillis
+
+    /** Updates the next periodic deadline from its retained anchor without changing retry state. */
+    fun withUpdatedSpec(spec: TrafficConfigWorkSpec): TrafficConfigPeriodicWorkState = copy(spec = spec)
+
+    /** The first run is due at its enqueue anchor; later periods anchor to attempt completion. */
+    val nextRunAtMillis: Long
+        get() = retryAtMillis ?: if (completedPeriods == 0L) {
+            periodAnchorMillis
+        } else {
+            periodAnchorMillis + intervalMillis
+        }
+
+    /** Records success or a WorkManager-style exponential retry using this spec's backoff. */
+    fun recordAttemptResult(
+        succeeded: Boolean,
+        atMillis: Long,
+    ): TrafficConfigPeriodicWorkState = if (succeeded) {
+        copy(
+            periodAnchorMillis = atMillis,
+            completedPeriods = incrementSaturated(completedPeriods),
+            runAttemptCount = 0,
+            retryAtMillis = null,
+        )
+    } else {
+        val nextAttempt = incrementSaturated(runAttemptCount)
+        val retryDelayMillis = workManagerExponentialBackoffDelayMillis(
+            runAttemptCount = nextAttempt,
+            baseDelayMillis = spec.backoffMillis,
+        )
+        copy(
+            periodAnchorMillis = atMillis,
+            runAttemptCount = nextAttempt,
+            retryAtMillis = atMillis + retryDelayMillis,
+        )
+    }
+}
+
 /** Platform gateway for persistent config and geo-resource refresh work. */
 interface TrafficConfigScheduleGateway {
     fun scheduledConfigIds(): Set<Int>
@@ -57,18 +110,7 @@ class TrafficConfigScheduler(
     private val gateway: TrafficConfigScheduleGateway,
 ) {
     fun reconcile(targets: List<TrafficConfigRefreshTarget>) {
-        val desiredConfigs = targets.mapNotNull { target ->
-            val schedule = target.profileRefreshIntervalMillisOrNull() ?: return@mapNotNull null
-            TrafficConfigWorkSpec(
-                id = target.id,
-                uniqueName = trafficConfigWorkName(target.id),
-                repeatIntervalMillis = schedule,
-                requiresConnectedNetwork = true,
-                policy = TrafficConfigExistingWorkPolicy.UPDATE,
-                backoffMillis = MinimumConfigBackoffMillis,
-                isGeo = false,
-            )
-        }
+        val desiredConfigs = targets.mapNotNull(TrafficConfigRefreshTarget::profileRefreshWorkSpecOrNull)
         val desiredConfigIds = desiredConfigs.mapTo(mutableSetOf()) { it.id }
         (gateway.scheduledConfigIds() - desiredConfigIds).forEach(gateway::cancelConfig)
         desiredConfigs.forEach(gateway::enqueueConfig)
@@ -90,6 +132,20 @@ private fun TrafficConfigRefreshTarget.profileRefreshIntervalMillisOrNull(): Lon
     if (!autoUpdate || updateLocked || sourceUrl.isBlank()) return null
     return (parseSubscriptionSchedule(updateInterval) as? SubscriptionSchedule.Enabled)
         ?.repeatIntervalMillis
+}
+
+/** Returns this profile's periodic refresh work when its profile schedule is eligible. */
+fun TrafficConfigRefreshTarget.profileRefreshWorkSpecOrNull(): TrafficConfigWorkSpec? {
+    val schedule = profileRefreshIntervalMillisOrNull() ?: return null
+    return TrafficConfigWorkSpec(
+        id = id,
+        uniqueName = trafficConfigWorkName(id),
+        repeatIntervalMillis = schedule,
+        requiresConnectedNetwork = true,
+        policy = TrafficConfigExistingWorkPolicy.UPDATE,
+        backoffMillis = MinimumConfigBackoffMillis,
+        isGeo = false,
+    )
 }
 
 private fun TrafficConfigRefreshTarget.geoRefreshIntervalMillisOrNull(): Long? {
@@ -142,6 +198,10 @@ internal fun workManagerExponentialBackoffDelayMillis(
     }
     return delayMillis
 }
+
+private fun incrementSaturated(value: Int): Int = if (value == Int.MAX_VALUE) value else value + 1
+
+private fun incrementSaturated(value: Long): Long = if (value == Long.MAX_VALUE) value else value + 1
 
 private const val MinimumConfigBackoffMillis = 15 * 60 * 1_000L
 private const val MaximumWorkBackoffMillis = 5 * 60 * 60 * 1_000L

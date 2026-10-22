@@ -1,0 +1,34 @@
+{
+  "desktop": {
+    "TrafficConfigRefreshSchedulingTest[desktop]": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T11:56:32.121Z"
+    },
+    "ResourceGeoAutoRefreshSchedulingTest[desktop]": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T11:56:32.095Z"
+    }
+  },
+  "android": {
+    "features.config.runtime.TrafficConfigRefreshSchedulingTest": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T11:56:35.071Z"
+    },
+    "features.config.runtime.ResourceGeoAutoRefreshSchedulingTest": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T11:56:35.045Z"
+    }
+  }
+}

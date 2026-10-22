@@ -171,9 +171,16 @@ class ResourceGeoAutoRefreshSchedulingTest {
     @Test
     fun periodic_and_retry_deadlines_keep_workmanager_long_addition_at_the_boundary() {
         val periodAnchor = Long.MAX_VALUE - 10L
-        val periodic = GeoResourcePeriodicSchedule(
-            profileId = 14,
-            intervalMillis = 20L,
+        val periodic = TrafficConfigPeriodicWorkState(
+            spec = TrafficConfigWorkSpec(
+                id = 14,
+                uniqueName = trafficConfigGeoWorkName(14),
+                repeatIntervalMillis = 20L,
+                requiresConnectedNetwork = true,
+                policy = TrafficConfigExistingWorkPolicy.UPDATE,
+                backoffMillis = 15 * MinuteMillis,
+                isGeo = true,
+            ),
             periodAnchorMillis = periodAnchor,
             completedPeriods = 1L,
         )
