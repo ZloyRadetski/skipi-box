@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:51:20.857Z" hostname="VQSeGo" time="0.024">
+  <properties/>
+  <testcase name="successfulBatchUpdatesInOrderThenReadsStatusMarksRawSourceAndNotifies" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.006"/>
+  <testcase name="cancellationIsReportedThenMappedWithoutWrappingOrContinuing" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="sourceMarkerFailureEscapesAfterStatusWithoutFailureCallbackOrCompletion" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.002"/>
+  <testcase name="fileFailureIsWrappedWithDisplayNameAndStopsTheBatch" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.003"/>
+  <testcase name="completionNotificationFailureIsSwallowedAfterSuccessfulMark" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="emptyPlanReadsStatusWithoutPreparingSessionOrTouchingOtherCallbacks" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="statusFailureIsReportedUnwrappedAndPreventsMarkAndCompletion" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="preparationFailureEscapesBeforeBatchFailureReporting" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="failureReporterExceptionIsNotSwallowed" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="successfulSingleFilePlanDoesNotMarkSourceButStillNotifiesCompletion" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

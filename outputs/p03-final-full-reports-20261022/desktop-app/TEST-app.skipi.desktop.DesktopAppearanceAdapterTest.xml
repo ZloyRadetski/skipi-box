@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopAppearanceAdapterTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:51:39.915Z" hostname="VQSeGo" time="0.073">
+  <properties/>
+  <testcase name="desktopAppearanceSettingsExposePortableCustomColorsAndFonts" classname="app.skipi.desktop.DesktopAppearanceAdapterTest" time="0.025"/>
+  <testcase name="missingDesktopFontSizeUsesAndroidDefaultInSettingsAndTheme" classname="app.skipi.desktop.DesktopAppearanceAdapterTest" time="0.016"/>
+  <testcase name="allCustomColorsFontsAndAppearanceFieldsRoundTripThroughRepository" classname="app.skipi.desktop.DesktopAppearanceAdapterTest" time="0.027"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

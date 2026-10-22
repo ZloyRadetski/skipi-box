@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.subscription.SubscriptionInstallOperationsTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:51:22.806Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="a_distinct_url_appends_a_new_record_with_android_defaults_and_next_counter_id" classname="app.skipi.app.subscription.SubscriptionInstallOperationsTest" time="0.001"/>
+  <testcase name="exact_url_reuses_the_entire_record_and_leaves_catalog_counter_unchanged" classname="app.skipi.app.subscription.SubscriptionInstallOperationsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

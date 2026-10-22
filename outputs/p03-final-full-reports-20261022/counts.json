@@ -1,0 +1,122 @@
+{
+  "sourceCommit": "e4b25cc",
+  "build": "BUILD SUCCESSFUL in 1m 15s",
+  "groups": [
+    {
+      "suiteGroup": "shared-core-desktop",
+      "testSuites": 99,
+      "tests": 361,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T20:51:18.707Z",
+      "lastTimestamp": "2026-10-22T20:51:19.882Z"
+    },
+    {
+      "suiteGroup": "shared-core-android",
+      "testSuites": 89,
+      "tests": 305,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T20:51:20.532Z",
+      "lastTimestamp": "2026-10-22T20:51:20.963Z"
+    },
+    {
+      "suiteGroup": "shared-app-desktop",
+      "testSuites": 59,
+      "tests": 348,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T20:51:21.399Z",
+      "lastTimestamp": "2026-10-22T20:51:21.991Z"
+    },
+    {
+      "suiteGroup": "shared-app-android",
+      "testSuites": 58,
+      "tests": 340,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T20:51:22.303Z",
+      "lastTimestamp": "2026-10-22T20:51:22.853Z"
+    },
+    {
+      "suiteGroup": "shared-ui-desktop",
+      "testSuites": 33,
+      "tests": 120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T20:51:30.290Z",
+      "lastTimestamp": "2026-10-22T20:51:30.459Z"
+    },
+    {
+      "suiteGroup": "shared-ui-android",
+      "testSuites": 33,
+      "tests": 120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T20:51:31.578Z",
+      "lastTimestamp": "2026-10-22T20:51:31.949Z"
+    },
+    {
+      "suiteGroup": "android-app",
+      "testSuites": 136,
+      "tests": 574,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T20:51:53.631Z",
+      "lastTimestamp": "2026-10-22T20:52:06.645Z"
+    },
+    {
+      "suiteGroup": "desktop-app",
+      "testSuites": 119,
+      "tests": 583,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T20:51:39.915Z",
+      "lastTimestamp": "2026-10-22T20:52:23.679Z"
+    }
+  ],
+  "totals": {
+    "tests": 2751,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "nativeFfmSuites": [
+    {
+      "suite": "app.skipi.desktop.DesktopCoreFfmIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:51:43.084Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopProfileAssetsFfmIntegrationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:51:43.612Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:51:53.124Z"
+    }
+  ],
+  "desktopCompile": "GREEN",
+  "debugApk": "GREEN",
+  "nativeEnvironment": "SKIPI_CORE_INTEGRATION_DIR=desktopApp/build/generated/skipi-core-resources/common",
+  "log": "outputs/p03-final-full-gate-20261022.log"
+}

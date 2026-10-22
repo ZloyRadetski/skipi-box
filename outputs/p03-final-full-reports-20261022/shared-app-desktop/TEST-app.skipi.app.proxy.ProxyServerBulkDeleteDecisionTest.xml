@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ProxyServerBulkDeleteDecisionTest[desktop]" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:51:21.636Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="selectedRunningServerStopsThenPublishesStopStateBeforeDeleteAndFeedback[desktop]" classname="app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest" time="0.001"/>
+  <testcase name="noSelectedServerUsesTheDirectDeletePathEvenWhileBusy[desktop]" classname="app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest" time="0.0"/>
+  <testcase name="failedStopDoesNotDeleteButMissingServiceDoes[desktop]" classname="app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest" time="0.002"/>
+  <testcase name="unselectedServerDeletesDirectlyEvenWhileAnotherServiceOperationIsBusy[desktop]" classname="app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest" time="0.0"/>
+  <testcase name="emptyDeleteSetDoesNotStopDispatchOrReport[desktop]" classname="app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest" time="0.001"/>
+  <testcase name="stoppedServiceDeletesDirectlyWithoutApplyingRuntimeState[desktop]" classname="app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest" time="0.001"/>
+  <testcase name="cancellationFromStopPropagatesWithoutDeleteOrFeedback[desktop]" classname="app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest" time="0.001"/>
+  <testcase name="selectedRunningServerWaitsForBusyGuardBeforeStoppingOrDeleting[desktop]" classname="app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

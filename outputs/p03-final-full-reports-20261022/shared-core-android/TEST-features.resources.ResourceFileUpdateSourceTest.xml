@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.ResourceFileUpdateSourceTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:51:20.851Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="customSourceTrimsEachProvidedUrlAndUsesTheAndroidFallbackForBlankFields" classname="features.resources.ResourceFileUpdateSourceTest" time="0.0"/>
+  <testcase name="indexedProvidersAndInvalidSourceIdsUseTheFirstProviderFallback" classname="features.resources.ResourceFileUpdateSourceTest" time="0.0"/>
+  <testcase name="emptyCustomFieldsProduceCustomIdentityWithTheFirstProvidersUrls" classname="features.resources.ResourceFileUpdateSourceTest" time="0.0"/>
+  <testcase name="providerCatalogKeepsTheAndroidOrderAndEveryUrl" classname="features.resources.ResourceFileUpdateSourceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

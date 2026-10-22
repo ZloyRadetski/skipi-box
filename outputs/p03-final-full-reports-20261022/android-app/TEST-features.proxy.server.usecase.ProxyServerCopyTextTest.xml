@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.usecase.ProxyServerCopyTextTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:51:58.239Z" hostname="VQSeGo" time="0.008">
+  <properties/>
+  <testcase name="copiesCleanVlessXrayJsonWithoutAndroidVpnPollution" classname="features.proxy.server.usecase.ProxyServerCopyTextTest" time="0.005"/>
+  <testcase name="urlCopyActionReturnsUrlForUrlProxyServer" classname="features.proxy.server.usecase.ProxyServerCopyTextTest" time="0.002"/>
+  <testcase name="copiesCustomServerWithCleanInbounds" classname="features.proxy.server.usecase.ProxyServerCopyTextTest" time="0.0"/>
+  <testcase name="copiesStrategyGroupWithBalancersAndObservatory" classname="features.proxy.server.usecase.ProxyServerCopyTextTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

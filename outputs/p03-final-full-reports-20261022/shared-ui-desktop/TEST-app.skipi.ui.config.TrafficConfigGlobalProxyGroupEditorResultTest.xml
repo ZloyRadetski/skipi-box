@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigGlobalProxyGroupEditorResultTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:51:30.307Z" hostname="VQSeGo" time="0.049">
+  <properties/>
+  <testcase name="addDraftUsesGlobalGroupDefaultsRegardlessOfHostDefaultGroup[desktop]" classname="app.skipi.ui.config.TrafficConfigGlobalProxyGroupEditorResultTest" time="0.011"/>
+  <testcase name="editResultRejectsNonStrategyServers[desktop]" classname="app.skipi.ui.config.TrafficConfigGlobalProxyGroupEditorResultTest" time="0.002"/>
+  <testcase name="duplicateResultCopiesOnlyRemarksAndReturnsDetachedUnsavedGroup[desktop]" classname="app.skipi.ui.config.TrafficConfigGlobalProxyGroupEditorResultTest" time="0.035"/>
+  <testcase name="editResultKeepsOriginalStrategyGroupAndExplicitServerId[desktop]" classname="app.skipi.ui.config.TrafficConfigGlobalProxyGroupEditorResultTest" time="0.0"/>
+  <testcase name="duplicateResultRejectsNonStrategyServersWithoutChangingThem[desktop]" classname="app.skipi.ui.config.TrafficConfigGlobalProxyGroupEditorResultTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
