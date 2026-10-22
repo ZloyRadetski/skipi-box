@@ -1,0 +1,32 @@
+[
+  {
+    "suite": "shared-ui-desktop",
+    "classes": 33,
+    "tests": 120,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-22T05:00:12.644Z",
+    "lastTimestamp": "2026-10-22T05:00:12.838Z"
+  },
+  {
+    "suite": "shared-ui-android",
+    "classes": 33,
+    "tests": 120,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-22T05:00:13.326Z",
+    "lastTimestamp": "2026-10-22T05:00:13.498Z"
+  },
+  {
+    "suite": "android-oracles",
+    "classes": 2,
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "firstTimestamp": "2026-10-22T05:00:24.244Z",
+    "lastTimestamp": "2026-10-22T05:00:24.257Z"
+  }
+]

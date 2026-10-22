@@ -73,10 +73,11 @@ import app.skipi.ui.config.TrafficConfigProfileItem
 import app.skipi.ui.config.TrafficConfigProxyGroupItem
 import app.skipi.ui.config.projectTrafficConfigGlobalProxyGroups as projectSharedTrafficConfigGlobalProxyGroups
 import app.skipi.ui.config.projectTrafficConfigSourcedProxyGroups as projectSharedTrafficConfigSourcedProxyGroups
+import app.skipi.ui.config.trafficConfigGlobalProxyGroupDuplicateResult as projectSharedTrafficConfigGlobalProxyGroupDuplicateResult
+import app.skipi.ui.config.trafficConfigGlobalProxyGroupEditResult as projectSharedTrafficConfigGlobalProxyGroupEditResult
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
-import features.proxy.server.editor.editableCopy
 import features.proxy.server.list.AutoBalancerGroupId
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
@@ -304,11 +305,7 @@ fun TrafficConfigPage(
         )
     }
 
-    fun openProxyGroupEditor(
-        server: ProxyServer<*>,
-        serverId: Int?,
-    ) {
-        val result = trafficConfigGlobalProxyGroupEditResult(server, serverId) ?: return
+    fun navigateToProxyGroupEditor(result: ProxyServerEditResult) {
         navigator.navigateForResult(
             route = Route.ProxyServerEditor(
                 ps = result.server,
@@ -321,17 +318,22 @@ fun TrafficConfigPage(
         )
     }
 
+    fun openProxyGroupEditor(
+        server: ProxyServer<*>,
+        serverId: Int?,
+    ) {
+        val result = trafficConfigGlobalProxyGroupEditResult(server, serverId) ?: return
+        navigateToProxyGroupEditor(result)
+    }
+
     fun duplicateProxyGroup(proxyGroup: ProxyServerState) {
         val original = proxyGroup.server as? StrategyGroup ?: return
-        val duplicate = original.editableCopy() as StrategyGroup
-        duplicate.remarks = context.getString(
+        val copyName = context.getString(
             R.string.configs_copy_name,
             original.remarks.ifBlank { original.getInfo().protocol },
         )
-        openProxyGroupEditor(
-            server = duplicate,
-            serverId = null,
-        )
+        val result = projectSharedTrafficConfigGlobalProxyGroupDuplicateResult(proxyGroup.server, copyName) ?: return
+        navigateToProxyGroupEditor(result)
     }
 
     fun deleteProxyGroup(proxyGroup: ProxyServerState) {
@@ -615,13 +617,4 @@ internal fun projectTrafficConfigGlobalProxyGroups(
 internal fun trafficConfigGlobalProxyGroupEditResult(
     server: ProxyServer<*>,
     serverId: Int?,
-): ProxyServerEditResult? {
-    val strategyGroup = server as? StrategyGroup ?: return null
-    return ProxyServerEditResult(
-        serverId = serverId,
-        server = strategyGroup,
-        groupId = AutoBalancerGroupId,
-        returnGroupId = AutoBalancerGroupId,
-        deleted = false,
-    )
-}
+): ProxyServerEditResult? = projectSharedTrafficConfigGlobalProxyGroupEditResult(server, serverId)

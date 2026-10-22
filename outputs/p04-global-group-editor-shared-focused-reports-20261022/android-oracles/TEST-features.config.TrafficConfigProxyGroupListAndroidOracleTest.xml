@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.TrafficConfigProxyGroupListAndroidOracleTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:00:24.257Z" hostname="VQSeGo" time="0.021">
+  <properties/>
+  <testcase name="globalRowsPreserveCatalogOrderAndUseAndroidSafeCastEligibility" classname="features.config.TrafficConfigProxyGroupListAndroidOracleTest" time="0.012"/>
+  <testcase name="sourcedRowsPreserveProfileAndParserOrderAndUseProfileLineKeys" classname="features.config.TrafficConfigProxyGroupListAndroidOracleTest" time="0.008"/>
+  <testcase name="globalRowsFallBackToProtocolAndAutoBalancerSubtitleForBlankInfoFields" classname="features.config.TrafficConfigProxyGroupListAndroidOracleTest" time="0.001"/>
+  <testcase name="emptyCatalogsProduceNoGlobalOrSourcedRows" classname="features.config.TrafficConfigProxyGroupListAndroidOracleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

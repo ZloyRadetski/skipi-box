@@ -1,6 +1,6 @@
 # P04 global proxy-group editor results
 
-Status: the separate Android menu Edit crash is fixed and verified. The common result-factory transfer and Desktop collection wiring have not yet passed their implementation gates. P04/R01 remain open.
+Status: the separate Android menu Edit crash and common result-factory transfer are verified. Desktop collection wiring has not yet passed its implementation gate. P04/R01 remain open.
 
 ## Android source correction before transfer
 
@@ -15,3 +15,11 @@ Only then was the cast changed to `as? StrategyGroup ?: return null`. The origin
 Five common UI cases specify global Add defaults under Android/Desktop manual-group defaults, Edit identity/ID and non-Strategy rejection, and detached Duplicate preserving all encoded fields except the localized name. Before any common production implementation they produced a clean missing-helper API RED in 935 milliseconds: `outputs/p04-global-group-editor-shared-api-red-20261022.log`. Add reuses the existing shared draft factory; localized copy-name formatting remains a host input.
 
 The actual Desktop collection tests first reproduced the missing global/sourced rows: **2/2 behavioral RED in 29 seconds**, XML timestamp `2026-10-22T04:51:25.089Z`, `outputs/p04-config-collection-host-section-red-20261022.log` and `outputs/p04-config-collection-host-section-red-reports-20261022/`. Three additional UI cases now specify Add, Duplicate and confirmed/cancelled Delete through a required apply-result callback. Before production the full test source stops only at that missing callback and inference cascades: **API RED in 2 seconds**, `outputs/p04-config-collection-global-callback-api-red-20261022.log`. Existing unrelated screen tests supply explicit fail-fast callback arguments. These tests use a scripted persistence boundary; they do not by themselves prove real store writes.
+
+## Common factory transfer verified
+
+The two result helpers now live in shared UI beside the shared editor and use its existing `editableCopy()` implementation. Android delegates Edit and Duplicate result construction to them while retaining localized copy-name formatting, navigation/result keys and the original editor-owned draft copy. Root reviewed identity, nullable IDs, -2/-2 routing, detached copies and the removal of the old Android clone/result construction before running verification. The Android correction is committed separately as `c32428b`.
+
+The unchanged five common cases and Android oracle passed in the scoped gate: **247/247 GREEN in 27 seconds**, zero failures/errors/skips — shared UI Desktop **120**, shared UI Android **120**, Android oracle **7**. `:app:assembleDebug` also passed with the existing HevTun artifacts. Log: `outputs/p04-global-group-editor-shared-focused-green-20261022.log`; preserved XML/counts: `outputs/p04-global-group-editor-shared-focused-reports-20261022/`, timestamps `2026-10-22T05:00:12.644Z`–`2026-10-22T05:00:24.257Z`. No APK install, user application restart, full-suite rerun or fresh native build was performed for this factory-only slice.
+
+During pre-implementation Desktop test review, root found that Add's expected saved result omitted an existing editor effect: the shared StrategyGroup form fills blank `probeUrl` from `NetworkDefaults.CONNECTIVITY_CHECK_URL`. The test author verified the Android/shared form source before correcting that expectation; production has not been changed to satisfy the erroneous blank-URL expectation. The pure Add factory test correctly still requires a blank draft before the form opens.
