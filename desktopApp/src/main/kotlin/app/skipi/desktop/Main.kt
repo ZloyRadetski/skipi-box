@@ -1658,7 +1658,7 @@ fun main() = application {
                                                 SubscriptionRefreshCommitScope.SUBSCRIPTION ->
                                                     "Серверы обновлены, но метаданные подписки не сохранены: ${failure.error.message.orEmpty()}"
                                                 SubscriptionRefreshCommitScope.PROFILE ->
-                                                    "Серверы и подписка обновлены, но профиль не сохранён: ${failure.error.message.orEmpty()}"
+                                                    "Серверы и подписка обновлены, но обновление профиля не завершено: ${failure.error.message.orEmpty()}"
                                             }
                                             else ->
                                                 "Подписка обновлена: ${result.loaded.servers.size} серверов из ${result.loaded.urlCount} ссылок."
@@ -1704,7 +1704,7 @@ fun main() = application {
                                                     SubscriptionRefreshCommitScope.SUBSCRIPTION ->
                                                         "Серверы обновлены, но метаданные подписки не сохранены: ${singleFailure.error.message.orEmpty()}"
                                                     SubscriptionRefreshCommitScope.PROFILE ->
-                                                        "Серверы и подписка обновлены, но профиль не сохранён: ${singleFailure.error.message.orEmpty()}"
+                                                        "Серверы и подписка обновлены, но обновление профиля не завершено: ${singleFailure.error.message.orEmpty()}"
                                                 }
                                                 else -> formatSubscriptionRefreshMessage(
                                                     summary = SubscriptionRefreshMessageSummary(

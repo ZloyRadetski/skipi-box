@@ -22,6 +22,7 @@ import features.config.toRoscomRoutingJsonOrNull
 import features.config.toRoscomRoutingShadowrocketConf
 import features.config.withSkipiSettingsReadFromRawConfig
 import features.proxy.server.model.encodePersistedProxyServer
+import features.proxy.server.model.stripLeadingCountryFlag
 import features.resources.ResourceFileLoyalsoldierGeoIpUrl
 import features.resources.ResourceFileLoyalsoldierGeoSiteUrl
 import features.resources.ResourceFileRoscomvpnGeoIpUrl
@@ -168,9 +169,18 @@ internal class DesktopSubscriptionRefreshBatchCommitAdapter(
             ?.let { selectedId -> original.configs.firstOrNull { profile -> profile.id == selectedId } }
         val activeAfter = updated.selectedConfigId
             ?.let { selectedId -> updated.configs.firstOrNull { profile -> profile.id == selectedId } }
+        val configLibraryChanged = original.configs != updated.configs ||
+            original.selectedConfigId != updated.selectedConfigId
         saveConfigs(updated).getOrThrow()
         publishConfigs(updated)
         profileLibraryChanged = activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
+        if (configLibraryChanged) {
+            DesktopTrafficConfigProxyGroupReconciler(
+                serverRepository = proxyServerRepository,
+                readConfigLibrary = readConfigs,
+                stripLeadingCountryFlag = { remarks -> remarks.stripLeadingCountryFlag() },
+            ).reconcile()
+        }
     }
 }
 

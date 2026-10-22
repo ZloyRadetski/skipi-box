@@ -1,0 +1,59 @@
+{
+  "suites": [
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:27:37.661Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionRefreshBatchCommitAdapterTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:27:37.804Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionRefreshBatchTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:27:37.836Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopSubscriptionRefreshCommitAdapterTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:27:37.847Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:27:37.891Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigProxyGroupReconcilerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:27:37.906Z"
+    }
+  ],
+  "totals": {
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "testSourceSha256": "432694c359be5760a506d9c4cadb0c8e118214c9f7c3552a665086bb1c8b66bb"
+}
