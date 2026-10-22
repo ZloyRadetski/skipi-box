@@ -164,6 +164,7 @@ FINAL,PROXY
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            onApplyGlobalProxyGroupResult = { _, _ -> error("Unexpected global proxy-group result apply in the Rules asset test") },
                             exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
                             copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             fetchUserAgent = "Desktop rule asset integration test",

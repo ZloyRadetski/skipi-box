@@ -150,6 +150,7 @@ FINAL,PROXY
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            onApplyGlobalProxyGroupResult = { _, _ -> error("Unexpected global proxy-group result apply in the Rules test") },
                             exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
                             copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),
@@ -281,6 +282,7 @@ vendor-option = keep-me
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            onApplyGlobalProxyGroupResult = { _, _ -> error("Unexpected global proxy-group result apply in the Rules test") },
                             exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
                             copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),
@@ -415,6 +417,7 @@ vendor-option = keep-me
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            onApplyGlobalProxyGroupResult = { _, _ -> error("Unexpected global proxy-group result apply in the Rules test") },
                             exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
                             copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),
@@ -551,6 +554,7 @@ FINAL,PROXY
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            onApplyGlobalProxyGroupResult = { _, _ -> error("Unexpected global proxy-group result apply in the Rules test") },
                             exportProxyServerFullJson = { error("Unexpected proxy-server export in the Rules test") },
                             copyTextToClipboard = { error("Unexpected clipboard write in the Rules test") },
                             proxyServers = catalogProxyServers(),

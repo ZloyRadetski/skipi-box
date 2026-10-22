@@ -1746,6 +1746,16 @@ fun main() = application {
                             },
                             desktopSettings = desktopSettings,
                             exportProxyServerFullJson = exportProxyServerFullJson,
+                            onApplyGlobalProxyGroupResult = { result, onCompleted ->
+                                subscriptionScope.launch {
+                                    val outcome = applyProxyServerEditResult(
+                                        result = result,
+                                        store = desktopSharedApplication.store,
+                                        defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                                    )
+                                    onCompleted(outcome)
+                                }
+                            },
                             proxyServers = routeProxyServers,
                             subscriptionCatalog = routeSubscriptionCatalog,
                             resourceFiles = desktopProfileResourceFiles,

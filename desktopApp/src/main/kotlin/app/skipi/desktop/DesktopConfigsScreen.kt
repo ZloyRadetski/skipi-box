@@ -17,9 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -58,10 +56,10 @@ import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
 import features.config.defaultShadowrocketConfig
 import app.skipi.ui.config.SkipiTrafficConfigContextMenu
-import app.skipi.ui.config.SkipiTrafficConfigProfileCard
 import app.skipi.ui.config.SkipiTrafficConfigRawEditor
 import app.skipi.ui.config.SkipiTrafficConfigRawEditorLabels
 import app.skipi.ui.config.SkipiTrafficConfigRawEditorState
+import app.skipi.ui.config.SkipiTrafficConfigScreen
 import app.skipi.ui.config.SkipiTrafficConfigBasicsEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigRoutingSectionScreen
 import app.skipi.ui.config.SkipiTrafficConfigGeneralEditorScreen
@@ -70,7 +68,8 @@ import app.skipi.ui.config.SkipiTrafficConfigTunnelEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigNetworkActivationEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigEditorSectionAction
 import app.skipi.ui.config.SkipiTrafficConfigUrlImportDialog
-import app.skipi.ui.config.TrafficConfigCatalogProfileItem
+import app.skipi.ui.config.TrafficConfigProfileItem
+import app.skipi.ui.config.projectTrafficConfigSourcedProxyGroups
 import app.skipi.ui.resourcefiles.ResourceManagementScreen
 import app.skipi.ui.layout.shouldShowSplitPane
 import app.skipi.ui.resources.Res
@@ -101,6 +100,7 @@ import app.skipi.app.config.TrafficConfigProfileRefreshOperations
 import app.skipi.app.config.TrafficConfigProfileRefreshRequest
 import app.skipi.app.config.TrafficConfigEditorController
 import app.skipi.app.config.TrafficConfigEditorProfileStore
+import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.app.config.toTrafficConfigState
 import features.config.withSkipiSettingsInRawConfig
@@ -115,6 +115,7 @@ import java.text.DateFormat
 import java.time.Duration
 import java.util.Date
 import features.config.ConfigProfile
+import app.skipi.ui.theme.SkipiTheme
 
 private val ConfigBackground: Color
     @Composable get() = DesktopContentBackground
@@ -124,7 +125,6 @@ private val ConfigBorder = Color(0xFF3C3E45)
 private val ConfigText = Color(0xFFF4F4F6)
 private val ConfigMuted = Color(0xFFA2A5AF)
 private val ConfigGreen = Color(0xFF58D27A)
-private val ConfigRed = Color(0xFFFF5B62)
 
 private data class DesktopConfigDraft(
     val id: Int?,
@@ -147,9 +147,15 @@ private enum class DesktopVisualEditorSection {
     Resources,
 }
 
+private enum class DesktopProxyGroupsReturnTarget {
+    TrafficConfigCatalog,
+    Routing,
+}
+
 private data class DesktopVisualEditorSession(
     val configId: Int,
     val section: DesktopVisualEditorSection = DesktopVisualEditorSection.Basics,
+    val proxyGroupsReturnTarget: DesktopProxyGroupsReturnTarget = DesktopProxyGroupsReturnTarget.Routing,
 )
 
 private class DesktopConfigEditorSaveRejected(message: String) : RuntimeException(message)
@@ -166,6 +172,7 @@ internal fun DesktopConfigsScreen(
     onResourceFileStatusMessage: (String) -> Unit,
     desktopSettings: DesktopAppSettings,
     exportProxyServerFullJson: suspend (ProxyServerEditResult) -> String,
+    onApplyGlobalProxyGroupResult: (ProxyServerEditResult, (ProxyServerEditApplyOutcome) -> Unit) -> Unit,
     copyTextToClipboard: (String) -> Unit = ::copyTextToDesktopClipboard,
     proxyServers: List<app.skipi.app.model.ProxyServerRecord>,
     subscriptionCatalog: app.skipi.app.model.SubscriptionCatalog,
@@ -179,6 +186,12 @@ internal fun DesktopConfigsScreen(
     var editorDraft by remember { mutableStateOf<DesktopConfigDraft?>(null) }
     var visualEditor by remember { mutableStateOf<DesktopVisualEditorSession?>(null) }
     val resourceUserAgentFallback = remember { versionedDesktopProfileResourceUserAgent(ProjectInfo.VERSION_NAME) }
+    val trafficConfigProfiles = remember(configLibrary.configs, resourceUserAgentFallback) {
+        configLibrary.configs.map { config -> config.toTrafficConfigState(resourceUserAgentFallback) }
+    }
+    val sourcedProxyGroups = remember(trafficConfigProfiles) {
+        projectTrafficConfigSourcedProxyGroups(trafficConfigProfiles)
+    }
     var showAddMenu by remember { mutableStateOf(false) }
     var importUrlDialog by remember { mutableStateOf(false) }
     var importUrl by remember { mutableStateOf("") }
@@ -234,6 +247,23 @@ internal fun DesktopConfigsScreen(
         editorSaveError = null
         editorDraft = null
         visualEditor = DesktopVisualEditorSession(configId = config.id)
+    }
+
+    fun openSourcedProxyGroups(key: String) {
+        val configId = key.takeIf { value -> value.startsWith("source:") }
+            ?.substringAfter(':')
+            ?.substringBefore(':')
+            ?.toIntOrNull()
+            ?: return
+        if (configLibrary.configs.any { config -> config.id == configId }) {
+            editorSaveError = null
+            editorDraft = null
+            visualEditor = DesktopVisualEditorSession(
+                configId = configId,
+                section = DesktopVisualEditorSection.ProxyGroups,
+                proxyGroupsReturnTarget = DesktopProxyGroupsReturnTarget.TrafficConfigCatalog,
+            )
+        }
     }
 
     fun persist(
@@ -512,7 +542,10 @@ internal fun DesktopConfigsScreen(
                     exportProxyServerFullJson = exportProxyServerFullJson,
                     copyTextToClipboard = copyTextToClipboard,
                     onBack = {
-                        visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
+                        visualEditor = when (session.proxyGroupsReturnTarget) {
+                            DesktopProxyGroupsReturnTarget.TrafficConfigCatalog -> null
+                            DesktopProxyGroupsReturnTarget.Routing -> session.copy(section = DesktopVisualEditorSection.Routing)
+                        }
                     },
                     statusContent = editorSaveError?.let { error ->
                         { DesktopEditorStatusContent(error) }
@@ -688,120 +721,180 @@ internal fun DesktopConfigsScreen(
         return
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ConfigBackground)
-            .padding(contentPadding),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        Column(
+    DesktopTrafficConfigGlobalProxyGroupsAdapter(
+        proxyServers = proxyServers,
+        subscriptionCatalog = subscriptionCatalog,
+        contentPadding = contentPadding,
+        confirmDeletion = desktopSettings.confirmDeletion,
+        exportProxyServerFullJson = exportProxyServerFullJson,
+        copyTextToClipboard = copyTextToClipboard,
+        onApplyResult = onApplyGlobalProxyGroupResult,
+    ) { collection ->
+        val profileStatusText = message.takeIf(String::isNotBlank)
+        val collectionFailureMessage = collection.failureMessage?.takeIf(String::isNotBlank)
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 980.dp)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 28.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .background(ConfigBackground)
+                .padding(contentPadding),
+            contentAlignment = Alignment.TopCenter,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text("Конфиги", color = ConfigText, fontSize = 25.sp, fontWeight = FontWeight.Black)
-                    Text("Профили трафика SKIPI", color = ConfigMuted, fontSize = 14.sp)
-                }
-                Box {
-                    IconButton(onClick = { showAddMenu = true }) {
-                        Icon(Icons.Outlined.Add, "Добавить конфиг", tint = ConfigText, modifier = Modifier.size(32.dp))
-                    }
-                    DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Новый конфиг") },
-                            leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null) },
-                            onClick = {
-                                showAddMenu = false
-                                editorDraft = DesktopConfigDraft(
-                                    id = null,
-                                    name = newProfileName,
-                                    content = defaultShadowrocketConfig(),
-                                    sourceUrl = "",
-                                    updateLocked = false,
-                                    lastUpdatedAtMillis = 0L,
-                                )
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Открыть .conf") },
-                            leadingIcon = { Icon(Icons.Outlined.FolderOpen, contentDescription = null) },
-                            onClick = {
-                                showAddMenu = false
-                                DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
-                                    DesktopProfileFiles.read(path).onSuccess { content ->
-                                        importRawConfig(content, path.fileName.toString().substringBeforeLast('.'))
-                                    }.onFailure { error ->
-                                        message = "Не удалось открыть файл: ${error.message.orEmpty()}"
-                                    }
-                                }
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Импортировать из буфера") },
-                            leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
-                            onClick = {
-                                showAddMenu = false
-                                val text = runCatching {
-                                    Toolkit.getDefaultToolkit().systemClipboard
-                                        .getData(DataFlavor.stringFlavor)
-                                        .toString()
-                                }.getOrDefault("").trim()
-                                when {
-                                    text.startsWith("http://", true) || text.startsWith("https://", true) -> importUrlFromClipboard(text)
-                                    text.isNotBlank() -> importRawConfig(text, "Конфиг из буфера")
-                                    else -> message = "Буфер обмена пуст."
-                                }
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Импортировать по URL") },
-                            leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
-                            onClick = { showAddMenu = false; importUrlDialog = true },
-                        )
-                    }
-                }
-            }
-
-            ConfigLibrarySummary(configLibrary)
-
-            if (configLibrary.configs.isEmpty()) {
-                EmptyConfigsCard(onCreate = {
-                    editorDraft = DesktopConfigDraft(
-                        id = null,
-                        name = newProfileName,
-                        content = defaultShadowrocketConfig(),
-                        sourceUrl = "",
-                        updateLocked = false,
-                        lastUpdatedAtMillis = 0L,
-                    )
-                })
-            } else {
-                Text("Профили", color = ConfigText, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                configLibrary.configs.forEach { config ->
-                    DesktopConfigProfileCard(
-                        config = config,
-                        selected = config.id == configLibrary.selectedConfigId,
-                        updating = config.id in updatingConfigIds,
+            SkipiTrafficConfigScreen(
+                profiles = trafficConfigProfiles.map { profile ->
+                    TrafficConfigProfileItem(
+                        profile = profile,
+                        active = profile.id == configLibrary.selectedConfigId,
+                        updating = profile.id in updatingConfigIds,
                         canDelete = configLibrary.configs.size > 1,
-                        onSelect = {
-                            persist(
-                                transform = { latest -> DesktopConfigLibraries.select(latest, config.id) },
-                                successMessage = "Выбран «${config.name}».",
-                            )
-                        },
-                        onEdit = { openVisualEditor(config) },
-                        onRefresh = { refreshConfigFromUrl(config) },
-                        onCopy = {
+                        hasUnsupportedSections = profile.rawConfig.analyzeShadowrocketConfig()
+                            .unsupportedSections.isNotEmpty(),
+                    )
+                },
+                globalProxyGroups = collection.groups,
+                sourcedProxyGroups = sourcedProxyGroups,
+                contentPadding = PaddingValues(start = 28.dp, top = 20.dp, end = 28.dp, bottom = 28.dp),
+                onAddConfig = { showAddMenu = true },
+                onAddGlobalProxyGroup = collection.onAdd,
+                onSelectProfile = { id ->
+                    configLibrary.configs.firstOrNull { config -> config.id == id }?.let { config ->
+                        persist(
+                            transform = { latest -> DesktopConfigLibraries.select(latest, config.id) },
+                            successMessage = "Выбран «${config.name}».",
+                        )
+                    }
+                },
+                onEditProfile = { id ->
+                    configLibrary.configs.firstOrNull { config -> config.id == id }?.let(::openVisualEditor)
+                },
+                onDeleteProfile = { id ->
+                    configLibrary.configs.firstOrNull { config -> config.id == id }?.let { config ->
+                        pendingDeletion = config
+                    }
+                },
+                onUpdateProfile = { id ->
+                    configLibrary.configs.firstOrNull { config -> config.id == id }?.let(::refreshConfigFromUrl)
+                },
+                onProfileMenu = { id ->
+                    contextMenuConfig = configLibrary.configs.firstOrNull { config -> config.id == id }
+                },
+                onOpenProxyGroup = { key ->
+                    if (key.startsWith("global:")) collection.onOpen(key) else openSourcedProxyGroups(key)
+                },
+                onDeleteGlobalProxyGroup = collection.onDelete,
+                onGlobalProxyGroupMenu = collection.onContextMenu,
+                headerContent = {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().height(54.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text("Конфиги", color = SkipiTheme.colors.onSurface, fontSize = 25.sp, fontWeight = FontWeight.Black)
+                                Text("Профили трафика SKIPI", color = SkipiTheme.colors.onSurfaceVariant, fontSize = 14.sp)
+                            }
+                            Box {
+                                IconButton(onClick = { showAddMenu = true }) {
+                                    Icon(Icons.Outlined.Add, "Добавить конфиг", tint = SkipiTheme.colors.onSurface, modifier = Modifier.size(32.dp))
+                                }
+                                DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text("Новый конфиг") },
+                                        leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null) },
+                                        onClick = {
+                                            showAddMenu = false
+                                            editorDraft = DesktopConfigDraft(
+                                                id = null,
+                                                name = newProfileName,
+                                                content = defaultShadowrocketConfig(),
+                                                sourceUrl = "",
+                                                updateLocked = false,
+                                                lastUpdatedAtMillis = 0L,
+                                            )
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Открыть .conf") },
+                                        leadingIcon = { Icon(Icons.Outlined.FolderOpen, contentDescription = null) },
+                                        onClick = {
+                                            showAddMenu = false
+                                            DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
+                                                DesktopProfileFiles.read(path).onSuccess { content ->
+                                                    importRawConfig(content, path.fileName.toString().substringBeforeLast('.'))
+                                                }.onFailure { error ->
+                                                    message = "Не удалось открыть файл: ${error.message.orEmpty()}"
+                                                }
+                                            }
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Импортировать из буфера") },
+                                        leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
+                                        onClick = {
+                                            showAddMenu = false
+                                            val text = runCatching {
+                                                Toolkit.getDefaultToolkit().systemClipboard
+                                                    .getData(DataFlavor.stringFlavor)
+                                                    .toString()
+                                            }.getOrDefault("").trim()
+                                            when {
+                                                text.startsWith("http://", true) || text.startsWith("https://", true) -> importUrlFromClipboard(text)
+                                                text.isNotBlank() -> importRawConfig(text, "Конфиг из буфера")
+                                                else -> message = "Буфер обмена пуст."
+                                            }
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Импортировать по URL") },
+                                        leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
+                                        onClick = { showAddMenu = false; importUrlDialog = true },
+                                    )
+                                }
+                            }
+                        }
+                        ConfigLibrarySummary(configLibrary)
+                    }
+                },
+                emptyProfilesContent = {
+                    EmptyConfigsCard(onCreate = {
+                        editorDraft = DesktopConfigDraft(
+                            id = null,
+                            name = newProfileName,
+                            content = defaultShadowrocketConfig(),
+                            sourceUrl = "",
+                            updateLocked = false,
+                            lastUpdatedAtMillis = 0L,
+                        )
+                    })
+                },
+                profileSupportingContent = { item ->
+                    val profile = item.profile
+                    val analysis = remember(profile.rawConfig) { profile.rawConfig.analyzeShadowrocketConfig() }
+                    Text(
+                        profile.sourceUrl.ifBlank { "Локальный профиль" },
+                        color = SkipiTheme.colors.onSurfaceVariant,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            "Правила: ${analysis.rules.size} · Группы: ${analysis.proxyGroups.size}",
+                            color = SkipiTheme.colors.onSurfaceVariant,
+                            fontSize = 12.sp,
+                        )
+                        if (profile.updateLocked) {
+                            Text("Обновление заблокировано", color = SkipiTheme.colors.onSurfaceVariant, fontSize = 12.sp)
+                        }
+                        if (analysis.diagnostics.isNotEmpty()) {
+                            Text("Диагностика: ${analysis.diagnostics.size}", color = SkipiTheme.colors.error, fontSize = 12.sp)
+                        }
+                    }
+                },
+                profileTrailingActions = { item ->
+                    val config = configLibrary.configs.firstOrNull { config -> config.id == item.profile.id }
+                    if (config != null) {
+                        IconButton(onClick = {
                             runCatching {
                                 Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(config.content), null)
                             }.onSuccess {
@@ -809,17 +902,41 @@ internal fun DesktopConfigsScreen(
                             }.onFailure { error ->
                                 message = "Не удалось скопировать конфиг: ${error.message.orEmpty()}"
                             }
-                        },
-                        onDelete = { pendingDeletion = config },
-                        onOpenContextMenu = { contextMenuConfig = config },
+                        }) {
+                            Icon(Icons.Outlined.ContentCopy, "Копировать содержимое")
+                        }
+                        IconButton(onClick = { contextMenuConfig = config }) {
+                            Icon(Icons.Outlined.MoreVert, "Ещё")
+                        }
+                    }
+                },
+                statusContent = profileStatusText?.let { text ->
+                    { Text(text, color = SkipiTheme.colors.onSurfaceVariant, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp)) }
+                },
+                showAddProfileAction = false,
+                showProfilesHeaderWhenEmpty = false,
+                modifier = Modifier.widthIn(max = 980.dp).fillMaxSize(),
+            )
+            collectionFailureMessage?.let { failure ->
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                        .widthIn(max = 720.dp),
+                    color = SkipiTheme.colors.errorContainer,
+                    contentColor = SkipiTheme.colors.onErrorContainer,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, SkipiTheme.colors.error.copy(alpha = 0.5f)),
+                ) {
+                    Text(
+                        text = failure,
+                        color = SkipiTheme.colors.onErrorContainer,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     )
                 }
             }
-
-            if (message.isNotBlank()) {
-                Text(message, color = ConfigMuted, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp))
-            }
-            Spacer(Modifier.height(8.dp))
         }
     }
 
@@ -982,56 +1099,6 @@ private fun EmptyConfigsCard(onCreate: () -> Unit) {
             Button(onClick = onCreate) { Text("Новый конфиг") }
         }
     }
-}
-
-@Composable
-private fun DesktopConfigProfileCard(
-    config: DesktopStoredConfig,
-    selected: Boolean,
-    updating: Boolean,
-    canDelete: Boolean,
-    onSelect: () -> Unit,
-    onEdit: () -> Unit,
-    onRefresh: () -> Unit,
-    onCopy: () -> Unit,
-    onDelete: () -> Unit,
-    onOpenContextMenu: () -> Unit,
-) {
-    val analysis = remember(config.content) { config.content.analyzeShadowrocketConfig() }
-    SkipiTrafficConfigProfileCard(
-        item = TrafficConfigCatalogProfileItem(
-            id = config.id,
-            name = config.name,
-            sourceUrl = config.sourceUrl,
-            active = selected,
-            updating = updating,
-            canDelete = canDelete,
-        ),
-        onSelect = onSelect,
-        onEdit = onEdit,
-        onDelete = onDelete,
-        onUpdate = onRefresh,
-        onLongPress = { onOpenContextMenu() },
-        showUpdateAction = true,
-        supportingContent = {
-            Text(
-                config.sourceUrl.ifBlank { "Локальный профиль" },
-                color = ConfigMuted,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Правила: ${analysis.rules.size} · Группы: ${analysis.proxyGroups.size}", color = ConfigMuted, fontSize = 12.sp)
-                if (config.updateLocked) Text(" · Обновление заблокировано", color = ConfigMuted, fontSize = 12.sp)
-                if (analysis.diagnostics.isNotEmpty()) Text(" · Диагностика: ${analysis.diagnostics.size}", color = ConfigRed, fontSize = 12.sp)
-            }
-        },
-        trailingActions = {
-            IconButton(onClick = onCopy) { Icon(Icons.Outlined.ContentCopy, "Копировать содержимое") }
-            IconButton(onClick = onOpenContextMenu) { Icon(Icons.Outlined.MoreVert, "Ещё") }
-        },
-    )
 }
 
 @Composable
