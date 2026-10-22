@@ -5,8 +5,10 @@ package app.skipi.ui.config
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -80,6 +82,13 @@ fun SkipiTrafficConfigScreen(
     onDeleteGlobalProxyGroup: (String) -> Unit,
     onGlobalProxyGroupMenu: (String) -> Unit,
     onEditGlobalProxyGroup: ((String) -> Unit)? = null,
+    headerContent: (@Composable () -> Unit)? = null,
+    emptyProfilesContent: (@Composable () -> Unit)? = null,
+    profileSupportingContent: (@Composable (TrafficConfigProfileItem) -> Unit)? = null,
+    profileTrailingActions: (@Composable RowScope.(TrafficConfigProfileItem) -> Unit)? = null,
+    statusContent: (@Composable () -> Unit)? = null,
+    showAddProfileAction: Boolean = true,
+    showProfilesHeaderWhenEmpty: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -87,6 +96,9 @@ fun SkipiTrafficConfigScreen(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        if (headerContent != null) {
+            item(key = "collection_header") { headerContent() }
+        }
         item(key = "global_proxy_groups_section_title") {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 SmallTitle(
@@ -117,15 +129,28 @@ fun SkipiTrafficConfigScreen(
                 ProxyGroupCard(group = group, onClick = { onOpenProxyGroup(group.key) })
             }
         }
-        item(key = "configs_section_title") {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SmallTitle(text = stringResource(Res.string.configs_profiles), modifier = Modifier.weight(1f))
-                IconButton(onClick = onAddConfig) {
-                    Icon(MiuixIcons.Add, contentDescription = stringResource(Res.string.configs_add), tint = MiuixTheme.colorScheme.onSurface)
+        if (profiles.isNotEmpty() || showProfilesHeaderWhenEmpty) {
+            item(key = "configs_section_title") {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    SmallTitle(text = stringResource(Res.string.configs_profiles), modifier = Modifier.weight(1f))
+                    if (showAddProfileAction) {
+                        IconButton(onClick = onAddConfig) {
+                            Icon(MiuixIcons.Add, contentDescription = stringResource(Res.string.configs_add), tint = MiuixTheme.colorScheme.onSurface)
+                        }
+                    }
                 }
             }
         }
+        if (profiles.isEmpty() && emptyProfilesContent != null) {
+            item(key = "empty_profiles_content") { emptyProfilesContent() }
+        }
         items(profiles, key = { it.profile.id }) { item ->
+            val supportingContent: (@Composable ColumnScope.() -> Unit)? = profileSupportingContent?.let { content ->
+                { content(item) }
+            }
+            val trailingActions: (@Composable RowScope.() -> Unit)? = profileTrailingActions?.let { content ->
+                { content(item) }
+            }
             ProfileCard(
                 item = item,
                 onSelect = { onSelectProfile(item.profile.id) },
@@ -133,7 +158,12 @@ fun SkipiTrafficConfigScreen(
                 onDelete = { onDeleteProfile(item.profile.id) },
                 onUpdate = { onUpdateProfile(item.profile.id) },
                 onLongPress = { onProfileMenu(item.profile.id) },
+                supportingContent = supportingContent,
+                trailingActions = trailingActions,
             )
+        }
+        if (statusContent != null) {
+            item(key = "collection_status") { statusContent() }
         }
     }
 }
@@ -146,6 +176,8 @@ private fun ProfileCard(
     onDelete: () -> Unit,
     onUpdate: () -> Unit,
     onLongPress: () -> Unit,
+    supportingContent: (@Composable ColumnScope.() -> Unit)?,
+    trailingActions: (@Composable RowScope.() -> Unit)?,
 ) {
     SkipiTrafficConfigProfileCard(
         item = TrafficConfigCatalogProfileItem(
@@ -162,6 +194,8 @@ private fun ProfileCard(
         onDelete = onDelete,
         onUpdate = onUpdate,
         onLongPress = onLongPress,
+        supportingContent = supportingContent,
+        trailingActions = trailingActions,
     )
 }
 
