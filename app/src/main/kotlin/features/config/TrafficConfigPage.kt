@@ -64,12 +64,15 @@ import app.skipi.app.config.TrafficConfigProfileRefreshOperations
 import app.skipi.app.config.TrafficConfigProfileRefreshRequest
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.applyProxyServerEditResult
+import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.ui.config.SkipiTrafficConfigScreen
 import app.skipi.ui.config.SkipiTrafficConfigContextMenu
 import app.skipi.ui.config.SkipiTrafficConfigProxyGroupContextMenu
 import app.skipi.ui.config.SkipiTrafficConfigUrlImportDialog
 import app.skipi.ui.config.TrafficConfigProfileItem
 import app.skipi.ui.config.TrafficConfigProxyGroupItem
+import app.skipi.ui.config.projectTrafficConfigGlobalProxyGroups as projectSharedTrafficConfigGlobalProxyGroups
+import app.skipi.ui.config.projectTrafficConfigSourcedProxyGroups as projectSharedTrafficConfigSourcedProxyGroups
 import app.navigation.ProxyServerEditResult
 import app.navigation.Route
 import app.navigation.TrafficConfigEditorSection
@@ -592,27 +595,17 @@ private const val ConfigProxyGroupEditResultKey = "traffic-config-global-proxy-g
 
 internal fun projectTrafficConfigSourcedProxyGroups(
     trafficConfigs: List<TrafficConfigState>,
-): List<TrafficConfigProxyGroupItem> = trafficConfigs.flatMap { config ->
-    config.rawConfig.analyzeShadowrocketConfig().proxyGroups.map { group ->
-        TrafficConfigProxyGroupItem(
-            key = "source:${config.id}:${group.lineNumber}",
-            name = group.name,
-            subtitle = config.name,
-            badge = group.type,
-        )
-    }
-}
+): List<TrafficConfigProxyGroupItem> = projectSharedTrafficConfigSourcedProxyGroups(trafficConfigs)
 
 internal fun projectTrafficConfigGlobalProxyGroups(
     proxyServers: List<ProxyServerState>,
-): List<TrafficConfigProxyGroupItem> = proxyServers.filter { state ->
-    state.groupId == AutoBalancerGroupId &&
-        (state.server as? StrategyGroup)?.sourceTrafficConfigId == null
-}.map { state ->
-    TrafficConfigProxyGroupItem(
-        key = "global:${state.id}",
-        name = state.server.getInfo().remarks.ifBlank { state.server.getInfo().protocol },
-        subtitle = state.server.getInfo().address.ifBlank { "Auto-Balancer" },
-        badge = "StrategyGroup",
-    )
-}
+): List<TrafficConfigProxyGroupItem> = projectSharedTrafficConfigGlobalProxyGroups(
+    proxyServers.map { state ->
+        ProxyServerRecord(
+            id = state.id,
+            groupId = state.groupId,
+            server = state.server,
+            latency = state.latency,
+        )
+    },
+)
