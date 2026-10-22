@@ -37,10 +37,19 @@ Before production, root corrected three test-spec assumptions against the source
 
 This bridge gate does not prove real HTTP, filesystem writes, a timer or Main wiring. Those are the next independent adapter/host gates. The common/Android checkpoint above remains the latest scoped multi-module check.
 
+## Desktop HTTP/runtime binding
+
+Five binding tests preceded `DesktopTrafficConfigProfileFetcher`: fresh timeout/device identity/runtime snapshots per fetch; active loopback SOCKS port and credentials instead of persisted settings; direct routing without a running endpoint; profile UA without the global subscription fallback; device-header opt-out and no Age key. They use the actual existing `DesktopSubscriptionFetcher` with an in-memory `HttpURLConnection` seam, observing its supplied headers/timeouts/proxy/auth. They do not establish a physical network/proxy session.
+
+- API RED: `outputs/p03-profile-auto-refresh-desktop-transport-api-red-20261022.log`, **20 seconds**, only missing `DesktopTrafficConfigProfileFetcher` at Desktop test compilation.
+- The adapter reads settings and active runtime options on each call, supplies profile UA, current timeout, opt-in device headers and actual running SOCKS endpoint, then performs the existing blocking fetch on Dispatchers.IO. The profile source-derived path has no subscription updateViaProxy gate or Age secret. Existing low-level transport is unchanged.
+- Profile UA defaults: absent key is materialized as `Skipi/<version>/Desktop`; an explicit profile value wins over the global subscription setting. An explicitly blank typed value reaches the existing transport unchanged; that transport retains its existing static `SKIPI Desktop` blank-header fallback. The binding does not introduce a literal-empty-wire-header policy or a global UA substitution.
+- GREEN: `outputs/p03-profile-auto-refresh-desktop-transport-green-20261022.log`, **11 seconds**, **34/34**, failures/errors/skips zero: profile binding5, execution bridge7, subscription binding1, local-proxy contract2/lifecycle8, geo updater10/loop1. Preserved XML/counts: `outputs/p03-profile-auto-refresh-desktop-transport-reports-20261022/`, timestamps `2026-10-22T12:04:06.594Z`–`12:04:06.862Z`. The geo checks also cover consumers of the common timing extraction reported [separately](p03-periodic-profile-verification.md).
+
 ## Scope and next gate
 
 The seven tests call the actual extracted execution helper; they do not instantiate WorkManager or prove application-context/input handling, Android UA/options integration, or real network/storage behavior. Those adapter lines were checked against the original worker diff; existing commit tests supplement the helper baseline. Existing four policy baseline tests contain copied policy lambdas and are not worker integration tests.
 
 No revision/CAS fence, post-fetch eligibility check, new default, or retry policy was added. A Unit commit that finds no latest row still returns normally and is followed by reconciliation and Success. Profile-document refresh remains separate from geo-resource refresh.
 
-The Android source extraction is committed as `494ee12`, and the shared executor transfer as `3ec6116`. Next: real Desktop profile HTTP/runtime binding, source-backed periodic scheduling and the Main entry point. The tested persistence bridge is ready for that host. Shared execution alone does not complete P03 or establish Desktop periodic refresh. No user application restart, APK installation or physical-device test was performed.
+The Android source extraction is committed as `494ee12`, and the shared executor transfer as `3ec6116`. The Desktop persistence bridge is committed as `826eaef`. The HTTP/runtime binding and common periodic timing are verified; next are the Desktop profile job owner, responsive wakeup loop, actual Main entry point and isolated local-HTTP/persistence composition check. Shared execution alone does not complete P03 or establish Desktop periodic refresh. No user application restart, APK installation or physical-device test was performed.

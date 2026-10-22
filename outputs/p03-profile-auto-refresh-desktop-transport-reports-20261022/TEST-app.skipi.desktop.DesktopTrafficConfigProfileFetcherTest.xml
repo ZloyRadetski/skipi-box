@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigProfileFetcherTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-22T12:04:06.862Z" hostname="VQSeGo" time="0.008">
+  <properties/>
+  <testcase name="eachFetchReadsCurrentTimeoutDeviceIdentityAndActiveEndpoint" classname="app.skipi.desktop.DesktopTrafficConfigProfileFetcherTest" time="0.003"/>
+  <testcase name="deviceHeaderOptOutOmitsIdentityAndBlankAgeKeyAddsNoAgeHeader" classname="app.skipi.desktop.DesktopTrafficConfigProfileFetcherTest" time="0.001"/>
+  <testcase name="absentRunningProxyDoesNotReusePersistedPortOrCredentials" classname="app.skipi.desktop.DesktopTrafficConfigProfileFetcherTest" time="0.001"/>
+  <testcase name="activeRuntimeProxyUsesLoopbackPortAndCredentialsInsteadOfPersistedListenerSettings" classname="app.skipi.desktop.DesktopTrafficConfigProfileFetcherTest" time="0.0"/>
+  <testcase name="profileUserAgentIsPassedAsStoredAndBlankUsesFetcherDefaultNotGlobalSetting" classname="app.skipi.desktop.DesktopTrafficConfigProfileFetcherTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

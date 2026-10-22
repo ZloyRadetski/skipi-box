@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-22T12:04:06.838Z" hostname="VQSeGo" time="0.023">
+  <properties/>
+  <testcase name="saveFailureReturnsRetryWithoutPublishingOrReconciling" classname="app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest" time="0.014"/>
+  <testcase name="reconciliationFailureReturnsRetryAfterTheLibraryWasCommitted" classname="app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest" time="0.001"/>
+  <testcase name="fetchCommitsIntoTheLatestSameIdRowAndPreservesLibraryAndSchedulingMetadata" classname="app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest" time="0.002"/>
+  <testcase name="fetchFailuresIncludingCancellationReturnRetryWithoutDesktopSideEffects" classname="app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest" time="0.001"/>
+  <testcase name="capturedDesktopProfileUsesFallbackCustomAndExplicitlyBlankResourceUserAgents" classname="app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest" time="0.002"/>
+  <testcase name="deletionDuringFetchIsNotUndoneAndStillRunsReconciliation" classname="app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest" time="0.002"/>
+  <testcase name="absentAndIneligibleProfilesCompleteWithoutCallingRefreshPorts" classname="app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
