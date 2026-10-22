@@ -1,0 +1,30 @@
+{
+  "app.skipi.desktop.DesktopApplicationRepositoriesTest": {
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timestamp": "2026-10-22T11:58:24.485Z"
+  },
+  "app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timestamp": "2026-10-22T11:58:24.975Z"
+  },
+  "app.skipi.desktop.DesktopTrafficConfigProxyGroupReconcilerTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timestamp": "2026-10-22T11:58:24.993Z"
+  },
+  "app.skipi.desktop.DesktopConfigProfileRefreshActionTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timestamp": "2026-10-22T11:58:24.972Z"
+  }
+}
