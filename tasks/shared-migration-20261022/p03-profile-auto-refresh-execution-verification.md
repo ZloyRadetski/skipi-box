@@ -1,6 +1,6 @@
 # P03 automatic profile refresh execution
 
-Date: 22 October 2026. P03 remains open: Android baseline extraction and shared execution are verified; the real Desktop periodic profile host follows separately.
+Date: 22 October 2026. P03 remains open: Android baseline extraction, shared execution, Desktop persistence/HTTP adapters and the automatic host are verified; the periodic host evidence is linked below. P03 remains open for the separately identified embedded-group and manual-header paths.
 
 ## Android source contract and tests first
 
@@ -52,4 +52,4 @@ The seven tests call the actual extracted execution helper; they do not instanti
 
 No revision/CAS fence, post-fetch eligibility check, new default, or retry policy was added. A Unit commit that finds no latest row still returns normally and is followed by reconciliation and Success. Profile-document refresh remains separate from geo-resource refresh.
 
-The Android source extraction is committed as `494ee12`, and the shared executor transfer as `3ec6116`. The Desktop persistence bridge is committed as `826eaef`. The HTTP/runtime binding and common periodic timing are verified; next are the Desktop profile job owner, responsive wakeup loop, actual Main entry point and isolated local-HTTP/persistence composition check. Shared execution alone does not complete P03 or establish Desktop periodic refresh. No user application restart, APK installation or physical-device test was performed.
+The Android source extraction is committed as `494ee12`, and the shared executor transfer as `3ec6116`. The Desktop persistence bridge is committed as `826eaef`. The [Desktop automatic host](p03-periodic-profile-verification.md) now passes **24/24**, including responsive loop and real local-HTTP/file/group composition. Acceptance review identified the remaining subscription embedded-profile group reconciliation and direct manual opt-in device-header gaps; separate tests/fixes follow before closing P03. Shared execution alone does not complete P03 or establish Desktop periodic refresh. No user application restart, APK installation or physical-device test was performed.

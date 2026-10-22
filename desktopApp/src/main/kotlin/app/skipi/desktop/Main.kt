@@ -495,7 +495,7 @@ fun main() = application {
                         readLatestTargets = {
                             latestConfigLibrary.configs
                                 .map { it.toTrafficConfigState(desktopResourceProfileFallbackUserAgent()) }
-                                .map(TrafficConfigState::toDesktopResourceRefreshTarget)
+                                .map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget)
                         },
                         isNetworkConnected = ::isDesktopNetworkConnected,
                         updateAutomatically = desktopResourceFileServices::updateAutomatically,
@@ -503,6 +503,44 @@ fun main() = application {
                     )
                 }
                 val resourceAutoUpdateWakeups = remember { Channel<Unit>(Channel.CONFLATED) }
+                val desktopTrafficConfigProfileFetcher = remember(subscriptionFetcher, desktopLocalProxyRuntime) {
+                    DesktopTrafficConfigProfileFetcher(
+                        fetcher = subscriptionFetcher,
+                        readSettings = { latestDesktopSettings },
+                        activeProxy = {
+                            desktopLocalProxyRuntime.activeOptions(
+                                coreRunning = coreController.state().isRunning,
+                            )
+                        },
+                    )
+                }
+                val desktopTrafficConfigAutoRefresh = remember(
+                    desktopSharedApplication,
+                    desktopTrafficConfigProfileFetcher,
+                    configProxyGroupReconciler,
+                ) {
+                    DesktopTrafficConfigAutoRefresh(
+                        readLibrary = { latestConfigLibrary },
+                        repository = desktopSharedApplication.trafficConfigs,
+                        fetch = desktopTrafficConfigProfileFetcher::fetch,
+                        reconcile = configProxyGroupReconciler::reconcile,
+                        nowMillis = System::currentTimeMillis,
+                        resourceUserAgentFallback = desktopResourceProfileFallbackUserAgent(),
+                    )
+                }
+                val desktopTrafficConfigAutoUpdater = remember(desktopTrafficConfigAutoRefresh) {
+                    DesktopTrafficConfigAutoUpdater(
+                        readLatestTargets = {
+                            latestConfigLibrary.configs
+                                .map { it.toTrafficConfigState(desktopResourceProfileFallbackUserAgent()) }
+                                .map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget)
+                        },
+                        isNetworkConnected = ::isDesktopNetworkConnected,
+                        updateAutomatically = desktopTrafficConfigAutoRefresh::run,
+                        nowMillis = System::currentTimeMillis,
+                    )
+                }
+                val desktopTrafficConfigAutoUpdateWakeups = remember { Channel<Unit>(Channel.CONFLATED) }
 
                 LaunchedEffect(desktopResourceFileServices) {
                     val startupLibrary = latestConfigLibrary
@@ -529,7 +567,7 @@ fun main() = application {
                         profile.toTrafficConfigState(desktopResourceProfileFallbackUserAgent())
                     }
                     resourceAutoUpdater.observeTargets(
-                        profiles.map(TrafficConfigState::toDesktopResourceRefreshTarget),
+                        profiles.map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget),
                     )
                     val activeOrFirst = profiles.firstOrNull { profile ->
                         profile.id == library.selectedConfigId
@@ -545,12 +583,38 @@ fun main() = application {
                 }
 
                 LaunchedEffect(resourceAutoUpdater) {
-                    runDesktopResourceAutoUpdateLoop(
-                        updater = resourceAutoUpdater,
+                    runDesktopAutomaticRefreshLoop(
+                        runDue = resourceAutoUpdater::runDue,
+                        nextWakeupAtMillis = resourceAutoUpdater::nextWakeupAtMillis,
                         wakeups = resourceAutoUpdateWakeups,
                         nowMillis = System::currentTimeMillis,
                         minimumDelayMillis = DesktopSubscriptionSchedulerMinimumDelayMillis,
                         idleDelayMillis = DesktopSubscriptionSchedulerIdleDelayMillis,
+                        onFailure = { error ->
+                            DesktopLogger.error("ResourceFiles", "Automatic resource update failed", error)
+                        },
+                    )
+                }
+
+                LaunchedEffect(desktopTrafficConfigAutoUpdater, latestConfigLibrary) {
+                    val targets = latestConfigLibrary.configs
+                        .map { it.toTrafficConfigState(desktopResourceProfileFallbackUserAgent()) }
+                        .map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget)
+                    desktopTrafficConfigAutoUpdater.observeTargets(targets)
+                    desktopTrafficConfigAutoUpdateWakeups.trySend(Unit)
+                }
+
+                LaunchedEffect(desktopTrafficConfigAutoUpdater) {
+                    runDesktopAutomaticRefreshLoop(
+                        runDue = desktopTrafficConfigAutoUpdater::runDue,
+                        nextWakeupAtMillis = desktopTrafficConfigAutoUpdater::nextWakeupAtMillis,
+                        wakeups = desktopTrafficConfigAutoUpdateWakeups,
+                        nowMillis = System::currentTimeMillis,
+                        minimumDelayMillis = DesktopSubscriptionSchedulerMinimumDelayMillis,
+                        idleDelayMillis = DesktopSubscriptionSchedulerIdleDelayMillis,
+                        onFailure = { error ->
+                            DesktopLogger.error("TrafficConfig", "Automatic profile refresh failed", error)
+                        },
                     )
                 }
                 val desktopTunnelController = remember(coreController, systemProxyManager) {
@@ -1823,7 +1887,7 @@ private val SkipiBackground: Color
     @Composable get() = DesktopContentBackground
 private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
 private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L
-private fun TrafficConfigState.toDesktopResourceRefreshTarget() = TrafficConfigRefreshTarget(
+private fun TrafficConfigState.toDesktopTrafficConfigRefreshTarget() = TrafficConfigRefreshTarget(
     id = id,
     sourceUrl = sourceUrl,
     autoUpdate = autoUpdate,

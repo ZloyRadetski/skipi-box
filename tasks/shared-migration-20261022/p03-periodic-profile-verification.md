@@ -1,6 +1,6 @@
 # P03 profile periodic scheduling
 
-Date: 22 October 2026. Common WorkSpec/timing extraction is verified. Desktop profile job ownership, wakeup loop and Main integration are the next tests-first gate; P03 remains open.
+Date: 22 October 2026. Common WorkSpec/timing and the Desktop automatic profile host are verified. P03 remains open for the embedded-profile generated-group handoff and manual opt-in device-header parity, identified during acceptance review.
 
 ## Source contract
 
@@ -19,7 +19,30 @@ Shared timing models the earliest due time: a new entry is due at its enqueue an
 
 Root and another Luna agent independently reviewed timing/spec parity and geo isolation. No required behavioral issue was found; a KDoc sentence was clarified to distinguish an interval update from a later completion. That comment-only change does not alter the tested algorithm.
 
-## Remaining host gate and limits
+## Desktop profile host: tests and first behavior gate
+
+Before host/loop/Main production, nine host cases, two loop cases and one real HTTP/file/group composition case were written and reviewed. They cover independent profile eligibility, offline/online admission, completion/retry deadlines, UPDATE without cancelling in-flight work, duplicate-pass exclusion, removal/re-enable generation ownership, and owner cancellation even when the callback maps cancellation to Retry. The re-enable case keeps a replacement callback running while the cancelled old callback finishes, proving old cleanup cannot release the new job slot. The loop tests use virtual time and check responsiveness while another profile is blocked.
+
+The test fixture adds `kotlinx-coroutines-test:1.8.1` only to Desktop testImplementation, matching the existing common test declaration. Gradle aligns it to Desktop's existing coroutines 1.9.0. The first offline attempt stopped after **21 seconds** because the test-only 1.9.0 JAR was absent; no compile or behavioral RED is claimed for this dependency-resolution failure (`outputs/p03-profile-auto-refresh-desktop-host-api-red-20261022.log`). A single online retry obtained the artifact, then produced the expected missing-host/loop API RED in **4 seconds** (`outputs/p03-profile-auto-refresh-desktop-host-api-red-retry-20261022.log`). Later commands returned to offline mode. No production dependency version was changed.
+
+The implementation creates a separate entry/job owner for profile work and shares only the wakeup-loop mechanism with geo work. Main supplies current library/settings, the actual running Core SOCKS endpoint, versioned absent-UA fallback, existing persistence and generated-group adapters. Profile and resource loops retain separate conflated wakeup channels and eligibility. The old resource-loop call/test was mechanically adapted without changing its assertions.
+
+Root review identified a potential stale due-snapshot race before committing the host. A tenth host regression was written before the fix: cancelling one entry invokes a nested due pass which completes another entry; the outer snapshot must not run that completed entry again before its new deadline. The unchanged implementation reproduced it in **11 seconds**: **24 executions, 23 passed, one failed** (expected one callback, actual two). The real local HTTP + temporary JSON profile/server persistence + group reconciliation case passed in this same run, as did the previous geo cases. Log: `outputs/p03-profile-auto-refresh-desktop-host-behavior-red-20261022.log`; preserved XML/counts: `outputs/p03-profile-auto-refresh-desktop-host-behavior-red-reports-20261022/`, timestamps `2026-10-22T12:23:31.260Z`–`12:23:31.542Z`.
+
+Only then did registration add a current-deadline check while holding the entry lock. This is schedule uniqueness, not a source/revision/content fence. Test expectations remain unchanged; class-level opt-ins merely acknowledge the virtual-time test API.
+
+## Desktop host GREEN and current acceptance status
+
+The unchanged 24 cases passed after the registration fix: `outputs/p03-profile-auto-refresh-desktop-host-green-20261022.log`, **11 seconds**, **24/24**, failures/errors/skips zero. Profile host **10**, shared Desktop loop **2**, local HTTP/file/group integration **1**, existing geo updater **10**, existing geo loop **1**. Preserved XML/counts: `outputs/p03-profile-auto-refresh-desktop-host-reports-20261022/`, timestamps `2026-10-22T12:28:52.259Z`–`12:28:52.381Z`. Desktop production compilation was part of this test task. The HTTP case observed the versioned absent-profile UA, persisted response name/document/timestamp/captured URL with the current scheduling policy, reloaded both JSON libraries, checked the generated group's concrete ID/members/selection/source, and verified the next deadline.
+
+Root and a different Luna agent reviewed the actual Main bindings, loop extraction, entry ownership and deadline fix. No required issue remains in this automatic-host slice. The imported profile's persistence bridge, transport and common timing were already committed separately (`826eaef`, `844eb64`, `991e0d9`). No user application was restarted and no physical Desktop/Android UI or fresh native execution is claimed for this focused gate.
+
+Acceptance review found two remaining P03 paths; host GREEN is not full-card completion:
+
+- Desktop single and batch subscription embedded-profile import persist/publish configurations without reconciling their generated groups. Android's corresponding ports explicitly reconcile after a changed profile list/active ID. New outcome-based regression tests must reproduce this before the separate fix.
+- Android manual refresh uses direct transport (`toSubscriptionFetchOptions()` defaults `useRunningProxy=false`), current timeout and opt-in device headers. Desktop manual refresh is already direct and supplies timeout/profile UA, but omits the device headers. A narrow manual binding/screen gate will preserve direct routing. Its existing asynchronous group-projection boundary matches Android UI dispatch and does not call for a new awaited UI transaction.
+
+## Host limits
 
 Timers, connected-interface probing and cancellation/job ownership stay in Desktop. Profile and geo jobs use separate eligibility and execution paths. No content/revision/CAS fence is introduced. A cancelled job that receives the shared executor's caught-cancellation Retry must not schedule an ordinary retry or overwrite the schedule of a re-enabled entry.
 

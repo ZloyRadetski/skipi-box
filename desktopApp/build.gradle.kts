@@ -103,6 +103,7 @@ dependencies {
     implementation(compose.materialIconsExtended)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
 // Desktop bundles the same font files already shipped by Android; keep the source assets canonical.

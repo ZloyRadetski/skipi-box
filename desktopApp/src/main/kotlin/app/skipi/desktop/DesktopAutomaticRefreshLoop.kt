@@ -16,31 +16,33 @@ import kotlinx.coroutines.selects.onTimeout
 
 /** Keeps scheduling responsive while each due pass remains a child of the app host. */
 @OptIn(ExperimentalCoroutinesApi::class)
-internal suspend fun runDesktopResourceAutoUpdateLoop(
-    updater: DesktopResourceAutoUpdater,
+internal suspend fun runDesktopAutomaticRefreshLoop(
+    runDue: suspend () -> Unit,
+    nextWakeupAtMillis: () -> Long?,
     wakeups: ReceiveChannel<Unit>,
     nowMillis: () -> Long,
     minimumDelayMillis: Long,
     idleDelayMillis: Long,
+    onFailure: (Throwable) -> Unit,
 ) = coroutineScope {
-    require(minimumDelayMillis > 0L) { "Minimum resource-update delay must be positive" }
+    require(minimumDelayMillis > 0L) { "Minimum automatic-refresh delay must be positive" }
     require(idleDelayMillis >= minimumDelayMillis) { "Idle delay must not be shorter than the minimum delay" }
 
     fun CoroutineScope.launchDuePass() {
         launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                updater.runDue()
+                runDue()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Throwable) {
-                DesktopLogger.error("ResourceFiles", "Automatic resource update failed", error)
+                onFailure(error)
             }
         }
     }
 
     launchDuePass()
     while (isActive) {
-        val waitMillis = updater.nextWakeupAtMillis()
+        val waitMillis = nextWakeupAtMillis()
             ?.let { nextWakeup -> (nextWakeup - nowMillis()).coerceIn(minimumDelayMillis, idleDelayMillis) }
             ?: idleDelayMillis
 

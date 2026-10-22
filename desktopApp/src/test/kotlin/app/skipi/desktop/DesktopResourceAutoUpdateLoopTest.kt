@@ -61,12 +61,16 @@ class DesktopResourceAutoUpdateLoopTest {
 
             val wakeups = Channel<Unit>(Channel.CONFLATED)
             val host = launch {
-                runDesktopResourceAutoUpdateLoop(
-                    updater = updater,
+                runDesktopAutomaticRefreshLoop(
+                    runDue = updater::runDue,
+                    nextWakeupAtMillis = updater::nextWakeupAtMillis,
                     wakeups = wakeups,
                     nowMillis = { nowMillis },
                     minimumDelayMillis = 1_000L,
                     idleDelayMillis = 60L * 60L * 1_000L,
+                    onFailure = { error ->
+                        DesktopLogger.error("ResourceFiles", "Automatic resource update failed", error)
+                    },
                 )
             }
             try {
