@@ -514,6 +514,13 @@ fun main() = application {
                         },
                     )
                 }
+                val desktopTrafficConfigManualProfileFetcher = remember(subscriptionFetcher) {
+                    DesktopTrafficConfigProfileFetcher(
+                        fetcher = subscriptionFetcher,
+                        readSettings = { latestDesktopSettings },
+                        activeProxy = { null },
+                    )
+                }
                 val desktopTrafficConfigAutoRefresh = remember(
                     desktopSharedApplication,
                     desktopTrafficConfigProfileFetcher,
@@ -1803,6 +1810,7 @@ fun main() = application {
                             },
                             fetchUserAgent = desktopSettings.subscriptionUserAgent,
                             fetchTimeoutSeconds = desktopSettings.subscriptionFetchTimeoutSeconds,
+                            fetchProfileDocument = desktopTrafficConfigManualProfileFetcher::fetch,
                             contentPadding = contentPadding,
                             resourceActionScope = subscriptionScope,
                             onResourceFileStatusMessage = { message ->

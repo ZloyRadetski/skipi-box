@@ -166,6 +166,62 @@ class DesktopTrafficConfigProfileFetcherTest {
     }
 
     @Test
+    fun manualRefreshBindingStaysDirectAndSendsCurrentOptInHeadersTimeoutAndProfileAgent() = runBlocking {
+        val observations = mutableListOf<RecordedRequest>()
+        val ageCrypto = RecordingAgeCrypto()
+        val runningCoreEndpoint = LocalProxyXrayConfigOptions(
+            socksPort = 20_480,
+            username = "running-core-user",
+            password = "running-core-password",
+        )
+        val settings = DesktopAppSettings(
+            localProxyPort = 11_111,
+            localProxyListenAddress = "0.0.0.0",
+            enableLocalProxyAuth = true,
+            localProxyUsername = "persisted-user",
+            localProxyPassword = "persisted-password",
+            subscriptionFetchTimeoutSeconds = 37,
+            subscriptionUserAgent = "Global fallback must not win",
+            sendDeviceHeaders = true,
+            installationUuid = "manual-refresh-test-installation",
+        )
+        val fetcher = recordingFetcher(observations, ageCrypto)
+        val automaticFetcher = DesktopTrafficConfigProfileFetcher(
+            fetcher = fetcher,
+            readSettings = { settings },
+            activeProxy = { runningCoreEndpoint },
+        )
+        val manualFetcher = DesktopTrafficConfigProfileFetcher(
+            fetcher = fetcher,
+            readSettings = { settings },
+            activeProxy = { null },
+        )
+        val profile = profile(userAgent = "Manual profile agent/1.0")
+        val trimmedUrl = "https://profiles.example.test/manual.conf"
+
+        // Main should own both bindings while Core is running, then pass only this
+        // direct-only instance as DesktopConfigsScreen.fetchProfileDocument.
+        automaticFetcher.fetch(profile, trimmedUrl)
+        manualFetcher.fetch(profile, trimmedUrl)
+
+        assertEquals(runningCoreEndpoint.socksPort, proxyPort(observations[0].proxy))
+        val manualRequest = observations[1]
+        assertNull(manualRequest.proxy, "Manual refresh remains direct when automatic refresh has a live proxy")
+        assertNull(manualRequest.socksCredentials)
+        assertEquals(trimmedUrl, manualRequest.connection.url.toString())
+        assertEquals(37_000, manualRequest.connection.connectTimeout)
+        assertEquals(37_000, manualRequest.connection.readTimeout)
+        assertEquals("Manual profile agent/1.0", manualRequest.connection.requestHeaders["User-Agent"])
+        assertEquals(
+            DesktopDeviceIdentity.deviceHeaders(settings.installationUuid)["X-Device-ID"],
+            manualRequest.connection.requestHeaders["X-Device-ID"],
+        )
+        assertTrue(manualRequest.connection.requestHeaders.containsKey("x-client"))
+        assertFalse(manualRequest.connection.requestHeaders.containsKey("X-Age-Public-Key"))
+        assertTrue(ageCrypto.publicKeySecrets.isEmpty())
+    }
+
+    @Test
     fun deviceHeaderOptOutOmitsIdentityAndBlankAgeKeyAddsNoAgeHeader() = runBlocking {
         val observations = mutableListOf<RecordedRequest>()
         val ageCrypto = RecordingAgeCrypto()

@@ -588,6 +588,7 @@ Sibling profile group = select, $OldMemberName
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            fetchProfileDocument = { _, _ -> error("Unexpected manual profile refresh") },
                             onApplyGlobalProxyGroupResult = { _, _ -> error("Unexpected global proxy-group result apply in the profile proxy-groups test") },
                             proxyServers = proxyServers,
                             subscriptionCatalog = subscriptionCatalog,

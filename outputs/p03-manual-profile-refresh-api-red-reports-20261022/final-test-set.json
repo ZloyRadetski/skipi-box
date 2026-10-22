@@ -1,0 +1,13 @@
+{
+  "result": "Final manual test set API RED before production",
+  "buildResult": "BUILD FAILED in 2s",
+  "compilerErrors": [
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigCollectionScreenIntegrationTest.kt:1409:29 No parameter with name 'fetchProfileDocument' found."
+  ],
+  "testsExecuted": 0,
+  "sourceSha256": {
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigCollectionScreenIntegrationTest.kt": "95261703d59dd933ec7358407bb037945f4f767ab4728b93b7b7ef0f12382585",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigProfileFetcherTest.kt": "8b5f204c7eb4f3820a2c25c1a948809721717c38aaba590ecce2e898ec71b355"
+  },
+  "log": "outputs/p03-manual-profile-refresh-final-api-red-20261022.log"
+}

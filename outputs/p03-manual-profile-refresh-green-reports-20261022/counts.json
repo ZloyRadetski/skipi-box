@@ -1,0 +1,87 @@
+{
+  "suites": [
+    {
+      "suite": "app.skipi.desktop.DesktopConfigProfileRefreshActionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:18.326Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopResourceAutoUpdateLoopTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:18.328Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopResourceAutoUpdaterTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:18.339Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficAutoUpdateLoopTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:18.348Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigAutoRefreshIntegrationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:18.361Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:18.410Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:18.420Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:08.353Z"
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigProfileFetcherTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-22T20:40:18.434Z"
+    }
+  ],
+  "totals": {
+    "tests": 59,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "build": "BUILD SUCCESSFUL in 16s",
+  "sourceSha256": {
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigCollectionScreenIntegrationTest.kt": "073feca1166ef9bf90227f7e9274b2d1373aec674ac8231235c69dfa620cbb0f",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigProfileFetcherTest.kt": "8b5f204c7eb4f3820a2c25c1a948809721717c38aaba590ecce2e898ec71b355"
+  }
+}

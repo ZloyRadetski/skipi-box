@@ -134,6 +134,7 @@ ${labels.groupName} = select, ${labels.memberName}, skipi-display=active_config
                         DesktopConfigsScreen(
                             configLibrary = latestLibrary,
                             onTransformConfigLibrary = transformLibrary,
+                            fetchProfileDocument = { _, _ -> error("Unexpected manual profile refresh") },
                             onApplyGlobalProxyGroupResult = { _, _ -> error("Unexpected global proxy-group result apply in the profile proxy-groups responsive test") },
                             exportProxyServerFullJson = { error("Unexpected proxy-server export in the responsive render test") },
                             copyTextToClipboard = { error("Unexpected clipboard write in the responsive render test") },

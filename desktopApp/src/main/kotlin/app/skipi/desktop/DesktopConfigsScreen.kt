@@ -103,6 +103,7 @@ import app.skipi.app.config.TrafficConfigEditorProfileStore
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.app.config.toTrafficConfigState
+import features.config.TrafficConfigState
 import features.config.withSkipiSettingsInRawConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
@@ -167,6 +168,7 @@ internal fun DesktopConfigsScreen(
     onTransformConfigLibrary: ((DesktopConfigLibrary) -> DesktopConfigLibrary) -> DesktopConfigLibrary,
     fetchUserAgent: String,
     fetchTimeoutSeconds: Int,
+    fetchProfileDocument: suspend (TrafficConfigState, String) -> String,
     contentPadding: PaddingValues,
     resourceActionScope: CoroutineScope,
     onResourceFileStatusMessage: (String) -> Unit,
@@ -305,10 +307,18 @@ internal fun DesktopConfigsScreen(
         )
     }
 
+    suspend fun fetchImportedDocument(normalizedUrl: String): String = withContext(Dispatchers.IO) {
+        fetcher.fetch(
+            url = normalizedUrl,
+            userAgent = fetchUserAgent,
+            timeout = Duration.ofSeconds(fetchTimeoutSeconds.toLong()),
+        ).body
+    }
+
     fun fetchConfigFromUrl(
         url: String,
         updatingConfigId: Int? = null,
-        userAgent: String = fetchUserAgent,
+        fetchDocument: suspend (normalizedUrl: String) -> String,
         onSuccess: (normalizedUrl: String, content: String) -> Unit,
     ) {
         val normalizedUrl = url.trim()
@@ -320,15 +330,7 @@ internal fun DesktopConfigsScreen(
             message = "Загрузка конфига…"
             updatingConfigId?.let { updatingConfigIds = updatingConfigIds + it }
             try {
-                val fetched = runCatching {
-                    withContext(Dispatchers.IO) {
-                        fetcher.fetch(
-                            url = normalizedUrl,
-                            userAgent = userAgent,
-                            timeout = Duration.ofSeconds(fetchTimeoutSeconds.toLong()),
-                        ).body
-                    }
-                }
+                val fetched = runCatching { fetchDocument(normalizedUrl) }
                 fetched.onSuccess { content -> onSuccess(normalizedUrl, content) }
                     .onFailure { error -> message = "Не удалось загрузить конфиг: ${error.message.orEmpty()}" }
             } finally {
@@ -338,7 +340,10 @@ internal fun DesktopConfigsScreen(
     }
 
     fun importUrlFromClipboard(url: String) {
-        fetchConfigFromUrl(url) { normalizedUrl, content ->
+        fetchConfigFromUrl(
+            url = url,
+            fetchDocument = ::fetchImportedDocument,
+        ) { normalizedUrl, content ->
             persist(
                 transform = { latest ->
                     DesktopConfigLibraries.importDocument(
@@ -356,7 +361,10 @@ internal fun DesktopConfigsScreen(
     }
 
     fun createConfigFromUrl(url: String) {
-        fetchConfigFromUrl(url) { normalizedUrl, content ->
+        fetchConfigFromUrl(
+            url = url,
+            fetchDocument = ::fetchImportedDocument,
+        ) { normalizedUrl, content ->
             val normalizedContent = content.trimEnd().plus("\n")
             val error = normalizedContent.analyzeShadowrocketConfig().diagnostics.firstOrNull {
                 it.severity == ShadowrocketConfigDiagnosticSeverity.Error
@@ -386,7 +394,7 @@ internal fun DesktopConfigsScreen(
         fetchConfigFromUrl(
             url = capturedUrl,
             updatingConfigId = snapshot.id,
-            userAgent = snapshot.resourceSettings.userAgent,
+            fetchDocument = { normalizedUrl -> fetchProfileDocument(snapshot, normalizedUrl) },
         ) { normalizedUrl, content ->
             val normalizedContent = content.trimEnd().plus("\n")
             val error = normalizedContent.analyzeShadowrocketConfig().diagnostics.firstOrNull {

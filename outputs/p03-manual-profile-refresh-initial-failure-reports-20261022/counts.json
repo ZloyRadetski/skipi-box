@@ -1,0 +1,68 @@
+{
+  "suites": [
+    {
+      "suite": "app.skipi.desktop.DesktopConfigProfileRefreshActionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopResourceAutoUpdateLoopTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopResourceAutoUpdaterTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigAutoRefreshIntegrationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigAutoRefreshTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest",
+      "tests": 19,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "app.skipi.desktop.DesktopTrafficConfigProfileFetcherTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totals": {
+    "tests": 57,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "build": "BUILD FAILED in 25s",
+  "failure": "Manual integration timed out waiting for active-profile selection commit; investigate public UI action/harness before classifying."
+}

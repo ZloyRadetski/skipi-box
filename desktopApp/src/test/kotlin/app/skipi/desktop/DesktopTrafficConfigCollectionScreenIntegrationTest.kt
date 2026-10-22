@@ -23,6 +23,7 @@ import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.common_edit
+import app.skipi.ui.resources.common_refresh
 import app.skipi.ui.resources.common_save
 import app.skipi.ui.resources.configs_add
 import app.skipi.ui.resources.configs_copy_name
@@ -34,6 +35,8 @@ import app.skipi.ui.resources.configs_preserved_unsupported
 import app.skipi.ui.resources.configs_resources
 import app.skipi.ui.resources.configs_rules_title
 import app.skipi.ui.resources.configs_ui_edit
+import app.skipi.ui.resources.configs_update_anyway
+import app.skipi.ui.resources.configs_update_locked_warning_title
 import app.skipi.ui.resources.deletion_confirmation_delete_proxy_server
 import app.skipi.ui.resources.proxy_editor_discard
 import app.skipi.ui.resources.proxy_editor_discard_changes_title
@@ -42,16 +45,24 @@ import app.skipi.ui.theme.ProvideSkipiTheme
 import app.skipi.ui.theme.SkipiVisualProfile
 import app.skipi.ui.theme.resolveBaseAppearanceColors
 import features.config.ConfigProfile
+import features.config.TrafficConfigState
 import features.config.withSkipiSettingsInRawConfig
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.VLESS
+import features.proxy.server.model.encodePersistedProxyServer
 import engine.network.NetworkDefaults
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.skia.EncodedImageFormat
 import java.io.File
@@ -878,7 +889,407 @@ loglevel = debug
         }
     }
 
-    private fun withDesktopScreen(
+    @Test
+    fun manualProfileRefreshUsesCapturedSnapshotAndAppliesResponseToLatestLibraryRow() = runBlocking {
+        val originalUrl = "  https://profiles.example.test/manual.conf  "
+        val trimmedUrl = originalUrl.trim()
+        val originalProfile = normalizedProfile(
+            id = 7,
+            name = "Captured profile name",
+            sourceUrl = originalUrl,
+            updateLocked = false,
+            content = """[General]
+loglevel = warning
+
+[SKIPI]
+profile-auto-update = false
+profile-update-interval = 18
+resource-auto-update = true
+resource-update-interval = 33
+resource-user-agent = Captured profile agent/1.0
+""",
+        )
+        val enteredFetch = CompletableDeferred<ManualProfileFetchRequest>()
+        val returnDocument = CompletableDeferred<String>()
+        val fetchedDocument = """[General]
+loglevel = debug
+
+[SKIPI]
+profile-update-url = https://provider.example.test/response-url.conf
+profile-update-locked = true
+profile-auto-update = true
+profile-update-interval = 6
+resource-auto-update = false
+resource-update-interval = 12
+resource-user-agent = Provider response agent/1.0
+"""
+        val active = normalizedProfile(
+            id = 3,
+            name = "Other active profile",
+            sourceUrl = "",
+            updateLocked = false,
+            content = "[General]\nloglevel = info\n",
+        )
+        val startMillis = System.currentTimeMillis()
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = originalProfile,
+            activeProfile = active,
+            fetchProfileDocument = { profile, url ->
+                enteredFetch.complete(ManualProfileFetchRequest(profile, url))
+                withTimeout(5_000L) { returnDocument.await() }
+            },
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, originalProfile.name, "Ещё")
+            clickTextAction(screen.scene, getString(Res.string.common_refresh))
+
+            val request = awaitDeferredWithRenderTicks(screen.scene, enteredFetch, "manual profile fetch")
+            assertEquals(originalProfile.id, request.profile.id)
+            assertEquals(originalProfile.name, request.profile.name)
+            assertEquals(originalUrl, request.profile.sourceUrl, "The callback receives the captured stored snapshot")
+            assertEquals("Captured profile agent/1.0", request.profile.resourceSettings.userAgent)
+            assertEquals(trimmedUrl, request.url, "Only the fetch URL is trimmed")
+
+            // Simulate a same-ID edit landing while HTTP is in flight. The response omits
+            // profile-name so the shared manual policy must retain this latest row's name.
+            val latestSourceUrl = "https://local.example.test/edited-during-fetch.conf"
+            val latestTarget = normalizedProfile(
+                id = originalProfile.id,
+                name = "Latest local profile name",
+                sourceUrl = latestSourceUrl,
+                updateLocked = false,
+                content = """[General]
+loglevel = error
+
+[SKIPI]
+profile-auto-update = false
+profile-update-interval = 21
+resource-auto-update = true
+resource-update-interval = 44
+resource-user-agent = Latest local agent/1.0
+""",
+            )
+            screen.replaceLatestLibrary(
+                screen.initialLibrary.copy(
+                    configs = screen.initialLibrary.configs.map { current ->
+                        if (current.id == latestTarget.id) latestTarget else current
+                    },
+                ),
+            )
+
+            returnDocument.complete(fetchedDocument)
+            val committed = awaitDeferredWithRenderTicks(
+                screen.scene,
+                screen.nextLibraryTransform,
+                "manual refresh persistence",
+            )
+            val saved = committed.configs.single { it.id == originalProfile.id }
+            val savedTyped = saved.toTrafficConfigState("Skipi/test/Desktop")
+
+            assertEquals("Latest local profile name", saved.name)
+            assertEquals(trimmedUrl, saved.sourceUrl, "The response URL and concurrent URL edit do not replace the captured URL")
+            assertTrue(saved.updateLocked, "Unlocked manual refresh accepts the lock value from the response")
+            assertTrue(saved.lastUpdatedAtMillis in startMillis..System.currentTimeMillis())
+            assertTrue(saved.content.contains("loglevel = debug"))
+            assertTrue(savedTyped.autoUpdate)
+            assertEquals("6", savedTyped.updateInterval)
+            assertFalse(savedTyped.resourceSettings.autoUpdate)
+            assertEquals("12", savedTyped.resourceSettings.updateInterval)
+            assertEquals("Provider response agent/1.0", savedTyped.resourceSettings.userAgent)
+            assertTrue(saved.content.contains("profile-name = Latest local profile name"))
+            assertTrue(saved.content.contains("profile-update-url = $trimmedUrl"))
+            assertTrue(saved.content.contains("resource-user-agent = Provider response agent/1.0"))
+            assertEquals(active.id, committed.selectedConfigId)
+            assertEquals(screen.initialLibrary.nextConfigId, committed.nextConfigId)
+            assertEquals(active, committed.configs.single { it.id == active.id })
+            assertEquals(1, screen.libraryTransformCount(), "One accepted response should persist one latest-library transform")
+        }
+    }
+
+    @Test
+    fun manualLockedProfileRefreshWaitsForConfirmationAndExplicitlyUnlocksTheSavedProfile() = runBlocking {
+        val originalUrl = "  https://profiles.example.test/locked.conf  "
+        val trimmedUrl = originalUrl.trim()
+        val lockedProfile = normalizedProfile(
+            id = 7,
+            name = "Locked captured profile",
+            sourceUrl = originalUrl,
+            updateLocked = true,
+            content = """[General]
+loglevel = warning
+
+[SKIPI]
+resource-user-agent = Locked profile agent/1.0
+""",
+        )
+        val enteredFetch = CompletableDeferred<ManualProfileFetchRequest>()
+        val response = """[General]
+loglevel = debug
+
+[SKIPI]
+profile-name = Provider locked response
+profile-update-locked = true
+profile-auto-update = true
+profile-update-interval = 9
+resource-auto-update = false
+resource-update-interval = 15
+resource-user-agent = Provider locked agent/1.0
+"""
+        val warningTitle = getString(Res.string.configs_update_locked_warning_title)
+        val updateAnyway = getString(Res.string.configs_update_anyway)
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = lockedProfile,
+            fetchProfileDocument = { profile, url ->
+                enteredFetch.complete(ManualProfileFetchRequest(profile, url))
+                response
+            },
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, lockedProfile.name, "Ещё")
+            clickTextAction(screen.scene, getString(Res.string.common_refresh))
+            assertNotNull(awaitText(screen.scene, warningTitle))
+            assertFalse(enteredFetch.isCompleted, "A locked profile must not fetch before explicit confirmation")
+            assertEquals(0, screen.libraryTransformCount(), "Showing the lock warning must not persist")
+
+            clickTextAction(screen.scene, updateAnyway)
+            val request = awaitDeferredWithRenderTicks(screen.scene, enteredFetch, "confirmed locked-profile fetch")
+            assertEquals(lockedProfile.id, request.profile.id)
+            assertTrue(request.profile.updateLocked)
+            assertEquals("Locked profile agent/1.0", request.profile.resourceSettings.userAgent)
+            assertEquals(trimmedUrl, request.url)
+
+            val committed = awaitDeferredWithRenderTicks(
+                screen.scene,
+                screen.nextLibraryTransform,
+                "confirmed manual refresh persistence",
+            )
+            val saved = committed.configs.single { it.id == lockedProfile.id }
+            assertEquals("Provider locked response", saved.name)
+            assertEquals(trimmedUrl, saved.sourceUrl)
+            assertFalse(saved.updateLocked, "Explicit confirmation overrides a response that keeps the lock enabled")
+            assertTrue(saved.content.contains("profile-update-locked = false"))
+            assertEquals(1, screen.libraryTransformCount())
+        }
+    }
+
+    @Test
+    fun manualRefreshReconcilesLatestRepositoryAfterConcurrentEditAndActiveProfileSwitch() = runBlocking {
+        val originalUrl = "https://profiles.example.test/reconcile.conf"
+        val targetProfile = normalizedProfile(
+            id = 7,
+            name = "Captured target profile",
+            sourceUrl = originalUrl,
+            updateLocked = false,
+            content = profileGroupDocument("Stable", listOf("Node A", "Node B")),
+        )
+        val siblingProfile = normalizedProfile(
+            id = 8,
+            name = "Sibling active profile",
+            sourceUrl = "manual://sibling",
+            updateLocked = false,
+            content = profileGroupDocument("Sibling", listOf("Node C")),
+        )
+        val initialLibrary = DesktopConfigLibrary(
+            selectedConfigId = targetProfile.id,
+            configs = listOf(targetProfile, siblingProfile),
+            nextConfigId = 80,
+        )
+        val initialServers = DesktopServerLibrary(
+            selectedServerId = 99,
+            servers = listOf(
+                storedProfileServer(10, VLESS(remarks = "Node A", id = "a", server = "a.example", port = "443")),
+                storedProfileServer(11, VLESS(remarks = "Node B", id = "b", server = "b.example", port = "443")),
+                storedProfileServer(12, VLESS(remarks = "Node C", id = "c", server = "c.example", port = "443")),
+                storedProfileServer(
+                    30,
+                    StrategyGroup(
+                        remarks = "Stable",
+                        proxyServerIds = listOf(10, 11),
+                        selectedMemberId = 11,
+                        sourceTrafficConfigId = targetProfile.id,
+                        sourcePolicyGroupName = "Stable",
+                    ),
+                    subscriptionId = DefaultAutoBalancerGroupId,
+                ),
+                storedProfileServer(
+                    25,
+                    StrategyGroup(
+                        remarks = "Sibling",
+                        proxyServerIds = listOf(12),
+                        selectedMemberId = 12,
+                        sourceTrafficConfigId = siblingProfile.id,
+                        sourcePolicyGroupName = "Sibling",
+                    ),
+                    subscriptionId = DefaultAutoBalancerGroupId,
+                ),
+                DesktopStoredProxyServer(id = 99, serverJson = """{"futureProxy":{"keep":true}}"""),
+            ),
+            nextServerId = 100,
+        )
+        val enteredFetch = CompletableDeferred<ManualProfileFetchRequest>()
+        val returnDocument = CompletableDeferred<String>()
+        val transformEvents = Channel<DesktopConfigLibrary>(Channel.UNLIMITED)
+        val reconciliationEvents = Channel<DesktopConfigLibrary>(Channel.UNLIMITED)
+        lateinit var configRepository: DesktopTrafficConfigRepository
+        lateinit var readConfigs: () -> DesktopConfigLibrary
+        lateinit var readServers: () -> DesktopServerLibrary
+        lateinit var serverPath: java.nio.file.Path
+        val response = """[General]
+loglevel = info
+
+[Proxy Group]
+Stable = select, Node B, Node C, skipi-display=always
+
+[Rule]
+FINAL,DIRECT
+"""
+
+        try {
+            withDesktopScreen(
+                proxyServers = emptyList(),
+                targetProfile = targetProfile,
+                activeProfile = siblingProfile,
+                initialLibraryOverride = initialLibrary,
+                fetchProfileDocument = { profile, url ->
+                    enteredFetch.complete(ManualProfileFetchRequest(profile, url))
+                    withTimeout(5_000L) { returnDocument.await() }
+                },
+                libraryTransformHooksFactory = { root, initial, hostScope ->
+                    val configPath = File(root, "configs.json").toPath()
+                    serverPath = File(root, "servers.json").toPath()
+                    DesktopConfigLibraries.save(configPath, initial).getOrThrow()
+                    DesktopServerLibraries.save(serverPath, initialServers).getOrThrow()
+                    readConfigs = { DesktopConfigLibraries.load(configPath).getOrThrow() }
+                    readServers = { DesktopServerLibraries.load(serverPath).getOrThrow() }
+                    configRepository = DesktopTrafficConfigRepository(
+                        initialLibrary = readConfigs(),
+                        readLibrary = readConfigs,
+                        saveLibrary = { updated -> DesktopConfigLibraries.save(configPath, updated) },
+                        publishLibrary = {},
+                    )
+                    val serverRepository = DesktopProxyServerRepository(
+                        initialLibrary = readServers(),
+                        readLibrary = readServers,
+                        saveLibrary = { updated -> DesktopServerLibraries.save(serverPath, updated) },
+                        publishLibrary = {},
+                    )
+                    val reconciler = DesktopTrafficConfigProxyGroupReconciler(
+                        serverRepository = serverRepository,
+                        readConfigLibrary = readConfigs,
+                        stripLeadingCountryFlag = { it },
+                    )
+                    DesktopScreenLibraryTransformHooks(
+                        transformLatestWithPrevious = configRepository::transformLatestWithPrevious,
+                        afterTransform = { result ->
+                            transformEvents.trySend(result.updated).getOrThrow()
+                            hostScope.launch {
+                                reconciler.reconcile()
+                                reconciliationEvents.send(result.updated)
+                            }
+                        },
+                    )
+                },
+            ) { screen ->
+                clickRowContentDescriptionAction(screen.scene, targetProfile.name, "Ещё")
+                clickTextAction(screen.scene, getString(Res.string.common_refresh))
+                val request = awaitDeferredWithRenderTicks(screen.scene, enteredFetch, "repository-backed manual refresh")
+                assertEquals(targetProfile.id, request.profile.id)
+                assertEquals(targetProfile.name, request.profile.name)
+                assertEquals(originalUrl, request.profile.sourceUrl)
+                assertEquals(originalUrl, request.url)
+
+                val latestTarget = normalizedProfile(
+                    id = targetProfile.id,
+                    name = "Latest local profile name",
+                    sourceUrl = originalUrl,
+                    updateLocked = false,
+                    content = profileGroupDocument("Stable", listOf("Node A", "Node B")),
+                ).copy(lastUpdatedAtMillis = 700L)
+                val lateEdit = configRepository.transformLatest { latest ->
+                    latest.copy(configs = latest.configs.map { current ->
+                        if (current.id == latestTarget.id) latestTarget else current
+                    })
+                }
+                screen.replaceLatestLibrary(lateEdit)
+
+                clickProfileCardSelection(screen.scene, siblingProfile.name)
+                val selectedLibrary = awaitChannelWithRenderTicks(
+                    screen.scene,
+                    transformEvents,
+                    "active profile selection commit",
+                )
+                assertEquals(siblingProfile.id, selectedLibrary.selectedConfigId)
+                assertEquals("Latest local profile name", selectedLibrary.configs.single { it.id == targetProfile.id }.name)
+                val selectionReconcile = awaitChannelWithRenderTicks(
+                    screen.scene,
+                    reconciliationEvents,
+                    "active profile selection reconciliation",
+                )
+                assertEquals(siblingProfile.id, selectionReconcile.selectedConfigId)
+                assertEquals(siblingProfile.id, readConfigs().selectedConfigId)
+                assertFalse(returnDocument.isCompleted, "The deferred profile response must still be in flight")
+
+                returnDocument.complete(response)
+                val refreshedLibrary = awaitChannelWithRenderTicks(
+                    screen.scene,
+                    transformEvents,
+                    "manual refresh library commit",
+                )
+                assertEquals(siblingProfile.id, refreshedLibrary.selectedConfigId)
+                assertEquals("Latest local profile name", refreshedLibrary.configs.single { it.id == targetProfile.id }.name)
+                awaitChannelWithRenderTicks(
+                    screen.scene,
+                    reconciliationEvents,
+                    "manual refresh group reconciliation",
+                )
+
+                val reloadedConfigs = readConfigs()
+                assertEquals(listOf(7, 8), reloadedConfigs.configs.map(ConfigProfile::id))
+                assertEquals(siblingProfile.id, reloadedConfigs.selectedConfigId)
+                assertEquals(initialLibrary.nextConfigId, reloadedConfigs.nextConfigId)
+                val savedTarget = reloadedConfigs.configs.single { it.id == targetProfile.id }
+                assertEquals("Latest local profile name", savedTarget.name)
+                assertEquals(originalUrl, savedTarget.sourceUrl)
+                assertTrue(savedTarget.content.contains("Stable = select, Node B, Node C"))
+                assertTrue(
+                    savedTarget.content.contains("profile-name = Latest local profile name"),
+                    "A response without a name retains the latest local profile name",
+                )
+                assertEquals(siblingProfile.content, reloadedConfigs.configs.single { it.id == siblingProfile.id }.content)
+
+                val reloadedServers = DesktopServerLibraries.load(serverPath).getOrThrow()
+                assertEquals(initialServers.selectedServerId, reloadedServers.selectedServerId)
+                assertEquals(initialServers.nextServerId, reloadedServers.nextServerId)
+                assertEquals(initialServers.servers.single { it.id == 99 }, reloadedServers.servers.single { it.id == 99 })
+                val stable = reloadedServers.servers.single { it.id == 30 }.decode().getOrThrow() as StrategyGroup
+                assertEquals(listOf(11, 12), stable.proxyServerIds)
+                assertEquals(11, stable.selectedMemberId)
+                assertEquals(targetProfile.id, stable.sourceTrafficConfigId)
+                assertEquals("Stable", stable.sourcePolicyGroupName)
+                val sibling = reloadedServers.servers.single { it.id == 25 }.decode().getOrThrow() as StrategyGroup
+                assertEquals(listOf(12), sibling.proxyServerIds)
+                assertEquals(12, sibling.selectedMemberId)
+                assertEquals(siblingProfile.id, sibling.sourceTrafficConfigId)
+            }
+        } finally {
+            transformEvents.close()
+            reconciliationEvents.close()
+        }
+    }
+
+    private data class ManualProfileFetchRequest(
+        val profile: TrafficConfigState,
+        val url: String,
+    )
+
+    private data class DesktopScreenLibraryTransformHooks(
+        val transformLatestWithPrevious: ((DesktopConfigLibrary) -> DesktopConfigLibrary) -> DesktopConfigLibraryTransformResult,
+        val afterTransform: (DesktopConfigLibraryTransformResult) -> Unit,
+    )
+
+    private suspend fun withDesktopScreen(
         proxyServers: List<CatalogProxyServerRecord>,
         scriptedApplyOutcome: ProxyServerEditApplyOutcome? = null,
         targetProfile: ConfigProfile? = null,
@@ -886,7 +1297,11 @@ loglevel = debug
         initialLibraryOverride: DesktopConfigLibrary? = null,
         viewportWidth: Int = TestSceneWidth,
         viewportHeight: Int = TestSceneHeight,
-        block: (DesktopScreenHarness) -> Unit,
+        fetchProfileDocument: suspend (TrafficConfigState, String) -> String = { _, _ ->
+            error("Unexpected manual profile refresh in this test")
+        },
+        libraryTransformHooksFactory: ((File, DesktopConfigLibrary, CoroutineScope) -> DesktopScreenLibraryTransformHooks)? = null,
+        block: suspend (DesktopScreenHarness) -> Unit,
     ) {
         withTemporaryRoot { root ->
             val target = targetProfile ?: normalizedProfile(
@@ -917,17 +1332,27 @@ $ActiveProfileGroupName = select, DIRECT
             var latestLibrary by mutableStateOf(initialLibrary)
             var persistedLibrary = initialLibrary
             var libraryTransformCount = 0
+            val nextLibraryTransform = CompletableDeferred<DesktopConfigLibrary>()
             val applyRequests = mutableListOf<GlobalProxyGroupApplyRequest>()
-            val transformLibrary: ((DesktopConfigLibrary) -> DesktopConfigLibrary) -> DesktopConfigLibrary = { transform ->
-                libraryTransformCount++
-                transform(latestLibrary).also { updated ->
-                    persistedLibrary = updated
-                    latestLibrary = updated
-                }
-            }
-
             val resourceFiles = DesktopProfileResourceFiles(File(root, "resources"))
             val hostScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            val libraryTransformHooks = libraryTransformHooksFactory?.invoke(root, initialLibrary, hostScope)
+            val transformLibrary: ((DesktopConfigLibrary) -> DesktopConfigLibrary) -> DesktopConfigLibrary = { transform ->
+                val result = libraryTransformHooks?.transformLatestWithPrevious?.invoke(transform)
+                    ?: DesktopConfigLibraryTransformResult(
+                        previous = latestLibrary,
+                        updated = transform(latestLibrary),
+                    )
+                val updated = result.updated
+                libraryTransformCount++
+                persistedLibrary = updated
+                latestLibrary = updated
+                if (result.previous.configs != updated.configs || result.previous.selectedConfigId != updated.selectedConfigId) {
+                    libraryTransformHooks?.afterTransform?.invoke(result)
+                }
+                nextLibraryTransform.complete(updated)
+                updated
+            }
             val resourceServices = DesktopResourceFileServices(
                 scope = hostScope,
                 resourceFiles = resourceFiles,
@@ -981,6 +1406,7 @@ $ActiveProfileGroupName = select, DIRECT
                             latencyByServerId = emptyMap(),
                             resourceServices = resourceServices,
                             resourceFileStatusMessage = "",
+                            fetchProfileDocument = fetchProfileDocument,
                         )
                     }
                 }
@@ -991,6 +1417,8 @@ $ActiveProfileGroupName = select, DIRECT
                         initialLibrary = initialLibrary,
                         persistedLibrary = { persistedLibrary },
                         libraryTransformCount = { libraryTransformCount },
+                        replaceLatestLibrary = { latestLibrary = it },
+                        nextLibraryTransform = nextLibraryTransform,
                         applyRequests = { applyRequests.toList() },
                         proxyServers = proxyServers,
                     ),
@@ -1007,9 +1435,26 @@ $ActiveProfileGroupName = select, DIRECT
         val initialLibrary: DesktopConfigLibrary,
         val persistedLibrary: () -> DesktopConfigLibrary,
         val libraryTransformCount: () -> Int,
+        val replaceLatestLibrary: (DesktopConfigLibrary) -> Unit,
+        val nextLibraryTransform: Deferred<DesktopConfigLibrary>,
         val applyRequests: () -> List<GlobalProxyGroupApplyRequest>,
         val proxyServers: List<CatalogProxyServerRecord>,
     )
+
+    private suspend fun <T> awaitChannelWithRenderTicks(
+        scene: ImageComposeScene,
+        channel: Channel<T>,
+        description: String,
+    ): T {
+        val deadline = System.nanoTime() + 3_000_000_000L
+        while (System.nanoTime() < deadline) {
+            val next = channel.tryReceive()
+            if (next.isSuccess) return next.getOrThrow()
+            render(scene)
+            delay(1L)
+        }
+        error("$description did not complete within three seconds")
+    }
 
     private data class GlobalProxyGroupApplyRequest(
         val serverId: Int?,
@@ -1064,6 +1509,26 @@ $ActiveProfileGroupName = select, DIRECT
         )
     }
 
+    private fun profileGroupDocument(name: String, members: List<String>): String = """[General]
+        loglevel = warning
+
+        [Proxy Group]
+        $name = select, ${members.joinToString(", ")}, skipi-display=always
+
+        [Rule]
+        FINAL,DIRECT
+    """.trimIndent()
+
+    private fun storedProfileServer(
+        id: Int,
+        server: features.proxy.server.model.ProxyServer<*>,
+        subscriptionId: Int? = null,
+    ) = DesktopStoredProxyServer(
+        id = id,
+        serverJson = server.encodePersistedProxyServer(),
+        subscriptionId = subscriptionId,
+    )
+
     private fun catalogServer(
         id: Int,
         sourceSubscriptionId: Int?,
@@ -1106,6 +1571,16 @@ $ActiveProfileGroupName = select, DIRECT
             "Expected '$actionLabel' inside '$rowLabel' to have a clickable ancestor",
         )
         clickNodeAction(scene, clickTarget, "The '$actionLabel' action in '$rowLabel'")
+    }
+
+    private fun clickProfileCardSelection(scene: ImageComposeScene, profileName: String) {
+        val profileCard = assertNotNull(
+            rowCards(scene, profileName).firstOrNull { candidate ->
+                candidate.descendants().any { it.hasContentDescription("Ещё") }
+            },
+            "Expected profile card '$profileName' with its More action",
+        )
+        clickNodeAction(scene, profileCard, "The '$profileName' profile selection card")
     }
 
     private fun rowHasContentDescriptionAction(scene: ImageComposeScene, rowLabel: String, actionLabel: String): Boolean {
@@ -1562,12 +2037,26 @@ $ActiveProfileGroupName = select, DIRECT
         scene.render(advancingSystemNanoTime()).close()
     }
 
+    private suspend fun <T> awaitDeferredWithRenderTicks(
+        scene: ImageComposeScene,
+        deferred: Deferred<T>,
+        description: String,
+    ): T {
+        val deadline = System.nanoTime() + 3_000_000_000L
+        while (!deferred.isCompleted && System.nanoTime() < deadline) {
+            render(scene)
+            delay(1L)
+        }
+        assertTrue(deferred.isCompleted, "$description did not complete within three seconds")
+        return withTimeout(100L) { deferred.await() }
+    }
+
     private fun advancingSystemNanoTime(): Long {
         frameTimeNanos += 16_666_667L
         return frameTimeNanos
     }
 
-    private inline fun <T> withTemporaryRoot(block: (File) -> T): T {
+    private suspend fun <T> withTemporaryRoot(block: suspend (File) -> T): T {
         val root = Files.createTempDirectory("desktop-config-collection-").toFile()
         return try {
             block(root)

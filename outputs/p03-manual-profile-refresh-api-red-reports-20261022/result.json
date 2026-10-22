@@ -1,0 +1,11 @@
+{
+  "result": "API RED before production changes",
+  "buildResult": "BUILD FAILED in 20s",
+  "failingTask": ":desktopApp:compileTestKotlin",
+  "compilerErrors": [
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigCollectionScreenIntegrationTest.kt:1187:29 No parameter with name 'fetchProfileDocument' found."
+  ],
+  "testsExecuted": 0,
+  "log": "outputs/p03-manual-profile-refresh-api-red-20261022.log",
+  "note": "No new test XML: compilation stopped before test execution."
+}
