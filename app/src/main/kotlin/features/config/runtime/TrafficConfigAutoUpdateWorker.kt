@@ -8,12 +8,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.SkipiApplication
 import data.repository.reconcileTrafficConfigProxyGroups
-import features.config.ShadowrocketConfigDiagnosticSeverity
-import features.config.analyzeShadowrocketConfig
 import features.config.withCommittedTrafficConfigRefresh
 import app.skipi.app.config.TrafficConfigProfileRefreshMode
 import features.subscription.normalizeSkipiUserAgent
-import features.subscription.runtime.AndroidSubscriptionFetchOptions
 import features.subscription.usecase.toSubscriptionFetchOptions
 
 internal class TrafficConfigAutoUpdateWorker(
@@ -25,38 +22,35 @@ internal class TrafficConfigAutoUpdateWorker(
         if (configId == -1) return Result.success()
         val application = applicationContext as? SkipiApplication ?: return Result.failure()
         val config = application.stateStore.state.value.trafficConfigs.firstOrNull { it.id == configId }
-            ?: return Result.success()
-        if (!config.autoUpdate || config.updateLocked || config.sourceUrl.isBlank()) {
-            return Result.success()
-        }
-        return runCatching {
-            val url = config.sourceUrl.trim()
-            val state = application.stateStore.state.value
-            val fetched = application.subscriptionFetcher.fetch(
-                url = url,
-                userAgent = normalizeSkipiUserAgent(config.resourceSettings.userAgent),
-                // Background refreshes must traverse the running tunnel/proxy
-                // instead of the direct path, which may be blocked.
-                options = state.toSubscriptionFetchOptions(useRunningProxy = state.proxyRunning),
+        return when (
+            executeTrafficConfigAutoUpdate(
+                capturedProfile = config,
+                fetch = { profile, url ->
+                    val state = application.stateStore.state.value
+                    application.subscriptionFetcher.fetch(
+                        url = url,
+                        userAgent = normalizeSkipiUserAgent(profile.resourceSettings.userAgent),
+                        // Background refreshes must traverse the running tunnel/proxy
+                        // instead of the direct path, which may be blocked.
+                        options = state.toSubscriptionFetchOptions(useRunningProxy = state.proxyRunning),
+                    )
+                },
+                commit = { profileId, normalizedDocument, capturedUrl ->
+                    application.stateStore.update { state ->
+                        state.withCommittedTrafficConfigRefresh(
+                            configId = profileId,
+                            normalizedDocument = normalizedDocument,
+                            capturedUrl = capturedUrl,
+                            timestamp = System.currentTimeMillis(),
+                            mode = TrafficConfigProfileRefreshMode.Automatic,
+                        )
+                    }
+                },
+                reconcile = { application.stateStore.reconcileTrafficConfigProxyGroups() },
             )
-            val normalized = fetched.trimEnd() + "\n"
-            val analysis = normalized.analyzeShadowrocketConfig()
-            if (analysis.diagnostics.any { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
-                return@runCatching Result.retry()
-            }
-            application.stateStore.update { state ->
-                state.withCommittedTrafficConfigRefresh(
-                    configId = config.id,
-                    normalizedDocument = normalized,
-                    capturedUrl = url,
-                    timestamp = System.currentTimeMillis(),
-                    mode = TrafficConfigProfileRefreshMode.Automatic,
-                )
-            }
-            application.stateStore.reconcileTrafficConfigProxyGroups()
-            Result.success()
-        }.getOrElse {
-            Result.retry()
+        ) {
+            TrafficConfigAutoUpdateExecutionResult.Success -> Result.success()
+            TrafficConfigAutoUpdateExecutionResult.Retry -> Result.retry()
         }
     }
 }
