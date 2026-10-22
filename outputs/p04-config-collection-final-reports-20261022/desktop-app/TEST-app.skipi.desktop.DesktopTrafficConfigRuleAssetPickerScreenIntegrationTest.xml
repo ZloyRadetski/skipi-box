@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:35:29.700Z" hostname="VQSeGo" time="4.974">
+  <properties/>
+  <testcase name="ruleAssetPickersInsertAndroidValuesFromTheInactiveProfilesOwnCustomDatFile" classname="app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest" time="4.974"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

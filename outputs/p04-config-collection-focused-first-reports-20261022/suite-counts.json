@@ -1,0 +1,34 @@
+[
+  {
+    "name": "app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest",
+    "tests": "15",
+    "failures": "2",
+    "errors": "0",
+    "skipped": "0",
+    "timestamp": "2026-10-22T05:17:55.275Z"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopTrafficConfigProxyGroupsScreenIntegrationTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "timestamp": "2026-10-22T05:18:02.633Z"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopTrafficConfigRulesScreenIntegrationTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "timestamp": "2026-10-22T05:18:12.399Z"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest",
+    "tests": "1",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "timestamp": "2026-10-22T05:18:07.436Z"
+  }
+]

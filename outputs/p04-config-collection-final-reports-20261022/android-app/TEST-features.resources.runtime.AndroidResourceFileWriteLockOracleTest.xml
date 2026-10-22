@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.AndroidResourceFileWriteLockOracleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:26:42.963Z" hostname="VQSeGo" time="0.342">
+  <properties/>
+  <testcase name="failedWriteReleasesItsTargetLockAndKeepsThePreviousFile" classname="features.resources.runtime.AndroidResourceFileWriteLockOracleTest" time="0.013"/>
+  <testcase name="differentTargetsCanWriteWhileOneTargetIsBlocked" classname="features.resources.runtime.AndroidResourceFileWriteLockOracleTest" time="0.014"/>
+  <testcase name="concurrentWritesToSameTargetSerializeTheirWriterCallbacks" classname="features.resources.runtime.AndroidResourceFileWriteLockOracleTest" time="0.313"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

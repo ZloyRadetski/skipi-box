@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:26:13.879Z" hostname="VQSeGo" time="1.096">
+  <properties/>
+  <testcase name="classicConnectionWithoutFloatingPowerButtonHidesConnectedLatencyToolbar" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.156"/>
+  <testcase name="connectedSubscriptionHeaderLatencyActionStillTestsItsWholeSubscription" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.132"/>
+  <testcase name="classicConnectionWithFloatingPowerButtonShowsToolbarAndTestsSelectedServer" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.109"/>
+  <testcase name="connectedFloatingLatencyActionCanTestSelectedServerWhenSearchLeavesNoVisibleRows" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.085"/>
+  <testcase name="connectedFloatingLatencyActionStillCancelsAnActiveTest" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.096"/>
+  <testcase name="compactConnectionShowsToolbarEvenWhenClassicFloatingPowerButtonIsOff" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.123"/>
+  <testcase name="connectedFloatingLatencyActionDoesNothingWhenNoServerIsSelected" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.095"/>
+  <testcase name="connectedFloatingLatencyActionTestsTheSelectedServerEvenWhenSearchAndGroupHideIt" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.099"/>
+  <testcase name="connectedFloatingLatencyActionDoesNothingWhenSelectedServerCannotBeTested" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.106"/>
+  <testcase name="classicConnectionWithoutFloatingPowerButtonKeepsCardPowerControlUsable" classname="app.skipi.desktop.DesktopProxyHomeLatencyFabTest" time="0.094"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

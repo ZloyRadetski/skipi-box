@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:26:25.608Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="selectedAutomaticGroupUsesTheLatestLatencyAndSubscriptionProbeSnapshot" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.001"/>
+  <testcase name="configOwnedStrategyGroupUsesTheReferencedConfContent" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.001"/>
+  <testcase name="selectedOpaqueFirstRowFailureDoesNotFallThroughToLaterDuplicateId" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.0"/>
+  <testcase name="noSelectionProducesNoGeneratedLocalConfig" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.0"/>
+  <testcase name="ordinarySelectedServerKeepsTheLocalListenerShapeAndIsValidated" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.002"/>
+  <testcase name="nullAndMinusTwoStoredGroupsMapToManualAndAutoMembershipIds" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.001"/>
+  <testcase name="automaticGroupWithOnlyFailedLatencyKeepsTheFirstMemberAsFallback" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.001"/>
+  <testcase name="invalidLocalListenerOptionsFailBeforeAnInvalidSelectedChain" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.0"/>
+  <testcase name="selectedChainUsesReversedHopOrderAndItsDialerLinks" classname="app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

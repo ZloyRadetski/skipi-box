@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:33:15.262Z" hostname="VQSeGo" time="3.62">
+  <properties/>
+  <testcase name="rendersCollectionAndGlobalActionsAtNarrowAndWideViewports" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="3.618"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

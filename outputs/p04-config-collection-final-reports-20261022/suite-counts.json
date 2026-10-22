@@ -1,0 +1,100 @@
+{
+  "total": 2676,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "runs": [
+    "outputs/p04-config-collection-full-checkpoint-20261022.log",
+    "outputs/p04-config-collection-desktop-final-checkpoint-20261022.log"
+  ],
+  "suites": [
+    {
+      "suite": "shared-core-desktop",
+      "classes": 98,
+      "tests": 354,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T11:25:44.776Z",
+      "lastTimestamp": "2026-10-22T11:25:45.937Z",
+      "sourceRun": "full-first"
+    },
+    {
+      "suite": "shared-core-android",
+      "classes": 88,
+      "tests": 298,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T11:25:51.339Z",
+      "lastTimestamp": "2026-10-22T11:25:51.743Z",
+      "sourceRun": "full-first"
+    },
+    {
+      "suite": "shared-app-desktop",
+      "classes": 58,
+      "tests": 341,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T11:25:46.259Z",
+      "lastTimestamp": "2026-10-22T11:25:46.966Z",
+      "sourceRun": "full-first"
+    },
+    {
+      "suite": "shared-app-android",
+      "classes": 57,
+      "tests": 333,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T11:25:56.109Z",
+      "lastTimestamp": "2026-10-22T11:25:56.870Z",
+      "sourceRun": "full-first"
+    },
+    {
+      "suite": "shared-ui-desktop",
+      "classes": 33,
+      "tests": 120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T11:25:41.210Z",
+      "lastTimestamp": "2026-10-22T11:25:41.502Z",
+      "sourceRun": "full-first"
+    },
+    {
+      "suite": "shared-ui-android",
+      "classes": 33,
+      "tests": 120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T11:26:07.531Z",
+      "lastTimestamp": "2026-10-22T11:26:07.791Z",
+      "sourceRun": "full-first"
+    },
+    {
+      "suite": "desktop-app",
+      "classes": 112,
+      "tests": 543,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T11:35:00.241Z",
+      "lastTimestamp": "2026-10-22T11:35:38.308Z",
+      "sourceRun": "desktop-final-continuation"
+    },
+    {
+      "suite": "android-app",
+      "classes": 135,
+      "tests": 567,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "firstTimestamp": "2026-10-22T11:26:30.654Z",
+      "lastTimestamp": "2026-10-22T11:26:44.102Z",
+      "sourceRun": "full-first"
+    }
+  ]
+}

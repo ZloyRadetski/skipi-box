@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopChainMemberEligibilityScreenIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:26:09.869Z" hostname="VQSeGo" time="1.905">
+  <properties/>
+  <testcase name="chainMemberDropdownOffersOrdinaryManualAndOrphanServersButExcludesAllCompositeServers" classname="app.skipi.desktop.DesktopChainMemberEligibilityScreenIntegrationTest" time="1.905"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
