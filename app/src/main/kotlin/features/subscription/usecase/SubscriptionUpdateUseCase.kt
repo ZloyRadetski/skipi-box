@@ -26,9 +26,11 @@ import features.subscription.runtime.AndroidSubscriptionFetcher
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import ui.text.formatTemplate
 import kotlin.time.Clock
 
@@ -80,11 +82,13 @@ private suspend fun updateSubscriptionsFromResponses(
         loader = SubscriptionRefreshLoader { request ->
             val group = checkNotNull(groupsById[request.subscription.id])
             coordinator.withGroup(group.id) {
-                updateSubscriptionGroup(
-                    group = group,
-                    fetchResponse = fetchResponse,
-                    fetchOptions = request.fetchOptions(),
-                ).getOrThrow()
+                withContext(Dispatchers.Default) {
+                    updateSubscriptionGroup(
+                        group = group,
+                        fetchResponse = fetchResponse,
+                        fetchOptions = request.fetchOptions(),
+                    ).getOrThrow()
+                }
             }
         },
         updatedAtMillis = { Clock.System.now().toEpochMilliseconds() },
@@ -151,15 +155,17 @@ internal class AndroidSubscriptionRefreshBatchRunner(
         val context = request.fetchOptions
         return try {
             coordinator.withGroup(context.group.id) {
-                val loaded = loadSubscriptionRefresh(
-                    request = SubscriptionRefreshLoadRequest(
-                        subscription = request.subscription,
-                        fetchOptions = context.readFetchOptions(),
-                    ),
-                    fetchResponse = fetchResponse,
-                    parsers = listOf(AndroidSubscriptionRefreshPayloadParser),
-                )
-                loaded.toProxyServerListSubscriptionUpdate(context.group)
+                withContext(Dispatchers.Default) {
+                    val loaded = loadSubscriptionRefresh(
+                        request = SubscriptionRefreshLoadRequest(
+                            subscription = request.subscription,
+                            fetchOptions = context.readFetchOptions(),
+                        ),
+                        fetchResponse = fetchResponse,
+                        parsers = listOf(AndroidSubscriptionRefreshPayloadParser),
+                    )
+                    loaded.toProxyServerListSubscriptionUpdate(context.group)
+                }
             }
         } catch (cancelled: CancellationException) {
             throw cancelled

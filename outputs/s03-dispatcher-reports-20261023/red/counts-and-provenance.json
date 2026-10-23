@@ -1,0 +1,13 @@
+{
+  "testSha256": "d3b76833a24dbb2aa8074d33be30ed42a6b8455e6c17b91236bfc4ad46718fac",
+  "tests": {
+    "name": "features.subscription.usecase.AndroidSubscriptionRefreshBatchDispatcherTest",
+    "tests": "2",
+    "skipped": "0",
+    "failures": "2",
+    "errors": "0",
+    "timestamp": "2026-10-23T20:25:30.533Z",
+    "hostname": "VQSeGo",
+    "time": "2.39"
+  }
+}
