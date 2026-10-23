@@ -1,0 +1,312 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :shared:app
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:app'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Configure project :shared:core
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:core'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Task :shared:core:androidPreBuild UP-TO-DATE
+> Task :shared:ui:androidPreBuild UP-TO-DATE
+> Task :hevtun:preBuild
+> Task :shared:yaml-jvm:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :shared:app:androidPreBuild UP-TO-DATE
+> Task :hevtun:preDebugBuild
+> Task :shared:app:preAndroidMainBuild UP-TO-DATE
+> Task :shared:core:preAndroidMainBuild UP-TO-DATE
+> Task :shared:ui:preAndroidMainBuild UP-TO-DATE
+> Task :updateResourceFileAssets UP-TO-DATE
+> Task :shared:core:generateAndroidMainEmptyResourceFiles UP-TO-DATE
+> Task :shared:app:generateAndroidMainEmptyResourceFiles UP-TO-DATE
+> Task :hevtun:processDebugNavigationResources UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :hevtun:generateDebugResources UP-TO-DATE
+> Task :shared:ui:generateAndroidMainEmptyResourceFiles UP-TO-DATE
+> Task :hevtun:packageDebugResources UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :hevtun:parseDebugLocalResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :hevtun:generateDebugRFile UP-TO-DATE
+> Task :hevtun:compileDebugKotlin NO-SOURCE
+> Task :hevtun:javaPreCompileDebug UP-TO-DATE
+> Task :hevtun:compileDebugJavaWithJavac NO-SOURCE
+> Task :hevtun:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :hevtun:writeDebugAarMetadata UP-TO-DATE
+> Task :hevtun:extractDeepLinksDebug UP-TO-DATE
+> Task :hevtun:processDebugManifest UP-TO-DATE
+> Task :hevtun:mapDebugSourceSetPaths UP-TO-DATE
+> Task :hevtun:compileDebugLibraryResources UP-TO-DATE
+> Task :hevtun:generateDebugAssets UP-TO-DATE
+> Task :shared:app:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:app:writeAndroidMainAarMetadata UP-TO-DATE
+> Task :hevtun:mergeDebugAssets UP-TO-DATE
+> Task :shared:core:kmpPartiallyResolvedDependenciesChecker
+> Task :hevtun:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :shared:core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:app:processAndroidMainManifest UP-TO-DATE
+> Task :shared:core:generateProjectInfo UP-TO-DATE
+> Task :shared:app:desktopProcessResources NO-SOURCE
+> Task :shared:app:processDesktopMainResources SKIPPED
+> Task :hevtun:processDebugJavaRes NO-SOURCE
+> Task :shared:app:desktopTestProcessResources NO-SOURCE
+> Task :shared:app:processDesktopTestResources SKIPPED
+> Task :shared:yaml-jvm:compileKotlin UP-TO-DATE
+> Task :shared:yaml-jvm:compileJava NO-SOURCE
+> Task :shared:yaml-jvm:processResources NO-SOURCE
+> Task :shared:yaml-jvm:classes UP-TO-DATE
+> Task :shared:yaml-jvm:jar UP-TO-DATE
+> Task :shared:ui:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:ui:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:ui:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForAndroidMain NO-SOURCE
+> Task :shared:ui:convertXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :shared:ui:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :shared:ui:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:ui:generateActualResourceCollectorsForAndroidMain UP-TO-DATE
+> Task :shared:ui:copyAndroidMainComposeResourcesToAndroidAssets UP-TO-DATE
+> Task :shared:ui:packageAndroidMainResources UP-TO-DATE
+> Task :shared:ui:parseAndroidMainLocalResources UP-TO-DATE
+> Task :shared:ui:generateAndroidMainRFile UP-TO-DATE
+> Task :shared:ui:generateComposeResClass UP-TO-DATE
+> Task :shared:ui:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :shared:ui:writeAndroidMainAarMetadata UP-TO-DATE
+> Task :shared:ui:processAndroidMainManifest UP-TO-DATE
+> Task :shared:ui:mapAndroidMainSourceSetPaths UP-TO-DATE
+> Task :shared:ui:compileAndroidMainLibraryResources UP-TO-DATE
+> Task :shared:ui:generateAndroidMainAssets UP-TO-DATE
+> Task :shared:ui:mergeAndroidMainAssets UP-TO-DATE
+> Task :shared:ui:checkDesktopMainComposeLibrariesCompatibility
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :shared:ui:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :shared:ui:generateResourceAccessorsForDesktopMain NO-SOURCE
+> Task :shared:ui:generateActualResourceCollectorsForDesktopMain UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :shared:ui:checkDesktopTestComposeLibrariesCompatibility
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :shared:ui:assembleDesktopMainResources UP-TO-DATE
+> Task :shared:ui:desktopProcessResources UP-TO-DATE
+> Task :shared:ui:processDesktopMainResources SKIPPED
+> Task :shared:core:writeAndroidMainAarMetadata UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForCommonTest NO-SOURCE
+> Task :shared:core:processAndroidMainManifest UP-TO-DATE
+> Task :shared:ui:copyNonXmlValueResourcesForCommonTest NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForCommonTest NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForCommonTest NO-SOURCE
+> Task :shared:ui:convertXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForDesktopTest NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForDesktopTest NO-SOURCE
+> Task :shared:ui:assembleDesktopTestResources UP-TO-DATE
+> Task :shared:ui:desktopTestProcessResources UP-TO-DATE
+> Task :shared:ui:processDesktopTestResources SKIPPED
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :shared:core:desktopProcessResources NO-SOURCE
+> Task :shared:core:processDesktopMainResources SKIPPED
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:mergeDebugUnitTestManifest
+> Task :app:processDebugUnitTestManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+> Task :shared:core:compileKotlinDesktop
+> Task :shared:core:compileDesktopMainJava NO-SOURCE
+> Task :shared:core:desktopMainClasses
+> Task :shared:core:desktopJar
+> Task :shared:core:compileAndroidMain
+> Task :shared:core:processAndroidMainJavaRes
+> Task :shared:core:bundleAndroidMainClassesToRuntimeJar
+> Task :shared:core:bundleAndroidMainClassesToCompileJar
+> Task :shared:app:compileKotlinDesktop
+> Task :shared:app:compileDesktopMainJava NO-SOURCE
+> Task :shared:app:desktopMainClasses
+> Task :shared:app:desktopJar UP-TO-DATE
+> Task :shared:app:compileAndroidMain
+> Task :shared:app:bundleAndroidMainClassesToCompileJar UP-TO-DATE
+> Task :shared:app:bundleAndroidMainClassesToRuntimeJar UP-TO-DATE
+> Task :shared:app:processAndroidMainJavaRes UP-TO-DATE
+
+> Task :shared:app:compileTestKotlinDesktop FAILED
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionInstallAndRefreshTest.kt:27:52 Unresolved reference 'installAndRefresh'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionInstallAndRefreshTest.kt:32:13 Cannot infer type for value parameter 'record'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionInstallAndRefreshTest.kt:36:36 Unresolved reference 'id'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionInstallAndRefreshTest.kt:87:52 Unresolved reference 'installAndRefresh'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionInstallAndRefreshTest.kt:92:13 Cannot infer type for value parameter 'record'. Specify it explicitly.
+
+> Task :shared:ui:compileKotlinDesktop
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigRuleEditorScreens.kt:235:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:74:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:79:13 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:126:29 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:168:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:172:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:221:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:225:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:272:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:276:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:327:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:331:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/routing/SkipiRoutingOutboundSelectorComponents.kt:114:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'SkipiRoutingOutboundGroupDetails'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/server/editor/SkipiServerPickerComponents.kt:101:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ServerPickerSubscriptionSummary'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/server/editor/SkipiServerPickerComponents.kt:101:40 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+
+> Task :shared:ui:compileDesktopMainJava NO-SOURCE
+> Task :shared:ui:desktopMainClasses
+> Task :shared:ui:desktopJar UP-TO-DATE
+
+> Task :shared:ui:compileAndroidMain
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigRuleEditorScreens.kt:235:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:74:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:79:13 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:126:29 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:168:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:172:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:221:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:225:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:272:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:276:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:327:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigVisualEditorScreens.kt:331:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/routing/SkipiRoutingOutboundSelectorComponents.kt:114:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'SkipiRoutingOutboundGroupDetails'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/server/editor/SkipiServerPickerComponents.kt:101:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'ServerPickerSubscriptionSummary'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonMain/kotlin/app/skipi/ui/server/editor/SkipiServerPickerComponents.kt:101:40 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+
+> Task :shared:ui:bundleAndroidMainClassesToCompileJar UP-TO-DATE
+> Task :shared:ui:bundleAndroidMainClassesToRuntimeJar UP-TO-DATE
+> Task :shared:ui:processAndroidMainJavaRes UP-TO-DATE
+
+> Task :shared:ui:compileTestKotlinDesktop FAILED
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonTest/kotlin/app/skipi/ui/home/SubscriptionInstallMessageTest.kt:12:23 Unresolved reference 'formatSubscriptionInstallMessage'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/ui/src/commonTest/kotlin/app/skipi/ui/home/SubscriptionInstallMessageTest.kt:26:23 Unresolved reference 'formatSubscriptionInstallMessage'.
+
+> Task :app:kspDebugKotlin
+
+> Task :app:compileDebugKotlin
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/main/kotlin/features/config/TrafficConfigEditorPages.kt:211:9 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/main/kotlin/features/config/TrafficConfigEditorPages.kt:318:49 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/main/kotlin/features/config/TrafficConfigEditorPages.kt:341:49 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/main/kotlin/features/proxy/server/list/ProxyServerListPage.kt:901:29 'when' is exhaustive so 'else' is redundant here.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/main/kotlin/features/proxy/server/list/ProxyServerListPage.kt:910:29 'when' is exhaustive so 'else' is redundant here.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/main/kotlin/features/proxy/server/usecase/AndroidTunnelController.kt:141:52 Unnecessary safe call on a non-null receiver of type 'Int'.
+
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:kspDebugUnitTestKotlin
+
+> Task :app:compileDebugUnitTestKotlin
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/config/TrafficConfigProxyGroupIsolationTest.kt:357:40 No cast needed.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/proxy/server/usecase/AndroidSubscriptionRefreshBatchCancellationParityTest.kt:74:21 'fun <T> CoroutineScope.async(context: Job, start: CoroutineStart = ..., block: suspend CoroutineScope.() -> T): Deferred<T>' is deprecated. Passing a Job to coroutine builders breaks structured concurrency, leading to hard-to-diagnose errors. This pattern should be avoided. This overload will be deprecated with an error in the future.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/proxy/server/usecase/AndroidTunnelControllerTest.kt:58:54 No cast needed.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:52:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:69:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:101:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:108:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:111:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:195:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:229:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:233:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:267:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:302:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:306:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:316:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:347:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:358:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/runtime/AndroidResourceFileDownloadProxyOracleTest.kt:362:41 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/resources/runtime/AndroidResourceFileWriteLockOracleTest.kt:176:13 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'File?'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/subscription/notification/SubscriptionExpirySchedulerTest.kt:69:66 'val nextScheduledAlarm: ShadowAlarmManager.ScheduledAlarm?' is deprecated. Deprecated in Java.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/subscription/notification/SubscriptionExpirySchedulerTest.kt:70:62 'field type: Int' is deprecated. Deprecated in Java.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/app/src/test/kotlin/features/subscription/notification/SubscriptionExpirySchedulerTest.kt:71:76 'field triggerAtTime: Long' is deprecated. Deprecated in Java.
+
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:testDebugUnitTest
+
+[Incubating] Problems report is available at: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/build/reports/problems/problems-report.html
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':shared:app:compileTestKotlinDesktop' (registered in build file 'shared/app/build.gradle.kts').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':shared:ui:compileTestKotlinDesktop' (registered in build file 'shared/ui/build.gradle.kts').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 30s
+104 actionable tasks: 33 executed, 71 up-to-date

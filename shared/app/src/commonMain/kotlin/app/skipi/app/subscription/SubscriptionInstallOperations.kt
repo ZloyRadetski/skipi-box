@@ -5,6 +5,7 @@ package app.skipi.app.subscription
 
 import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
+import app.skipi.app.repository.SubscriptionRepository
 import features.subscription.SubscriptionMetadata
 
 /** Prepared subscription row and full catalogue to persist before its first refresh. */
@@ -14,7 +15,13 @@ data class SubscriptionInstallPreparation(
     val existingTitle: String?,
 )
 
-/** Pure install preparation; hosts keep URI policy, persistence, fetching, and UI in their adapters. */
+/** The saved install decision and the result from its one first refresh. */
+data class SubscriptionInstallAndRefreshResult<RefreshResult>(
+    val preparation: SubscriptionInstallPreparation,
+    val refreshResult: RefreshResult,
+)
+
+/** Shared install preparation and persist-before-refresh coordination; hosts own URI and refresh policy. */
 object SubscriptionInstallOperations {
     /** Reuses the first exact-URL row unchanged, or appends an Android-compatible new row. */
     fun prepare(
@@ -54,6 +61,35 @@ object SubscriptionInstallOperations {
             catalog = nextCatalog,
             subscription = subscription,
             existingTitle = null,
+        )
+    }
+
+    /**
+     * Persists the install decision, then runs exactly one host-owned refresh on its saved row.
+     * A refresh result or exception never rolls back the already-persisted subscription.
+     */
+    suspend fun <RefreshResult> installAndRefresh(
+        repository: SubscriptionRepository,
+        title: String,
+        url: String,
+        userAgent: String,
+        refresh: suspend (SubscriptionRecord) -> RefreshResult,
+    ): SubscriptionInstallAndRefreshResult<RefreshResult> {
+        var preparation: SubscriptionInstallPreparation? = null
+        repository.updateCatalog { catalog ->
+            prepare(
+                catalog = catalog,
+                title = title,
+                url = url,
+                userAgent = userAgent,
+            ).also { prepared -> preparation = prepared }.catalog
+        }
+        val savedPreparation = checkNotNull(preparation) {
+            "Subscription repository did not prepare the installed row"
+        }
+        return SubscriptionInstallAndRefreshResult(
+            preparation = savedPreparation,
+            refreshResult = refresh(savedPreparation.subscription),
         )
     }
 }

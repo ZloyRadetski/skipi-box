@@ -1,0 +1,7 @@
+{
+  "shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionInstallAndRefreshTest.kt": "68a539f55bbc5ae6c6a0a5cb72520381623bba08afc10b881a5021d68305cc1e",
+  "shared/ui/src/commonTest/kotlin/app/skipi/ui/home/SubscriptionInstallMessageTest.kt": "bae969be5ce2c60d94bd7e88a9b65d0a42726664aec0ee1780f4b1740dba1d9e",
+  "app/src/test/kotlin/features/subscription/SubscriptionInstallFirstFetchTest.kt": "6a627b8dc789ec0aeaad89059bec5429e1653f57d68c89b03ba02e706d581535",
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionInstallIntegrationTest.kt": "1d33cafb47237cc5f561d18d6b89746d569c5af08acde04a97341ae98352d314",
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionClipboardInstallTest.kt": "b322591835af44689da93b7e9c490604979356dee166a304ecde158758e0e7d3"
+}

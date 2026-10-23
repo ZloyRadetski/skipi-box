@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.server.usecase.AndroidSubscriptionRefreshApplyTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-23T20:42:47.264Z" hostname="VQSeGo" time="2.84">
+  <properties/>
+  <testcase name="applyProxySubscriptionUpdatesRebasesCurrentCatalogAndSubscriptionMetadata" classname="features.proxy.server.usecase.AndroidSubscriptionRefreshApplyTest" time="2.493"/>
+  <testcase name="multiGroupBatchKeepsSharedReferencesSelectionAndBothEmbeddedProfiles" classname="features.proxy.server.usecase.AndroidSubscriptionRefreshApplyTest" time="0.059"/>
+  <testcase name="cancelledCallerDoesNotUpdateAndroidCatalogOrSubscriptionState" classname="features.proxy.server.usecase.AndroidSubscriptionRefreshApplyTest" time="0.042"/>
+  <testcase name="batchApplyRebasesLatestRowsAndSkipsChangedOrDeletedSubscriptionIdentities" classname="features.proxy.server.usecase.AndroidSubscriptionRefreshApplyTest" time="0.041"/>
+  <testcase name="batchEligibilityMatchesEnabledNonblankUrlRuleAndKeepsGroupOrder" classname="features.proxy.server.usecase.AndroidSubscriptionRefreshApplyTest" time="0.022"/>
+  <testcase name="androidOriginalSameProtocolBatchReusesRowsAndKeepsSelectionAndCounter" classname="features.proxy.server.usecase.AndroidSubscriptionRefreshApplyTest" time="0.019"/>
+  <testcase name="batchApplyFailureAfterCatalogWriteLeavesTheCurrentPartialResultVisible" classname="features.proxy.server.usecase.AndroidSubscriptionRefreshApplyTest" time="0.034"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

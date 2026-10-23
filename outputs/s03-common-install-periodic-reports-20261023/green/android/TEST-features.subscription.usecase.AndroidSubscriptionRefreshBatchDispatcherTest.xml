@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.usecase.AndroidSubscriptionRefreshBatchDispatcherTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-23T20:42:50.551Z" hostname="VQSeGo" time="0.044">
+  <properties/>
+  <testcase name="reachableSingleRefreshLoaderAlsoFetchesAndParsesAwayFromCaller" classname="features.subscription.usecase.AndroidSubscriptionRefreshBatchDispatcherTest" time="0.024"/>
+  <testcase name="retainedBatchRunnerLoadsAndParsesAwayFromCallerButCapturesAndCommitsOnCaller" classname="features.subscription.usecase.AndroidSubscriptionRefreshBatchDispatcherTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

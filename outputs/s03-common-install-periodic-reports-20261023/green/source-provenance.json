@@ -1,0 +1,10 @@
+{
+  "shared/app/src/commonMain/kotlin/app/skipi/app/subscription/SubscriptionInstallOperations.kt": "87920c30b224ec59f9688fe6a369b43dbbd1e155b48897eb74342e10d97ce0cb",
+  "shared/ui/src/commonMain/kotlin/app/skipi/ui/home/SubscriptionInstallMessage.kt": "0c831fd9b1133c22611cbf0f2e70f2488b58a49260bfe35e2709207e837547d9",
+  "app/src/main/kotlin/features/subscription/SubscriptionInstallConfigUseCase.kt": "b15c505bb7fc78e3e04e4d8bb887d540b22a3cef1ff7c37fa74cb6c837459be2",
+  "shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionInstallAndRefreshTest.kt": "68a539f55bbc5ae6c6a0a5cb72520381623bba08afc10b881a5021d68305cc1e",
+  "shared/ui/src/commonTest/kotlin/app/skipi/ui/home/SubscriptionInstallMessageTest.kt": "bae969be5ce2c60d94bd7e88a9b65d0a42726664aec0ee1780f4b1740dba1d9e",
+  "app/src/test/kotlin/features/subscription/SubscriptionInstallFirstFetchTest.kt": "6a627b8dc789ec0aeaad89059bec5429e1653f57d68c89b03ba02e706d581535",
+  "shared/core/src/commonTest/kotlin/features/subscription/runtime/SubscriptionPeriodicWorkStateTest.kt": "84753c7cacb1037957a659604a359338cc5636cc8386f23a4f9d5061c66680ef",
+  "shared/core/src/desktopTest/kotlin/features/subscription/SubscriptionRefreshFailurePolicyHostConnectionTest.kt": "43c3701f80572d85dc2328569c3c4f1354947f63525ce1bd390b4bc3a8672015"
+}
