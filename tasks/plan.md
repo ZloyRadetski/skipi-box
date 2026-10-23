@@ -588,7 +588,7 @@
 
 **Зависимости:** [C03](#c03), [P04](#p04), [X01](#x01).
 
-**Текущий checkpoint:** [Desktop RoutingRepository](shared-migration-20261023/r01-desktop-routing-repository-verification.md) подключён и прошёл 20/20 focused GREEN + compile (`a5cba46`). R01 остаётся открытой. Перед новым UI entrypoint проверяется фактическая Android-навигация: неактивная legacy RoutingPage сама по себе не служит основанием добавлять новую функцию.
+**Текущий checkpoint:** [Desktop RoutingRepository](shared-migration-20261023/r01-desktop-routing-repository-verification.md) подключён и прошёл 20/20 focused GREEN + compile (`a5cba46`). R01 остаётся открытой. [Source/history audit](shared-migration-20261023/r01-routing-source-audit.md) подтвердил: legacy `RoutingPage` не имела navigation caller уже в initial commit; зарегистрированный RuleEditor вызывается только из неё. Новую глобальную навигацию/Desktop clipboard flow в рамках переноса не добавляем. Активный профильный Routing UI закрыт в P04. Следующий малый срез — применение сохранённых global rules/default/domain strategy в generated Desktop пути без активного профиля; существующий profile/Custom приоритет сохраняется. Критерий UI ниже применяется к подтверждённым активным Android flows, а dormant component semantics сохраняются в source contract.
 
 **Работа:** Свести route state/operations/import-export/editor orchestration к общим сценариям и подключить RoutingRepository в Desktop. Текст правила, ID, порядок, default outbound и selector semantics сохранить по Android.
 
@@ -892,4 +892,3 @@ env SKIPI_CORE_INTEGRATION_DIR=/home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopA
 - Старый путь удалён после проверки всех UI/background/deep-link consumers.
 - В конце обновлена матрица областей: common code, Android adapter, Desktop adapter, оставшаяся работа/обоснованное platform-only.
 - Миграция не объявляется завершённой при обязательном неперенесённом сценарии или непроверенном результате; ограничения среды и runtime перечисляются отдельно.
-
