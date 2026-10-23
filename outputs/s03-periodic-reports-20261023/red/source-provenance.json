@@ -1,0 +1,4 @@
+{
+  "shared/core/src/commonTest/kotlin/features/subscription/runtime/SubscriptionPeriodicWorkStateTest.kt": "84753c7cacb1037957a659604a359338cc5636cc8386f23a4f9d5061c66680ef",
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionAutoUpdaterTest.kt": "db683b18b4708fa7da3000a331d4f8b39b11eedef8117dc03f129721d5d41f03"
+}

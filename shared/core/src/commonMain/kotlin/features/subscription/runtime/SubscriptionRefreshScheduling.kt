@@ -91,17 +91,7 @@ class SubscriptionScheduler(
     private val gateway: SubscriptionScheduleGateway,
 ) {
     fun reconcile(targets: List<SubscriptionRefreshTarget>) {
-        val desired = targets.mapNotNull { target ->
-            val schedule = target.refreshIntervalMillisOrNull() ?: return@mapNotNull null
-            SubscriptionWorkSpec(
-                groupId = target.id,
-                uniqueName = subscriptionWorkName(target.id),
-                repeatIntervalMillis = schedule,
-                requiresConnectedNetwork = true,
-                policy = SubscriptionExistingWorkPolicy.UPDATE,
-                backoffMillis = MinimumSubscriptionBackoffMillis,
-            )
-        }
+        val desired = targets.mapNotNull(SubscriptionRefreshTarget::subscriptionRefreshWorkSpecOrNull)
         val desiredIds = desired.mapTo(mutableSetOf()) { it.groupId }
         (gateway.scheduledGroupIds() - desiredIds).forEach(gateway::cancel)
         desired.forEach(gateway::enqueue)
@@ -110,6 +100,19 @@ class SubscriptionScheduler(
 }
 
 fun subscriptionWorkName(groupId: Int): String = "subscription-update-$groupId"
+
+/** Returns the shared periodic work spec when this subscription is eligible for refresh. */
+fun SubscriptionRefreshTarget.subscriptionRefreshWorkSpecOrNull(): SubscriptionWorkSpec? {
+    val schedule = refreshIntervalMillisOrNull() ?: return null
+    return SubscriptionWorkSpec(
+        groupId = id,
+        uniqueName = subscriptionWorkName(id),
+        repeatIntervalMillis = schedule,
+        requiresConnectedNetwork = true,
+        policy = SubscriptionExistingWorkPolicy.UPDATE,
+        backoffMillis = MinimumSubscriptionBackoffMillis,
+    )
+}
 
 private fun SubscriptionRefreshTarget.refreshIntervalMillisOrNull(): Long? {
     if (!enabled || url.isBlank()) return null
