@@ -1,0 +1,4 @@
+{
+  "app/src/test/kotlin/features/subscription/SubscriptionFailureClassifierTest.kt": "94f77dfef6a6483bd69c0803ef8ba62eac60b87a96268f93fbe0374dec97ec67",
+  "shared/core/src/desktopTest/kotlin/features/subscription/SubscriptionRefreshFailurePolicyTest.kt": "207130bdf1162aba436a70c1e5e1854b930e104c2b2c66085cb04dca3a3a61c9"
+}

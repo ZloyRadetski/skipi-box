@@ -1,0 +1,7 @@
+# S03: shared scheduled-failure policy
+
+Before production extraction, the existing Android classifier passed a new **2/2 baseline**: HTTP 408/429/500–599, wrapped causes and the five listed Android JVM connection exceptions retry; generic IOException and permanent errors do not. The corresponding shared/core desktop test failed at compile with the absent `isTransientSubscriptionRefreshFailure` API. This was **API/compile RED**, not an executed behavioral failure.
+
+The policy now lives in shared/core JVM source, with a host-supplied HTTP-status extractor. Android keeps its existing SubscriptionHttpException class, IOException inheritance, fields and message formatting, and delegates to the shared policy. Desktop can supply its HTTP exception without duplicating retry rules.
+
+After extraction: shared core Desktop **2/2 GREEN**, Android baseline plus actual worker-runner tests **7/7 GREEN** (25s combined build), no failures/errors/skips. Frozen test hashes matched before and after: Android `94f77dfef6a6483bd69c0803ef8ba62eac60b87a96268f93fbe0374dec97ec67`; common JVM `207130bdf1162aba436a70c1e5e1854b930e104c2b2c66085cb04dca3a3a61c9`. Evidence under `outputs/s03-failure-policy-reports-20261023/{android-baseline,shared-red,green}`. Source spec: [s03-failure-policy-spec.md](../../outputs/drafts/s03-failure-policy-spec.md). Root reviewed exact cause-chain/status/class matching and the Android adapter; Desktop timer integration follows in the next S03 slice.
