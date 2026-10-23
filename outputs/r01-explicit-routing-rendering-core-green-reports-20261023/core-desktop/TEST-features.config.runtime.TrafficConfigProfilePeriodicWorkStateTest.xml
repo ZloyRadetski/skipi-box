@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigProfilePeriodicWorkStateTest[desktop]" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-23T12:42:51.625Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="profile_refresh_spec_is_absent_for_disabled_locked_blank_or_invalid_profiles[desktop]" classname="features.config.runtime.TrafficConfigProfilePeriodicWorkStateTest" time="0.001"/>
+  <testcase name="new_periodic_state_is_due_at_its_enqueue_anchor_and_success_reanchors_at_completion[desktop]" classname="features.config.runtime.TrafficConfigProfilePeriodicWorkStateTest" time="0.0"/>
+  <testcase name="update_preserves_period_and_retry_state_but_new_interval_applies_after_success[desktop]" classname="features.config.runtime.TrafficConfigProfilePeriodicWorkStateTest" time="0.0"/>
+  <testcase name="profile_refresh_spec_uses_profile_eligibility_and_stable_workmanager_fields_without_id_filter[desktop]" classname="features.config.runtime.TrafficConfigProfilePeriodicWorkStateTest" time="0.0"/>
+  <testcase name="completed_period_and_attempt_counters_saturate_at_their_maximum_values[desktop]" classname="features.config.runtime.TrafficConfigProfilePeriodicWorkStateTest" time="0.0"/>
+  <testcase name="periodic_retry_delay_doubles_from_fifteen_minutes_and_caps_at_five_hours[desktop]" classname="features.config.runtime.TrafficConfigProfilePeriodicWorkStateTest" time="0.0"/>
+  <testcase name="period_and_retry_deadline_addition_preserves_workmanager_long_overflow_semantics[desktop]" classname="features.config.runtime.TrafficConfigProfilePeriodicWorkStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

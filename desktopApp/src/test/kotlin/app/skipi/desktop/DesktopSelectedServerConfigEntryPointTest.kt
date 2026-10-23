@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 package app.skipi.desktop
 
+import app.skipi.app.model.RoutingConfigRecord
 import features.config.ConfigProfileLibrary
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
@@ -39,6 +40,7 @@ class DesktopSelectedServerConfigEntryPointTest {
         val result = buildDesktopSelectedServerConfig(
             serverLibrary = library,
             configLibrary = configLibrary,
+            routing = RoutingConfigRecord(),
             options = LocalProxyXrayConfigOptions(socksPort = 19_081),
             trafficConfigContentById = mapOf(7 to profile.content),
             subscriptionPingUrl = "http://127.0.0.1:18086/probe",
@@ -80,6 +82,7 @@ class DesktopSelectedServerConfigEntryPointTest {
         val result = buildDesktopSelectedServerConfig(
             serverLibrary = library,
             configLibrary = ConfigProfileLibrary(),
+            routing = RoutingConfigRecord(),
             options = LocalProxyXrayConfigOptions(socksPort = 19_082),
             trafficConfigContentById = emptyMap(),
             subscriptionPingUrl = "http://127.0.0.1:18086/probe",
@@ -143,6 +146,7 @@ class DesktopSelectedServerConfigEntryPointTest {
         val result = buildDesktopSelectedServerConfig(
             serverLibrary = library,
             configLibrary = configLibrary,
+            routing = RoutingConfigRecord(),
             options = LocalProxyXrayConfigOptions(
                 socksPort = 19_084,
                 httpProxyPort = 19_085,
@@ -210,6 +214,7 @@ class DesktopSelectedServerConfigEntryPointTest {
         val result = buildDesktopSelectedServerConfig(
             serverLibrary = library,
             configLibrary = ConfigProfileLibrary(),
+            routing = RoutingConfigRecord(),
             options = LocalProxyXrayConfigOptions(socksPort = 19_083),
             trafficConfigContentById = emptyMap(),
             subscriptionPingUrl = "http://127.0.0.1:18086/probe",

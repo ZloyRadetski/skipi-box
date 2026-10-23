@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 package app.skipi.desktop
 
+import app.skipi.app.model.RoutingConfigRecord
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.OlcRtc
@@ -77,6 +78,7 @@ class DesktopSelectedServerNativeBoundaryTest {
 
     private fun buildResult(library: DesktopServerLibrary) = DesktopSelectedServerXrayConfigFactory.build(
         serverLibrary = library,
+        routing = RoutingConfigRecord(),
         trafficConfigContentById = emptyMap(),
         options = LocalProxyXrayConfigOptions(socksPort = 19_084),
         subscriptionPingUrl = "http://127.0.0.1:18087/subscription-ping",

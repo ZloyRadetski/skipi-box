@@ -3,12 +3,14 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.model.RoutingConfigRecord
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Socks
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.model.encodePersistedProxyServer
+import features.routing.model.RouteRule
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -121,6 +123,91 @@ class DesktopSelectedServerCoreFfmIntegrationTest {
         }
     }
 
+    @Test
+    fun generatedNoProfileConfigRoutesLoopbackTrafficThroughSavedGlobalRulesAndDefault() =
+        withIntegrationRuntime { runtime ->
+            LoopbackHttpMarkerServer().use { ruleMarker ->
+                LoopbackHttpMarkerServer().use { defaultMarker ->
+                    LoopbackSocksRelay().use { selectedRelay ->
+                        LoopbackSocksRelay().use { ruleRelay ->
+                            LoopbackSocksRelay().use { defaultRelay ->
+                                val resourceRoot = Files.createTempDirectory("skipi-global-routing-resources-")
+                                try {
+                                    val plan = prepareDesktopTunnelStartPlan(
+                                        settings = DesktopAppSettings(
+                                            localProxyPort = loopbackOptions().socksPort,
+                                            localProxyListenAddress = "127.0.0.1",
+                                            useSystemProxy = false,
+                                            subscriptionPingUrl = ruleMarker.url("/subscription-ping"),
+                                            routeDomainStrategy = 2,
+                                            defaultRouteOutboundTag = "3",
+                                            routeRules = listOf(
+                                                RouteRule(
+                                                    id = 5,
+                                                    remarks = "route marker port through R",
+                                                    outboundTag = "2",
+                                                    ip = listOf("127.0.0.1"),
+                                                    port = ruleMarker.port.toString(),
+                                                ),
+                                            ),
+                                        ),
+                                        serverLibrary = library(
+                                            selectedId = 1,
+                                            stored(1, socks("Selected S", selectedRelay.port)),
+                                            stored(2, socks("Rule R", ruleRelay.port)),
+                                            stored(3, socks("Default D", defaultRelay.port)),
+                                        ),
+                                        configLibrary = DesktopConfigLibrary(),
+                                        latencyByServerId = emptyMap(),
+                                        localProxyRuntime = DesktopLocalProxyRuntime(),
+                                        resourceFiles = DesktopProfileResourceFiles(xrayRootDir = resourceRoot.toFile()),
+                                    )
+
+                                    DesktopCoreController(runtimeProvider = { Result.success(runtime) }).use { controller ->
+                                        assertTrue(controller.start(plan.configuration, plan.assetsDirectory).getOrThrow().isRunning)
+                                        val ruleResponse = requestThroughSocks(plan.localProxyPort, ruleMarker.port, "/rule")
+                                        val defaultResponse = requestThroughSocks(plan.localProxyPort, defaultMarker.port, "/default")
+
+                                        assertTrue(ruleResponse.contains("HTTP/1.1 200 OK"), ruleResponse)
+                                        assertTrue(ruleResponse.endsWith("strategy-marker"), ruleResponse)
+                                        assertTrue(defaultResponse.contains("HTTP/1.1 200 OK"), defaultResponse)
+                                        assertTrue(defaultResponse.endsWith("strategy-marker"), defaultResponse)
+                                        assertTrue(
+                                            SocksTarget("127.0.0.1", ruleMarker.port) in ruleRelay.targets,
+                                            "Rule relay R did not receive the matching marker: ${ruleRelay.targets}",
+                                        )
+                                        assertTrue(
+                                            SocksTarget("127.0.0.1", defaultMarker.port) in defaultRelay.targets,
+                                            "Default relay D did not receive the unmatched marker: ${defaultRelay.targets}",
+                                        )
+                                        assertTrue(
+                                            ruleRelay.targets.none { it.port == defaultMarker.port },
+                                            "Unmatched marker reached rule relay R: ${ruleRelay.targets}",
+                                        )
+                                        assertTrue(
+                                            defaultRelay.targets.none { it.port == ruleMarker.port },
+                                            "Matching marker reached default relay D: ${defaultRelay.targets}",
+                                        )
+                                        assertTrue(
+                                            listOf(ruleMarker.port, defaultMarker.port).none { targetPort ->
+                                                selectedRelay.targets.any { target -> target.port == targetPort }
+                                            },
+                                            "Selected relay S received an application marker: ${selectedRelay.targets}",
+                                        )
+                                        assertTrue(!controller.stop().getOrThrow().isRunning)
+                                    }
+                                } finally {
+                                    Files.walk(resourceRoot).use { paths ->
+                                        paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     private fun selectedConfig(
         library: DesktopServerLibrary,
         options: LocalProxyXrayConfigOptions,
@@ -128,6 +215,7 @@ class DesktopSelectedServerCoreFfmIntegrationTest {
     ): String = assertNotNull(
         DesktopSelectedServerXrayConfigFactory.build(
             serverLibrary = library,
+            routing = RoutingConfigRecord(),
             trafficConfigContentById = emptyMap(),
             options = options,
             subscriptionPingUrl = subscriptionPingUrl,

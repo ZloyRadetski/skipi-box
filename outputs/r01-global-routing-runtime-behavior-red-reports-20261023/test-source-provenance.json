@@ -1,0 +1,8 @@
+{
+  "production_head": "42a3bedab9a55931556ce3cf3527fd9c4d19d7cc",
+  "test_source_sha256": {
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopGlobalRoutingRuntimeTest.kt": "8c7e152796d5e55ea6fd5fa5daab576cc43fdbe9c7db60e7bec45a83cf9531fa",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSelectedServerCoreFfmIntegrationTest.kt": "e89207797134669bf84309682a853797dbd77d84ff90739eb150ce14d244c46e"
+  },
+  "native_runtime_directory": "desktopApp/build/generated/skipi-core-resources/common"
+}

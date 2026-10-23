@@ -3,11 +3,17 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.XrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
+import engine.xray.XrayGeoRuleValidator
 import engine.xray.XrayOutboundRenderingOptions
+import engine.xray.XrayRoutingRequest
+import engine.xray.XrayRoutingRuleValidator
 import engine.xray.XrayTags
+import engine.xray.buildXrayBalancers
+import engine.xray.planXrayRouting
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.OlcRtc
@@ -20,6 +26,7 @@ import platform.LocalProxyXrayConfigOptions
 object DesktopSelectedServerXrayConfigFactory {
     fun build(
         serverLibrary: DesktopServerLibrary,
+        routing: RoutingConfigRecord,
         trafficConfigContentById: Map<Int, String>,
         options: LocalProxyXrayConfigOptions,
         subscriptionPingUrl: String,
@@ -50,8 +57,8 @@ object DesktopSelectedServerXrayConfigFactory {
                 XrayOutboundPlanningInput(
                     selectedServer = selectedRecord,
                     servers = records,
-                    routeRules = emptyList(),
-                    defaultRouteOutboundTag = XrayTags.PROXY,
+                    routeRules = routing.rules,
+                    defaultRouteOutboundTag = routing.defaultOutboundTag,
                     shadowrocketPolicyGroups = emptyList(),
                     trafficConfigContentById = trafficConfigContentById,
                     enableLocalDns = false,
@@ -59,6 +66,20 @@ object DesktopSelectedServerXrayConfigFactory {
                     subscriptionPingUrl = subscriptionPingUrl,
                     stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
                 ),
+            )
+            val routingPlan = planXrayRouting(
+                request = XrayRoutingRequest(
+                    routeDomainStrategy = routing.domainStrategy,
+                    routeRules = routing.rules,
+                    defaultRouteOutboundTag = routing.defaultOutboundTag,
+                    routeTargets = plan.routeTargets,
+                    balancers = buildXrayBalancers(plan.balancers),
+                    enableLocalDns = false,
+                    routeProxyDns = false,
+                    routeDirectDns = false,
+                    dnsHijackInboundTags = emptyList(),
+                ),
+                ruleValidator = DesktopNoResourceRoutingRuleValidator,
             )
             plan.proxyOutbounds.forEach { outbound ->
                 outbound.server?.let { server ->
@@ -87,6 +108,7 @@ object DesktopSelectedServerXrayConfigFactory {
                     mux = null,
                     fragment = null,
                 ),
+                routingPlan = routingPlan,
             )
         }
     }
@@ -104,4 +126,25 @@ object DesktopSelectedServerXrayConfigFactory {
         is DesktopServerLatencyResult.Error -> "Failed"
         null -> ""
     }
+}
+
+/**
+ * Uses Android's null-dataDir compatibility behavior until the Desktop planner
+ * receives the runtime asset directory. Core still loads global assets;
+ * resource-aware filtering is a separate slice.
+ */
+private object DesktopNoResourceRoutingRuleValidator : XrayRoutingRuleValidator {
+    override fun isDomainRuleValid(rule: String): Boolean = true
+
+    override fun isIpRuleValid(rule: String): Boolean {
+        val trimmed = rule.trim()
+        if (trimmed.startsWith("geoip:", ignoreCase = true) || trimmed.startsWith("ext:", ignoreCase = true)) {
+            return true
+        }
+        return XrayGeoRuleValidator.isIpRuleValid(trimmed) { _, _ -> false }
+    }
+
+    override fun filterValidDomainRules(rules: List<String>): List<String> = rules
+
+    override fun filterValidIpRules(rules: List<String>): List<String> = rules
 }

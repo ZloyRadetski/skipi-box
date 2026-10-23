@@ -16,6 +16,8 @@ internal fun prepareDesktopTunnelStartPlan(
     resourceFiles: DesktopProfileResourceFiles,
     allocatePort: (String, Set<Int>) -> Int? = ::allocateDesktopLocalProxyPort,
 ): DesktopTunnelStartPlan {
+    val routingSnapshot = settings.toRoutingConfigRecord()
+    val capturedRouting = routingSnapshot.copy(rules = routingSnapshot.rules.toList())
     val capturedConfigLibrary = configLibrary.copy(configs = configLibrary.configs.toList())
     val selectedConfigId = capturedConfigLibrary.selectedConfigId
     val selectedProfile = selectedConfigId?.let { id ->
@@ -47,6 +49,7 @@ internal fun prepareDesktopTunnelStartPlan(
             trafficConfigContentById = capturedTrafficConfigContentById,
             subscriptionPingUrl = settings.subscriptionPingUrl,
             latencyByServerId = capturedLatencyByServerId,
+            routing = capturedRouting,
         )?.getOrThrow()
             ?: error("Select a working server before connecting")
         return DesktopTunnelStartPlan(

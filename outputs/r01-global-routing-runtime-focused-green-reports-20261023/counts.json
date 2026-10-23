@@ -1,0 +1,42 @@
+[
+  {
+    "name": "app.skipi.desktop.DesktopGlobalRoutingRuntimeTest",
+    "tests": "5",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.106"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopSelectedServerConfigEntryPointTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.003"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "4.125"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopSelectedServerXrayConfigFactoryTest",
+    "tests": "9",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.011"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopTunnelStartAssetsPlannerTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.028"
+  }
+]

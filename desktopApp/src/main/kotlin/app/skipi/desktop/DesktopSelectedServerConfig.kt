@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.model.RoutingConfigRecord
 import features.proxy.server.model.Custom
 import features.proxy.server.model.formatCustomXrayConfigJson
 import features.proxy.server.model.parseCustomXrayConfigJsonObject
@@ -17,6 +18,7 @@ import platform.LocalProxyXrayConfigOptions
 internal fun buildDesktopSelectedServerConfig(
     serverLibrary: DesktopServerLibrary,
     configLibrary: DesktopConfigLibrary,
+    routing: RoutingConfigRecord,
     options: LocalProxyXrayConfigOptions,
     trafficConfigContentById: Map<Int, String>,
     subscriptionPingUrl: String,
@@ -48,6 +50,7 @@ internal fun buildDesktopSelectedServerConfig(
     return checkNotNull(selectedServerResult).mapCatching {
         DesktopSelectedServerXrayConfigFactory.build(
             serverLibrary = serverLibrary,
+            routing = routing,
             trafficConfigContentById = trafficConfigContentById,
             options = options,
             subscriptionPingUrl = subscriptionPingUrl,

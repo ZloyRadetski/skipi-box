@@ -1,0 +1,5 @@
+{
+  "source": "shared/core/src/commonTest/kotlin/platform/LocalProxyExplicitRoutingPlanTest.kt",
+  "sha256": "45dcfc61b795f3c2f9ede8ab7415c6b45f81bb74a4ed58ca3c0ff51f20c2390a",
+  "behavior_red_completed_before_install": true
+}

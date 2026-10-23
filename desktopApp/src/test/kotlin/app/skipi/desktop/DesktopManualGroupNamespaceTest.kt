@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.server.ProxyServerEditApplyOutcome
 import app.skipi.app.server.ProxyServerEditResult
 import app.skipi.app.server.toProxyServerCopyTarget
@@ -126,6 +127,7 @@ class DesktopManualGroupNamespaceTest {
         return assertNotNull(
             DesktopSelectedServerXrayConfigFactory.build(
                 serverLibrary = library,
+                routing = RoutingConfigRecord(),
                 trafficConfigContentById = emptyMap(),
                 options = LocalProxyXrayConfigOptions(socksPort = 19_080),
                 subscriptionPingUrl = "http://127.0.0.1:18082/subscription-ping",

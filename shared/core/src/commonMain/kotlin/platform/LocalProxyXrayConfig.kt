@@ -98,19 +98,20 @@ object LocalProxyXrayConfigFactory {
         plan: XrayOutboundPlan,
         options: LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(),
         renderingOptions: XrayOutboundRenderingOptions,
+        routingPlan: XrayRoutingPlan? = null,
     ): String {
         validateOptions(options)
 
-        val routingPlan = buildLocalRoutingPlan(
+        val effectiveRoutingPlan = routingPlan ?: buildLocalRoutingPlan(
             plan = plan,
             options = options,
             renderingOptions = renderingOptions,
         )
         val effectiveRenderingOptions = renderingOptions.copy(
-            primaryOutboundTag = routingPlan?.primaryOutboundTag ?: renderingOptions.primaryOutboundTag,
+            primaryOutboundTag = effectiveRoutingPlan?.primaryOutboundTag ?: renderingOptions.primaryOutboundTag,
         )
         val outbounds = renderXrayOutbounds(plan.proxyOutbounds, effectiveRenderingOptions)
-        val routing = routingPlan?.let(::buildXrayRouting)
+        val routing = effectiveRoutingPlan?.let(::buildXrayRouting)
         val observatory = buildXrayObservatory(
             selectors = plan.observatorySelectors,
             probeUrl = plan.observatoryProbeUrl,

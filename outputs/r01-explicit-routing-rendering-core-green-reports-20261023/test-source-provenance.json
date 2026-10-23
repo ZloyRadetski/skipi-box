@@ -1,0 +1,7 @@
+{
+  "source_sha256": {
+    "shared/core/src/commonMain/kotlin/platform/LocalProxyXrayConfig.kt": "dd9ca65adcbc05765e4cf475bb51ff879bc1fc2baab93f21c27a5d0cb1a530ac",
+    "shared/core/src/commonTest/kotlin/platform/LocalProxyExplicitRoutingPlanTest.kt": "45dcfc61b795f3c2f9ede8ab7415c6b45f81bb74a4ed58ca3c0ff51f20c2390a"
+  },
+  "build_seconds": 7
+}

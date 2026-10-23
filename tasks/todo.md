@@ -1,5 +1,9 @@
 # Чек-лист завершения Android → shared
 
+**Точка остановки по последнему указанию пользователя, 23 октября: завершить R01, проверить, закоммитить и сделать паузу; следующую карточку не начинать.**
+
+R01 runtime checkpoint: [no-profile routing](shared-migration-20261023/r01-global-routing-runtime-verification.md), behavior RED 8/4 failures → core **692 GREEN7s** и отдельный Desktop **25 GREEN26s**, native **3/3**, compile GREEN. Repository checkpoint ниже сохраняется отдельно. R01 пока открыта: завершающий срез — GeoIP/GeoSite validation и enabled ext-domain preflight с фактическим global assets path. Активная profile/Custom семантика сохранена; новая legacy UI не добавляется.
+
 Дата исходного плана: 7 октября 2026 года. **12 октября пользователь подтвердил продолжение всего плана («Делаем!», «Продолжай»). Прежняя пауза после S01/S02 отменена; работа продолжается малыми срезами, сначала тесты.**
 
 Полное описание, зависимости, критерии и проверки: [tasks/plan.md](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md).

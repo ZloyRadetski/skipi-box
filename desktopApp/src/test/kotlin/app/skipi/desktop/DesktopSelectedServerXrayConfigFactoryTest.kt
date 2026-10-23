@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 package app.skipi.desktop
 
+import app.skipi.app.model.RoutingConfigRecord
 import engine.xray.XrayTags
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.ProxyServer
@@ -322,6 +323,7 @@ class DesktopSelectedServerXrayConfigFactoryTest {
         options: LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(socksPort = 19_080),
     ) = DesktopSelectedServerXrayConfigFactory.build(
         serverLibrary = library,
+        routing = RoutingConfigRecord(),
         trafficConfigContentById = trafficConfigContentById,
         options = options,
         subscriptionPingUrl = subscriptionPingUrl,

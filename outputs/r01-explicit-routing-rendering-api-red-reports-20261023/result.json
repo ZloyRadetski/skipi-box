@@ -1,0 +1,8 @@
+{
+  "result": "API RED",
+  "executed_tests": 0,
+  "build_duration_seconds": 1,
+  "compiler_diagnostics": [
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/platform/LocalProxyExplicitRoutingPlanTest.kt:134:13 No parameter with name 'routingPlan' found."
+  ]
+}

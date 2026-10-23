@@ -48,7 +48,7 @@ class DesktopRoutingRepository(
     }
 }
 
-private fun DesktopAppSettings.toRoutingConfigRecord() = RoutingConfigRecord(
+internal fun DesktopAppSettings.toRoutingConfigRecord() = RoutingConfigRecord(
     domainStrategy = routeDomainStrategy,
     defaultOutboundTag = defaultRouteOutboundTag,
     rules = routeRules,

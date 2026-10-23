@@ -1,0 +1,38 @@
+[
+  {
+    "name": "app.skipi.desktop.DesktopGlobalRoutingRuntimeTest",
+    "tests": "5",
+    "failures": "3",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.105",
+    "failed_cases": [
+      {
+        "name": "noProfilePlanUsesStrategyOrderedEnabledRulesAndTheirAdditionalServerTargets",
+        "message": "java.util.NoSuchElementException: Key routing is missing in the map."
+      },
+      {
+        "name": "missingRuleAndDefaultTargetsFallBackToTheSelectedProxy",
+        "message": "java.util.NoSuchElementException: Key routing is missing in the map."
+      },
+      {
+        "name": "noProfilePlanUsesAStoredServerAsTheFinalDefaultTarget",
+        "message": "java.util.NoSuchElementException: Key routing is missing in the map."
+      }
+    ]
+  },
+  {
+    "name": "app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest",
+    "tests": "3",
+    "failures": "1",
+    "errors": "0",
+    "skipped": "0",
+    "time": "4.118",
+    "failed_cases": [
+      {
+        "name": "generatedNoProfileConfigRoutesLoopbackTrafficThroughSavedGlobalRulesAndDefault",
+        "message": "java.lang.AssertionError: Rule relay R did not receive the matching marker: []"
+      }
+    ]
+  }
+]

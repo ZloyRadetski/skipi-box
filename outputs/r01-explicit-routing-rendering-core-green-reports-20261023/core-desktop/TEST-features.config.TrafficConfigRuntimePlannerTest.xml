@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigRuntimePlannerTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T12:42:51.618Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="dnsAndHostsKeepProfileKeyGatingAndFallbackPriority[desktop]" classname="features.config.TrafficConfigRuntimePlannerTest" time="0.0"/>
+  <testcase name="groupNamePrecedesBuiltinPolicyAndIpv6DefaultsUseCallerFallback[desktop]" classname="features.config.TrafficConfigRuntimePlannerTest" time="0.0"/>
+  <testcase name="resolvesServerPoliciesAndRecursiveConfigFinalPoliciesWithProxyFallbackOnCycles[desktop]" classname="features.config.TrafficConfigRuntimePlannerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

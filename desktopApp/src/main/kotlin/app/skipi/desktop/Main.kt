@@ -407,6 +407,7 @@ fun main() = application {
                 val localProxyOptions = remember(desktopSettings) {
                     desktopSettings.toLocalProxyXrayConfigOptions()
                 }
+                val routingSnapshot = desktopSettings.toRoutingConfigRecord()
                 val trafficConfigContentById = remember(configLibrary) {
                     configLibrary.configs.associate { config -> config.id to config.content }
                 }
@@ -414,6 +415,7 @@ fun main() = application {
                     serverLibrary,
                     configLibrary,
                     localProxyOptions,
+                    routingSnapshot,
                     trafficConfigContentById,
                     desktopSettings.subscriptionPingUrl,
                     latencyByServerId,
@@ -421,6 +423,7 @@ fun main() = application {
                     buildDesktopSelectedServerConfig(
                         serverLibrary = serverLibrary,
                         configLibrary = configLibrary,
+                        routing = routingSnapshot,
                         options = localProxyOptions,
                         trafficConfigContentById = trafficConfigContentById,
                         subscriptionPingUrl = desktopSettings.subscriptionPingUrl,
@@ -433,6 +436,7 @@ fun main() = application {
                 val exportProxyServerFullJson: suspend (ProxyServerEditResult) -> String = { editResult ->
                     val serverLibrarySnapshot = serverLibrary
                     val configLibrarySnapshot = configLibrary
+                    val routingSnapshot = desktopSettings.toRoutingConfigRecord()
                     val optionsSnapshot = localProxyOptions
                     val trafficConfigContentSnapshot = trafficConfigContentById
                     val subscriptionPingUrlSnapshot = desktopSettings.subscriptionPingUrl
@@ -445,6 +449,7 @@ fun main() = application {
                         buildDesktopSelectedServerConfig(
                             serverLibrary = tempServerLibrary,
                             configLibrary = configLibrarySnapshot,
+                            routing = routingSnapshot,
                             options = optionsSnapshot,
                             trafficConfigContentById = trafficConfigContentSnapshot,
                             subscriptionPingUrl = subscriptionPingUrlSnapshot,
@@ -641,6 +646,7 @@ fun main() = application {
                     DesktopTunnelController(
                         configForProfile = {
                             val settingsSnapshot = latestDesktopSettings
+                            val routingSnapshot = settingsSnapshot.toRoutingConfigRecord()
                             val serverLibrarySnapshot = latestServerLibrary
                             val configLibrarySnapshot = latestConfigLibrary
                             val trafficConfigContentSnapshot = configLibrarySnapshot.configs
@@ -651,6 +657,7 @@ fun main() = application {
                                 buildDesktopSelectedServerConfig(
                                     serverLibrary = serverLibrarySnapshot,
                                     configLibrary = configLibrarySnapshot,
+                                    routing = routingSnapshot,
                                     options = options,
                                     trafficConfigContentById = trafficConfigContentSnapshot,
                                     subscriptionPingUrl = settingsSnapshot.subscriptionPingUrl,

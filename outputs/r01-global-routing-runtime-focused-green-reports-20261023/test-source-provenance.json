@@ -1,0 +1,10 @@
+{
+  "build_seconds": 26,
+  "test_source_sha256": {
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopGlobalRoutingRuntimeTest.kt": "8c7e152796d5e55ea6fd5fa5daab576cc43fdbe9c7db60e7bec45a83cf9531fa",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSelectedServerCoreFfmIntegrationTest.kt": "48c078368c29b73c79829e5ba34144365d9373600557f602f0c792592bd90122",
+    "shared/core/src/commonTest/kotlin/platform/LocalProxyExplicitRoutingPlanTest.kt": "45dcfc61b795f3c2f9ede8ab7415c6b45f81bb74a4ed58ca3c0ff51f20c2390a"
+  },
+  "native_source_sha256_after_removing_only_required_api_import_and_old_helper_argument": "e89207797134669bf84309682a853797dbd77d84ff90739eb150ce14d244c46e",
+  "expectations_changed": false
+}

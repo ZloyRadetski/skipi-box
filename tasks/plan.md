@@ -592,6 +592,8 @@
 
 **Работа:** Свести route state/operations/import-export/editor orchestration к общим сценариям и подключить RoutingRepository в Desktop. Текст правила, ID, порядок, default outbound и selector semantics сохранить по Android.
 
+**Runtime checkpoint, 23 октября:** [No-profile routing](shared-migration-20261023/r01-global-routing-runtime-verification.md): tests-first behavior RED 8/4 failures (включая фактический Core relay), shared API RED, затем полные core suites **692 GREEN7s** и отдельный focused Desktop gate **25 GREEN26s**, native **3/3**, compile GREEN. Global settings передаются в общий outbound/routing planner через preview/export/start; retry сохраняет captured routing. Profile/Custom приоритет прежний. Это два scoped GREEN-прогона, не новый полный baseline. До закрытия R01 остаётся resource-aware GeoIP/GeoSite filtering и enabled ext-domain preflight по Android с реальным global assets path; новая UI не добавляется. После R01 пользователь запросил паузу.
+
 **Критерии приёмки:**
 
 - Create/edit/remove/reorder/enable/import/export имеют одну реализацию правил.

@@ -1,0 +1,71 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :shared:app
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:app'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Configure project :shared:core
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:core'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Task :shared:core:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:core:generateProjectInfo UP-TO-DATE
+> Task :shared:core:desktopProcessResources NO-SOURCE
+> Task :shared:core:processDesktopMainResources SKIPPED
+> Task :shared:core:desktopTestProcessResources NO-SOURCE
+> Task :shared:core:processDesktopTestResources SKIPPED
+> Task :shared:core:androidPreBuild UP-TO-DATE
+> Task :shared:core:preAndroidMainBuild UP-TO-DATE
+> Task :shared:core:androidJar UP-TO-DATE
+> Task :shared:core:preAndroidHostTestBuild UP-TO-DATE
+> Task :shared:core:processAndroidHostTestJavaRes NO-SOURCE
+> Task :shared:core:compileAndroidMain
+> Task :shared:core:processAndroidMainJavaRes UP-TO-DATE
+> Task :shared:core:compileKotlinDesktop
+> Task :shared:core:compileDesktopMainJava NO-SOURCE
+> Task :shared:core:desktopMainClasses
+> Task :shared:core:bundleAndroidMainClassesToRuntimeJar
+> Task :shared:core:bundleAndroidMainClassesToCompileJar
+> Task :shared:core:desktopJar
+> Task :shared:core:compileAndroidHostTest
+
+> Task :shared:core:compileTestKotlinDesktop
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/desktopTest/kotlin/features/resources/runtime/ResourceFileDownloadCancellationTest.kt:147:55 'constructor(p0: String!): URL' is deprecated. Deprecated in Java.
+
+> Task :shared:core:testAndroidHostTest
+> Task :shared:core:compileDesktopTestJava NO-SOURCE
+> Task :shared:core:desktopTestClasses
+> Task :shared:core:desktopTest
+
+[Incubating] Problems report is available at: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 7s
+16 actionable tasks: 10 executed, 6 up-to-date
