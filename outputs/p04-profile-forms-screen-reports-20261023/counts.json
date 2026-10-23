@@ -1,0 +1,35 @@
+{
+  "tests": "6",
+  "failures": "0",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-23T05:21:43.699Z",
+  "cases": [
+    "rendersBasicsAndPortableSectionsAtNarrowAndWideDesktopViewports",
+    "basicsSectionNavigationPersistsItsDraftBeforeOpeningGeneral",
+    "eachDetailSaveActionPersistsItsPublicWidgetEditAndReturnsToBasics",
+    "basicsToolbarBackPersistsTheEditedNameIntoTheTemporaryConfigJson",
+    "rendersRawEditorMetadataAndDocumentFieldAtNarrowAndWideViewports",
+    "eachDetailToolbarBackPersistsItsPublicWidgetEditAndReturnsToBasics"
+  ],
+  "build": "BUILD SUCCESSFUL in 1m 36s",
+  "productionChanged": false,
+  "head": "78091e3",
+  "sourceSha256": "6fd30ced59e04917ed0c3dd89f96976defb5a28dcd271b2ae6857dfce557a659",
+  "png": {
+    "basics-1100x800.png": "e228e2adcecc9b1fc24f7a9d3e620f283d20ce4ccabc40216ededcf50ee6e2fb",
+    "basics-390x844.png": "daee9cf636fb6b7bf280a1b8f74c0def8623a22eeafcf5cb03df4406e8867360",
+    "dns-1100x800.png": "0c6538d8cb4c116f51ecba47be410033ba848741a870fd37041d9874d47cecba",
+    "dns-390x844.png": "45e8619746c0e5f01d1baa43e41ebf8e515793f38403b5253bdad11a7c8b1818",
+    "general-1100x800.png": "25d8f6b2713c2ad79816ca9db9b861735ae317a13eb13ce3173c4b8e1cd000f6",
+    "general-390x844.png": "df18da25aab642edf2cae24ef3922ad6c9dfdf49286ecd41fe5727f564129291",
+    "network-1100x800.png": "44e84a28ccdb2ce7f4a4925bdf8532df1d440cc769c328e1403109da80625381",
+    "network-390x844.png": "2ab49b800b1718d241a28e195ab37efd4b918085b009591792b72764fb1ed360",
+    "raw-document-1100x800.png": "cb95de35b816930d3d0679cba7f5261081bfd8a0ca8701e5a5964ba826cd7482",
+    "raw-document-390x844.png": "a19337092f3bb58f9e991ccf70e5c0a06847c74ef8ce931ff6b44f957c89e5d6",
+    "raw-metadata-1100x800.png": "cb95de35b816930d3d0679cba7f5261081bfd8a0ca8701e5a5964ba826cd7482",
+    "raw-metadata-390x844.png": "a19337092f3bb58f9e991ccf70e5c0a06847c74ef8ce931ff6b44f957c89e5d6",
+    "tunnel-1100x800.png": "261cff72ed4ad124699d809fd69e58fe4e72a1f2f0305adc5f59327018efa8b8",
+    "tunnel-390x844.png": "fa5e76227eb6f300a9165a1ae72076990acb62eaa10f9bbad1457d57b458de7b"
+  }
+}

@@ -64,6 +64,7 @@ fun SkipiTrafficConfigFullScreenScaffold(
                 title = title,
                 isWideScreen = isWideScreen,
                 scrollBehavior = scrollBehavior,
+                color = SkipiTheme.colors.background,
                 navigationIcon = { BackNavigationIcon(onClick = onBack) },
                 actions = {
                     actions?.invoke()
@@ -114,4 +115,3 @@ fun SkipiTrafficConfigEditorGroupCard(
         }
     }
 }
-

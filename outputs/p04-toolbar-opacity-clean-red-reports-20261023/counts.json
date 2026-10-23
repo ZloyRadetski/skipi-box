@@ -1,0 +1,19 @@
+{
+  "tests": "2",
+  "failures": "2",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-23T05:30:09.818Z",
+  "cases": [
+    {
+      "name": "dnsToolbarBackgroundDoesNotChangeWhenTheFormScrolls",
+      "failure": "java.lang.AssertionError: Scrolling the DNS form must not change empty toolbar background pixels at 390x844 expected:<[-657672, -657672, -657672]> but was:<[-1, -9539984, -1]>"
+    },
+    {
+      "name": "rendersRawEditorMetadataAndDocumentFieldAtNarrowAndWideViewports",
+      "failure": "java.lang.AssertionError: The raw profile-name field should be outside the viewport before the document capture"
+    }
+  ],
+  "sourceSha256": "d7b82be95383114556c06881740f49567c42c0f7eb62c85af0387eb209cd5c3e",
+  "build": "BUILD FAILED in 8s"
+}

@@ -1,0 +1,39 @@
+{
+  "tests": "7",
+  "failures": "2",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-23T05:27:48.969Z",
+  "cases": [
+    {
+      "name": "rendersBasicsAndPortableSectionsAtNarrowAndWideDesktopViewports",
+      "failure": null
+    },
+    {
+      "name": "basicsSectionNavigationPersistsItsDraftBeforeOpeningGeneral",
+      "failure": null
+    },
+    {
+      "name": "eachDetailSaveActionPersistsItsPublicWidgetEditAndReturnsToBasics",
+      "failure": null
+    },
+    {
+      "name": "dnsToolbarBackgroundDoesNotChangeWhenTheFormScrolls",
+      "failure": "java.lang.AssertionError: Scrolling the DNS form must not change empty toolbar background pixels at 390x844 expected:<[-657672, -657672, -657672]> but was:<[-1, -9539984, -1]>"
+    },
+    {
+      "name": "basicsToolbarBackPersistsTheEditedNameIntoTheTemporaryConfigJson",
+      "failure": null
+    },
+    {
+      "name": "rendersRawEditorMetadataAndDocumentFieldAtNarrowAndWideViewports",
+      "failure": "java.lang.AssertionError: Raw .conf capture should follow a real vertical scroll"
+    },
+    {
+      "name": "eachDetailToolbarBackPersistsItsPublicWidgetEditAndReturnsToBasics",
+      "failure": null
+    }
+  ],
+  "sourceSha256": "81d4a9accd9d62c143001aa5bcf034b000376a6e273cc5d01ead1f328502ca95",
+  "build": "BUILD FAILED in 15s"
+}

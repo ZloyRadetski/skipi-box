@@ -1,0 +1,143 @@
+{
+  "build": "BUILD SUCCESSFUL in 46s",
+  "suites": {
+    "shared-ui-desktop": {
+      "counts": {
+        "tests": 120,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "timestamps": [
+        "2026-10-23T05:32:54.675Z",
+        "2026-10-23T05:32:54.898Z"
+      ],
+      "classes": {
+        "StringListEditorStateTest[desktop]": 1,
+        "SkipiTrafficConfigRawEditorStateTest[desktop]": 2,
+        "TrafficConfigGlobalProxyGroupEditorResultTest[desktop]": 5,
+        "TrafficConfigProxyGroupListProjectionTest[desktop]": 4,
+        "ProxyHomeActionAvailabilityTest[desktop]": 1,
+        "ProxyHomeLayoutTest[desktop]": 7,
+        "ProxyHomePolishTest[desktop]": 3,
+        "ProxyHomeStatusMessageTest[desktop]": 1,
+        "SkipiPullToRefreshTest[desktop]": 4,
+        "SubscriptionRefreshMessageTest[desktop]": 4,
+        "SkipiMainDestinationTest[desktop]": 2,
+        "ResourceFileSettingsActionTest[desktop]": 4,
+        "ResourceManagementInteractionTest[desktop]": 9,
+        "GeoAssetPickerStateTest[desktop]": 5,
+        "RouteOutboundOptionPresentationTest[desktop]": 4,
+        "RouteOutboundSelectorStateTest[desktop]": 3,
+        "CountryFlagUtilsTest[desktop]": 5,
+        "ProxyServerEditorGroupOptionsProjectionTest[desktop]": 4,
+        "ProxyServerEditorRegistryTest[desktop]": 9,
+        "StrategyMemberSelectionStateTest[desktop]": 3,
+        "AppearanceSettingValuesTest[desktop]": 3,
+        "GeneralSettingsCapabilitiesTest[desktop]": 2,
+        "GeneralSettingsValuesTest[desktop]": 1,
+        "LocalProxySettingsValuesTest[desktop]": 2,
+        "SettingsScreenModelsTest[desktop]": 2,
+        "SubscriptionGroupDraftValidationTest[desktop]": 4,
+        "SubscriptionGroupRecordProjectionTest[desktop]": 4,
+        "FontFamilyAssetTest[desktop]": 1,
+        "StringTemplateTest[desktop]": 2,
+        "AppearanceColorOverridesTest[desktop]": 5,
+        "AppearanceTypographyStylesTest[desktop]": 2,
+        "BaseAppearancePaletteTest[desktop]": 5,
+        "ThemeTest[desktop]": 7
+      }
+    },
+    "shared-ui-android": {
+      "counts": {
+        "tests": 120,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "timestamps": [
+        "2026-10-23T05:33:00.074Z",
+        "2026-10-23T05:33:00.291Z"
+      ],
+      "classes": {
+        "app.skipi.ui.components.StringListEditorStateTest": 1,
+        "app.skipi.ui.config.SkipiTrafficConfigRawEditorStateTest": 2,
+        "app.skipi.ui.config.TrafficConfigGlobalProxyGroupEditorResultTest": 5,
+        "app.skipi.ui.config.TrafficConfigProxyGroupListProjectionTest": 4,
+        "app.skipi.ui.home.ProxyHomeActionAvailabilityTest": 1,
+        "app.skipi.ui.home.ProxyHomeLayoutTest": 7,
+        "app.skipi.ui.home.ProxyHomePolishTest": 3,
+        "app.skipi.ui.home.ProxyHomeStatusMessageTest": 1,
+        "app.skipi.ui.home.SkipiPullToRefreshTest": 4,
+        "app.skipi.ui.home.SubscriptionRefreshMessageTest": 4,
+        "app.skipi.ui.navigation.SkipiMainDestinationTest": 2,
+        "app.skipi.ui.resourcefiles.ResourceFileSettingsActionTest": 4,
+        "app.skipi.ui.resourcefiles.ResourceManagementInteractionTest": 9,
+        "app.skipi.ui.routing.GeoAssetPickerStateTest": 5,
+        "app.skipi.ui.routing.RouteOutboundOptionPresentationTest": 4,
+        "app.skipi.ui.routing.RouteOutboundSelectorStateTest": 3,
+        "app.skipi.ui.server.display.CountryFlagUtilsTest": 5,
+        "app.skipi.ui.server.editor.ProxyServerEditorGroupOptionsProjectionTest": 4,
+        "app.skipi.ui.server.editor.ProxyServerEditorRegistryTest": 9,
+        "app.skipi.ui.server.editor.StrategyMemberSelectionStateTest": 3,
+        "app.skipi.ui.settings.AppearanceSettingValuesTest": 3,
+        "app.skipi.ui.settings.GeneralSettingsCapabilitiesTest": 2,
+        "app.skipi.ui.settings.GeneralSettingsValuesTest": 1,
+        "app.skipi.ui.settings.LocalProxySettingsValuesTest": 2,
+        "app.skipi.ui.settings.SettingsScreenModelsTest": 2,
+        "app.skipi.ui.subscription.SubscriptionGroupDraftValidationTest": 4,
+        "app.skipi.ui.subscription.SubscriptionGroupRecordProjectionTest": 4,
+        "app.skipi.ui.text.FontFamilyAssetTest": 1,
+        "app.skipi.ui.text.StringTemplateTest": 2,
+        "app.skipi.ui.theme.AppearanceColorOverridesTest": 5,
+        "app.skipi.ui.theme.AppearanceTypographyStylesTest": 2,
+        "app.skipi.ui.theme.BaseAppearancePaletteTest": 5,
+        "app.skipi.ui.theme.ThemeTest": 7
+      }
+    },
+    "desktop-app": {
+      "counts": {
+        "tests": 35,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "timestamps": [
+        "2026-10-23T05:32:54.191Z",
+        "2026-10-23T05:33:26.754Z"
+      ],
+      "classes": {
+        "app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest": 26,
+        "app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest": 7,
+        "app.skipi.desktop.DesktopTrafficConfigProxyGroupsResponsiveRenderTest": 1,
+        "app.skipi.desktop.DesktopTrafficConfigRulesResponsiveRenderTest": 1
+      }
+    }
+  },
+  "totals": {
+    "tests": 275,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "head": "78091e3",
+  "testSourceSha256": "fa9644728cf9010a168b406cdd7594b7f3b160cf451f332f2164acf5a1631ae7",
+  "productionSourceSha256": "e80fa415e40a550fd0f3b0ae05f3664cc03adeffe90a415d34b38958763e5bea",
+  "png": {
+    "basics-1100x800.png": "e228e2adcecc9b1fc24f7a9d3e620f283d20ce4ccabc40216ededcf50ee6e2fb",
+    "basics-390x844.png": "daee9cf636fb6b7bf280a1b8f74c0def8623a22eeafcf5cb03df4406e8867360",
+    "dns-1100x800.png": "f075b2f9a23171f6b0d1bd4f471124474732de057cc33fb9062931da7dbfd4fa",
+    "dns-390x844.png": "e09496d9c0da8b93b320cff1c92536987ed066a97886687d67cf378d08d82750",
+    "general-1100x800.png": "25d8f6b2713c2ad79816ca9db9b861735ae317a13eb13ce3173c4b8e1cd000f6",
+    "general-390x844.png": "df18da25aab642edf2cae24ef3922ad6c9dfdf49286ecd41fe5727f564129291",
+    "network-1100x800.png": "44e84a28ccdb2ce7f4a4925bdf8532df1d440cc769c328e1403109da80625381",
+    "network-390x844.png": "2ab49b800b1718d241a28e195ab37efd4b918085b009591792b72764fb1ed360",
+    "raw-document-1100x800.png": "3b0b176c35943d759a6b261bcabac751ef6df2121e3b93f3047252ef92f77e56",
+    "raw-document-390x844.png": "ad059a0673ab251075fec0bf1cf3991a058cf6e62b8207f959bbeab3d60c5dbc",
+    "raw-metadata-1100x800.png": "cb95de35b816930d3d0679cba7f5261081bfd8a0ca8701e5a5964ba826cd7482",
+    "raw-metadata-390x844.png": "a19337092f3bb58f9e991ccf70e5c0a06847c74ef8ce931ff6b44f957c89e5d6",
+    "tunnel-1100x800.png": "261cff72ed4ad124699d809fd69e58fe4e72a1f2f0305adc5f59327018efa8b8",
+    "tunnel-390x844.png": "fa5e76227eb6f300a9165a1ae72076990acb62eaa10f9bbad1457d57b458de7b"
+  },
+  "androidDebugApk": "assembleDebug GREEN; no installation"
+}

@@ -1,0 +1,19 @@
+{
+  "tests": "2",
+  "failures": "1",
+  "errors": "0",
+  "skipped": "0",
+  "timestamp": "2026-10-23T05:31:48.443Z",
+  "cases": [
+    {
+      "name": "dnsToolbarBackgroundDoesNotChangeWhenTheFormScrolls",
+      "failure": "java.lang.AssertionError: Scrolling the DNS form must not change empty toolbar background pixels at 390x844 expected:<[-657672, -657672, -657672]> but was:<[-1, -9539984, -1]>"
+    },
+    {
+      "name": "rendersRawEditorMetadataAndDocumentFieldAtNarrowAndWideViewports",
+      "failure": null
+    }
+  ],
+  "sourceSha256": "fa9644728cf9010a168b406cdd7594b7f3b160cf451f332f2164acf5a1631ae7",
+  "build": "BUILD FAILED in 12s"
+}

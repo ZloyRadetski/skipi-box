@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigRulesResponsiveRenderTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-23T05:33:26.754Z" hostname="VQSeGo" time="1.266">
+  <properties/>
+  <testcase name="rendersRulesListFormAndPolicyPickerAtNarrowAndWideDesktopViewports" classname="app.skipi.desktop.DesktopTrafficConfigRulesResponsiveRenderTest" time="1.266"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
