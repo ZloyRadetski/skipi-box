@@ -294,6 +294,12 @@ fun main() = application {
                             isMessageError = coreMessage.isNotBlank(),
                         )
                     }
+                    val routingRepository = DesktopRoutingRepository(
+                        initialSettings = desktopSettings,
+                        readSettings = { desktopSettings },
+                        saveSettings = DesktopSettingsLibraries::saveDefault,
+                        publishSettings = { desktopSettings = it },
+                    )
                     createDesktopSharedApplication(
                         scope = subscriptionScope,
                         settings = settingsRepository,
@@ -301,6 +307,7 @@ fun main() = application {
                         subscriptions = subscriptionRepository,
                         trafficConfigs = trafficConfigRepository,
                         runtime = runtimeRepository,
+                        routing = routingRepository,
                     )
                 }
                 val routeProxyServers by desktopSharedApplication.proxyServers.servers.collectAsState()
@@ -377,6 +384,7 @@ fun main() = application {
                     desktopSharedApplication.subscriptions.refresh(subscriptionLibrary)
                     desktopSharedApplication.trafficConfigs.refresh(configLibrary)
                     desktopSharedApplication.runtime.refresh()
+                    desktopSharedApplication.routing.refresh()
                 }
 
                 LaunchedEffect(systemProxyManager) {

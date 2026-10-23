@@ -386,6 +386,7 @@ data class DesktopSharedApplication(
     val subscriptions: DesktopSubscriptionRepository,
     val trafficConfigs: DesktopTrafficConfigRepository,
     val runtime: DesktopRuntimeStateRepository,
+    val routing: DesktopRoutingRepository,
 )
 
 fun createDesktopSharedApplication(
@@ -395,6 +396,7 @@ fun createDesktopSharedApplication(
     subscriptions: DesktopSubscriptionRepository,
     trafficConfigs: DesktopTrafficConfigRepository,
     runtime: DesktopRuntimeStateRepository,
+    routing: DesktopRoutingRepository,
 ): DesktopSharedApplication {
     val repositories = AppRepositories(
         settings = settings,
@@ -402,6 +404,7 @@ fun createDesktopSharedApplication(
         subscriptions = subscriptions,
         trafficConfigs = trafficConfigs,
         runtime = runtime,
+        routing = routing,
     )
     return DesktopSharedApplication(
         repositories = repositories,
@@ -411,6 +414,7 @@ fun createDesktopSharedApplication(
         subscriptions = subscriptions,
         trafficConfigs = trafficConfigs,
         runtime = runtime,
+        routing = routing,
     )
 }
 

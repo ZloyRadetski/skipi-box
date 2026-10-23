@@ -1,0 +1,362 @@
+// Copyright 2026, Radetski
+// SPDX-License-Identifier: GPL-3.0
+
+package app.skipi.desktop
+
+import app.skipi.app.model.RoutingConfigRecord
+import app.skipi.app.runtime.AppRuntimeState
+import app.skipi.app.store.SharedApplicationAction
+import app.skipi.app.store.SharedApplicationActionOutcome
+import features.routing.model.RouteRule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.Comparator
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertSame
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class DesktopRoutingRepositoryTest {
+    @Test
+    fun mapsInitialSettingsAndUpdatesTheLatestFileWithoutLosingHighWaterOrOtherPreferences() = runTest {
+        val initial = DesktopAppSettings(
+            routeDomainStrategy = 0,
+            defaultRouteOutboundTag = "proxy",
+            routeRules = listOf(RouteRule(id = 5, remarks = "Initial", outboundTag = "proxy")),
+            nextRouteRuleId = 10,
+            localProxyPort = 10808,
+            themeMode = DesktopThemeMode.Sakura,
+            languageTag = "ru",
+            installationUuid = "stable-installation",
+        )
+
+        withSettingsFile(initial) { path ->
+            val published = AtomicReference(initial)
+            val repository = createRepository(
+                path = path,
+                initialSettings = DesktopSettingsLibraries.load(path).getOrThrow(),
+                publishedSettings = published,
+            )
+
+            assertEquals(
+                RoutingConfigRecord(
+                    domainStrategy = 0,
+                    defaultOutboundTag = "proxy",
+                    rules = listOf(RouteRule(id = 5, remarks = "Initial", outboundTag = "proxy")),
+                ),
+                repository.state.value,
+            )
+
+            // Simulate a completed settings write after this repository was constructed.
+            val latest = initial.copy(
+                routeDomainStrategy = 1,
+                defaultRouteOutboundTag = "11",
+                routeRules = listOf(RouteRule(id = 11, remarks = "Latest row", outboundTag = "11")),
+                nextRouteRuleId = 40,
+                localProxyPort = 10810,
+                themeMode = DesktopThemeMode.Sunset,
+                languageTag = "fa",
+                installationUuid = "newer-installation",
+            )
+            DesktopSettingsLibraries.save(path, latest).getOrThrow()
+            val expectedLatestRouting = RoutingConfigRecord(
+                domainStrategy = 1,
+                defaultOutboundTag = "11",
+                rules = listOf(RouteRule(id = 11, remarks = "Latest row", outboundTag = "11")),
+            )
+            var transformInput: RoutingConfigRecord? = null
+            val firstUpdateRules = listOf(
+                RouteRule(id = 11, remarks = "Latest row", outboundTag = "11"),
+                RouteRule(id = 20, remarks = "New low ID", outboundTag = "direct"),
+            )
+
+            repository.update { current ->
+                transformInput = current
+                current.copy(
+                    domainStrategy = 3,
+                    defaultOutboundTag = "direct",
+                    rules = firstUpdateRules,
+                )
+            }
+
+            assertEquals(expectedLatestRouting, transformInput)
+            val firstSaved = DesktopSettingsLibraries.load(path).getOrThrow()
+            assertEquals(3, firstSaved.routeDomainStrategy)
+            assertEquals("direct", firstSaved.defaultRouteOutboundTag)
+            assertEquals(firstUpdateRules, firstSaved.routeRules)
+            assertEquals(40, firstSaved.nextRouteRuleId, "A lower rule ID must not reduce the persisted high-water mark")
+            assertEquals(10810, firstSaved.localProxyPort)
+            assertEquals(DesktopThemeMode.Sunset, firstSaved.themeMode)
+            assertEquals("fa", firstSaved.languageTag)
+            assertEquals("newer-installation", firstSaved.installationUuid)
+            assertEquals(firstSaved, published.get())
+            assertEquals(
+                RoutingConfigRecord(3, "direct", firstUpdateRules),
+                repository.state.value,
+            )
+
+            val highRule = RouteRule(id = 55, remarks = "High ID", outboundTag = "77")
+            repository.update { current -> current.copy(rules = current.rules + highRule) }
+
+            val advanced = DesktopSettingsLibraries.load(path).getOrThrow()
+            assertEquals(56, advanced.nextRouteRuleId, "The counter must remain above every persisted route ID")
+            assertEquals(firstUpdateRules + highRule, advanced.routeRules)
+            assertEquals(advanced, published.get())
+        }
+    }
+
+    @Test
+    fun refreshReadsLatestRoutingSettingsWithoutSavingOrPublishingThem() = runTest {
+        val initial = DesktopAppSettings(
+            routeDomainStrategy = 0,
+            defaultRouteOutboundTag = "proxy",
+            routeRules = listOf(RouteRule(id = 5, remarks = "Initial", outboundTag = "proxy")),
+            nextRouteRuleId = 10,
+            localProxyPort = 10808,
+            themeMode = DesktopThemeMode.Sakura,
+            languageTag = "ru",
+            installationUuid = "stable-installation",
+        )
+
+        withSettingsFile(initial) { path ->
+            val initialSettings = DesktopSettingsLibraries.load(path).getOrThrow()
+            val published = AtomicReference(initialSettings)
+            var saveCalls = 0
+            var publishCalls = 0
+            val repository = createRepository(
+                path = path,
+                initialSettings = initialSettings,
+                publishedSettings = published,
+                saveSettings = { settings ->
+                    saveCalls += 1
+                    DesktopSettingsLibraries.save(path, settings)
+                },
+                publishSettings = { settings ->
+                    publishCalls += 1
+                    published.set(settings)
+                },
+            )
+
+            val latest = initial.copy(
+                routeDomainStrategy = 4,
+                defaultRouteOutboundTag = "block",
+                routeRules = listOf(RouteRule(id = 37, remarks = "Restored", outboundTag = "block")),
+                nextRouteRuleId = 80,
+                localProxyPort = 10810,
+                themeMode = DesktopThemeMode.Sunset,
+                languageTag = "fa",
+                installationUuid = "reloaded-installation",
+            )
+            DesktopSettingsLibraries.save(path, latest).getOrThrow()
+            val fileBeforeRefresh = Files.readString(path)
+            val settingsBeforeRefresh = DesktopSettingsLibraries.load(path).getOrThrow()
+
+            assertEquals(RoutingConfigRecord(0, "proxy", initial.routeRules), repository.state.value)
+            assertEquals(10810, settingsBeforeRefresh.localProxyPort)
+            assertEquals(DesktopThemeMode.Sunset, settingsBeforeRefresh.themeMode)
+            assertEquals("fa", settingsBeforeRefresh.languageTag)
+            assertEquals("reloaded-installation", settingsBeforeRefresh.installationUuid)
+            assertEquals(initialSettings, published.get())
+            assertEquals(0, saveCalls)
+            assertEquals(0, publishCalls)
+
+            repository.refresh()
+
+            assertEquals(
+                RoutingConfigRecord(
+                    domainStrategy = settingsBeforeRefresh.routeDomainStrategy,
+                    defaultOutboundTag = settingsBeforeRefresh.defaultRouteOutboundTag,
+                    rules = settingsBeforeRefresh.routeRules,
+                ),
+                repository.state.value,
+            )
+            assertEquals(settingsBeforeRefresh, DesktopSettingsLibraries.load(path).getOrThrow())
+            assertEquals(fileBeforeRefresh, Files.readString(path), "Refresh must not rewrite settings.json")
+            assertEquals(80, DesktopSettingsLibraries.load(path).getOrThrow().nextRouteRuleId)
+            assertEquals(initialSettings, published.get(), "Refresh updates only the routing repository state")
+            assertEquals(0, saveCalls)
+            assertEquals(0, publishCalls)
+        }
+    }
+
+    @Test
+    fun failedSettingsSaveDoesNotPublishOrChangeTheRoutingSnapshot() = runTest {
+        val initial = DesktopAppSettings(
+            routeDomainStrategy = 2,
+            defaultRouteOutboundTag = "direct",
+            routeRules = listOf(RouteRule(id = 7, remarks = "Existing", outboundTag = "direct")),
+            nextRouteRuleId = 19,
+            localProxyPort = 10808,
+        )
+
+        withSettingsFile(initial) { path ->
+            val settingsJsonBefore = Files.readString(path)
+            val published = AtomicReference(initial)
+            var publishCalls = 0
+            val failure = IllegalStateException("settings write failed")
+            val repository = createRepository(
+                path = path,
+                initialSettings = DesktopSettingsLibraries.load(path).getOrThrow(),
+                publishedSettings = published,
+                saveSettings = { Result.failure(failure) },
+                publishSettings = { settings ->
+                    publishCalls += 1
+                    published.set(settings)
+                },
+            )
+
+            val thrown = runCatching {
+                repository.update { current ->
+                    current.copy(
+                        defaultOutboundTag = "block",
+                        rules = current.rules + RouteRule(id = 19, remarks = "Unsaved", outboundTag = "block"),
+                    )
+                }
+            }.exceptionOrNull()
+
+            assertSame(failure, thrown)
+            assertEquals(settingsJsonBefore, Files.readString(path), "A failed save must leave settings.json untouched")
+            assertEquals(initial, DesktopSettingsLibraries.load(path).getOrThrow())
+            assertEquals(RoutingConfigRecord(2, "direct", initial.routeRules), repository.state.value)
+            assertEquals(initial, published.get())
+            assertEquals(0, publishCalls)
+        }
+    }
+
+    @Test
+    fun desktopApplicationFactoryRoutesSharedUpdateThroughTheConfiguredRepository() = runTest {
+        val initial = DesktopAppSettings(
+            routeDomainStrategy = 1,
+            defaultRouteOutboundTag = "proxy",
+            routeRules = listOf(RouteRule(id = 4, remarks = "Persisted", outboundTag = "proxy")),
+            nextRouteRuleId = 12,
+        )
+
+        withSettingsFile(initial) { path ->
+            val published = AtomicReference(initial)
+            val routing = createRepository(
+                path = path,
+                initialSettings = DesktopSettingsLibraries.load(path).getOrThrow(),
+                publishedSettings = published,
+            )
+            val application = createDesktopSharedApplication(
+                scope = backgroundScope,
+                settings = emptySettingsRepository(),
+                proxyServers = emptyProxyServerRepository(),
+                subscriptions = emptySubscriptionRepository(),
+                trafficConfigs = emptyTrafficConfigRepository(),
+                runtime = DesktopRuntimeStateRepository { AppRuntimeState() },
+                routing = routing,
+            )
+            runCurrent()
+
+            assertSame(routing, application.routing)
+            assertSame(routing, application.repositories.routing)
+            assertEquals(RoutingConfigRecord(1, "proxy", initial.routeRules), application.store.state.value.routing)
+
+            val actionId = application.store.dispatch(
+                SharedApplicationAction.UpdateRouting { current ->
+                    current.copy(
+                        domainStrategy = 3,
+                        defaultOutboundTag = "direct",
+                        rules = current.rules + RouteRule(id = 12, remarks = "Added", outboundTag = "direct"),
+                    )
+                },
+            )
+            runCurrent()
+
+            assertEquals(actionId, application.store.lastActionResult.value?.actionId)
+            assertIs<SharedApplicationActionOutcome.Completed>(application.store.lastActionResult.value?.outcome)
+            assertEquals(3, application.store.state.value.routing.domainStrategy)
+            assertEquals("direct", application.store.state.value.routing.defaultOutboundTag)
+            val saved = DesktopSettingsLibraries.load(path).getOrThrow()
+            assertEquals(3, saved.routeDomainStrategy)
+            assertEquals("direct", saved.defaultRouteOutboundTag)
+            assertEquals(listOf(4, 12), saved.routeRules.map(RouteRule::id))
+            assertEquals(13, saved.nextRouteRuleId)
+        }
+    }
+
+    private fun createRepository(
+        path: Path,
+        initialSettings: DesktopAppSettings,
+        publishedSettings: AtomicReference<DesktopAppSettings>,
+        saveSettings: (DesktopAppSettings) -> Result<Unit> = { settings ->
+            DesktopSettingsLibraries.save(path, settings)
+        },
+        publishSettings: (DesktopAppSettings) -> Unit = publishedSettings::set,
+    ): DesktopRoutingRepository = DesktopRoutingRepository(
+        initialSettings = initialSettings,
+        readSettings = { DesktopSettingsLibraries.load(path).getOrThrow() },
+        saveSettings = saveSettings,
+        publishSettings = publishSettings,
+    )
+
+    private fun emptySettingsRepository(): DesktopSettingsRepository {
+        var settings = DesktopAppSettings()
+        var servers = DesktopServerLibrary()
+        var configs = DesktopConfigLibrary()
+        return DesktopSettingsRepository(
+            readSettings = { settings },
+            saveSettings = { settings = it; Result.success(Unit) },
+            publishSettings = { settings = it },
+            readServers = { servers },
+            saveServers = { servers = it; Result.success(Unit) },
+            publishServers = { servers = it },
+            readConfigs = { configs },
+            saveConfigs = { configs = it; Result.success(Unit) },
+            publishConfigs = { configs = it },
+        )
+    }
+
+    private fun emptyProxyServerRepository(): DesktopProxyServerRepository {
+        var library = DesktopServerLibrary()
+        return DesktopProxyServerRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+        )
+    }
+
+    private fun emptySubscriptionRepository(): DesktopSubscriptionRepository {
+        var library = DesktopSubscriptionLibrary()
+        return DesktopSubscriptionRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+        )
+    }
+
+    private fun emptyTrafficConfigRepository(): DesktopTrafficConfigRepository {
+        var library = DesktopConfigLibrary()
+        return DesktopTrafficConfigRepository(
+            initialLibrary = library,
+            readLibrary = { library },
+            saveLibrary = { library = it; Result.success(Unit) },
+            publishLibrary = { library = it },
+        )
+    }
+
+    private suspend fun <T> withSettingsFile(
+        initial: DesktopAppSettings,
+        block: suspend (Path) -> T,
+    ): T {
+        val directory = Files.createTempDirectory("skipi-desktop-routing-repository-")
+        try {
+            val path = directory.resolve("settings.json")
+            DesktopSettingsLibraries.save(path, initial).getOrThrow()
+            return block(path)
+        } finally {
+            Files.walk(directory).use { paths ->
+                paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+            }
+        }
+    }
+}

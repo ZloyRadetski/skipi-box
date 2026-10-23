@@ -101,7 +101,7 @@ data class DesktopAppSettings(
     val backgroundPhotoDimPercent: Int? = null,
     val bottomBarSize: Int? = null,
     val connectionDisplayMode: Int? = null,
-    /** Inactive legacy routing values retained so saving other settings preserves existing settings.json data. */
+    /** Persisted routing fields exposed through the shared repository; UI/runtime wiring remains separate. */
     val routeDomainStrategy: Int = 0,
     val defaultRouteOutboundTag: String = DefaultRouteOutboundTag,
     val routeRules: List<RouteRule> = emptyList(),

@@ -195,6 +195,13 @@ class DesktopProxyDeletionActionTest {
             publishLibrary = { currentConfigs = it },
         )
         val runtime = DesktopRuntimeStateRepository { app.skipi.app.runtime.AppRuntimeState() }
+        var routingSettings = DesktopAppSettings()
+        val routing = DesktopRoutingRepository(
+            initialSettings = routingSettings,
+            readSettings = { routingSettings },
+            saveSettings = { Result.success(Unit) },
+            publishSettings = { routingSettings = it },
+        )
         val application = createDesktopSharedApplication(
             scope = scope,
             settings = settings,
@@ -202,6 +209,7 @@ class DesktopProxyDeletionActionTest {
             subscriptions = subscriptions,
             trafficConfigs = trafficConfigs,
             runtime = runtime,
+            routing = routing,
         )
         return DesktopFixture(application, { currentServers }, publicationHistory, scope)
     }
