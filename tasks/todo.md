@@ -1,6 +1,6 @@
 # Чек-лист завершения Android → shared
 
-**Пауза по последнему указанию пользователя, 23 октября: R01 завершена, проверена и закоммичена; следующая карточка не начата.**
+**Работа возобновлена по последнему указанию пользователя: сейчас завершаем S03, следующей карточкой берём R03. R01 завершена; прежняя пауза снята.**
 
 Последняя полная контрольная точка: [R01 acceptance](shared-migration-20261023/r01-acceptance-verification.md) — **2859/2859 GREEN94s**, failures/errors/skips 0, восемь свежих targets, реальные Core **9/9**, Desktop compile/debug APK GREEN. Закрыто **14/39 карточек по количеству**, не по объёму. [Точка продолжения](shared-migration-20261023/r01-pause-handoff.md). Source checkpoints: `a5cba46`, `efcdde7`, `7a213bd`. Новая global UI не добавлена: её Android source не имел entrypoint уже в initial commit; активный profile Routing UI принят в P04.
 
