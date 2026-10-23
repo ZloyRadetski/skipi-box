@@ -1,0 +1,38 @@
+{
+  "build_seconds": 12,
+  "tests": 20,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "classes": [
+    {
+      "name": "app.skipi.desktop.DesktopRoutingRepositoryTest",
+      "timestamp": "2026-10-23T12:17:20.481Z",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "app.skipi.desktop.DesktopSettingsLibraryTest",
+      "timestamp": "2026-10-23T12:17:20.517Z",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "app.skipi.desktop.DesktopProxyDeletionActionTest",
+      "timestamp": "2026-10-23T12:17:20.360Z",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "routing_test_sha256": "fb60f9c746cbd1da3dbff828453a23ecabab4f7561adb0651a2e16708dca94dc",
+  "unchanged_from_api_red": true,
+  "desktop_compile": "passed",
+  "native_core_rerun": false,
+  "android_rerun": false
+}

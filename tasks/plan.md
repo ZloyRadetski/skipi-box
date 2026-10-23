@@ -588,6 +588,8 @@
 
 **Зависимости:** [C03](#c03), [P04](#p04), [X01](#x01).
 
+**Текущий checkpoint:** [Desktop RoutingRepository](shared-migration-20261023/r01-desktop-routing-repository-verification.md) подключён и прошёл 20/20 focused GREEN + compile (`a5cba46`). R01 остаётся открытой. Перед новым UI entrypoint проверяется фактическая Android-навигация: неактивная legacy RoutingPage сама по себе не служит основанием добавлять новую функцию.
+
 **Работа:** Свести route state/operations/import-export/editor orchestration к общим сценариям и подключить RoutingRepository в Desktop. Текст правила, ID, порядок, default outbound и selector semantics сохранить по Android.
 
 **Критерии приёмки:**

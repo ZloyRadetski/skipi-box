@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 
-/** Draft source-backed tests; not installed in src until root review and expected API RED. */
+/** Reviewed source-backed draft; installed copy awaits the expected API RED. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopRoutingRepositoryTest {
     @Test
@@ -112,6 +112,80 @@ class DesktopRoutingRepositoryTest {
     }
 
     @Test
+    fun refreshReadsLatestRoutingSettingsWithoutSavingOrPublishingThem() = runTest {
+        val initial = DesktopAppSettings(
+            routeDomainStrategy = 0,
+            defaultRouteOutboundTag = "proxy",
+            routeRules = listOf(RouteRule(id = 5, remarks = "Initial", outboundTag = "proxy")),
+            nextRouteRuleId = 10,
+            localProxyPort = 10808,
+            themeMode = DesktopThemeMode.Sakura,
+            languageTag = "ru",
+            installationUuid = "stable-installation",
+        )
+
+        withSettingsFile(initial) { path ->
+            val initialSettings = DesktopSettingsLibraries.load(path).getOrThrow()
+            val published = AtomicReference(initialSettings)
+            var saveCalls = 0
+            var publishCalls = 0
+            val repository = createRepository(
+                path = path,
+                initialSettings = initialSettings,
+                publishedSettings = published,
+                saveSettings = { settings ->
+                    saveCalls += 1
+                    DesktopSettingsLibraries.save(path, settings)
+                },
+                publishSettings = { settings ->
+                    publishCalls += 1
+                    published.set(settings)
+                },
+            )
+
+            val latest = initial.copy(
+                routeDomainStrategy = 4,
+                defaultRouteOutboundTag = "block",
+                routeRules = listOf(RouteRule(id = 37, remarks = "Restored", outboundTag = "block")),
+                nextRouteRuleId = 80,
+                localProxyPort = 10810,
+                themeMode = DesktopThemeMode.Sunset,
+                languageTag = "fa",
+                installationUuid = "reloaded-installation",
+            )
+            DesktopSettingsLibraries.save(path, latest).getOrThrow()
+            val fileBeforeRefresh = Files.readString(path)
+            val settingsBeforeRefresh = DesktopSettingsLibraries.load(path).getOrThrow()
+
+            assertEquals(RoutingConfigRecord(0, "proxy", initial.routeRules), repository.state.value)
+            assertEquals(10810, settingsBeforeRefresh.localProxyPort)
+            assertEquals(DesktopThemeMode.Sunset, settingsBeforeRefresh.themeMode)
+            assertEquals("fa", settingsBeforeRefresh.languageTag)
+            assertEquals("reloaded-installation", settingsBeforeRefresh.installationUuid)
+            assertEquals(initialSettings, published.get())
+            assertEquals(0, saveCalls)
+            assertEquals(0, publishCalls)
+
+            repository.refresh()
+
+            assertEquals(
+                RoutingConfigRecord(
+                    domainStrategy = settingsBeforeRefresh.routeDomainStrategy,
+                    defaultOutboundTag = settingsBeforeRefresh.defaultRouteOutboundTag,
+                    rules = settingsBeforeRefresh.routeRules,
+                ),
+                repository.state.value,
+            )
+            assertEquals(settingsBeforeRefresh, DesktopSettingsLibraries.load(path).getOrThrow())
+            assertEquals(fileBeforeRefresh, Files.readString(path), "Refresh must not rewrite settings.json")
+            assertEquals(80, DesktopSettingsLibraries.load(path).getOrThrow().nextRouteRuleId)
+            assertEquals(initialSettings, published.get(), "Refresh updates only the routing repository state")
+            assertEquals(0, saveCalls)
+            assertEquals(0, publishCalls)
+        }
+    }
+
+    @Test
     fun failedSettingsSaveDoesNotPublishOrChangeTheRoutingSnapshot() = runTest {
         val initial = DesktopAppSettings(
             routeDomainStrategy = 2,
@@ -122,6 +196,7 @@ class DesktopRoutingRepositoryTest {
         )
 
         withSettingsFile(initial) { path ->
+            val settingsJsonBefore = Files.readString(path)
             val published = AtomicReference(initial)
             var publishCalls = 0
             val failure = IllegalStateException("settings write failed")
@@ -146,6 +221,7 @@ class DesktopRoutingRepositoryTest {
             }.exceptionOrNull()
 
             assertSame(failure, thrown)
+            assertEquals(settingsJsonBefore, Files.readString(path), "A failed save must leave settings.json untouched")
             assertEquals(initial, DesktopSettingsLibraries.load(path).getOrThrow())
             assertEquals(RoutingConfigRecord(2, "direct", initial.routeRules), repository.state.value)
             assertEquals(initial, published.get())

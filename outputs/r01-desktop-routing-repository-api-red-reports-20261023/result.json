@@ -1,0 +1,8 @@
+{
+  "phase": "expected missing adapter/factory routing/refresh API and unresolved-type cascades, before production",
+  "tests_executed": 0,
+  "planned_cases": 4,
+  "build_seconds": 21,
+  "test_source_sha256": "fb60f9c746cbd1da3dbff828453a23ecabab4f7561adb0651a2e16708dca94dc",
+  "compiler_error_count": 35
+}

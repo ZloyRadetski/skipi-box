@@ -1,0 +1,35 @@
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:52:28 Unresolved reference 'state'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:78:24 Unresolved reference 'update'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:78:33 Cannot infer type for value parameter 'current'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:80:25 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:80:25 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:80:25 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:81:21 No parameter with name 'domainStrategy' found.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:82:21 No parameter with name 'defaultOutboundTag' found.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:83:21 No parameter with name 'rules' found.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:100:28 Unresolved reference 'state'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:104:24 Unresolved reference 'update'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:104:33 Cannot infer type for value parameter 'current'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:104:52 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:104:52 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:104:52 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:104:57 No parameter with name 'rules' found.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:104:73 Unresolved reference 'rules'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:159:90 Unresolved reference 'state'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:168:24 Unresolved reference 'refresh'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:176:28 Unresolved reference 'state'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:213:26 Cannot infer type for type parameter 'R'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:214:28 Unresolved reference 'update'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:214:37 Cannot infer type for value parameter 'current'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:215:29 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:215:29 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:215:29 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:216:25 No parameter with name 'defaultOutboundTag' found.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:217:25 No parameter with name 'rules' found.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:217:41 Unresolved reference 'rules'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:225:91 Unresolved reference 'state'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:254:17 No parameter with name 'routing' found.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:258:13 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:258:45 Unresolved reference 'routing'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:293:8 Unresolved reference 'DesktopRoutingRepository'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopRoutingRepositoryTest.kt:293:35 Unresolved reference 'DesktopRoutingRepository'.
