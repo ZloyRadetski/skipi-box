@@ -1,0 +1,13 @@
+{
+  "tests": 2,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "timestamp": "2026-10-23T12:03:53.615Z",
+  "build_seconds": 30,
+  "production_changes": false,
+  "cases": [
+    "inactiveProfileResourcesRouteBackPersistsAgainstTheLatestRowAndPreservesLibraryEnvelope",
+    "dnsDialogsRejectMalformedDraftsAndPersistOnlyAcceptedValuesOnBack"
+  ]
+}

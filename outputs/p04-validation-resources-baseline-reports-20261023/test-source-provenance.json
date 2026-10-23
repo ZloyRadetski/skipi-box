@@ -1,0 +1,7 @@
+{
+  "phase": "first baseline, production unchanged at 35728b7 / documentation HEAD 5d6e474",
+  "source": "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigValidationAndResourcesScreenIntegrationTest.kt",
+  "sha256": "f3c6de9ffa87c7c563847458c9aa23e5ae5cccff375c2b31084e5758d2eb98b5",
+  "sha256_after_build": "f3c6de9ffa87c7c563847458c9aa23e5ae5cccff375c2b31084e5758d2eb98b5",
+  "unchanged_during_build": true
+}

@@ -418,6 +418,8 @@
 
 **Зависимости:** [P02](#p02), [P03](#p03).
 
+**Статус:** завершена 23 октября 2026 года. [Приёмка P04](shared-migration-20261023/p04-acceptance-verification.md) связывает общий список, portable формы и оба host bindings с tests-first gates, Android oracles, actual Desktop flows и raster QA. Итоговая двухпрогонная inventory 2824 GREEN (полный 2822 + два новых verification-only теста); Core 7/7, compile/APK GREEN. Global routing и полная per-app platform binding остаются R01/R03.
+
 **Работа:** Перенести остатки state/controller/screens для существующих mobile форм General, DNS, routing, proxy groups, ресурсов и raw edit. Desktop использует те же portable формы. Для TUN/per-app/network-specific частей общая форма вызывает platform callbacks или учитывает реальные capabilities.
 
 **Критерии приёмки:**

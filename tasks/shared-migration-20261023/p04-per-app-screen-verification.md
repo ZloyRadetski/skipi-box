@@ -2,6 +2,8 @@
 
 23 October 2026. This records the completed Desktop Per-App screen acceptance gate. **The Per-App screen gate is GREEN; P04 remains open** for DNS validation and Resources route tests that are still draft. Full package inventory and runtime enforcement remain separate R03 work. The source-backed eight-case plan is in [the Per-App screen spec](../../outputs/drafts/p04-per-app-screen-spec.md). Prior shared codec/selection and controller/store checkpoints are documented in [foundation verification](p04-per-app-foundation-verification.md), [controller verification](p04-per-app-controller-verification.md), and the [Per-App source audit](p04-remaining-per-app-research.md).
 
+Subsequent status: the two DNS/Resources baseline cases passed without production changes, and [P04 acceptance](p04-acceptance-verification.md) closed the card. The open-P04 statements below describe this Per-App checkpoint before that additional verification.
+
 ## Scope under test
 
 The new `DesktopTrafficConfigPerAppScreenIntegrationTest` exercises the existing profile-card More → UI Edit route for inactive profile 7 while profile 3 remains selected, then characterizes immediate per-profile mode and clipboard operations. It uses a real temporary `configs.json`, a `DesktopTrafficConfigRepository`, public Compose semantics actions, injected clipboard callbacks, and fresh `ImageComposeScene` instances at 390×844 and 1100×800.
