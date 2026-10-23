@@ -267,10 +267,10 @@ class DesktopSelectedServerCoreFfmIntegrationTest {
     }
 }
 
-private data class SocksTarget(val host: String, val port: Int)
+internal data class SocksTarget(val host: String, val port: Int)
 
 /** Local HTTP fixture returns 204 to Core probes and a marker body to tunnel requests. */
-private class LoopbackHttpMarkerServer : AutoCloseable {
+internal class LoopbackHttpMarkerServer : AutoCloseable {
     private val listener = LoopbackSocketListener(::serve)
     val port: Int get() = listener.port
     fun url(path: String) = "http://127.0.0.1:$port$path"
@@ -292,7 +292,7 @@ private class LoopbackHttpMarkerServer : AutoCloseable {
 }
 
 /** Minimal unauthenticated SOCKS5 CONNECT relay used only between loopback endpoints. */
-private class LoopbackSocksRelay : AutoCloseable {
+internal class LoopbackSocksRelay : AutoCloseable {
     private val targetLog = ConcurrentLinkedQueue<SocksTarget>()
     private val upstreamSockets = ConcurrentHashMap.newKeySet<Socket>()
     private val listener = LoopbackSocketListener(::relay)

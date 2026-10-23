@@ -653,6 +653,7 @@ fun main() = application {
                                 .associate { config -> config.id to config.content }
                             val latencySnapshot = latestLatencyByServerId.toMap()
                             runCatching {
+                                val globalAssetsDirectory = DesktopCoreRuntimes.discover().getOrThrow().directory
                                 val options = desktopLocalProxyRuntime.prepareStart(settingsSnapshot)
                                 buildDesktopSelectedServerConfig(
                                     serverLibrary = serverLibrarySnapshot,
@@ -662,6 +663,7 @@ fun main() = application {
                                     trafficConfigContentById = trafficConfigContentSnapshot,
                                     subscriptionPingUrl = settingsSnapshot.subscriptionPingUrl,
                                     latencyByServerId = latencySnapshot,
+                                    routingDataDirectory = globalAssetsDirectory,
                                 )?.getOrThrow()
                                     ?: error("Select a working server before connecting")
                             }
@@ -679,6 +681,7 @@ fun main() = application {
                                     latencyByServerId = latencySnapshot,
                                     localProxyRuntime = desktopLocalProxyRuntime,
                                     resourceFiles = desktopProfileResourceFiles,
+                                    globalAssetsDirectory = DesktopCoreRuntimes.discover().getOrThrow().directory,
                                 )
                             }
                         },

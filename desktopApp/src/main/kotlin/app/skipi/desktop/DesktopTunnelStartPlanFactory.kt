@@ -5,6 +5,7 @@ package app.skipi.desktop
 
 import app.ProjectInfo
 import app.skipi.app.config.toTrafficConfigState
+import java.nio.file.Path
 
 /** Captures one selected-profile resource directory and rebuildable Core configuration. */
 internal fun prepareDesktopTunnelStartPlan(
@@ -14,6 +15,7 @@ internal fun prepareDesktopTunnelStartPlan(
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     localProxyRuntime: DesktopLocalProxyRuntime,
     resourceFiles: DesktopProfileResourceFiles,
+    globalAssetsDirectory: Path? = null,
     allocatePort: (String, Set<Int>) -> Int? = ::allocateDesktopLocalProxyPort,
 ): DesktopTunnelStartPlan {
     val routingSnapshot = settings.toRoutingConfigRecord()
@@ -23,7 +25,7 @@ internal fun prepareDesktopTunnelStartPlan(
     val selectedProfile = selectedConfigId?.let { id ->
         capturedConfigLibrary.configs.firstOrNull { profile -> profile.id == id }
     }
-    val assetsDirectory = selectedProfile
+    val profileAssetsDirectory = selectedProfile
         ?.toTrafficConfigState(versionedDesktopProfileResourceUserAgent(ProjectInfo.VERSION_NAME))
         ?.let { profile ->
             resourceFiles.prepare(
@@ -32,6 +34,7 @@ internal fun prepareDesktopTunnelStartPlan(
                 restoreAfterPackageUpdate = false,
             ).dataDir.toPath()
         }
+    val assetsDirectory = profileAssetsDirectory ?: globalAssetsDirectory
     val capturedTrafficConfigContentById = capturedConfigLibrary.configs
         .associate { profile -> profile.id to profile.content }
     val capturedLatencyByServerId = latencyByServerId.toMap()
@@ -50,6 +53,7 @@ internal fun prepareDesktopTunnelStartPlan(
             subscriptionPingUrl = settings.subscriptionPingUrl,
             latencyByServerId = capturedLatencyByServerId,
             routing = capturedRouting,
+            routingDataDirectory = globalAssetsDirectory,
         )?.getOrThrow()
             ?: error("Select a working server before connecting")
         return DesktopTunnelStartPlan(

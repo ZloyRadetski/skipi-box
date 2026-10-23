@@ -13,6 +13,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
+import java.nio.file.Path
 
 /** Desktop entry point shared by preview, runtime start plans, and FullJson export. */
 internal fun buildDesktopSelectedServerConfig(
@@ -23,6 +24,7 @@ internal fun buildDesktopSelectedServerConfig(
     trafficConfigContentById: Map<Int, String>,
     subscriptionPingUrl: String,
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
+    routingDataDirectory: Path? = null,
 ): Result<String>? {
     val selectedStored = serverLibrary.selectedServerId
         ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
@@ -55,6 +57,7 @@ internal fun buildDesktopSelectedServerConfig(
             options = options,
             subscriptionPingUrl = subscriptionPingUrl,
             latencyByServerId = latencyByServerId,
+            routingDataDirectory = routingDataDirectory,
         )?.getOrThrow()
             ?: error("Select a working server before connecting")
     }

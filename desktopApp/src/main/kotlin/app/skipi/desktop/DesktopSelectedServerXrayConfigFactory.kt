@@ -7,13 +7,14 @@ import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.XrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
-import engine.xray.XrayGeoRuleValidator
 import engine.xray.XrayOutboundRenderingOptions
+import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.XrayRoutingRequest
-import engine.xray.XrayRoutingRuleValidator
 import engine.xray.XrayTags
 import engine.xray.buildXrayBalancers
 import engine.xray.planXrayRouting
+import engine.xray.validateXrayExternalDomainResources
+import features.routing.usecase.GeoDatParser
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.OlcRtc
@@ -21,6 +22,7 @@ import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.stripLeadingCountryFlag
 import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
+import java.nio.file.Path
 
 /** Builds a local listener config from the selected row and Android's shared proxy planner. */
 object DesktopSelectedServerXrayConfigFactory {
@@ -31,6 +33,7 @@ object DesktopSelectedServerXrayConfigFactory {
         options: LocalProxyXrayConfigOptions,
         subscriptionPingUrl: String,
         latencyByServerId: Map<Int, DesktopServerLatencyResult>,
+        routingDataDirectory: Path? = null,
     ): Result<String>? {
         val selectedId = serverLibrary.selectedServerId ?: return null
         val selectedStored = serverLibrary.servers.firstOrNull { stored -> stored.id == selectedId } ?: return null
@@ -38,6 +41,20 @@ object DesktopSelectedServerXrayConfigFactory {
             LocalProxyXrayConfigFactory.validateOptions(options)
             require(selectedServer !is Custom) { "Raw custom Xray JSON needs a dedicated desktop adapter" }
             validateServer(selectedServer)
+            routingDataDirectory?.let { dataDirectory ->
+                validateXrayExternalDomainResources(routing.rules) { fileName ->
+                    val file = dataDirectory.resolve(fileName).toFile()
+                    file.isFile && file.length() > 0
+                }
+            }
+
+            val hasResourceTag: ((String, String, String) -> Boolean)? = routingDataDirectory?.let { dataDirectory ->
+                { fileName, tag, _ ->
+                    val file = dataDirectory.resolve(fileName).toFile()
+                    file.isFile && file.length() > 0 && GeoDatParser.parseTags(file)
+                        .any { resourceTag -> resourceTag.equals(tag, ignoreCase = true) }
+                }
+            }
 
             val records = serverLibrary.servers.mapNotNull { stored ->
                 val server = if (stored === selectedStored) {
@@ -79,7 +96,7 @@ object DesktopSelectedServerXrayConfigFactory {
                     routeDirectDns = false,
                     dnsHijackInboundTags = emptyList(),
                 ),
-                ruleValidator = DesktopNoResourceRoutingRuleValidator,
+                ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = hasResourceTag),
             )
             plan.proxyOutbounds.forEach { outbound ->
                 outbound.server?.let { server ->
@@ -126,25 +143,4 @@ object DesktopSelectedServerXrayConfigFactory {
         is DesktopServerLatencyResult.Error -> "Failed"
         null -> ""
     }
-}
-
-/**
- * Uses Android's null-dataDir compatibility behavior until the Desktop planner
- * receives the runtime asset directory. Core still loads global assets;
- * resource-aware filtering is a separate slice.
- */
-private object DesktopNoResourceRoutingRuleValidator : XrayRoutingRuleValidator {
-    override fun isDomainRuleValid(rule: String): Boolean = true
-
-    override fun isIpRuleValid(rule: String): Boolean {
-        val trimmed = rule.trim()
-        if (trimmed.startsWith("geoip:", ignoreCase = true) || trimmed.startsWith("ext:", ignoreCase = true)) {
-            return true
-        }
-        return XrayGeoRuleValidator.isIpRuleValid(trimmed) { _, _ -> false }
-    }
-
-    override fun filterValidDomainRules(rules: List<String>): List<String> = rules
-
-    override fun filterValidIpRules(rules: List<String>): List<String> = rules
 }
