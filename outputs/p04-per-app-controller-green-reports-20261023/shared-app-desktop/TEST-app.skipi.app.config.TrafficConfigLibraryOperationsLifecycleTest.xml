@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigLibraryOperationsLifecycleTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-23T05:53:46.200Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="duplicateUsesStoredEnvelopeWhenSerializedBasicsAreStale[desktop]" classname="app.skipi.app.config.TrafficConfigLibraryOperationsLifecycleTest" time="0.001"/>
+  <testcase name="duplicateUsesClickedSnapshotWhenSameIdHasNewerStoredRecord[desktop]" classname="app.skipi.app.config.TrafficConfigLibraryOperationsLifecycleTest" time="0.0"/>
+  <testcase name="duplicateUsesAndroidTypedProfileWriterAndNeverUpsertsMatchingUrl[desktop]" classname="app.skipi.app.config.TrafficConfigLibraryOperationsLifecycleTest" time="0.001"/>
+  <testcase name="duplicateUsesClickedSnapshotEvenIfSourceWasRemovedFromLibrary[desktop]" classname="app.skipi.app.config.TrafficConfigLibraryOperationsLifecycleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

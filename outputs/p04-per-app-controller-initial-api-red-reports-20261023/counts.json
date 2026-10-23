@@ -1,0 +1,10 @@
+{
+  "kind": "API RED with one test typing issue",
+  "build": "BUILD FAILED in 19s",
+  "executedTests": 0,
+  "failedTasks": [
+    "shared:app:compileTestKotlinDesktop",
+    "desktopApp:compileTestKotlin"
+  ],
+  "testHarnessIssue": "line246 generic assert typing fixed to listOf<Exception>(failure) before production; expected values/order unchanged"
+}

@@ -1,0 +1,199 @@
+{
+  "build": "BUILD SUCCESSFUL in 29s",
+  "head": "540e996",
+  "suites": {
+    "shared-app-desktop": {
+      "counts": {
+        "tests": 355,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "timestamps": [
+        "2026-10-23T05:53:46.079Z",
+        "2026-10-23T05:53:46.583Z"
+      ],
+      "classes": {
+        "ConfigProfileTrafficConfigBasicsTest[desktop]": 2,
+        "TrafficConfigAdditionalSectionsControllerTest[desktop]": 3,
+        "TrafficConfigAutoUpdateExecutionTest[desktop]": 7,
+        "TrafficConfigCollectionOperationsTest[desktop]": 12,
+        "TrafficConfigDocumentImportTest[desktop]": 4,
+        "TrafficConfigEditorControllerTest[desktop]": 13,
+        "TrafficConfigEditorOperationsTest[desktop]": 6,
+        "TrafficConfigLibraryImportTest[desktop]": 2,
+        "TrafficConfigLibraryOperationsLifecycleTest[desktop]": 4,
+        "TrafficConfigPerAppEditorControllerTest[desktop]": 7,
+        "TrafficConfigProfileRefreshOperationsTest[desktop]": 7,
+        "TrafficConfigProxyGroupEditorControllerTest[desktop]": 7,
+        "TrafficConfigRuleEditorControllerTest[desktop]": 8,
+        "ProxyHomeCollectionOperationsTest[desktop]": 4,
+        "ProxyHomeGroupingProjectionTest[desktop]": 2,
+        "ProxyHomeInitialGroupTest[desktop]": 3,
+        "ProxyHomeInputProjectionTest[desktop]": 4,
+        "ProxyHomeLatencyOperationTest[desktop]": 3,
+        "ProxyHomeLatencyRunnerTest[desktop]": 6,
+        "ProxyHomeLatencySettingsTest[desktop]": 1,
+        "ProxyHomeServerHeadlineTest[desktop]": 1,
+        "ProxyHomeSortModePersistenceTest[desktop]": 1,
+        "ProxyHomeStoreTest[desktop]": 26,
+        "HomeDisplaySettingsContractTest[desktop]": 2,
+        "PersistedRuntimePreferencesContractTest[desktop]": 2,
+        "ConfigProxyGroupReconcilerTest[desktop]": 2,
+        "LocalProxyStartRetryPolicyTest[desktop]": 2,
+        "ProxyServerBulkDeleteAfterStopTest[desktop]": 5,
+        "ProxyServerBulkDeleteDecisionTest[desktop]": 8,
+        "ProxyServerCatalogOperationsTest[desktop]": 18,
+        "ProxyServerCollectionOperationsTest[desktop]": 4,
+        "ProxyServerGroupingTest[desktop]": 5,
+        "ProxyServerSingleDeleteCoordinatorTest[desktop]": 6,
+        "ProxyServerTextCopyTest[desktop]": 2,
+        "ProxySubscriptionGroupDeleteCoordinatorTest[desktop]": 5,
+        "StrategyGroupMemberResolverTest[desktop]": 3,
+        "StrategyGroupMemberSelectorProjectionTest[desktop]": 6,
+        "XrayOutboundPlannerTest[desktop]": 11,
+        "ProxyServerRepositoryContractTest[desktop]": 2,
+        "RouteOutboundPickerProjectionTest[desktop]": 9,
+        "RouteRuleCollectionOperationsTest[desktop]": 2,
+        "ProxyServerCopyTargetTest[desktop]": 5,
+        "ProxyServerDraftFactoryTest[desktop]": 3,
+        "ProxyServerEditResultHandlerTest[desktop]": 6,
+        "ProxyServerEditorControllerTest[desktop]": 8,
+        "SettingsDraftsTest[desktop]": 4,
+        "InMemoryFeatureStoreTest[desktop]": 1,
+        "SharedApplicationStoreTest[desktop]": 17,
+        "SubscriptionCatalogOperationsTest[desktop]": 8,
+        "SubscriptionEditorControllerTest[desktop]": 8,
+        "SubscriptionGroupListPresentationStateTest[desktop]": 2,
+        "SubscriptionInstallOperationsTest[desktop]": 2,
+        "SubscriptionRefreshBatchCancellationTest[desktop]": 1,
+        "SubscriptionRefreshBatchTest[desktop]": 12,
+        "SubscriptionRefreshCommitPortTest[desktop]": 12,
+        "SubscriptionRefreshOperationTest[desktop]": 10,
+        "SubscriptionRefreshUseCaseTest[desktop]": 9,
+        "SubscriptionWorkerPolicyTest[desktop]": 2,
+        "ResourceFileEditorOperationsTest[desktop]": 10,
+        "ResourceFileUpdateCoordinatorTest[desktop]": 8
+      }
+    },
+    "shared-app-android": {
+      "counts": {
+        "tests": 347,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "timestamps": [
+        "2026-10-23T05:53:50.984Z",
+        "2026-10-23T05:53:51.507Z"
+      ],
+      "classes": {
+        "app.skipi.app.config.ConfigProfileTrafficConfigBasicsTest": 2,
+        "app.skipi.app.config.TrafficConfigAdditionalSectionsControllerTest": 3,
+        "app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest": 7,
+        "app.skipi.app.config.TrafficConfigCollectionOperationsTest": 12,
+        "app.skipi.app.config.TrafficConfigDocumentImportTest": 4,
+        "app.skipi.app.config.TrafficConfigEditorControllerTest": 13,
+        "app.skipi.app.config.TrafficConfigEditorOperationsTest": 6,
+        "app.skipi.app.config.TrafficConfigLibraryImportTest": 2,
+        "app.skipi.app.config.TrafficConfigLibraryOperationsLifecycleTest": 4,
+        "app.skipi.app.config.TrafficConfigPerAppEditorControllerTest": 7,
+        "app.skipi.app.config.TrafficConfigProfileRefreshOperationsTest": 7,
+        "app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest": 7,
+        "app.skipi.app.config.TrafficConfigRuleEditorControllerTest": 8,
+        "app.skipi.app.home.ProxyHomeCollectionOperationsTest": 4,
+        "app.skipi.app.home.ProxyHomeGroupingProjectionTest": 2,
+        "app.skipi.app.home.ProxyHomeInitialGroupTest": 3,
+        "app.skipi.app.home.ProxyHomeInputProjectionTest": 4,
+        "app.skipi.app.home.ProxyHomeLatencyOperationTest": 3,
+        "app.skipi.app.home.ProxyHomeLatencyRunnerTest": 6,
+        "app.skipi.app.home.ProxyHomeLatencySettingsTest": 1,
+        "app.skipi.app.home.ProxyHomeServerHeadlineTest": 1,
+        "app.skipi.app.home.ProxyHomeSortModePersistenceTest": 1,
+        "app.skipi.app.home.ProxyHomeStoreTest": 26,
+        "app.skipi.app.model.HomeDisplaySettingsContractTest": 2,
+        "app.skipi.app.model.PersistedRuntimePreferencesContractTest": 2,
+        "app.skipi.app.proxy.ConfigProxyGroupReconcilerTest": 2,
+        "app.skipi.app.proxy.LocalProxyStartRetryPolicyTest": 2,
+        "app.skipi.app.proxy.ProxyServerBulkDeleteAfterStopTest": 5,
+        "app.skipi.app.proxy.ProxyServerBulkDeleteDecisionTest": 8,
+        "app.skipi.app.proxy.ProxyServerCatalogOperationsTest": 18,
+        "app.skipi.app.proxy.ProxyServerCollectionOperationsTest": 4,
+        "app.skipi.app.proxy.ProxyServerGroupingTest": 5,
+        "app.skipi.app.proxy.ProxyServerSingleDeleteCoordinatorTest": 6,
+        "app.skipi.app.proxy.ProxyServerTextCopyTest": 2,
+        "app.skipi.app.proxy.ProxySubscriptionGroupDeleteCoordinatorTest": 5,
+        "app.skipi.app.proxy.StrategyGroupMemberResolverTest": 3,
+        "app.skipi.app.proxy.StrategyGroupMemberSelectorProjectionTest": 6,
+        "app.skipi.app.proxy.XrayOutboundPlannerTest": 11,
+        "app.skipi.app.repository.ProxyServerRepositoryContractTest": 2,
+        "app.skipi.app.routing.RouteOutboundPickerProjectionTest": 9,
+        "app.skipi.app.routing.RouteRuleCollectionOperationsTest": 2,
+        "app.skipi.app.server.ProxyServerCopyTargetTest": 5,
+        "app.skipi.app.server.ProxyServerDraftFactoryTest": 3,
+        "app.skipi.app.server.ProxyServerEditResultHandlerTest": 6,
+        "app.skipi.app.server.ProxyServerEditorControllerTest": 8,
+        "app.skipi.app.settings.SettingsDraftsTest": 4,
+        "app.skipi.app.store.InMemoryFeatureStoreTest": 1,
+        "app.skipi.app.store.SharedApplicationStoreTest": 17,
+        "app.skipi.app.subscription.SubscriptionCatalogOperationsTest": 8,
+        "app.skipi.app.subscription.SubscriptionEditorControllerTest": 8,
+        "app.skipi.app.subscription.SubscriptionGroupListPresentationStateTest": 2,
+        "app.skipi.app.subscription.SubscriptionInstallOperationsTest": 2,
+        "app.skipi.app.subscription.SubscriptionRefreshBatchCancellationTest": 1,
+        "app.skipi.app.subscription.SubscriptionRefreshBatchTest": 12,
+        "app.skipi.app.subscription.SubscriptionRefreshCommitPortTest": 12,
+        "app.skipi.app.subscription.SubscriptionRefreshOperationTest": 10,
+        "app.skipi.app.subscription.SubscriptionRefreshUseCaseTest": 9,
+        "app.skipi.app.subscription.SubscriptionWorkerPolicyTest": 2,
+        "features.resources.ResourceFileEditorOperationsTest": 10
+      }
+    },
+    "android-app": {
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "timestamps": [
+        "2026-10-23T05:54:10.632Z",
+        "2026-10-23T05:54:10.722Z"
+      ],
+      "classes": {
+        "features.config.TrafficConfigEditorAndroidOracleTest": 4,
+        "features.proxy.app.ProxyAppListSelectionTest": 2,
+        "features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest": 9
+      }
+    },
+    "desktop-app": {
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "timestamps": [
+        "2026-10-23T05:54:04.332Z",
+        "2026-10-23T05:54:04.399Z"
+      ],
+      "classes": {
+        "app.skipi.desktop.DesktopConfigEditorSaveTest": 4,
+        "app.skipi.desktop.DesktopTrafficConfigEditorProfileStoreTest": 5,
+        "app.skipi.desktop.DesktopTrafficConfigPerAppProfileStoreTest": 2
+      }
+    }
+  },
+  "totals": {
+    "tests": 728,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sourceSha256": {
+    "shared/app/src/commonTest/kotlin/app/skipi/app/config/TrafficConfigPerAppEditorControllerTest.kt": "6418ac900a3a53ef6acca00304b076bd1444d2e3c770d2cf5c04233a8741dd88",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigPerAppProfileStoreTest.kt": "b53925686ebd46d047a1c10685a12409c87d7bd0fdfdb6314295db7892065db2",
+    "shared/app/src/commonMain/kotlin/app/skipi/app/config/TrafficConfigEditorController.kt": "53e66498702cccd95c44b5372242b6ab92da56c9a0b208e6e1a66339c3713598"
+  },
+  "androidDebugApk": "assembleDebug GREEN; no installation"
+}

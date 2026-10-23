@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-23T05:54:10.722Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="prefixesBarePackagesWithTheCallerProvidedUserIdIncludingZeroFallback" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.002"/>
+  <testcase name="missingModeKeepsNullAndSelfFilteringLeavesOtherIdsInOrder" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.0"/>
+  <testcase name="encodesModeAndSelectedIdsInSourceOrderAfterTrimAndDeduplication" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.0"/>
+  <testcase name="reportsExistingFailuresForUnsupportedModeMalformedIdsAndNoValidApps" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.001"/>
+  <testcase name="decodesEachNamedModeAndKeepsExplicitUserIdsAndPackageOrder" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.0"/>
+  <testcase name="mergeRetainsCurrentModeWhenImportHasNoModeAndDeduplicatesInOrder" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.001"/>
+  <testcase name="acceptsLegacyBooleanModeLinesAsBlacklistAndWhitelist" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.0"/>
+  <testcase name="replaceUsesImportedModeAndReplacesTheSelectedIdList" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.0"/>
+  <testcase name="reportsEmptyClipboardWithTheExistingFailure" classname="features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -15,6 +15,8 @@ P04 forms checkpoint, 23 октября: [экранные формы и raster 
 
 P04 Per-App foundation, 23 октября: [shared codec/selection verification](shared-migration-20261023/p04-per-app-foundation-verification.md). Android source baseline **11 GREEN** → common API RED (4 s, до исполнения tests) → перенос чистых функций в shared/core с прежними FQN → **700 GREEN** (core Desktop372/Android316, Android oracle11, Desktop More→UIEdit1), debug APK GREEN. Codec отличается от Android snapshot только пятью visibility modifiers, заменённый app codec удалён; common/Android expectations неизменны. **P04 ещё открыта**: следующий срез — immediate per-profile controller и общий Per-App editor/два host bindings. Enumeration/icons/user spaces/VPN policy остаются реальными Android adapters в R03.
 
+P04 Per-App controller, 23 октября: [немедленные операции профиля](shared-migration-20261023/p04-per-app-controller-verification.md). Семь common и две Desktop file-store проверки до production → API RED **2 s** → три операции общего controller → **728 GREEN** (shared app355+347, Android15, Desktop11) и debug APK. Latest target ID, unchanged sibling/library envelope, Replace/Merge count, Missing и storage failure проверены; tests SHA final RED→GREEN неизменны. Следующий срез — общий Per-App экран и подключение Android/Desktop callbacks. **P04/R03 остаются открытыми.**
+
 ## 0. Исходное поведение и проверка границ
 
 - [ ] [B01](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#b01) — Зафиксировать исходное поведение и карту потребителей.
@@ -219,3 +221,5 @@ S01/S02 acceptance завершена 8 октября 2026: HEAD `1edad1e`, д�
 23 октября 2026: P04 forms/raw matrix завершена малым срезом. Tests-first toolbar RED (2 tests/1 failure) → общий themed background параметр → scoped 275 GREEN + debug APK. Root raster QA: 14 final PNG, десять byte-identical прежним inspected outputs, четыре изменённых просмотрены заново. P04 не закрыта из-за shared Per-App editor/host route; следующий срез начинается с Android clipboard/selection oracle. R01 repository research/draft подготовлен отдельно, production не реализован.
 
 23 октября 2026: Per-App clipboard/selection foundation выполнена tests-first, Android source 11 GREEN/API RED4s/post-move scoped700 GREEN+APK. Actual More→UIEdit baseline1GREEN, без production изменений маршрута. P04/R03 открыты; controller/общий экран/host wiring следующие.
+
+23 октября 2026: Per-App controller срез завершён: API RED2s после test typing correction, post-code728 GREEN29s+debug APK. UI/два host callbacks пока не подключены; следующий срез общий экран, existing Android mode/menu/dialog и Desktop profile route, без fake package inventory или нового text editor.

@@ -4,6 +4,7 @@
 package app.skipi.app.config
 
 import app.skipi.app.server.ProxyServerEditResult
+import features.clipboard.ClipboardImportMode
 import features.config.ProxyGroupServerChoice
 import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigState
@@ -15,6 +16,9 @@ import features.config.withShadowrocketProxyGroupLine
 import features.config.withShadowrocketRuleAdded
 import features.config.withShadowrocketRuleLine
 import features.config.withoutShadowrocketProxyGroupLine
+import features.proxy.app.updateProxyAppListSelection
+import features.proxy.app.usecase.ProxyAppListClipboardData
+import features.proxy.app.usecase.applyProxyAppListClipboardImport
 import features.proxy.server.model.StrategyGroup
 
 /** Host-owned latest-profile update port for the visual traffic-config editor. */
@@ -51,6 +55,11 @@ sealed interface TrafficConfigEditorResult {
     data class Rejected(val message: String) : TrafficConfigEditorResult
     data class Failed(val cause: Exception) : TrafficConfigEditorResult
 }
+
+data class TrafficConfigProxyAppListImportResult(
+    val updateResult: TrafficConfigEditorResult,
+    val importedCount: Int,
+)
 
 /** Shared, platform-neutral save and save-before-navigation behavior for profile editors. */
 class TrafficConfigEditorController(
@@ -101,6 +110,56 @@ class TrafficConfigEditorController(
         transport: Int,
     ): TrafficConfigEditorResult = update(profileId) { current ->
         current.withNetworkActivation(enabled = enabled, transport = transport)
+    }
+
+    fun setProxyAppListMode(
+        profileId: Int,
+        mode: Int,
+    ): TrafficConfigEditorResult = update(profileId) { current ->
+        current.copy(proxyAppListMode = mode)
+    }
+
+    fun setProxyAppListSelection(
+        profileId: Int,
+        selectionKeys: List<String>,
+        isChecked: Boolean,
+    ): TrafficConfigEditorResult = update(profileId) { current ->
+        current.copy(
+            proxyAppListSelectedApps = updateProxyAppListSelection(
+                selectedApps = current.proxyAppListSelectedApps,
+                selectionKeys = selectionKeys,
+                isChecked = isChecked,
+            ),
+        )
+    }
+
+    fun applyProxyAppListImport(
+        profileId: Int,
+        imported: ProxyAppListClipboardData,
+        importMode: ClipboardImportMode,
+    ): TrafficConfigProxyAppListImportResult {
+        var importedCount = 0
+        val updateResult = update(profileId) { current ->
+            val result = applyProxyAppListClipboardImport(
+                currentMode = current.proxyAppListMode,
+                currentSelectedApps = current.proxyAppListSelectedApps,
+                imported = imported,
+                mode = importMode,
+            )
+            importedCount = when (importMode) {
+                ClipboardImportMode.Replace -> result.selectedApps.size
+                ClipboardImportMode.Merge ->
+                    (result.selectedApps.size - current.proxyAppListSelectedApps.size).coerceAtLeast(0)
+            }
+            current.copy(
+                proxyAppListMode = result.mode,
+                proxyAppListSelectedApps = result.selectedApps,
+            )
+        }
+        return TrafficConfigProxyAppListImportResult(
+            updateResult = updateResult,
+            importedCount = if (updateResult == TrafficConfigEditorResult.Saved) importedCount else 0,
+        )
     }
 
     /** Persists the exact document captured by the rules-list action. */

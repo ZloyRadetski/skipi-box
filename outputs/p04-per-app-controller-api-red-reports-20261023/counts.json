@@ -1,0 +1,9 @@
+{
+  "kind": "API RED before production; common and Desktop compile test tasks failed on missing per-app controller methods/result type",
+  "build": "BUILD FAILED in 2s",
+  "executedTests": 0,
+  "sourceSha256": {
+    "shared/app/src/commonTest/kotlin/app/skipi/app/config/TrafficConfigPerAppEditorControllerTest.kt": "6418ac900a3a53ef6acca00304b076bd1444d2e3c770d2cf5c04233a8741dd88",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigPerAppProfileStoreTest.kt": "b53925686ebd46d047a1c10685a12409c87d7bd0fdfdb6314295db7892065db2"
+  }
+}
