@@ -1,0 +1,16 @@
+[
+  {
+    "name": "engine.xray.XrayResourceRoutingAndroidOracleTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "engine.xray.XrayRoutingConfigTest",
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  }
+]

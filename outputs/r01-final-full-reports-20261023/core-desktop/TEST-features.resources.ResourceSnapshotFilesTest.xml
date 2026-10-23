@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ResourceSnapshotFilesTest[desktop]" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:27:44.078Z" hostname="VQSeGo" time="0.011">
+  <properties/>
+  <testcase name="customPathsUseTheSanitizedFilenameAndIdBasedFallback[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="customRenameOverwritesAnExistingDestinationAndDeleteIsScoped[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="profileFilesAreIsolatedAndCorePathRemainsAtTheGlobalRoot[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.002"/>
+  <testcase name="xrayCoreAndReservedCustomNamesAreGuardedBeforeInputIsOpened[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="replacementConsumesTheInputOnceAndWritesIntoTheCapturedProfile[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="replacementRejectsEmptyInputAndLeavesPreviousContentsIntact[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="atomicWriteFailurePreservesOldTargetAndCleansReplacementStagingFile[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="customRenameIgnoresReservedNamesAndSamePath[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.0"/>
+  <testcase name="inputOpenFailureLeavesExistingReplacementStagingFileUntouched[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="profileScopeRejectsNonPositiveTrafficConfigIds[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.0"/>
+  <testcase name="missingCustomRenameLeavesAnExistingDestinationAlone[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <testcase name="statusReportsEmptyFilesAsUnavailableAndPreservesExistingMetadata[desktop]" classname="features.resources.ResourceSnapshotFilesTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

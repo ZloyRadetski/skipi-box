@@ -1,0 +1,45 @@
+{
+  "source_head": "efcdde71c88c535bcedbc53698cbbdfbd6ba1dc5",
+  "source_sha256_before": {
+    "app/src/main/kotlin/engine/xray/XrayExternalRoutingResources.kt": "79b3dcd2c2de3796e5d52f28d9868a897d7e14c05601c051cfa4db25bf917a9b",
+    "app/src/main/kotlin/engine/xray/XrayGeoRuleSanitizer.kt": "11a554e3601f9c03bd9885049edacee95c7b1b48ab66be33ca58161c5d874c03",
+    "app/src/test/kotlin/engine/xray/XrayResourceRoutingAndroidOracleTest.kt": "13e8f7be5e2a85f2e05c4ab508c18bade4e6b63d78ae18ef00e435452aaae121",
+    "desktopApp/src/main/kotlin/app/skipi/desktop/DesktopSelectedServerConfig.kt": "73da39e3b2fdcf89e58f3e2a9be8e6aa60261a0ddea232d05d503489c504c4e5",
+    "desktopApp/src/main/kotlin/app/skipi/desktop/DesktopSelectedServerXrayConfigFactory.kt": "41a87eda56095364c6e1c29f07ea5719faf347dca4f6b7d8208faed6b92336d2",
+    "desktopApp/src/main/kotlin/app/skipi/desktop/DesktopTunnelStartPlanFactory.kt": "acde7d2be79ad7028d78349a68b6380353ac29b4e9bf61b84f4cc9eda7baa983",
+    "desktopApp/src/main/kotlin/app/skipi/desktop/Main.kt": "940c83325839f472ae584eef7887e26344bad38cae518cfab8f3dd2c842bd3b5",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopGlobalRoutingCoreResourcesIntegrationTest.kt": "103b8cce5b8359be2b646ca889790a9822650ed96adbc9d1b950bdca64bc2549",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopGlobalRoutingResourceValidationTest.kt": "7467dc9f05407012814a550f9162ae7e23f33a0198d3daf004c288037ee99954",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSelectedServerCoreFfmIntegrationTest.kt": "8304dbf40d36f7ef18e66af06b0743367c64de0fd149187cc38c4cc75c5bb28e",
+    "shared/core/src/commonMain/kotlin/engine/xray/XrayExternalDomainResources.kt": "54f6b2f01d8753f1cb0bd8692fe78ea5ccb696ddd64ea52a268bbc6fcbc4094b",
+    "shared/core/src/commonMain/kotlin/engine/xray/XrayResourceRoutingRuleValidator.kt": "a1ca0d0fa0baa45ad3c3fd4a115be34bcc74517d534649f9eb2538d040b495d1",
+    "shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt": "7f9e68942e5586b891e8274fd9e1466ff638cbf076d27eff41698bc1c01ddabb",
+    "shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt": "890eb5cc7aea781a82d9d370438814cee0fa11b548b9eea3254cd491adb856e2"
+  },
+  "native_runtime_directory": "/home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/build/generated/skipi-core-resources/common",
+  "fresh_per_task_rerun": true,
+  "source_sha256_after": {
+    "app/src/main/kotlin/engine/xray/XrayExternalRoutingResources.kt": "79b3dcd2c2de3796e5d52f28d9868a897d7e14c05601c051cfa4db25bf917a9b",
+    "app/src/main/kotlin/engine/xray/XrayGeoRuleSanitizer.kt": "11a554e3601f9c03bd9885049edacee95c7b1b48ab66be33ca58161c5d874c03",
+    "app/src/test/kotlin/engine/xray/XrayResourceRoutingAndroidOracleTest.kt": "13e8f7be5e2a85f2e05c4ab508c18bade4e6b63d78ae18ef00e435452aaae121",
+    "desktopApp/src/main/kotlin/app/skipi/desktop/DesktopSelectedServerConfig.kt": "73da39e3b2fdcf89e58f3e2a9be8e6aa60261a0ddea232d05d503489c504c4e5",
+    "desktopApp/src/main/kotlin/app/skipi/desktop/DesktopSelectedServerXrayConfigFactory.kt": "41a87eda56095364c6e1c29f07ea5719faf347dca4f6b7d8208faed6b92336d2",
+    "desktopApp/src/main/kotlin/app/skipi/desktop/DesktopTunnelStartPlanFactory.kt": "acde7d2be79ad7028d78349a68b6380353ac29b4e9bf61b84f4cc9eda7baa983",
+    "desktopApp/src/main/kotlin/app/skipi/desktop/Main.kt": "940c83325839f472ae584eef7887e26344bad38cae518cfab8f3dd2c842bd3b5",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopGlobalRoutingCoreResourcesIntegrationTest.kt": "103b8cce5b8359be2b646ca889790a9822650ed96adbc9d1b950bdca64bc2549",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopGlobalRoutingResourceValidationTest.kt": "7467dc9f05407012814a550f9162ae7e23f33a0198d3daf004c288037ee99954",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSelectedServerCoreFfmIntegrationTest.kt": "8304dbf40d36f7ef18e66af06b0743367c64de0fd149187cc38c4cc75c5bb28e",
+    "shared/core/src/commonMain/kotlin/engine/xray/XrayExternalDomainResources.kt": "54f6b2f01d8753f1cb0bd8692fe78ea5ccb696ddd64ea52a268bbc6fcbc4094b",
+    "shared/core/src/commonMain/kotlin/engine/xray/XrayResourceRoutingRuleValidator.kt": "a1ca0d0fa0baa45ad3c3fd4a115be34bcc74517d534649f9eb2538d040b495d1",
+    "shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt": "7f9e68942e5586b891e8274fd9e1466ff638cbf076d27eff41698bc1c01ddabb",
+    "shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt": "890eb5cc7aea781a82d9d370438814cee0fa11b548b9eea3254cd491adb856e2"
+  },
+  "all_frozen_sources_unchanged": true,
+  "build_seconds": 94,
+  "debug_apk": {
+    "path": "app/build/outputs/apk/debug/app-universal-debug.apk",
+    "bytes": 167222461,
+    "sha256": "34bad011263ca7486d4a5f98761fb4383fcc3de5b9c63cea1f81df1d44fb5a5d",
+    "installed": false
+  }
+}

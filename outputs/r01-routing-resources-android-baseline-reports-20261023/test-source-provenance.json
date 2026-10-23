@@ -1,0 +1,5 @@
+{
+  "source": "app/src/test/kotlin/engine/xray/XrayResourceRoutingAndroidOracleTest.kt",
+  "sha256": "13e8f7be5e2a85f2e05c4ab508c18bade4e6b63d78ae18ef00e435452aaae121",
+  "before_android_production_extraction": true
+}

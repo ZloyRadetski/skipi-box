@@ -1,0 +1,8 @@
+{
+  "source_sha256": {
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopGlobalRoutingResourceValidationTest.kt": "0d7d4dc3a0ddf79d4e9762b1582a14e289a7d1b0fd6f6957c2d80ac910453d3f",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopGlobalRoutingCoreResourcesIntegrationTest.kt": "103b8cce5b8359be2b646ca889790a9822650ed96adbc9d1b950bdca64bc2549",
+    "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSelectedServerCoreFfmIntegrationTest.kt": "8304dbf40d36f7ef18e66af06b0743367c64de0fd149187cc38c4cc75c5bb28e"
+  },
+  "before_desktop_production_resource_wiring": true
+}

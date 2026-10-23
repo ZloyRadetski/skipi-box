@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:28:08.622Z" hostname="VQSeGo" time="3.067">
+  <properties/>
+  <testcase name="allPlanDownloadsBuiltInsThenCustomInCapturedScopeAndMarksRawSourceAfterSuccess" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.009"/>
+  <testcase name="emptyCustomPlanReturnsStatusWithoutPreparingRuntimeOrClearingCancellation" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.002"/>
+  <testcase name="singleBuiltInUsesDefaultUserAgentSkipsProxyResolutionAndDoesNotMarkSource" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.002"/>
+  <testcase name="cancellationReportsOriginalThenThrowsMappedErrorAndPreservesCurrentTarget" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.034"/>
+  <testcase name="allPlanFailureOnSecondFileKeepsPublishedPrefixStopsLaterTargetsAndDoesNotMarkSource" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="0.006"/>
+  <testcase name="selectedProxyFromResolverIsUsedAndIoFailureFallsBackToOneDirectRequest" classname="app.skipi.desktop.DesktopResourceFileUpdateRunnerTest" time="3.014"/>
+  <system-out><![CDATA[[2026-10-23 22:28:08.627] [INFO] [ResourceFiles] Resource file update will use local proxy 127.0.0.1:36793
+[2026-10-23 22:28:08.667] [INFO] [ResourceFiles] Resource file update cancelled
+[2026-10-23 22:28:08.674] [ERROR] [ResourceFiles] Failed to update resource files
+features.resources.runtime.ResourceFileDownloadFailedException: geosite.dat: HTTP 500
+	at features.resources.runtime.ResourceFileUpdateBatchExecutorKt.executeResourceFileUpdateBatch(ResourceFileUpdateBatchExecutor.kt:43)
+	at app.skipi.desktop.DesktopResourceFileUpdateRunner.executeOnIo(DesktopResourceFileUpdateRunner.kt:63)
+	at app.skipi.desktop.DesktopResourceFileUpdateRunner.access$executeOnIo(DesktopResourceFileUpdateRunner.kt:33)
+	at app.skipi.desktop.DesktopResourceFileUpdateRunner$execute$2.invokeSuspend(DesktopResourceFileUpdateRunner.kt:40)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:798)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+Caused by: java.lang.IllegalStateException: HTTP 500
+	at features.resources.runtime.ResourceFileDownloadTransfer.downloadWithRedirects(ResourceFileDownloadTransfer.kt:86)
+	at features.resources.runtime.ResourceFileDownloadTransfer.download(ResourceFileDownloadTransfer.kt:50)
+	at app.skipi.desktop.DesktopResourceFileDownloader.download$lambda$4(DesktopResourceFileDownloader.kt:40)
+	at features.resources.runtime.ResourceFileDownloadProxyFallbackKt.runResourceFileDownloadWithProxyFallback(ResourceFileDownloadProxyFallback.kt:18)
+	at app.skipi.desktop.DesktopResourceFileDownloader.download(DesktopResourceFileDownloader.kt:29)
+	at app.skipi.desktop.DesktopResourceFileUpdateRunner.executeOnIo$lambda$2$1(DesktopResourceFileUpdateRunner.kt:84)
+	at features.resources.runtime.ResourceFileUpdateBatchExecutorKt.executeResourceFileUpdateBatch(ResourceFileUpdateBatchExecutor.kt:39)
+	... 11 more
+[2026-10-23 22:28:08.679] [INFO] [ResourceFiles] Resource file update will use local proxy 127.0.0.1:36691
+[2026-10-23 22:28:11.684] [INFO] [ResourceFiles] Proxy download failed, falling back to direct connection
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

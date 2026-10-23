@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopGlobalRoutingCoreResourcesIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:28:01.275Z" hostname="VQSeGo" time="1.026">
+  <properties/>
+  <testcase name="missingGlobalGeoSiteCriterionIsFilteredAndLoopbackRequestUsesDefaultProxy" classname="app.skipi.desktop.DesktopGlobalRoutingCoreResourcesIntegrationTest" time="1.026"/>
+  <system-out><![CDATA[[2026-10-23 22:28:01.295] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 7)
+[2026-10-23 22:28:02.300] [INFO] [CoreController] Stopped in-process SKIPI Core session 7
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

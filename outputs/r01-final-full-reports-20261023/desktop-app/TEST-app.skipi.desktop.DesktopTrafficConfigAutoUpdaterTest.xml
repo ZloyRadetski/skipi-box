@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:28:16.715Z" hostname="VQSeGo" time="0.014">
+  <properties/>
+  <testcase name="stale_due_snapshot_does_not_run_after_a_nested_pass_advances_the_deadline" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.002"/>
+  <testcase name="concurrent_due_passes_do_not_start_a_duplicate_profile_callback" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.001"/>
+  <testcase name="retry_waits_for_backoff_then_success_starts_a_new_period" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.001"/>
+  <testcase name="offline_work_stays_due_and_runs_after_connectivity_returns" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.001"/>
+  <testcase name="updating_interval_preserves_anchor_and_does_not_cancel_in_flight_work" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.001"/>
+  <testcase name="owner_cancellation_does_not_record_retry_when_callback_maps_cancellation_to_retry" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.002"/>
+  <testcase name="runs_all_eligible_profiles_independently_of_geo_eligibility_or_positive_ids" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.001"/>
+  <testcase name="success_anchors_the_next_period_at_callback_completion" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.001"/>
+  <testcase name="interval_update_preserves_pending_retry_and_sets_the_following_period" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.001"/>
+  <testcase name="removal_cancels_work_and_late_retry_cannot_change_a_reenabled_schedule" classname="app.skipi.desktop.DesktopTrafficConfigAutoUpdaterTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayResourceRoutingAndroidOracleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T12:54:31.368Z" hostname="VQSeGo" time="2.431">
+  <properties/>
+  <testcase name="missingDataDirectoryKeepsListsButStillValidatesDirectIpChecks" classname="engine.xray.XrayResourceRoutingAndroidOracleTest" time="2.209"/>
+  <testcase name="externalPreflightChecksEnabledDomainRulesAndPreservesFailureOrder" classname="engine.xray.XrayResourceRoutingAndroidOracleTest" time="0.066"/>
+  <testcase name="sanitizerUsesNonEmptyResourceFilesAndCaseInsensitiveGeoTags" classname="engine.xray.XrayResourceRoutingAndroidOracleTest" time="0.028"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

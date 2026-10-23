@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.proxy.XrayOutboundPlannerTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:27:53.059Z" hostname="VQSeGo" time="0.011">
+  <properties/>
+  <testcase name="selectedAndReferencedOutboundsKeepAndroidOrderAndFixedTargets" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.004"/>
+  <testcase name="strategyGroupWithoutAvailableMembersFailsClearly" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <testcase name="filteredStrategyGroupRebindsDuplicateIdToFirstSourceRecord" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <testcase name="customOutboundWithoutAProxyCandidateFailsClearly" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <testcase name="shadowrocketAliasWithoutAvailableMembersIsSkipped" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="chainReversesUsableMembersAndAssignsDialerTagsWithoutFragment" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <testcase name="customOutboundSelectsProxyAndContributesHostsOnlyWhenOverrideIsEnabled" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="selectGroupUsesSelectedMemberAndFallsBackToFirstConfiguredMember" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="chainRejectsFewerThanTwoUsableMembers" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.0"/>
+  <testcase name="disabledShadowrocketRouteStillPlansItsMatchingStrategyAlias" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <testcase name="automaticGroupsKeepSelectedFallbackThenChooseLatencyAndFirstProbeSettings" classname="app.skipi.app.proxy.XrayOutboundPlannerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

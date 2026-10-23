@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayExternalRoutingResourcesTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:21:54.788Z" hostname="VQSeGo" time="0.041">
+  <properties/>
+  <testcase name="reportsDistinctMissingFilesInEncounterOrder" classname="engine.xray.XrayExternalRoutingResourcesTest" time="0.035"/>
+  <testcase name="validatesOnlyEnabledDomainCandidatesAndChecksDistinctFilesInEncounterOrder" classname="engine.xray.XrayExternalRoutingResourcesTest" time="0.001"/>
+  <testcase name="rejectsMalformedCandidatesBeforeConsultingFiles" classname="engine.xray.XrayExternalRoutingResourcesTest" time="0.0"/>
+  <testcase name="preflightKeepsTheParsedFilenameLiteralWithoutAddingDatSuffix" classname="engine.xray.XrayExternalRoutingResourcesTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

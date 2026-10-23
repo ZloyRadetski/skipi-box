@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.ShadowrocketRuleTranslationAndroidOracleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:27:48.147Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="android_runtime_planner_matches_frozen_rule_fixtures" classname="features.config.ShadowrocketRuleTranslationAndroidOracleTest" time="0.002"/>
+  <testcase name="desktop_profile_planner_matches_android_portable_rule_fixtures" classname="features.config.ShadowrocketRuleTranslationAndroidOracleTest" time="0.001"/>
+  <testcase name="android_omitted_url_rule_does_not_resolve_its_unknown_policy" classname="features.config.ShadowrocketRuleTranslationAndroidOracleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

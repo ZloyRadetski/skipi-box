@@ -1,0 +1,34 @@
+[
+  {
+    "name": "app.skipi.desktop.DesktopCoreFfmIntegrationTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.469"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopGlobalRoutingCoreResourcesIntegrationTest",
+    "tests": "1",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "1.026"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopProfileAssetsFfmIntegrationTest",
+    "tests": "1",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.065"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "4.361"
+  }
+]

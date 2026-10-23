@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.config.TrafficConfigPerAppEditorControllerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:27:52.737Z" hostname="VQSeGo" time="0.008">
+  <properties/>
+  <testcase name="modeChangeUpdatesLatestTargetAndPreservesSelectedIdsAndOtherProfileData" classname="app.skipi.app.config.TrafficConfigPerAppEditorControllerTest" time="0.002"/>
+  <testcase name="sharedUidSelectionAddsAndRemovesEveryKeyWhileKeepingUnknownIdsInOrder" classname="app.skipi.app.config.TrafficConfigPerAppEditorControllerTest" time="0.001"/>
+  <testcase name="mergeKeepsCurrentModeWhenClipboardHasNoModeAndCountsNewResultEntries" classname="app.skipi.app.config.TrafficConfigPerAppEditorControllerTest" time="0.003"/>
+  <testcase name="replaceUsesImportedModeAndReportsResultingSelectedIdCount" classname="app.skipi.app.config.TrafficConfigPerAppEditorControllerTest" time="0.001"/>
+  <testcase name="handledStoreFailureReturnsFailedAndZeroCountWithoutReportingSuccess" classname="app.skipi.app.config.TrafficConfigPerAppEditorControllerTest" time="0.0"/>
+  <testcase name="missingTargetReturnsMissingAndZeroCountWithoutChangingSibling" classname="app.skipi.app.config.TrafficConfigPerAppEditorControllerTest" time="0.001"/>
+  <testcase name="mergeCountClampsAtZeroWhenMergedResultIsShorterThanCurrentList" classname="app.skipi.app.config.TrafficConfigPerAppEditorControllerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficAutoUpdateLoopTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:28:16.687Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="loop_waits_for_the_updater_deadline_and_uses_it_for_the_next_period" classname="app.skipi.desktop.DesktopTrafficAutoUpdateLoopTest" time="0.004"/>
+  <testcase name="a_new_profile_runs_on_wakeup_while_first_profile_is_blocked_and_owner_cancel_stops_it" classname="app.skipi.desktop.DesktopTrafficAutoUpdateLoopTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

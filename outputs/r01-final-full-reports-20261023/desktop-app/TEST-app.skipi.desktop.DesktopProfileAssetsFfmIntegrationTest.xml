@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProfileAssetsFfmIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:28:02.421Z" hostname="VQSeGo" time="0.065">
+  <properties/>
+  <testcase name="realCoreLoadsProfileOnlyExternalGeoFileInsteadOfTheEmptyGlobalAssetsDirectory" classname="app.skipi.desktop.DesktopProfileAssetsFfmIntegrationTest" time="0.065"/>
+  <system-out><![CDATA[[2026-10-23 22:28:02.484] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 8)
+[2026-10-23 22:28:02.484] [INFO] [CoreController] Stopped in-process SKIPI Core session 8
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

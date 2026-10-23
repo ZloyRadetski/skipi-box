@@ -1,0 +1,29 @@
+{
+  "source_sha256": {
+    "shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt": "890eb5cc7aea781a82d9d370438814cee0fa11b548b9eea3254cd491adb856e2",
+    "shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt": "7f9e68942e5586b891e8274fd9e1466ff638cbf076d27eff41698bc1c01ddabb"
+  },
+  "executed_tests": 0,
+  "diagnostics": [
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:17:9 Unresolved reference 'validateXrayExternalDomainResources'.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:23:33 Cannot infer type for value parameter 'fileName'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:32:21 Cannot infer type for type parameter 'R'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:33:13 Unresolved reference 'validateXrayExternalDomainResources'.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:35:37 Cannot infer type for value parameter 'fileName'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:47:21 Cannot infer type for type parameter 'R'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:48:13 Unresolved reference 'validateXrayExternalDomainResources'.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:52:37 Cannot infer type for value parameter 'fileName'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:65:9 Unresolved reference 'validateXrayExternalDomainResources'.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayExternalRoutingResourcesTest.kt:67:33 Cannot infer type for value parameter 'fileName'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:17:25 Unresolved reference 'XrayResourceRoutingRuleValidator'.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:19:43 Overload resolution ambiguity between candidates:",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:39:25 Unresolved reference 'XrayResourceRoutingRuleValidator'.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:40:32 Cannot infer type for value parameter 'fileName'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:40:42 Cannot infer type for value parameter 'tag'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:40:47 Cannot infer type for value parameter 'originalRule'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:42:44 Cannot infer type for type parameter 'A'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:42:44 Cannot infer type for type parameter 'B'. Specify it explicitly.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:42:44 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/engine/xray/XrayResourceRoutingRuleValidatorTest.kt:49:43 Overload resolution ambiguity between candidates:"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "core-desktop": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "core-android": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "android-app": {
+    "tests": 10,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  }
+}
