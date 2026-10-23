@@ -146,9 +146,7 @@ internal fun DesktopProxyHome(
     onRestartService: (() -> Unit)? = null,
     onDeleteAllServers: ((Set<Int>) -> Unit)? = null,
     onCancelLatencyTests: (() -> Unit)? = null,
-    scheduledSubscriptionId: Int?,
-    onScheduledSubscriptionConsumed: () -> Unit,
-    onPrepareSubscription: suspend (DesktopSubscriptionInstallUri) -> Result<Int>,
+    onPrepareSubscription: suspend (DesktopSubscriptionInstallUri) -> Result<String>,
     onImport: suspend (DesktopProxyImportInput) -> Result<String>,
     onSaveSubscriptionGroup: suspend (SubscriptionGroupUiState, Boolean, Boolean) -> SubscriptionEditorSaveResult,
     onSetSubscriptionEnabled: suspend (Int, Boolean) -> Unit,
@@ -186,15 +184,6 @@ internal fun DesktopProxyHome(
             ),
         )
     }
-    LaunchedEffect(scheduledSubscriptionId, updatingSubscription, subscriptionCatalog) {
-        val subscriptionId = scheduledSubscriptionId ?: return@LaunchedEffect
-        val subscription = subscriptionCatalog.subscriptions.firstOrNull { it.id == subscriptionId }
-        if (subscription != null && subscription.url.isNotBlank() && !updatingSubscription) {
-            onUpdateSubscriptionById(subscriptionId)
-        }
-        onScheduledSubscriptionConsumed()
-    }
-
     val combinedStatusMessage = listOf(tunnelMessage, subscriptionMessage, serverMessage, localMessage)
         .firstOrNull { it.isNotBlank() }
     val isStatusError = combinedStatusMessage?.let { msg ->
@@ -461,13 +450,10 @@ internal fun DesktopProxyHome(
     val importFromClipboard: () -> Unit = {
         scope.launch {
             readDesktopClipboardText().onSuccess { text ->
-                val install = text.trim().toDesktopSubscriptionInstallUriOrNull()
+                val install = text.trim().toDesktopSubscriptionInstallClipboardUriOrNull()
                 if (install != null) {
                     onPrepareSubscription(install).fold(
-                        onSuccess = { subscriptionId ->
-                            onUpdateSubscriptionById(subscriptionId)
-                            localMessage = "Подписка «${install.name}» добавлена."
-                        },
+                        onSuccess = { message -> localMessage = message },
                         onFailure = { error -> localMessage = error.message ?: "Не удалось сохранить подписку." },
                     )
                 } else {
@@ -736,8 +722,8 @@ internal fun DesktopProxyHome(
                 if (uri != null) {
                     scope.launch {
                         onPrepareSubscription(uri).fold(
-                            onSuccess = { subscriptionId ->
-                                onUpdateSubscriptionById(subscriptionId)
+                            onSuccess = { message ->
+                                localMessage = message
                                 addDialogVisible = false
                             },
                             onFailure = { error ->

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshOperationTest" tests="2" skipped="0" failures="1" errors="0" timestamp="2026-10-23T20:51:20.230Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="cancellationDuringBackgroundLoadPropagatesBeforeAnyPersistenceWrite" classname="app.skipi.desktop.DesktopSubscriptionRefreshOperationTest" time="0.003"/>
+  <testcase name="runLoadsWithTheProductionParserOffCallerAndCommitsPersistedServerMetadataAndActiveProfile" classname="app.skipi.desktop.DesktopSubscriptionRefreshOperationTest" time="0.004">
+    <failure message="org.junit.ComparisonFailure: expected:&lt;[Rule]&#10;FINAL,PROXY[]&gt; but was:&lt;[Rule]&#10;FINAL,PROXY[&#10;&#10;[SKIPI]&#10;profile-name = Disabled provider&#10;profile-update-url = subscription://4&#10;profile-update-locked = false&#10;profile-auto-update = false&#10;per-app-mode = global&#10;sniffing = true&#10;sniffing-route-only = true&#10;mux = false&#10;mux-concurrency = 8&#10;mux-xudp-concurrency = 16&#10;mux-udp-443 = 0&#10;fragment = false&#10;fragment-packets = tlshello&#10;fragment-length = 100-200&#10;fragment-interval = 10-20&#10;vpn-local-dns = true&#10;fake-dns = false&#10;resolve-proxy-server-domain = true&#10;direct-dns-fallback-proxy = true&#10;tun-dns = 8.8.8.8&#10;proxy-dns = https://8.8.8.8/dns-query&#10;direct-dns = https://1.1.1.1/dns-query,https://8.8.8.8/dns-query&#10;route-domain-strategy = AsIs&#10;network-activation = false&#10;network-transport = wifi&#10;resource-source = 0&#10;resource-geoip-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat&#10;resource-geosite-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat&#10;resource-geoip-cn-private-url = https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat&#10;resource-direct-cidr-ipv4-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt&#10;resource-direct-cidr-ipv6-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt&#10;resource-user-agent = Skipi/0.4.1/Desktop&#10;resource-auto-update = true&#10;resource-update-interval = 24&#10;]&gt;" type="org.junit.ComparisonFailure">org.junit.ComparisonFailure: expected:&lt;[Rule]
+FINAL,PROXY[]&gt; but was:&lt;[Rule]
+FINAL,PROXY[
+
+[SKIPI]
+profile-name = Disabled provider
+profile-update-url = subscription://4
+profile-update-locked = false
+profile-auto-update = false
+per-app-mode = global
+sniffing = true
+sniffing-route-only = true
+mux = false
+mux-concurrency = 8
+mux-xudp-concurrency = 16
+mux-udp-443 = 0
+fragment = false
+fragment-packets = tlshello
+fragment-length = 100-200
+fragment-interval = 10-20
+vpn-local-dns = true
+fake-dns = false
+resolve-proxy-server-domain = true
+direct-dns-fallback-proxy = true
+tun-dns = 8.8.8.8
+proxy-dns = https://8.8.8.8/dns-query
+direct-dns = https://1.1.1.1/dns-query,https://8.8.8.8/dns-query
+route-domain-strategy = AsIs
+network-activation = false
+network-transport = wifi
+resource-source = 0
+resource-geoip-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
+resource-geosite-url = https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+resource-geoip-cn-private-url = https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat
+resource-direct-cidr-ipv4-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute.txt
+resource-direct-cidr-ipv6-url = https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chnroute_v6.txt
+resource-user-agent = Skipi/0.4.1/Desktop
+resource-auto-update = true
+resource-update-interval = 24
+]&gt;
+	at org.junit.Assert.assertEquals(Assert.java:117)
+	at kotlin.test.junit.JUnitAsserter.assertEquals(JUnitSupport.kt:32)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals(Assertions.kt:63)
+	at kotlin.test.AssertionsKt.assertEquals(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals$default(Assertions.kt:62)
+	at kotlin.test.AssertionsKt.assertEquals$default(Unknown Source)
+	at app.skipi.desktop.DesktopSubscriptionRefreshOperationTest$runLoadsWithTheProductionParserOffCallerAndCommitsPersistedServerMetadataAndActiveProfile$1.invokeSuspend(DesktopSubscriptionRefreshOperationTest.kt:110)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)
+	at kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)
+	at kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:22)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:20)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at app.skipi.desktop.DesktopSubscriptionRefreshOperationTest.runLoadsWithTheProductionParserOffCallerAndCommitsPersistedServerMetadataAndActiveProfile(DesktopSubscriptionRefreshOperationTest.kt:34)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.runRequest(JUnitTestExecutor.java:174)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:84)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestExecutor.accept(JUnitTestExecutor.java:47)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestDefinitionProcessor.processTestDefinition(AbstractJUnitTestDefinitionProcessor.java:65)
+	at org.gradle.api.internal.tasks.testing.SuiteTestDefinitionProcessor.processTestDefinition(SuiteTestDefinitionProcessor.java:53)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.gradle.internal.dispatch.MethodInvocation.invokeOn(MethodInvocation.java:77)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:28)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:19)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:88)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestDefinition(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:178)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

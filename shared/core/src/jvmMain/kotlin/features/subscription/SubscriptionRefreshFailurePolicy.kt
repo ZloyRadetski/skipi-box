@@ -13,6 +13,7 @@ import java.net.UnknownHostException
 fun isTransientSubscriptionRefreshFailure(
     error: Throwable,
     httpStatusCode: (Throwable) -> Int?,
+    isHostConnectionFailure: (Throwable) -> Boolean = { false },
 ): Boolean = generateSequence(error) { current -> current.cause }
     .any { cause ->
         val statusCode = httpStatusCode(cause)
@@ -22,5 +23,6 @@ fun isTransientSubscriptionRefreshFailure(
             cause is NoRouteToHostException ||
             cause is SocketException ||
             cause is SocketTimeoutException ||
-            cause is UnknownHostException
+            cause is UnknownHostException ||
+            isHostConnectionFailure(cause)
     }

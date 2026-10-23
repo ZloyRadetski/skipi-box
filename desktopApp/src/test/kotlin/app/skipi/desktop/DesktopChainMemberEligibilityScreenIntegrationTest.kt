@@ -163,8 +163,6 @@ class DesktopChainMemberEligibilityScreenIntegrationTest {
                         onMeasureServers = { error("Unexpected latency measurement") },
                         onLaunchHomeLatencyTest = { _, _ -> error("Unexpected latency-test launch") },
                         onUpdateSubscriptionById = { error("Unexpected subscription update") },
-                        scheduledSubscriptionId = null,
-                        onScheduledSubscriptionConsumed = {},
                         onPrepareSubscription = { error("Unexpected subscription preparation") },
                         onImport = { error("Unexpected import") },
                         onSaveSubscriptionGroup = { _, _, _ -> error("Unexpected subscription-group save") },

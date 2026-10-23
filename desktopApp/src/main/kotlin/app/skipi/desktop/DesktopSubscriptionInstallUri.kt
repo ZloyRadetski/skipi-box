@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.config.SkipiDeepLink
+import features.config.parseSkipiDeepLinkOrNull
 import features.subscription.SubscriptionInstallSource
 import features.subscription.SubscriptionInstallUriParsingPolicy
 import features.subscription.SubscriptionInstallUrlPolicy
@@ -31,6 +33,18 @@ typealias DesktopSubscriptionInstallSource = SubscriptionInstallSource
 /** Convenience form for import integrations. */
 fun String.toDesktopSubscriptionInstallUriOrNull(): DesktopSubscriptionInstallUri? =
     DesktopSubscriptionInstallUri.parseOrNull(this)
+
+/** Parses existing clipboard install formats plus SKIPI subscription links supported by Android. */
+fun String.toDesktopSubscriptionInstallClipboardUriOrNull(): DesktopSubscriptionInstallUri? {
+    DesktopSubscriptionInstallUri.parseOrNull(this)?.let { return it }
+    val subscriptionLink = parseSkipiDeepLinkOrNull(this) as? SkipiDeepLink.Subscription ?: return null
+    return DesktopSubscriptionInstallUri(
+        name = "SKIPI subscription",
+        url = subscriptionLink.url,
+        userAgent = DefaultDesktopSubscriptionUserAgent,
+        source = SubscriptionInstallSource.RawHttp,
+    )
+}
 
 /** Thin desktop adapter over the common install-link parser. */
 object DesktopSubscriptionInstallUriParser {

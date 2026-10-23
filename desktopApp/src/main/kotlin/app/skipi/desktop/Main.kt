@@ -58,11 +58,11 @@ import app.skipi.app.store.SharedApplicationActionOutcome
 import app.skipi.app.subscription.SubscriptionRefreshCommitScope
 import app.skipi.app.subscription.SubscriptionRefreshLoadRequest
 import app.skipi.app.subscription.SubscriptionRefreshLoader
-import app.skipi.app.subscription.loadSubscriptionRefresh
-import app.skipi.app.subscription.refreshSubscription
+import app.skipi.app.subscription.SubscriptionRefreshResult
 import app.skipi.ui.subscription.toSubscriptionRecord
 import app.skipi.ui.home.SubscriptionRefreshMessageSummary
 import app.skipi.ui.home.formatSubscriptionRefreshMessage
+import app.skipi.ui.home.formatSubscriptionInstallMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
@@ -80,6 +80,7 @@ import app.skipi.ui.resources.proxy_server_list_no_subscription_updates
 import app.skipi.ui.resources.proxy_server_list_latency_done
 import app.skipi.ui.resources.proxy_server_list_subscription_update_result
 import app.skipi.ui.resources.proxy_server_list_subscription_update_result_with_failed
+import app.skipi.ui.resources.subscription_install_existing_url
 import app.skipi.ui.resources.resource_file_download_notification_cancelled
 import app.skipi.ui.resources.resource_file_download_notification_failed
 import app.skipi.ui.resources.settings_resource_file_updating
@@ -108,6 +109,7 @@ import platform.TunnelConnectRequest
 import features.config.runtime.ActiveGeoResourceRefreshTrigger
 import features.config.runtime.TrafficConfigRefreshTarget
 import features.config.TrafficConfigState
+import features.subscription.runtime.SubscriptionRefreshTarget
 import features.resources.ResourceFileDownloadCancelledException
 import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
@@ -148,6 +150,8 @@ fun main() = application {
                     stringResource(Res.string.proxy_server_list_subscription_update_result)
                 val subscriptionRefreshFailedTemplate =
                     stringResource(Res.string.proxy_server_list_subscription_update_result_with_failed)
+                val subscriptionInstallExistingUrlTemplate =
+                    stringResource(Res.string.subscription_install_existing_url)
                 val resourceUpdatingTemplate = stringResource(Res.string.settings_resource_file_updating)
                 val resourceUpdatedMessage = stringResource(Res.string.settings_resource_files_updated)
                 val resourceCancelledMessage = stringResource(Res.string.resource_file_download_notification_cancelled)
@@ -167,8 +171,6 @@ fun main() = application {
                 var subscriptionUpdateInProgress by remember { mutableStateOf(false) }
                 var refreshingSubscriptionId by remember { mutableStateOf<Int?>(null) }
                 var batchRefreshingSubscriptionIds by remember { mutableStateOf(emptySet<Int>()) }
-                var scheduledSubscriptionId by remember { mutableStateOf<Int?>(null) }
-                var subscriptionSchedulerTick by remember { mutableStateOf(0) }
                 var subscriptionLibrary by remember {
                     mutableStateOf(DesktopSubscriptionLibraries.loadDefault().getOrElse { DesktopSubscriptionLibrary() })
                 }
@@ -193,36 +195,6 @@ fun main() = application {
                 }
                 LaunchedEffect(serverLibrary) {
                     proxyServerRepository.refresh(serverLibrary)
-                }
-                LaunchedEffect(
-                    subscriptionLibrary,
-                    subscriptionUpdateInProgress,
-                    scheduledSubscriptionId,
-                    subscriptionSchedulerTick,
-                    closeRequested,
-                ) {
-                    if (closeRequested || subscriptionUpdateInProgress || scheduledSubscriptionId != null) {
-                        return@LaunchedEffect
-                    }
-                    val refreshPlan = DesktopSubscriptionRefreshPlanner.plan(
-                        library = subscriptionLibrary.copy(
-                            subscriptions = subscriptionLibrary.subscriptions.filter { it.url.isNotBlank() },
-                        ),
-                        nowMillis = System.currentTimeMillis(),
-                    )
-                    val dueSubscription = refreshPlan.dueSubscriptions.firstOrNull { it.url.isNotBlank() }
-                    if (dueSubscription != null) {
-                        scheduledSubscriptionId = dueSubscription.id
-                        return@LaunchedEffect
-                    }
-                    delay(
-                        (refreshPlan.nextDelayMillis ?: DesktopSubscriptionSchedulerIdleDelayMillis)
-                            .coerceIn(
-                                DesktopSubscriptionSchedulerMinimumDelayMillis,
-                                DesktopSubscriptionSchedulerIdleDelayMillis,
-                            ),
-                    )
-                    subscriptionSchedulerTick += 1
                 }
                 var serverLibraryMessage by remember { mutableStateOf("") }
                 val latencyTester = remember { DesktopServerLatencyTester() }
@@ -312,7 +284,36 @@ fun main() = application {
                 }
                 val routeProxyServers by desktopSharedApplication.proxyServers.servers.collectAsState()
                 val routeSubscriptionCatalog by desktopSharedApplication.subscriptions.catalog.collectAsState()
-                val desktopSubscriptionRefreshBatchRunner = remember(desktopSharedApplication, subscriptionFetcher) {
+                val desktopSubscriptionRefreshOperation = remember(
+                    desktopSharedApplication,
+                    proxyServerRepository,
+                    subscriptionFetcher,
+                    subscriptionPayloadParsers,
+                ) {
+                    DesktopSubscriptionRefreshOperation(
+                        subscriptionRepository = desktopSharedApplication.subscriptions,
+                        proxyServerRepository = proxyServerRepository,
+                        readConfigs = { configLibrary },
+                        saveConfigs = DesktopConfigLibraries::saveDefault,
+                        publishConfigs = { configLibrary = it },
+                        readLatencyByServerId = { latencyByServerId },
+                        publishLatencyByServerId = { latencyByServerId = it },
+                        fetchResponse = { url, userAgent, options ->
+                            subscriptionFetcher.fetchSubscriptionRefreshResponse(
+                                url = url,
+                                storedUserAgent = userAgent,
+                                options = options,
+                            )
+                        },
+                        parsers = subscriptionPayloadParsers,
+                        refreshedAtMillis = { System.currentTimeMillis() },
+                    )
+                }
+                val desktopSubscriptionRefreshBatchRunner = remember(
+                    desktopSharedApplication,
+                    subscriptionFetcher,
+                    desktopSubscriptionRefreshOperation,
+                ) {
                     DesktopSubscriptionRefreshBatchRunner(
                         captureRequests = {
                             val settings = desktopSettings
@@ -329,17 +330,7 @@ fun main() = application {
                             }
                         },
                         loader = SubscriptionRefreshLoader { request ->
-                            loadSubscriptionRefresh(
-                                request = request,
-                                fetchResponse = { url, userAgent, options ->
-                                    subscriptionFetcher.fetchSubscriptionRefreshResponse(
-                                        url = url,
-                                        storedUserAgent = userAgent,
-                                        options = options,
-                                    )
-                                },
-                                parsers = subscriptionPayloadParsers,
-                            )
+                            desktopSubscriptionRefreshOperation.load(request)
                         },
                         refreshedAtMillis = { System.currentTimeMillis() },
                         subscriptionRepository = desktopSharedApplication.subscriptions,
@@ -376,7 +367,6 @@ fun main() = application {
                     subscriptionUpdateInProgress,
                     refreshingSubscriptionId,
                     batchRefreshingSubscriptionIds,
-                    scheduledSubscriptionId,
                     coreMessage,
                     subscriptionMessage,
                 ) {
@@ -466,6 +456,97 @@ fun main() = application {
                 val latestResourceUpdatedMessage by rememberUpdatedState(resourceUpdatedMessage)
                 val latestResourceCancelledMessage by rememberUpdatedState(resourceCancelledMessage)
                 val latestResourceFailureTemplate by rememberUpdatedState(resourceFailureTemplate)
+                val desktopSubscriptionRefreshCoordinator = remember(
+                    desktopSharedApplication,
+                    desktopSubscriptionRefreshOperation,
+                    desktopLocalProxyRuntime,
+                ) {
+                    DesktopSubscriptionRefreshCoordinator(
+                        subscriptionRepository = desktopSharedApplication.subscriptions,
+                        refresh = { subscription ->
+                            subscriptionUrl = subscription.url
+                            subscriptionUpdateInProgress = true
+                            refreshingSubscriptionId = subscription.id
+                            try {
+                                subscriptionMessage = "Обновление подписки…"
+                                subscriptionUpdate = null
+                                val result = desktopSubscriptionRefreshOperation.run(
+                                    request = SubscriptionRefreshLoadRequest(
+                                        subscription = subscription,
+                                        fetchOptions = desktopLocalProxyRuntime.subscriptionFetchOptions(
+                                            settings = latestDesktopSettings,
+                                            subscription = subscription,
+                                            coreRunning = coreController.state().isRunning,
+                                        ),
+                                    ),
+                                )
+                                subscriptionMessage = desktopSubscriptionRefreshResultMessage(result.refresh)
+                                if (
+                                    (result.serverLibraryChanged || result.profileLibraryChanged) &&
+                                    coreController.state().isRunning
+                                ) {
+                                    requestTunnelReconnect("Подписка обновлена.")
+                                }
+                                result
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (error: Throwable) {
+                                subscriptionMessage = "Не удалось обновить подписку: ${error.message.orEmpty()}"
+                                throw error
+                            } finally {
+                                refreshingSubscriptionId = null
+                                subscriptionUpdateInProgress = false
+                            }
+                        },
+                    )
+                }
+                val desktopSubscriptionAutoUpdater = remember(desktopSubscriptionRefreshCoordinator) {
+                    DesktopSubscriptionAutoUpdater(
+                        readLatestTargets = {
+                            desktopSharedApplication.subscriptions.catalog.value.subscriptions.map { subscription ->
+                                SubscriptionRefreshTarget(
+                                    id = subscription.id,
+                                    url = subscription.url,
+                                    enabled = subscription.enabled,
+                                    updateInterval = subscription.updateInterval,
+                                    lastUpdatedAtMillis = subscription.lastUpdatedAtMillis ?: 0L,
+                                )
+                            }
+                        },
+                        isNetworkConnected = ::isDesktopNetworkConnected,
+                        updateAutomatically = desktopSubscriptionRefreshCoordinator::refreshScheduled,
+                        nowMillis = System::currentTimeMillis,
+                    )
+                }
+                val desktopSubscriptionAutoUpdateWakeups = remember { Channel<Unit>(Channel.CONFLATED) }
+                LaunchedEffect(desktopSubscriptionAutoUpdater, routeSubscriptionCatalog) {
+                    desktopSubscriptionAutoUpdater.observeTargets(
+                        routeSubscriptionCatalog.subscriptions.map { subscription ->
+                            SubscriptionRefreshTarget(
+                                id = subscription.id,
+                                url = subscription.url,
+                                enabled = subscription.enabled,
+                                updateInterval = subscription.updateInterval,
+                                lastUpdatedAtMillis = subscription.lastUpdatedAtMillis ?: 0L,
+                            )
+                        },
+                    )
+                    desktopSubscriptionAutoUpdateWakeups.trySend(Unit)
+                }
+                LaunchedEffect(desktopSubscriptionAutoUpdater, closeRequested) {
+                    if (closeRequested) return@LaunchedEffect
+                    runDesktopAutomaticRefreshLoop(
+                        runDue = desktopSubscriptionAutoUpdater::runDue,
+                        nextWakeupAtMillis = desktopSubscriptionAutoUpdater::nextWakeupAtMillis,
+                        wakeups = desktopSubscriptionAutoUpdateWakeups,
+                        nowMillis = System::currentTimeMillis,
+                        minimumDelayMillis = DesktopSubscriptionSchedulerMinimumDelayMillis,
+                        idleDelayMillis = DesktopSubscriptionSchedulerIdleDelayMillis,
+                        onFailure = { error ->
+                            DesktopLogger.error("Subscriptions", "Automatic subscription update failed", error)
+                        },
+                    )
+                }
                 val desktopResourceFileServices = remember(subscriptionScope, desktopProfileResourceFiles) {
                     DesktopResourceFileServices(
                         scope = subscriptionScope,
@@ -1344,19 +1425,25 @@ fun main() = application {
                                 requestTunnelReconnect("Перезапуск SKIPI Core.")
                             },
                             onPrepareSubscription = { install ->
-                                if (subscriptionUpdateInProgress) {
-                                    Result.failure(IllegalStateException("Дождитесь завершения обновления подписки."))
-                                } else {
-                                    try {
-                                        val prepared = install.prepareAndPersistIn(desktopSharedApplication.subscriptions)
-                                        subscriptionUrl = install.url
-                                        subscriptionMessage = "Подписка сохранена. Загружаю серверы…"
-                                        Result.success(prepared.id)
-                                    } catch (cancelled: CancellationException) {
-                                        throw cancelled
-                                    } catch (error: Throwable) {
-                                        Result.failure(error)
-                                    }
+                                try {
+                                    val installed = desktopSubscriptionRefreshCoordinator.install(install)
+                                    val refreshMessage = installed.refreshResult.fold(
+                                        onSuccess = { result -> desktopSubscriptionRefreshResultMessage(result.refresh) },
+                                        onFailure = { error ->
+                                            "Не удалось обновить подписку: ${error.message.orEmpty()}"
+                                        },
+                                    )
+                                    val message = formatSubscriptionInstallMessage(
+                                        existingTitle = installed.preparation.existingTitle,
+                                        refreshMessage = refreshMessage,
+                                        existingUrlTemplate = subscriptionInstallExistingUrlTemplate,
+                                    )
+                                    subscriptionMessage = message
+                                    Result.success(message)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (error: Throwable) {
+                                    Result.failure(error)
                                 }
                             },
                             onDeleteDuplicateServers = { currentGroupServerIds ->
@@ -1620,103 +1707,22 @@ fun main() = application {
                                     }
                                 }
                             },
-                            onUpdateSubscriptionById = updateSubscription@{ subscriptionId ->
-                                if (subscriptionUpdateInProgress) {
-                                    subscriptionMessage = "Обновление подписки уже выполняется."
-                                    return@updateSubscription
-                                }
-                                val subscription = desktopSharedApplication.subscriptions.catalog.value.subscriptions
-                                    .firstOrNull { current -> current.id == subscriptionId }
-                                if (subscription == null) {
-                                    subscriptionMessage = "Подписка больше не существует."
-                                    return@updateSubscription
-                                }
-                                if (subscription.url.isBlank()) {
-                                    subscriptionMessage = "У группы нет ссылки для обновления."
-                                    return@updateSubscription
-                                }
-
-                                val fetchOptions = desktopLocalProxyRuntime.subscriptionFetchOptions(
-                                    settings = desktopSettings,
-                                    subscription = subscription,
-                                    coreRunning = coreState.isRunning,
-                                )
-                                subscriptionUrl = subscription.url
-                                subscriptionUpdateInProgress = true
-                                refreshingSubscriptionId = subscriptionId
+                            onUpdateSubscriptionById = { subscriptionId ->
                                 subscriptionScope.launch {
-                                    try {
-                                        subscriptionMessage = "Обновление подписки…"
-                                        subscriptionUpdate = null
-                                        val commitAdapter = DesktopSubscriptionRefreshCommitAdapter(
-                                            subscriptionId = subscriptionId,
-                                            subscriptionRepository = desktopSharedApplication.subscriptions,
-                                            proxyServerRepository = proxyServerRepository,
-                                            readConfigs = { configLibrary },
-                                            saveConfigs = DesktopConfigLibraries::saveDefault,
-                                            publishConfigs = { configLibrary = it },
-                                            readLatencyByServerId = { latencyByServerId },
-                                            publishLatencyByServerId = { latencyByServerId = it },
-                                        )
-                                        val result = refreshSubscription(
-                                            request = SubscriptionRefreshLoadRequest(
-                                                subscription = subscription,
-                                                fetchOptions = fetchOptions,
-                                            ),
-                                            fetchResponse = { url, userAgent, options ->
-                                                subscriptionFetcher.fetchSubscriptionRefreshResponse(
-                                                    url = url,
-                                                    storedUserAgent = userAgent,
-                                                    options = options,
-                                                )
-                                            },
-                                            parsers = subscriptionPayloadParsers,
-                                            refreshedAtMillis = { System.currentTimeMillis() },
-                                            port = commitAdapter,
-                                        )
-                                        val commit = result.commit
-                                        val serverWasApplied = SubscriptionRefreshCommitScope.SERVERS in commit.appliedScopes
-                                        val failure = commit.failure
-                                        subscriptionMessage = when {
-                                            !commit.applicable && serverWasApplied ->
-                                                "Серверы обновлены (${result.loaded.servers.size}), но подписка была изменена или удалена до сохранения метаданных."
-                                            !commit.applicable ->
-                                                "Подписка была изменена или удалена во время загрузки; ответ не применён."
-                                            failure != null -> when (failure.scope) {
-                                                SubscriptionRefreshCommitScope.SERVERS ->
-                                                    "Список получен, но серверы не сохранены: ${failure.error.message.orEmpty()}"
-                                                SubscriptionRefreshCommitScope.SUBSCRIPTION ->
-                                                    "Серверы обновлены, но метаданные подписки не сохранены: ${failure.error.message.orEmpty()}"
-                                                SubscriptionRefreshCommitScope.PROFILE ->
-                                                    "Серверы и подписка обновлены, но обновление профиля не завершено: ${failure.error.message.orEmpty()}"
-                                            }
-                                            else ->
-                                                "Подписка обновлена: ${result.loaded.servers.size} серверов из ${result.loaded.urlCount} ссылок."
-                                        }
-                                        if (
-                                            (commitAdapter.serverLibraryChanged || commitAdapter.profileLibraryChanged) &&
-                                            coreState.isRunning
-                                        ) {
-                                            requestTunnelReconnect("Подписка обновлена.")
-                                        }
-                                    } catch (cancelled: CancellationException) {
-                                        throw cancelled
-                                    } catch (error: Throwable) {
-                                        subscriptionMessage = "Не удалось обновить подписку: ${error.message.orEmpty()}"
-                                    } finally {
-                                        refreshingSubscriptionId = null
-                                        subscriptionUpdateInProgress = false
+                                    val result = desktopSubscriptionRefreshCoordinator.refresh(subscriptionId)
+                                    val precondition = result.exceptionOrNull()
+                                        as? DesktopSubscriptionRefreshPreconditionException
+                                    if (precondition != null) {
+                                        subscriptionMessage = precondition.message.orEmpty()
                                     }
                                 }
                             },
                             onRefreshAllSubscriptions = {
-                                if (subscriptionUpdateInProgress) {
-                                    subscriptionMessage = "Дождитесь завершения обновления подписки."
-                                } else {
-                                    subscriptionUpdateInProgress = true
-                                    refreshingSubscriptionId = null
-                                    subscriptionUrl = ""
-                                    subscriptionScope.launch {
+                                subscriptionScope.launch {
+                                    desktopSubscriptionRefreshCoordinator.runBatch {
+                                        subscriptionUpdateInProgress = true
+                                        refreshingSubscriptionId = null
+                                        subscriptionUrl = ""
                                         try {
                                             subscriptionMessage = "Обновление подписок…"
                                             subscriptionUpdate = null
@@ -1757,11 +1763,6 @@ fun main() = application {
                                         }
                                     }
                                 }
-                            },
-                            scheduledSubscriptionId = scheduledSubscriptionId,
-                            onScheduledSubscriptionConsumed = {
-                                scheduledSubscriptionId = null
-                                subscriptionSchedulerTick += 1
                             },
                             contentPadding = contentPadding,
                             desktopSettings = desktopSettings,
@@ -1885,6 +1886,27 @@ fun main() = application {
         }
     }
 }
+}
+
+private fun desktopSubscriptionRefreshResultMessage(result: SubscriptionRefreshResult): String {
+    val commit = result.commit
+    val serverWasApplied = SubscriptionRefreshCommitScope.SERVERS in commit.appliedScopes
+    val failure = commit.failure
+    return when {
+        !commit.applicable && serverWasApplied ->
+            "Серверы обновлены (${result.loaded.servers.size}), но подписка была изменена или удалена до сохранения метаданных."
+        !commit.applicable ->
+            "Подписка была изменена или удалена во время загрузки; ответ не применён."
+        failure != null -> when (failure.scope) {
+            SubscriptionRefreshCommitScope.SERVERS ->
+                "Список получен, но серверы не сохранены: ${failure.error.message.orEmpty()}"
+            SubscriptionRefreshCommitScope.SUBSCRIPTION ->
+                "Серверы обновлены, но метаданные подписки не сохранены: ${failure.error.message.orEmpty()}"
+            SubscriptionRefreshCommitScope.PROFILE ->
+                "Серверы и подписка обновлены, но обновление профиля не завершено: ${failure.error.message.orEmpty()}"
+        }
+        else -> "Подписка обновлена: ${result.loaded.servers.size} серверов из ${result.loaded.urlCount} ссылок."
+    }
 }
 
 @Composable

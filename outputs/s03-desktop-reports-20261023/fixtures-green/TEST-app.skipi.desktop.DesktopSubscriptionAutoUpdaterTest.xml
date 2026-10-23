@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionAutoUpdaterTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-23T21:11:10.640Z" hostname="VQSeGo" time="0.08">
+  <properties/>
+  <testcase name="repeated_due_passes_and_unchanged_observation_do_not_duplicate_or_cancel_running_work" classname="app.skipi.desktop.DesktopSubscriptionAutoUpdaterTest" time="0.065"/>
+  <testcase name="disabling_cancels_in_flight_work_and_reenabling_starts_a_fresh_due_entry" classname="app.skipi.desktop.DesktopSubscriptionAutoUpdaterTest" time="0.003"/>
+  <testcase name="disabling_an_eligible_group_removes_its_schedule" classname="app.skipi.desktop.DesktopSubscriptionAutoUpdaterTest" time="0.002"/>
+  <testcase name="disconnected_work_stays_due_until_the_connected_network_constraint_is_met" classname="app.skipi.desktop.DesktopSubscriptionAutoUpdaterTest" time="0.002"/>
+  <testcase name="retry_outcome_uses_fifteen_then_thirty_minute_deadlines_without_early_runs" classname="app.skipi.desktop.DesktopSubscriptionAutoUpdaterTest" time="0.002"/>
+  <testcase name="permanent_failure_waits_for_the_next_period_instead_of_spinning_on_the_due_item" classname="app.skipi.desktop.DesktopSubscriptionAutoUpdaterTest" time="0.001"/>
+  <testcase name="app_lifetime_host_dispatches_a_due_group_without_a_proxy_screen_consumer" classname="app.skipi.desktop.DesktopSubscriptionAutoUpdaterTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

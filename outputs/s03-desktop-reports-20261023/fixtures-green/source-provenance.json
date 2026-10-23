@@ -1,0 +1,5 @@
+{
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionAutoUpdaterTest.kt": "19dc681d9965f12dc76ee5e74fb35032c2eea6a4248f424c5abe07119ebdabc9",
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshOperationTest.kt": "c35be93d47c86284bab031c292b56625e37596dcbf13e728006c3c06d795e3c0",
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt": "7a0cc3d5ea1dfebd519d4ee3ec2126e7d294121d74b864867ecdb885cd4025b3"
+}

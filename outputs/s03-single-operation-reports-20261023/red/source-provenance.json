@@ -1,0 +1,5 @@
+{
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshOperationTest.kt": "c63e43eac2b6402e41521ebba0f1a8e989ba4eca1eeebc440372bdd512bcef3e",
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshFailureClassifierTest.kt": "930cb8b15e9778cd141a7cba029df08e2d44d794d820bb0801d2ef1c55e8ad2c",
+  "shared/core/src/desktopTest/kotlin/features/subscription/SubscriptionRefreshFailurePolicyHostConnectionTest.kt": "43c3701f80572d85dc2328569c3c4f1354947f63525ce1bd390b4bc3a8672015"
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopApplicationRepositoriesTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-23T20:51:16.791Z" hostname="VQSeGo" time="0.255">
+  <properties/>
+  <testcase name="concurrentSubscriptionCreatesUseLatestCounterWithoutLosingRows" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.246"/>
+  <testcase name="desktopRepositoryRejectsRemovingBuiltInSubscriptionBeforeHostCleanup" classname="app.skipi.desktop.DesktopApplicationRepositoriesTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

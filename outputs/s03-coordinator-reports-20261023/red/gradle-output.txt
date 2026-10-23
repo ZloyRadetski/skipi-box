@@ -1,0 +1,171 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :shared:app
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:app'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Configure project :shared:core
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:core'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Task :shared:yaml-jvm:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :shared:core:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:yaml-jvm:compileKotlin UP-TO-DATE
+> Task :shared:core:generateProjectInfo UP-TO-DATE
+> Task :shared:yaml-jvm:compileJava NO-SOURCE
+> Task :shared:yaml-jvm:processResources NO-SOURCE
+> Task :shared:yaml-jvm:classes UP-TO-DATE
+> Task :shared:yaml-jvm:jar UP-TO-DATE
+> Task :shared:core:compileKotlinDesktop UP-TO-DATE
+> Task :shared:ui:checkDesktopMainComposeLibrariesCompatibility
+> Task :shared:core:compileDesktopMainJava NO-SOURCE
+> Task :shared:core:desktopProcessResources NO-SOURCE
+> Task :shared:core:processDesktopMainResources SKIPPED
+> Task :shared:core:desktopMainClasses UP-TO-DATE
+> Task :shared:core:desktopJar UP-TO-DATE
+> Task :shared:app:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:app:compileKotlinDesktop UP-TO-DATE
+> Task :shared:ui:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:app:compileDesktopMainJava NO-SOURCE
+> Task :shared:ui:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:app:desktopProcessResources NO-SOURCE
+> Task :shared:app:processDesktopMainResources SKIPPED
+> Task :shared:app:desktopMainClasses UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :shared:app:desktopJar UP-TO-DATE
+> Task :shared:ui:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :shared:ui:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForDesktopMain NO-SOURCE
+> Task :shared:ui:generateActualResourceCollectorsForDesktopMain UP-TO-DATE
+> Task :shared:ui:generateComposeResClass UP-TO-DATE
+> Task :shared:ui:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :shared:ui:compileKotlinDesktop UP-TO-DATE
+> Task :shared:ui:compileDesktopMainJava NO-SOURCE
+> Task :shared:ui:assembleDesktopMainResources UP-TO-DATE
+> Task :shared:ui:desktopProcessResources UP-TO-DATE
+> Task :shared:ui:processDesktopMainResources SKIPPED
+> Task :shared:ui:desktopMainClasses UP-TO-DATE
+> Task :shared:ui:desktopJar UP-TO-DATE
+
+> Task :desktopApp:compileKotlin
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/DesktopProxyHome.kt:1224:17 'when' is exhaustive so 'else' is redundant here.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/DesktopSubscriptionFetcher.kt:588:16 'constructor(p0: String!): URL' is deprecated. Deprecated in Java.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/Main.kt:1779:37 Expression is unused.
+
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar
+
+> Task :desktopApp:compileTestKotlin FAILED
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:56:27 Unresolved reference 'DesktopSubscriptionRefreshCoordinator'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:58:25 Cannot infer type for value parameter 'saved'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:64:43 Unresolved reference 'userAgent'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:65:46 Unresolved reference 'ageSecretKey'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:66:48 Unresolved reference 'updateViaProxy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:70:45 Suspension functions can only be called within coroutine body.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:79:22 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:90:21 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:95:34 Suspension functions can only be called within coroutine body.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:102:25 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:118:35 Unresolved reference 'isSuccess'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:144:27 Unresolved reference 'DesktopSubscriptionRefreshCoordinator'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:146:25 Cannot infer type for value parameter 'saved'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:150:41 Suspension functions can only be called within coroutine body.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:156:22 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:158:25 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:166:35 Unresolved reference 'isSuccess'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:186:27 Unresolved reference 'DesktopSubscriptionRefreshCoordinator'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:188:25 Cannot infer type for value parameter 'record'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:192:41 Suspension functions can only be called within coroutine body.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:197:34 Argument type mismatch: actual type is 'SubscriptionRecord', but 'Double' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:197:49 Argument type mismatch: actual type is 'String', but 'Double' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:203:31 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:205:23 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:219:44 Unresolved reference 'isSuccess'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:223:36 Unresolved reference 'preparation'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:224:44 Unresolved reference 'preparation'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:225:45 Unresolved reference 'refreshResult'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:235:27 Unresolved reference 'DesktopSubscriptionRefreshCoordinator'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:237:25 Cannot infer type for value parameter 'record'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:253:13 Argument type mismatch: actual type is 'SubscriptionWorkerOutcome', but 'Double' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:255:13 Argument type mismatch: actual type is 'String', but 'Double' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:260:13 Argument type mismatch: actual type is 'SubscriptionWorkerOutcome', but 'Double' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:262:13 Argument type mismatch: actual type is 'String', but 'Double' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:289:27 Unresolved reference 'DesktopSubscriptionRefreshCoordinator'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:291:25 Cannot infer type for value parameter 'record'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:296:25 Suspension functions can only be called within coroutine body.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:306:32 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:310:27 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:319:40 Unresolved reference 'isSuccess'.
+
+[Incubating] Problems report is available at: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:compileTestKotlin' (registered by plugin 'org.jetbrains.kotlin.jvm').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 8s
+31 actionable tasks: 7 executed, 24 up-to-date

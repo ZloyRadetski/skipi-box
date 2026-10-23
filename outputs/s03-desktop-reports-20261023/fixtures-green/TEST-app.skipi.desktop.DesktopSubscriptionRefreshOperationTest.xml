@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshOperationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-23T21:11:10.721Z" hostname="VQSeGo" time="0.105">
+  <properties/>
+  <testcase name="cancellationDuringBackgroundLoadPropagatesBeforeAnyPersistenceWrite" classname="app.skipi.desktop.DesktopSubscriptionRefreshOperationTest" time="0.055"/>
+  <testcase name="runLoadsWithTheProductionParserOffCallerAndCommitsPersistedServerMetadataAndActiveProfile" classname="app.skipi.desktop.DesktopSubscriptionRefreshOperationTest" time="0.05"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

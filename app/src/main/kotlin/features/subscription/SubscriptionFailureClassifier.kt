@@ -20,7 +20,8 @@ internal fun formatHttpExceptionMessage(statusCode: Int, serverMessage: String?)
 }
 
 internal fun isTransientSubscriptionFailure(error: Throwable): Boolean {
-    return isTransientSubscriptionRefreshFailure(error) { cause ->
-        (cause as? SubscriptionHttpException)?.statusCode
-    }
+    return isTransientSubscriptionRefreshFailure(
+        error = error,
+        httpStatusCode = { cause -> (cause as? SubscriptionHttpException)?.statusCode },
+    )
 }
