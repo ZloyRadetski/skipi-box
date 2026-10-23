@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.AndroidResourceFileDownloadCancellationOracleTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:53:08.247Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="trackingAfterCancellationStoresConnectionBeforeThrowing" classname="features.resources.runtime.AndroidResourceFileDownloadCancellationOracleTest" time="0.001"/>
+  <testcase name="cancelDisconnectsTheMostRecentlyTrackedConnection" classname="features.resources.runtime.AndroidResourceFileDownloadCancellationOracleTest" time="0.0"/>
+  <testcase name="beginClearsCancelledFlagAndTrackedReferenceWithoutDisconnectingItAgain" classname="features.resources.runtime.AndroidResourceFileDownloadCancellationOracleTest" time="0.0"/>
+  <testcase name="throwIfCancelledUsesTheExistingDefaultMessage" classname="features.resources.runtime.AndroidResourceFileDownloadCancellationOracleTest" time="0.0"/>
+  <testcase name="cancelDisconnectsAConnectionWhoseFakeReadIsBlocked" classname="features.resources.runtime.AndroidResourceFileDownloadCancellationOracleTest" time="0.0"/>
+  <testcase name="untrackingAnOlderConnectionDoesNotClearTheNewerTrackedConnection" classname="features.resources.runtime.AndroidResourceFileDownloadCancellationOracleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

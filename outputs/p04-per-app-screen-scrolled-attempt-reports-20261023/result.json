@@ -1,0 +1,16 @@
+{
+  "phase": "first actual Per-app behaviors after navigation scroll correction",
+  "tests": 8,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "timestamp": "2026-10-23T11:47:24.360Z",
+  "build_seconds": 33,
+  "test_source_sha256": "f4c9caebbe96a3b1919118637684f5a53ade8e961afcd70efcffa6e0c8dd53a4",
+  "failed_cases": [
+    {
+      "name": "moreUiEditOpensInactivePerAppAndBackDoesNotWriteAgain",
+      "message": "java.lang.AssertionError: Per-App Back should return to Basics"
+    }
+  ]
+}

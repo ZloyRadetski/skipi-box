@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.routing.usecase.RoutingSuggestionsTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:52:21.855Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="geoSiteSuggestionsSortStandardTagsMergeProfileThenGlobalAndKeepMissingCustomFallbacks" classname="features.routing.usecase.RoutingSuggestionsTest" time="0.002"/>
+  <testcase name="geoIpUsesStandardAndCustomSpellingsForNormalAndShadowrocketEditors" classname="features.routing.usecase.RoutingSuggestionsTest" time="0.0"/>
+  <testcase name="explicitProfileSelectionDoesNotFallBackButImplicitSelectionUsesActiveThenFirst" classname="features.routing.usecase.RoutingSuggestionsTest" time="0.0"/>
+  <testcase name="emptyStandardGeoSiteUsesTheExistingDefaultCatalog" classname="features.routing.usecase.RoutingSuggestionsTest" time="0.001"/>
+  <testcase name="customResourceFilenameSanitizerKeepsAndroidLiteralCharactersAndOnlyStripsPathSeparators" classname="features.routing.usecase.RoutingSuggestionsTest" time="0.0"/>
+  <testcase name="missingCustomGeoIpUsesNameStemAndShadowrocketBareUppercaseRule" classname="features.routing.usecase.RoutingSuggestionsTest" time="0.0"/>
+  <testcase name="portablePresetCatalogMatchesTheCurrentAndroidLists" classname="features.routing.usecase.RoutingSuggestionsTest" time="0.0"/>
+  <testcase name="ruleSetSuggestionsMergeStandardAndCustomEntriesWithoutDuplicatingCustomRule" classname="features.routing.usecase.RoutingSuggestionsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

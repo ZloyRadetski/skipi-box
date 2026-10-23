@@ -1,0 +1,27 @@
+Per-App Back navigation diagnostics at 390x844
+Visible/intersecting text (19):
+  Name @ Rect.fromLTRB(28.0, 68.0, 53.0, 80.0)
+  A local name used to identify this configuration in SKIPI. @ Rect.fromLTRB(16.0, 116.0, 328.0, 132.0)
+  Update URL (optional) @ Rect.fromLTRB(28.0, 144.0, 118.0, 156.0)
+  Optional remote .conf URL used when you update this configuration. @ Rect.fromLTRB(16.0, 192.0, 374.0, 224.0)
+  Do not update @ Rect.fromLTRB(28.0, 244.0, 128.0, 264.0)
+  Blocks remote replacement until you disable this option @ Rect.fromLTRB(28.0, 264.0, 297.0, 296.0)
+  Auto update Geo databases @ Rect.fromLTRB(28.0, 334.0, 220.0, 354.0)
+  Automatically update GeoIP, GeoSite, and custom routing data. @ Rect.fromLTRB(28.0, 354.0, 297.0, 386.0)
+  Geo update interval (hours) @ Rect.fromLTRB(44.0, 410.0, 156.0, 422.0)
+  Configuration sections @ Rect.fromLTRB(40.0, 490.0, 175.0, 506.0)
+  General @ Rect.fromLTRB(28.0, 538.0, 84.0, 558.0)
+  DNS and IPv6 behavior @ Rect.fromLTRB(28.0, 558.0, 157.0, 574.0)
+  DNS Settings @ Rect.fromLTRB(28.0, 612.0, 120.0, 632.0)
+  VPN Local DNS, Proxy & Direct DNS (DoH, local DoQ, DoU, TCP), FakeDNS @ Rect.fromLTRB(28.0, 632.0, 338.0, 664.0)
+  Core & bypass settings @ Rect.fromLTRB(28.0, 702.0, 188.0, 722.0)
+  Sniffing, multiplexing, TLS fragmentation and FakeDNS @ Rect.fromLTRB(28.0, 722.0, 335.0, 738.0)
+  Network activation @ Rect.fromLTRB(28.0, 776.0, 164.0, 796.0)
+  Automatic activation on Wi-Fi or cellular @ Rect.fromLTRB(28.0, 796.0, 250.0, 812.0)
+  Edit config @ Rect.fromLTRB(151.0, 14.0, 238.0, 37.0)
+Editable fields (3):
+  Per-App target @ Rect.fromLTRB(12.0, 60.0, 378.0, 112.0) intersects=true
+  https://target.example/per-app.conf @ Rect.fromLTRB(12.0, 136.0, 378.0, 188.0) intersects=true
+  24 @ Rect.fromLTRB(28.0, 402.0, 362.0, 454.0) intersects=true
+Vertical scrollers (1):
+  value=0.0 max=100.0 bounds=Rect.fromLTRB(0.0, 0.0, 390.0, 844.0)

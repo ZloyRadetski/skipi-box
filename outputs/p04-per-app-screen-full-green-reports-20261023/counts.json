@@ -1,0 +1,138 @@
+{
+  "build_seconds": 117,
+  "targets": {
+    "shared-core-desktop": {
+      "tests": 372,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_files": 101,
+      "timestamp_min": "2026-10-23T11:52:22.885Z",
+      "timestamp_max": "2026-10-23T11:52:24.061Z"
+    },
+    "shared-core-android": {
+      "tests": 316,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_files": 91,
+      "timestamp_min": "2026-10-23T11:52:21.286Z",
+      "timestamp_max": "2026-10-23T11:52:21.922Z"
+    },
+    "shared-app-desktop": {
+      "tests": 355,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_files": 60,
+      "timestamp_min": "2026-10-23T11:52:22.668Z",
+      "timestamp_max": "2026-10-23T11:52:23.579Z"
+    },
+    "shared-app-android": {
+      "tests": 347,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_files": 59,
+      "timestamp_min": "2026-10-23T11:52:23.997Z",
+      "timestamp_max": "2026-10-23T11:52:24.728Z"
+    },
+    "shared-ui-desktop": {
+      "tests": 120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_files": 33,
+      "timestamp_min": "2026-10-23T11:52:35.325Z",
+      "timestamp_max": "2026-10-23T11:52:35.577Z"
+    },
+    "shared-ui-android": {
+      "tests": 120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_files": 33,
+      "timestamp_min": "2026-10-23T11:52:36.360Z",
+      "timestamp_max": "2026-10-23T11:52:36.927Z"
+    },
+    "android-app": {
+      "tests": 584,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_files": 137,
+      "timestamp_min": "2026-10-23T11:53:03.801Z",
+      "timestamp_max": "2026-10-23T11:53:16.861Z"
+    },
+    "desktop-app": {
+      "tests": 608,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_files": 122,
+      "timestamp_min": "2026-10-23T11:52:52.232Z",
+      "timestamp_max": "2026-10-23T11:54:12.237Z"
+    }
+  },
+  "total": {
+    "tests": 2822,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "native_suites": [
+    {
+      "target": "desktop-app",
+      "name": "app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest",
+      "tests": "2",
+      "skipped": "0",
+      "timestamp": "2026-10-23T11:53:14.962Z"
+    },
+    {
+      "target": "desktop-app",
+      "name": "app.skipi.desktop.DesktopProfileAssetsFfmIntegrationTest",
+      "tests": "1",
+      "skipped": "0",
+      "timestamp": "2026-10-23T11:53:02.380Z"
+    },
+    {
+      "target": "desktop-app",
+      "name": "app.skipi.desktop.DesktopCoreFfmIntegrationTest",
+      "tests": "4",
+      "skipped": "0",
+      "timestamp": "2026-10-23T11:53:01.343Z"
+    }
+  ],
+  "pngs": [
+    {
+      "name": "body-390x844.png",
+      "sha256": "c050fa4bf7e071e95377355f0a886aa3fd9c679c346a00142894ec673d842ea7",
+      "identical_to_root_inspected_scrolled_gate": true
+    },
+    {
+      "name": "body-1100x800.png",
+      "sha256": "41f04eaae2af7cdc0e527fcd393e7080b2df0702208b59e7d7406ecf25905b9f",
+      "identical_to_root_inspected_scrolled_gate": true
+    },
+    {
+      "name": "mode-menu-390x844.png",
+      "sha256": "2660e61dd9ec0f59404c51912d9c6a942dcb11f2699209f3269d165785ce73a1",
+      "identical_to_root_inspected_scrolled_gate": true
+    },
+    {
+      "name": "mode-menu-1100x800.png",
+      "sha256": "ec82a498912cfe87cc11363d4610334dc42c474916514951f340e70e7dae095c",
+      "identical_to_root_inspected_scrolled_gate": true
+    },
+    {
+      "name": "import-dialog-390x844.png",
+      "sha256": "a5e9a30a0d6f9e5d5ed057a743f188cbf14f8fac5a1646cf8814d3213199b34e",
+      "identical_to_root_inspected_scrolled_gate": true
+    },
+    {
+      "name": "import-dialog-1100x800.png",
+      "sha256": "94ec32d0065f7247b52eaca6528e762a0eaeaf8b87a6f39146b24be354311e2e",
+      "identical_to_root_inspected_scrolled_gate": true
+    }
+  ]
+}

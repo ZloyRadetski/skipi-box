@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopBuildPortabilityTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:52:59.132Z" hostname="VQSeGo" time="0.012">
+  <properties/>
+  <testcase name="hostOperatingSystemRequiresExpectedNativeLibraryName" classname="app.skipi.desktop.DesktopBuildPortabilityTest" time="0.004"/>
+  <testcase name="runtimeFailsWhenGeoAssetsAreMissingRegardlessOfLibrary" classname="app.skipi.desktop.DesktopBuildPortabilityTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

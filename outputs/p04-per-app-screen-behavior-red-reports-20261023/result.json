@@ -1,0 +1,43 @@
+{
+  "phase": "behavior RED before Per-app route/shared UI; all fail at missing Basics Per-app section",
+  "tests": 8,
+  "failures": 8,
+  "errors": 0,
+  "skipped": 0,
+  "timestamp": "2026-10-23T06:21:04.543Z",
+  "test_source_sha256": "98fdc89fbe349749922e0c7c0942488fdddeb20d01bfb4339689b96e4d98df07",
+  "failed_cases": [
+    {
+      "name": "rendersPerAppBodyModeMenuAndImportDialogAtNarrowAndWideViewports",
+      "message": "java.lang.IllegalArgumentException: Expected rendered clickable text 'Apps for this configuration'"
+    },
+    {
+      "name": "replaceClipboardImportUsesDesktopUserIdFallbackAndReportsTwoImports",
+      "message": "java.lang.IllegalArgumentException: Expected rendered clickable text 'Apps for this configuration'"
+    },
+    {
+      "name": "mergeAfterDialogUsesLatestRowAndReportsNoNewIds",
+      "message": "java.lang.IllegalArgumentException: Expected rendered clickable text 'Apps for this configuration'"
+    },
+    {
+      "name": "failedMergeAndReplaceKeepImportDialogOpenWithoutSuccessOrPersistence",
+      "message": "java.lang.IllegalArgumentException: Expected rendered clickable text 'Apps for this configuration'"
+    },
+    {
+      "name": "exportUsesInjectedClipboardWithoutInventedDesktopAppInventoryOrWrites",
+      "message": "java.lang.IllegalArgumentException: Expected rendered clickable text 'Apps for this configuration'"
+    },
+    {
+      "name": "moreUiEditOpensInactivePerAppAndBackDoesNotWriteAgain",
+      "message": "java.lang.IllegalArgumentException: Expected rendered clickable text 'Apps for this configuration'"
+    },
+    {
+      "name": "mergeAfterTargetDisappearsClosesDialogAndReportsZeroWithoutResurrection",
+      "message": "java.lang.IllegalArgumentException: Expected rendered clickable text 'Apps for this configuration'"
+    },
+    {
+      "name": "malformedUserIdShowsLocalizedErrorWithoutDialogOrLibraryMutation",
+      "message": "java.lang.IllegalArgumentException: Expected rendered clickable text 'Apps for this configuration'"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:52:24.086Z" hostname="VQSeGo" time="0.059">
+  <properties/>
+  <testcase name="validRefreshUsesCapturedProfileAndTrimmedUrlThenNormalizesCommitsAndReconcilesInOrder" classname="app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest" time="0.052"/>
+  <testcase name="commitErrorsIncludingCancellationMapToRetryAndSkipReconciliation" classname="app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest" time="0.001"/>
+  <testcase name="documentWithAnErrorDiagnosticRetriesWithoutCommitOrReconciliation" classname="app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest" time="0.001"/>
+  <testcase name="fetchErrorsIncludingCancellationMapToRetryAndStopBeforeCommit" classname="app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest" time="0.001"/>
+  <testcase name="nullAndIneligibleCapturedProfilesCompleteWithoutInvokingCallbacks" classname="app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest" time="0.001"/>
+  <testcase name="reconciliationRunsAfterCommitCallbackEvenWhenLatestProfileWasAlreadyRemoved" classname="app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest" time="0.001"/>
+  <testcase name="reconciliationErrorsIncludingCancellationMapToRetryAfterCommit" classname="app.skipi.app.config.TrafficConfigAutoUpdateExecutionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

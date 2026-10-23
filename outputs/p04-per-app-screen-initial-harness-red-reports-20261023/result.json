@@ -1,0 +1,43 @@
+{
+  "phase": "initial harness failure after API bootstrap; OnClick dispatched on text child rather than clickable ancestor; not route behavioral RED",
+  "tests": 8,
+  "failures": 8,
+  "errors": 0,
+  "skipped": 0,
+  "timestamp": "2026-10-23T06:19:58.425Z",
+  "test_source_sha256": "fd1bd8e1d3e5727d52b5a09712381c15bd7933d2a15e26b122c78185d7fd07eb",
+  "failed_cases": [
+    {
+      "name": "rendersPerAppBodyModeMenuAndImportDialogAtNarrowAndWideViewports",
+      "message": "java.lang.IllegalStateException: Key not present: AccessibilityKey: OnClick - consider getOrElse or getOrNull"
+    },
+    {
+      "name": "replaceClipboardImportUsesDesktopUserIdFallbackAndReportsTwoImports",
+      "message": "java.lang.IllegalStateException: Key not present: AccessibilityKey: OnClick - consider getOrElse or getOrNull"
+    },
+    {
+      "name": "mergeAfterDialogUsesLatestRowAndReportsNoNewIds",
+      "message": "java.lang.IllegalStateException: Key not present: AccessibilityKey: OnClick - consider getOrElse or getOrNull"
+    },
+    {
+      "name": "failedMergeAndReplaceKeepImportDialogOpenWithoutSuccessOrPersistence",
+      "message": "java.lang.IllegalStateException: Key not present: AccessibilityKey: OnClick - consider getOrElse or getOrNull"
+    },
+    {
+      "name": "exportUsesInjectedClipboardWithoutInventedDesktopAppInventoryOrWrites",
+      "message": "java.lang.IllegalStateException: Key not present: AccessibilityKey: OnClick - consider getOrElse or getOrNull"
+    },
+    {
+      "name": "moreUiEditOpensInactivePerAppAndBackDoesNotWriteAgain",
+      "message": "java.lang.IllegalStateException: Key not present: AccessibilityKey: OnClick - consider getOrElse or getOrNull"
+    },
+    {
+      "name": "mergeAfterTargetDisappearsClosesDialogAndReportsZeroWithoutResurrection",
+      "message": "java.lang.IllegalStateException: Key not present: AccessibilityKey: OnClick - consider getOrElse or getOrNull"
+    },
+    {
+      "name": "malformedUserIdShowsLocalizedErrorWithoutDialogOrLibraryMutation",
+      "message": "java.lang.IllegalStateException: Key not present: AccessibilityKey: OnClick - consider getOrElse or getOrNull"
+    }
+  ]
+}

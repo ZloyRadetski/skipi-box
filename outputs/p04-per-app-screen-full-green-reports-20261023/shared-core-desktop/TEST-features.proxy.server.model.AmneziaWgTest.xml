@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="AmneziaWgTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:52:23.153Z" hostname="VQSeGo" time="0.031">
+  <properties/>
+  <testcase name="parseAwgUrlAndGenerateOutbound[desktop]" classname="features.proxy.server.model.AmneziaWgTest" time="0.014"/>
+  <testcase name="validationRejectsInvalidJminJmax[desktop]" classname="features.proxy.server.model.AmneziaWgTest" time="0.001"/>
+  <testcase name="persistenceRoundTrip[desktop]" classname="features.proxy.server.model.AmneziaWgTest" time="0.016"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

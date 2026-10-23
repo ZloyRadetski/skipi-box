@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyHomeInitialGroupTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:53:02.849Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="absentOrUndecodableSelectedServerFallsBackToManual" classname="app.skipi.desktop.DesktopProxyHomeInitialGroupTest" time="0.001"/>
+  <testcase name="initialGroupSeedFollowsPersistedSelectedServerInsteadOfEarlierSubscription" classname="app.skipi.desktop.DesktopProxyHomeInitialGroupTest" time="0.0"/>
+  <testcase name="hostAliasesCoverManualAutoAndUnknownSubscriptionIdsWithoutNormalization" classname="app.skipi.desktop.DesktopProxyHomeInitialGroupTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

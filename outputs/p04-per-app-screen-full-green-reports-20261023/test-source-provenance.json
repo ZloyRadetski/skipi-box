@@ -1,0 +1,8 @@
+{
+  "test_source": "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigPerAppScreenIntegrationTest.kt",
+  "sha256": "225d3b982267fe8643d3bd0e7a58f546cb48cb35013ddae1f3d5bb902da47756",
+  "phase": "frozen before full regression after navigation harness correction and source lifecycle alignment",
+  "behavior_expectations": "eight original cases retained; only navigation/diagnostic harness changed; Back additionally proves target-name field",
+  "sha256_after_build": "225d3b982267fe8643d3bd0e7a58f546cb48cb35013ddae1f3d5bb902da47756",
+  "unchanged_during_build": true
+}

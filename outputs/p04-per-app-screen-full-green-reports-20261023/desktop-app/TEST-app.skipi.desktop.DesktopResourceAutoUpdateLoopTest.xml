@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopResourceAutoUpdateLoopTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:53:03.848Z" hostname="VQSeGo" time="0.01">
+  <properties/>
+  <testcase name="active_profile_work_runs_while_an_unrelated_periodic_update_is_blocked_and_host_cancel_cleans_up" classname="app.skipi.desktop.DesktopResourceAutoUpdateLoopTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

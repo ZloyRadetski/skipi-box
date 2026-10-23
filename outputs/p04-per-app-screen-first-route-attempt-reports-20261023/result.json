@@ -1,0 +1,10 @@
+{
+  "phase": "first compiled implementation; Basics LazyColumn lookup did not scroll to newly appended Per-app item; harness reachability failure",
+  "tests": 8,
+  "failures": 8,
+  "errors": 0,
+  "skipped": 0,
+  "build_seconds": 51,
+  "android_compile": "passed",
+  "test_source_sha256": "98fdc89fbe349749922e0c7c0942488fdddeb20d01bfb4339689b96e4d98df07"
+}

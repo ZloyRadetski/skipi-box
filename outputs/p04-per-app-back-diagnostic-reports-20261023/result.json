@@ -1,0 +1,9 @@
+{
+  "tests": 1,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "build_seconds": 13,
+  "diagnosis": "Back correctly opens Basics at scroll 0 with target name visible. The assertion looked for the Per-app card below the initial viewport without scrolling; harness-only correction required.",
+  "source_sha256_at_evidence_collection": "eea85a4536b215c7eb9a6b86a7e456dc0e1f4bd91b3f1d94c7d2d5214e6f9d91"
+}

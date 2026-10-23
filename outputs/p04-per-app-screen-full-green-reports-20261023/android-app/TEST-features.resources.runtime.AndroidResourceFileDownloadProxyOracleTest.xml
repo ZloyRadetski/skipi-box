@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.AndroidResourceFileDownloadProxyOracleTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:53:08.273Z" hostname="VQSeGo" time="6.519">
+  <properties/>
+  <testcase name="proxiedHttpFailureDoesNotFallBackToDirect" classname="features.resources.runtime.AndroidResourceFileDownloadProxyOracleTest" time="0.272"/>
+  <testcase name="socksCredentialsRemainAvailableAcrossProxiedRetriesBeforeDirectFallback" classname="features.resources.runtime.AndroidResourceFileDownloadProxyOracleTest" time="3.154"/>
+  <testcase name="blankUsernameKeepsProxyRouteAndDoesNotReplaceInstalledAuthenticator" classname="features.resources.runtime.AndroidResourceFileDownloadProxyOracleTest" time="0.016"/>
+  <testcase name="exhaustedProxiedSocketFailuresFallBackToOneDirectGet" classname="features.resources.runtime.AndroidResourceFileDownloadProxyOracleTest" time="3.017"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

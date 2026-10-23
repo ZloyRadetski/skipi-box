@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigRulesScreenIntegrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:54:09.890Z" hostname="VQSeGo" time="1.882">
+  <properties/>
+  <testcase name="profileRulesSectionOpensFromVisualEditorAndDeletingARulePersistsOnlyItsTargetDocument" classname="app.skipi.desktop.DesktopTrafficConfigRulesScreenIntegrationTest" time="0.298"/>
+  <testcase name="failedRuleSaveKeepsTypedFormOpenAndShowsStorageError" classname="app.skipi.desktop.DesktopTrafficConfigRulesScreenIntegrationTest" time="0.366"/>
+  <testcase name="policyPickerShowsAndPersistsNamedServerFromDesktopCatalog" classname="app.skipi.desktop.DesktopTrafficConfigRulesScreenIntegrationTest" time="0.527"/>
+  <testcase name="newRuleKeepsTypedValueWhenOutboundPickerIsCanceledAndConfirmsRejectPolicy" classname="app.skipi.desktop.DesktopTrafficConfigRulesScreenIntegrationTest" time="0.691"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

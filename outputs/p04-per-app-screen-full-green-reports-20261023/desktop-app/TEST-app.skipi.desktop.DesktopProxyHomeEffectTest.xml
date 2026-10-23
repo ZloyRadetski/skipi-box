@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopProxyHomeEffectTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:53:02.841Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="moveServerDispatchesOnlyDuringDefaultSortAndRejectsOtherSortModes" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.001"/>
+  <testcase name="storeDispatchInvokesTunnelAndSelectionCallbacksOnceAndKeepsTunnelHostOwned" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.001"/>
+  <testcase name="moveGroupDispatchesCallbackOnceAndRejectsBuiltinsAndBoundaries" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="refreshAllSubscriptionsIsAcceptedByTheDesktopHomeEffect" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="sortEffectChangesOnlyTheHostPreferenceCallback" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.001"/>
+  <testcase name="typedServerAddDoesNotOpenTheServerLinkDialog" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="duplicateDesktopSubscriptionPingIsRejectedWhileTheSubscriptionIsBusy" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="subscriptionTrafficSumDoesNotOverflowOrBecomeNegative" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="reorderServerInLibraryMovesToTargetIdAndPreservesMetadata" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.001"/>
+  <testcase name="reorderItemSwapsAdjacentElementsAndRejectsBoundary" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="subscriptionPingPassesItsIdentityWithTheActualTestTargets" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.001"/>
+  <testcase name="snapshotUsesOnlyHostRunningAndConnectingValues" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="desktopImportDialogIsManualInputAndQrSourceIsRejected" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="refreshIsRejectedWhileAnUpdateRunsButTheGroupToggleStillUsesItsSharedOperation" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.001"/>
+  <testcase name="typedServerAddPassesEveryKindOnceToDraftCreationWithoutOpeningDialogs" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="editGroupDispatchesToUIAndRejectsBuiltins" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="refreshSubscriptionRejectsBlankUrl" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <testcase name="deleteGroupDispatchesConfirmOrDeleteAndRejectsBuiltins" classname="app.skipi.desktop.DesktopProxyHomeEffectTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

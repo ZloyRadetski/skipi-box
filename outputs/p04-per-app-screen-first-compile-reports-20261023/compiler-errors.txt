@@ -1,0 +1,2 @@
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/DesktopConfigsScreen.kt:523:54 Cannot access class 'top.yukonga.miuix.kmp.basic.ScrollBehavior'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/DesktopConfigsScreen.kt:536:58 Cannot access class 'top.yukonga.miuix.kmp.basic.ScrollBehavior'. Check your module classpath for missing or conflicting dependencies.

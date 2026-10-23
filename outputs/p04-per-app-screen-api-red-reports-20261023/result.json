@@ -1,0 +1,10 @@
+{
+  "phase": "API RED before callback/resource bootstrap",
+  "tests_executed": 0,
+  "test_source_sha256": "7210d0ca5bba05cbfdd22aca3166124becf1e2dc175b9a9bafe31b2687a7fe2a",
+  "compiler_errors": [
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigPerAppScreenIntegrationTest.kt:27:31 Unresolved reference 'configs_per_app_desktop_notice'.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigPerAppScreenIntegrationTest.kt:795:49 Unresolved reference 'configs_per_app_desktop_notice'.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigPerAppScreenIntegrationTest.kt:1060:25 No parameter with name 'readPerAppClipboardText' found."
+  ]
+}

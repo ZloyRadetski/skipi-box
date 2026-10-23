@@ -1,0 +1,10 @@
+{
+  "phase": "first implementation compile; public Miuix ScrollBehavior not exported by shared UI dependency",
+  "tests_executed": 0,
+  "build_seconds": 14,
+  "test_source_sha256": "98fdc89fbe349749922e0c7c0942488fdddeb20d01bfb4339689b96e4d98df07",
+  "compiler_errors": [
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/DesktopConfigsScreen.kt:523:54 Cannot access class 'top.yukonga.miuix.kmp.basic.ScrollBehavior'. Check your module classpath for missing or conflicting dependencies.",
+    "e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/main/kotlin/app/skipi/desktop/DesktopConfigsScreen.kt:536:58 Cannot access class 'top.yukonga.miuix.kmp.basic.ScrollBehavior'. Check your module classpath for missing or conflicting dependencies."
+  ]
+}
