@@ -44,22 +44,16 @@ import app.LocalIsWideScreen
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
-import app.activeTrafficConfig
 import app.modes.RunModeVpnService
-import features.config.withUpdatedTrafficConfig
+import app.skipi.ui.config.SkipiTrafficConfigProxyAppListEditorScreen
+import features.config.rememberTrafficConfigEditorController
 import features.proxy.app.model.ProxyAppListItem
-import features.proxy.app.model.ProxyAppListUserSpaceTabUi
-import features.proxy.app.usecase.ProxyAppListClipboardData
-import features.proxy.app.usecase.applyProxyAppListClipboardImport
-import features.proxy.app.usecase.decodeProxyAppListFromClipboard
-import features.proxy.app.usecase.encodeProxyAppListForClipboard
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import system.ANDROID_APP_ICON_SIZE_DP
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import ui.components.AppPullToRefresh
-import top.yukonga.miuix.kmp.basic.Scaffold
+import ui.clipboard.getPlainText
+import ui.clipboard.setPlainText
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
@@ -67,19 +61,8 @@ import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
-import features.clipboard.ClipboardImportException
-import features.clipboard.ClipboardImportFailure
-import features.clipboard.ClipboardImportMode
-import ui.clipboard.getPlainText
-import ui.clipboard.setPlainText
-import ui.components.ImportModeDialog
-import ui.layout.AdaptiveTopAppBar
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageListPadding
 import ui.layout.pageScrollModifiers
-import ui.text.formatTemplate
 import kotlin.time.Duration.Companion.milliseconds
-import androidx.compose.ui.graphics.Color
 
 private const val ProxyAppListAutomaticLoadingMinVisibleMillis = 500L
 
@@ -97,27 +80,13 @@ fun ProxyAppListPage(
     val packageCatalog = services.packageCatalog
     val userSpaces = services.userSpaces
     val tipNotifier = services.tipNotifier
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
     val clipboard = LocalClipboard.current
-    val scope = rememberCoroutineScope()
-    val copiedMessage = stringResource(R.string.common_copied)
-    val clipboardEmptyMessage = stringResource(R.string.common_clipboard_empty)
-    val unsupportedClipboardMessage = stringResource(R.string.common_clipboard_unsupported_format)
-    val importTitle = stringResource(R.string.proxy_app_list_import_clipboard_title)
-    val importMessageTemplate = stringResource(R.string.proxy_app_list_import_clipboard_message)
-    val importedTemplate = stringResource(R.string.proxy_app_list_imported)
-    val noValidAppsMessage = stringResource(R.string.proxy_app_list_import_no_valid_apps)
-    val invalidEntryMessage = stringResource(R.string.proxy_app_list_import_invalid_entry)
-    val invalidUserIdMessage = stringResource(R.string.proxy_app_list_import_invalid_user)
-    val unsupportedModeMessage = stringResource(R.string.proxy_app_list_import_unsupported_mode)
-    var pendingAppListImport by remember { mutableStateOf<ProxyAppListClipboardData?>(null) }
+    val actionScope = rememberCoroutineScope()
 
     val trafficConfig = appState.trafficConfigs.firstOrNull { config -> config.id == trafficConfigId }
         ?: return
-    val configuredMode = trafficConfig.proxyAppListMode
     val configuredSelectedApps = trafficConfig.proxyAppListSelectedApps
-    val proxyAppListModes = proxyAppListModeLabels()
-    val modeIndex = configuredMode.coerceIn(proxyAppListModes.indices)
+    val editorController = rememberTrafficConfigEditorController(updateAppState)
     val isVpnServiceMode = appState.runMode == RunModeVpnService
     val selectedAppKeys = remember(configuredSelectedApps) {
         configuredSelectedApps.toSet()
@@ -161,198 +130,52 @@ fun ProxyAppListPage(
         tipNotifier = tipNotifier,
     )
 
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        modifier = Modifier
-            .fillMaxSize(),
-        topBar = {
-            ProxyAppListTopBar(
-                modes = proxyAppListModes,
-                modeIndex = modeIndex,
-                isWideScreen = isWideScreen,
-                scrollBehavior = topAppBarScrollBehavior,
-                searchValue = pageState.searchValue,
-                showSystemApps = pageState.showSystemApps,
-                userTabs = pageState.userTabs,
-                selectedUserId = selectedUserId,
-                onModeChanged = { index ->
-                    updateAppState { state ->
-                        state.withUpdatedTrafficConfig(trafficConfigId) { config ->
-                            config.copy(
-                                proxyAppListMode = index,
-                            )
-                        }
-                    }
-                },
-                onSearchValueChange = { value -> pageState.searchValue = value },
-                onMoreAction = { action ->
-                    when (action) {
-                        ProxyAppListMoreAction.ToggleSystemApps -> {
-                            pageState.showSystemApps = !pageState.showSystemApps
-                        }
-
-                        ProxyAppListMoreAction.ImportClipboard -> {
-                            scope.launch {
-                                runCatching {
-                                    decodeProxyAppListFromClipboard(
-                                        text = clipboard.getPlainText().orEmpty(),
-                                        currentUserId = selectedUserId ?: 0,
-                                        selfPackageName = selfPackageName,
-                                    )
-                                }.onSuccess { imported ->
-                                    pendingAppListImport = imported
-                                }.onFailure { error ->
-                                    tipNotifier.show(
-                                        error.proxyAppListClipboardImportMessage(
-                                            emptyClipboard = clipboardEmptyMessage,
-                                            unsupportedFormat = unsupportedClipboardMessage,
-                                            noValidApps = noValidAppsMessage,
-                                            invalidEntry = invalidEntryMessage,
-                                            invalidUserId = invalidUserIdMessage,
-                                            unsupportedMode = unsupportedModeMessage,
-                                        ),
-                                    )
-                                }
-                            }
-                        }
-
-                        ProxyAppListMoreAction.ExportClipboard -> {
-                            scope.launch {
-                                clipboard.setPlainText(
-                                    encodeProxyAppListForClipboard(
-                                        selectedApps = configuredSelectedApps,
-                                        mode = configuredMode,
-                                    ),
-                                )
-                                tipNotifier.show(copiedMessage)
-                            }
-                        }
-                    }
-                },
-                onSelectedUserIdChange = { userId -> pageState.selectedUserId = userId },
-            )
-        },
-    ) { innerPadding ->
-        val contentPadding = pageContentPaddingWithCutout(
-            innerPadding = innerPadding,
-            outerPadding = padding,
-            isWideScreen = isWideScreen,
-        )
-        val listPadding = pageListPadding(contentPadding)
-
-        ProxyAppListContent(
-            pageState = pageState,
-            selectedAppKeys = selectedAppKeys,
-            modeIndex = modeIndex,
-            iconSizePx = iconSizePx,
-            contentPadding = contentPadding,
-            listPadding = listPadding,
-            scrollBehavior = topAppBarScrollBehavior,
-            userPagerState = userPagerState,
-            onAppCheckedChange = { item, isChecked ->
-                updateAppState { state ->
-                    state.withUpdatedTrafficConfig(trafficConfigId) { config ->
-                        val selectedApps = updateProxyAppListSelection(
-                            selectedApps = config.proxyAppListSelectedApps,
-                            item = item,
-                            isChecked = isChecked,
-                        )
-                        config.copy(
-                            proxyAppListSelectedApps = selectedApps,
-                        )
-                    }
-                }
-            },
-        )
-    }
-
-    val appListImport = pendingAppListImport
-    ImportModeDialog(
-        show = appListImport != null,
-        title = importTitle,
-        message = importMessageTemplate.formatTemplate("count" to appListImport?.selectedApps.orEmpty().size),
-        onDismissRequest = { pendingAppListImport = null },
-        onModeSelected = { importMode ->
-            val imported = pendingAppListImport ?: return@ImportModeDialog
-            var importedCount = 0
-            updateAppState { state ->
-                val activeConfig = state.trafficConfigs.firstOrNull { config -> config.id == trafficConfigId }
-                    ?: return@updateAppState state
-                val result = applyProxyAppListClipboardImport(
-                    currentMode = activeConfig.proxyAppListMode,
-                    currentSelectedApps = activeConfig.proxyAppListSelectedApps,
-                    imported = imported,
-                    mode = importMode,
-                )
-                importedCount = when (importMode) {
-                    ClipboardImportMode.Replace -> result.selectedApps.size
-                    ClipboardImportMode.Merge ->
-                        (result.selectedApps.size - activeConfig.proxyAppListSelectedApps.size).coerceAtLeast(0)
-                }
-                state.withUpdatedTrafficConfig(activeConfig.id) { config ->
-                    config.copy(
-                        proxyAppListMode = result.mode,
-                        proxyAppListSelectedApps = result.selectedApps,
-                    )
-                }
-            }
-            pendingAppListImport = null
-            scope.launch {
-                tipNotifier.show(importedTemplate.formatTemplate("count" to importedCount))
-            }
-        },
-    )
-}
-
-@Composable
-private fun ProxyAppListTopBar(
-    modes: List<String>,
-    modeIndex: Int,
-    isWideScreen: Boolean,
-    scrollBehavior: ScrollBehavior,
-    searchValue: String,
-    showSystemApps: Boolean,
-    userTabs: List<ProxyAppListUserSpaceTabUi>,
-    selectedUserId: Int?,
-    onModeChanged: (Int) -> Unit,
-    onSearchValueChange: (String) -> Unit,
-    onMoreAction: (ProxyAppListMoreAction) -> Unit,
-    onSelectedUserIdChange: (Int) -> Unit,
-) {
-    AdaptiveTopAppBar(
-        title = stringResource(R.string.proxy_app_list_title),
-        subtitle = modes[modeIndex],
+    SkipiTrafficConfigProxyAppListEditorScreen(
+        profile = trafficConfig,
+        controller = editorController,
+        actionScope = actionScope,
+        padding = padding,
         isWideScreen = isWideScreen,
-        scrollBehavior = scrollBehavior,
-        actions = {
-            ProxyAppListModeMenu(
-                modes = modes,
-                selectedIndex = modeIndex,
-                onSelectedIndexChange = onModeChanged,
-            )
-            ProxyAppListMoreActionsMenu(
-                showSystemApps = showSystemApps,
-                onAction = onMoreAction,
-            )
-        },
-        bottomContent = {
+        readClipboardText = { clipboard.getPlainText() },
+        writeClipboardText = { text -> clipboard.setPlainText(text) },
+        currentUserId = selectedUserId,
+        selfPackageName = selfPackageName,
+        onNotice = { notice -> tipNotifier.show(notice) },
+        showSystemApps = pageState.showSystemApps,
+        onToggleSystemApps = { pageState.showSystemApps = !pageState.showSystemApps },
+        headerContent = {
             Column {
                 ProxyAppListSearchBar(
-                    searchValue = searchValue,
-                    onSearchValueChange = onSearchValueChange,
+                    searchValue = pageState.searchValue,
+                    onSearchValueChange = { value -> pageState.searchValue = value },
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .padding(bottom = 12.dp),
                 )
-                if (userTabs.size > 1) {
+                if (pageState.userTabs.size > 1) {
                     ProxyAppListUserSpaceTabs(
-                        tabs = userTabs,
+                        tabs = pageState.userTabs,
                         selectedUserId = selectedUserId,
-                        onSelectedUserIdChange = onSelectedUserIdChange,
+                        onSelectedUserIdChange = { userId -> pageState.selectedUserId = userId },
                         modifier = Modifier.padding(bottom = 12.dp),
                     )
                 }
             }
+        },
+        appContent = { contentPadding, listPadding, scrollBehavior, selectedKeys, modeIndex, onSelectionChange ->
+            ProxyAppListContent(
+                pageState = pageState,
+                selectedAppKeys = selectedKeys,
+                modeIndex = modeIndex,
+                iconSizePx = iconSizePx,
+                contentPadding = contentPadding,
+                listPadding = listPadding,
+                scrollBehavior = scrollBehavior,
+                userPagerState = userPagerState,
+                onAppCheckedChange = { item, isChecked ->
+                    onSelectionChange(item.selectionKeys, isChecked)
+                },
+            )
         },
     )
 }
@@ -524,33 +347,5 @@ private fun ProxyAppListUserPage(
             modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
             trackPadding = contentPadding,
         )
-    }
-}
-
-@Composable
-private fun proxyAppListModeLabels(): List<String> {
-    return listOf(
-        stringResource(R.string.proxy_app_list_mode_blacklist),
-        stringResource(R.string.proxy_app_list_mode_whitelist),
-        stringResource(R.string.proxy_app_list_mode_global),
-    )
-}
-
-private fun Throwable.proxyAppListClipboardImportMessage(
-    emptyClipboard: String,
-    unsupportedFormat: String,
-    noValidApps: String,
-    invalidEntry: String,
-    invalidUserId: String,
-    unsupportedMode: String,
-): String {
-    return when ((this as? ClipboardImportException)?.failure) {
-        ClipboardImportFailure.EmptyClipboard -> emptyClipboard
-        ClipboardImportFailure.NoValidApps -> noValidApps
-        ClipboardImportFailure.InvalidAppEntry -> invalidEntry
-        ClipboardImportFailure.InvalidAppUserId -> invalidUserId
-        ClipboardImportFailure.UnsupportedAppMode -> unsupportedMode
-        ClipboardImportFailure.UnsupportedFormat -> unsupportedFormat
-        else -> unsupportedFormat
     }
 }

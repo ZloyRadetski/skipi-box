@@ -157,7 +157,7 @@ fun TrafficConfigEditorPage(
 }
 
 @Composable
-private fun rememberTrafficConfigEditorController(
+internal fun rememberTrafficConfigEditorController(
     updateAppState: ((AppState) -> AppState) -> Unit,
 ): TrafficConfigEditorController = remember(updateAppState) {
     TrafficConfigEditorController(

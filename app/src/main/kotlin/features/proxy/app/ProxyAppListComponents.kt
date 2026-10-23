@@ -46,9 +46,6 @@ import top.yukonga.miuix.kmp.basic.SearchBar
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import features.proxy.app.model.AppPackageEntry
 import features.proxy.app.model.ProxyAppIconRequest
@@ -57,14 +54,6 @@ import ui.AppTheme
 import ui.text.formatTemplate
 import features.proxy.app.model.name
 import androidx.compose.runtime.getValue
-import ui.components.IconDropdownMenu
-import ui.components.IconDropdownMenuEntry
-
-internal enum class ProxyAppListMoreAction {
-    ToggleSystemApps,
-    ImportClipboard,
-    ExportClipboard,
-}
 
 @Composable
 internal fun ProxyAppListUserSpaceTabs(
@@ -93,57 +82,6 @@ internal fun ProxyAppListUserSpaceTabs(
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
         maxWidth = 132.dp,
-    )
-}
-
-@Composable
-internal fun ProxyAppListMoreActionsMenu(
-    showSystemApps: Boolean,
-    onAction: (ProxyAppListMoreAction) -> Unit,
-) {
-    IconDropdownMenu(
-        imageVector = MiuixIcons.More,
-        contentDescription = stringResource(R.string.proxy_app_list_more_actions),
-        entries = listOf(
-            IconDropdownMenuEntry(
-                key = "show-system-apps",
-                title = stringResource(R.string.proxy_app_list_show_system_apps),
-                selected = showSystemApps,
-                action = ProxyAppListMoreAction.ToggleSystemApps,
-            ),
-            IconDropdownMenuEntry(
-                key = "import-clipboard",
-                title = stringResource(R.string.common_import_from_clipboard),
-                action = ProxyAppListMoreAction.ImportClipboard,
-            ),
-            IconDropdownMenuEntry(
-                key = "export-clipboard",
-                title = stringResource(R.string.common_export_to_clipboard),
-                action = ProxyAppListMoreAction.ExportClipboard,
-            ),
-        ),
-        onAction = onAction,
-    )
-}
-
-@Composable
-internal fun ProxyAppListModeMenu(
-    modes: List<String>,
-    selectedIndex: Int,
-    onSelectedIndexChange: (Int) -> Unit,
-) {
-    IconDropdownMenu(
-        imageVector = MiuixIcons.Tune,
-        contentDescription = stringResource(R.string.proxy_app_list_mode),
-        entries = modes.mapIndexed { index, mode ->
-            IconDropdownMenuEntry(
-                key = mode,
-                title = mode,
-                selected = selectedIndex == index,
-                action = index,
-            )
-        },
-        onAction = onSelectedIndexChange,
     )
 }
 

@@ -1032,6 +1032,7 @@
     <string name="configs_ipv6">Включить IPv6</string>
     <string name="configs_ipv6_prefer">Предпочитать IPv6</string>
     <string name="configs_per_app">Приложения для этой конфигурации</string>
+    <string name="configs_per_app_desktop_notice">На Desktop недоступны список Android-приложений и применение правил к отдельным приложениям. Изменения в этом разделе сразу сохраняются в профиле.</string>
     <string name="skipi_imported_subscription">Подписка SKIPI</string>
     <string name="skipi_imported_server">Сервер добавлен в список ручных серверов</string>
     <string name="skipi_imported_config">Конфигурация добавлена</string>

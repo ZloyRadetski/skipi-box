@@ -34,7 +34,7 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
             api(compose.components.resources)
-            implementation(libs.miuix.ui)
+            api(libs.miuix.ui)
             implementation(libs.miuix.icons)
             implementation(libs.miuix.preference)
             implementation(libs.reorderable)

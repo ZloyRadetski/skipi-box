@@ -49,10 +49,12 @@ fun SkipiTrafficConfigFullScreenScaffold(
     padding: PaddingValues,
     isWideScreen: Boolean,
     saveLabel: String,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onSave: (() -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
     topContentInset: Dp = 8.dp,
+    subtitle: String = "",
+    topBarBottomContent: @Composable () -> Unit = {},
     content: @Composable BoxScope.(contentPadding: PaddingValues, listPadding: PaddingValues, scrollBehavior: ScrollBehavior) -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
@@ -65,13 +67,15 @@ fun SkipiTrafficConfigFullScreenScaffold(
                 isWideScreen = isWideScreen,
                 scrollBehavior = scrollBehavior,
                 color = SkipiTheme.colors.background,
-                navigationIcon = { BackNavigationIcon(onClick = onBack) },
+                subtitle = subtitle,
+                navigationIcon = { onBack?.let { back -> BackNavigationIcon(onClick = back) } },
                 actions = {
                     actions?.invoke()
                     if (onSave != null) {
                         NavigationIcon(onClick = onSave, imageVector = MiuixIcons.Ok, contentDescription = saveLabel)
                     }
                 },
+                bottomContent = topBarBottomContent,
             )
         },
     ) { innerPadding ->

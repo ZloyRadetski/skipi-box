@@ -68,6 +68,7 @@ import app.skipi.ui.config.SkipiTrafficConfigTunnelEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigNetworkActivationEditorScreen
 import app.skipi.ui.config.SkipiTrafficConfigEditorSectionAction
 import app.skipi.ui.config.SkipiTrafficConfigUrlImportDialog
+import app.skipi.ui.config.SkipiTrafficConfigProxyAppListEditorScreen
 import app.skipi.ui.config.TrafficConfigProfileItem
 import app.skipi.ui.config.projectTrafficConfigSourcedProxyGroups
 import app.skipi.ui.resourcefiles.ResourceManagementScreen
@@ -88,6 +89,9 @@ import app.skipi.ui.resources.configs_android_title
 import app.skipi.ui.resources.configs_tunnel_summary
 import app.skipi.ui.resources.configs_network_title
 import app.skipi.ui.resources.configs_network_summary
+import app.skipi.ui.resources.configs_per_app
+import app.skipi.ui.resources.configs_per_app_summary
+import app.skipi.ui.resources.configs_per_app_desktop_notice
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_save
 import app.skipi.ui.resources.resource_file_download_notification_failed
@@ -138,6 +142,7 @@ private data class DesktopConfigDraft(
 
 private enum class DesktopVisualEditorSection {
     Basics,
+    PerApp,
     Routing,
     Rules,
     ProxyGroups,
@@ -182,6 +187,10 @@ internal fun DesktopConfigsScreen(
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     resourceServices: DesktopResourceFileServices,
     resourceFileStatusMessage: String,
+    readPerAppClipboardText: suspend () -> String? = {
+        Toolkit.getDefaultToolkit().systemClipboard
+            .getData(DataFlavor.stringFlavor) as? String
+    },
 ) {
     val scope = rememberCoroutineScope()
     val fetcher = remember { DesktopSubscriptionFetcher() }
@@ -490,6 +499,14 @@ internal fun DesktopConfigsScreen(
                                 visualEditor = session.copy(section = DesktopVisualEditorSection.Routing)
                             },
                         ),
+                        SkipiTrafficConfigEditorSectionAction(
+                            key = "per-app",
+                            title = stringResource(Res.string.configs_per_app),
+                            summary = stringResource(Res.string.configs_per_app_summary),
+                            onNavigate = {
+                                visualEditor = session.copy(section = DesktopVisualEditorSection.PerApp)
+                            },
+                        ),
                     ),
                     profile = profile,
                     controller = editorController,
@@ -501,6 +518,40 @@ internal fun DesktopConfigsScreen(
                     },
                     statusContent = editorSaveError?.let { error ->
                         { DesktopEditorStatusContent(error) }
+                    },
+                )
+                DesktopVisualEditorSection.PerApp -> SkipiTrafficConfigProxyAppListEditorScreen(
+                    profile = profile,
+                    controller = editorController,
+                    actionScope = scope,
+                    padding = contentPadding,
+                    isWideScreen = true,
+                    readClipboardText = readPerAppClipboardText,
+                    writeClipboardText = { text -> copyTextToClipboard(text) },
+                    currentUserId = null,
+                    selfPackageName = "",
+                    onNotice = { notice -> message = notice },
+                    onBack = {
+                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
+                    },
+                    appContent = { appContentPadding, _, _, _, _, _ ->
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(appContentPadding).padding(28.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.configs_per_app_desktop_notice),
+                                color = ConfigMuted,
+                                fontSize = 14.sp,
+                                modifier = Modifier.widthIn(max = 720.dp),
+                            )
+                            message.takeIf { text -> text.isNotBlank() && text != editorSaveError }?.let { text ->
+                                Text(text, color = ConfigMuted, fontSize = 13.sp)
+                            }
+                            editorSaveError?.let { error ->
+                                DesktopEditorStatusContent(error)
+                            }
+                        }
                     },
                 )
                 DesktopVisualEditorSection.Routing -> SkipiTrafficConfigRoutingSectionScreen(

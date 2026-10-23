@@ -878,6 +878,7 @@
     <string name="configs_ipv6">IPv6</string>
     <string name="configs_ipv6_prefer">Prefer IPv6</string>
     <string name="configs_per_app">Apps for this configuration</string>
+    <string name="configs_per_app_desktop_notice">Desktop does not provide the Android app inventory or per-app enforcement. Changes to these settings are saved in the profile immediately.</string>
     <string name="configs_resources">Routing resources</string>
     <string name="configs_proxy_groups_title">Proxy groups</string>
     <string name="configs_proxy_groups_summary">Build aliases from servers that are already added to SKIPI. Select chooses a server manually; url-test, fallback and load-balance select automatically.</string>
