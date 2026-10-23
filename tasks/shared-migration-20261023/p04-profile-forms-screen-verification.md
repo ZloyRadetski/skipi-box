@@ -49,4 +49,4 @@ Root inspected all fourteen original PNGs, then inspected the four changed final
 
 Command: offline `:shared:ui:allTests :desktopApp:test` with the four class filters above, followed by `:app:assembleDebug`; JDK 26, Android test JDK 21, native HevTun build/sync tasks excluded. Log: `outputs/p04-toolbar-opacity-green-20261023.log`. This is a scoped gate; the previous full P03 2751 checkpoint remains the latest full cross-module/Core inventory. No APK installation or user-app restart was performed.
 
-P04 remains open for the source-backed shared Per-App editor/state and its Desktop entry point. The current forms use the direct card UI Edit action; a separate actual More → UI Edit test is still planned. Neither gap is hidden by this GREEN matrix.
+P04 remains open for the source-backed shared Per-App editor/state and its Desktop entry point. The forms use the direct card UI Edit action. A subsequent [foundation gate](p04-per-app-foundation-verification.md) also verifies actual More → UI Edit in 1/1 GREEN with no route implementation change. The Per-App editor remains outstanding.

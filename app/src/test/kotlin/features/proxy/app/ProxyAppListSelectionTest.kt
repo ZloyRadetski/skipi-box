@@ -41,6 +41,53 @@ class ProxyAppListSelectionTest {
         )
     }
 
+    @Test
+    fun toggling_shared_uid_updates_every_key_and_keeps_unknown_legacy_ids() {
+        val sharedUidItem = ProxyAppListItem(
+            key = "0:com.example.first",
+            app = AppPackageEntry(
+                packageName = "com.example.first",
+                userId = 0,
+                uid = 42,
+            ),
+            sharedUid = true,
+            selectionKeys = listOf(
+                "0:com.example.first",
+                "0:com.example.second",
+            ),
+        )
+        val configuredApps = listOf(
+            "ru.yota.android",
+            "com.example.legacy",
+            "0:com.example.first",
+        )
+
+        val afterCheckingSharedUid = updateProxyAppListSelection(
+            selectedApps = configuredApps,
+            item = sharedUidItem,
+            isChecked = true,
+        )
+        val afterUncheckingSharedUid = updateProxyAppListSelection(
+            selectedApps = afterCheckingSharedUid,
+            item = sharedUidItem,
+            isChecked = false,
+        )
+
+        assertEquals(
+            listOf(
+                "ru.yota.android",
+                "com.example.legacy",
+                "0:com.example.first",
+                "0:com.example.second",
+            ),
+            afterCheckingSharedUid,
+        )
+        assertEquals(
+            listOf("ru.yota.android", "com.example.legacy"),
+            afterUncheckingSharedUid,
+        )
+    }
+
     private fun proxyAppListItem(selectionKey: String): ProxyAppListItem {
         val packageName = selectionKey.substringAfter(':')
         return ProxyAppListItem(

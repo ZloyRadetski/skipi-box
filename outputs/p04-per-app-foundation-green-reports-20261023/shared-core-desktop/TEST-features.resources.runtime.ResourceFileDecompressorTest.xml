@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ResourceFileDecompressorTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-23T05:40:19.138Z" hostname="VQSeGo" time="0.029">
+  <properties/>
+  <testcase name="recognizesXzSuffixWithoutCaseSensitivity[desktop]" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.009"/>
+  <testcase name="detectsXzMagicWhenTheResolvedAssetNameHasNoXzSuffix[desktop]" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.007"/>
+  <testcase name="decompressesAnXzStreamWhenTheResolvedAssetNameEndsInXz[desktop]" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.006"/>
+  <testcase name="xzHeaderDetectionRequiresTheCompleteMagicPrefix[desktop]" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.005"/>
+  <testcase name="passesOrdinaryUncompressedBytesThroughUnchanged[desktop]" classname="features.resources.runtime.ResourceFileDecompressorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

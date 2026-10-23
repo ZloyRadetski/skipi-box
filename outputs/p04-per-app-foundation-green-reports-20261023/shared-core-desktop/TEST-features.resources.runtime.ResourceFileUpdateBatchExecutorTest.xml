@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ResourceFileUpdateBatchExecutorTest[desktop]" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-23T05:40:19.195Z" hostname="VQSeGo" time="0.011">
+  <properties/>
+  <testcase name="successfulBatchUpdatesInOrderThenReadsStatusMarksRawSourceAndNotifies[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.003"/>
+  <testcase name="cancellationIsReportedThenMappedWithoutWrappingOrContinuing[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.0"/>
+  <testcase name="sourceMarkerFailureEscapesAfterStatusWithoutFailureCallbackOrCompletion[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.0"/>
+  <testcase name="fileFailureIsWrappedWithDisplayNameAndStopsTheBatch[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="completionNotificationFailureIsSwallowedAfterSuccessfulMark[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="emptyPlanReadsStatusWithoutPreparingSessionOrTouchingOtherCallbacks[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.0"/>
+  <testcase name="statusFailureIsReportedUnwrappedAndPreventsMarkAndCompletion[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="preparationFailureEscapesBeforeBatchFailureReporting[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.0"/>
+  <testcase name="failureReporterExceptionIsNotSwallowed[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.001"/>
+  <testcase name="successfulSingleFilePlanDoesNotMarkSourceButStillNotifiesCompletion[desktop]" classname="features.resources.runtime.ResourceFileUpdateBatchExecutorTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

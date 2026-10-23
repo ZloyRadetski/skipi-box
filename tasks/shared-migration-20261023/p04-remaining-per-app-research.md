@@ -49,3 +49,7 @@ Enumeration, labels/icons, user-space discovery, Android self-package identity, 
 ## Scope distinction
 
 The concrete P04 blocker is a missing shared Per-App editor/state boundary and Desktop connection, not the absence of a Desktop PackageManager. The current fields and document codec are already portable, and the Android page defines immediate-commit, selection, and clipboard-import behavior. A common screen can consume host-supplied app rows where available, while Desktop continues to edit mode and selected IDs through the existing clipboard flow without inventing installed apps. Full package list projection and OS integration stay in the dependent R03 work.
+
+## Foundation checkpoint after this audit
+
+The source-backed pure clipboard codec and selection helper have now moved to shared/core after Android baseline 11 GREEN and common API RED. The scoped post-move gate is 700 GREEN; actual More → UI Edit is also 1/1 GREEN without changing that route. [Foundation verification](p04-per-app-foundation-verification.md) records source hashes and limits. These complete characterization/codec pieces of the continuation above; immediate per-profile controller operations, the shared Per-App screen, Desktop entry and Android adapter wiring remain the next work. Full installed-package projection/filter/search and Android OS policy remain R03.

@@ -112,11 +112,11 @@ internal fun updateProxyAppListSelection(
     item: ProxyAppListItem,
     isChecked: Boolean,
 ): List<String> {
-    return if (isChecked) {
-        (selectedApps + item.selectionKeys).distinct()
-    } else {
-        selectedApps - item.selectionKeys.toSet()
-    }
+    return updateProxyAppListSelection(
+        selectedApps = selectedApps,
+        selectionKeys = item.selectionKeys,
+        isChecked = isChecked,
+    )
 }
 
 internal const val ProxyAppListGlobalModeIndex = 2

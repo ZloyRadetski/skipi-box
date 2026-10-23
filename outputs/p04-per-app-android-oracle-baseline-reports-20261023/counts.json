@@ -1,0 +1,49 @@
+{
+  "suites": [
+    {
+      "name": "features.proxy.app.usecase.ProxyAppListClipboardAndroidOracleTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-23T05:35:53.038Z",
+      "cases": [
+        "prefixesBarePackagesWithTheCallerProvidedUserIdIncludingZeroFallback",
+        "missingModeKeepsNullAndSelfFilteringLeavesOtherIdsInOrder",
+        "encodesModeAndSelectedIdsInSourceOrderAfterTrimAndDeduplication",
+        "reportsExistingFailuresForUnsupportedModeMalformedIdsAndNoValidApps",
+        "decodesEachNamedModeAndKeepsExplicitUserIdsAndPackageOrder",
+        "mergeRetainsCurrentModeWhenImportHasNoModeAndDeduplicatesInOrder",
+        "acceptsLegacyBooleanModeLinesAsBlacklistAndWhitelist",
+        "replaceUsesImportedModeAndReplacesTheSelectedIdList",
+        "reportsEmptyClipboardWithTheExistingFailure"
+      ]
+    },
+    {
+      "name": "features.proxy.app.ProxyAppListSelectionTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-23T05:35:53.021Z",
+      "cases": [
+        "toggling_shared_uid_updates_every_key_and_keeps_unknown_legacy_ids",
+        "editing_installed_apps_keeps_packages_that_are_only_present_in_the_config"
+      ]
+    }
+  ],
+  "totals": {
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "build": "BUILD SUCCESSFUL in 26s",
+  "head": "3a2adde",
+  "sourceSha256": {
+    "app/src/test/kotlin/features/proxy/app/usecase/ProxyAppListClipboardAndroidOracleTest.kt": "dedff182f91bf287f297c4d6b82ead75d3a49975c305cbf3a73ba14bcfd8afd3",
+    "app/src/test/kotlin/features/proxy/app/ProxyAppListSelectionTest.kt": "fb8b35c39f3bd10f0473ae007ea2c24ddabc3de7dab1ed2ad12cae0f46451b01",
+    "app/src/main/kotlin/features/proxy/app/usecase/ProxyAppListClipboardCodec.kt": "300acddfaba351c21c82989f49d74af15fcd09787ec748318a75d79d101b5b7b",
+    "app/src/main/kotlin/features/proxy/app/ProxyAppListPageState.kt": "837f4a399715055b1f39e9c2424699fce377d109be7a32db57599f62b1cd0be0"
+  }
+}

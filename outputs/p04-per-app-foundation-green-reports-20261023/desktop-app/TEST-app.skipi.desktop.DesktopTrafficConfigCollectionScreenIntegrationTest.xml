@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-23T05:40:38.265Z" hostname="VQSeGo" time="2.693">
+  <properties/>
+  <testcase name="profileMenuUiEditOpensTheInactiveTargetBasicsWithoutWritingTheLibrary" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="2.689"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

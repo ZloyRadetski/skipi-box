@@ -1,0 +1,15 @@
+{
+  "kind": "API RED; compileTestKotlinDesktop failed before test execution",
+  "build": "BUILD FAILED in 4s",
+  "executedTests": 0,
+  "expectedMissingApi": [
+    "updateProxyAppListSelection",
+    "encodeProxyAppListForClipboard",
+    "decodeProxyAppListFromClipboard",
+    "applyProxyAppListClipboardImport"
+  ],
+  "sourceSha256": {
+    "shared/core/src/commonTest/kotlin/features/proxy/app/usecase/ProxyAppListClipboardTest.kt": "166e85f0f5a7e1af1ae399b1528f9fa0c87506fbb2ab90bbf4ec2fa827bf7b21",
+    "shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListSelectionOperationsTest.kt": "89732ef323eee55734af578dba160ae34fb8a674688977204e897e05c3f1863a"
+  }
+}

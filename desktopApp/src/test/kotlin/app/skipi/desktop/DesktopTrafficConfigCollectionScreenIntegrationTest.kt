@@ -1182,6 +1182,66 @@ loglevel = debug
     }
 
     @Test
+    fun profileMenuUiEditOpensTheInactiveTargetBasicsWithoutWritingTheLibrary() = runBlocking {
+        val target = normalizedProfile(
+            id = 7,
+            name = "Inactive profile opened from More",
+            content = """[General]
+loglevel = warning
+""",
+            sourceUrl = "https://inactive-menu.example.test/profile.conf",
+            updateLocked = true,
+        )
+        val active = normalizedProfile(
+            id = 3,
+            name = "Selected sibling remains active",
+            content = """[General]
+loglevel = debug
+""",
+            sourceUrl = "https://active-menu.example.test/profile.conf",
+            updateLocked = false,
+        )
+        val initialLibrary = DesktopConfigLibrary(
+            selectedConfigId = active.id,
+            configs = listOf(target, active),
+            nextConfigId = 29,
+        )
+        val uiEditLabel = getString(Res.string.configs_ui_edit)
+        lateinit var configFile: File
+
+        withDesktopScreen(
+            proxyServers = emptyList(),
+            targetProfile = target,
+            activeProfile = active,
+            initialLibraryOverride = initialLibrary,
+            libraryTransformHooksFactory = fileBackedConfigLibraryHooks { _, file -> configFile = file },
+        ) { screen ->
+            clickRowContentDescriptionAction(screen.scene, target.name, "Ещё")
+            assertNotNull(awaitText(screen.scene, uiEditLabel), "The profile More menu should expose UI Edit")
+            clickTextAction(screen.scene, uiEditLabel)
+
+            assertEquals(
+                target.name,
+                awaitEditableText(screen.scene, target.name),
+                "More → UI Edit should open Basics for the clicked inactive profile",
+            )
+            assertFalse(
+                hasVisibleText(screen.scene, active.name),
+                "Opening UI Edit for the inactive target must not open the selected sibling",
+            )
+
+            val persisted = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
+            assertEquals(listOf(7, 3), persisted.configs.map(ConfigProfile::id))
+            assertEquals(3, persisted.selectedConfigId)
+            assertEquals(29, persisted.nextConfigId)
+            assertEquals(initialLibrary, persisted, "Opening UI Edit should leave the actual temporary JSON library unchanged")
+            assertEquals(target, persisted.configs.single { it.id == target.id })
+            assertEquals(active, persisted.configs.single { it.id == active.id })
+            assertEquals(0, screen.libraryTransformCount(), "Opening More → UI Edit must not transform the profile library")
+        }
+    }
+
+    @Test
     fun openingGroupsFromBasicsAndBackingOutReturnsToRouting() = runBlocking {
         val profileName = "Profile for routing navigation baseline"
         val routingTitle = getString(Res.string.configs_rules_title)

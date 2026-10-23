@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigDocumentCustomResourceTest[desktop]" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-23T05:40:18.944Z" hostname="VQSeGo" time="0.009">
+  <properties/>
+  <testcase name="filtersInvalidCustomResourceRowsAndKeepsTheFirstPositiveId[desktop]" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.002"/>
+  <testcase name="decodesMalformedCustomResourceComponentsLikeAndroidUri[desktop]" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.003"/>
+  <testcase name="roundTripsAnAsciiCustomResourceFileThroughTheProfileDocument[desktop]" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.002"/>
+  <testcase name="decodesPercentEncodedUtf8AndLeavesLiteralPlusAsUriDecodeDoes[desktop]" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.0"/>
+  <testcase name="malformedTrailingEscapeUsesAndroidUriDecodeReplacementCharacter[desktop]" classname="features.config.TrafficConfigDocumentCustomResourceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
