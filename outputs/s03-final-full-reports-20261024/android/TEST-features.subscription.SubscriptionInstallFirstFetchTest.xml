@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionInstallFirstFetchTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:27:33.699Z" hostname="VQSeGo" time="0.08">
+  <properties/>
+  <testcase name="new_install_keeps_android_defaults_and_commits_non_activating_embedded_profile" classname="features.subscription.SubscriptionInstallFirstFetchTest" time="0.053"/>
+  <testcase name="disabled_duplicate_uses_its_saved_user_agent_and_age_key_on_the_first_fetch" classname="features.subscription.SubscriptionInstallFirstFetchTest" time="0.026"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

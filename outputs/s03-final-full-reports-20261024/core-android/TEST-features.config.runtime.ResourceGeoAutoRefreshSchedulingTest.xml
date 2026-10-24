@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.runtime.ResourceGeoAutoRefreshSchedulingTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:24:32.905Z" hostname="VQSeGo" time="0.004">
+  <properties/>
+  <testcase name="active_profile_trigger_drops_initial_state_and_tracks_only_id_and_two_geo_urls" classname="features.config.runtime.ResourceGeoAutoRefreshSchedulingTest" time="0.0"/>
+  <testcase name="latest_worker_admission_checks_only_matching_profile_and_resource_auto_update" classname="features.config.runtime.ResourceGeoAutoRefreshSchedulingTest" time="0.001"/>
+  <testcase name="interval_update_keeps_period_anchor_and_removal_then_reenable_starts_a_new_period" classname="features.config.runtime.ResourceGeoAutoRefreshSchedulingTest" time="0.001"/>
+  <testcase name="one_time_trigger_is_separate_from_periodic_work_and_matches_android_positive_id_gate" classname="features.config.runtime.ResourceGeoAutoRefreshSchedulingTest" time="0.0"/>
+  <testcase name="reconcile_starts_new_resource_schedules_and_ignores_profile_refresh_fields" classname="features.config.runtime.ResourceGeoAutoRefreshSchedulingTest" time="0.001"/>
+  <testcase name="periodic_and_one_time_retries_follow_their_distinct_workmanager_bases" classname="features.config.runtime.ResourceGeoAutoRefreshSchedulingTest" time="0.0"/>
+  <testcase name="periodic_and_retry_deadlines_keep_workmanager_long_addition_at_the_boundary" classname="features.config.runtime.ResourceGeoAutoRefreshSchedulingTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

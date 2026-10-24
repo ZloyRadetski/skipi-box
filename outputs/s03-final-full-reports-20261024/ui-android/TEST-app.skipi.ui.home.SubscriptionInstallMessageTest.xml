@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.ui.home.SubscriptionInstallMessageTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:25:39.979Z" hostname="VQSeGo" time="0.342">
+  <properties/>
+  <testcase name="new_install_message_returns_refresh_result_without_duplicate_notice" classname="app.skipi.ui.home.SubscriptionInstallMessageTest" time="0.275"/>
+  <testcase name="install_message_adds_saved_title_before_refresh_result_for_duplicate" classname="app.skipi.ui.home.SubscriptionInstallMessageTest" time="0.067"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

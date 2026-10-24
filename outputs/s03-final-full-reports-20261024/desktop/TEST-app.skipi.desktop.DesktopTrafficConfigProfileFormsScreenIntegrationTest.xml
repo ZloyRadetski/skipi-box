@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:26:45.836Z" hostname="VQSeGo" time="13.367">
+  <properties/>
+  <testcase name="rendersBasicsAndPortableSectionsAtNarrowAndWideDesktopViewports" classname="app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest" time="5.088"/>
+  <testcase name="basicsSectionNavigationPersistsItsDraftBeforeOpeningGeneral" classname="app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest" time="0.146"/>
+  <testcase name="eachDetailSaveActionPersistsItsPublicWidgetEditAndReturnsToBasics" classname="app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest" time="0.606"/>
+  <testcase name="dnsToolbarBackgroundDoesNotChangeWhenTheFormScrolls" classname="app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest" time="1.628"/>
+  <testcase name="basicsToolbarBackPersistsTheEditedNameIntoTheTemporaryConfigJson" classname="app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest" time="0.118"/>
+  <testcase name="rendersRawEditorMetadataAndDocumentFieldAtNarrowAndWideViewports" classname="app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest" time="5.178"/>
+  <testcase name="eachDetailToolbarBackPersistsItsPublicWidgetEditAndReturnsToBasics" classname="app.skipi.desktop.DesktopTrafficConfigProfileFormsScreenIntegrationTest" time="0.603"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

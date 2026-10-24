@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:26:23.910Z" hostname="VQSeGo" time="0.031">
+  <properties/>
+  <testcase name="batchEmbeddedProfilesMaterializeGroupsInSourceOrderAfterTheAggregateCommit" classname="app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest" time="0.014"/>
+  <testcase name="lateBatchCancellationStillCommitsMetadataProfilesAndGeneratedGroups" classname="app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest" time="0.005"/>
+  <testcase name="singleEmbeddedProfileRefreshReconcilesTheExistingGeneratedGroupAfterCommit" classname="app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest" time="0.006"/>
+  <testcase name="failedProfileSaveDoesNotPublishProfilesOrPersistGeneratedGroups" classname="app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest" time="0.002"/>
+  <testcase name="invalidDuplicateFinalDocumentDoesNotWriteProfilesOrReconcileTheServerLibrary" classname="app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest" time="0.001"/>
+  <testcase name="generatedGroupSaveFailureReportsProfileScopeWithoutRollingBackTheCommittedProfile" classname="app.skipi.desktop.DesktopSubscriptionProfileGroupReconciliationTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

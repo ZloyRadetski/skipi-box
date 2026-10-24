@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigEditorProfileStoreTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:26:41.601Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="updateUsesInjectedLibraryTransformBeforeHostSideEffects" classname="app.skipi.desktop.DesktopTrafficConfigEditorProfileStoreTest" time="0.001"/>
+  <testcase name="controllerRawSaveUsesAndroidSkipiNormalizationAndUpdatesLatestDesktopEnvelope" classname="app.skipi.desktop.DesktopTrafficConfigEditorProfileStoreTest" time="0.0"/>
+  <testcase name="missingProfileReturnsFalseAndDoesNotAddAConfig" classname="app.skipi.desktop.DesktopTrafficConfigEditorProfileStoreTest" time="0.001"/>
+  <testcase name="updateTransformsLatestProfileByIdAndPreservesLibraryEnvelopeAndResourceUaSemantics" classname="app.skipi.desktop.DesktopTrafficConfigEditorProfileStoreTest" time="0.0"/>
+  <testcase name="failedLibraryCommitIsReportedWithoutPublishingMutationOrLeavingEditor" classname="app.skipi.desktop.DesktopTrafficConfigEditorProfileStoreTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

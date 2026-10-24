@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.SubscriptionInstallConfigUseCaseTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:27:33.625Z" hostname="VQSeGo" time="0.073">
+  <properties/>
+  <testcase name="exact_url_reuses_the_entire_existing_group_and_reports_its_saved_name" classname="features.subscription.SubscriptionInstallConfigUseCaseTest" time="0.044"/>
+  <testcase name="new_group_is_visible_before_fetch_and_survives_fetch_failure" classname="features.subscription.SubscriptionInstallConfigUseCaseTest" time="0.028"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

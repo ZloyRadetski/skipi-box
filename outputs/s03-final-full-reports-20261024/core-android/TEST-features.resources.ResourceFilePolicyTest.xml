@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.ResourceFilePolicyTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:24:33.008Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="missingAndEmptyTargetsRestoreBeforeCustomSourceProtection" classname="features.resources.ResourceFilePolicyTest" time="0.0"/>
+  <testcase name="profileSourceActivationUsesItsMarkerAndDoesNotAffectLegacyFiles" classname="features.resources.ResourceFilePolicyTest" time="0.0"/>
+  <testcase name="resourceFileKindsKeepTheirAndroidOrderFileNamesAndDisplayNames" classname="features.resources.ResourceFilePolicyTest" time="0.001"/>
+  <testcase name="packageUpdateMustBeRequestedForNonemptyPresetFiles" classname="features.resources.ResourceFilePolicyTest" time="0.0"/>
+  <testcase name="packageUpdateRestoresOnlyWhenBundledTimestampIsKnownAndStrictlyNewer" classname="features.resources.ResourceFilePolicyTest" time="0.0"/>
+  <testcase name="packageUpdateProtectsNonemptyCustomFilesExceptXrayCore" classname="features.resources.ResourceFilePolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

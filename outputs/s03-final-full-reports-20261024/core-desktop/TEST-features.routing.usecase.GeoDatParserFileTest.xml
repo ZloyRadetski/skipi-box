@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="GeoDatParserFileTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:24:16.236Z" hostname="VQSeGo" time="0.002">
+  <properties/>
+  <testcase name="cachedTagsAreRefreshedWhenSameLengthFileHasAChangedTimestamp[desktop]" classname="features.routing.usecase.GeoDatParserFileTest" time="0.001"/>
+  <testcase name="missingAndEmptyFilesHaveNoTags[desktop]" classname="features.routing.usecase.GeoDatParserFileTest" time="0.001"/>
+  <testcase name="truncatingACachedFileToEmptyDoesNotReturnStaleTags[desktop]" classname="features.routing.usecase.GeoDatParserFileTest" time="0.0"/>
+  <testcase name="readsTagsFromAMiniatureGeoDatFile[desktop]" classname="features.routing.usecase.GeoDatParserFileTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

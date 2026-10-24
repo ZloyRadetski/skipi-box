@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:24:29.887Z" hostname="VQSeGo" time="0.036">
+  <properties/>
+  <testcase name="resultDoesNotResurrectMissingProfile" classname="app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest" time="0.031"/>
+  <testcase name="nullOrNonPositiveEditResultIdAddsGroupToCapturedDocument" classname="app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest" time="0.001"/>
+  <testcase name="invalidDeleteNonStrategyAndBlankNameResultsSkipWithoutWriting" classname="app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest" time="0.002"/>
+  <testcase name="profileStoreFailureIsReportedWithoutClaimingSuccess" classname="app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest" time="0.001"/>
+  <testcase name="deleteProxyGroupUsesCapturedDocumentOnLatestSameIdProfile" classname="app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest" time="0.0"/>
+  <testcase name="deletedResultRemovesCapturedGroupByPositiveProfileLineNumber" classname="app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest" time="0.0"/>
+  <testcase name="editResultTreatsServerIdAsProfileLineNumberEvenWhenItMatchesMemberId" classname="app.skipi.app.config.TrafficConfigProxyGroupEditorControllerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

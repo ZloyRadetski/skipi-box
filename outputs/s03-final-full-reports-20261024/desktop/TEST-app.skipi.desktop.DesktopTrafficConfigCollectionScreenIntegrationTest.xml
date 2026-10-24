@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" tests="27" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:26:24.069Z" hostname="VQSeGo" time="17.531">
+  <properties/>
+  <testcase name="sourcedGroupOpensItsInactiveProfileAndBackReturnsToCatalogWithoutWrites" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.24"/>
+  <testcase name="manualRefreshReconcilesLatestRepositoryAfterConcurrentEditAndActiveProfileSwitch" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.157"/>
+  <testcase name="savedProfileCardShowsThePreservedUnsupportedSectionNotice" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.071"/>
+  <testcase name="manualProfileRefreshUsesCapturedSnapshotAndAppliesResponseToLatestLibraryRow" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.103"/>
+  <testcase name="rendersCollectionAndGlobalActionsAtNarrowAndWideViewports" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="3.6"/>
+  <testcase name="globalRowsKeepAndroidEligibilityAndOrderAndNonStrategyClickIsANoop" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.107"/>
+  <testcase name="profileMenuUiEditOpensTheInactiveTargetBasicsWithoutWritingTheLibrary" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.714"/>
+  <testcase name="profileMenuDeleteUsesLatestLibraryAndFallsBackToFirstRemainingProfile" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.765"/>
+  <testcase name="leavingAnUnchangedExistingProfileEditorDoesNotWriteTheLibrary" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.194"/>
+  <testcase name="manualLockedProfileRefreshWaitsForConfirmationAndExplicitlyUnlocksTheSavedProfile" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.192"/>
+  <testcase name="duplicatingBlankNamedGlobalGroupUsesProtocolFallbackForItsSavedName" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.176"/>
+  <testcase name="openingGroupsFromBasicsAndBackingOutReturnsToRouting" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="3.195"/>
+  <testcase name="duplicatingGlobalGroupCreatesLocalizedDetachedDraftAndPreservesItsFields" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.292"/>
+  <testcase name="emptyLibraryShowsLegacyEmptyCardAndToolbarImportChoicesWithoutIo" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.214"/>
+  <testcase name="rawEditMenuBackRejectsInvalidDocumentAndLeavesLibraryUnchanged" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.791"/>
+  <testcase name="failedGlobalGroupEditShowsAdapterReasonAndKeepsPersistedDataUnchanged" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.132"/>
+  <testcase name="profileMenuDeleteKeepsTheOnlyProfileAndItsSelectionAndCounter" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.633"/>
+  <testcase name="discardingEditedGlobalGroupDoesNotApplyOrMutateTheOriginal" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.365"/>
+  <testcase name="savedProfileCardShowsSourceSummaryLockDiagnosticsAndCopyMoreActions" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.115"/>
+  <testcase name="nonStrategyAutoBalancerContextActionsLeaveCatalogAndDoNotApply" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.154"/>
+  <testcase name="profileMenuEnableChangesOnlyThePersistedSelection" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.58"/>
+  <testcase name="editingExistingGlobalGroupKeepsIdentityAndAppliesOnlyAfterSave" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.237"/>
+  <testcase name="globalDeleteCancelDoesNotApplyAndConfirmSubmitsOnlyTheGlobalRecord" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.295"/>
+  <testcase name="addingGlobalGroupKeepsDraftUntilSaveAndEmitsAutoBalancerResult" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.189"/>
+  <testcase name="rawEditMenuExplicitDesktopSaveKeepsPortableMetadataAndLibraryEnvelope" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="1.783"/>
+  <testcase name="rawEditMenuBackSavesValidAndroidDocumentAndPreservesLibraryEnvelope" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="0.695"/>
+  <testcase name="profileMenuDuplicateUsesClickedSnapshotAndKeepsEditorChangesLocalUntilSave" classname="app.skipi.desktop.DesktopTrafficConfigCollectionScreenIntegrationTest" time="1.542"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

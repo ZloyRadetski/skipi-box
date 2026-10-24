@@ -1,10 +1,10 @@
 # Чек-лист завершения Android → shared
 
-**Работа возобновлена по последнему указанию пользователя: сейчас завершаем S03, следующей карточкой берём R03. R01 завершена; прежняя пауза снята.**
+**S03 завершена 24 октября; следующая карточка по выбору пользователя — R03. R01/P04 завершены; R03 production ещё не начат.**
 
-Последняя полная контрольная точка: [R01 acceptance](shared-migration-20261023/r01-acceptance-verification.md) — **2859/2859 GREEN94s**, failures/errors/skips 0, восемь свежих targets, реальные Core **9/9**, Desktop compile/debug APK GREEN. Закрыто **14/39 карточек по количеству**, не по объёму. [Точка продолжения](shared-migration-20261023/r01-pause-handoff.md). Source checkpoints: `a5cba46`, `efcdde7`, `7a213bd`. Новая global UI не добавлена: её Android source не имел entrypoint уже в initial commit; активный profile Routing UI принят в P04.
+Последняя полная контрольная точка: [S03 acceptance](shared-migration-20261023/s03-acceptance-verification.md) — **2906/2906 GREEN3m53s**, failures/errors/skips 0, восемь свежих targets, реальные Core **9/9**, Desktop compile/debug APK GREEN, 30 Kotlin hashes неизменны. Закрыто **15/39 карточек по количеству**, не по объёму. [Точка продолжения на R03](shared-migration-20261023/s03-handoff.md). Source checkpoint `20bbe10`; прежний полный [R01 baseline](shared-migration-20261023/r01-acceptance-verification.md) 2859 GREEN сохранён как история.
 
-Предыдущий малый R01 checkpoint (до завершающей resource-приёмки): [no-profile routing](shared-migration-20261023/r01-global-routing-runtime-verification.md), behavior RED 8/4 failures → core **692 GREEN7s** и отдельный Desktop **25 GREEN26s**, native **3/3**, compile GREEN. Repository checkpoint ниже сохраняется отдельно. R01 пока открыта: завершающий срез — GeoIP/GeoSite validation и enabled ext-domain preflight с фактическим global assets path. Активная profile/Custom семантика сохранена; новая legacy UI не добавляется.
+Исторический малый R01 checkpoint перед закрытием: [no-profile routing](shared-migration-20261023/r01-global-routing-runtime-verification.md), behavioral RED → core692 GREEN и Desktop25 GREEN/native3. Последующая resource-приёмка R01 завершена и сохранена в R01 acceptance; этот промежуточный checkpoint не задаёт текущий статус.
 
 Дата исходного плана: 7 октября 2026 года. **12 октября пользователь подтвердил продолжение всего плана («Делаем!», «Продолжай»). Прежняя пауза после S01/S02 отменена; работа продолжается малыми срезами, сначала тесты.**
 
@@ -47,7 +47,7 @@ P04 Per-App controller, 23 октября: [немедленные операц�
 
 - [x] [S01](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#s01) — Перенести CRUD подписок и ручных групп; общий controller и полный редактор подключены к обоим хостам, persistence/counter/opaque removal проверены; manual UI QA не выполнена.
 - [x] [S02](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#s02) — Перенести обновление одной подписки и сверку результата; shared load/rebase/commit подключён, identity/cancellation/partial failure/Age/provider/embedded проверены; batch/install/schedules остаются S03.
-- [ ] [S03](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#s03) — Перенести массовое обновление, install и правила расписаний.
+- [x] [S03](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#s03) — Перенести массовое обновление, install и правила расписаний. Shared batch/install/periodic rules и Android/Desktop entrypoints приняты; app-lifetime timer, network defer/cancel, saved duplicate/embedded профили проверены. Итог 2906 GREEN, Core9, compile/APK; границы T02/L01 и физической QA указаны в отчёте.
 - [ ] [H01](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#h01) — Свести группировку, сортировку и Home-проекцию.
 - [ ] [H02](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#h02) — Вынести прикладные Home-операции и runtime-решения.
 - [ ] [H03](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#h03) — Подключить Home и переносимые инструменты в обоих хостах.
