@@ -4,10 +4,8 @@
 package engine.vpn
 
 import app.AppState
-import app.modes.ProxyAppListModeBlacklist
 import app.modes.ProxyAppListModeGlobal
-import app.modes.ProxyAppListModeWhitelist
-import utils.toTrimmedNonEmptyDistinctList
+import features.proxy.app.projectProxyAppVpnPolicy
 
 internal data class VpnApplicationPolicy(
     val mode: Int = ProxyAppListModeGlobal,
@@ -15,38 +13,14 @@ internal data class VpnApplicationPolicy(
 )
 
 internal fun AppState.toVpnApplicationPolicy(currentUserId: Int): VpnApplicationPolicy {
-    if (enableStrictFullTunnel) {
-        return VpnApplicationPolicy(mode = ProxyAppListModeGlobal)
-    }
-    val mode = when (proxyAppListMode) {
-        ProxyAppListModeBlacklist,
-        ProxyAppListModeWhitelist,
-        ProxyAppListModeGlobal -> proxyAppListMode
-
-        else -> ProxyAppListModeGlobal
-    }
-    if (mode == ProxyAppListModeGlobal) {
-        return VpnApplicationPolicy(mode = mode)
-    }
-    return VpnApplicationPolicy(
-        mode = mode,
-        packageNames = proxyAppListSelectedApps.toVpnServicePackageNames(currentUserId),
+    val projection = projectProxyAppVpnPolicy(
+        mode = proxyAppListMode,
+        selectedAppKeys = proxyAppListSelectedApps,
+        currentUserId = currentUserId,
+        strictFullTunnel = enableStrictFullTunnel,
     )
-}
-
-private fun List<String>.toVpnServicePackageNames(currentUserId: Int): List<String> {
-    return mapNotNull { key ->
-        val separatorIndex = key.indexOf(':')
-        if (separatorIndex < 0) {
-            key
-        } else {
-            val userId = key.substring(0, separatorIndex).toIntOrNull()
-            if (userId == currentUserId) {
-                key.substring(separatorIndex + 1)
-            } else {
-                null
-            }
-        }
-    }
-        .toTrimmedNonEmptyDistinctList()
+    return VpnApplicationPolicy(
+        mode = projection.mode,
+        packageNames = projection.packageNames,
+    )
 }
