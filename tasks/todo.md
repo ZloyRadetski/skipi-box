@@ -1,8 +1,8 @@
 # Чек-лист завершения Android → shared
 
-**S03 завершена 24 октября; R03 в работе по выбору пользователя. R01/P04 завершены.** [Первый R03 срез](shared-migration-20261024/r03-foundation-verification.md): Android source baseline11 и Desktop preservation1 GREEN → common API RED до production → **92/92 focused GREEN33s**, включая synthetic package/Builder smoke8; Desktop compile GREEN. Далее общий list presentation; R03 открыта.
+**S03 и R03 завершены 24 октября в выбранном пользователем порядке.** [R03 acceptance](shared-migration-20261024/r03-acceptance-verification.md): **2960/2960 full GREEN1m19s**, failures/errors/skips0, real Core9/9, actual shared-UI7/7, Desktop compile/debug APK GREEN, 25 Kotlin SHA неизменны. Закрыто **16/39 карточек по количеству**, не по объёму. [Продолжение](shared-migration-20261024/r03-handoff.md): ближайшая implementation-карточка основного порядка H01, ещё не начата.
 
-Последняя полная контрольная точка: [S03 acceptance](shared-migration-20261023/s03-acceptance-verification.md) — **2906/2906 GREEN3m53s**, failures/errors/skips 0, восемь свежих targets, реальные Core **9/9**, Desktop compile/debug APK GREEN, 30 Kotlin hashes неизменны. Закрыто **15/39 карточек по количеству**, не по объёму. [Точка продолжения на R03](shared-migration-20261023/s03-handoff.md). Source checkpoint `20bbe10`; прежний полный [R01 baseline](shared-migration-20261023/r01-acceptance-verification.md) 2859 GREEN сохранён как история.
+Предыдущая полная контрольная точка: [S03 acceptance](shared-migration-20261023/s03-acceptance-verification.md) — **2906/2906 GREEN3m53s**, failures/errors/skips 0, восемь свежих targets, реальные Core **9/9**, Desktop compile/debug APK GREEN, 30 Kotlin hashes неизменны. На тот момент закрыто15/39 карточек; исторический source checkpoint `20bbe10`. Актуальная приёмка R03 приведена выше.
 
 Исторический малый R01 checkpoint перед закрытием: [no-profile routing](shared-migration-20261023/r01-global-routing-runtime-verification.md), behavioral RED → core692 GREEN и Desktop25 GREEN/native3. Последующая resource-приёмка R01 завершена и сохранена в R01 acceptance; этот промежуточный checkpoint не задаёт текущий статус.
 
@@ -77,7 +77,7 @@ P04 Per-App controller, 23 октября: [немедленные операц�
 
 - [x] [R01](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#r01) — Общие routing operations/components, Desktop repository и generated no-profile runtime с реальными assets/валидацией приняты; profile/Custom семантика сохранена. Global UI не добавляется по Android source/history. Итог 2859 GREEN, Core 9/9; после карточки — пауза.
 - [x] [R02](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#r02) — Перенести каталог ресурсов и правила обновления; shared Android/Desktop UI, profile-scoped adapters, refresh hosts и ordered download/update paths подключены. Итоговая suite inventory 2,542 GREEN; rendered-screen local-HTTP sample 1/1. Физическая Desktop/Android device QA не выполнялась.
-- [ ] [R03](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#r03) — Перенести app selection и платформенную привязку per-app.
+- [x] [R03](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/plan.md#r03) — Common app-list projection/policy и list/search/tabs/pages/rows подключены к Android; P04 editor/controller и Desktop сохранение opaque IDs сохранены. Profile/backup/temporary Desktop store, synthetic package/Builder smoke и7 actual shared-UI scenes GREEN; итог2960 full/Core9/compile/APK. Desktop OS enforcement не добавлялся; physical device QA не выполнялась.
 
 ## 7. Остальные существующие мобильные сценарии
 

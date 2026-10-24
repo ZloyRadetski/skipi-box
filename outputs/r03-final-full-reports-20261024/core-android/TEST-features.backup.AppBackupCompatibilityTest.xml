@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.backup.AppBackupCompatibilityTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:48.810Z" hostname="VQSeGo" time="0.067">
+  <properties/>
+  <testcase name="sharedMappersRoundTripPortableModels" classname="features.backup.AppBackupCompatibilityTest" time="0.009"/>
+  <testcase name="roundTripsV1DataAndPreservesFieldNames" classname="features.backup.AppBackupCompatibilityTest" time="0.032"/>
+  <testcase name="decodesLegacyV1FixtureAndReencodesStableFields" classname="features.backup.AppBackupCompatibilityTest" time="0.024"/>
+  <testcase name="validatesFormatAndSupportedVersion" classname="features.backup.AppBackupCompatibilityTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

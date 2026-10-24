@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigProxyGroupListProjectionTest[desktop]" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:49.158Z" hostname="VQSeGo" time="0.028">
+  <properties/>
+  <testcase name="globalRowsPreserveCatalogOrderAndSafeCastEligibility[desktop]" classname="app.skipi.ui.config.TrafficConfigProxyGroupListProjectionTest" time="0.008"/>
+  <testcase name="sourcedRowsPreserveProfileAndParserOrderAndUseProfileLineKeys[desktop]" classname="app.skipi.ui.config.TrafficConfigProxyGroupListProjectionTest" time="0.018"/>
+  <testcase name="globalRowsFallBackToProtocolAndAutoBalancerSubtitleForBlankInfoFields[desktop]" classname="app.skipi.ui.config.TrafficConfigProxyGroupListProjectionTest" time="0.001"/>
+  <testcase name="emptyCatalogsProduceNoGlobalOrSourcedRows[desktop]" classname="app.skipi.ui.config.TrafficConfigProxyGroupListProjectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

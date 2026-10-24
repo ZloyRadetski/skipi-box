@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.runtime.AndroidResourceFileStoreBundledOracleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:59.942Z" hostname="VQSeGo" time="0.304">
+  <properties/>
+  <testcase name="missingRoscomVpnCnPrivateAssetLeavesTheSourceMarkerUncommitted" classname="features.resources.runtime.AndroidResourceFileStoreBundledOracleTest" time="0.07"/>
+  <testcase name="firstProfileReceivesLegacyVisibleFilesOnceWithoutOverwritingItsExistingFile" classname="features.resources.runtime.AndroidResourceFileStoreBundledOracleTest" time="0.016"/>
+  <testcase name="v2FlyAssetsRestoreAllNonCoreFilesAndCommitTheProfileSourceMarker" classname="features.resources.runtime.AndroidResourceFileStoreBundledOracleTest" time="0.216"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

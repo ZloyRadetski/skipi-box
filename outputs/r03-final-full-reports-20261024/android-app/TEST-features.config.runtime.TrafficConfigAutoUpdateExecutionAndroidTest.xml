@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:52.717Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="validRefreshUsesCapturedProfileAndTrimmedUrlThenNormalizesCommitsAndReconcilesInOrder" classname="features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest" time="0.001"/>
+  <testcase name="commitErrorsIncludingCancellationMapToRetryAndSkipReconciliation" classname="features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest" time="0.001"/>
+  <testcase name="documentWithAnErrorDiagnosticRetriesWithoutCommitOrReconciliation" classname="features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest" time="0.001"/>
+  <testcase name="fetchErrorsIncludingCancellationMapToRetryAndStopBeforeCommit" classname="features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest" time="0.0"/>
+  <testcase name="nullAndIneligibleCapturedProfilesCompleteWithoutInvokingCallbacks" classname="features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest" time="0.001"/>
+  <testcase name="reconciliationRunsAfterCommitCallbackEvenWhenLatestProfileWasAlreadyRemoved" classname="features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest" time="0.0"/>
+  <testcase name="reconciliationErrorsIncludingCancellationMapToRetryAfterCommit" classname="features.config.runtime.TrafficConfigAutoUpdateExecutionAndroidTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

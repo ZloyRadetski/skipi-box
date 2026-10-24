@@ -1,0 +1,7 @@
+Working directory: /home/vqsego/TorvaldsVPN/Skipi/skipi-box
+
+env JAVA_HOME=/home/vqsego/.gradle/jdks/eclipse_adoptium-26-amd64-linux.2 ANDROID_HOME=/home/vqsego/Android/Sdk ANDROID_SDK_ROOT=/home/vqsego/Android/Sdk SKIPI_CORE_INTEGRATION_DIR=/home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/build/generated/skipi-core-resources/common ./gradlew --offline :shared:core:desktopTest --rerun :shared:core:testAndroidHostTest --rerun :shared:app:desktopTest --rerun :shared:app:testAndroidHostTest --rerun :shared:ui:desktopTest --rerun :shared:ui:testAndroidHostTest --rerun :app:testDebugUnitTest --rerun :desktopApp:test --rerun :desktopApp:compileKotlin :app:assembleDebug -PskipiAndroidTestJavaHome=/home/vqsego/.gradle/jdks/eclipse_adoptium-21-amd64-linux.2 -x :hevtun:buildHevTun -x :hevtun:syncHevSocks5TunnelVersion > outputs/r03-final-full-reports-20261024/gradle-output.txt 2>&1
+
+Exit code: 0
+Gradle elapsed: 1m 19s
+Verified production checkpoint: ebfca81 (same 25 Kotlin hashes as the frozen pre-gate snapshot).

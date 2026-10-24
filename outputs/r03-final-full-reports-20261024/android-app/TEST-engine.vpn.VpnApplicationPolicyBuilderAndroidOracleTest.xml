@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:52.293Z" hostname="VQSeGo" time="0.131">
+  <properties/>
+  <testcase name="whitelistExcludesTheVpnAppAndAllowsOnlyTheRemainingSelectedPackage" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.032"/>
+  <testcase name="globalPolicyDeniesOnlyTheVpnAppAndIgnoresSelectedPackages" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.019"/>
+  <testcase name="emptyEffectiveWhitelistFallsBackToDenyingSyntheticInstalledPackages" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.042"/>
+  <testcase name="nonPackageManagerFailureFromBuilderIsPropagated" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.018"/>
+  <testcase name="blacklistDeniesSelectedPackagesAndSelfWhileIgnoringOnlyNotFoundPackages" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.016"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

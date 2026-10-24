@@ -1,0 +1,42 @@
+[
+  {
+    "name": "app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest",
+    "tests": "3",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-24T07:09:02.449Z",
+    "hostname": "VQSeGo",
+    "time": "4.061"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopGlobalRoutingCoreResourcesIntegrationTest",
+    "tests": "1",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-24T07:08:51.736Z",
+    "hostname": "VQSeGo",
+    "time": "1.032"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopProfileAssetsFfmIntegrationTest",
+    "tests": "1",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-24T07:08:52.921Z",
+    "hostname": "VQSeGo",
+    "time": "0.079"
+  },
+  {
+    "name": "app.skipi.desktop.DesktopCoreFfmIntegrationTest",
+    "tests": "4",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-24T07:08:51.351Z",
+    "hostname": "VQSeGo",
+    "time": "0.348"
+  }
+]

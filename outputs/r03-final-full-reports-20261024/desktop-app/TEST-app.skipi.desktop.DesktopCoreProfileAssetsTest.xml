@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopCoreProfileAssetsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:51.701Z" hostname="VQSeGo" time="0.005">
+  <properties/>
+  <testcase name="explicitProfileDirectoryOverridesOnlyTheAssetsDirectory" classname="app.skipi.desktop.DesktopCoreProfileAssetsTest" time="0.002"/>
+  <testcase name="nullProfileDirectoryUsesTheLegacyRuntimeDirectoryString" classname="app.skipi.desktop.DesktopCoreProfileAssetsTest" time="0.001"/>
+  <testcase name="switchingProfilesReinitializesAssetsButKeepsTheLoadedNativeLibrary" classname="app.skipi.desktop.DesktopCoreProfileAssetsTest" time="0.001"/>
+  <system-out><![CDATA[[2026-10-24 10:08:51.702] [INFO] [CoreController] Started in-process SKIPI Core profile-assets-test (session 41)
+[2026-10-24 10:08:51.703] [INFO] [CoreController] Stopped in-process SKIPI Core session 41
+[2026-10-24 10:08:51.704] [INFO] [CoreController] Started in-process SKIPI Core profile-assets-test (session 41)
+[2026-10-24 10:08:51.705] [INFO] [CoreController] Stopped in-process SKIPI Core session 41
+[2026-10-24 10:08:51.706] [INFO] [CoreController] Started in-process SKIPI Core profile-assets-test (session 41)
+[2026-10-24 10:08:51.706] [INFO] [CoreController] Stopped in-process SKIPI Core session 41
+[2026-10-24 10:08:51.706] [INFO] [CoreController] Started in-process SKIPI Core profile-assets-test (session 41)
+[2026-10-24 10:08:51.706] [INFO] [CoreController] Stopped in-process SKIPI Core session 41
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.xray.XrayOutboundPlannerAndroidOracleTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:52.526Z" hostname="VQSeGo" time="0.003">
+  <properties/>
+  <testcase name="strategyGroupMembershipAdapterRebindsDuplicateIdToFirstSourceRecord" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.001"/>
+  <testcase name="selectedAndReferencedOutboundsKeepAndroidOrderAndFixedTargets" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <testcase name="strategyGroupWithoutAvailableMembersFailsClearly" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <testcase name="customOutboundWithoutAProxyCandidateFailsClearly" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <testcase name="shadowrocketAliasWithoutAvailableMembersIsSkipped" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.001"/>
+  <testcase name="chainReversesUsableMembersAndAssignsDialerTagsWithoutFragment" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <testcase name="customOutboundSelectsProxyAndContributesHostsOnlyWhenOverrideIsEnabled" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <testcase name="selectGroupUsesSelectedMemberAndFallsBackToFirstConfiguredMember" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <testcase name="filteredStrategyGroupPlannerRebindsDuplicateIdToFirstSourceRecord" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <testcase name="chainRejectsFewerThanTwoUsableMembers" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <testcase name="disabledShadowrocketRouteStillPlansItsMatchingStrategyAlias" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.001"/>
+  <testcase name="automaticGroupsKeepSelectedFallbackThenChooseLatencyAndFirstProbeSettings" classname="engine.xray.XrayOutboundPlannerAndroidOracleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

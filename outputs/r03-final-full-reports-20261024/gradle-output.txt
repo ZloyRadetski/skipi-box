@@ -1,0 +1,350 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :shared:app
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:app'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Configure project :shared:core
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:core'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :shared:yaml-jvm:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :hevtun:preBuild
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :updateResourceFileAssets UP-TO-DATE
+> Task :hevtun:preDebugBuild
+> Task :app:preBuild UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :hevtun:processDebugNavigationResources UP-TO-DATE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :hevtun:generateDebugResources UP-TO-DATE
+> Task :hevtun:packageDebugResources UP-TO-DATE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :hevtun:parseDebugLocalResources UP-TO-DATE
+> Task :hevtun:generateDebugRFile UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :hevtun:compileDebugKotlin NO-SOURCE
+> Task :hevtun:javaPreCompileDebug UP-TO-DATE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :shared:app:kmpPartiallyResolvedDependenciesChecker
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :shared:core:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:core:generateProjectInfo UP-TO-DATE
+> Task :hevtun:compileDebugJavaWithJavac NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :shared:app:desktopProcessResources NO-SOURCE
+> Task :shared:app:processDesktopMainResources SKIPPED
+> Task :hevtun:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :shared:app:desktopTestProcessResources NO-SOURCE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :shared:app:processDesktopTestResources SKIPPED
+> Task :hevtun:writeDebugAarMetadata UP-TO-DATE
+> Task :shared:app:androidPreBuild UP-TO-DATE
+> Task :shared:app:preAndroidMainBuild UP-TO-DATE
+> Task :hevtun:extractDeepLinksDebug UP-TO-DATE
+> Task :shared:app:androidJar UP-TO-DATE
+> Task :shared:app:preAndroidHostTestBuild UP-TO-DATE
+> Task :shared:yaml-jvm:compileKotlin UP-TO-DATE
+> Task :hevtun:processDebugManifest UP-TO-DATE
+> Task :shared:app:processAndroidHostTestJavaRes NO-SOURCE
+> Task :shared:yaml-jvm:compileJava NO-SOURCE
+> Task :shared:app:generateAndroidMainEmptyResourceFiles UP-TO-DATE
+> Task :hevtun:mapDebugSourceSetPaths UP-TO-DATE
+> Task :shared:app:writeAndroidMainAarMetadata UP-TO-DATE
+> Task :shared:yaml-jvm:processResources NO-SOURCE
+> Task :shared:yaml-jvm:classes UP-TO-DATE
+> Task :hevtun:compileDebugLibraryResources UP-TO-DATE
+> Task :hevtun:generateDebugAssets UP-TO-DATE
+> Task :shared:yaml-jvm:jar UP-TO-DATE
+> Task :shared:app:processAndroidMainManifest UP-TO-DATE
+> Task :hevtun:mergeDebugAssets UP-TO-DATE
+> Task :shared:app:mergeAndroidMainJniLibFolders UP-TO-DATE
+> Task :hevtun:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :shared:app:mergeAndroidMainNativeLibs NO-SOURCE
+> Task :shared:app:copyAndroidMainJniLibsProjectOnly UP-TO-DATE
+> Task :hevtun:processDebugJavaRes NO-SOURCE
+> Task :hevtun:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :hevtun:mergeDebugJniLibFolders UP-TO-DATE
+> Task :hevtun:mergeDebugNativeLibs UP-TO-DATE
+> Task :hevtun:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDebugGlobalSynthetics UP-TO-DATE
+> Task :shared:core:compileKotlinDesktop UP-TO-DATE
+> Task :shared:core:compileDesktopMainJava NO-SOURCE
+> Task :shared:core:desktopProcessResources NO-SOURCE
+> Task :shared:core:processDesktopMainResources SKIPPED
+> Task :shared:core:desktopMainClasses UP-TO-DATE
+> Task :shared:core:desktopJar UP-TO-DATE
+> Task :shared:ui:checkDesktopMainComposeLibrariesCompatibility
+> Task :shared:app:compileKotlinDesktop UP-TO-DATE
+> Task :shared:app:compileDesktopMainJava NO-SOURCE
+> Task :shared:app:desktopMainClasses UP-TO-DATE
+> Task :shared:app:desktopJar UP-TO-DATE
+> Task :shared:ui:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:ui:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:ui:convertXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :shared:ui:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :shared:ui:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForDesktopMain NO-SOURCE
+> Task :shared:ui:generateActualResourceCollectorsForDesktopMain UP-TO-DATE
+> Task :shared:ui:generateComposeResClass UP-TO-DATE
+> Task :shared:ui:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :shared:ui:compileKotlinDesktop UP-TO-DATE
+> Task :shared:ui:compileDesktopMainJava NO-SOURCE
+> Task :shared:ui:checkDesktopTestComposeLibrariesCompatibility
+> Task :shared:ui:assembleDesktopMainResources UP-TO-DATE
+> Task :shared:ui:desktopProcessResources UP-TO-DATE
+> Task :shared:ui:processDesktopMainResources SKIPPED
+> Task :shared:ui:desktopMainClasses UP-TO-DATE
+> Task :shared:ui:desktopJar UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForCommonTest NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForCommonTest NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForCommonTest NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForCommonTest NO-SOURCE
+> Task :shared:ui:convertXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForDesktopTest NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForDesktopTest NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForDesktopTest NO-SOURCE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar UP-TO-DATE
+> Task :shared:core:desktopTestProcessResources NO-SOURCE
+> Task :shared:core:processDesktopTestResources SKIPPED
+> Task :desktopApp:compileTestKotlin UP-TO-DATE
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :shared:core:compileAndroidMain UP-TO-DATE
+> Task :shared:core:androidPreBuild UP-TO-DATE
+> Task :shared:core:preAndroidMainBuild UP-TO-DATE
+> Task :shared:core:bundleAndroidMainClassesToRuntimeJar UP-TO-DATE
+> Task :shared:core:androidJar UP-TO-DATE
+> Task :shared:core:bundleAndroidMainClassesToCompileJar UP-TO-DATE
+> Task :shared:app:compileAndroidMain UP-TO-DATE
+> Task :shared:app:bundleAndroidMainClassesToRuntimeJar UP-TO-DATE
+> Task :shared:app:bundleAndroidMainClassesToCompileJar UP-TO-DATE
+> Task :shared:core:preAndroidHostTestBuild UP-TO-DATE
+> Task :shared:core:processAndroidHostTestJavaRes NO-SOURCE
+> Task :shared:ui:assembleDesktopTestResources UP-TO-DATE
+> Task :shared:core:processAndroidMainJavaRes UP-TO-DATE
+> Task :shared:core:generateAndroidMainEmptyResourceFiles UP-TO-DATE
+> Task :shared:ui:desktopTestProcessResources UP-TO-DATE
+> Task :shared:ui:processDesktopTestResources SKIPPED
+> Task :shared:core:writeAndroidMainAarMetadata UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:core:processAndroidMainManifest UP-TO-DATE
+> Task :shared:ui:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForAndroidMain NO-SOURCE
+> Task :shared:ui:generateActualResourceCollectorsForAndroidMain UP-TO-DATE
+> Task :shared:ui:androidPreBuild UP-TO-DATE
+> Task :shared:ui:preAndroidMainBuild UP-TO-DATE
+> Task :shared:ui:generateAndroidMainEmptyResourceFiles UP-TO-DATE
+> Task :shared:ui:copyAndroidMainComposeResourcesToAndroidAssets UP-TO-DATE
+> Task :shared:ui:packageAndroidMainResources UP-TO-DATE
+> Task :shared:ui:parseAndroidMainLocalResources UP-TO-DATE
+> Task :shared:ui:generateAndroidMainRFile UP-TO-DATE
+> Task :shared:app:processAndroidMainJavaRes UP-TO-DATE
+> Task :shared:app:bundleLibRuntimeToDirAndroidMain UP-TO-DATE
+> Task :shared:core:mergeAndroidMainJniLibFolders UP-TO-DATE
+> Task :shared:core:mergeAndroidMainNativeLibs NO-SOURCE
+> Task :shared:core:copyAndroidMainJniLibsProjectOnly UP-TO-DATE
+> Task :shared:ui:compileAndroidMain UP-TO-DATE
+> Task :shared:ui:bundleAndroidMainClassesToRuntimeJar UP-TO-DATE
+> Task :shared:ui:androidJar UP-TO-DATE
+> Task :shared:ui:bundleAndroidMainClassesToCompileJar UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForAndroidHostTest NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForAndroidHostTest NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForAndroidHostTest NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForAndroidHostTest NO-SOURCE
+> Task :shared:core:bundleLibRuntimeToDirAndroidMain
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :app:kspDebugKotlin UP-TO-DATE
+> Task :shared:ui:preAndroidHostTestBuild UP-TO-DATE
+> Task :shared:ui:processAndroidHostTestJavaRes NO-SOURCE
+> Task :shared:ui:processAndroidMainJavaRes UP-TO-DATE
+> Task :shared:ui:writeAndroidMainAarMetadata UP-TO-DATE
+> Task :shared:ui:processAndroidMainManifest UP-TO-DATE
+> Task :shared:ui:mapAndroidMainSourceSetPaths UP-TO-DATE
+> Task :shared:ui:compileAndroidMainLibraryResources UP-TO-DATE
+> Task :shared:ui:generateAndroidMainAssets UP-TO-DATE
+> Task :shared:ui:mergeAndroidMainAssets UP-TO-DATE
+> Task :shared:ui:mergeAndroidMainJniLibFolders UP-TO-DATE
+> Task :shared:ui:mergeAndroidMainNativeLibs NO-SOURCE
+> Task :shared:ui:copyAndroidMainJniLibsProjectOnly UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :shared:ui:bundleLibRuntimeToDirAndroidMain
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:kspDebugUnitTestKotlin UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:packageDebugUnitTestForUnitTest UP-TO-DATE
+> Task :app:mergeDebugUnitTestManifest UP-TO-DATE
+> Task :app:processDebugUnitTestManifest UP-TO-DATE
+> Task :app:generateDebugUnitTestConfig UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :shared:ui:compileAndroidHostTest
+> Task :shared:ui:compileTestKotlinDesktop
+> Task :shared:core:compileAndroidHostTest
+
+> Task :shared:core:compileTestKotlinDesktop
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/desktopTest/kotlin/features/resources/runtime/ResourceFileDownloadCancellationTest.kt:147:55 'constructor(p0: String!): URL' is deprecated. Deprecated in Java.
+
+> Task :shared:ui:testAndroidHostTest
+> Task :shared:ui:compileDesktopTestJava NO-SOURCE
+> Task :shared:ui:desktopTestClasses
+
+> Task :shared:app:compileAndroidHostTest
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:50:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:55:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:60:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:86:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:120:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/store/SharedApplicationStoreTest.kt:378:61 No cast needed.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:247:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:251:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:372:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:376:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:384:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:405:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshUseCaseTest.kt:67:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshUseCaseTest.kt:104:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/features/resources/ResourceFileEditorOperationsTest.kt:224:17 Expression is unused.
+
+> Task :shared:app:compileTestKotlinDesktop
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:50:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:55:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:60:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:86:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/home/ProxyHomeLatencyRunnerTest.kt:120:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/store/SharedApplicationStoreTest.kt:378:61 No cast needed.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:247:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:251:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:372:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:376:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:384:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshBatchTest.kt:405:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshUseCaseTest.kt:67:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/app/skipi/app/subscription/SubscriptionRefreshUseCaseTest.kt:104:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/commonTest/kotlin/features/resources/ResourceFileEditorOperationsTest.kt:224:17 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:50:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:67:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:99:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:106:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:109:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:193:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:227:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:231:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:265:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:300:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:304:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:314:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:345:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/app/src/desktopTest/kotlin/features/resources/ResourceFileUpdateCoordinatorTest.kt:356:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+
+> Task :shared:core:testAndroidHostTest
+> Task :shared:core:compileDesktopTestJava NO-SOURCE
+> Task :shared:core:desktopTestClasses
+> Task :shared:ui:desktopTest
+> Task :shared:app:testAndroidHostTest
+> Task :shared:app:compileDesktopTestJava NO-SOURCE
+> Task :shared:app:desktopTestClasses
+> Task :shared:core:desktopTest
+> Task :shared:app:desktopTest
+[Warning] core: Xray 26.9.9 started
+from tcp:127.0.0.1:44176 accepted tcp:127.0.0.1:39619 [skipi-socks -> proxy]
+> Task :app:testDebugUnitTest
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:mergeLibDexDebug
+> Task :app:mergeDebugJavaResource
+[Warning] core: Xray 26.9.9 started
+from tcp:127.0.0.1:58694 accepted tcp:127.0.0.1:40407 [skipi-socks -> 2]
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+from tcp:127.0.0.1:36132 accepted tcp:127.0.0.1:44909 [skipi-socks -> 3]
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+> Task :desktopApp:test
+
+[Incubating] Problems report is available at: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 19s
+155 actionable tasks: 27 executed, 128 up-to-date

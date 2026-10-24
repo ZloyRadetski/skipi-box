@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.subscription.runtime.SubscriptionPeriodicWorkStateTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:49.262Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="retry_delay_uses_workmanager_five_hour_maximum" classname="features.subscription.runtime.SubscriptionPeriodicWorkStateTest" time="0.0"/>
+  <testcase name="successful_refresh_starts_the_next_period_at_completion" classname="features.subscription.runtime.SubscriptionPeriodicWorkStateTest" time="0.0"/>
+  <testcase name="retry_uses_fifteen_minute_base_and_doubles_for_the_next_attempt" classname="features.subscription.runtime.SubscriptionPeriodicWorkStateTest" time="0.001"/>
+  <testcase name="new_periodic_work_is_due_at_its_enqueue_anchor" classname="features.subscription.runtime.SubscriptionPeriodicWorkStateTest" time="0.0"/>
+  <testcase name="permanent_failure_completes_the_period_and_clears_a_pending_retry" classname="features.subscription.runtime.SubscriptionPeriodicWorkStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

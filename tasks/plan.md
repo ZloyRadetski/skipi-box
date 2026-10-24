@@ -1,6 +1,6 @@
 # План завершения переноса Android → shared
 
-Дата исходного плана: 7 октября 2026 года. Статус на 24 октября: **S03 завершена, R03 в работе по выбору пользователя**. Последняя полная приёмка S03: 2906/2906 GREEN, real Core9/9, Desktop compile/debug APK GREEN; [отчёт](shared-migration-20261023/s03-acceptance-verification.md). Для R03 записаны Android source baseline11/11, Desktop preservation1/1 и common API RED до production; [текущий срез](shared-migration-20261024/r03-foundation-verification.md).
+Дата исходного плана: 7 октября 2026 года. Статус на 24 октября: **S03 и R03 завершены в выбранном пользователем порядке**. Последняя полная приёмка R03: **2960/2960 GREEN1m19s**, real Core9/9, Desktop compile/debug APK GREEN, 25 Kotlin SHA неизменны; [отчёт](shared-migration-20261024/r03-acceptance-verification.md). Закрыто16/39 карточек по количеству. [Продолжение](shared-migration-20261024/r03-handoff.md): ближайшая implementation-карточка основного порядка H01, ещё не начата.
 Реализация начата 7 октября 2026 года после подтверждения пользователя. Первый срез: B01/B02 → C01 → C02 → C03, сначала поведенческие тесты.
 
 Этот документ и [tasks/todo.md](/home/vqsego/TorvaldsVPN/Skipi/skipi-box/tasks/todo.md) — текущие рабочие документы. Предыдущие планы сохранены как история; их ограничения на перенос существующих мобильных сценариев в Desktop не определяют текущий scope.
@@ -631,7 +631,7 @@
 
 **Зависимости:** [P04](#p04), [R01](#r01).
 
-**Исполнение, 24 октября:** [первый tests-first срез](shared-migration-20261024/r03-foundation-verification.md). P04 уже подключила profile-scoped mode/clipboard/selection editor к обоим хостам. Pure catalog projection и policy mapping вынесены после Android source baseline11/ Desktop temp-store1 GREEN и matching common API RED; **92/92 focused GREEN33s**, включая synthetic package/VPN smoke8 и Desktop compile. Остаток R03 — переносимые list/search/tabs/pages и итоговая проверка; карточка открыта.
+**Завершено, 24 октября:** [итоговая приёмка](shared-migration-20261024/r03-acceptance-verification.md). P04 common editor/controller сохранён; R03 перенесла pure catalog projection/policy и portable list/search/tabs/pages/rows в shared. Android package/user/icon/clock/Builder boundaries сохранены; Desktop profile/backup IDs round-trip проверен без нового OS enforcement. Tests-first baseline/API RED → focused gates → **2960/2960 full GREEN1m19s**, real Core9/9, actual shared-UI7/7, Desktop compile/debug APK GREEN. Physical OS/device/packet QA не выполнялась.
 
 **Работа:** Перенести pure selection/filter/search/serialization и portable presentation. Installed-package enumeration/icons, user spaces и применение per-app VPN policy остаются Android adapters. Desktop application routing не изобретать при отсутствии соответствующего runtime. Общие state/editor подключаются и в Desktop; отсутствие PackageManager ограничивает получение списка/иконок и применение policy, а не хранение/редактирование уже существующих переносимых данных.
 

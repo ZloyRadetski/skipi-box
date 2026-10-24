@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopGlobalRoutingResourceValidationTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:52.770Z" hostname="VQSeGo" time="0.021">
+  <properties/>
+  <testcase name="dynamicPortRetryReusesTheCapturedGlobalAssetsDirectory" classname="app.skipi.desktop.DesktopGlobalRoutingResourceValidationTest" time="0.004"/>
+  <testcase name="noProfileUsesGlobalAssetsAndFiltersUnavailableGeoCriteriaButKeepsLiterals" classname="app.skipi.desktop.DesktopGlobalRoutingResourceValidationTest" time="0.002"/>
+  <testcase name="activeProfileAndRawCustomKeepTheirExistingRoutingAndAssetPrecedence" classname="app.skipi.desktop.DesktopGlobalRoutingResourceValidationTest" time="0.013"/>
+  <testcase name="enabledExternalDomainValidationKeepsAndroidErrorMessages" classname="app.skipi.desktop.DesktopGlobalRoutingResourceValidationTest" time="0.001"/>
+  <testcase name="disabledExternalDomainRuleDoesNotRequireOrValidateItsResourceFile" classname="app.skipi.desktop.DesktopGlobalRoutingResourceValidationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

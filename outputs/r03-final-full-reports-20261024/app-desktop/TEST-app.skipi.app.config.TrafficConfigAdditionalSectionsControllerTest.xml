@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="TrafficConfigAdditionalSectionsControllerTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:50.846Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="tunnelAndNetworkNavigationStillRunWhenTheProfileIsMissing[desktop]" classname="app.skipi.app.config.TrafficConfigAdditionalSectionsControllerTest" time="0.004"/>
+  <testcase name="networkActivationSaveClampsBothBoundsAndNavigatesAfterTheUpdate[desktop]" classname="app.skipi.app.config.TrafficConfigAdditionalSectionsControllerTest" time="0.002"/>
+  <testcase name="tunnelSaveUsesLatestRowAndTheFullCapturedSettingsSnapshot[desktop]" classname="app.skipi.app.config.TrafficConfigAdditionalSectionsControllerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

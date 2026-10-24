@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:09:02.449Z" hostname="VQSeGo" time="4.061">
+  <properties/>
+  <testcase name="generatedNoProfileConfigRoutesLoopbackTrafficThroughSavedGlobalRulesAndDefault" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="2.027"/>
+  <testcase name="generatedChainCarriesLoopbackTrafficThroughItsConfiguredHopOrder" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="1.018"/>
+  <testcase name="generatedAutomaticGroupStartsAndRoutesLoopbackTrafficThroughAMember" classname="app.skipi.desktop.DesktopSelectedServerCoreFfmIntegrationTest" time="1.016"/>
+  <system-out><![CDATA[[2026-10-24 10:09:02.464] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 9)
+[2026-10-24 10:09:04.471] [INFO] [CoreController] Stopped in-process SKIPI Core session 9
+[2026-10-24 10:09:04.488] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 10)
+[2026-10-24 10:09:05.491] [INFO] [CoreController] Stopped in-process SKIPI Core session 10
+[2026-10-24 10:09:05.505] [INFO] [CoreController] Started in-process SKIPI Core 26.9.9 (session 11)
+[2026-10-24 10:09:06.507] [INFO] [CoreController] Stopped in-process SKIPI Core session 11
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.resources.ResourceFileEditorOperationsTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:08:50.485Z" hostname="VQSeGo" time="0.007">
+  <properties/>
+  <testcase name="addingAllocatesFromLatestSettingsAndRequestsBlankUrlReplacementAfterCommit" classname="features.resources.ResourceFileEditorOperationsTest" time="0.002"/>
+  <testcase name="addingRemoteCustomFileTrimsUrlWithoutOpeningReplacementPicker" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="editingAnotherCustomFilesNameIsRejectedWithoutMetadataOrRename" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <testcase name="customSourceDraftUsesResolvedProviderAndSaveTrimsWithPerFieldFallback" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="selectingBuiltInProviderChangesOnlySourceAndDoesNotOpenOrRewriteCustomDraft" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <testcase name="everyBuiltInFilenameIsReservedForCustomFiles" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <testcase name="deleteRemovesOnlyTheMatchingIdAndDispatchesAfterMetadataCommit" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="editingKeepsIdAndDispatchesRenameOnlyAfterLatestSettingsCommit" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <testcase name="invalidAddDoesNotCommitMetadataOrDispatchStorageWork" classname="features.resources.ResourceFileEditorOperationsTest" time="0.001"/>
+  <testcase name="customNamesKeepTheAndroidValidationAndCaseSensitiveDuplicateRules" classname="features.resources.ResourceFileEditorOperationsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
