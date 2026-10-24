@@ -10,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runCurrent
@@ -73,6 +74,54 @@ class DesktopSubscriptionAutoUpdaterTest {
         updater.runDue()
 
         assertEquals(listOf(12), updatedGroupIds)
+        assertEquals(8_000L + IntervalMillis, updater.nextWakeupAtMillis())
+    }
+
+    @Test
+    fun losing_connected_constraint_cancels_running_attempt_without_advancing_period() = runTest {
+        var connected = true
+        var nowMillis = 5_000L
+        val firstAttemptStarted = CompletableDeferred<Unit>()
+        val firstAttemptCancelled = CompletableDeferred<Unit>()
+        var attempts = 0
+        val updater = updater(
+            readTargets = { listOf(target(id = 19)) },
+            isNetworkConnected = { connected },
+            nowMillis = { nowMillis },
+            updateAutomatically = {
+                attempts += 1
+                if (attempts == 1) {
+                    firstAttemptStarted.complete(Unit)
+                    try {
+                        awaitCancellation()
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        firstAttemptCancelled.complete(Unit)
+                        throw cancelled
+                    }
+                }
+                nowMillis = 8_000L
+                SubscriptionWorkerOutcome.SUCCESS
+            },
+        )
+        updater.observeTargets(listOf(target(id = 19)))
+
+        val firstPass = launch { updater.runDue() }
+        runCurrent()
+        firstAttemptStarted.await()
+        connected = false
+        updater.runDue()
+
+        runCurrent()
+        assertTrue(firstAttemptCancelled.isCompleted)
+        firstAttemptCancelled.await()
+        firstPass.join()
+        assertEquals(1, attempts)
+        assertEquals(5_000L, updater.nextWakeupAtMillis(), "a constraint stop leaves the work due")
+
+        connected = true
+        updater.runDue()
+
+        assertEquals(2, attempts, "the due work starts again once CONNECTED is restored")
         assertEquals(8_000L + IntervalMillis, updater.nextWakeupAtMillis())
     }
 

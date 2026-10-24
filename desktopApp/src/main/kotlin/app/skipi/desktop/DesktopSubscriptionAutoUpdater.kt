@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 internal class DesktopSubscriptionAutoUpdater(
     private val readLatestTargets: () -> List<SubscriptionRefreshTarget>,
     private val isNetworkConnected: () -> Boolean,
-    private val updateAutomatically: suspend (Int) -> SubscriptionWorkerOutcome,
+    private val updateAutomatically: suspend (Int) -> SubscriptionWorkerOutcome?,
     private val nowMillis: () -> Long,
 ) {
     private val lock = Any()
@@ -42,7 +42,13 @@ internal class DesktopSubscriptionAutoUpdater(
         val jobsToCancel: List<Job>
         val dueEntries: List<Entry>
         synchronized(lock) {
-            jobsToCancel = reconcileTargetsLocked(latestTargets, now)
+            val removedJobs = reconcileTargetsLocked(latestTargets, now)
+            val disconnectedJobs = if (connected) {
+                emptyList()
+            } else {
+                entriesByGroupId.values.mapNotNull { entry -> entry.job }
+            }
+            jobsToCancel = (removedJobs + disconnectedJobs).distinct()
             dueEntries = if (connected) {
                 entriesByGroupId.values.filter { entry ->
                     entry.job == null && entry.workState.nextRunAtMillis <= now
@@ -133,6 +139,7 @@ internal class DesktopSubscriptionAutoUpdater(
 
         val outcome = updateAutomatically(entry.groupId)
         if (!context.isActive) return
+        if (outcome == null) return
 
         val completedAtMillis = nowMillis()
         synchronized(lock) {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopSubscriptionRefreshCoordinatorTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:21:42.220Z" hostname="VQSeGo" time="0.02">
+  <properties/>
+  <testcase name="scheduled_refresh_maps_load_and_commit_outcomes_and_propagates_cancellation" classname="app.skipi.desktop.DesktopSubscriptionRefreshCoordinatorTest" time="0.008"/>
+  <testcase name="scheduled_refresh_rechecks_disabled_group_after_wait_and_skips_without_fetch" classname="app.skipi.desktop.DesktopSubscriptionRefreshCoordinatorTest" time="0.004"/>
+  <testcase name="connected_loss_while_scheduled_refresh_waits_for_admission_defers_and_keeps_period_due" classname="app.skipi.desktop.DesktopSubscriptionRefreshCoordinatorTest" time="0.003"/>
+  <testcase name="cancelling_a_suspended_refresh_propagates_and_releases_admission_for_the_next_request" classname="app.skipi.desktop.DesktopSubscriptionRefreshCoordinatorTest" time="0.001"/>
+  <testcase name="install_waits_for_admission_refreshes_saved_disabled_duplicate_and_returns_failure_with_saved_title" classname="app.skipi.desktop.DesktopSubscriptionRefreshCoordinatorTest" time="0.002"/>
+  <testcase name="queued_batch_and_scheduled_refresh_share_admission_and_use_the_latest_saved_record" classname="app.skipi.desktop.DesktopSubscriptionRefreshCoordinatorTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

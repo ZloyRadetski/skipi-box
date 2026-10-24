@@ -14,6 +14,7 @@ import app.skipi.app.subscription.SubscriptionRefreshResult
 import app.skipi.app.subscription.SubscriptionWorkerOutcome
 import app.skipi.app.subscription.subscriptionRefreshRequestIdentity
 import features.subscription.SubscriptionMetadata
+import features.subscription.runtime.SubscriptionRefreshTarget
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -166,6 +167,68 @@ class DesktopSubscriptionRefreshCoordinatorTest {
         assertTrue(single.await().isSuccess)
         assertEquals(SubscriptionWorkerOutcome.SUCCESS, scheduled.await())
         assertEquals(1, refreshCalls, "a group disabled while waiting is skipped after admission")
+    }
+
+    @Test
+    fun connected_loss_while_scheduled_refresh_waits_for_admission_defers_and_keeps_period_due() = runTest {
+        val saved = subscription(id = 8, title = "Still enabled")
+        val repository = InMemorySubscriptionRepository(SubscriptionCatalog(listOf(saved), 9))
+        var connected = true
+        var nowMillis = 1_000L
+        var refreshCalls = 0
+        val coordinator = DesktopSubscriptionRefreshCoordinator(
+            subscriptionRepository = repository,
+            isNetworkConnected = { connected },
+            refresh = { record ->
+                refreshCalls += 1
+                successfulOperation(record)
+            },
+        )
+        val batchStarted = CompletableDeferred<Unit>()
+        val releaseBatch = CompletableDeferred<Unit>()
+        val batch = async(start = CoroutineStart.UNDISPATCHED) {
+            coordinator.runBatch {
+                batchStarted.complete(Unit)
+                releaseBatch.await()
+            }
+        }
+        batchStarted.await()
+
+        val target = SubscriptionRefreshTarget(
+            id = saved.id,
+            url = saved.url,
+            enabled = saved.enabled,
+            updateInterval = "0.25",
+            lastUpdatedAtMillis = 0L,
+        )
+        val updater = DesktopSubscriptionAutoUpdater(
+            readLatestTargets = { listOf(target) },
+            isNetworkConnected = { connected },
+            updateAutomatically = coordinator::refreshScheduled,
+            nowMillis = { nowMillis },
+        )
+        updater.observeTargets(listOf(target))
+
+        val scheduledPass = async(start = CoroutineStart.UNDISPATCHED) { updater.runDue() }
+        runCurrent()
+        assertFalse(scheduledPass.isCompleted, "the scheduled refresh is queued behind the batch admission")
+        assertEquals(0, refreshCalls)
+        assertEquals(nowMillis, updater.nextWakeupAtMillis())
+
+        // Model connectivity changing before the queued callback gets the shared admission.
+        connected = false
+        releaseBatch.complete(Unit)
+        batch.await()
+        scheduledPass.await()
+
+        assertEquals(0, refreshCalls, "the callback rechecks the network after admission")
+        assertEquals(nowMillis, updater.nextWakeupAtMillis(), "deferral must not complete the periodic work")
+
+        connected = true
+        updater.runDue()
+
+        assertEquals(1, refreshCalls, "the same due item runs once connectivity returns")
+        assertEquals(nowMillis + 15L * 60L * 1_000L, updater.nextWakeupAtMillis())
     }
 
     @Test

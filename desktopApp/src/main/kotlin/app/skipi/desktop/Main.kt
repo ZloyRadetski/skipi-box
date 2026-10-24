@@ -463,6 +463,7 @@ fun main() = application {
                 ) {
                     DesktopSubscriptionRefreshCoordinator(
                         subscriptionRepository = desktopSharedApplication.subscriptions,
+                        isNetworkConnected = ::isDesktopNetworkConnected,
                         refresh = { subscription ->
                             subscriptionUrl = subscription.url
                             subscriptionUpdateInProgress = true

@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.withLock
 /** Serializes Desktop's single, scheduled, install, and batch subscription refresh paths. */
 internal class DesktopSubscriptionRefreshCoordinator(
     private val subscriptionRepository: SubscriptionRepository,
+    private val isNetworkConnected: () -> Boolean = { true },
     private val refresh: suspend (SubscriptionRecord) -> DesktopSubscriptionRefreshOperationResult,
 ) {
     private val admission = Mutex()
@@ -35,8 +36,8 @@ internal class DesktopSubscriptionRefreshCoordinator(
         refreshResult(subscription)
     }
 
-    /** Rechecks Android's worker eligibility after admission, then converts the real result. */
-    suspend fun refreshScheduled(subscriptionId: Int): SubscriptionWorkerOutcome = admission.withLock {
+    /** Rechecks worker eligibility and connectivity after admission; null defers without an attempt. */
+    suspend fun refreshScheduled(subscriptionId: Int): SubscriptionWorkerOutcome? = admission.withLock {
         val subscription = latestSubscription(subscriptionId)
         if (!shouldFetchScheduledSubscription(
                 groupFound = subscription != null,
@@ -46,6 +47,7 @@ internal class DesktopSubscriptionRefreshCoordinator(
         ) {
             return@withLock SubscriptionWorkerOutcome.SUCCESS
         }
+        if (!isNetworkConnected()) return@withLock null
 
         try {
             val result = refresh(checkNotNull(subscription))
