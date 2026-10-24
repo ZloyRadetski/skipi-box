@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:51:13.912Z" hostname="VQSeGo" time="2.544">
+  <properties/>
+  <testcase name="whitelistExcludesTheVpnAppAndAllowsOnlyTheRemainingSelectedPackage" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="2.278"/>
+  <testcase name="globalPolicyDeniesOnlyTheVpnAppAndIgnoresSelectedPackages" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.028"/>
+  <testcase name="emptyEffectiveWhitelistFallsBackToDenyingSyntheticInstalledPackages" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.041"/>
+  <testcase name="nonPackageManagerFailureFromBuilderIsPropagated" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.024"/>
+  <testcase name="blacklistDeniesSelectedPackagesAndSelfWhileIgnoringOnlyNotFoundPackages" classname="engine.vpn.VpnApplicationPolicyBuilderAndroidOracleTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Exception in thread "DefaultDispatcher-worker-1 @coroutine#1" java.security.KeyStoreException: AndroidKeyStore not found
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:873)
+	at data.AppSettingsPreferencesKt.subscriptionHwidEncryptionKey(AppSettingsPreferences.kt:779)
+	at data.AppSettingsPreferencesKt.encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:754)
+	at data.AppSettingsPreferencesKt.access$encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:1)
+	at data.AppSettingsPreferences.getOrCreateSubscriptionHwid(AppSettingsPreferences.kt:66)
+	at app.SkipiApplication.initializeRuntime(SkipiApplication.kt:76)
+	at app.SkipiApplication.access$initializeRuntime(SkipiApplication.kt:31)
+	at app.SkipiApplication$onCreate$1.invokeSuspend(SkipiApplication.kt:71)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:798)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [CoroutineId(1), "coroutine#1":StandaloneCoroutine{Cancelling}@7b7f5b41, Dispatchers.IO]
+Caused by: java.security.NoSuchAlgorithmException: AndroidKeyStore KeyStore not available
+	at java.base/sun.security.jca.GetInstance.getInstance(GetInstance.java:159)
+	at java.base/java.security.Security.getImpl(Security.java:655)
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:870)
+	... 15 more
+Exception in thread "DefaultDispatcher-worker-1 @coroutine#2" java.security.KeyStoreException: AndroidKeyStore not found
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:873)
+	at data.AppSettingsPreferencesKt.subscriptionHwidEncryptionKey(AppSettingsPreferences.kt:779)
+	at data.AppSettingsPreferencesKt.encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:754)
+	at data.AppSettingsPreferencesKt.access$encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:1)
+	at data.AppSettingsPreferences.getOrCreateSubscriptionHwid(AppSettingsPreferences.kt:66)
+	at app.SkipiApplication.initializeRuntime(SkipiApplication.kt:76)
+	at app.SkipiApplication.access$initializeRuntime(SkipiApplication.kt:31)
+	at app.SkipiApplication$onCreate$1.invokeSuspend(SkipiApplication.kt:71)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:798)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [CoroutineId(2), "coroutine#2":StandaloneCoroutine{Cancelling}@793efe40, Dispatchers.IO]
+Caused by: java.security.NoSuchAlgorithmException: AndroidKeyStore KeyStore not available
+	at java.base/sun.security.jca.GetInstance.getInstance(GetInstance.java:159)
+	at java.base/java.security.Security.getImpl(Security.java:655)
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:870)
+	... 15 more
+Exception in thread "DefaultDispatcher-worker-1 @coroutine#3" java.security.KeyStoreException: AndroidKeyStore not found
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:873)
+	at data.AppSettingsPreferencesKt.subscriptionHwidEncryptionKey(AppSettingsPreferences.kt:779)
+	at data.AppSettingsPreferencesKt.encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:754)
+	at data.AppSettingsPreferencesKt.access$encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:1)
+	at data.AppSettingsPreferences.getOrCreateSubscriptionHwid(AppSettingsPreferences.kt:66)
+	at app.SkipiApplication.initializeRuntime(SkipiApplication.kt:76)
+	at app.SkipiApplication.access$initializeRuntime(SkipiApplication.kt:31)
+	at app.SkipiApplication$onCreate$1.invokeSuspend(SkipiApplication.kt:71)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:798)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [CoroutineId(3), "coroutine#3":StandaloneCoroutine{Cancelling}@1a6fc18b, Dispatchers.IO]
+Caused by: java.security.NoSuchAlgorithmException: AndroidKeyStore KeyStore not available
+	at java.base/sun.security.jca.GetInstance.getInstance(GetInstance.java:159)
+	at java.base/java.security.Security.getImpl(Security.java:655)
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:870)
+	... 15 more
+Exception in thread "DefaultDispatcher-worker-1 @coroutine#4" java.security.KeyStoreException: AndroidKeyStore not found
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:873)
+	at data.AppSettingsPreferencesKt.subscriptionHwidEncryptionKey(AppSettingsPreferences.kt:779)
+	at data.AppSettingsPreferencesKt.encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:754)
+	at data.AppSettingsPreferencesKt.access$encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:1)
+	at data.AppSettingsPreferences.getOrCreateSubscriptionHwid(AppSettingsPreferences.kt:66)
+	at app.SkipiApplication.initializeRuntime(SkipiApplication.kt:76)
+	at app.SkipiApplication.access$initializeRuntime(SkipiApplication.kt:31)
+	at app.SkipiApplication$onCreate$1.invokeSuspend(SkipiApplication.kt:71)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:798)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [CoroutineId(4), "coroutine#4":StandaloneCoroutine{Cancelling}@36fe1d76, Dispatchers.IO]
+Caused by: java.security.NoSuchAlgorithmException: AndroidKeyStore KeyStore not available
+	at java.base/sun.security.jca.GetInstance.getInstance(GetInstance.java:159)
+	at java.base/java.security.Security.getImpl(Security.java:655)
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:870)
+	... 15 more
+Exception in thread "DefaultDispatcher-worker-1 @coroutine#5" java.security.KeyStoreException: AndroidKeyStore not found
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:873)
+	at data.AppSettingsPreferencesKt.subscriptionHwidEncryptionKey(AppSettingsPreferences.kt:779)
+	at data.AppSettingsPreferencesKt.encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:754)
+	at data.AppSettingsPreferencesKt.access$encryptSubscriptionInstallationUuid(AppSettingsPreferences.kt:1)
+	at data.AppSettingsPreferences.getOrCreateSubscriptionHwid(AppSettingsPreferences.kt:66)
+	at app.SkipiApplication.initializeRuntime(SkipiApplication.kt:76)
+	at app.SkipiApplication.access$initializeRuntime(SkipiApplication.kt:31)
+	at app.SkipiApplication$onCreate$1.invokeSuspend(SkipiApplication.kt:71)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:798)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [CoroutineId(5), "coroutine#5":StandaloneCoroutine{Cancelling}@76e61e71, Dispatchers.IO]
+Caused by: java.security.NoSuchAlgorithmException: AndroidKeyStore KeyStore not available
+	at java.base/sun.security.jca.GetInstance.getInstance(GetInstance.java:159)
+	at java.base/java.security.Security.getImpl(Security.java:655)
+	at java.base/java.security.KeyStore.getInstance(KeyStore.java:870)
+	... 15 more
+]]></system-err>
+</testsuite>

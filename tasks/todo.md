@@ -1,6 +1,6 @@
 # Чек-лист завершения Android → shared
 
-**S03 завершена 24 октября; следующая карточка по выбору пользователя — R03. R01/P04 завершены; R03 production ещё не начат.**
+**S03 завершена 24 октября; R03 в работе по выбору пользователя. R01/P04 завершены.** [Первый R03 срез](shared-migration-20261024/r03-foundation-verification.md): Android source baseline11 и Desktop preservation1 GREEN → common API RED до production → **92/92 focused GREEN33s**, включая synthetic package/Builder smoke8; Desktop compile GREEN. Далее общий list presentation; R03 открыта.
 
 Последняя полная контрольная точка: [S03 acceptance](shared-migration-20261023/s03-acceptance-verification.md) — **2906/2906 GREEN3m53s**, failures/errors/skips 0, восемь свежих targets, реальные Core **9/9**, Desktop compile/debug APK GREEN, 30 Kotlin hashes неизменны. Закрыто **15/39 карточек по количеству**, не по объёму. [Точка продолжения на R03](shared-migration-20261023/s03-handoff.md). Source checkpoint `20bbe10`; прежний полный [R01 baseline](shared-migration-20261023/r01-acceptance-verification.md) 2859 GREEN сохранён как история.
 

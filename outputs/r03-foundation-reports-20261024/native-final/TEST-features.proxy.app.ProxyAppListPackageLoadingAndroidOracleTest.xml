@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.app.ProxyAppListPackageLoadingAndroidOracleTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:54:20.622Z" hostname="VQSeGo" time="0.083">
+  <properties/>
+  <testcase name="broadUserAndAllScopesUsePackageProviderAndExcludeSelf" classname="features.proxy.app.ProxyAppListPackageLoadingAndroidOracleTest" time="0.062"/>
+  <testcase name="currentUserOnlyUserScopeExcludesSelfAndMapsSyntheticUidAndLabelFields" classname="features.proxy.app.ProxyAppListPackageLoadingAndroidOracleTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,26 @@
+{
+  "core-desktop": {
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "core-android": {
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "android-green": {
+    "tests": 35,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "desktop-green": {
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

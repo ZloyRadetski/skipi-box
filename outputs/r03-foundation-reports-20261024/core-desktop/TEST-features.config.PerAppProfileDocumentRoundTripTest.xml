@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="PerAppProfileDocumentRoundTripTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:50:51.314Z" hostname="VQSeGo" time="0.019">
+  <properties/>
+  <testcase name="profileDocumentRoundTripCanonicalizesOpaquePackageIdsAndKeepsMode[desktop]" classname="features.config.PerAppProfileDocumentRoundTripTest" time="0.018"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

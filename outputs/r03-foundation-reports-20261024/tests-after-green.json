@@ -1,0 +1,12 @@
+{
+  "app/src/test/kotlin/features/proxy/app/ProxyAppListProjectionAndroidOracleTest.kt": "70111e12fad653834d52933254636178d12d6b540dbd8c42680531e30f00d22f",
+  "app/src/test/kotlin/engine/vpn/VpnApplicationPolicyAndroidOracleTest.kt": "a3c27fa30172828f89e9edf217b177776cc2d9db1cacaf014f819bd1dcf44811",
+  "shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt": "939619986718884b7c63915f6979ae2b411e23702fc80e49d7001931aafbc603",
+  "shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt": "c54d1f2196018e106ad9ba5b271717bff9d85e31e14efafbd29a406b7dceeaa8",
+  "shared/core/src/commonTest/kotlin/features/config/PerAppProfileDocumentRoundTripTest.kt": "553cad64b191463a9bc29de4a8ed3084d71b8071c61b3a28a2d60bf73d934f1b",
+  "shared/core/src/commonTest/kotlin/features/backup/PerAppBackupRoundTripTest.kt": "c80d0295b209166b3e2b03ef5748679bdddbdfc4e2fc19810fc55840d31e55a0",
+  "desktopApp/src/test/kotlin/app/skipi/desktop/DesktopPerAppPreservationRoundTripTest.kt": "c27a45ac33783446f4993553c5a5ab21a2f4d377d9b1f32d5b926730a0c871ab",
+  "app/src/test/kotlin/engine/vpn/VpnApplicationPolicyBuilderAndroidOracleTest.kt": "da6c995f08e2b76a83a2c89a049c2d1a4ecf21a38e209282adb89ccf40242735",
+  "app/src/test/kotlin/engine/vpn/VpnApplicationPolicyNoProfileAndroidOracleTest.kt": "e366d839693e66c8aacd71d3f8ba9a9d29269cbcb7e03e0d62e37e5d6a400baa",
+  "app/src/test/kotlin/system/AndroidPackageRepositorySyntheticOracleTest.kt": "75399616c42471c72f13c452ba839d741dfc4da9e712959425c4aa08cc8b391f"
+}

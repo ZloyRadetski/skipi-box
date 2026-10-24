@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.app.ProxyAppVpnPolicyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:50:50.984Z" hostname="VQSeGo" time="0.001">
+  <properties/>
+  <testcase name="whitelistModeIsPreservedWithNormalizedPackages" classname="features.proxy.app.ProxyAppVpnPolicyTest" time="0.0"/>
+  <testcase name="strictFullTunnelProjectsGlobalWithoutMutatingTheStoredKeys" classname="features.proxy.app.ProxyAppVpnPolicyTest" time="0.001"/>
+  <testcase name="unknownModeFallsBackToGlobal" classname="features.proxy.app.ProxyAppVpnPolicyTest" time="0.0"/>
+  <testcase name="globalModeIgnoresSelectedKeys" classname="features.proxy.app.ProxyAppVpnPolicyTest" time="0.0"/>
+  <testcase name="selectedKeysFilterUserPrefixesThenTrimAndDeduplicateInEncounterOrder" classname="features.proxy.app.ProxyAppVpnPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

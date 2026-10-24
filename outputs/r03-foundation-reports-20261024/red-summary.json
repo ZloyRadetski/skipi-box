@@ -1,0 +1,12 @@
+{
+  "stage": "compileTestKotlinDesktop",
+  "elapsed": "1s",
+  "kind": "missing common API compile RED; no behavioral tests executed",
+  "error_sources": [
+    "home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt",
+    "home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt"
+  ],
+  "baseline_production": "77f217c",
+  "android_baseline_tests": 11,
+  "desktop_preservation_tests": 1
+}

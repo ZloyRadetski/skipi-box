@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.app.ProxyAppListProjectionAndroidOracleTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:51:16.506Z" hostname="VQSeGo" time="0.018">
+  <properties/>
+  <testcase name="refreshSortPrioritizesSelectedGroupsThenGroupNameAndKey" classname="features.proxy.app.ProxyAppListProjectionAndroidOracleTest" time="0.002"/>
+  <testcase name="fixedUserRemapsUidToAppIdAndKeepsFirstDuplicatePackage" classname="features.proxy.app.ProxyAppListProjectionAndroidOracleTest" time="0.013"/>
+  <testcase name="userSpacesSortAndSynthesizeFallbackTabsWithoutCountingUnknownKeys" classname="features.proxy.app.ProxyAppListProjectionAndroidOracleTest" time="0.001"/>
+  <testcase name="trimmedCaseInsensitiveSearchMatchesLabelPackageAndBlankLabelFallback" classname="features.proxy.app.ProxyAppListProjectionAndroidOracleTest" time="0.001"/>
+  <testcase name="sharedUidKeysAndCountsStayWithinEachUserSpace" classname="features.proxy.app.ProxyAppListProjectionAndroidOracleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

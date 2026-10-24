@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="engine.vpn.StrictFullTunnelTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:51:13.785Z" hostname="VQSeGo" time="0.043">
+  <properties/>
+  <testcase name="strictFullTunnel_removesPerAppExceptionsAndEnabledDirectRulesAtRuntime" classname="engine.vpn.StrictFullTunnelTest" time="0.038"/>
+  <testcase name="strictFullTunnel_doesNotRewriteStoredStateOrNonDirectRules" classname="engine.vpn.StrictFullTunnelTest" time="0.0"/>
+  <testcase name="appState_enableStrictFullTunnel_defaultsToFalseAndVpnResetDisablesIt" classname="engine.vpn.StrictFullTunnelTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

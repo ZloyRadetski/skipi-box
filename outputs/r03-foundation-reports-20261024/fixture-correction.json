@@ -1,0 +1,6 @@
+{
+  "path": "shared/core/src/commonTest/kotlin/features/config/PerAppProfileDocumentRoundTripTest.kt",
+  "initial_sha256": "2b784f437c9ce2c2ee95a518c0d791f8293258c8a32f4c92016755487c015b63",
+  "final_sha256": "553cad64b191463a9bc29de4a8ed3084d71b8071c61b3a28a2d60bf73d934f1b",
+  "reason": "Test fixture compiler correction: withSkipiSettingsInRawConfig returns TrafficConfigState; consume .rawConfig, preserve all expectations."
+}

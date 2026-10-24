@@ -1,0 +1,8 @@
+{
+  "initial_builder_sha": "da6c995f08e2b76a83a2c89a049c2d1a4ecf21a38e209282adb89ccf40242735",
+  "final_hashes": {
+    "app/src/test/kotlin/engine/vpn/VpnApplicationPolicyBuilderAndroidOracleTest.kt": "daf8dbb4f5b61aadd1906f5e439746383397daf203f4f13b8dc9d91075dc1ded",
+    "app/src/test/kotlin/features/proxy/app/ProxyAppListPackageLoadingAndroidOracleTest.kt": "b0217880cb63fb7703446f5e4e4b799700f123714b1185213fd7061e5fcbaf00"
+  },
+  "reason": "Application isolation correction only; Builder expectations unchanged. Add two synthetic actual provider loader cases after core extraction; native loader algorithm unchanged."
+}

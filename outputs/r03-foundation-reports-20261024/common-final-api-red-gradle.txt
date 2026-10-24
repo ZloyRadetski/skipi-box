@@ -1,0 +1,172 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :shared:app
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:app'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Configure project :shared:core
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:core'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Task :shared:core:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:core:generateProjectInfo UP-TO-DATE
+> Task :shared:core:compileKotlinDesktop UP-TO-DATE
+> Task :shared:core:compileDesktopMainJava NO-SOURCE
+> Task :shared:core:desktopProcessResources NO-SOURCE
+> Task :shared:core:processDesktopMainResources SKIPPED
+> Task :shared:core:desktopMainClasses UP-TO-DATE
+> Task :shared:core:desktopJar UP-TO-DATE
+> Task :shared:core:desktopTestProcessResources NO-SOURCE
+> Task :shared:core:processDesktopTestResources SKIPPED
+
+> Task :shared:core:compileTestKotlinDesktop FAILED
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:6:27 Unresolved reference 'model'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:7:27 Unresolved reference 'model'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:8:27 Unresolved reference 'model'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:9:27 Unresolved reference 'model'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:10:27 Unresolved reference 'model'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:11:27 Unresolved reference 'model'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:19:24 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:31:24 Unresolved reference 'visibleItemsByUser'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:31:43 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:31:61 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:31:74 Unresolved reference 'key'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:35:26 Unresolved reference 'visibleItemsByUser'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:35:45 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:35:63 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:35:76 Unresolved reference 'key'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:39:31 Unresolved reference 'visibleItemsByUser'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:39:50 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:39:68 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:39:81 Unresolved reference 'key'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:47:24 Unresolved reference 'allItemsByUser'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:47:39 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:47:57 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:47:70 Unresolved reference 'key'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:54:27 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:54:27 Argument type mismatch: actual type is 'List<uninferred T (of fun <T> listOf)>', but 'List<??? (Unresolved qualified name: AppPackageEntry)>' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:59:26 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:59:26 Argument type mismatch: actual type is 'List<uninferred T (of fun <T> listOf)>', but 'List<??? (Unresolved qualified name: ProxyAppListUserSpace)>' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:60:17 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:61:17 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:65:29 Unresolved reference 'projectedUserSpaceTabs'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:69:9 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:70:13 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:71:17 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:72:17 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:73:17 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:75:22 Unresolved reference 'displayedUserSpaces'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:77:69 Cannot infer type for value parameter 'tab'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:77:80 Unresolved reference 'label'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:78:50 Cannot infer type for value parameter 'tab'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:78:61 Unresolved reference 'checkedCount'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:84:27 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:84:27 Argument type mismatch: actual type is 'List<uninferred T (of fun <T> listOf)>', but 'List<??? (Unresolved qualified name: AppPackageEntry)>' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:89:26 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:89:26 Argument type mismatch: actual type is 'List<uninferred T (of fun <T> listOf)>', but 'List<??? (Unresolved qualified name: ProxyAppListUserSpace)>' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:90:17 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:91:17 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:94:35 Unresolved reference 'allItemsByUser'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:94:50 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:95:34 Unresolved reference 'allItemsByUser'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:95:49 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:96:29 Unresolved reference 'projectedUserSpaceTabs'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:100:59 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:100:72 Unresolved reference 'sharedUid'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:106:30 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:106:43 Unresolved reference 'selectionKeys'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:108:53 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:108:66 Unresolved reference 'sharedUid'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:109:72 Unresolved reference 'selectionKeys'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:110:47 Cannot infer type for value parameter 'tab'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:110:58 Unresolved reference 'checkedCount'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:116:27 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:116:27 Argument type mismatch: actual type is 'List<uninferred T (of fun <T> listOf)>', but 'List<??? (Unresolved qualified name: AppPackageEntry)>' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:122:26 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:122:26 Argument type mismatch: actual type is 'List<uninferred T (of fun <T> listOf)>', but 'List<??? (Unresolved qualified name: ProxyAppListUserSpace)>' was expected.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:122:33 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:125:30 Unresolved reference 'allItemsByUser'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:125:45 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:129:25 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:129:38 Unresolved reference 'app'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:131:77 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:131:90 Unresolved reference 'app'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:132:64 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:132:77 Unresolved reference 'app'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:139:25 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:139:38 Unresolved reference 'key'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:145:24 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:152:31 Unresolved reference 'sortedForProxyAppListRefresh'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:158:26 Cannot infer type for value parameter 'entry'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:158:41 Unresolved reference 'packageName'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:163:27 Unresolved reference 'AppPackageEntry'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:165:26 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:165:51 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:165:58 Unresolved reference 'ProxyAppListUserSpace'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:167:8 Unresolved reference 'ProxyAppListPreparedData'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:167:35 Unresolved reference 'prepareProxyAppListProjection'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppListProjectionTest.kt:179:9 Unresolved reference 'AppPackageEntry'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:17:9 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:18:13 Unresolved reference 'ProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:18:77 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:19:13 Unresolved reference 'projectProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:30:9 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:31:13 Unresolved reference 'ProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:31:77 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:32:13 Unresolved reference 'projectProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:46:22 Unresolved reference 'projectProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:53:9 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:54:13 Unresolved reference 'ProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:54:77 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:75:9 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:76:13 Unresolved reference 'ProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:84:13 Unresolved reference 'projectProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:95:9 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:96:13 Unresolved reference 'ProxyAppVpnPolicy'.
+e: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/shared/core/src/commonTest/kotlin/features/proxy/app/ProxyAppVpnPolicyTest.kt:100:13 Unresolved reference 'projectProxyAppVpnPolicy'.
+
+[Incubating] Problems report is available at: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':shared:core:compileTestKotlinDesktop' (registered in build file 'shared/core/build.gradle.kts').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1s
+8 actionable tasks: 2 executed, 6 up-to-date

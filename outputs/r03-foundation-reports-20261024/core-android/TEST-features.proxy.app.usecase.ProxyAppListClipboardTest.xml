@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="features.proxy.app.usecase.ProxyAppListClipboardTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-24T06:50:50.986Z" hostname="VQSeGo" time="0.006">
+  <properties/>
+  <testcase name="prefixesBarePackagesWithTheCallerProvidedUserIdIncludingZeroFallback" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.0"/>
+  <testcase name="missingModeKeepsNullAndSelfFilteringLeavesOtherIdsInOrder" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.0"/>
+  <testcase name="encodesModeAndSelectedIdsInSourceOrderAfterTrimAndDeduplication" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.001"/>
+  <testcase name="reportsExistingFailuresForUnsupportedModeMalformedIdsAndNoValidApps" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.003"/>
+  <testcase name="decodesEachNamedModeAndKeepsExplicitUserIdsAndPackageOrder" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.0"/>
+  <testcase name="mergeRetainsCurrentModeWhenImportHasNoModeAndDeduplicatesInOrder" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.001"/>
+  <testcase name="acceptsLegacyBooleanModeLinesAsBlacklistAndWhitelist" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.0"/>
+  <testcase name="replaceUsesImportedModeAndReplacesTheSelectedIdList" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.0"/>
+  <testcase name="reportsEmptyClipboardWithTheExistingFailure" classname="features.proxy.app.usecase.ProxyAppListClipboardTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
