@@ -3,7 +3,4 @@
 
 package system.user
 
-data class AndroidUserSpace(
-    val id: Int,
-    val name: String,
-)
+typealias AndroidUserSpace = features.proxy.app.model.ProxyAppListUserSpace
