@@ -5,6 +5,7 @@ package features.proxy.server.list
 
 import app.AppState
 import app.ProxyServerState
+import app.ProxyServerLatencyTesting
 import app.SubscriptionGroupState
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.ProxyServerListLayoutMultiple
@@ -116,7 +117,7 @@ class ProxyHomeAndroidInputTest {
         assertEquals(setOf("10", "11", "20"), allSummary.serverIds)
         assertEquals(listOf("10", "11", "20", "21"), input.servers.map { it.id })
         val workSummary = input.servers.first { it.id == "11" }
-        assertTrue(workSummary.searchText?.contains("Work") == true)
+        assertEquals("Work node", workSummary.searchText)
         assertEquals("Work node", workSummary.sortKey)
     }
 
@@ -276,7 +277,7 @@ class ProxyHomeAndroidInputTest {
         assertEquals("🇺🇸", alphaSummary.flag)
         assertEquals("🇺🇸 Alpha", alphaSummary.sortKey)
         assertEquals("Zulu", zuluSummary.sortKey)
-        assertTrue(zuluSummary.searchText?.contains("Work") == true)
+        assertEquals("Zulu", zuluSummary.searchText)
         assertEquals(19L, alphaSummary.latencyMs)
         assertTrue(zuluSummary.latencyError)
         assertEquals(setOf("10", "20"), input.groups.first { it.id == AllProxyGroupId.toString() }.serverIds)
@@ -823,4 +824,81 @@ class ProxyHomeAndroidInputTest {
         )
         assertEquals(listOf("1", "2", "3"), defaultStore.uiState.value.servers.map { it.id })
     }
+
+    @Test
+    fun androidLatencySortSourceOracleKeepsNegativeOverflowAndFailuresAfterNumericAndTestingRows() {
+        val servers = listOf(
+            latencyServer(1, "Slow", "500 ms"),
+            latencyServer(2, "Fast", "50 ms"),
+            latencyServer(3, "Testing", ProxyServerLatencyTesting),
+            latencyServer(4, "Negative", "-1ms"),
+            latencyServer(5, "Timeout", "Timeout"),
+            latencyServer(6, "Error", "Error"),
+            latencyServer(7, "Failure", "Failed"),
+            latencyServer(8, "Overflow", "2147483648ms"),
+        )
+
+        // Android's comparator treats negative, oversized, and failed probes as unavailable.
+        assertEquals(
+            listOf(2, 1, 3, 6, 7, 4, 8, 5),
+            servers.sortedForProxyServerList(ProxyServerListSortLatency).map { it.id },
+        )
+    }
+
+    @Test
+    fun sharedHomeLatencySortPreservesAndroidNegativeOverflowAndFailureBuckets() {
+        val manualGroup = SubscriptionGroupState(
+            id = DefaultSubscriptionGroupId,
+            name = "Manual",
+            url = "",
+            userAgent = "",
+            updateInterval = "",
+            enabled = true,
+            builtIn = true,
+        )
+        val servers = listOf(
+            latencyServer(1, "Slow", "500 ms"),
+            latencyServer(2, "Fast", "50 ms"),
+            latencyServer(3, "Testing", ProxyServerLatencyTesting),
+            latencyServer(4, "Negative", "-1ms"),
+            latencyServer(5, "Timeout", "Timeout"),
+            latencyServer(6, "Error", "Error"),
+            latencyServer(7, "Failure", "Failed"),
+            latencyServer(8, "Overflow", "2147483648ms"),
+        )
+        val state = AppState(
+            subscriptionGroups = listOf(manualGroup),
+            proxyServers = servers,
+            selectedProxyServerId = 2,
+            proxyServerListSort = ProxyServerListSortLatency,
+        )
+        val groups = proxyServerListGroups(
+            state = state.toProxyServerListState(),
+            selectedGroupId = DefaultSubscriptionGroupId,
+            searchValue = "",
+            allGroupName = "All",
+            defaultGroupName = "Manual",
+            autoBalancerGroupName = "Auto balancers",
+        )
+        val input = state.toProxyHomeInput(
+            groupState = groups,
+            tunnelSnapshot = TunnelSnapshot(),
+            tunnelBusy = false,
+            isTestingLatency = false,
+        )
+        val store = ProxyHomeStore(
+            initialInput = input,
+            scope = CoroutineScope(Dispatchers.Unconfined),
+            effectHandler = { Result.success(Unit) },
+        )
+
+        assertEquals(listOf("2", "1", "3", "6", "7", "4", "8", "5"), store.uiState.value.servers.map { it.id })
+    }
+
+    private fun latencyServer(id: Int, remarks: String, latency: String) = ProxyServerState(
+        id = id,
+        server = VLESS(remarks = remarks, id = "id-$id", server = "$id.example", port = "443"),
+        groupId = DefaultSubscriptionGroupId,
+        latency = latency,
+    )
 }

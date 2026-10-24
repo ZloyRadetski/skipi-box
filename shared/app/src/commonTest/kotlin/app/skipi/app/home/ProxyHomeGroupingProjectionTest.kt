@@ -6,12 +6,31 @@ package app.skipi.app.home
 import app.skipi.app.proxy.ProxyServerGroupInput
 import app.skipi.app.proxy.ProxyServerGroupServerInput
 import app.skipi.app.proxy.ProxyServerGroupingRequest
+import app.skipi.app.proxy.ProxyServerGroupingAndroidContractFixture
 import app.skipi.app.proxy.groupProxyServersForHome
 import features.proxy.server.model.StrategyGroupDisplayMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ProxyHomeGroupingProjectionTest {
+    @Test
+    fun androidContractFixtureProjectsAllManualSubscriptionAndAutoBalancerMembership() {
+        val request = ProxyServerGroupingAndroidContractFixture.request
+        val grouping = groupProxyServersForHome(request)
+
+        assertEquals(
+            listOf(
+                ProxyHomeGroupMembership(id = 0, title = "All", serverIds = listOf(10, 20, 21, 40)),
+                ProxyHomeGroupMembership(id = -2, title = "Auto balancers", serverIds = listOf(40, 50, 52)),
+                ProxyHomeGroupMembership(id = 8, title = "Later subscription", serverIds = listOf(20)),
+                ProxyHomeGroupMembership(id = 4, title = "Empty subscription", serverIds = emptyList()),
+                ProxyHomeGroupMembership(id = 2, title = "Earlier subscription", serverIds = listOf(21)),
+                ProxyHomeGroupMembership(id = 1, title = "Default group", serverIds = listOf(10)),
+            ),
+            proxyHomeGroupMemberships(request, grouping),
+        )
+    }
+
     @Test
     fun homeMembershipUsesVisibleRowsButOmitsConfigOwnedStrategiesFromAll() {
         val request = ProxyServerGroupingRequest(
@@ -61,9 +80,9 @@ class ProxyHomeGroupingProjectionTest {
     }
 
     @Test
-    fun serverSearchTextIncludesGroupTitleAndSortUsesRawRemarksWithTitleFallback() {
+    fun serverSearchTextUsesRemarksAndSortUsesRawRemarksWithTitleFallback() {
         assertEquals(
-            "Work node 🇺🇸 Work node work.example:443 VLESS Work",
+            "🇺🇸 Work node",
             proxyHomeServerSearchText(
                 title = "Work node",
                 remarks = "🇺🇸 Work node",

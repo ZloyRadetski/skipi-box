@@ -94,7 +94,7 @@ class DesktopProxyHomeProjectionTest {
 
         val projectedWorkServer = projection.servers.first { it.id == "11" }
         assertEquals("subscription:2", projectedWorkServer.groupId)
-        assertTrue(projectedWorkServer.searchText?.contains("Work") == true)
+        assertEquals("🇺🇸 Amsterdam", projectedWorkServer.searchText)
         assertEquals("🇺🇸 Amsterdam", projectedWorkServer.sortKey)
         assertEquals("Amsterdam", projectedWorkServer.title)
         assertTrue(projectedWorkServer.selected)

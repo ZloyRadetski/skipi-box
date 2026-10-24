@@ -113,6 +113,15 @@ class DesktopProxyGroupsTest {
                         ),
                         subscriptionId = -2,
                     ),
+                    storedStrategy(
+                        6,
+                        StrategyGroup(
+                            remarks = "Never config group",
+                            sourceTrafficConfigId = 7,
+                            displayMode = StrategyGroupDisplayMode.NEVER,
+                        ),
+                        subscriptionId = -2,
+                    ),
                 ),
             ),
             subscriptionLibrary = DesktopSubscriptionLibrary(

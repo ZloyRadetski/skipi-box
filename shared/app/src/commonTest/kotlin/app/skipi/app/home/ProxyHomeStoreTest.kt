@@ -493,6 +493,38 @@ class ProxyHomeStoreTest {
     }
 
     @Test
+    fun androidHomeSearchMatchesRemarksWithoutExpandingToGroupAddressOrProtocol() {
+        val server = ProxyServerSummary(
+            id = "1",
+            title = "Friendly title",
+            address = "work.example:443",
+            protocol = "VLESS",
+            groupId = "2",
+            searchText = proxyHomeServerSearchText(
+                title = "Friendly title",
+                remarks = "Node from source",
+                address = "work.example:443",
+                protocol = "VLESS",
+                groupName = "Work group",
+            ),
+        )
+        val store = createStore(
+            ProxyHomeInput(
+                servers = listOf(server),
+                groups = listOf(group("2", "Work group", serverIds = setOf("1"))),
+            ),
+        )
+
+        listOf("Friendly", "work.example", "VLESS", "Work group").forEach { query ->
+            store.dispatch(ProxyHomeAction.SetSearchQuery(query))
+            assertEquals(emptyList(), store.uiState.value.pages.single().servers, "query=$query")
+        }
+
+        store.dispatch(ProxyHomeAction.SetSearchQuery("source"))
+        assertEquals(listOf("1"), store.uiState.value.pages.single().servers.map { it.id })
+    }
+
+    @Test
     fun sortingMaintainsStableNameTiesAndOrdersLatencyValues() {
         val servers = listOf(
             ProxyServerSummary(id = "s1", title = "alpha", address = "1", protocol = "p", latencyMs = null),

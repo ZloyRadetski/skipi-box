@@ -47,6 +47,24 @@ class ProxyServerListGroupsCompatibilityTest {
                 displayMode = StrategyGroupDisplayMode.ACTIVE_CONFIG,
             ),
         )
+        val alwaysConfigBalancer = ProxyServerState(
+            id = 33,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "Always config",
+                sourceTrafficConfigId = 8,
+                displayMode = StrategyGroupDisplayMode.ALWAYS,
+            ),
+        )
+        val neverConfigBalancer = ProxyServerState(
+            id = 34,
+            groupId = AutoBalancerGroupId,
+            server = StrategyGroup(
+                remarks = "Never config",
+                sourceTrafficConfigId = 7,
+                displayMode = StrategyGroupDisplayMode.NEVER,
+            ),
+        )
         val disabledFlagUserBalancer = ProxyServerState(
             id = 32,
             groupId = AutoBalancerGroupId,
@@ -66,6 +84,8 @@ class ProxyServerListGroupsCompatibilityTest {
                 subscriptionServer,
                 activeConfigBalancer,
                 inactiveConfigBalancer,
+                alwaysConfigBalancer,
+                neverConfigBalancer,
                 disabledFlagUserBalancer,
                 disabledGroupServer,
             ),
@@ -121,13 +141,14 @@ class ProxyServerListGroupsCompatibilityTest {
         assertEquals(listOf(AllProxyGroupId, AutoBalancerGroupId, 2, 4, DefaultSubscriptionGroupId), result.groupTabs.map { it.id })
         assertEquals(AutoBalancerGroupId, result.selectedGroup.id)
         assertEquals(AutoBalancerGroupId, result.selectedTabId)
-        assertEquals(listOf(10, 20, 30, 32), result.visibleServers.map { it.id })
-        assertEquals(listOf(30), result.currentFilteredServers.map { it.id })
+        assertEquals(listOf(10, 20, 30, 33, 32), result.visibleServers.map { it.id })
+        assertEquals(listOf(30, 33), result.currentFilteredServers.map { it.id })
         assertEquals("Default group", result.groupNames[DefaultSubscriptionGroupId])
         assertEquals("Auto balancers", result.groupNames[AutoBalancerGroupId])
         assertTrue(result.visibleGroupIds.contains(2))
-        assertEquals(2, result.groupTabs.first { it.id == AutoBalancerGroupId }.serverCount)
+        assertEquals(3, result.groupTabs.first { it.id == AutoBalancerGroupId }.serverCount)
         assertSame(activeConfigBalancer, result.visibleServers.first { it.id == activeConfigBalancer.id })
         assertSame(disabledFlagUserBalancer, result.visibleServers.first { it.id == disabledFlagUserBalancer.id })
+        assertSame(alwaysConfigBalancer, result.visibleServers.first { it.id == alwaysConfigBalancer.id })
     }
 }

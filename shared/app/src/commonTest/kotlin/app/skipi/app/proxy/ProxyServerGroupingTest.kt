@@ -157,6 +157,44 @@ class ProxyServerGroupingTest {
         assertEquals(listOf(10, 20, 40), allResult.currentGroupServerIds)
     }
 
+    @Test
+    fun androidContractFixturePreservesConfigDisplayModesAndHomeGroupOrder() {
+        val request = ProxyServerGroupingAndroidContractFixture.request
+        val result = groupProxyServersForHome(request)
+
+        assertEquals(listOf(-2, 8, 4, 2, 1), result.visibleGroups.map { it.id })
+        assertEquals(listOf(0, -2, 8, 4, 2, 1), result.groupTabs.map { it.id })
+        assertEquals(listOf(6, 3, 1, 0, 1, 1), result.groupTabs.map { it.serverCount })
+        assertEquals(listOf(10, 20, 21, 40, 50, 52), result.visibleServerIds)
+        assertEquals(listOf(10, 20, 21, 40), result.currentGroupServerIds)
+        assertEquals(-2, result.selectedGroupId)
+        assertEquals(0, result.selectedTabId)
+        assertEquals(0, result.selectedTabIndex)
+
+        val autoBalancers = groupProxyServersForHome(request.copy(selectedGroupId = -2))
+        assertEquals(listOf(40, 50, 52), autoBalancers.currentGroupServerIds)
+        assertEquals(-2, autoBalancers.selectedTabId)
+        assertEquals(1, autoBalancers.selectedTabIndex)
+
+        val invalidSelection = groupProxyServersForHome(request.copy(selectedGroupId = 3))
+        assertEquals(-2, invalidSelection.selectedGroupId)
+        assertEquals(-2, invalidSelection.selectedTabId)
+    }
+
+    @Test
+    fun androidContractFixtureSearchFiltersRowsAfterGroupCountsAndAllMembership() {
+        val request = ProxyServerGroupingAndroidContractFixture.request
+
+        val searchedAll = groupProxyServersForHome(request.copy(searchQuery = " node "))
+        assertEquals(listOf(6, 3, 1, 0, 1, 1), searchedAll.groupTabs.map { it.serverCount })
+        assertEquals(listOf(10, 20, 21), searchedAll.currentFilteredServerIds)
+
+        val searchedAuto = groupProxyServersForHome(
+            request.copy(selectedGroupId = -2, searchQuery = " CONFIG "),
+        )
+        assertEquals(listOf(50, 52), searchedAuto.currentFilteredServerIds)
+    }
+
     private fun request(
         groups: List<ProxyServerGroupInput>,
         servers: List<ProxyServerGroupServerInput>,

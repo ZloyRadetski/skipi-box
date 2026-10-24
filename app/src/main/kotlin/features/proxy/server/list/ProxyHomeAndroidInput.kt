@@ -172,12 +172,12 @@ private fun ProxyServerState.toProxyHomeSummary(
     )
     val latencyText = latency.trim()
     val latencyTesting = latencyText == ProxyServerLatencyTesting
-    val latencyMs = if (latencyText == ProxyServerLatencyTesting) {
-        null
-    } else {
-        HomeLatencyNumber.find(latencyText)?.value?.toLongOrNull()
+    val latencyUnavailable = latencyText.isBlank() || latencyText.startsWith("-") ||
+        listOf("Failed", "Timeout", "Error").any { marker -> latencyText.contains(marker, ignoreCase = true) }
+    val latencyMs = if (latencyTesting || latencyUnavailable) null else {
+        HomeLatencyNumber.find(latencyText)?.value?.toIntOrNull()?.toLong()
     }
-    val latencyError = !latencyTesting && latencyMs == null && latencyText.isNotBlank()
+    val latencyError = !latencyTesting && latencyText.isNotBlank() && (latencyUnavailable || latencyMs == null)
 
     return ProxyServerSummary(
         id = id.toString(),

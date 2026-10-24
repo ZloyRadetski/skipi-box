@@ -5,6 +5,7 @@ package features.proxy.server.list
 
 import app.ProxyServerState
 import features.proxy.server.model.VLESS
+import features.subscription.DefaultSubscriptionGroupId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -68,5 +69,24 @@ class ProxyServerReorderTest {
 
         val reordered = list.reorderVisibleServerById(fromServerId = 10, toServerId = 30)
         assertEquals(listOf(1, 20, 30, 10, 2), reordered.map { it.id })
+    }
+
+    @Test
+    fun reorderUsesNeighborsRemainingAfterAndroidRemarksSearch() {
+        val sourceOrder = listOf(
+            createServer(1, "Search match first", groupId = DefaultSubscriptionGroupId),
+            createServer(2, "Hidden by search", groupId = DefaultSubscriptionGroupId),
+            createServer(3, "Search match second", groupId = DefaultSubscriptionGroupId),
+        )
+        val visiblePageOrder = sourceOrder.filter { server ->
+            server.server.getInfo().remarks.contains("search match", ignoreCase = true)
+        }
+
+        assertEquals(listOf(1, 3), visiblePageOrder.map { it.id })
+        val reordered = sourceOrder.reorderVisibleServerById(
+            fromServerId = visiblePageOrder.first().id,
+            toServerId = visiblePageOrder.last().id,
+        )
+        assertEquals(listOf(2, 3, 1), reordered.map { it.id })
     }
 }

@@ -5,7 +5,16 @@ package app.skipi.ui.home
 
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeActionId
+import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeUiState
+
+/** Android permits drag reordering only in the single-column default sort. */
+@Suppress("UNUSED_PARAMETER")
+fun proxyHomeCanReorderServers(
+    columns: Int,
+    sortMode: ProxyHomeSortMode,
+    searchQuery: String,
+): Boolean = columns == 1 && sortMode == ProxyHomeSortMode.Default
 
 internal fun ProxyHomeAction.requiredActionId(): ProxyHomeActionId? = when (this) {
     is ProxyHomeAction.SelectGroup,

@@ -41,14 +41,15 @@ fun proxyHomeGroupMemberships(
     }
 }
 
-/** Keeps the Android Home search contract, including the server's resolved group title. */
+/** Keeps the canonical server remarks as the only searchable Home text. */
+@Suppress("UNUSED_PARAMETER")
 fun proxyHomeServerSearchText(
     title: String,
     remarks: String,
     address: String,
     protocol: String,
     groupName: String,
-): String = listOf(title, remarks, address, protocol, groupName).joinToString(" ")
+): String = remarks
 
 /** Name sorting uses the canonical remarks, including any leading country flag. */
 fun proxyHomeServerSortKey(remarks: String, title: String): String = remarks.ifBlank { title }

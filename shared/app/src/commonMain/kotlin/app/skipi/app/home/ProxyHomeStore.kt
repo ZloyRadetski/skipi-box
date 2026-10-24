@@ -401,11 +401,15 @@ class ProxyHomeStore(
         val validGroupIds = value.groups.mapTo(hashSetOf()) { it.id }
         val prunedCollapsed = currentPresentation.collapsedSubscriptionGroupIds.filterTo(linkedSetOf()) { it in validGroupIds }
         val nextSelectedGroupId = if (currentPresentation.selectedGroupId != null && currentPresentation.selectedGroupId !in validGroupIds) {
-            resolveSelectedGroupId(
-                source = value,
-                requestedGroupId = null,
-                selectedServerId = value.selectedServerId,
-            )
+            if (value.groups.isEmpty()) {
+                currentPresentation.selectedGroupId
+            } else {
+                resolveSelectedGroupId(
+                    source = value,
+                    requestedGroupId = currentPresentation.selectedGroupId,
+                    selectedServerId = value.selectedServerId,
+                )
+            }
         } else {
             currentPresentation.selectedGroupId
         }
@@ -568,7 +572,7 @@ class ProxyHomeStore(
 
         val filteredServers = if (isSearchActive) {
             source.servers.filter { server ->
-                (server.searchText ?: "${server.title} ${server.address} ${server.protocol}")
+                (server.searchText ?: server.sortKey ?: server.title)
                     .contains(visibleQuery, ignoreCase = true)
             }
         } else {
@@ -693,22 +697,34 @@ class ProxyHomeStore(
             keyA.compareTo(keyB, ignoreCase = true)
         }
         ProxyHomeSortMode.Latency -> servers.sortedWith { a, b ->
-            val aGroup = when {
-                a.latencyMs != null -> 0
-                a.latencyTesting -> 1
-                else -> 2
-            }
-            val bGroup = when {
-                b.latencyMs != null -> 0
-                b.latencyTesting -> 1
-                else -> 2
-            }
+            val aGroup = a.latencySortGroup()
+            val bGroup = b.latencySortGroup()
             compareValues(aGroup, bGroup)
                 .takeIf { it != 0 }
-                ?: compareValues(a.latencyMs, b.latencyMs)
+                ?: (if (aGroup == SuccessfulLatencySortGroup) compareValues(a.latencyMs, b.latencyMs) else 0)
                     .takeIf { it != 0 }
                 ?: (a.sortKey ?: a.title).compareTo(b.sortKey ?: b.title, ignoreCase = true)
         }
+    }
+
+    private fun ProxyServerSummary.latencySortGroup(): Int = when {
+        latencyTesting -> TestingLatencySortGroup
+        latencyError || latencyMs == null || latencyMs < 0 || latencyErrorText.isUnavailableLatencyText() ->
+            UnavailableLatencySortGroup
+        else -> SuccessfulLatencySortGroup
+    }
+
+    private fun String?.isUnavailableLatencyText(): Boolean {
+        val value = this?.trim().orEmpty()
+        return value.startsWith("-") || listOf("failed", "timeout", "error").any { marker ->
+            value.contains(marker, ignoreCase = true)
+        }
+    }
+
+    private companion object {
+        const val SuccessfulLatencySortGroup = 0
+        const val TestingLatencySortGroup = 1
+        const val UnavailableLatencySortGroup = 2
     }
 
     private fun resolveSelectedGroupId(
@@ -717,7 +733,10 @@ class ProxyHomeStore(
         selectedServerId: String?,
     ): String? {
         if (source.groups.isEmpty()) return null
-        if (requestedGroupId != null && source.groups.any { it.id == requestedGroupId }) return requestedGroupId
+        if (requestedGroupId != null) {
+            return source.groups.firstOrNull { it.id == requestedGroupId }?.id
+                ?: source.groups.first().id
+        }
 
         val selectedServer = source.servers.firstOrNull { it.id == selectedServerId }
         val serverGroup = selectedServer?.groupId?.let { groupId ->
