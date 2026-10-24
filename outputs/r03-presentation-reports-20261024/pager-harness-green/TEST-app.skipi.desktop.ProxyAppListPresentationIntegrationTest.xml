@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.ProxyAppListPresentationIntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:07:34.012Z" hostname="VQSeGo" time="0.634">
+  <properties/>
+  <testcase name="tabsShowCheckedCountsAndKeepPageInSyncWithSelectedUser" classname="app.skipi.desktop.ProxyAppListPresentationIntegrationTest" time="0.631"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

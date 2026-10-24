@@ -1,0 +1,7 @@
+{
+  "path": "desktopApp/src/test/kotlin/app/skipi/desktop/ProxyAppListPresentationIntegrationTest.kt",
+  "before_diagnostic_sha256": "47f2c88440008eb7e3f82a1ecb2d32450d0c2f97d4dc37de24b1ebf1bef5b413",
+  "diagnostic_sha256": "19cce424b58a05f63e0be87209196b94c079a9d23c21439e9220ec1efb13a44a",
+  "final_sha256": "1bd3164a3e83d447d7036e03509f5fd9ca843b7e586e5c24ade42a5eca885026",
+  "reason": "Global first horizontal ScrollBy matched Miuix tabs LazyRow (bounds17,5..463,40, tab texts), not pager (bounds0,45..480,780, package row texts). Target horizontal ancestor of Personal mail row; assert action accepted. No production/timing/output expectation changes."
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-24T07:02:33.686Z" hostname="VQSeGo" time="5.794">
+  <properties/>
+  <testcase name="rendersPerAppBodyModeMenuAndImportDialogAtNarrowAndWideViewports" classname="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" time="3.495"/>
+  <testcase name="replaceClipboardImportUsesDesktopUserIdFallbackAndReportsTwoImports" classname="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" time="0.323"/>
+  <testcase name="mergeAfterDialogUsesLatestRowAndReportsNoNewIds" classname="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" time="0.357"/>
+  <testcase name="failedMergeAndReplaceKeepImportDialogOpenWithoutSuccessOrPersistence" classname="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" time="0.575"/>
+  <testcase name="exportUsesInjectedClipboardWithoutInventedDesktopAppInventoryOrWrites" classname="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" time="0.227"/>
+  <testcase name="moreUiEditOpensInactivePerAppAndBackDoesNotWriteAgain" classname="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" time="0.275"/>
+  <testcase name="mergeAfterTargetDisappearsClosesDialogAndReportsZeroWithoutResurrection" classname="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" time="0.3"/>
+  <testcase name="malformedUserIdShowsLocalizedErrorWithoutDialogOrLibraryMutation" classname="app.skipi.desktop.DesktopTrafficConfigPerAppScreenIntegrationTest" time="0.239"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

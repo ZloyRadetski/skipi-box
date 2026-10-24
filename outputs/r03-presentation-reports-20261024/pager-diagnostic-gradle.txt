@@ -1,0 +1,149 @@
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources NO-SOURCE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :shared:app
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:app'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Configure project :shared:core
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':shared:core'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[androidMain, desktopMain, jvmMain]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Task :shared:yaml-jvm:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :shared:yaml-jvm:compileKotlin UP-TO-DATE
+> Task :shared:core:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:yaml-jvm:compileJava NO-SOURCE
+> Task :shared:core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:yaml-jvm:processResources NO-SOURCE
+> Task :shared:core:generateProjectInfo UP-TO-DATE
+> Task :shared:yaml-jvm:classes UP-TO-DATE
+> Task :shared:yaml-jvm:jar UP-TO-DATE
+> Task :shared:ui:checkDesktopMainComposeLibrariesCompatibility
+> Task :shared:core:compileKotlinDesktop UP-TO-DATE
+> Task :shared:core:compileDesktopMainJava NO-SOURCE
+> Task :shared:core:desktopProcessResources NO-SOURCE
+> Task :shared:core:processDesktopMainResources SKIPPED
+> Task :shared:core:desktopMainClasses UP-TO-DATE
+> Task :shared:core:desktopJar UP-TO-DATE
+> Task :shared:app:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:ui:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:ui:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:app:compileKotlinDesktop UP-TO-DATE
+> Task :shared:app:compileDesktopMainJava NO-SOURCE
+> Task :shared:app:desktopProcessResources NO-SOURCE
+> Task :shared:app:processDesktopMainResources SKIPPED
+> Task :shared:app:desktopMainClasses UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :shared:ui:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:app:desktopJar UP-TO-DATE
+> Task :shared:ui:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :shared:ui:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:ui:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:ui:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :shared:ui:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :shared:ui:generateResourceAccessorsForDesktopMain NO-SOURCE
+> Task :shared:ui:generateActualResourceCollectorsForDesktopMain UP-TO-DATE
+> Task :shared:ui:generateComposeResClass UP-TO-DATE
+> Task :shared:ui:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :shared:ui:compileKotlinDesktop UP-TO-DATE
+> Task :shared:ui:compileDesktopMainJava NO-SOURCE
+> Task :shared:ui:assembleDesktopMainResources UP-TO-DATE
+> Task :shared:ui:desktopProcessResources UP-TO-DATE
+> Task :shared:ui:processDesktopMainResources SKIPPED
+> Task :shared:ui:desktopMainClasses UP-TO-DATE
+> Task :shared:ui:desktopJar UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar UP-TO-DATE
+
+> Task :desktopApp:compileTestKotlin
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSelectedServerCoreFfmIntegrationTest.kt:282:56 Expression is unused.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionInstallIntegrationTest.kt:64:58 Unnecessary non-null assertion (!!) on a non-null receiver of type 'SubscriptionRecord'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionInstallIntegrationTest.kt:65:62 Unnecessary non-null assertion (!!) on a non-null receiver of type 'SubscriptionRecord'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionInstallIntegrationTest.kt:66:51 Unnecessary non-null assertion (!!) on a non-null receiver of type 'SubscriptionRecord'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:106:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:113:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:162:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:213:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:278:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopSubscriptionRefreshCoordinatorTest.kt:376:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigProxyGroupsScreenIntegrationTest.kt:811:56 Unnecessary safe call on a non-null receiver of type 'Pair<Int, SemanticsNode>'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTrafficConfigRulesScreenIntegrationTest.kt:708:56 Unnecessary safe call on a non-null receiver of type 'Pair<Int, SemanticsNode>'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTunnelControllerTest.kt:114:72 No cast needed.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopTunnelStartAssetsPlannerTest.kt:234:27 Unnecessary safe call on a non-null receiver of type 'DesktopCoreStartRequest'.
+w: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/src/test/kotlin/app/skipi/desktop/DesktopVisibleNeighborReorderContractTest.kt:28:48 Unnecessary safe call on a non-null receiver of type 'List<DesktopStoredProxyServer>'.
+
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:testClasses UP-TO-DATE
+
+> Task :desktopApp:test
+
+ProxyAppListPresentationIntegrationTest > tabsShowCheckedCountsAndKeepPageInSyncWithSelectedUser FAILED
+    java.lang.AssertionError at ProxyAppListPresentationIntegrationTest.kt:171
+
+1 test completed, 1 failed
+
+> Task :desktopApp:test FAILED
+
+[Incubating] Problems report is available at: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:test'.
+> There were failing tests. See the report at: file:///home/vqsego/TorvaldsVPN/Skipi/skipi-box/desktopApp/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.7.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 9s
+32 actionable tasks: 6 executed, 26 up-to-date

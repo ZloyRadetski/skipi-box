@@ -1,0 +1,6 @@
+{
+  "path": "desktopApp/src/test/kotlin/app/skipi/desktop/ProxyAppListPresentationIntegrationTest.kt",
+  "initial_sha256": "5d6c3a8c50581aebf0a07ab942dc808a9be5c7d5490e7eecaf16124ff282aaea",
+  "final_sha256": "47f2c88440008eb7e3f82a1ecb2d32450d0c2f97d4dc37de24b1ebf1bef5b413",
+  "reason": "JUnit method inferred SemanticsNode return from runBlocking; explicitly use runBlocking<Unit>, no assertions/timing/interaction changes."
+}

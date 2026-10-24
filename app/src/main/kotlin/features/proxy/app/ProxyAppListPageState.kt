@@ -1,12 +1,8 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-@file:OptIn(ExperimentalFoundationApi::class)
-
 package features.proxy.app
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -15,7 +11,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.res.stringResource
 import app.R
@@ -29,12 +24,10 @@ import features.proxy.app.model.sortedForProxyAppListRefresh
 import features.proxy.app.model.toAndroidUserSpace
 import features.proxy.app.model.toUserSpaceTabs
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 import system.AndroidPackageProvider
 import system.AndroidUserSpaceProvider
 import system.user.AndroidUserSpace
 import ui.feedback.AndroidToastTipNotifier
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 internal fun rememberProxyAppListPageState(): ProxyAppListPageState {
@@ -72,25 +65,15 @@ internal fun ProxyAppListPageEffects(
     isVpnServiceMode: Boolean,
     vpnServiceUserId: Int?,
     selfPackageName: String,
-    selectedUserIndex: Int,
-    userTabIds: List<Int>,
-    userPagerState: PagerState,
     packageCatalog: AndroidPackageProvider,
     userSpaces: AndroidUserSpaceProvider,
     tipNotifier: AndroidToastTipNotifier,
 ) {
-    ProxyAppListSearchEffect(pageState)
     ProxyAppListPreparedDataEffect(
         pageState = pageState,
         selectedAppKeys = selectedAppKeys,
         isVpnServiceMode = isVpnServiceMode,
         vpnServiceUserId = vpnServiceUserId,
-    )
-    ProxyAppListPagerEffect(
-        pageState = pageState,
-        selectedUserIndex = selectedUserIndex,
-        userTabIds = userTabIds,
-        userPagerState = userPagerState,
     )
     ProxyAppListUserSpaceEffect(
         pageState = pageState,
@@ -119,18 +102,6 @@ internal fun updateProxyAppListSelection(
     )
 }
 
-internal const val ProxyAppListGlobalModeIndex = 2
-
-@Composable
-private fun ProxyAppListSearchEffect(
-    pageState: ProxyAppListPageState,
-) {
-    LaunchedEffect(pageState.searchValue) {
-        delay(150.milliseconds)
-        pageState.debouncedSearchValue = pageState.searchValue
-    }
-}
-
 @Composable
 private fun ProxyAppListPreparedDataEffect(
     pageState: ProxyAppListPageState,
@@ -155,42 +126,6 @@ private fun ProxyAppListPreparedDataEffect(
 
     LaunchedEffect(pageState.preparedAppListData, selectedAppKeys) {
         pageState.userTabs = pageState.preparedAppListData.toUserSpaceTabs(selectedAppKeys)
-    }
-}
-
-@Composable
-private fun ProxyAppListPagerEffect(
-    pageState: ProxyAppListPageState,
-    selectedUserIndex: Int,
-    userTabIds: List<Int>,
-    userPagerState: PagerState,
-) {
-    LaunchedEffect(userTabIds) {
-        val lastIndex = userTabIds.lastIndex
-        if (lastIndex >= 0 && userPagerState.currentPage > lastIndex) {
-            userPagerState.scrollToPage(lastIndex)
-        }
-    }
-
-    LaunchedEffect(selectedUserIndex, userTabIds) {
-        if (
-            userTabIds.isNotEmpty() &&
-            !userPagerState.isScrollInProgress &&
-            userPagerState.currentPage != selectedUserIndex
-        ) {
-            userPagerState.animateScrollToPage(selectedUserIndex)
-        }
-    }
-
-    LaunchedEffect(userPagerState, userTabIds) {
-        snapshotFlow { userPagerState.targetPage }
-            .collect { page ->
-                pageState.userTabs.getOrNull(page)?.let { tab ->
-                    if (pageState.selectedUserId != tab.id) {
-                        pageState.selectedUserId = tab.id
-                    }
-                }
-            }
     }
 }
 

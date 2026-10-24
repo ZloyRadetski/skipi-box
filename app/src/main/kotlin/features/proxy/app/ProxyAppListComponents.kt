@@ -1,266 +1,36 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.proxy.app
 
 import androidx.compose.animation.animateColorAsState
-import ui.text.themedFontWeight
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import app.R
-import system.ANDROID_APP_ICON_SIZE_DP
 import coil3.compose.AsyncImage
-import androidx.compose.ui.res.stringResource
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.InputField
-import top.yukonga.miuix.kmp.basic.SearchBar
-import top.yukonga.miuix.kmp.basic.TabRowDefaults
-import top.yukonga.miuix.kmp.basic.TabRowWithContour
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import features.proxy.app.model.AppPackageEntry
 import features.proxy.app.model.ProxyAppIconRequest
-import features.proxy.app.model.ProxyAppListUserSpaceTabUi
-import ui.AppTheme
-import ui.text.formatTemplate
 import features.proxy.app.model.name
-import androidx.compose.runtime.getValue
+import system.ANDROID_APP_ICON_SIZE_DP
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+/** Android-only icon adapter; common rows receive this as their icon-content slot. */
 @Composable
-internal fun ProxyAppListUserSpaceTabs(
-    tabs: List<ProxyAppListUserSpaceTabUi>,
-    selectedUserId: Int?,
-    onSelectedUserIdChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (tabs.isEmpty()) return
-
-    val hapticFeedback = LocalHapticFeedback.current
-    val selectedIndex = tabs.indexOfFirst { tab -> tab.id == selectedUserId }
-        .coerceAtLeast(0)
-    TabRowWithContour(
-        tabs = tabs.map { tab -> "${tab.label} (${tab.checkedCount})" },
-        selectedTabIndex = selectedIndex,
-        onTabSelected = { index ->
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
-            onSelectedUserIdChange(tabs[index].id)
-        },
-        colors = TabRowDefaults.tabRowColors(
-            selectedBackgroundColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.16f),
-            selectedContentColor = MiuixTheme.colorScheme.primary,
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-        maxWidth = 132.dp,
-    )
-}
-
-@Composable
-internal fun ProxyAppListItemCard(
-    app: AppPackageEntry,
-    checked: Boolean,
-    enabled: Boolean,
-    sharedUid: Boolean,
-    iconSizePx: Int,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val toggle = {
-        if (enabled) {
-            onCheckedChange(!checked)
-        }
-    }
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(bottom = 8.dp),
-        colors = CardDefaults.defaultColors(
-            color = if (app.system) {
-                MiuixTheme.colorScheme.primary.copy(alpha = 0.08f)
-            } else {
-                AppTheme.colors.surface
-            },
-            contentColor = AppTheme.colors.onSurface,
-        ),
-        insideMargin = PaddingValues(14.dp),
-        onClick = toggle,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AppIcon(
-                app = app,
-                enabled = enabled,
-                iconSizePx = iconSizePx,
-            )
-            Spacer(Modifier.width(12.dp))
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = app.name,
-                        fontSize = 17.sp,
-                        fontWeight = themedFontWeight(FontWeight.Medium),
-                        color = if (enabled) {
-                            MiuixTheme.colorScheme.onSurface
-                        } else {
-                            MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = stringResource(R.string.proxy_app_list_entry_summary)
-                            .formatTemplate("package" to app.packageName),
-                        style = MiuixTheme.textStyles.body2,
-                        color = if (enabled) {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        } else {
-                            MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                UidChip(
-                    uid = app.uid,
-                    enabled = enabled,
-                    sharedUid = sharedUid,
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Checkbox(
-                state = ToggleableState(checked),
-                onClick = toggle,
-                enabled = enabled,
-            )
-        }
-    }
-}
-
-@Composable
-internal fun ProxyAppListSearchBar(
-    searchValue: String,
-    onSearchValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    SearchBar(
-        modifier = modifier,
-        inputField = {
-            InputField(
-                query = searchValue,
-                onQueryChange = onSearchValueChange,
-                onSearch = {},
-                expanded = false,
-                onExpandedChange = {},
-                label = stringResource(R.string.proxy_app_list_search_label),
-            )
-        },
-        expanded = false,
-        onExpandedChange = {},
-    ) {}
-}
-
-@Composable
-internal fun ProxyAppListEmptyState(
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp)
-            .padding(vertical = 28.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.common_empty),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-    }
-}
-
-@Composable
-private fun UidChip(
-    uid: Int?,
-    enabled: Boolean,
-    sharedUid: Boolean,
-) {
-    val backgroundColor = if (!enabled) {
-        AppTheme.colors.surfaceVariant.copy(alpha = 0.5f)
-    } else if (sharedUid) {
-        MiuixTheme.colorScheme.primary
-    } else {
-        AppTheme.colors.surfaceVariant
-    }
-
-    val textColor = if (!enabled) {
-        AppTheme.colors.onSurfaceVariant.copy(alpha = 0.5f)
-    } else if (sharedUid) {
-        MiuixTheme.colorScheme.onPrimary
-    } else {
-        AppTheme.colors.onSurfaceVariant
-    }
-
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-    ) {
-        Text(
-            text = if (sharedUid) {
-                "SUID:${uid?.toString() ?: "..."}"
-            } else {
-                "UID:${uid?.toString() ?: "..."}"
-            },
-            fontSize = 12.sp,
-            fontWeight = if (sharedUid) FontWeight.SemiBold else FontWeight.Medium,
-            color = textColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun AppIcon(
+internal fun ProxyAppListNativeIcon(
     app: AppPackageEntry,
     enabled: Boolean,
     iconSizePx: Int,

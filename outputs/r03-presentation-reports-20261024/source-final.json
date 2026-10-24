@@ -1,0 +1,12 @@
+{
+  "desktopApp/src/test/kotlin/app/skipi/desktop/ProxyAppListPresentationIntegrationTest.kt": "1bd3164a3e83d447d7036e03509f5fd9ca843b7e586e5c24ade42a5eca885026",
+  "app/src/test/kotlin/data/backup/AppBackupPerAppAndroidOracleTest.kt": "e4fb43bbd2599da44ff229a89db51ac52ec4d61bebf654a88d9938de4d828256",
+  "app/src/main/kotlin/features/proxy/app/ProxyAppListPage.kt": "2be1f3753818f977a04f5a6c820ae72ce2e29e1ea91b92f5e9d0b58340483058",
+  "app/src/main/kotlin/features/proxy/app/ProxyAppListComponents.kt": "f16ee0157176d9d461f0d6aee944deb5e999cf80c8738013de3d7c7d249bc997",
+  "app/src/main/kotlin/features/proxy/app/ProxyAppListPageState.kt": "f2fbdb495441ada9a64605da6f05501fa3fdec521902b3026a4f138f6bf6237c",
+  "shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigProxyAppListLoadingState.kt": "77a826d1e32bb0e018849e7baedeec340de708b221fa72d70eae145906664918",
+  "shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigProxyAppListEditorScreen.kt": "1d31e20de6849d6d759b6ba6cf22a43f6dbf72b523e4da064fee246d2a22a473",
+  "shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigProxyAppListItemCard.kt": "d9e7311210df3b59a43178bf0d75aa487c786a79f8637d1758361f8c64f1ed7e",
+  "shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigProxyAppListPages.kt": "58d8652547d6a8469445b42aa45cccb4cecbae7f8e662b3191a8eba1797ccf67",
+  "shared/ui/src/commonMain/kotlin/app/skipi/ui/config/SkipiTrafficConfigProxyAppListComponents.kt": "5cb9082f03f605d789d047b7b6979edda288d153a6cd2b741c66436db71e9d8e"
+}

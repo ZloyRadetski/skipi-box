@@ -1,0 +1,6 @@
+{
+  "path": "desktopApp/src/test/kotlin/app/skipi/desktop/ProxyAppListPresentationIntegrationTest.kt",
+  "initial_sha256": "25141e9a23897707272df2eb203c16d47c66da745018fb827b7682373f15395b",
+  "final_sha256": "5d6c3a8c50581aebf0a07ab942dc808a9be5c7d5490e7eecaf16124ff282aaea",
+  "reason": "MiuixScrollBehavior is composable; invoke directly outside remember non-composable lambda. Expectations/timing unchanged."
+}

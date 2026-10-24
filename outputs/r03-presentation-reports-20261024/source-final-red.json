@@ -1,0 +1,6 @@
+{
+  "desktopApp/src/test/kotlin/app/skipi/desktop/ProxyAppListPresentationIntegrationTest.kt": "5d6c3a8c50581aebf0a07ab942dc808a9be5c7d5490e7eecaf16124ff282aaea",
+  "app/src/main/kotlin/features/proxy/app/ProxyAppListComponents.kt": "75b0e831e9153d6194909e9552c642f1ad00aa1dad2c6fa2509400a12fa969b3",
+  "app/src/main/kotlin/features/proxy/app/ProxyAppListPage.kt": "6c16f12be441c97cd1bc82fd4eddb435677817f36442dd85c7165c4fa915e75b",
+  "app/src/main/kotlin/features/proxy/app/ProxyAppListPageState.kt": "c9f5cbe4fcad497d2f5551c38ced96f7ec16192b4b1d3fd4c572bdbf64f7a280"
+}
