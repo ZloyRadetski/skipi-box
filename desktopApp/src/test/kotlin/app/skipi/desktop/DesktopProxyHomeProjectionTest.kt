@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import app.skipi.app.home.ProxyHomeGroupKind
+import app.skipi.app.home.ProxyHomeCopyFormat
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.StrategyGroupDisplayMode
 import features.proxy.server.model.VLESS
@@ -16,6 +17,51 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class DesktopProxyHomeProjectionTest {
+    @Test
+    fun projectionAdvertisesQrOnlyForUrlProxyServers() {
+        val serverLibrary = DesktopServerLibrary(
+            servers = listOf(
+                storedServer(30, "QR node"),
+                storedStrategy(31, StrategyGroup(remarks = "Strategy")),
+            ),
+        )
+        val subscriptionLibrary = DesktopSubscriptionLibrary(subscriptions = emptyList())
+        val groupCatalog = DesktopProxyGroups.create(
+            serverLibrary = serverLibrary,
+            subscriptionLibrary = subscriptionLibrary,
+            options = DesktopProxyGroupOptions(enableAllProxyGroup = true),
+        )
+        val decodedServers = serverLibrary.servers.map { stored -> stored to stored.decode().getOrNull() }
+        val presentationNodes = decodedServers.mapNotNull { (stored, server) ->
+            server?.let { current ->
+                ProxyServerPresentationNode(
+                    id = stored.id,
+                    groupId = stored.subscriptionId,
+                    server = current,
+                )
+            }
+        }
+        val projection = projectDesktopProxyHomeProjection(
+            groupCatalog = groupCatalog,
+            decodedServers = decodedServers,
+            subscriptionLibrary = subscriptionLibrary,
+            selectedServerId = 30,
+            latencyByServerId = emptyMap(),
+            testingServerIds = emptySet(),
+            presentationFormatter = ProxyServerPresentationFormatter(
+                groupNames = emptyMap(),
+                labels = projectionTestPresentationLabels(),
+            ),
+            presentationNodes = presentationNodes,
+            refreshingSubscriptionIds = emptySet(),
+            pingingSubscriptionIds = emptySet(),
+        )
+        val formatsById = projection.servers.associate { it.id to it.availableCopyFormats }
+
+        assertTrue(ProxyHomeCopyFormat.QrCode in formatsById.getValue("30"))
+        assertTrue(ProxyHomeCopyFormat.QrCode !in formatsById.getValue("31"))
+    }
+
     @Test
     fun projectionMatchesAndroidAllMembershipAndServerSearchAndSortFields() {
         val workServer = storedServer(

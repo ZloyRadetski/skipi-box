@@ -8,13 +8,14 @@ import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeUiState
 
-/** Android permits drag reordering only in the single-column default sort. */
+/** Android permits drag reordering for multiple visible rows in the single-column default sort. */
 @Suppress("UNUSED_PARAMETER")
 fun proxyHomeCanReorderServers(
     columns: Int,
     sortMode: ProxyHomeSortMode,
     searchQuery: String,
-): Boolean = columns == 1 && sortMode == ProxyHomeSortMode.Default
+    visibleServerCount: Int,
+): Boolean = columns == 1 && sortMode == ProxyHomeSortMode.Default && visibleServerCount > 1
 
 internal fun ProxyHomeAction.requiredActionId(): ProxyHomeActionId? = when (this) {
     is ProxyHomeAction.SelectGroup,
@@ -45,6 +46,7 @@ internal fun ProxyHomeAction.requiredActionId(): ProxyHomeActionId? = when (this
     is ProxyHomeAction.DeleteGroup -> ProxyHomeActionId.DeleteGroup
     is ProxyHomeAction.MoveGroup -> ProxyHomeActionId.MoveGroup
     is ProxyHomeAction.MoveServer -> ProxyHomeActionId.MoveServer
+    is ProxyHomeAction.ReorderServer -> ProxyHomeActionId.ReorderServer
     is ProxyHomeAction.OpenStrategyMemberPicker -> ProxyHomeActionId.OpenStrategyMemberPicker
     is ProxyHomeAction.SelectStrategyMember -> ProxyHomeActionId.SelectStrategyMember
     is ProxyHomeAction.SetSort -> ProxyHomeActionId.SetSort

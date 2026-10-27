@@ -7,6 +7,8 @@ import app.AppState
 import app.ProxyServerLatencyTesting
 import app.ProxyServerState
 import app.skipi.app.home.ProxyHomeLatencyRunner
+import app.skipi.app.home.ProxyServerSelectionRuntimeAction
+import app.skipi.app.home.decideProxyServerSelectionRuntimeAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,6 +35,7 @@ private const val TcpLatencyTestConcurrency = 16
 private const val RealConnectionLatencyTestConcurrency = 8
 
 internal fun restartProxyServiceAfterSelection(
+    previousServerId: Int,
     serverId: Int,
     scope: CoroutineScope,
     serviceRestartMutex: Mutex,
@@ -53,19 +56,24 @@ internal fun restartProxyServiceAfterSelection(
             } catch (_: Throwable) {
                 return@withLock
             }
-            if (!status.running) return@withLock
-
             val currentActiveServerId = ProxyTrafficStatsRuntimeStore.read(stateStore.context)?.selectedServerId
-            if (currentActiveServerId == serverId) {
-                return@withLock
-            }
+            val server = stateSnapshot.proxyServers.firstOrNull { it.id == serverId }
+            val decision = decideProxyServerSelectionRuntimeAction(
+                previousSelectedServerId = previousServerId,
+                selectedServerId = stateSnapshot.selectedProxyServerId,
+                requestedServerId = serverId,
+                serverExists = server != null,
+                runtimeRunning = status.running,
+                activeServerId = currentActiveServerId,
+            )
+            if (decision != ProxyServerSelectionRuntimeAction.Restart) return@withLock
 
-            val server = stateSnapshot.proxyServers.firstOrNull { it.id == serverId } ?: return@withLock
+            val selectedServer = server ?: return@withLock
             try {
                 val restartedStatus = proxyEngine.restart(
                     ProxyEngineStartRequest(
                         appState = stateSnapshot,
-                        selectedServer = server,
+                        selectedServer = selectedServer,
                     ),
                 )
                 updateAppState { state ->

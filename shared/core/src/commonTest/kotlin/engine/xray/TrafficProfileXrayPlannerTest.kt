@@ -2,6 +2,7 @@
 
 package engine.xray
 
+import features.config.TrafficConfigReference
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -12,6 +13,71 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class TrafficProfileXrayPlannerTest {
+    @Test
+    fun resolvesServerAndRecursiveConfigFinalPoliciesWithProxyFallbackOnMissingAndCycles() {
+        val alpha = TrafficProfileServerRecord(
+            1,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha"),
+        )
+        val beta = TrafficProfileServerRecord(
+            2,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@beta.example:443#Beta"),
+        )
+
+        val plan = TrafficProfileXrayPlanner.plan(
+            profileContent = """
+                [Rule]
+                DOMAIN,server.example,Beta
+                DOMAIN,recursive.example,CONFIG:2
+                DOMAIN,cycle.example,CONFIG:4
+                DOMAIN,missing.example,CONFIG:99
+                FINAL,CONFIG:2
+            """.trimIndent(),
+            servers = listOf(alpha, beta),
+            selectedServerId = alpha.id,
+            configs = listOf(
+                TrafficConfigReference(2, "[Rule]\nFINAL,CONFIG:3"),
+                TrafficConfigReference(3, "[Rule]\nFINAL,REJECT-DROP"),
+                TrafficConfigReference(4, "[Rule]\nFINAL,CONFIG:4"),
+            ),
+        )
+
+        assertEquals(
+            listOf("skipi-server-2", "block", "skipi-proxy", "skipi-proxy", "block"),
+            plan.routingRules.map { rule -> rule.getValue("outboundTag").jsonPrimitive.content },
+        )
+    }
+
+    @Test
+    fun groupNamePrecedesBuiltinPolicyWhenResolvingDesktopRouteTargets() {
+        val alpha = TrafficProfileServerRecord(
+            1,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha"),
+        )
+        val beta = TrafficProfileServerRecord(
+            2,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@beta.example:443#Beta"),
+        )
+
+        val plan = TrafficProfileXrayPlanner.plan(
+            profileContent = """
+                [Proxy Group]
+                PROXY = select, Beta
+
+                [Rule]
+                DOMAIN,group.example,PROXY
+                FINAL,PROXY
+            """.trimIndent(),
+            servers = listOf(alpha, beta),
+            selectedServerId = alpha.id,
+        )
+
+        assertEquals(
+            listOf("skipi-server-2", "skipi-server-2"),
+            plan.routingRules.map { rule -> rule.getValue("outboundTag").jsonPrimitive.content },
+        )
+    }
+
     @Test
     fun resolvesLocalProxyGroupsAndCompilesTheirRoutingTargets() {
         val alpha = TrafficProfileServerRecord(
@@ -44,7 +110,29 @@ class TrafficProfileXrayPlannerTest {
     }
 
     @Test
-    fun rejectsUnknownPoliciesAndDesktopUnsupportedRules() {
+    fun resolvesUnknownPoliciesToAndroidOutboundTags() {
+        val server = TrafficProfileServerRecord(
+            1,
+            ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha"),
+        )
+        val plan = TrafficProfileXrayPlanner.plan(
+            profileContent = """
+                [Rule]
+                DOMAIN,example.com,shadowrocket-group:custom-route
+                FINAL,custom-final
+            """.trimIndent(),
+            servers = listOf(server),
+            selectedServerId = server.id,
+        )
+
+        assertEquals(
+            listOf("custom-route", "custom-final"),
+            plan.routingRules.map { rule -> rule.getValue("outboundTag").jsonPrimitive.content },
+        )
+    }
+
+    @Test
+    fun rejectsDesktopUnsupportedRules() {
         val server = TrafficProfileServerRecord(
             1,
             ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha"),
@@ -61,7 +149,6 @@ class TrafficProfileXrayPlannerTest {
             ),
         )
 
-        assertFailsWith<IllegalStateException> { plan("DOMAIN,example.com,Missing") }
         assertFailsWith<IllegalArgumentException> { plan("IP-ASN,13335,PROXY") }
     }
 

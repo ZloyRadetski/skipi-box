@@ -9,9 +9,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Android filters the page rows by search before rendering, but enables drag reorder from only
- * the resolved column count and persisted sort mode. This covers that availability rule; it does
- * not characterize the separate shared move-up/down card-menu interaction.
+ * Android filters page rows by search before rendering, then enables drag only for one column,
+ * default sort, and more than one visible row. Search itself does not disable drag. This does not
+ * characterize the separate shared move-up/down card-menu interaction.
  */
 class ProxyHomeServerReorderAvailabilityTest {
     @Test
@@ -21,6 +21,7 @@ class ProxyHomeServerReorderAvailabilityTest {
                 columns = 1,
                 sortMode = ProxyHomeSortMode.Default,
                 searchQuery = "matching server",
+                visibleServerCount = 2,
             ),
         )
         assertFalse(
@@ -28,6 +29,7 @@ class ProxyHomeServerReorderAvailabilityTest {
                 columns = 2,
                 sortMode = ProxyHomeSortMode.Default,
                 searchQuery = "",
+                visibleServerCount = 2,
             ),
         )
         assertFalse(
@@ -35,6 +37,7 @@ class ProxyHomeServerReorderAvailabilityTest {
                 columns = 1,
                 sortMode = ProxyHomeSortMode.Name,
                 searchQuery = "",
+                visibleServerCount = 2,
             ),
         )
         assertFalse(
@@ -42,6 +45,15 @@ class ProxyHomeServerReorderAvailabilityTest {
                 columns = 1,
                 sortMode = ProxyHomeSortMode.Latency,
                 searchQuery = "matching server",
+                visibleServerCount = 2,
+            ),
+        )
+        assertFalse(
+            proxyHomeCanReorderServers(
+                columns = 1,
+                sortMode = ProxyHomeSortMode.Default,
+                searchQuery = "",
+                visibleServerCount = 1,
             ),
         )
     }

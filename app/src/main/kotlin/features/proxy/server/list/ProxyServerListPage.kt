@@ -300,8 +300,9 @@ fun ProxyServerListPage(
         }
     }
 
-    fun restartProxyServiceSilently(serverId: Int) {
+    fun restartProxyServiceSilently(previousServerId: Int, serverId: Int) {
         restartProxyServiceAfterSelection(
+            previousServerId = previousServerId,
             serverId = serverId,
             scope = services.appScope,
             serviceRestartMutex = serviceRestartMutex,
@@ -312,8 +313,8 @@ fun ProxyServerListPage(
     }
 
     LaunchedEffect(stateStore, proxyEngine) {
-        observeHomeServerSelection(stateStore.state) { serverId ->
-            restartProxyServiceSilently(serverId)
+        observeHomeServerSelectionChanges(stateStore.state) { previousServerId, serverId ->
+            restartProxyServiceSilently(previousServerId, serverId)
         }.join()
     }
 
@@ -1000,6 +1001,35 @@ fun ProxyServerListPage(
                                     items = current,
                                     fromId = serverId,
                                     toId = toId,
+                                    idOf = { it.id },
+                                )
+                            },
+                        )
+                    }
+                    is ProxyHomeEffect.ReorderServer -> {
+                        val fromServerId = effect.fromServerId.toIntOrNull()
+                            ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid source server ID."))
+                        val toServerId = effect.toServerId.toIntOrNull()
+                            ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid target server ID."))
+                        val currentHomeState = homeStoreReference.value?.uiState?.value
+                            ?: return@ProxyHomeEffectHandler Result.failure(IllegalStateException("Home is not ready."))
+                        if (currentHomeState.sortMode != ProxyHomeSortMode.Default) {
+                            return@ProxyHomeEffectHandler Result.failure(
+                                IllegalStateException("Server reordering is only available in the default sort."),
+                            )
+                        }
+                        val visibleIds = currentHomeState.servers.mapNotNull { server -> server.id.toIntOrNull() }
+                        if (fromServerId !in visibleIds || toServerId !in visibleIds || fromServerId == toServerId) {
+                            return@ProxyHomeEffectHandler Result.failure(
+                                IllegalStateException("The dragged servers are no longer visible."),
+                            )
+                        }
+                        services.sharedApplicationStore.dispatch(
+                            SharedApplicationAction.UpdateProxyServers { current ->
+                                moveProxyHomeItem(
+                                    items = current,
+                                    fromId = fromServerId,
+                                    toId = toServerId,
                                     idOf = { it.id },
                                 )
                             },

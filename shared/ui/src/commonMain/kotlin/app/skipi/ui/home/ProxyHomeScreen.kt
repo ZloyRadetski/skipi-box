@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -88,6 +89,9 @@ import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyHomeUiState
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
+import app.skipi.ui.components.longPressReorderDragHandle
+import app.skipi.ui.components.rememberReorderableGridStateByKey
+import app.skipi.ui.components.rememberReorderableScrollThresholdPadding
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_close
 import app.skipi.ui.resources.common_copy
@@ -192,6 +196,7 @@ import kotlin.time.TimeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import sh.calvin.reorderable.ReorderableItem
 
 /**
  * Unified adaptive Home screen for both Android and Desktop.
@@ -753,12 +758,34 @@ private fun PageServerGrid(
     val providerSurface = SkipiTheme.colors.surface
     val providerBorder = SkipiTheme.colors.onSurface.copy(alpha = 0.14f)
     val providerDivider = SkipiTheme.colors.onSurface.copy(alpha = 0.08f)
+    val gridState = rememberLazyGridState()
+    val reorderEnabled = proxyHomeCanReorderServers(
+        columns = columns,
+        sortMode = state.sortMode,
+        searchQuery = state.searchQuery,
+        visibleServerCount = pageServers.size,
+    ) && canUseHomeAction(state, ProxyHomeActionId.ReorderServer)
+    val reorderableState = rememberReorderableGridStateByKey(
+        lazyGridState = gridState,
+        hapticFeedback = LocalHapticFeedback.current,
+        scrollThresholdPadding = rememberReorderableScrollThresholdPadding(
+            bottom = contentPadding.calculateBottomPadding(),
+        ),
+    ) { fromKey, toKey ->
+        if (!reorderEnabled) return@rememberReorderableGridStateByKey
+        val fromServerId = pageServers.firstOrNull { server -> "server-${server.id}" == fromKey }?.id
+            ?: return@rememberReorderableGridStateByKey
+        val toServerId = pageServers.firstOrNull { server -> "server-${server.id}" == toKey }?.id
+            ?: return@rememberReorderableGridStateByKey
+        onAction(ProxyHomeAction.ReorderServer(fromServerId, toServerId))
+    }
     val pullRefreshBaseHeightPx = with(LocalDensity.current) {
         (pullRefreshPresentation.circleSize + 32.dp).toPx()
     }
     Box(modifier = modifier.fillMaxSize()) {
       LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
+        state = gridState,
         modifier = Modifier.fillMaxSize()
             .then(pullRefreshController?.let { controller ->
                 Modifier
@@ -857,29 +884,42 @@ private fun PageServerGrid(
                         } else {
                             SkipiSubscriptionPanelSegment.Body
                         }
-                        SkipiSubscriptionServerPanelSegment(
-                            segment = segment,
-                            surfaceColor = providerSurface,
-                            borderColor = providerBorder,
-                            dividerColor = providerDivider,
-                            modifier = Modifier.animateItem(
-                                fadeInSpec = tween(durationMillis = 180),
-                                fadeOutSpec = tween(durationMillis = 120),
-                                placementSpec = null,
-                            ),
-                        ) {
-                            ServerListItem(
-                                server = server,
-                                state = state,
-                                serverIndex = serverIndex,
-                                totalServers = pageServers.size,
-                                columns = columns,
-                                inSubscriptionGroup = true,
-                                onAction = onAction,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 6.dp),
+                        ReorderableItem(
+                            state = reorderableState.reorderableState,
+                            key = "server-${server.id}",
+                            enabled = reorderEnabled,
+                        ) { isDragging ->
+                            val dragModifier = Modifier.longPressReorderDragHandle(
+                                scope = this,
+                                enabled = reorderEnabled,
+                                state = reorderableState,
                             )
+                            SkipiSubscriptionServerPanelSegment(
+                                segment = segment,
+                                surfaceColor = providerSurface,
+                                borderColor = providerBorder,
+                                dividerColor = providerDivider,
+                                modifier = Modifier.animateItem(
+                                    fadeInSpec = tween(durationMillis = 180),
+                                    fadeOutSpec = tween(durationMillis = 120),
+                                    placementSpec = null,
+                                ),
+                            ) {
+                                ServerListItem(
+                                    server = server,
+                                    state = state,
+                                    serverIndex = serverIndex,
+                                    totalServers = pageServers.size,
+                                    columns = columns,
+                                    inSubscriptionGroup = true,
+                                    isDragging = isDragging && reorderEnabled,
+                                    dragModifier = dragModifier,
+                                    onAction = onAction,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 6.dp),
+                                )
+                            }
                         }
                     }
                 }
@@ -902,18 +942,30 @@ private fun PageServerGrid(
                     key = { _, server -> "server-${server.id}" },
                     contentType = { _, _ -> "server" },
                 ) { serverIndex, server ->
-                    ServerListItem(
-                        server = server,
-                        state = state,
-                        serverIndex = serverIndex,
-                        totalServers = pageServers.size,
-                        columns = columns,
-                        onAction = onAction,
-                        inSubscriptionGroup = subscriptionGroup,
-                        modifier = Modifier
-                            .padding(bottom = SkipiTheme.spacing.extraSmall)
-                            .animateItem(placementSpec = null),
-                    )
+                    ReorderableItem(
+                        state = reorderableState.reorderableState,
+                        key = "server-${server.id}",
+                        enabled = reorderEnabled,
+                        animateItemModifier = Modifier.animateItem(placementSpec = null),
+                    ) { isDragging ->
+                        val dragModifier = Modifier.longPressReorderDragHandle(
+                            scope = this,
+                            enabled = reorderEnabled,
+                            state = reorderableState,
+                        )
+                        ServerListItem(
+                            server = server,
+                            state = state,
+                            serverIndex = serverIndex,
+                            totalServers = pageServers.size,
+                            columns = columns,
+                            onAction = onAction,
+                            inSubscriptionGroup = subscriptionGroup,
+                            isDragging = isDragging && reorderEnabled,
+                            dragModifier = dragModifier,
+                            modifier = Modifier.padding(bottom = SkipiTheme.spacing.extraSmall),
+                        )
+                    }
                 }
             }
         }
@@ -1421,6 +1473,8 @@ private fun ServerListItem(
     columns: Int,
     onAction: (ProxyHomeAction) -> Unit,
     inSubscriptionGroup: Boolean = false,
+    isDragging: Boolean = false,
+    dragModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
     val menuActions = buildServerMenuActions(server, state, serverIndex, totalServers)
@@ -1460,7 +1514,7 @@ private fun ServerListItem(
                 latencyColor = latencyColor,
                 progressColor = SkipiTheme.colors.accent,
                 isStrategyGroup = server.isStrategyGroup,
-                isDragging = false,
+                isDragging = isDragging,
             ),
             colors = SkipiProxyServerCompactListCardColors(
                 surface = SkipiTheme.colors.surface,
@@ -1492,6 +1546,7 @@ private fun ServerListItem(
                 }
             },
             modifier = modifier,
+            dragModifier = dragModifier,
         )
     } else {
         val copyMenuActions = menuActions.filter { it.id.startsWith("copy:") }
@@ -1518,7 +1573,7 @@ private fun ServerListItem(
                 latencyColor = latencyColor,
                 progressColor = SkipiTheme.colors.accent,
                 isStrategyGroup = server.isStrategyGroup,
-                isDragging = false,
+                isDragging = isDragging,
             ),
             colors = SkipiProxyServerExpandedListCardColors(
                 surface = SkipiTheme.colors.surface,
@@ -1594,6 +1649,7 @@ private fun ServerListItem(
                 }
             },
             modifier = modifier,
+            dragModifier = dragModifier,
         )
     }
 }
@@ -1809,6 +1865,10 @@ private fun dispatchHomeIntent(
         is ProxyHomeAction.SelectStrategyMember -> server?.isStrategyGroup == true
         is ProxyHomeAction.TestServer -> server?.canTest == true
         is ProxyHomeAction.MoveServer -> state.sortMode == ProxyHomeSortMode.Default && state.searchQuery.isBlank()
+        is ProxyHomeAction.ReorderServer -> state.sortMode == ProxyHomeSortMode.Default &&
+            action.fromServerId != action.toServerId &&
+            state.servers.any { it.id == action.fromServerId } &&
+            state.servers.any { it.id == action.toServerId }
         is ProxyHomeAction.TestGroup -> state.groups.any { it.id == action.groupId && it.enabled && it.serverCount > 0 }
         is ProxyHomeAction.EditGroup -> action.groupId == null || state.groups.any { it.id == action.groupId && it.canEdit }
         is ProxyHomeAction.DeleteGroup -> state.groups.any { it.id == action.groupId && it.canDelete }

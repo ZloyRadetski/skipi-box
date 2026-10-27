@@ -44,6 +44,7 @@ internal fun buildDesktopSelectedServerConfig(
                 profile = activeProfile,
                 serverLibrary = serverLibrary,
                 options = options,
+                configs = configLibrary.configs,
             )
         }
     }

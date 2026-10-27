@@ -12,6 +12,7 @@ import engine.xray.buildXrayObservatory
 import engine.xray.buildSimpleOutbound
 import engine.xray.toSupportedXrayDnsServers
 import engine.xray.xrayDirectOutboundDomainStrategy
+import features.config.TrafficConfigReference
 import features.config.shadowrocketSectionValue
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -36,6 +37,7 @@ object DesktopTrafficProfileXrayConfigFactory {
         profile: DesktopStoredConfig,
         serverLibrary: DesktopServerLibrary,
         options: LocalProxyXrayConfigOptions,
+        configs: List<DesktopStoredConfig> = emptyList(),
     ): String {
         require(options.socksPort in 1..65_535) { "Local SOCKS port must be in 1..65535" }
         if (options.enableHttpProxy) {
@@ -57,6 +59,7 @@ object DesktopTrafficProfileXrayConfigFactory {
             servers = decodedServers,
             selectedServerId = serverLibrary.selectedServerId,
             capabilities = DesktopTrafficProfileXrayCapabilities,
+            configs = configs.map { config -> TrafficConfigReference(config.id, config.content) },
         )
         val analysis = plan.analysis
         val proxyOutbounds = plan.proxyOutbounds

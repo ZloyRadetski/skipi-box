@@ -49,7 +49,10 @@ fun ProxyHomeInputSnapshot.toProxyHomeInput(): ProxyHomeInput {
     }
     if (groups.none(ProxyGroupSummary::canDelete)) actions.remove(ProxyHomeActionId.DeleteGroup)
     if (groups.none(ProxyGroupSummary::canMove)) actions.remove(ProxyHomeActionId.MoveGroup)
-    if (sortMode != ProxyHomeSortMode.Default) actions.remove(ProxyHomeActionId.MoveServer)
+    if (sortMode != ProxyHomeSortMode.Default) {
+        actions.remove(ProxyHomeActionId.MoveServer)
+        actions.remove(ProxyHomeActionId.ReorderServer)
+    }
 
     return ProxyHomeInput(
         tunnelSnapshot = tunnelSnapshot,

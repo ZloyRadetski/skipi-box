@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.home.ProxyServerSelectionRuntimeAction
+import app.skipi.app.home.decideProxyServerSelectionRuntimeAction
 import app.skipi.app.subscription.SubscriptionRefreshCommitScope
 import app.skipi.app.subscription.SubscriptionRefreshLoadRequest
 import features.config.ConfigProfile
@@ -31,6 +33,48 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopSubscriptionRefreshOperationTest {
+    @Test
+    fun refreshingUnselectedSubscriptionKeepsBroadChangeFlagButAndroidParityPolicyDoesNotReconnect() = runBlocking {
+        val fixture = SingleRefreshFixture()
+        fixture.configLibrary = DesktopConfigLibrary()
+        val selectedServerIdBefore = fixture.serverLibrary.selectedServerId
+        val selectedServerBefore = fixture.serverLibrary.servers.single { it.id == fixture.manualServerId }
+        val operation = fixture.operation(
+            fetchResponse = { _, _, _ ->
+                SubscriptionFetchResponse(
+                    body = """
+                        proxies:
+                          - name: Refreshed inactive subscription server
+                            type: socks
+                            server: inactive-refresh.example.test
+                            port: 1080
+                    """.trimIndent(),
+                )
+            },
+        )
+
+        val result = operation.run(fixture.request())
+
+        assertEquals(fixture.manualServerId, fixture.serverLibrary.selectedServerId)
+        assertEquals(selectedServerBefore, fixture.serverLibrary.servers.single { it.id == fixture.manualServerId })
+        assertTrue(result.serverLibraryChanged)
+        assertFalse(result.profileLibraryChanged)
+        // The library flag records the persisted catalog change. Runtime reconnect
+        // follows Android's selection-transition policy, which ignores this inactive
+        // subscription update while the selected server and active runtime target match.
+        assertEquals(
+            ProxyServerSelectionRuntimeAction.None,
+            decideProxyServerSelectionRuntimeAction(
+                previousSelectedServerId = selectedServerIdBefore,
+                selectedServerId = fixture.serverLibrary.selectedServerId,
+                requestedServerId = checkNotNull(fixture.serverLibrary.selectedServerId),
+                serverExists = fixture.serverLibrary.servers.any { it.id == fixture.manualServerId },
+                runtimeRunning = true,
+                activeServerId = selectedServerIdBefore,
+            ),
+        )
+    }
+
     @Test
     fun runLoadsWithTheProductionParserOffCallerAndCommitsPersistedServerMetadataAndActiveProfile() = runBlocking {
         val fixture = SingleRefreshFixture()

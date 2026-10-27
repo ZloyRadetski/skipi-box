@@ -12,6 +12,7 @@ import app.skipi.app.store.SharedApplicationActionOutcome
 import data.AndroidAppStateStore
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.HTTP
+import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.deleteDuplicateServersInGroup
@@ -89,6 +90,119 @@ class ProxyHomeAndroidDeletionBridgeTest {
             assertEquals(8, (result.proxyServers.single { it.id == 30 }.server as StrategyGroup).selectedMemberId)
             assertEquals(listOf(8, 9), (result.proxyServers.single { it.id == 40 }.server as ChainProxy).proxyServerIds)
             assertEquals(listOf("30 ms", "40 ms", "8 ms", "9 ms", "13 ms"), result.proxyServers.map { it.latency })
+        } finally {
+            stateStore.resetToStockState()
+        }
+    }
+
+    @Test
+    fun duplicateCleanupKeepsTheActionTimeSelectedRowAfterSelectionChangesBeforeQueuedRemove() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val stateStore = AndroidAppStateStore.get(context)
+        stateStore.resetToStockState()
+
+        try {
+            val duplicate = ProxyServer.parse(
+                "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@node.example:443#Node",
+            )
+            stateStore.update(persist = false) { state ->
+                state.copy(
+                    proxyServers = listOf(
+                        ProxyServerState(7, duplicate, groupId = 72),
+                        ProxyServerState(8, duplicate, groupId = 72),
+                        ProxyServerState(9, HTTP(server = "unrelated.example"), groupId = 99),
+                    ),
+                    nextProxyServerId = 80,
+                    selectedProxyServerId = 8,
+                )
+            }
+
+            // Android plans duplicate IDs before launching the queued RemoveProxyServers action.
+            val actionSnapshot = stateStore.currentState
+            val currentGroupServerIds = setOf(7, 8)
+            val preview = actionSnapshot.proxyServers.deleteDuplicateServersInGroup(
+                currentGroupServerIds = currentGroupServerIds,
+                selectedProxyServerId = actionSnapshot.selectedProxyServerId,
+            )
+            val retainedIds = preview.servers.mapTo(hashSetOf()) { it.id }
+            val removedIds = actionSnapshot.proxyServers.map { it.id }
+                .filterNot { it in retainedIds }
+                .toSet()
+            assertEquals(setOf(7), removedIds)
+
+            stateStore.update(persist = false) { state -> state.copy(selectedProxyServerId = 9) }
+            assertEquals(
+                SharedApplicationActionOutcome.Completed,
+                stateStore.sharedApplicationStore.dispatchAndAwait(
+                    SharedApplicationAction.RemoveProxyServers(removedIds),
+                ).outcome,
+            )
+
+            val after = stateStore.currentState
+            assertEquals(listOf(8, 9), after.proxyServers.map { it.id })
+            assertEquals(9, after.selectedProxyServerId)
+        } finally {
+            stateStore.resetToStockState()
+        }
+    }
+
+    @Test
+    fun duplicateCleanupRemovesOnlyActionTimeDuplicateIdsAfterCatalogChangesBeforeQueuedRemove() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val stateStore = AndroidAppStateStore.get(context)
+        stateStore.resetToStockState()
+
+        try {
+            val duplicate = ProxyServer.parse(
+                "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@node.example:443#Node",
+            )
+            stateStore.update(persist = false) { state ->
+                state.copy(
+                    proxyServers = listOf(
+                        ProxyServerState(7, duplicate, groupId = 72),
+                        ProxyServerState(8, duplicate, groupId = 72),
+                        ProxyServerState(9, HTTP(server = "unrelated.example"), groupId = 99),
+                    ),
+                    nextProxyServerId = 80,
+                    selectedProxyServerId = 8,
+                )
+            }
+
+            val actionSnapshot = stateStore.currentState
+            val currentGroupServerIds = setOf(7, 8)
+            val preview = actionSnapshot.proxyServers.deleteDuplicateServersInGroup(
+                currentGroupServerIds = currentGroupServerIds,
+                selectedProxyServerId = actionSnapshot.selectedProxyServerId,
+            )
+            val retainedIds = preview.servers.mapTo(hashSetOf()) { it.id }
+            val removedIds = actionSnapshot.proxyServers.map { it.id }
+                .filterNot { it in retainedIds }
+                .toSet()
+            assertEquals(setOf(7), removedIds)
+
+            stateStore.update(persist = false) { state ->
+                state.copy(
+                    proxyServers = state.proxyServers.map { server ->
+                        if (server.id == 8) {
+                            server.copy(
+                                server = ProxyServer.parse("vless://other@other.example:443#Changed"),
+                            )
+                        } else server
+                    } + ProxyServerState(11, duplicate, groupId = 72),
+                    selectedProxyServerId = 9,
+                )
+            }
+            assertEquals(
+                SharedApplicationActionOutcome.Completed,
+                stateStore.sharedApplicationStore.dispatchAndAwait(
+                    SharedApplicationAction.RemoveProxyServers(removedIds),
+                ).outcome,
+            )
+
+            val after = stateStore.currentState
+            assertEquals(listOf(8, 9, 11), after.proxyServers.map { it.id })
+            assertEquals(9, after.selectedProxyServerId)
+            assertEquals("Changed", after.proxyServers.single { it.id == 8 }.server.getInfo().remarks)
         } finally {
             stateStore.resetToStockState()
         }
@@ -208,6 +322,62 @@ class ProxyHomeAndroidDeletionBridgeTest {
             assertEquals(before.nextProxyServerId, stateStore.currentState.nextProxyServerId)
             assertEquals(before.selectedProxyServerId, stateStore.currentState.selectedProxyServerId)
             assertEquals(before.proxyRunning, stateStore.currentState.proxyRunning)
+        } finally {
+            stateStore.resetToStockState()
+        }
+    }
+
+    @Test
+    fun cancelledBulkDeleteKeepsPublishedStopStateAndDoesNotReportSuccess() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val stateStore = AndroidAppStateStore.get(context)
+        stateStore.resetToStockState()
+
+        try {
+            stateStore.update(persist = false) { state ->
+                state.copy(
+                    proxyServers = listOf(
+                        ProxyServerState(7, HTTP(server = "selected.example"), groupId = 72),
+                        ProxyServerState(8, HTTP(server = "also-selected.example"), groupId = 73),
+                    ),
+                    nextProxyServerId = 80,
+                    selectedProxyServerId = 7,
+                    proxyRunning = true,
+                )
+            }
+            val before = stateStore.currentState
+            val cancellation = CancellationException("delete cancelled")
+            val events = mutableListOf<String>()
+
+            val thrown = runCatching {
+                deleteProxyServersAfterStoppingService(
+                    stopService = {
+                        events += "stop"
+                        ProxyServiceResult.Success(proxyRunning = false)
+                    },
+                    dispatchDelete = {
+                        events += "delete"
+                        throw cancellation
+                    },
+                    applyStopState = { result ->
+                        events += "stop-state"
+                        stateStore.update(persist = false) { state ->
+                            state.copy(proxyRunning = result.proxyRunning)
+                        }
+                    },
+                    onDeleted = { events += "deleted" },
+                    onDeleteError = { events += "delete-error" },
+                    onStopFailed = { events += "stop-error" },
+                )
+            }.exceptionOrNull()
+
+            assertSame(cancellation, thrown)
+            assertEquals(listOf("stop", "stop-state", "delete"), events)
+            val after = stateStore.currentState
+            assertEquals(before.proxyServers, after.proxyServers)
+            assertEquals(before.nextProxyServerId, after.nextProxyServerId)
+            assertEquals(before.selectedProxyServerId, after.selectedProxyServerId)
+            assertFalse(after.proxyRunning)
         } finally {
             stateStore.resetToStockState()
         }

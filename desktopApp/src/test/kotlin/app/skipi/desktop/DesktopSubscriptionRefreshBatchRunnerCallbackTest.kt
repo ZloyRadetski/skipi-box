@@ -38,6 +38,48 @@ import kotlin.test.assertTrue
 
 class DesktopSubscriptionRefreshBatchRunnerCallbackTest {
     @Test
+    fun refreshingInactiveSubscriptionsDoesNotRequestReconnectWhileCoreRuns() = runBlocking {
+        val selectedServerId = 10
+        val initialServers = DesktopServerLibrary(
+            selectedServerId = selectedServerId,
+            servers = listOf(
+                stored(selectedServerId, vless("Selected manual", "manual.example.test")),
+                stored(11, vless("Old provider four", "old-four.example.test"), subscriptionId = 4),
+                stored(12, vless("Old provider five", "old-five.example.test"), subscriptionId = 5),
+            ),
+            nextServerId = 13,
+        )
+
+        withFixture(servers = initialServers) { fixture ->
+            val coreIsRunning = true
+            val reconnectRequests = mutableListOf<String>()
+            val runner = fixture.runner(
+                loader = SubscriptionRefreshLoader { request ->
+                    loaded(
+                        subscription = request.subscription,
+                        servers = listOf(
+                            vless(
+                                name = "Refreshed ${request.subscription.id}",
+                                host = "refreshed-${request.subscription.id}.example.test",
+                            ),
+                        ),
+                    )
+                },
+                onCommittedLibrariesChanged = {
+                    if (coreIsRunning) reconnectRequests += "Подписки обновлены."
+                },
+            )
+
+            val result = runner.run()
+
+            assertEquals(listOf(4, 5), result.commitResult?.appliedSubscriptionIds)
+            assertTrue(runner.serverLibraryChanged)
+            assertEquals(selectedServerId, fixture.readServers().selectedServerId)
+            assertEquals(emptyList(), reconnectRequests)
+        }
+    }
+
+    @Test
     fun changedBatchCommitNotifiesOnceAfterTheRunnerCapturesItsFlags() = runBlocking {
         withFixture { fixture ->
             var callbackCount = 0
@@ -74,7 +116,7 @@ class DesktopSubscriptionRefreshBatchRunnerCallbackTest {
     }
 
     @Test
-    fun persistedActiveProfileStillNotifiesWhenGeneratedGroupSaveFails() = runBlocking {
+    fun persistedActiveProfileDoesNotNotifyRuntimeWhenGeneratedGroupSaveFails() = runBlocking {
         val initialConfigs = DesktopConfigLibrary(
             selectedConfigId = 6,
             configs = listOf(
@@ -125,8 +167,8 @@ class DesktopSubscriptionRefreshBatchRunnerCallbackTest {
             val failure = assertFailsWith<IllegalStateException> { runner.run() }
 
             assertEquals("injected generated-group save failure", failure.message)
-            assertEquals(1, callbackCount)
-            assertEquals(false to true, flagsSeenByCallback)
+            assertEquals(0, callbackCount)
+            assertNull(flagsSeenByCallback)
             assertFalse(runner.serverLibraryChanged)
             assertTrue(runner.profileLibraryChanged)
             val savedConfigs = fixture.readConfigs()

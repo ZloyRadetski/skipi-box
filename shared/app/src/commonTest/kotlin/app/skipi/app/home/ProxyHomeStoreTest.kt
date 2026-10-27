@@ -89,12 +89,12 @@ class ProxyHomeStoreTest {
                 statusMessage = "Still connected",
             ),
         )
-        assertEquals("group-2", store.uiState.value.selectedGroupId)
+        assertEquals("group-1", store.uiState.value.selectedGroupId)
         assertEquals("beta", store.uiState.value.searchQuery)
         assertTrue(store.uiState.value.isSearchVisible)
 
         store.updateInput(input.copy(statusMessage = "All group returned"))
-        assertEquals("group-2", store.uiState.value.selectedGroupId)
+        assertEquals("group-1", store.uiState.value.selectedGroupId)
 
         store.updateInput(
             input.copy(
@@ -302,6 +302,60 @@ class ProxyHomeStoreTest {
         store.dispatch(ProxyHomeAction.DismissMessage)
         assertNull(store.uiState.value.localError)
         assertNull(store.uiState.value.statusMessage)
+    }
+
+    @Test
+    fun serverDragReorderDispatchesStableSourceAndTargetIdsInDefaultSort() = runTest {
+        val effects = RecordingEffectHandler()
+        val store = createStore(
+            input = ProxyHomeInput(
+                servers = listOf(
+                    ProxyServerSummary("server-1", "Alpha", "alpha.example", "vless"),
+                    ProxyServerSummary("server-2", "Beta", "beta.example", "vmess"),
+                ),
+                sortMode = ProxyHomeSortMode.Default,
+                availableActions = setOf(ProxyHomeActionId.ReorderServer),
+            ),
+            effects = effects,
+            scope = this,
+        )
+
+        store.dispatch(ProxyHomeAction.ReorderServer("server-1", "server-2"))
+        runCurrent()
+
+        assertEquals(
+            ProxyHomeEffect.ReorderServer("server-1", "server-2"),
+            effects.effects.single(),
+        )
+    }
+
+    @Test
+    fun serverDragReorderRejectsSortedMissingAndSameServerIds() = runTest {
+        val baseInput = ProxyHomeInput(
+            servers = listOf(
+                ProxyServerSummary("server-1", "Alpha", "alpha.example", "vless"),
+                ProxyServerSummary("server-2", "Beta", "beta.example", "vmess"),
+            ),
+            availableActions = setOf(ProxyHomeActionId.ReorderServer),
+        )
+        val rejectedIntents = listOf(
+            baseInput.copy(sortMode = ProxyHomeSortMode.Name) to ProxyHomeAction.ReorderServer("server-1", "server-2"),
+            baseInput to ProxyHomeAction.ReorderServer("missing", "server-2"),
+            baseInput to ProxyHomeAction.ReorderServer("server-1", "missing"),
+            baseInput to ProxyHomeAction.ReorderServer("server-1", "server-1"),
+        )
+
+        rejectedIntents.forEach { (input, action) ->
+            val effects = RecordingEffectHandler()
+            val store = createStore(input = input, effects = effects, scope = this)
+
+            store.dispatch(action)
+            runCurrent()
+
+            assertTrue(effects.effects.isEmpty())
+            assertEquals(ProxyHomeActionId.ReorderServer, store.uiState.value.rejectedAction)
+            assertEquals(ProxyHomeLocalError.VariantUnavailable, store.uiState.value.localError)
+        }
     }
 
     @Test

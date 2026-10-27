@@ -50,6 +50,14 @@ internal class ProxyHomeAndroidEffectBridge(
 internal fun CoroutineScope.observeHomeServerSelection(
     state: StateFlow<AppState>,
     onSelectionChanged: (Int) -> Unit,
+): Job = observeHomeServerSelectionChanges(state) { _, serverId ->
+    onSelectionChanged(serverId)
+}
+
+/** Reports the persisted selection transition so runtime policy can reject stale callbacks. */
+internal fun CoroutineScope.observeHomeServerSelectionChanges(
+    state: StateFlow<AppState>,
+    onSelectionChanged: (previousServerId: Int, serverId: Int) -> Unit,
 ): Job = launch {
     var previousServerId = state.value.selectedProxyServerId
     state
@@ -57,7 +65,8 @@ internal fun CoroutineScope.observeHomeServerSelection(
         .distinctUntilChanged()
         .collect { serverId ->
             if (serverId == previousServerId) return@collect
+            val priorServerId = previousServerId
             previousServerId = serverId
-            onSelectionChanged(serverId)
+            onSelectionChanged(priorServerId, serverId)
         }
 }

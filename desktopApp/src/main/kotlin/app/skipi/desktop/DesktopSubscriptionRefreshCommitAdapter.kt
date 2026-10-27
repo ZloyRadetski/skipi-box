@@ -64,12 +64,20 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
     var profileLibraryChanged: Boolean = false
         private set
 
+    var previousSelectedServerId: Int? = null
+        private set
+
+    var currentSelectedServerId: Int? = null
+        private set
+
     override suspend fun updateServers(
         reconcileLatest: (SubscriptionRefreshSnapshot) -> SubscriptionRefreshReconciliationResult,
     ): SubscriptionRefreshReconciliationResult {
         currentCoroutineContext().ensureActive()
         serverLibraryChanged = false
         profileLibraryChanged = false
+        previousSelectedServerId = null
+        currentSelectedServerId = null
 
         var reconciliation: SubscriptionRefreshReconciliationResult? = null
         var previousServerLibrary: DesktopServerLibrary? = null
@@ -101,6 +109,8 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
         if (result.applicable) {
             publishLatencyByServerId(checkNotNull(updatedLatencyByServerId))
             val previous = checkNotNull(previousServerLibrary)
+            previousSelectedServerId = previous.selectedServerId
+            currentSelectedServerId = updatedServerLibrary.selectedServerId
             serverLibraryChanged = previous.servers != updatedServerLibrary.servers ||
                 previous.selectedServerId != updatedServerLibrary.selectedServerId
         }

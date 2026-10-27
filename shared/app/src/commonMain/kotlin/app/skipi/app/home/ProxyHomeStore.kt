@@ -226,6 +226,7 @@ enum class ProxyHomeActionId {
     DeleteGroup,
     MoveGroup,
     MoveServer,
+    ReorderServer,
     OpenStrategyMemberPicker,
     SelectStrategyMember,
     SetSort,
@@ -317,6 +318,7 @@ sealed interface ProxyHomeAction {
     data class DeleteGroup(val groupId: String) : ProxyHomeAction
     data class MoveGroup(val groupId: String, val offset: Int) : ProxyHomeAction
     data class MoveServer(val serverId: String, val offset: Int) : ProxyHomeAction
+    data class ReorderServer(val fromServerId: String, val toServerId: String) : ProxyHomeAction
     data class OpenStrategyMemberPicker(val serverId: String) : ProxyHomeAction
     data class SelectStrategyMember(val serverId: String, val memberId: String) : ProxyHomeAction
     data class SetSort(val mode: ProxyHomeSortMode) : ProxyHomeAction
@@ -348,6 +350,7 @@ sealed interface ProxyHomeEffect {
     data class DeleteGroup(val groupId: String) : ProxyHomeEffect
     data class MoveGroup(val groupId: String, val offset: Int) : ProxyHomeEffect
     data class MoveServer(val serverId: String, val offset: Int) : ProxyHomeEffect
+    data class ReorderServer(val fromServerId: String, val toServerId: String) : ProxyHomeEffect
     data class OpenStrategyMemberPicker(val serverId: String) : ProxyHomeEffect
     data class SelectStrategyMember(val serverId: String, val memberId: String) : ProxyHomeEffect
     data class SetSort(val mode: ProxyHomeSortMode) : ProxyHomeEffect
@@ -782,6 +785,7 @@ class ProxyHomeStore(
         is ProxyHomeAction.DeleteGroup -> ProxyHomeActionId.DeleteGroup
         is ProxyHomeAction.MoveGroup -> ProxyHomeActionId.MoveGroup
         is ProxyHomeAction.MoveServer -> ProxyHomeActionId.MoveServer
+        is ProxyHomeAction.ReorderServer -> ProxyHomeActionId.ReorderServer
         is ProxyHomeAction.OpenStrategyMemberPicker -> ProxyHomeActionId.OpenStrategyMemberPicker
         is ProxyHomeAction.SelectStrategyMember -> ProxyHomeActionId.SelectStrategyMember
         is ProxyHomeAction.SetSort -> ProxyHomeActionId.SetSort
@@ -797,6 +801,10 @@ class ProxyHomeStore(
         is ProxyHomeAction.RunServerTool -> this.tool in source.availableServerTools
         is ProxyHomeAction.OpenStrategyMemberPicker -> source.servers.any { it.id == this.serverId && it.isStrategyGroup }
         is ProxyHomeAction.SelectStrategyMember -> source.servers.any { it.id == this.serverId && it.isStrategyGroup }
+        is ProxyHomeAction.ReorderServer -> source.sortMode == ProxyHomeSortMode.Default &&
+            fromServerId != toServerId &&
+            source.servers.any { it.id == fromServerId } &&
+            source.servers.any { it.id == toServerId }
         else -> true
     }
 
@@ -829,6 +837,7 @@ class ProxyHomeStore(
         is ProxyHomeAction.DeleteGroup -> ProxyHomeEffect.DeleteGroup(groupId)
         is ProxyHomeAction.MoveGroup -> ProxyHomeEffect.MoveGroup(groupId, offset)
         is ProxyHomeAction.MoveServer -> ProxyHomeEffect.MoveServer(serverId, offset)
+        is ProxyHomeAction.ReorderServer -> ProxyHomeEffect.ReorderServer(fromServerId, toServerId)
         is ProxyHomeAction.OpenStrategyMemberPicker -> ProxyHomeEffect.OpenStrategyMemberPicker(serverId)
         is ProxyHomeAction.SelectStrategyMember -> ProxyHomeEffect.SelectStrategyMember(serverId, memberId)
         is ProxyHomeAction.SetSort -> ProxyHomeEffect.SetSort(mode)

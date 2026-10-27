@@ -86,8 +86,6 @@ import app.skipi.ui.resources.resource_file_download_notification_failed
 import app.skipi.ui.resources.settings_resource_file_updating
 import app.skipi.ui.resources.settings_resource_files_updated
 import app.skipi.ui.text.formatTemplate
-import features.proxy.server.usecase.ProxyServerGroupCleanup
-import features.proxy.server.usecase.ProxyServerGroupCleanupRecord
 import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
@@ -314,7 +312,8 @@ fun main() = application {
                     subscriptionFetcher,
                     desktopSubscriptionRefreshOperation,
                 ) {
-                    DesktopSubscriptionRefreshBatchRunner(
+                    lateinit var runner: DesktopSubscriptionRefreshBatchRunner<DesktopSubscriptionRefreshFetchOptions>
+                    runner = DesktopSubscriptionRefreshBatchRunner(
                         captureRequests = {
                             val settings = desktopSettings
                             val proxyRunning = coreState.isRunning
@@ -341,11 +340,18 @@ fun main() = application {
                         readLatencyByServerId = { latencyByServerId },
                         publishLatencyByServerId = { latencyByServerId = it },
                         onCommittedLibrariesChanged = {
-                            if (coreController.state().isRunning) {
+                            val coreIsRunning = coreController.state().isRunning
+                            val selectionChanged = shouldReconnectAfterSubscriptionRefresh(
+                                coreIsRunning = coreIsRunning,
+                                previousSelectedServerId = runner.previousSelectedServerId,
+                                currentSelectedServerId = runner.currentSelectedServerId,
+                            )
+                            if (selectionChanged) {
                                 requestTunnelReconnect("Подписки обновлены.")
                             }
                         },
                     )
+                    runner
                 }
                 LaunchedEffect(desktopSubscriptionRefreshBatchRunner) {
                     desktopSubscriptionRefreshBatchRunner.progress.collect { progress ->
@@ -482,9 +488,11 @@ fun main() = application {
                                     ),
                                 )
                                 subscriptionMessage = desktopSubscriptionRefreshResultMessage(result.refresh)
-                                if (
-                                    (result.serverLibraryChanged || result.profileLibraryChanged) &&
-                                    coreController.state().isRunning
+                                if (shouldReconnectAfterSubscriptionRefresh(
+                                        coreIsRunning = coreController.state().isRunning,
+                                        previousSelectedServerId = result.previousSelectedServerId,
+                                        currentSelectedServerId = result.currentSelectedServerId,
+                                    )
                                 ) {
                                     requestTunnelReconnect("Подписка обновлена.")
                                 }
@@ -1448,24 +1456,19 @@ fun main() = application {
                                 }
                             },
                             onDeleteDuplicateServers = { currentGroupServerIds ->
+                                val duplicateIds = captureDesktopDuplicateProxyServerIds(
+                                    library = serverLibrary,
+                                    currentGroupServerIds = currentGroupServerIds,
+                                )
                                 subscriptionScope.launch {
-                                    var removedCount = 0
                                     val result = desktopSharedApplication.store.dispatchAndAwait(
                                         SharedApplicationAction.UpdateProxyCatalog { catalog ->
-                                            val duplicateIds = ProxyServerGroupCleanup.duplicateServerIds(
-                                                servers = catalog.servers.map { row ->
-                                                    ProxyServerGroupCleanupRecord(row.id, row.server)
-                                                },
-                                                currentGroupServerIds = currentGroupServerIds,
-                                                selectedServerId = catalog.selectedServerId,
-                                            )
-                                            removedCount = duplicateIds.size
                                             deleteProxyServerRecords(catalog, duplicateIds)
                                         },
                                     )
                                     serverLibraryMessage = when (val outcome = result.outcome) {
-                                        SharedApplicationActionOutcome.Completed -> if (removedCount > 0) {
-                                            duplicatesDeletedTemplate.formatTemplate("count" to removedCount)
+                                        SharedApplicationActionOutcome.Completed -> if (duplicateIds.isNotEmpty()) {
+                                            duplicatesDeletedTemplate.formatTemplate("count" to duplicateIds.size)
                                         } else noDuplicatesMessage
                                         is SharedApplicationActionOutcome.Rejected -> outcome.reason
                                         is SharedApplicationActionOutcome.Failed -> outcome.reason

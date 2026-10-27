@@ -134,19 +134,23 @@ class ProxyServerBulkDeleteAfterStopTest {
         assertTrue(!stopFailureFeedback)
 
         val cancelledDelete = CancellationException("delete cancelled")
+        val deleteEvents = mutableListOf<String>()
         var deleteErrorFeedback = false
+        var deletedFeedback = false
         val deleteThrown = runCatching {
             runBulkDeleteAfterStoppingProxyService(
-                stopService = { ProxyServerStopOutcome.Stopped },
-                applyStopState = {},
-                dispatchDelete = { throw cancelledDelete },
-                onDeleted = {},
-                onDeleteError = { deleteErrorFeedback = true },
-                onStopFailed = { error("successful stop must not report a stop failure: $it") },
+                stopService = { deleteEvents += "stop"; ProxyServerStopOutcome.Stopped },
+                applyStopState = { deleteEvents += "stop-state" },
+                dispatchDelete = { deleteEvents += "delete"; throw cancelledDelete },
+                onDeleted = { deletedFeedback = true; deleteEvents += "deleted" },
+                onDeleteError = { deleteErrorFeedback = true; deleteEvents += "delete-error" },
+                onStopFailed = { deleteEvents += "stop-error"; error("successful stop must not report a stop failure: $it") },
             )
         }.exceptionOrNull()
 
         assertSame(cancelledDelete, deleteThrown)
+        assertEquals(listOf("stop", "stop-state", "delete"), deleteEvents)
+        assertTrue(!deletedFeedback)
         assertTrue(!deleteErrorFeedback)
     }
 }

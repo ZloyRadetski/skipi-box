@@ -5,6 +5,8 @@ package engine.xray
 import features.config.ShadowrocketConfigAnalysis
 import features.config.ShadowrocketPolicyGroup
 import features.config.ShadowrocketRule
+import features.config.ShadowrocketPolicyGroupTagPrefix
+import features.config.TrafficConfigReference
 import features.config.analyzeShadowrocketConfig
 import features.config.toXrayRouteRule
 import features.proxy.server.model.Custom
@@ -51,6 +53,7 @@ object TrafficProfileXrayPlanner {
         servers: List<TrafficProfileServerRecord>,
         selectedServerId: Int?,
         capabilities: TrafficProfileXrayCapabilities = TrafficProfileXrayCapabilities(),
+        configs: List<TrafficConfigReference> = emptyList(),
     ): TrafficProfileXrayPlan {
         val analysis = profileContent.analyzeShadowrocketConfig()
         analysis.diagnostics.firstOrNull { it.severity.name == "Error" }?.let { diagnostic ->
@@ -80,7 +83,6 @@ object TrafficProfileXrayPlanner {
         }
 
         addOutbound(selected, ProfileProxyTag)
-        val groupsByName = analysis.proxyGroups.associateBy { it.name.trim().lowercase() }
         val builtGroupTargets = mutableMapOf<String, XrayRouteTarget>()
         val buildingGroups = mutableSetOf<String>()
         val balancers = mutableListOf<XrayBalancerPlan>()
@@ -88,25 +90,36 @@ object TrafficProfileXrayPlanner {
         var observatoryUrl: String? = null
         var observatoryInterval: String? = null
 
-        fun membersFor(group: ShadowrocketPolicyGroup, visited: Set<String> = emptySet()): List<TrafficProfileServerRecord> {
+        fun membersFor(
+            group: ShadowrocketPolicyGroup,
+            policyGroups: List<ShadowrocketPolicyGroup>,
+            visited: Set<String> = emptySet(),
+        ): List<TrafficProfileServerRecord> {
             val groupKey = group.name.trim().lowercase()
             if (groupKey in visited) return emptyList()
+            val groupsByName = policyGroups.associateBy { it.name.trim().lowercase() }
             return group.members.flatMap { rawMember ->
                 val member = rawMember.trim().removeSurrounding("\"").removeSurrounding("'")
                 when {
                     member == ".*" -> usableServers
-                    else -> groupsByName[member.lowercase()]?.let { nested -> membersFor(nested, visited + groupKey) }
+                    else -> groupsByName[member.lowercase()]?.let { nested ->
+                        membersFor(nested, policyGroups, visited + groupKey)
+                    }
                         ?: usableServers.filter { it.server.getInfo().remarks.matchesProfileGroupMember(member) }
                 }
             }.distinctBy(TrafficProfileServerRecord::id)
         }
 
-        fun groupTarget(group: ShadowrocketPolicyGroup): XrayRouteTarget {
-            val groupKey = group.name.trim().lowercase()
+        fun groupTarget(
+            group: ShadowrocketPolicyGroup,
+            policyGroups: List<ShadowrocketPolicyGroup>,
+            namespace: String,
+        ): XrayRouteTarget {
+            val groupKey = "$namespace:${group.name.trim().lowercase()}"
             builtGroupTargets[groupKey]?.let { return it }
             check(buildingGroups.add(groupKey)) { "Proxy groups form a cycle at '${group.name}'" }
             try {
-                val members = membersFor(group)
+                val members = membersFor(group, policyGroups)
                 check(members.isNotEmpty()) { "Proxy group '${group.name}' has no matching local servers" }
                 val target = when (group.type.trim().lowercase()) {
                     "select" -> normalTarget(members.first())
@@ -140,24 +153,54 @@ object TrafficProfileXrayPlanner {
             }
         }
 
-        fun policyTarget(policy: String): XrayRouteTarget {
+        fun policyTarget(
+            policy: String,
+            policyGroups: List<ShadowrocketPolicyGroup> = analysis.proxyGroups,
+            namespace: String = "active",
+            visitedConfigIds: Set<Int> = emptySet(),
+        ): XrayRouteTarget {
             val normalized = policy.trim()
+            policyGroups.firstOrNull { group -> group.name.equals(normalized, ignoreCase = true) }
+                ?.let { group -> return groupTarget(group, policyGroups, namespace) }
             when {
                 normalized.equals("PROXY", ignoreCase = true) -> return XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
                 normalized.equals("DIRECT", ignoreCase = true) -> return XrayRouteTarget(DirectTag, XrayRouteTargetKind.Outbound)
                 normalized.equals("BLOCK", ignoreCase = true) || normalized.startsWith("REJECT", ignoreCase = true) -> {
                     return XrayRouteTarget(BlockTag, XrayRouteTargetKind.Outbound)
                 }
+                normalized.startsWith("CONFIG:", ignoreCase = true) -> {
+                    val configId = normalized.substringAfter(':').trim().toIntOrNull()
+                    val referenced = configId
+                        ?.takeUnless(visitedConfigIds::contains)
+                        ?.let { id -> configs.firstOrNull { config -> config.id == id } }
+                    val referencedAnalysis = referenced?.rawConfig?.analyzeShadowrocketConfig()
+                    val finalRule = referencedAnalysis?.rules?.lastOrNull(ShadowrocketRule::isFinal)
+                    if (referencedAnalysis == null || finalRule == null) {
+                        return XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+                    }
+                    return policyTarget(
+                        policy = finalRule.policy,
+                        policyGroups = referencedAnalysis.proxyGroups,
+                        namespace = "config:${referenced.id}",
+                        visitedConfigIds = visitedConfigIds + referenced.id,
+                    )
+                }
             }
-            groupsByName[normalized.lowercase()]?.let(::groupTarget)?.let { return it }
             usableServers.firstOrNull { it.server.getInfo().remarks.equals(normalized, ignoreCase = true) }
                 ?.let(::normalTarget)?.let { return it }
-            error("Profile policy '$normalized' does not match a server or [Proxy Group]")
+            val tag = normalized.removePrefix(ShadowrocketPolicyGroupTagPrefix)
+            return when {
+                tag.equals("PROXY", ignoreCase = true) -> XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+                tag.equals("DIRECT", ignoreCase = true) -> XrayRouteTarget(DirectTag, XrayRouteTargetKind.Outbound)
+                tag.equals("BLOCK", ignoreCase = true) || tag.startsWith("REJECT", ignoreCase = true) ->
+                    XrayRouteTarget(BlockTag, XrayRouteTargetKind.Outbound)
+                else -> XrayRouteTarget(tag, XrayRouteTargetKind.Outbound)
+            }
         }
 
         val routingRules = buildList {
             analysis.rules.filterNot(ShadowrocketRule::isFinal)
-                .mapNotNull { rule -> rule.toTrafficProfileXrayRule(::policyTarget, capabilities) }
+                .mapNotNull { rule -> rule.toTrafficProfileXrayRule({ policy -> policyTarget(policy) }, capabilities) }
                 .forEach(::add)
             val finalTarget = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
                 ?.let { rule -> policyTarget(rule.policy) }

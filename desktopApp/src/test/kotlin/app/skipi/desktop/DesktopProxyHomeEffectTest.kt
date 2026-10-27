@@ -7,8 +7,10 @@ import app.skipi.app.home.ProxyHomeEffect
 import app.skipi.app.home.ProxyHomeImportSource
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeActionId
+import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeEffectHandler
 import app.skipi.app.home.ProxyHomeInput
+import app.skipi.app.home.ProxyHomeQrPayload
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeStore
@@ -22,6 +24,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import features.proxy.server.model.VLESS
+import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.encodePersistedProxyServer
 import platform.TunnelPhase
 
@@ -74,6 +77,20 @@ class DesktopProxyHomeEffectTest {
         )
         assertEquals(TunnelPhase.Disconnected, store.uiState.value.tunnelSnapshot.phase)
         assertEquals(1, tunnelToggles)
+    }
+
+    @Test
+    fun selectingAlreadySelectedServerWhileCoreRunsDoesNotRequestReconnect() {
+        val coreRunning = true
+        var reconnectRequests = 0
+        val effects = DesktopProxyHomeEffectContext(
+            selectedServerId = 37,
+            onSelectServer = { if (coreRunning) reconnectRequests += 1 },
+        )
+
+        assertTrue(effects.handle(ProxyHomeEffect.SelectServer("37")).isSuccess)
+
+        assertEquals(0, reconnectRequests)
     }
 
     @Test
@@ -334,6 +351,90 @@ class DesktopProxyHomeEffectTest {
         )
         assertTrue(latencyContext.handle(ProxyHomeEffect.MoveServer("1", 1)).isFailure)
         assertEquals(1, moves.size) // no additional dispatches
+    }
+
+    @Test
+    fun dragReorderPassesStableVisibleIdsAndRejectsHiddenIds() {
+        val moves = mutableListOf<Pair<Int, Int>>()
+        val context = DesktopProxyHomeEffectContext(
+            // ID 2 is hidden by the current group/search filter between these visible servers.
+            orderedVisibleServerIds = listOf(1, 3),
+            sortMode = ProxyHomeSortMode.Default,
+            onMoveServer = { fromServerId, toServerId ->
+                moves += (fromServerId to toServerId)
+                Result.success(Unit)
+            },
+        )
+
+        assertTrue(context.handle(ProxyHomeEffect.ReorderServer("1", "3")).isSuccess)
+        assertTrue(context.handle(ProxyHomeEffect.ReorderServer("1", "2")).isFailure)
+        assertTrue(context.handle(ProxyHomeEffect.ReorderServer("2", "3")).isFailure)
+
+        assertEquals(listOf(1 to 3), moves)
+    }
+
+    @Test
+    fun showServerQrPresentsRemarksAndUrlTextForUrlProxy() {
+        val server = VLESS(
+            remarks = "QR server",
+            id = "8b4a2b20-c533-4d13-a3e0-bb0a8d9eb9c6",
+            server = "server.example",
+            port = "443",
+            encryption = "none",
+        )
+        val stored = DesktopStoredProxyServer(
+            id = 31,
+            serverJson = server.encodePersistedProxyServer(),
+        )
+        val payloads = mutableListOf<ProxyHomeQrPayload>()
+        val context = DesktopProxyHomeEffectContext(
+            decodedServers = listOf(stored to server),
+            onShowServerQr = { payload ->
+                payloads += payload
+                Result.success(Unit)
+            },
+        )
+
+        assertTrue(context.handle(ProxyHomeEffect.ShowServerQr("31")).isSuccess)
+        assertTrue(context.handle(ProxyHomeEffect.CopyServer("31", ProxyHomeCopyFormat.QrCode)).isSuccess)
+
+        assertEquals(
+            listOf(
+                ProxyHomeQrPayload(title = "QR server", text = server.getUrl()),
+                ProxyHomeQrPayload(title = "QR server", text = server.getUrl()),
+            ),
+            payloads,
+        )
+    }
+
+    @Test
+    fun showServerQrRejectsMissingUndecodableAndNonUrlServers() {
+        val storedVless = DesktopStoredProxyServer(
+            id = 31,
+            serverJson = "{ malformed",
+        )
+        val strategy = StrategyGroup(remarks = "Strategy")
+        val storedStrategy = DesktopStoredProxyServer(
+            id = 32,
+            serverJson = strategy.encodePersistedProxyServer(),
+        )
+        var presentations = 0
+        val context = DesktopProxyHomeEffectContext(
+            decodedServers = listOf(
+                storedVless to null,
+                storedStrategy to strategy,
+            ),
+            onShowServerQr = {
+                presentations += 1
+                Result.success(Unit)
+            },
+        )
+
+        assertTrue(context.handle(ProxyHomeEffect.ShowServerQr("999")).isFailure)
+        assertTrue(context.handle(ProxyHomeEffect.ShowServerQr("31")).isFailure)
+        assertTrue(context.handle(ProxyHomeEffect.ShowServerQr("32")).isFailure)
+
+        assertEquals(0, presentations)
     }
 
     @Test

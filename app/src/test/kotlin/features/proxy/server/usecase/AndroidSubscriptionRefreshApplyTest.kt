@@ -8,6 +8,8 @@ import androidx.test.core.app.ApplicationProvider
 import app.AppState
 import app.ProxyServerState
 import app.SubscriptionGroupState
+import app.skipi.app.home.ProxyServerSelectionRuntimeAction
+import app.skipi.app.home.decideProxyServerSelectionRuntimeAction
 import data.AndroidAppStateStore
 import features.config.TrafficConfigState
 import features.proxy.server.model.ChainProxy
@@ -84,6 +86,62 @@ class AndroidSubscriptionRefreshApplyTest {
             assertEquals("New subscription server", applied.proxyServers.single { it.groupId == group.id }.server.getInfo().remarks)
             assertEquals(35, applied.nextProxyServerId)
             assertEquals(33, applied.selectedProxyServerId)
+        } finally {
+            stateStore.resetToStockState()
+        }
+    }
+
+    @Test
+    fun refreshOfActiveServerWithSameIdDoesNotRequestAndroidRuntimeRestart() = runBlocking {
+        val stateStore = cleanStateStore()
+        val group = subscriptionGroup()
+        val activeServer = ProxyServerState(
+            id = 7,
+            server = VLESS(remarks = "Before refresh", id = "stable-uuid", server = "before.example.test", port = "443"),
+            groupId = group.id,
+        )
+        stateStore.update(persist = false) { state ->
+            state.copy(
+                subscriptionGroups = listOf(group),
+                proxyServers = listOf(activeServer),
+                nextProxyServerId = 8,
+                selectedProxyServerId = activeServer.id,
+            )
+        }
+
+        try {
+            applyProxySubscriptionUpdates(
+                stateStore = stateStore,
+                updates = listOf(
+                    refreshUpdate(group).copy(
+                        servers = listOf(
+                            VLESS(
+                                remarks = "After refresh",
+                                id = "stable-uuid",
+                                server = "after.example.test",
+                                port = "443",
+                            ),
+                        ),
+                    ),
+                ),
+                updatedAtMillis = 902L,
+                updateAppState = { transform -> stateStore.update(persist = false, transform = transform) },
+            )
+
+            val refreshedState = stateStore.currentState
+            assertEquals(activeServer.id, refreshedState.selectedProxyServerId)
+            assertEquals("after.example.test:443", refreshedState.proxyServers.single().server.getInfo().address)
+            assertEquals(
+                ProxyServerSelectionRuntimeAction.None,
+                decideProxyServerSelectionRuntimeAction(
+                    previousSelectedServerId = activeServer.id,
+                    selectedServerId = refreshedState.selectedProxyServerId,
+                    requestedServerId = refreshedState.selectedProxyServerId,
+                    serverExists = refreshedState.proxyServers.any { it.id == activeServer.id },
+                    runtimeRunning = true,
+                    activeServerId = activeServer.id,
+                ),
+            )
         } finally {
             stateStore.resetToStockState()
         }

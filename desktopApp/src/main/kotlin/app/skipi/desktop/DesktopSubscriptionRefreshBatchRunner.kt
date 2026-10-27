@@ -25,20 +25,26 @@ internal class DesktopSubscriptionRefreshBatchRunner<FetchOptions>(
     private val publishConfigs: (DesktopConfigLibrary) -> Unit,
     private val readLatencyByServerId: () -> Map<Int, DesktopServerLatencyResult>,
     private val publishLatencyByServerId: (Map<Int, DesktopServerLatencyResult>) -> Unit,
-    /** Signals captured persisted changes, including partial failure; the host callback must not throw. */
+    /** Signals selected-server transitions to the host runtime callback; it must not throw. */
     private val onCommittedLibrariesChanged: () -> Unit = {},
 ) {
     private var mutableServerLibraryChanged = false
     private var mutableProfileLibraryChanged = false
+    private var mutablePreviousSelectedServerId: Int? = null
+    private var mutableCurrentSelectedServerId: Int? = null
 
     val serverLibraryChanged: Boolean get() = mutableServerLibraryChanged
     val profileLibraryChanged: Boolean get() = mutableProfileLibraryChanged
+    val previousSelectedServerId: Int? get() = mutablePreviousSelectedServerId
+    val currentSelectedServerId: Int? get() = mutableCurrentSelectedServerId
 
     private val operation = SubscriptionRefreshBatchOperation(
         captureRequests = {
             // This lambda runs inside the common operation's re-entry gate.
             mutableServerLibraryChanged = false
             mutableProfileLibraryChanged = false
+            mutablePreviousSelectedServerId = null
+            mutableCurrentSelectedServerId = null
             captureRequests()
         },
         loader = loader,
@@ -89,7 +95,17 @@ internal class DesktopSubscriptionRefreshBatchRunner<FetchOptions>(
         } finally {
             mutableServerLibraryChanged = singleAdapter.serverLibraryChanged || batchAdapter.serverLibraryChanged
             mutableProfileLibraryChanged = singleAdapter.profileLibraryChanged || batchAdapter.profileLibraryChanged
-            if (mutableServerLibraryChanged || mutableProfileLibraryChanged) {
+            val selectedServerIds = when {
+                batchAdapter.serverLibraryChanged ->
+                    batchAdapter.previousSelectedServerId to batchAdapter.currentSelectedServerId
+                singleAdapter.serverLibraryChanged ->
+                    singleAdapter.previousSelectedServerId to singleAdapter.currentSelectedServerId
+                else -> null
+            }
+            mutablePreviousSelectedServerId = selectedServerIds?.first
+            mutableCurrentSelectedServerId = selectedServerIds?.second
+            val selectedServerChanged = mutablePreviousSelectedServerId != mutableCurrentSelectedServerId
+            if (selectedServerChanged) {
                 onCommittedLibrariesChanged()
             }
         }

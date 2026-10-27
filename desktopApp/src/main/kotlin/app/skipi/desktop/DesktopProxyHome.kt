@@ -25,6 +25,7 @@ import app.skipi.app.home.ProxyHomeEffectHandler
 import app.skipi.app.home.ProxyHomeImportSource
 import app.skipi.app.home.ProxyHomeInput
 import app.skipi.app.home.ProxyHomePresentation
+import app.skipi.app.home.ProxyHomeQrPayload
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeServerTool
 import app.skipi.app.home.ProxyHomeSortMode
@@ -58,6 +59,7 @@ import app.skipi.ui.resources.proxy_editor_strategy_group_select
 import app.skipi.ui.resources.proxy_server_list_chain_proxy_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary_with_filter
+import app.skipi.ui.resources.proxy_server_qr_generate_failed
 import app.skipi.ui.resources.proxy_server_list_delete_all
 import app.skipi.ui.resources.proxy_server_list_delete_duplicates
 import app.skipi.ui.resources.proxy_server_list_delete_invalid
@@ -71,11 +73,13 @@ import app.skipi.ui.resources.routing_default_proxy_server
 import app.skipi.ui.server.editor.GroupMemberChoice
 import app.skipi.ui.server.editor.ProxyServerEditorMemberOption
 import app.skipi.ui.server.editor.SkipiSelectGroupMemberDialog
+import app.skipi.ui.server.editor.SkipiProxyServerQrCodeDialog
 import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.resolveStrategyGroupMembers
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Custom
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.UrlProxyServer
 import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.model.extractLeadingCountryFlagOrNull
@@ -164,6 +168,7 @@ internal fun DesktopProxyHome(
     var pendingServerDeletion by remember { mutableStateOf<Int?>(null) }
     var pendingSubscriptionDeletion by remember { mutableStateOf<Int?>(null) }
     var pendingToolDeletion by remember { mutableStateOf<ProxyHomeServerTool?>(null) }
+    var qrPayload by remember { mutableStateOf<ProxyHomeQrPayload?>(null) }
     var editingServerId by remember { mutableStateOf<Int?>(null) }
     var subscriptionEditorVisible by remember { mutableStateOf(false) }
     var editingSubscriptionGroup by remember { mutableStateOf<SubscriptionGroupUiState?>(null) }
@@ -326,6 +331,9 @@ internal fun DesktopProxyHome(
             add(ProxyHomeActionId.DeleteServer)
             add(ProxyHomeActionId.CopyServer)
         }
+        if (allProxyServers.any { server -> ProxyHomeCopyFormat.QrCode in server.availableCopyFormats }) {
+            add(ProxyHomeActionId.ShowServerQr)
+        }
         if (testingServerIds.isNotEmpty() && onCancelLatencyTests != null) {
             add(ProxyHomeActionId.CancelLatencyTests)
         }
@@ -366,6 +374,7 @@ internal fun DesktopProxyHome(
         }
         if (sortMode == ProxyHomeSortMode.Default && allProxyServers.size > 1) {
             add(ProxyHomeActionId.MoveServer)
+            add(ProxyHomeActionId.ReorderServer)
         }
         if (Desktop.isDesktopSupported()) add(ProxyHomeActionId.OpenExternalLink)
     }
@@ -399,7 +408,13 @@ internal fun DesktopProxyHome(
             ProxyHomeImportSource.Clipboard,
             ProxyHomeImportSource.File,
         ),
-        availableCopyFormats = setOf(ProxyHomeCopyFormat.Url, ProxyHomeCopyFormat.FullJson),
+        availableCopyFormats = buildSet {
+            add(ProxyHomeCopyFormat.FullJson)
+            if (allProxyServers.any { server -> ProxyHomeCopyFormat.QrCode in server.availableCopyFormats }) {
+                add(ProxyHomeCopyFormat.Url)
+                add(ProxyHomeCopyFormat.QrCode)
+            }
+        },
         availableServerKinds = ProxyHomeServerKind.entries.toSet(),
         availableServerTools = desktopCapabilities.serverTools,
     )
@@ -511,6 +526,7 @@ internal fun DesktopProxyHome(
         subscriptions = subscriptionLibrary.subscriptions,
         currentGroupServerIds = groupCatalog.select(homeUiState.selectedGroupId).serverIds.toSet(),
         orderedVisibleServerIds = homeUiState.servers.mapNotNull { server -> server.id.toIntOrNull() },
+        selectedServerId = serverLibrary.selectedServerId,
         pingingSubscriptionIds = pingingSubscriptionIds,
         updatingSubscription = updatingSubscription,
         confirmDeletion = confirmDeletion,
@@ -621,6 +637,10 @@ internal fun DesktopProxyHome(
             Result.success(Unit)
         },
         onMoveServer = onMoveServer,
+        onShowServerQr = { payload ->
+            qrPayload = payload
+            Result.success(Unit)
+        },
     )
     SideEffect {
         effectContextState.value = effectContext
@@ -631,6 +651,15 @@ internal fun DesktopProxyHome(
             store = homeStore,
             contentPadding = contentPadding,
             topContentPadding = 40.dp,
+        )
+    }
+
+    qrPayload?.let { payload ->
+        DesktopProxyServerQrCodeDialog(
+            title = payload.title,
+            text = payload.text,
+            generationFailedMessage = stringResource(Res.string.proxy_server_qr_generate_failed),
+            onDismissRequest = { qrPayload = null },
         )
     }
 
@@ -971,6 +1000,7 @@ internal class DesktopProxyHomeEffectContext(
     val subscriptions: List<DesktopStoredSubscription> = emptyList(),
     val currentGroupServerIds: Set<Int> = emptySet(),
     val orderedVisibleServerIds: List<Int> = emptyList(),
+    val selectedServerId: Int? = null,
     val pingingSubscriptionIds: Set<Int> = emptySet(),
     val updatingSubscription: Boolean = false,
     val confirmDeletion: Boolean = false,
@@ -1006,13 +1036,14 @@ internal class DesktopProxyHomeEffectContext(
     val onDeleteSubscription: (Int) -> Unit = {},
     val onMoveGroup: (Int, Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     val onMoveServer: (fromServerId: Int, toServerId: Int) -> Result<Unit> = { _, _ -> Result.success(Unit) },
+    val onShowServerQr: ((ProxyHomeQrPayload) -> Result<Unit>)? = null,
     val onOpenStrategyMemberPicker: (Int) -> Unit = {},
     val onSelectStrategyMember: (Int, Int) -> Unit = { _, _ -> },
 ) {
     fun handle(effect: ProxyHomeEffect): Result<Unit> = when (effect) {
         ProxyHomeEffect.ToggleTunnel -> invoke(onToggleTunnel)
         is ProxyHomeEffect.SelectServer -> effect.serverId.toIntOrNull()?.let { id ->
-            invoke { onSelectServer(id) }
+            if (id == selectedServerId) Result.success(Unit) else invoke { onSelectServer(id) }
         } ?: unsupported("Некорректный идентификатор сервера.")
         is ProxyHomeEffect.TestServer -> testVisibleServers(listOf(effect.serverId))
         is ProxyHomeEffect.TestVisibleServers -> testVisibleServers(effect.serverIds)
@@ -1058,9 +1089,10 @@ internal class DesktopProxyHomeEffectContext(
                 invoke { if (confirmDeletion) onDeleteServerConfirm(id) else onDeleteServer(id) }
             } else unsupported("Сервер не найден.")
         } ?: unsupported("Некорректный идентификатор сервера.")
-        is ProxyHomeEffect.ShowServerQr -> unsupported("Показ QR-кода сервера не поддерживается в Desktop.")
+        is ProxyHomeEffect.ShowServerQr -> showServerQr(effect.id)
         is ProxyHomeEffect.CopyServer -> effect.id.toIntOrNull()?.let { id ->
-            copyServer(id, effect.format)
+            if (effect.format == ProxyHomeCopyFormat.QrCode) showServerQr(effect.id)
+            else copyServer(id, effect.format)
         } ?: unsupported("Некорректный идентификатор сервера.")
         is ProxyHomeEffect.EditSubscription -> findSubscription(effect.id)?.let { subscription ->
             invoke { onEditSubscription(subscription) }
@@ -1122,6 +1154,21 @@ internal class DesktopProxyHomeEffectContext(
                 } ?: unsupported("Некорректный идентификатор сервера.")
             }
         }
+        is ProxyHomeEffect.ReorderServer -> {
+            if (sortMode != ProxyHomeSortMode.Default) {
+                unsupported("Изменение порядка серверов возможно только в стандартной сортировке.")
+            } else {
+                val fromServerId = effect.fromServerId.toIntOrNull()
+                val toServerId = effect.toServerId.toIntOrNull()
+                when {
+                    fromServerId == null || toServerId == null -> unsupported("Некорректный идентификатор сервера.")
+                    fromServerId == toServerId -> unsupported("Нельзя переместить сервер на ту же позицию.")
+                    fromServerId !in orderedVisibleServerIds || toServerId !in orderedVisibleServerIds ->
+                        unsupported("Перетаскиваемые серверы больше не видны в текущей группе.")
+                    else -> onMoveServer(fromServerId, toServerId)
+                }
+            }
+        }
         is ProxyHomeEffect.OpenStrategyMemberPicker -> effect.serverId.toIntOrNull()?.let { id ->
             if (decodedServers.firstOrNull { it.first.id == id }?.second is StrategyGroup) invoke { onOpenStrategyMemberPicker(id) }
             else unsupported("Группа стратегий не найдена.")
@@ -1180,6 +1227,26 @@ internal class DesktopProxyHomeEffectContext(
             Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(copyText), null)
             onSetLocalMessage("Данные сервера скопированы.")
         }
+    }
+
+    private fun showServerQr(serverIdValue: String): Result<Unit> {
+        val serverId = serverIdValue.toIntOrNull()
+            ?: return unsupported("Некорректный идентификатор сервера.")
+        val server = decodedServers.firstOrNull { (stored, _) -> stored.id == serverId }?.second
+            ?: return unsupported("Сервер не найден.")
+        if (server !is UrlProxyServer<*>) {
+            return unsupported("Для этого сервера нельзя сформировать QR-код.")
+        }
+        if (server.validateBasic().isNotEmpty()) {
+            return unsupported("Параметры сервера некорректны.")
+        }
+        val text = runCatching { server.getUrlOrNull() }.getOrNull()
+            ?: return unsupported("Для этого сервера нельзя сформировать QR-код.")
+        val callback = onShowServerQr
+            ?: return unsupported("Показ QR-кода сервера не подключён в Desktop.")
+        return runCatching {
+            callback(ProxyHomeQrPayload(title = server.getInfo().remarks, text = text))
+        }.getOrElse { error -> Result.failure(error) }
     }
 
     private fun findSubscription(id: String): DesktopStoredSubscription? =

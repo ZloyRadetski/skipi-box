@@ -22,6 +22,44 @@ import platform.LocalProxyXrayConfigOptions
 /** Pins the active-profile, raw-custom, and generated selected-server branches. */
 class DesktopSelectedServerConfigEntryPointTest {
     @Test
+    fun selectedActiveProfileResolvesFinalConfigFromConfigLibrary() {
+        val server = Socks(remarks = "Stored selection", server = "stored.example", port = "1080")
+        val serverLibrary = DesktopServerLibrary(
+            selectedServerId = 1,
+            servers = listOf(DesktopStoredProxyServer(1, server.encodePersistedProxyServer())),
+        )
+        val activeProfile = DesktopStoredConfig(
+            id = 7,
+            name = "Active routing",
+            content = "[Rule]\nFINAL,CONFIG:8\n",
+        )
+        val referencedProfile = DesktopStoredConfig(
+            id = 8,
+            name = "Referenced routing",
+            content = "[Rule]\nFINAL,REJECT-DROP\n",
+        )
+        val configLibrary = ConfigProfileLibrary(
+            selectedConfigId = activeProfile.id,
+            configs = listOf(activeProfile, referencedProfile),
+        )
+
+        val result = buildDesktopSelectedServerConfig(
+            serverLibrary = serverLibrary,
+            configLibrary = configLibrary,
+            routing = RoutingConfigRecord(),
+            options = LocalProxyXrayConfigOptions(socksPort = 19_086),
+            trafficConfigContentById = mapOf(activeProfile.id to activeProfile.content),
+            subscriptionPingUrl = "http://127.0.0.1:18086/probe",
+            latencyByServerId = emptyMap(),
+        )
+
+        val root = Json.parseToJsonElement(assertNotNull(result).getOrThrow()).jsonObject
+        val finalRule = root.getValue("routing").jsonObject.getValue("rules").jsonArray.last().jsonObject
+
+        assertEquals("block", finalRule.getValue("outboundTag").jsonPrimitive.content)
+    }
+
+    @Test
     fun selectedActiveConfStillOwnsItsRulesEvenWhenAStoredServerIsSelected() {
         val server = Socks(remarks = "Stored selection", server = "stored.example", port = "1080")
         val library = DesktopServerLibrary(

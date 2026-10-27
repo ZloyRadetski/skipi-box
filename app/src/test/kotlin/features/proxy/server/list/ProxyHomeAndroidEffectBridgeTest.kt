@@ -83,6 +83,55 @@ class ProxyHomeAndroidEffectBridgeTest {
     }
 
     @Test
+    fun selectingAlreadySelectedServerWhileRunningDoesNotRequestRestart() {
+        val selected = server(20)
+        val state = MutableStateFlow(
+            AppState(
+                proxyServers = listOf(selected),
+                selectedProxyServerId = selected.id,
+                proxyRunning = true,
+            ),
+        )
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val restartRequests = mutableListOf<Int>()
+        val observer = scope.observeHomeServerSelection(state) { serverId ->
+            restartRequests += serverId
+        }
+        val bridge = ProxyHomeAndroidEffectBridge(
+            onToggleTunnel = { Result.success(Unit) },
+            onSelectServer = { id ->
+                val parsedId = id.toIntOrNull()
+                if (parsedId == null) {
+                    Result.failure(IllegalArgumentException("Invalid server id"))
+                } else {
+                    state.update { current -> current.copy(selectedProxyServerId = parsedId) }
+                    Result.success(Unit)
+                }
+            },
+            onOtherEffect = { Result.success(Unit) },
+        )
+        val store = ProxyHomeStore(
+            initialInput = ProxyHomeInput(
+                selectedServerId = selected.id.toString(),
+                servers = listOf(
+                    app.skipi.app.home.ProxyServerSummary(selected.id.toString(), "Selected", "selected", "VLESS"),
+                ),
+                availableActions = setOf(ProxyHomeActionId.SelectServer),
+            ),
+            scope = scope,
+            effectHandler = bridge,
+        )
+
+        store.dispatch(ProxyHomeAction.SelectServer(selected.id.toString()))
+
+        assertEquals(selected.id, state.value.selectedProxyServerId)
+        assertTrue(state.value.proxyRunning)
+        assertTrue(restartRequests.isEmpty())
+        observer.cancel()
+        scope.cancel()
+    }
+
+    @Test
     fun toggleTunnelEffectInvokesAndroidTunnelControllerStartPathOnce() {
         val selected = server(41)
         val state = MutableStateFlow(

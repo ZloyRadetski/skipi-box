@@ -12,11 +12,13 @@ import features.subscription.SubscriptionFetchResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Full single-refresh receipt plus the Desktop library changes relevant to a running tunnel. */
+/** Full refresh receipt, library-change flags, and selected-server transition at commit time. */
 internal data class DesktopSubscriptionRefreshOperationResult(
     val refresh: SubscriptionRefreshResult,
     val serverLibraryChanged: Boolean,
     val profileLibraryChanged: Boolean,
+    val previousSelectedServerId: Int? = null,
+    val currentSelectedServerId: Int? = null,
 )
 
 /** Reuses shared loading/commit policy and the real Desktop latest-state persistence adapter. */
@@ -55,6 +57,8 @@ internal class DesktopSubscriptionRefreshOperation(
             refresh = SubscriptionRefreshResult(loaded = loaded, commit = committed),
             serverLibraryChanged = commitAdapter.serverLibraryChanged,
             profileLibraryChanged = commitAdapter.profileLibraryChanged,
+            previousSelectedServerId = commitAdapter.previousSelectedServerId,
+            currentSelectedServerId = commitAdapter.currentSelectedServerId,
         )
     }
 

@@ -88,14 +88,13 @@ class DesktopProxyHomeDeletionBridgeTest {
                 onDeleteDuplicateServers = { groupIds ->
                     callbackCalls += "duplicates"
                     duplicateCallbackGroupIds = groupIds
+                    val duplicateIds = captureDesktopDuplicateProxyServerIds(
+                        library = DesktopServerLibraries.load(libraryPath).getOrThrow(),
+                        currentGroupServerIds = groupIds,
+                    )
                     runBlocking {
                         repository.updateCatalog { latest ->
-                            val duplicates = ProxyServerGroupCleanup.duplicateServerIds(
-                                servers = latest.servers.map { ProxyServerGroupCleanupRecord(it.id, it.server) },
-                                currentGroupServerIds = groupIds,
-                                selectedServerId = latest.selectedServerId,
-                            )
-                            deleteProxyServerRecords(latest, duplicates)
+                            deleteProxyServerRecords(latest, duplicateIds)
                         }
                     }
                 },
@@ -128,6 +127,122 @@ class DesktopProxyHomeDeletionBridgeTest {
             assertEquals(listOf(70, 71, 99, 74), persisted.servers.map { it.subscriptionId })
             assertEquals(listOf(9), (persisted.servers.single { it.id == 30 }.decode().getOrThrow() as StrategyGroup).proxyServerIds)
             assertEquals(listOf(9), (persisted.servers.single { it.id == 40 }.decode().getOrThrow() as ChainProxy).proxyServerIds)
+        } finally {
+            deleteLibraryFiles(libraryPath)
+        }
+    }
+
+    @Test
+    fun duplicateCleanupUsesTheSelectedRowCapturedBeforeQueuedDesktopUpdate() = runBlocking {
+        val duplicateUrl = "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@node.example:443#Node"
+        val libraryPath = Files.createTempFile("skipi-home-duplicate-snapshot-selection", ".json")
+        val initial = DesktopServerLibrary(
+            selectedServerId = 8,
+            servers = listOf(
+                stored(7, ProxyServer.parse(duplicateUrl), 72),
+                stored(8, ProxyServer.parse(duplicateUrl), 73),
+                stored(9, HTTP(server = "unrelated.example"), 99),
+            ),
+            nextServerId = 80,
+        )
+        val currentGroupServerIds = setOf(7, 8)
+        val pendingUpdates = mutableListOf<suspend () -> Unit>()
+
+        try {
+            DesktopServerLibraries.save(libraryPath, initial).getOrThrow()
+            val repository = repository(libraryPath, initial)
+            val effectContext = DesktopProxyHomeEffectContext(
+                currentGroupServerIds = currentGroupServerIds,
+                decodedServers = initial.servers.map { stored -> stored to stored.decode().getOrThrow() },
+                onDeleteDuplicateServers = queueCapturedCatalogDuplicateCleanup(
+                    libraryAtAction = { DesktopServerLibraries.load(libraryPath).getOrThrow() },
+                    repository = repository,
+                    pendingUpdates = pendingUpdates,
+                ),
+            )
+
+            // The Home action is consumed now, but Desktop Main's queued UpdateProxyCatalog
+            // transform reads selectedServerId later. Change selection in between those points.
+            assertTrue(
+                effectContext.handle(
+                    ProxyHomeEffect.RunServerTool(ProxyHomeServerTool.DeleteDuplicateServers),
+                ).isSuccess,
+            )
+            assertEquals(1, pendingUpdates.size)
+            repository.updateCatalog { latest -> latest.copy(selectedServerId = 9) }
+            pendingUpdates.single().invoke()
+
+            val persisted = DesktopServerLibraries.load(libraryPath).getOrThrow()
+            assertEquals(listOf(8, 9), persisted.servers.map { it.id })
+            assertEquals(9, persisted.selectedServerId)
+        } finally {
+            deleteLibraryFiles(libraryPath)
+        }
+    }
+
+    @Test
+    fun duplicateCleanupUsesTheDuplicateIdsCapturedBeforeQueuedCatalogChanges() = runBlocking {
+        val duplicateUrl = "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@node.example:443#Node"
+        val libraryPath = Files.createTempFile("skipi-home-duplicate-snapshot-catalog", ".json")
+        val duplicate = ProxyServer.parse(duplicateUrl)
+        val initial = DesktopServerLibrary(
+            selectedServerId = 8,
+            servers = listOf(
+                stored(7, duplicate, 72),
+                stored(8, duplicate, 73),
+                stored(9, HTTP(server = "unrelated.example"), 99),
+            ),
+            nextServerId = 80,
+        )
+        val currentGroupServerIds = setOf(7, 8)
+        val pendingUpdates = mutableListOf<suspend () -> Unit>()
+
+        try {
+            DesktopServerLibraries.save(libraryPath, initial).getOrThrow()
+            val repository = repository(libraryPath, initial)
+            val effectContext = DesktopProxyHomeEffectContext(
+                currentGroupServerIds = currentGroupServerIds,
+                decodedServers = initial.servers.map { stored -> stored to stored.decode().getOrThrow() },
+                onDeleteDuplicateServers = queueCapturedCatalogDuplicateCleanup(
+                    libraryAtAction = { DesktopServerLibraries.load(libraryPath).getOrThrow() },
+                    repository = repository,
+                    pendingUpdates = pendingUpdates,
+                ),
+            )
+
+            assertTrue(
+                effectContext.handle(
+                    ProxyHomeEffect.RunServerTool(ProxyHomeServerTool.DeleteDuplicateServers),
+                ).isSuccess,
+            )
+            assertEquals(1, pendingUpdates.size)
+            repository.updateCatalog { latest ->
+                latest.copy(
+                    servers = latest.servers.map { row ->
+                        if (row.id == 8) {
+                            row.copy(
+                                server = ProxyServer.parse(
+                                    "vless://other@other.example:443#Changed",
+                                ),
+                            )
+                        } else row
+                    } + ProxyServerRecord(
+                        id = 11,
+                        server = duplicate,
+                        sourceSubscriptionId = 74,
+                    ),
+                    selectedServerId = 9,
+                )
+            }
+            pendingUpdates.single().invoke()
+
+            val persisted = DesktopServerLibraries.load(libraryPath).getOrThrow()
+            assertEquals(listOf(8, 9, 11), persisted.servers.map { it.id })
+            assertEquals(9, persisted.selectedServerId)
+            assertEquals(
+                ProxyServer.parse("vless://other@other.example:443#Changed").encodePersistedProxyServer(),
+                persisted.servers.single { it.id == 8 }.serverJson,
+            )
         } finally {
             deleteLibraryFiles(libraryPath)
         }
@@ -210,6 +325,23 @@ class DesktopProxyHomeDeletionBridgeTest {
         saveLibrary = { DesktopServerLibraries.save(path, it) },
         publishLibrary = {},
     )
+
+    /** Captures IDs when Home invokes the callback, then applies them to the latest catalog. */
+    private fun queueCapturedCatalogDuplicateCleanup(
+        libraryAtAction: () -> DesktopServerLibrary,
+        repository: DesktopProxyServerRepository,
+        pendingUpdates: MutableList<suspend () -> Unit>,
+    ): (Set<Int>) -> Unit = { currentGroupServerIds ->
+        val duplicateIds = captureDesktopDuplicateProxyServerIds(
+            library = libraryAtAction(),
+            currentGroupServerIds = currentGroupServerIds,
+        )
+        pendingUpdates += {
+            repository.updateCatalog { latest ->
+                deleteProxyServerRecords(latest, duplicateIds)
+            }
+        }
+    }
 
     private fun stored(id: Int, host: String, subscriptionId: Int) =
         stored(id, HTTP(remarks = host, server = host), subscriptionId)

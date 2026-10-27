@@ -9,6 +9,26 @@ import kotlin.test.assertEquals
 
 class TrafficConfigRuntimePlannerTest {
     @Test
+    fun unknownPoliciesPreserveNormalizedOutboundTags() {
+        val plan = TrafficConfigRuntimePlanner.plan(
+            TrafficConfigRuntimePlanInput(
+                rawConfig = """
+                    [Rule]
+                    DOMAIN,example.com,shadowrocket-group:custom-route
+                    FINAL,custom-final
+                """.trimIndent(),
+                configs = emptyList(),
+                servers = emptyList(),
+                enableIpv6Fallback = false,
+                enableIpv6PreferFallback = false,
+            ),
+        )
+
+        assertEquals("custom-route", plan.routeRules.single().outboundTag)
+        assertEquals("custom-final", plan.defaultRouteOutboundTag)
+    }
+
+    @Test
     fun dnsAndHostsKeepProfileKeyGatingAndFallbackPriority() {
         val plan = TrafficConfigRuntimePlanner.plan(
             TrafficConfigRuntimePlanInput(

@@ -13,8 +13,8 @@ import app.skipi.app.home.proxyHomeServerSearchText
 import app.skipi.app.home.proxyHomeServerSortKey
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.UrlProxyServer
 import features.proxy.server.model.getTransportDisplay
-import features.proxy.server.model.getUrlOrNull
 import features.proxy.server.presentation.ProxyServerPresentationFormatter
 import features.proxy.server.presentation.ProxyServerPresentationNode
 
@@ -117,7 +117,10 @@ internal fun projectDesktopProxyHomeProjection(
             canTest = current.desktopTcpEndpointOrNull() != null,
             availableCopyFormats = buildSet {
                 add(ProxyHomeCopyFormat.FullJson)
-                if (current.getUrlOrNull() != null) add(ProxyHomeCopyFormat.Url)
+                if (current is UrlProxyServer<*>) {
+                    add(ProxyHomeCopyFormat.Url)
+                    add(ProxyHomeCopyFormat.QrCode)
+                }
             },
             isStrategyGroup = current is StrategyGroup,
             groupId = group?.id,
