@@ -3,6 +3,12 @@
 
 package app.skipi.desktop
 
+import engine.xray.DefaultFragmentInterval
+import engine.xray.DefaultFragmentLength
+import engine.xray.DefaultFragmentPackets
+import engine.xray.DefaultMuxConcurrency
+import engine.xray.DefaultMuxUdp443Mode
+import engine.xray.DefaultMuxXudpConcurrency
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.toAndroidValue
 import app.modes.SubscriptionPingModeHttp
@@ -106,6 +112,15 @@ data class DesktopAppSettings(
     val defaultRouteOutboundTag: String = DefaultRouteOutboundTag,
     val routeRules: List<RouteRule> = emptyList(),
     val nextRouteRuleId: Int = 10,
+    val enableMux: Boolean = false,
+    val muxConcurrency: String = DefaultMuxConcurrency,
+    val muxXudpConcurrency: String = DefaultMuxXudpConcurrency,
+    val muxXudpProxyUdp443: Int = DefaultMuxUdp443Mode,
+    val enableFragment: Boolean = false,
+    val fragmentPackets: String = DefaultFragmentPackets,
+    val fragmentLength: String = DefaultFragmentLength,
+    val fragmentInterval: String = DefaultFragmentInterval,
+
     val languageTag: String? = null,
     val hapticsEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,

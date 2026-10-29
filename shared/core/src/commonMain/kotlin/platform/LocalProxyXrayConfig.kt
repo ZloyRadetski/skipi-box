@@ -3,6 +3,8 @@
 
 package platform
 
+import engine.xray.XrayFragmentOutboundOptions
+import engine.xray.XrayMuxOutboundOptions
 import engine.xray.XrayOutboundPlan
 import engine.xray.XrayOutboundRenderingOptions
 import engine.xray.XrayRouteTarget
@@ -49,6 +51,10 @@ data class LocalProxyXrayConfigOptions(
     val logLevel: String = "warning",
     val dnsServers: List<String> = emptyList(),
     val includeDefaultRouting: Boolean = false,
+    /** Global Mux overlay for generated proxy outbounds; null when disabled. */
+    val mux: XrayMuxOutboundOptions? = null,
+    /** Global Fragment overlay for generated proxy outbounds; null when disabled. */
+    val fragment: XrayFragmentOutboundOptions? = null,
 )
 
 object LocalProxyXrayConfigFactory {
@@ -109,6 +115,8 @@ object LocalProxyXrayConfigFactory {
         )
         val effectiveRenderingOptions = renderingOptions.copy(
             primaryOutboundTag = effectiveRoutingPlan?.primaryOutboundTag ?: renderingOptions.primaryOutboundTag,
+            mux = renderingOptions.mux ?: options.mux,
+            fragment = renderingOptions.fragment ?: options.fragment,
         )
         val outbounds = renderXrayOutbounds(plan.proxyOutbounds, effectiveRenderingOptions)
         val routing = effectiveRoutingPlan?.let(::buildXrayRouting)

@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import engine.xray.XrayFragmentOutboundOptions
+import engine.xray.XrayMuxOutboundOptions
+import engine.xray.xrayDirectOutboundDomainStrategy
 import app.skipi.app.model.SubscriptionRecord
 import engine.network.toPortOrNull
 import java.time.Duration
@@ -42,6 +45,18 @@ internal fun DesktopAppSettings.toLocalProxyXrayConfigOptions(
     username = if (enableLocalProxyAuth) localProxyUsername.trim() else "",
     password = if (enableLocalProxyAuth) localProxyPassword else "",
     logLevel = coreLogLevel,
+    mux = if (enableMux) XrayMuxOutboundOptions(muxConcurrency, muxXudpConcurrency, muxXudpProxyUdp443) else null,
+    fragment = if (enableFragment) {
+        XrayFragmentOutboundOptions(
+            // Desktop has no IPv6 preference setting yet; Android's defaults select IPv4.
+            domainStrategy = xrayDirectOutboundDomainStrategy(enableIpv6 = false, enableIpv6Prefer = false),
+            packets = fragmentPackets,
+            length = fragmentLength,
+            interval = fragmentInterval,
+        )
+    } else {
+        null
+    },
 )
 
 /** Converts persisted Android-shaped settings into the Desktop HTTP fetch transport snapshot. */
