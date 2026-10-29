@@ -187,7 +187,8 @@ class PowerShellWinInetSettingsRefresher(
 ) : DesktopWindowsInternetSettingsRefresher {
     override fun refresh(): Result<Unit> = commandRunner.run(
         "powershell.exe",
-        listOf("-NoLogo", "-NoProfile", "-NonInteractive", "-Command", RefreshScript),
+        // Encoded because Windows would strip the double quotes of a plain -Command argument.
+        listOf("-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", RefreshScript.toEncodedCommand()),
     ).mapCatching { result ->
         check(result.exitCode == 0) {
             "Windows did not refresh its Internet proxy settings: ${result.output.trim()}"
@@ -195,6 +196,9 @@ class PowerShellWinInetSettingsRefresher(
     }
 
     private companion object {
+        fun String.toEncodedCommand(): String =
+            java.util.Base64.getEncoder().encodeToString(toByteArray(Charsets.UTF_16LE))
+
         // INTERNET_OPTION_SETTINGS_CHANGED = 39, INTERNET_OPTION_REFRESH = 37.
         val RefreshScript = """
             Add-Type @'
