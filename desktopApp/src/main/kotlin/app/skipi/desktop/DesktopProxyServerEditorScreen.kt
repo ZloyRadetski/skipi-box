@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.proxy_editor_custom_json
+import app.skipi.ui.server.editor.SkipiJsonCodeEditor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -232,12 +234,11 @@ internal fun DesktopProxyServerEditorHost(
                             .onFailure { onMessage(invalidJsonMessage) }
                     },
                     jsonEditor = { jsonModifier ->
-                        OutlinedTextField(
+                        SkipiJsonCodeEditor(
+                            label = stringResource(Res.string.proxy_editor_custom_json),
                             value = custom.configJson,
                             onValueChange = { custom.configJson = it },
                             modifier = jsonModifier,
-                            textStyle = MaterialTheme.typography.bodySmall,
-                            singleLine = false,
                         )
                     },
                 )

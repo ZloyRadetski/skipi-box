@@ -3,6 +3,9 @@
 
 package features.config
 
+import app.skipi.ui.server.editor.ConfToken
+import app.skipi.ui.server.editor.ConfTokenKind
+import app.skipi.ui.server.editor.tokenizeConfLine
 import android.content.Context
 import android.graphics.Typeface
 import android.text.InputType
@@ -26,8 +29,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import features.proxy.server.editor.JsonEditorColors
-import features.proxy.server.editor.rememberJsonEditorColors
+import app.skipi.ui.server.editor.JsonEditorColors
+import app.skipi.ui.server.editor.rememberJsonEditorColors
 import io.github.rosemoe.sora.event.ContentChangeEvent
 import io.github.rosemoe.sora.lang.EmptyLanguage
 import io.github.rosemoe.sora.lang.analysis.AnalyzeManager
@@ -240,98 +243,6 @@ private class ConfIncrementalAnalyzeManager : AsyncIncrementalAnalyzeManager<Uni
         text: Content,
         delegate: CodeBlockAnalyzeDelegate,
     ): List<CodeBlock> = emptyList()
-}
-
-internal enum class ConfTokenKind {
-    Normal,
-    Section,
-    Key,
-    Comment,
-    String,
-    Number,
-    Literal,
-    Punctuation,
-}
-
-internal data class ConfToken(
-    val start: Int,
-    val kind: ConfTokenKind,
-)
-
-internal fun tokenizeConfLine(line: CharSequence): List<ConfToken> {
-    val text = line.toString()
-    val trimmed = text.trimStart()
-    if (trimmed.isEmpty()) {
-        return listOf(ConfToken(0, ConfTokenKind.Normal))
-    }
-    val leadingWhitespace = text.length - trimmed.length
-    if (trimmed.startsWith("#") || trimmed.startsWith(";") || trimmed.startsWith("//")) {
-        return listOf(ConfToken(leadingWhitespace, ConfTokenKind.Comment))
-    }
-    if (trimmed.startsWith("[") && trimmed.contains("]")) {
-        return listOf(ConfToken(leadingWhitespace, ConfTokenKind.Section))
-    }
-
-    val tokens = mutableListOf<ConfToken>()
-    var index = 0
-    while (index < text.length) {
-        val char = text[index]
-        if (char == '#' || char == ';') {
-            tokens += ConfToken(index, ConfTokenKind.Comment)
-            break
-        }
-        if (char == '=' || char == ',') {
-            tokens += ConfToken(index, ConfTokenKind.Punctuation)
-            index += 1
-            continue
-        }
-        if (char.isWhitespace()) {
-            index += 1
-            continue
-        }
-        if (char == '"' || char == '\'') {
-            val quote = char
-            val start = index
-            index += 1
-            while (index < text.length && text[index] != quote) {
-                if (text[index] == '\\' && index + 1 < text.length) index += 1
-                index += 1
-            }
-            if (index < text.length) index += 1
-            tokens += ConfToken(start, ConfTokenKind.String)
-            continue
-        }
-        if (char.isDigit()) {
-            val start = index
-            while (index < text.length && (text[index].isDigit() || text[index] == '.')) {
-                index += 1
-            }
-            tokens += ConfToken(start, ConfTokenKind.Number)
-            continue
-        }
-        val start = index
-        while (index < text.length && !text[index].isWhitespace() && text[index] != '=' && text[index] != ',' && text[index] != '#' && text[index] != ';' && text[index] != '"' && text[index] != '\'') {
-            index += 1
-        }
-        val word = text.substring(start, index)
-        val kind = when {
-            word.equals("true", ignoreCase = true) ||
-                word.equals("false", ignoreCase = true) ||
-                word.equals("null", ignoreCase = true) ||
-                word.equals("PROXY", ignoreCase = true) ||
-                word.equals("DIRECT", ignoreCase = true) ||
-                word.equals("REJECT", ignoreCase = true) ||
-                word.equals("select", ignoreCase = true) ||
-                word.equals("url-test", ignoreCase = true) ||
-                word.equals("fallback", ignoreCase = true) -> ConfTokenKind.Literal
-
-            word.contains(':') -> ConfTokenKind.String
-            tokens.isEmpty() || (tokens.lastOrNull()?.kind == ConfTokenKind.Punctuation && text.substring(0, start).trimEnd().endsWith("=")) -> ConfTokenKind.Key
-            else -> ConfTokenKind.Normal
-        }
-        tokens += ConfToken(start, kind)
-    }
-    return tokens.ifEmpty { listOf(ConfToken(0, ConfTokenKind.Normal)) }
 }
 
 private fun ConfTokenKind.soraColorId(): Int = when (this) {

@@ -188,14 +188,14 @@ private fun CustomServerEditorFields(
                 },
             )
         }
-        TextField(
+        SkipiJsonCodeEditor(
             label = stringResource(Res.string.proxy_editor_custom_json),
             value = configJson,
             onValueChange = {
                 configJson = it
                 custom.configJson = it
             },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp, max = 320.dp),
+            modifier = Modifier.fillMaxWidth().height(320.dp),
         )
     }
 }

@@ -3,6 +3,7 @@
 
 package features.proxy.server.editor
 
+import app.skipi.ui.server.editor.rememberJsonEditorColors
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

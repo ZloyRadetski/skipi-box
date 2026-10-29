@@ -1,22 +1,49 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.proxy.server.editor
+package app.skipi.ui.server.editor
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import app.skipi.ui.theme.SkipiTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.isInDarkTheme
+
+/** Colors of the raw-JSON editor, derived from the theme's primary color so every host matches. */
+data class JsonEditorColors(
+    val darkTheme: Boolean,
+    val accent: Color,
+    val foreground: Color,
+    val background: Color,
+    val gutter: Color,
+    val separator: Color,
+    val border: Color,
+    val lineNumber: Color,
+    val placeholder: Color,
+    val selection: Color,
+    val currentLine: Color,
+    val formatButtonBackground: Color,
+    val syntax: JsonSyntaxColors,
+)
+
+data class JsonSyntaxColors(
+    val key: Color,
+    val string: Color,
+    val number: Color,
+    val literal: Color,
+    val punctuation: Color,
+)
 
 @Composable
-internal fun rememberJsonEditorColors(): JsonEditorColors {
+fun rememberJsonEditorColors(): JsonEditorColors {
     val colorScheme = MiuixTheme.colorScheme
     val primary = colorScheme.primary
     val background = colorScheme.secondaryContainer
     val foreground = colorScheme.onSurface
-    val darkTheme = isInDarkTheme()
+    val darkTheme = SkipiTheme.colors.isDark
     val onSurfaceVariantSummary = colorScheme.onSurfaceVariantSummary
     val onSecondaryContainer = colorScheme.onSecondaryContainer
     return remember(primary, background, foreground, darkTheme, onSurfaceVariantSummary, onSecondaryContainer) {
@@ -45,31 +72,7 @@ internal fun rememberJsonEditorColors(): JsonEditorColors {
     }
 }
 
-internal data class JsonEditorColors(
-    val darkTheme: Boolean,
-    val accent: Color,
-    val foreground: Color,
-    val background: Color,
-    val gutter: Color,
-    val separator: Color,
-    val border: Color,
-    val lineNumber: Color,
-    val placeholder: Color,
-    val selection: Color,
-    val currentLine: Color,
-    val formatButtonBackground: Color,
-    val syntax: JsonSyntaxColors,
-)
-
-internal data class JsonSyntaxColors(
-    val key: Color,
-    val string: Color,
-    val number: Color,
-    val literal: Color,
-    val punctuation: Color,
-)
-
-internal enum class JsonTokenKind {
+enum class JsonTokenKind {
     Normal,
     Key,
     String,
@@ -78,12 +81,13 @@ internal enum class JsonTokenKind {
     Punctuation,
 }
 
-internal data class JsonToken(
+data class JsonToken(
     val start: Int,
     val kind: JsonTokenKind,
 )
 
-internal fun tokenizeJsonLine(line: CharSequence): List<JsonToken> {
+/** Splits one line into colored runs; each token spans from its start to the next token's start. */
+fun tokenizeJsonLine(line: CharSequence): List<JsonToken> {
     val text = line.toString()
     val tokens = mutableListOf<JsonToken>()
     var index = 0
@@ -129,6 +133,39 @@ internal fun tokenizeJsonLine(line: CharSequence): List<JsonToken> {
         }
     }
     return tokens.ifEmpty { listOf(JsonToken(0, JsonTokenKind.Normal)) }
+}
+
+/** Colors a whole document line by line; the text itself is returned unchanged. */
+fun highlightJson(text: String, colors: JsonSyntaxColors, normal: Color): AnnotatedString = buildAnnotatedString {
+    append(text)
+    var lineStart = 0
+    while (lineStart <= text.length) {
+        val newline = text.indexOf('\n', lineStart)
+        val lineEnd = if (newline < 0) text.length else newline
+        val line = text.substring(lineStart, lineEnd)
+        val tokens = tokenizeJsonLine(line)
+        tokens.forEachIndexed { index, token ->
+            val tokenEnd = tokens.getOrNull(index + 1)?.start ?: line.length
+            if (tokenEnd > token.start) {
+                addStyle(
+                    SpanStyle(color = token.kind.color(colors, normal)),
+                    lineStart + token.start,
+                    lineStart + tokenEnd,
+                )
+            }
+        }
+        if (newline < 0) break
+        lineStart = newline + 1
+    }
+}
+
+private fun JsonTokenKind.color(colors: JsonSyntaxColors, normal: Color): Color = when (this) {
+    JsonTokenKind.Normal -> normal
+    JsonTokenKind.Key -> colors.key
+    JsonTokenKind.String -> colors.string
+    JsonTokenKind.Number -> colors.number
+    JsonTokenKind.Literal -> colors.literal
+    JsonTokenKind.Punctuation -> colors.punctuation
 }
 
 private fun String.isJsonTokenStart(index: Int): Boolean {
@@ -183,13 +220,21 @@ private fun String.literalTokenEnd(start: Int): Int {
     return if (boundaryBefore && boundaryAfter) end else start
 }
 
-private fun Color.hue(): Float {
-    val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(toArgb(), hsv)
-    return hsv[0]
+/** Hue in degrees of the HSV wheel; grays report 0. */
+fun Color.hue(): Float {
+    val max = maxOf(red, green, blue)
+    val min = minOf(red, green, blue)
+    val delta = max - min
+    if (delta == 0f) return 0f
+    val hue = when (max) {
+        red -> ((green - blue) / delta) % 6f
+        green -> (blue - red) / delta + 2f
+        else -> (red - green) / delta + 4f
+    } * 60f
+    return if (hue < 0f) hue + 360f else hue
 }
 
-private fun vividThemeColor(
+fun vividThemeColor(
     baseHue: Float,
     hueOffset: Float,
     darkTheme: Boolean,
@@ -200,7 +245,7 @@ private fun vividThemeColor(
     return Color.hsv(hue = hue, saturation = saturation, value = value)
 }
 
-private fun enhancedThemeColor(
+fun enhancedThemeColor(
     baseHue: Float,
     darkTheme: Boolean,
 ): Color {

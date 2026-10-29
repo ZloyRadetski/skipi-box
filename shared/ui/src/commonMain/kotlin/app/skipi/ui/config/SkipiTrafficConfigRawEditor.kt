@@ -3,6 +3,14 @@
 
 package app.skipi.ui.config
 
+import androidx.compose.foundation.layout.heightIn
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.height
+import app.skipi.ui.server.editor.SkipiConfCodeEditor
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -147,12 +155,17 @@ fun SkipiTrafficConfigRawEditor(
                         }
                     }
                 }
-                TextField(
-                    state = rememberTextFieldState(initialText = state.content),
-                    inputTransformation = { onContentChange(asCharSequence().toString()) },
+                var content by remember { mutableStateOf(state.content) }
+                SmallTitle(text = labels.content)
+                SkipiConfCodeEditor(
                     label = labels.content,
-                    lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 20, maxHeightInLines = 1000),
-                    modifier = Modifier.fillMaxWidth(),
+                    value = content,
+                    onValueChange = {
+                        content = it
+                        onContentChange(it)
+                    },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 400.dp),
+                    scrollsInternally = false,
                 )
             }
         }
