@@ -60,6 +60,13 @@ enum class SkipiNavigationBarSize {
     Large,
 }
 
+/** Maps the persisted bottom-bar setting (0 small, 1 medium, anything else large). */
+fun navigationBarSizeForSetting(setting: Int): SkipiNavigationBarSize = when (setting) {
+    0 -> SkipiNavigationBarSize.Small
+    1 -> SkipiNavigationBarSize.Medium
+    else -> SkipiNavigationBarSize.Large
+}
+
 /** Theme values supplied by the host while geometry and interaction stay common. */
 data class SkipiExpressiveNavigationColors(
     val surface: Color,

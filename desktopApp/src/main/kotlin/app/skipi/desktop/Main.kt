@@ -66,6 +66,7 @@ import app.skipi.ui.home.formatSubscriptionRefreshMessage
 import app.skipi.ui.home.formatSubscriptionInstallMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
+import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.navigation.SkipiNavigationBarSize
 import app.skipi.ui.theme.SkipiTheme
@@ -1179,6 +1180,7 @@ fun main() = application {
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     bottomBar = {
                         DesktopBottomNavigation(
+                            sizeSetting = desktopSettings.bottomBarSize ?: 1,
                             selected = currentSection,
                             onSelect = { currentSection = it },
                         )
@@ -1977,6 +1979,7 @@ private fun desktopSubscriptionRefreshResultMessage(result: SubscriptionRefreshR
 @Composable
 private fun DesktopBottomNavigation(
     selected: SkipiMainDestination,
+    sizeSetting: Int,
     onSelect: (SkipiMainDestination) -> Unit,
 ) {
     val colors = SkipiTheme.colors
@@ -1990,7 +1993,7 @@ private fun DesktopBottomNavigation(
             onSurfaceVariant = colors.onSurfaceVariant,
             isDark = colors.isDark,
         ),
-        size = SkipiNavigationBarSize.Medium,
+        size = navigationBarSizeForSetting(sizeSetting),
     )
 }
 

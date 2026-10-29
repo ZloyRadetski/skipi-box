@@ -104,6 +104,7 @@ import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.navigation.SkipiNavigationBarSize
+import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiMainPager
 import app.skipi.ui.navigation.SkipiMainPagerState
 import app.skipi.ui.navigation.SkipiNavigationItem
@@ -594,11 +595,7 @@ private fun ExpressiveFloatingNavigationBar(
     modifier: Modifier = Modifier,
 ) {
     val bottomBarSize = LocalAppChromeState.current.bottomBarSize
-    val size = when (bottomBarSize) {
-        BottomBarSizeSmall -> SkipiNavigationBarSize.Small
-        BottomBarSizeMedium -> SkipiNavigationBarSize.Medium
-        else -> SkipiNavigationBarSize.Large
-    }
+    val size = navigationBarSizeForSetting(bottomBarSize)
     SkipiExpressiveNavigationBar(
         items = navigationItems,
         mainPagerState = mainPagerState,

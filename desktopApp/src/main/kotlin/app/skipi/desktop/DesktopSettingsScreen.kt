@@ -183,7 +183,8 @@ internal fun DesktopSettingsScreen(
             val result = withContext(Dispatchers.IO) {
                 saveMutex.withLock { DesktopSettingsLibraries.saveDefault(next) }
             }
-            result.onSuccess { message = successMessage }
+            // Android applies settings silently; only failures are reported.
+            result.onSuccess { message = "" }
                 .onFailure { error -> message = "Не удалось сохранить настройки: ${error.message.orEmpty()}" }
         }
     }
@@ -433,7 +434,7 @@ internal fun desktopAppearanceSettingsCapabilities() = AppearanceSettingsCapabil
     dynamicColors = false,
     customColors = true,
     fonts = true,
-    bottomBarSize = false,
+    bottomBarSize = true,
 )
 
 @Composable
