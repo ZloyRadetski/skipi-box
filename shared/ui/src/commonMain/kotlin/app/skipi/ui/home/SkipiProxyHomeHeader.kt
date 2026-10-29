@@ -265,7 +265,7 @@ private fun SkipiProxyHomeHeaderMenu(
                         text = {
                             Text(
                                 text = action.title,
-                                maxLines = 1,
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         },

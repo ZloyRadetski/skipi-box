@@ -52,10 +52,12 @@ fun SkipiSettingsSectionCard(
             contentColor = SkipiTheme.colors.onSurface,
         ),
     ) {
+        // Preference rows carry their own vertical padding; a full inset here left an empty "chin"
+        // under the last row, so only a thin vertical inset remains.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SkipiTheme.spacing.medium),
+                .padding(horizontal = SkipiTheme.spacing.medium, vertical = 4.dp),
         ) { content() }
     }
 }

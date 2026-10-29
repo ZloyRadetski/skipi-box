@@ -91,15 +91,17 @@ fun SkipiSubscriptionEditDialog(
         title = stringResource(Res.string.subscription_edit),
         onDismissRequest = onDismiss,
     ) {
+        // Phone-sized type: the default 17sp field text made this dialog tall and crowded.
         val textFieldStyle = MiuixTheme.textStyles.main.copy(
             color = MiuixTheme.colorScheme.onSurface,
+            fontSize = 14.sp,
         )
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             TextField(
                 value = draft.name,
@@ -107,6 +109,7 @@ fun SkipiSubscriptionEditDialog(
                 label = stringResource(Res.string.subscription_group_name),
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = textFieldStyle,
+                singleLine = true,
             )
 
             TextField(
@@ -121,7 +124,7 @@ fun SkipiSubscriptionEditDialog(
                 Text(
                     text = stringResource(Res.string.home_subscription_insecure_http),
                     color = MiuixTheme.colorScheme.error,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                 )
             }
 
@@ -132,81 +135,28 @@ fun SkipiSubscriptionEditDialog(
                 ),
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(Res.string.home_subscription_enabled_toggle),
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = MiuixTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(Res.string.home_subscription_auto_update_toggle_hint),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontSize = 12.sp,
-                            )
-                        }
-                        Switch(
-                            checked = draft.enabled,
-                            onCheckedChange = { value -> updateDraft { it.copy(enabled = value) } },
-                        )
-                    }
-
+                    SubscriptionToggleRow(
+                        title = stringResource(Res.string.home_subscription_enabled_toggle),
+                        hint = stringResource(Res.string.home_subscription_auto_update_toggle_hint),
+                        checked = draft.enabled,
+                        onCheckedChange = { value -> updateDraft { it.copy(enabled = value) } },
+                    )
                     HorizontalDivider()
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(Res.string.subscription_auto_override_rules),
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = MiuixTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(Res.string.subscription_auto_override_rules_summary),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontSize = 12.sp,
-                            )
-                        }
-                        Switch(
-                            checked = draft.autoOverrideRules,
-                            onCheckedChange = { value -> updateDraft { it.copy(autoOverrideRules = value) } },
-                        )
-                    }
-
+                    SubscriptionToggleRow(
+                        title = stringResource(Res.string.subscription_auto_override_rules),
+                        hint = stringResource(Res.string.subscription_auto_override_rules_summary),
+                        checked = draft.autoOverrideRules,
+                        onCheckedChange = { value -> updateDraft { it.copy(autoOverrideRules = value) } },
+                    )
                     HorizontalDivider()
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(Res.string.subscription_update_via_proxy),
-                                fontWeight = themedFontWeight(FontWeight.Medium),
-                                color = MiuixTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(Res.string.subscription_update_via_proxy_summary),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                fontSize = 12.sp,
-                            )
-                        }
-                        Switch(
-                            checked = draft.updateViaProxy,
-                            onCheckedChange = { value -> updateDraft { it.copy(updateViaProxy = value) } },
-                        )
-                    }
+                    SubscriptionToggleRow(
+                        title = stringResource(Res.string.subscription_update_via_proxy),
+                        hint = stringResource(Res.string.subscription_update_via_proxy_summary),
+                        checked = draft.updateViaProxy,
+                        onCheckedChange = { value -> updateDraft { it.copy(updateViaProxy = value) } },
+                    )
                 }
             }
 
@@ -217,6 +167,7 @@ fun SkipiSubscriptionEditDialog(
                     label = stringResource(Res.string.subscription_user_agent),
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = textFieldStyle,
+                    singleLine = true,
                 )
 
                 TextField(
@@ -225,6 +176,7 @@ fun SkipiSubscriptionEditDialog(
                     label = stringResource(Res.string.subscription_age_secret_key),
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = textFieldStyle,
+                    singleLine = true,
                 )
             }
 
@@ -232,6 +184,7 @@ fun SkipiSubscriptionEditDialog(
                 Text(
                     text = message,
                     color = MiuixTheme.colorScheme.error,
+                    fontSize = 12.sp,
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics { liveRegion = LiveRegionMode.Polite },
@@ -247,30 +200,61 @@ fun SkipiSubscriptionEditDialog(
                         contentColor = MiuixTheme.colorScheme.error,
                     ),
                 ) {
-                    Text(text = stringResource(Res.string.subscription_delete))
+                    Text(text = stringResource(Res.string.subscription_delete), fontSize = 14.sp)
                 }
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TextButton(
                     text = stringResource(Res.string.common_cancel),
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
                 )
-                Spacer(Modifier.width(16.dp))
                 Button(
                     onClick = { onSave(draft) },
                     modifier = Modifier.weight(1f),
                     enabled = draft.name.isNotBlank(),
                 ) {
-                    Text(text = stringResource(Res.string.common_save))
+                    Text(text = stringResource(Res.string.common_save), fontSize = 14.sp)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SubscriptionToggleRow(
+    title: String,
+    hint: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = themedFontWeight(FontWeight.Medium),
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = hint,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }

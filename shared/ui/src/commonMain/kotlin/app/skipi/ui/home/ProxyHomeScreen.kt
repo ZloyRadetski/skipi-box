@@ -278,30 +278,26 @@ fun ProxyHomeScreenContent(
     val searchActionTitle = stringResource(Res.string.home_action_search)
     val hideSearchActionTitle = stringResource(Res.string.home_action_hide_search)
 
-    val addActions = buildList {
-        if (canUseHomeAction(state, ProxyHomeActionId.AddServer) && state.availableServerKinds.isNotEmpty()) {
-            add(SkipiProxyHomeHeaderAction(
-                id = "add-server",
+    val addActions = proxyHomeAddMenuIds(
+        canAddSubscription = canUseHomeAction(state, ProxyHomeActionId.AddSubscription),
+        canImport = canUseHomeAction(state, ProxyHomeActionId.ImportServers),
+        importSources = state.availableImportSources,
+        canAddServer = canUseHomeAction(state, ProxyHomeActionId.AddServer) && state.availableServerKinds.isNotEmpty(),
+    ).map { id ->
+        when (id) {
+            "add-subscription" ->
+                SkipiProxyHomeHeaderAction(id, stringResource(Res.string.home_action_add_subscription))
+            "add-server" -> SkipiProxyHomeHeaderAction(
+                id = id,
                 title = stringResource(Res.string.home_action_add_server),
                 children = state.availableServerKinds.map { kind ->
                     SkipiProxyHomeHeaderAction("server:" + kind.name, serverKindTitle(kind))
                 },
-            ))
-        }
-        if (canUseHomeAction(state, ProxyHomeActionId.AddSubscription)) {
-            add(SkipiProxyHomeHeaderAction("add-subscription", stringResource(Res.string.home_action_add_subscription)))
-        }
-        if (canUseHomeAction(state, ProxyHomeActionId.ImportServers) && state.availableImportSources.isNotEmpty()) {
-            add(SkipiProxyHomeHeaderAction(
-                id = "import",
-                title = stringResource(Res.string.home_action_import),
-                children = state.availableImportSources.map { source ->
-                    SkipiProxyHomeHeaderAction("import:" + source.name, importSourceTitle(source))
-                },
-            ))
-        }
-        if (canUseHomeAction(state, ProxyHomeActionId.EditGroup)) {
-            add(SkipiProxyHomeHeaderAction("add-group", stringResource(Res.string.home_add_group)))
+            )
+            else -> SkipiProxyHomeHeaderAction(
+                id,
+                importSourceTitle(ProxyHomeImportSource.valueOf(id.substringAfter("import:"))),
+            )
         }
     }
 
@@ -448,7 +444,6 @@ fun ProxyHomeScreenContent(
                 onAddAction = { id ->
                     when {
                         id == "add-subscription" -> send(ProxyHomeAction.AddSubscription)
-                        id == "add-group" -> send(ProxyHomeAction.EditGroup(null))
                         id.startsWith("server:") -> state.availableServerKinds
                             .firstOrNull { it.name == id.substringAfter("server:") }
                             ?.let { kind -> send(ProxyHomeAction.AddServer(kind)) }
@@ -1799,3 +1794,22 @@ private fun serverToolTitle(tool: ProxyHomeServerTool): String = stringResource(
         ProxyHomeServerTool.DeleteAllServers -> Res.string.proxy_server_list_delete_all
     },
 )
+
+/**
+ * Entries of the "+" menu, in display order: subscription, clipboard, QR code, then the server
+ * submenu. Files and manual input are not offered here, and there is no separate group entry
+ * (it opened the same dialog as adding a subscription).
+ */
+internal fun proxyHomeAddMenuIds(
+    canAddSubscription: Boolean,
+    canImport: Boolean,
+    importSources: Set<ProxyHomeImportSource>,
+    canAddServer: Boolean,
+): List<String> = buildList {
+    if (canAddSubscription) add("add-subscription")
+    if (canImport) {
+        if (ProxyHomeImportSource.Clipboard in importSources) add("import:" + ProxyHomeImportSource.Clipboard.name)
+        if (ProxyHomeImportSource.QrCode in importSources) add("import:" + ProxyHomeImportSource.QrCode.name)
+    }
+    if (canAddServer) add("add-server")
+}
