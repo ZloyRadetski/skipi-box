@@ -21,6 +21,7 @@ import app.modes.AppIconStealth
 import app.modes.AppIconSunset
 import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeSystem
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import features.logs.AppLog
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +32,7 @@ import kotlinx.coroutines.withContext
 @Composable
 internal fun LauncherIconSynchronizer(
     context: Context,
-    stateStore: AndroidAppStateStore,
+    stateStore: AppStateStore,
 ) {
     val appContext = context.applicationContext
     LaunchedEffect(appContext, stateStore) {

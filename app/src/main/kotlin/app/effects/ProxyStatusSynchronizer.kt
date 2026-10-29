@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.AppState
 import app.collectAppState
 import app.modes.RunModeVpnService
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.ProxyEngineStatus
@@ -27,7 +28,7 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 
 @Composable
 internal fun ProxyStatusSynchronizer(
-    stateStore: AndroidAppStateStore,
+    stateStore: AppStateStore,
     proxyEngine: AndroidProxyEngine,
     updateAppState: ((AppState) -> AppState) -> Unit,
 ) {

@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import app.effects.resolveActiveNetworkConfig
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.NetworkHandoverRecoveryGate

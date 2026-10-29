@@ -3,6 +3,7 @@
 
 package data
 
+import app.skipi.app.store.AppStateStore
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class AndroidAppStateStore private constructor(
     context: Context,
-) {
+) : AppStateStore {
     private val appContext = context.applicationContext
     private var database = buildDatabase()
     private var dao = database.appStateDao()
@@ -47,7 +48,7 @@ class AndroidAppStateStore private constructor(
     }
 
     val context: Context get() = appContext
-    val state: StateFlow<AppState> = mutableState.asStateFlow()
+    override val state: StateFlow<AppState> = mutableState.asStateFlow()
     val proxyServerRepository: AndroidProxyServerRepository by lazy {
         AndroidProxyServerRepository(this, scope)
     }
@@ -69,13 +70,13 @@ class AndroidAppStateStore private constructor(
     }
 
     /** Non-reactive one-shot snapshot for decisions that must not trigger recomposition. */
-    val currentState: AppState get() = mutableState.value
+    override val currentState: AppState get() = mutableState.value
 
-    fun update(transform: (AppState) -> AppState) {
+    override fun update(transform: (AppState) -> AppState) {
         update(persist = true, transform = transform)
     }
 
-    fun update(
+    override fun update(
         persist: Boolean,
         transform: (AppState) -> AppState,
     ) {

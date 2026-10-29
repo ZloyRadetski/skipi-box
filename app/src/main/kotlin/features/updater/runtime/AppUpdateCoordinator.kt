@@ -11,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import app.AppState
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import features.updater.AppUpdateDownloadStatus
 import features.updater.AppUpdateRestoreAction
@@ -36,7 +37,7 @@ internal sealed interface AppUpdateCheckOutcome {
  */
 internal class AppUpdateCheckCoordinator(
     context: Context,
-    private val stateStore: AndroidAppStateStore,
+    private val stateStore: AppStateStore,
 ) {
     private val appContext = context.applicationContext
     private val checkStore = AppUpdateCheckStore(appContext)
@@ -86,7 +87,7 @@ internal class AppUpdateCheckCoordinator(
 /** A single durable owner for update download work. */
 internal class AppUpdateDownloadCoordinator(
     context: Context,
-    private val stateStore: AndroidAppStateStore,
+    private val stateStore: AppStateStore,
 ) {
     private val appContext = context.applicationContext
     private val workManager = WorkManager.getInstance(appContext)

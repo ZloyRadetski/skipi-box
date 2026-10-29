@@ -8,6 +8,7 @@ import app.AppState
 import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.repository.ProxyServerRepository
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import features.subscription.DefaultSubscriptionGroupId
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +19,7 @@ import kotlinx.coroutines.flow.stateIn
 
 /** Bridges the shared proxy catalog to the existing Room backed AppState format. */
 class AndroidProxyServerRepository(
-    private val stateStore: AndroidAppStateStore,
+    private val stateStore: AppStateStore,
     scope: CoroutineScope,
 ) : ProxyServerRepository {
     override val servers: StateFlow<List<ProxyServerRecord>> = stateStore.state

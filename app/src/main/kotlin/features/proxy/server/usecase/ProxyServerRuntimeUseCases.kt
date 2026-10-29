@@ -25,6 +25,7 @@ import engine.proxy.latency.ProxyServerLatencyTestResult
 import engine.proxy.AndroidProxyEngine
 import engine.proxy.ProxyEngineStartRequest
 import engine.stats.ProxyTrafficStatsRuntimeStore
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import ui.feedback.AndroidToastTipNotifier
 import app.skipi.ui.text.formatTemplate
@@ -107,7 +108,7 @@ internal fun runProxyServerLatencyTest(
     doneTemplate: String,
     showSingleResult: Boolean,
     scope: CoroutineScope,
-    stateStore: AndroidAppStateStore,
+    stateStore: AppStateStore,
     updateAppState: ((AppState) -> AppState) -> Unit,
     proxyLatencyTester: AndroidProxyLatencyTester,
     tipNotifier: AndroidToastTipNotifier,

@@ -10,6 +10,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -89,12 +90,12 @@ val LocalAppChromeState = compositionLocalOf<AppChromeState> {
 }
 
 @Composable
-fun AndroidAppStateStore.collectAppState(): State<AppState> {
+fun AppStateStore.collectAppState(): State<AppState> {
     return state.collectAsState()
 }
 
 @Composable
-fun AndroidAppStateStore.collectAppChromeState(): State<AppChromeState> {
+fun AppStateStore.collectAppChromeState(): State<AppChromeState> {
     val appState = state.collectAsState()
     return remember {
         derivedStateOf { appState.value.toAppChromeState() }
@@ -102,7 +103,7 @@ fun AndroidAppStateStore.collectAppChromeState(): State<AppChromeState> {
 }
 
 @Composable
-fun AndroidAppStateStore.collectProxyServerListState(): State<ProxyServerListState> {
+fun AppStateStore.collectProxyServerListState(): State<ProxyServerListState> {
     val appState = state.collectAsState()
     return remember {
         derivedStateOf { appState.value.toProxyServerListState() }
@@ -110,7 +111,7 @@ fun AndroidAppStateStore.collectProxyServerListState(): State<ProxyServerListSta
 }
 
 @Composable
-fun AndroidAppStateStore.collectProxyServerLatency(
+fun AppStateStore.collectProxyServerLatency(
     serverId: Int,
     initialLatency: String = "",
 ): State<String> {

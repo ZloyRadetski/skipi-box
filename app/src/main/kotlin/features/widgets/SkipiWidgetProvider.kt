@@ -16,6 +16,7 @@ import app.effects.resolveActiveNetworkConfig
 import app.modes.RunModeVpnService
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.proxy.AndroidProxyEngine
@@ -339,7 +340,7 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
 
     private suspend fun syncProxyRunningState(
         appContext: Context,
-        stateStore: AndroidAppStateStore,
+        stateStore: AppStateStore,
         proxyEngine: AndroidProxyEngine,
     ): Boolean {
         val currentState = stateStore.state.value

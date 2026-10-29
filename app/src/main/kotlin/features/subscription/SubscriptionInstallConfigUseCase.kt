@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import app.skipi.app.subscription.SubscriptionInstallOperations
 import app.skipi.ui.home.formatSubscriptionInstallMessage
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import features.proxy.server.usecase.applyProxySubscriptionUpdates
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult

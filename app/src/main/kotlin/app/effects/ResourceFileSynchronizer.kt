@@ -5,6 +5,7 @@ package app.effects
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
 import app.activeTrafficConfig
 import features.logs.AppLog
@@ -14,7 +15,7 @@ import features.resources.runtime.XrayResourceFileScope
 @Composable
 internal fun ResourceFileSynchronizer(
     resourceFileUseCase: ResourceFileUseCase,
-    stateStore: AndroidAppStateStore,
+    stateStore: AppStateStore,
 ) {
     LaunchedEffect(resourceFileUseCase, stateStore) {
         runCatching {
