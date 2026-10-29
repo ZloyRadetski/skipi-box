@@ -441,6 +441,8 @@ fun SkipiProxyHeroCompactCard(
                                 fontSize = 12.sp,
                                 fontWeight = typography.body,
                                 color = colors.connectedStatus,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             )
                         }
                         state.memoryText?.let { memoryText ->
@@ -512,6 +514,8 @@ fun SkipiProxyHeroCompactCard(
                                 fontSize = 15.sp,
                                 fontWeight = typography.emphasis,
                                 color = if (connecting) colors.accent else colors.text,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             )
                         }
                         Text(

@@ -269,6 +269,8 @@ private fun SkipiProtocolChip(
             color = colors.text,
             style = SkipiTheme.typography.labelMedium,
             fontWeight = themedFontWeight(FontWeight.SemiBold),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
         )
     }
@@ -289,6 +291,8 @@ private fun SkipiTransportChip(
             color = colors.text,
             style = SkipiTheme.typography.labelMedium,
             fontWeight = themedFontWeight(FontWeight.Medium),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
         )
     }

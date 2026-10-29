@@ -128,6 +128,8 @@ fun LocalProxySettingsBottomSheet(
                     ) {
                         Text(
                             text = stringResource(Res.string.settings_local_proxy_credentials_section),
+                            modifier = Modifier.weight(1f).padding(end = 8.dp),
+                            maxLines = 2,
                             fontSize = 14.sp,
                             fontWeight = themedFontWeight(FontWeight.SemiBold),
                             color = MiuixTheme.colorScheme.onSurface,

@@ -219,6 +219,9 @@ private fun LogEntryCard(text: String, onClick: () -> Unit) {
             text = text,
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            // A single multi-KB core line must not become an endless list item; copy keeps the full text.
+            maxLines = 8,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
     }
 }

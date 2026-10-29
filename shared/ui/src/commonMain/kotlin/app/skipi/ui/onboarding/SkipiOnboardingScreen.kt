@@ -639,10 +639,10 @@ private fun ChoiceChip(label: String, selected: Boolean, modifier: Modifier = Mo
             .background(background)
             .border(1.dp, if (selected) Color.Transparent else if (colors.isDark) Color(0xFF30313C) else Color(0xFFE5E7EB), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 11.dp),
+            .padding(horizontal = 6.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = textColor, fontWeight = themedFontWeight(if (selected) FontWeight.Bold else FontWeight.Medium), fontSize = 13.sp, textAlign = TextAlign.Center)
+        Text(label, color = textColor, fontWeight = themedFontWeight(if (selected) FontWeight.Bold else FontWeight.Medium), fontSize = 13.sp, textAlign = TextAlign.Center, maxLines = 2)
     }
 }
 

@@ -342,6 +342,8 @@ private fun TrafficStatsRefreshIntervalPreference(
         ) {
             Text(
                 text = stringResource(Res.string.settings_traffic_stats_notification_refresh_interval),
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
+                maxLines = 3,
                 fontSize = 14.sp,
                 fontWeight = themedFontWeight(FontWeight.Medium),
                 color = MiuixTheme.colorScheme.onSurface,

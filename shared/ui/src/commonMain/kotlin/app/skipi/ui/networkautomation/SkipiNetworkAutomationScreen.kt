@@ -265,12 +265,16 @@ private fun RuleCard(
                         fontSize = 16.sp,
                     ),
                     color = SkipiTheme.colors.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = actionSummary,
                     style = MiuixTheme.textStyles.body2,
                     color = SkipiTheme.colors.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
             Spacer(modifier = Modifier.width(6.dp))

@@ -20,10 +20,9 @@ fun ImportModeDialog(show: Boolean, title: String, message: String, mergeText: S
     AppWindowDialog(show = show, title = title, onDismissRequest = onDismissRequest) {
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = message, style = MiuixTheme.textStyles.body2, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(text = mergeText, onClick = { onModeSelected(ClipboardImportMode.Merge) }, modifier = Modifier.weight(1f))
-                TextButton(text = replaceText, onClick = { onModeSelected(ClipboardImportMode.Replace) }, modifier = Modifier.weight(1f))
-            }
+            // Stacked: both labels are long and would wrap inside half-width buttons.
+            TextButton(text = mergeText, onClick = { onModeSelected(ClipboardImportMode.Merge) }, modifier = Modifier.fillMaxWidth())
+            TextButton(text = replaceText, onClick = { onModeSelected(ClipboardImportMode.Replace) }, modifier = Modifier.fillMaxWidth())
         }
     }
 }

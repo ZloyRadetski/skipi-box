@@ -15,8 +15,13 @@ internal class ProxyServiceUseCase(
     private val proxyEngine: AndroidProxyEngine,
 ) {
     suspend fun toggle(state: AppState, selectedServer: ProxyServerState?): ProxyServiceResult {
-        val running = runCatching { proxyEngine.status(appState = state).running }
-            .getOrElse { return ProxyServiceResult.Failed(it) }
+        val running = try {
+            proxyEngine.status(appState = state).running
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            return ProxyServiceResult.Failed(error)
+        }
         return if (running) stop(state.runMode) else start(state, selectedServer)
     }
 

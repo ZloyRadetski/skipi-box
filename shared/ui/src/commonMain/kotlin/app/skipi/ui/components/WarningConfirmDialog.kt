@@ -131,24 +131,32 @@ fun WarningConfirmDialog(
                             content = details,
                         )
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        TextButton(
-                            text = dismissText,
-                            onClick = onDismissRequest,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Spacer(Modifier.width(20.dp))
-                        TextButton(
-                            text = confirmText,
-                            onClick = onConfirm,
-                            modifier = Modifier.weight(1f),
-                        )
+                    if (warningDialogStacksButtons(dismissText, confirmText)) {
+                        // A half-width button would wrap a long label onto several lines.
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextButton(text = confirmText, onClick = onConfirm, modifier = Modifier.fillMaxWidth())
+                            TextButton(text = dismissText, onClick = onDismissRequest, modifier = Modifier.fillMaxWidth())
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            TextButton(text = dismissText, onClick = onDismissRequest, modifier = Modifier.weight(1f))
+                            TextButton(text = confirmText, onClick = onConfirm, modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
         }
     }
 }
+
+private const val MaxSideBySideLabelLength = 14
+
+/** Two buttons share a row only when both labels comfortably fit in half of a phone-width dialog. */
+internal fun warningDialogStacksButtons(dismissText: String, confirmText: String): Boolean =
+    maxOf(dismissText.length, confirmText.length) > MaxSideBySideLabelLength

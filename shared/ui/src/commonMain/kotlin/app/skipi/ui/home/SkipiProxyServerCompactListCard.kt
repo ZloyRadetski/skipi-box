@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -96,7 +97,7 @@ fun SkipiProxyServerCompactListCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(compactCardHeight)
+            .heightIn(min = compactCardHeight)
             .zIndex(if (state.isDragging) 1f else 0f)
             .then(dragVisualModifier)
             .clip(selectedShape)

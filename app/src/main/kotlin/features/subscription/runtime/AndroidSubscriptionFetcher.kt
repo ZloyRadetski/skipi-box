@@ -143,7 +143,7 @@ private fun fetchWithRedirects(
                     responseBody = errorBody,
                 )
             }
-            val body = connection.inputStream.bufferedReader().use { reader -> reader.readText() }
+            val body = connection.inputStream.use { input -> input.readTextLimited(MaxSubscriptionBodyBytes) }
             val headers = connection.headerFields
                 .filterKeys { name -> name != null }
                 .mapNotNull { (name, values) ->
@@ -275,4 +275,19 @@ internal fun parseSubscriptionHttpErrorMessage(errorBody: String?): String? {
     }
 
     return null
+}
+
+private const val MaxSubscriptionBodyBytes = 32 * 1024 * 1024
+
+/** Reads UTF-8 text, failing early instead of exhausting memory on a hostile or broken endpoint. */
+internal fun java.io.InputStream.readTextLimited(maxBytes: Int): String {
+    val out = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(8 * 1024)
+    while (true) {
+        val read = read(buffer)
+        if (read < 0) break
+        if (out.size() + read > maxBytes) error("Subscription response is larger than $maxBytes bytes")
+        out.write(buffer, 0, read)
+    }
+    return out.toString(Charsets.UTF_8.name())
 }

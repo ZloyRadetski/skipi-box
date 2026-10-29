@@ -683,7 +683,8 @@ fun ProxyServerListPage(
             return@produceState
         }
         while (true) {
-            value = context.currentTunnelMemoryPssKb()
+            // Reflection, JSON and a binder call: keep them off the UI thread.
+            value = kotlinx.coroutines.withContext(Dispatchers.IO) { context.currentTunnelMemoryPssKb() }
             kotlinx.coroutines.delay(3_000)
         }
     }

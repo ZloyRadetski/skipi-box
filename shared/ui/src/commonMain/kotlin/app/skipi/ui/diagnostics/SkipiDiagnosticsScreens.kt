@@ -364,6 +364,8 @@ private fun IpInfoFailureCard(errorMessage: String?, onRefresh: () -> Unit) {
                     text = errorMessage,
                     fontSize = 13.sp,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 4,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
             Spacer(Modifier.height(16.dp))

@@ -113,12 +113,12 @@ fun SkipiSettingsCategoryEntry(
                     text = title,
                     style = SkipiTheme.typography.titleMedium,
                     color = SkipiTheme.colors.onSurface,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             },
             supportingContent = summary?.takeIf(String::isNotBlank)?.let { text ->
-                { Text(text, style = SkipiTheme.typography.bodyMedium, color = SkipiTheme.colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                { Text(text, style = SkipiTheme.typography.bodyMedium, color = SkipiTheme.colors.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis) }
             },
             leadingContent = {
                 androidx.compose.foundation.layout.Box(
