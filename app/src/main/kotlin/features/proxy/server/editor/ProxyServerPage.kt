@@ -189,9 +189,10 @@ fun ProxyServerPage(
     val memberOptions = remember(appState.proxyServers, appState.subscriptionGroups, serverId, unknownGroupName, defaultGroupName) {
         val groupNames = appState.subscriptionGroups.displayNameById(defaultGroupName)
         appState.proxyServers.filter { server ->
-            server.id != serverId && !server.server.isCompositeProxyServer() &&
-                (server.server !is Custom || server.server.canBeUsedInGeneratedProxyPlan()) &&
-                (server.server !is StrategyGroup || server.server.sourceTrafficConfigId == null)
+            val candidate = server.server
+            server.id != serverId && !candidate.isCompositeProxyServer() &&
+                (candidate !is Custom || candidate.canBeUsedInGeneratedProxyPlan()) &&
+                (candidate !is StrategyGroup || candidate.sourceTrafficConfigId == null)
         }.map { server ->
             ProxyServerEditorMemberOption(
                 id = server.id,

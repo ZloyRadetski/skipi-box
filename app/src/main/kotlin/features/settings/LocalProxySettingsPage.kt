@@ -17,7 +17,7 @@ import app.LocalNavigator
 import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
-import app.generateRandomProxyCredential
+import app.skipi.app.settings.generateRandomProxyCredential
 import app.skipi.app.settings.localNetworkIpAddresses
 import app.skipi.ui.settings.LocalProxySettingsLabels
 import app.skipi.ui.settings.LocalProxySettingsState

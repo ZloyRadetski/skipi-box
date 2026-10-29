@@ -47,6 +47,8 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.ktor.http)
             implementation(libs.kotlinx.serialization.json)
+            // Stability hints (@Stable) on the models Compose hosts render.
+            implementation(libs.compose.runtime)
         }
         sharedJvmMain.dependencies {
             implementation(libs.kage)

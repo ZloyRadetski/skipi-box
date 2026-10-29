@@ -101,12 +101,6 @@ data class FragmentSettingsDraft(
 
 data class SubscriptionPingSettingsDraft(val url: String = "", val timeoutMillis: String = "")
 
-fun generateRandomProxyCredential(prefix: String = "skipi_"): String {
-    val chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    val randomPart = (1..6).map { chars.random() }.joinToString("")
-    return "$prefix$randomPart"
-}
-
 fun SettingsValues.toTunSettingsDraft() = TunSettingsDraft(
     tunMtu, tunVpnDns, tunIpv4Cidr, tunIpv6Cidr, tunTcpKeepAliveInterval, tunTcpUserTimeout,
 )
