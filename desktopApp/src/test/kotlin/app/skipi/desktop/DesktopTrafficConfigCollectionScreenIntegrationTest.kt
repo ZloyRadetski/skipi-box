@@ -31,6 +31,11 @@ import app.skipi.ui.resources.configs_copy_name
 import app.skipi.ui.resources.configs_duplicate
 import app.skipi.ui.resources.configs_global_proxy_groups
 import app.skipi.ui.resources.configs_profiles
+import app.skipi.ui.resources.configs_add_new
+import app.skipi.ui.resources.configs_import_clipboard
+import app.skipi.ui.resources.configs_import_file
+import app.skipi.ui.resources.configs_import_url
+import app.skipi.ui.resources.deletion_confirmation_delete_config
 import app.skipi.ui.resources.configs_proxy_groups_title
 import app.skipi.ui.resources.configs_preserved_unsupported
 import app.skipi.ui.resources.configs_resources
@@ -588,11 +593,6 @@ loglevel = debug
             activeProfile = active,
         ) { screen ->
             assertNotNull(awaitText(screen.scene, profileName))
-            assertNotNull(awaitText(screen.scene, sourceUrl), "The saved profile card should show its update URL")
-            assertNotNull(awaitText(screen.scene, "Правила: 3 · Группы: 2"), "The card should show parser-derived rule and group counts")
-            assertNotNull(awaitTextContaining(screen.scene, "Обновление заблокировано"))
-            assertNotNull(awaitTextContaining(screen.scene, "Диагностика: 1"), "The card should show its parser diagnostic count")
-            assertTrue(rowHasContentDescriptionAction(screen.scene, profileName, "Копировать содержимое"))
             assertTrue(rowHasContentDescriptionAction(screen.scene, profileName, "Ещё"))
 
             clickRowContentDescriptionAction(screen.scene, profileName, "Ещё")
@@ -878,7 +878,7 @@ loglevel = error
             clickRowContentDescriptionAction(screen.scene, active.name, "Ещё")
             assertNotNull(awaitText(screen.scene, deleteLabel), "The profile More menu should expose Delete")
             clickTextAction(screen.scene, deleteLabel)
-            assertNotNull(awaitText(screen.scene, "Удалить конфиг?"), "Delete should wait for confirmation")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.deletion_confirmation_delete_config)), "Delete should wait for confirmation")
 
             val latestLibrary = configRepository.transformLatest { latest ->
                 latest.copy(
@@ -887,8 +887,8 @@ loglevel = error
                 )
             }
             screen.replaceLatestLibrary(latestLibrary)
-            assertNotNull(awaitText(screen.scene, "Удалить конфиг?"), "The pending confirmation should survive a newer library render")
-            clickDialogTextAction(screen.scene, "Удалить конфиг?", "Удалить")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.deletion_confirmation_delete_config)), "The pending confirmation should survive a newer library render")
+            clickDialogTextAction(screen.scene, getString(Res.string.deletion_confirmation_delete_config), getString(Res.string.common_delete))
 
             val saved = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
             assertEquals(listOf(3, 12, 40), saved.configs.map(ConfigProfile::id))
@@ -934,8 +934,8 @@ loglevel = warning
             clickRowContentDescriptionAction(screen.scene, only.name, "Ещё")
             assertNotNull(awaitText(screen.scene, deleteLabel), "The public More menu should expose Delete for the last profile")
             clickTextAction(screen.scene, deleteLabel)
-            assertNotNull(awaitText(screen.scene, "Удалить конфиг?"))
-            clickDialogTextAction(screen.scene, "Удалить конфиг?", "Удалить")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.deletion_confirmation_delete_config)))
+            clickDialogTextAction(screen.scene, getString(Res.string.deletion_confirmation_delete_config), getString(Res.string.common_delete))
 
             val saved = DesktopConfigLibraries.load(configFile.toPath()).getOrThrow()
             assertEquals(initialLibrary, saved, "The last-profile guard must preserve the complete stored library")
@@ -1294,22 +1294,20 @@ loglevel = debug
             configs = emptyList(),
             nextConfigId = 1,
         )
-        val addConfigLabel = "Добавить конфиг"
+        val addConfigLabel = getString(Res.string.configs_add)
 
         withDesktopScreen(
             proxyServers = emptyList(),
             initialLibraryOverride = emptyLibrary,
         ) { screen ->
-            assertNotNull(awaitText(screen.scene, "Пока нет конфигов"), "An empty library should show the existing empty-state card")
-            assertNotNull(awaitText(screen.scene, "Создайте профиль, откройте .conf или импортируйте ссылку."))
-            assertNotNull(awaitText(screen.scene, "Новый конфиг"), "The empty-state card should retain its create action")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.configs_profiles)), "An empty library keeps the shared profiles header")
 
-            clickContentDescriptionAction(screen.scene, addConfigLabel)
+            clickSectionContentDescriptionAction(screen.scene, getString(Res.string.configs_profiles), addConfigLabel)
 
-            assertNotNull(awaitText(screen.scene, "Новый конфиг"), "Toolbar Add should offer new-config creation")
-            assertNotNull(awaitText(screen.scene, "Открыть .conf"), "Toolbar Add should offer a .conf file import")
-            assertNotNull(awaitText(screen.scene, "Импортировать из буфера"), "Toolbar Add should offer clipboard import")
-            assertNotNull(awaitText(screen.scene, "Импортировать по URL"), "Toolbar Add should offer URL import")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.configs_add_new)), "Add should offer new-config creation")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.configs_import_file)), "Add should offer a .conf file import")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.configs_import_clipboard)), "Add should offer clipboard import")
+            assertNotNull(awaitText(screen.scene, getString(Res.string.configs_import_url)), "Add should offer URL import")
             assertEquals(emptyLibrary, screen.persistedLibrary())
             assertEquals(0, screen.libraryTransformCount(), "Checking empty-state choices must not persist a config")
             assertEquals(emptyList(), screen.applyRequests())
@@ -1390,21 +1388,11 @@ loglevel = debug
                     predicates = listOf<(SemanticsNode) -> Boolean>(
                         { it.hasText(profilesTitle) },
                         { it.hasText(profileName) },
-                        { it.hasText(sourceUrl) },
-                        { it.hasText("Правила: 3 · Группы: 2") },
-                        { it.hasTextContaining("Обновление заблокировано") },
-                        { it.hasTextContaining("Диагностика: 1") },
-                        { it.hasContentDescription("Копировать содержимое") },
                         { it.hasContentDescription("Ещё") },
                     ),
                     predicateNames = listOf(
                         profilesTitle,
                         profileName,
-                        sourceUrl,
-                        "Правила: 3 · Группы: 2",
-                        "Обновление заблокировано",
-                        "Диагностика: 1",
-                        "Копировать содержимое",
                         "Ещё",
                     ),
                 )

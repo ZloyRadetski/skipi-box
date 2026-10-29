@@ -18,7 +18,7 @@ import app.navigation.Route
 import app.skipi.ui.settings.LogsSettingsLabels
 import app.skipi.ui.settings.LogsSettingsState
 import app.skipi.ui.settings.SkipiLogsSettingsScreen
-import features.about.SkipiBugReportUri
+import app.skipi.ui.settings.SkipiBugReportUri
 
 @Composable
 fun SettingsLogsPage(padding: PaddingValues) {

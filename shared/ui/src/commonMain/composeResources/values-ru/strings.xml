@@ -913,6 +913,7 @@
     <string name="configs_global_proxy_groups">Глобальные группы прокси</string>
     <string name="configs_global_proxy_groups_add">Добавить глобальную группу прокси</string>
     <string name="configs_profiles">Конфигурации</string>
+    <string name="configs_import_file">Открыть .conf файл</string>
     <string name="configs_add_new">Создать новую конфигурацию</string>
     <string name="configs_import_clipboard">Импортировать конфигурацию из буфера</string>
     <string name="configs_import_url">Загрузить по ссылке</string>

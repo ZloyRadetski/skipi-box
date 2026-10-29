@@ -29,6 +29,25 @@ import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.preference.ArrowPreference
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.about_bug_report
+import app.skipi.ui.resources.about_bug_report_summary
+import app.skipi.ui.resources.about_other
+import app.skipi.ui.resources.about_replay_onboarding
+import app.skipi.ui.resources.about_replay_onboarding_summary
+import app.skipi.ui.resources.about_runtime
+import app.skipi.ui.resources.about_telegram_channel
+import app.skipi.ui.resources.about_title
+import app.skipi.ui.resources.about_view_skipi_source
+import app.skipi.ui.resources.settings_updates_title
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.painterResource
+import app.skipi.ui.resources.ic_about_logo
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 
 data class AboutSettingsLabels(
     val screenTitle: String,
@@ -41,6 +60,39 @@ data class AboutSettingsLabels(
     val bugReportTitle: String,
     val bugReportSummary: String,
     val sourceTitle: String,
+)
+
+const val SkipiSourceUri = "https://github.com/ZloyRadetski/skipi-box"
+const val SkipiCoreSourceUri = "https://github.com/ZloyRadetski/skipi-core"
+const val SkipiBugReportUri = "https://github.com/ZloyRadetski/skipi-box/issues/new"
+const val SkipiTelegramChannelUri = "https://t.me/skipi_public"
+
+@Composable
+fun SkipiAboutLogo(contentDescription: String, modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(Res.drawable.ic_about_logo),
+        contentDescription = contentDescription,
+        contentScale = ContentScale.Fit,
+        modifier = modifier
+            .height(150.dp)
+            .aspectRatio(2f)
+            .clip(RoundedCornerShape(30.dp)),
+    )
+}
+
+/** Localized About labels shared by every host. */
+@Composable
+fun rememberAboutSettingsLabels(): AboutSettingsLabels = AboutSettingsLabels(
+    screenTitle = stringResource(Res.string.about_title),
+    updatesTitle = stringResource(Res.string.settings_updates_title),
+    runtimeTitle = stringResource(Res.string.about_runtime),
+    otherTitle = stringResource(Res.string.about_other),
+    replayOnboardingTitle = stringResource(Res.string.about_replay_onboarding),
+    replayOnboardingSummary = stringResource(Res.string.about_replay_onboarding_summary),
+    telegramTitle = stringResource(Res.string.about_telegram_channel),
+    bugReportTitle = stringResource(Res.string.about_bug_report),
+    bugReportSummary = stringResource(Res.string.about_bug_report_summary),
+    sourceTitle = stringResource(Res.string.about_view_skipi_source),
 )
 
 data class AboutRuntimeInfo(
@@ -74,8 +126,8 @@ fun SkipiAboutScreen(
     onOpenTelegram: () -> Unit,
     onOpenBugReport: () -> Unit,
     onOpenSource: () -> Unit,
-    logo: @Composable () -> Unit,
     updatesContent: @Composable () -> Unit,
+    logo: @Composable () -> Unit = { SkipiAboutLogo(contentDescription = runtime.appName) },
     capabilities: AboutSettingsCapabilities = AboutSettingsCapabilities(),
     platformContent: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
@@ -119,7 +171,9 @@ fun SkipiAboutScreen(
                     SkipiSettingsSectionCard {
                         ArrowPreference(title = "SKIPI Core", summary = runtime.skipiCoreVersion, onClick = onOpenCoreInfo)
                         BasicComponent(title = "Xray-core", summary = runtime.xrayCoreVersion)
-                        BasicComponent(title = "hev-socks5-tunnel", summary = runtime.hevTunnelVersion)
+                        if (runtime.hevTunnelVersion.isNotBlank()) {
+                            BasicComponent(title = "hev-socks5-tunnel", summary = runtime.hevTunnelVersion)
+                        }
                     }
                 }
                 if (capabilities.replayOnboarding || capabilities.telegram || capabilities.bugReport || capabilities.source) item(key = "about_other") {

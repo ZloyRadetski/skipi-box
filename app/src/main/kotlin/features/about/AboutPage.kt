@@ -6,18 +6,18 @@ package features.about
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.stringResource
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import app.ProjectInfo
-import app.R
 import app.navigation.Route
 import app.skipi.core.skipicore.Skipicore
 import app.skipi.ui.settings.AboutRuntimeInfo
-import app.skipi.ui.settings.AboutSettingsLabels
+import app.skipi.ui.settings.SkipiBugReportUri
+import app.skipi.ui.settings.SkipiCoreSourceUri
+import app.skipi.ui.settings.SkipiSourceUri
+import app.skipi.ui.settings.SkipiTelegramChannelUri
+import app.skipi.ui.settings.rememberAboutSettingsLabels
 import app.skipi.ui.settings.SkipiAboutScreen
-
-private const val SkipiProjectSourceUri = "https://github.com/ZloyRadetski/skipi-box"
 
 @Composable
 fun AboutPage(
@@ -36,28 +36,16 @@ fun AboutPage(
     )
 
     SkipiAboutScreen(
-        labels = AboutSettingsLabels(
-            screenTitle = stringResource(R.string.about_title),
-            updatesTitle = stringResource(R.string.settings_updates_title),
-            runtimeTitle = stringResource(R.string.about_runtime),
-            otherTitle = stringResource(R.string.about_other),
-            replayOnboardingTitle = stringResource(R.string.about_replay_onboarding),
-            replayOnboardingSummary = stringResource(R.string.about_replay_onboarding_summary),
-            telegramTitle = stringResource(R.string.about_telegram_channel),
-            bugReportTitle = stringResource(R.string.about_bug_report),
-            bugReportSummary = stringResource(R.string.about_bug_report_summary),
-            sourceTitle = stringResource(R.string.about_view_skipi_source),
-        ),
+        labels = rememberAboutSettingsLabels(),
         runtime = runtimeInfo,
         padding = padding,
         isWideScreen = isWideScreen,
         onBack = { navigator.pop() },
-        onOpenCoreInfo = { uriHandler.openUri("https://github.com/ZloyRadetski/skipi-core") },
+        onOpenCoreInfo = { uriHandler.openUri(SkipiCoreSourceUri) },
         onReplayOnboarding = { navigator.push(Route.Onboarding) },
         onOpenTelegram = { uriHandler.openUri(SkipiTelegramChannelUri) },
         onOpenBugReport = { uriHandler.openUri(SkipiBugReportUri) },
-        onOpenSource = { uriHandler.openUri(SkipiProjectSourceUri) },
-        logo = { AboutAppLogo() },
+        onOpenSource = { uriHandler.openUri(SkipiSourceUri) },
         updatesContent = { AboutUpdatesCard() },
     )
 }

@@ -996,6 +996,7 @@
     <string name="configs_global_proxy_groups">Global proxy groups</string>
     <string name="configs_global_proxy_groups_add">Add global proxy group</string>
     <string name="configs_profiles">Configurations</string>
+    <string name="configs_import_file">Open .conf file</string>
     <string name="configs_add_new">Create new configuration</string>
     <string name="configs_import_clipboard">Import configuration from clipboard</string>
     <string name="configs_import_url">Download from URL</string>

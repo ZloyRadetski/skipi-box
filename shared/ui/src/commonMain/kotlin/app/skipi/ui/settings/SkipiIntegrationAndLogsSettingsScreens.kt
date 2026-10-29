@@ -35,6 +35,14 @@ import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.settings_broadcast_control
+import app.skipi.ui.resources.settings_broadcast_control_summary
+import app.skipi.ui.resources.settings_category_integration
+import app.skipi.ui.resources.settings_header_integration
+import app.skipi.ui.resources.settings_url_schemes
+import app.skipi.ui.resources.settings_url_schemes_summary
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun SettingsBackTopBar(
@@ -83,6 +91,17 @@ data class IntegrationSettingsLabels(
     val urlSchemesSummary: String,
     val broadcastControlTitle: String,
     val broadcastControlSummary: String,
+)
+
+/** Localized integration labels shared by every host. */
+@Composable
+fun rememberIntegrationSettingsLabels(): IntegrationSettingsLabels = IntegrationSettingsLabels(
+    screenTitle = stringResource(Res.string.settings_category_integration),
+    sectionTitle = stringResource(Res.string.settings_header_integration),
+    urlSchemesTitle = stringResource(Res.string.settings_url_schemes),
+    urlSchemesSummary = stringResource(Res.string.settings_url_schemes_summary),
+    broadcastControlTitle = stringResource(Res.string.settings_broadcast_control),
+    broadcastControlSummary = stringResource(Res.string.settings_broadcast_control_summary),
 )
 
 data class IntegrationSettingsCapabilities(

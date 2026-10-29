@@ -8,6 +8,7 @@ import app.skipi.ui.networkautomation.NetworkAutomationServerOption
 import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
 import features.networkautomation.policy.NetworkAutomationRules
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.common_copied
 import app.skipi.ui.resources.about_bug_report
 import app.skipi.ui.resources.about_bug_report_summary
 import app.skipi.ui.resources.settings_access_logs
@@ -102,6 +103,13 @@ import app.skipi.ui.settings.LogsSettingsCapabilities
 import app.skipi.ui.settings.LogsSettingsLabels
 import app.skipi.ui.settings.LogsSettingsState
 import app.skipi.ui.settings.SkipiAboutScreen
+import app.skipi.ui.settings.SkipiBugReportUri
+import app.skipi.ui.settings.SkipiCoreSourceUri
+import app.skipi.ui.settings.SkipiSourceUri
+import app.skipi.ui.settings.SkipiTelegramChannelUri
+import app.skipi.ui.settings.SkipiUrlSchemesScreen
+import app.skipi.ui.settings.rememberAboutSettingsLabels
+import app.skipi.ui.settings.rememberIntegrationSettingsLabels
 import app.skipi.ui.settings.SkipiAppearanceSettingsScreen
 import app.skipi.ui.settings.SkipiGeneralSettingsScreen
 import app.skipi.ui.settings.SkipiIntegrationSettingsScreen
@@ -137,7 +145,7 @@ import app.modes.SubscriptionPingModeHttp
 
 private enum class DesktopSettingsDestination {
     Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
-    NetworkAutomation, BackupReset, SpeedTest, DnsLeakTest, IpInfo, Integration, Diagnostics, CoreLogs, AccessLogs, About,
+    NetworkAutomation, BackupReset, SpeedTest, DnsLeakTest, IpInfo, Integration, UrlSchemes, Diagnostics, CoreLogs, AccessLogs, About,
 }
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
@@ -156,6 +164,7 @@ internal fun DesktopSettingsScreen(
 ) {
     var destination by remember { mutableStateOf(DesktopSettingsDestination.Overview) }
     var message by remember { mutableStateOf("") }
+    val copiedMessage = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.common_copied)
     val scope = rememberCoroutineScope()
     val saveMutex = remember { Mutex() }
     var currentSettings by remember(settings) { mutableStateOf(settings) }
@@ -318,8 +327,16 @@ internal fun DesktopSettingsScreen(
         }
         DesktopSettingsDestination.Integration -> DesktopIntegrationSettings(
             onBack = { destination = DesktopSettingsDestination.Overview },
-            onMessage = { message = it },
+            onOpenUrlSchemes = { destination = DesktopSettingsDestination.UrlSchemes },
             contentPadding = contentPadding,
+        )
+        DesktopSettingsDestination.UrlSchemes -> SkipiUrlSchemesScreen(
+            padding = contentPadding,
+            isWideScreen = true,
+            onBack = { destination = DesktopSettingsDestination.Integration },
+            onCopyCommand = { command ->
+                copyToClipboard(command).onSuccess { message = copiedMessage }
+            },
         )
         DesktopSettingsDestination.Diagnostics -> DesktopLogsSettings(
             settings = currentSettings,
@@ -802,39 +819,18 @@ private fun DesktopSubscriptionUserAgents(
 @Composable
 private fun DesktopIntegrationSettings(
     onBack: () -> Unit,
-    onMessage: (String) -> Unit,
+    onOpenUrlSchemes: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     SkipiIntegrationSettingsScreen(
         state = IntegrationSettingsState(broadcastControlEnabled = false),
-        labels = IntegrationSettingsLabels(
-            screenTitle = "Интеграция",
-            sectionTitle = "ИНТЕГРАЦИЯ",
-            urlSchemesTitle = "URL-схемы SKIPI",
-            urlSchemesSummary = "Команды подключения и импорта.",
-            broadcastControlTitle = "Управление трансляцией",
-            broadcastControlSummary = "Недоступно в Desktop.",
-        ),
+        labels = rememberIntegrationSettingsLabels(),
         padding = contentPadding,
         isWideScreen = true,
         onBack = onBack,
-        onOpenUrlSchemes = {},
+        onOpenUrlSchemes = onOpenUrlSchemes,
         onBroadcastControlChange = {},
-        capabilities = IntegrationSettingsCapabilities(urlSchemes = false, broadcastControl = false),
-        platformContent = {
-            SkipiSettingsGroup(title = "КОМАНДЫ DESKTOP") {
-                IntegrationCommandRow("skipi://connect", "Запустить подключение", onMessage)
-                IntegrationCommandRow("skipi://disconnect", "Остановить подключение", onMessage)
-                IntegrationCommandRow("skipi://toggle", "Переключить состояние", onMessage)
-                IntegrationCommandRow("skipi://add/{url}", "Добавить подписку по URL", onMessage)
-                IntegrationCommandRow("skipi://import/{base64}", "Импортировать закодированную ссылку", onMessage)
-                IntegrationCommandRow("skipi://conf/add/{base64}", "Добавить профиль конфигурации", onMessage)
-                SkipiSettingsInfoRow(
-                    title = "Обработчик URL-схемы",
-                    summary = "Обработчик skipi:// ещё не зарегистрирован системой. Используйте импорт из буфера или URL в приложении.",
-                )
-            }
-        },
+        capabilities = IntegrationSettingsCapabilities(urlSchemes = true, broadcastControl = false),
     )
 }
 
@@ -1014,78 +1010,40 @@ private fun DesktopAboutSettings(
 ) {
     val settingsPath = remember { DesktopSettingsLibraries.defaultPath() }
     SkipiAboutScreen(
-        labels = AboutSettingsLabels(
-            screenTitle = "О SKIPI",
-            updatesTitle = "ОБНОВЛЕНИЯ",
-            runtimeTitle = "КОМПОНЕНТЫ",
-            otherTitle = "О ПРОЕКТЕ",
-            replayOnboardingTitle = "Повторить знакомство",
-            replayOnboardingSummary = "Недоступно в Desktop.",
-            telegramTitle = "Telegram",
-            bugReportTitle = "Сообщить об ошибке",
-            bugReportSummary = "Недоступно в Desktop.",
-            sourceTitle = "Исходный код",
-        ),
+        labels = rememberAboutSettingsLabels(),
         runtime = AboutRuntimeInfo(
-            appName = "SKIPI Desktop",
-            appVersion = "",
-            skipiCoreVersion = "",
-            xrayCoreVersion = "",
+            appName = ProjectInfo.PROJECT_NAME,
+            appVersion = "${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
+            skipiCoreVersion = ProjectInfo.SKIPI_CORE_VERSION,
+            xrayCoreVersion = ProjectInfo.XRAY_CORE_VERSION,
             hevTunnelVersion = "",
         ),
         padding = contentPadding,
         isWideScreen = true,
         onBack = onBack,
-        onOpenCoreInfo = {},
+        onOpenCoreInfo = { browse(SkipiCoreSourceUri, onMessage) },
         onReplayOnboarding = {},
-        onOpenTelegram = {},
-        onOpenBugReport = {},
-        onOpenSource = {},
-        logo = { Text("SKIPI", fontSize = 28.sp, fontWeight = FontWeight.Black, color = SkipiTheme.colors.onSurface) },
+        onOpenTelegram = { browse(SkipiTelegramChannelUri, onMessage) },
+        onOpenBugReport = { browse(SkipiBugReportUri, onMessage) },
+        onOpenSource = { browse(SkipiSourceUri, onMessage) },
         updatesContent = {},
-        capabilities = AboutSettingsCapabilities(
-            updates = false,
-            runtime = false,
-            replayOnboarding = false,
-            telegram = false,
-            bugReport = false,
-            source = false,
-        ),
+        capabilities = AboutSettingsCapabilities(updates = false, replayOnboarding = false),
         platformContent = {
-            SkipiSettingsGroup(title = "КОМПОНЕНТЫ") {
-                SkipiSettingsInfoRow("SKIPI Core", "Встроенный runtime в процессе приложения")
+            SkipiSettingsGroup(title = "ХРАНИЛИЩЕ") {
                 SkipiSettingsInfoRow("Хранилище", settingsPath.toString())
-            }
-            SkipiSettingsGroup(title = "ЛИЦЕНЗИЯ") {
-                SkipiSettingsActionRow(
-                    title = "GPL-3.0",
-                    summary = "Исходный код и условия распространения находятся в корне проекта.",
-                    onClick = {
-                        copyToClipboard("GPL-3.0").onSuccess { onMessage("Название лицензии скопировано.") }
-                    },
-                )
             }
             SkipiSettingsStatusMessage(message)
         },
     )
 }
 
-@Composable
-private fun IntegrationCommandRow(
-    command: String,
-    description: String,
-    onMessage: (String) -> Unit,
-) {
-    SkipiSettingsActionRow(
-        title = command,
-        summary = "$description · нажмите, чтобы скопировать",
-        onClick = {
-            copyToClipboard(command).fold(
-                onSuccess = { onMessage("Команда скопирована: $command") },
-                onFailure = { onMessage("Не удалось скопировать команду: ${it.message.orEmpty()}") },
-            )
-        },
-    )
+private fun browse(uri: String, onMessage: (String) -> Unit) {
+    runCatching {
+        check(Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            "Открытие ссылок не поддерживается системой."
+        }
+        Desktop.getDesktop().browse(java.net.URI(uri))
+    }.onFailure { onMessage("Не удалось открыть ссылку: ${it.message.orEmpty()}") }
 }
 
 private fun openDirectory(path: java.nio.file.Path): Result<Unit> = runCatching {

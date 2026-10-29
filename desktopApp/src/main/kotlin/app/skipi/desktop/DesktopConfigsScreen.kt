@@ -32,11 +32,35 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.ui.platform.LocalLayoutDirection
+import app.skipi.ui.components.AppCascadingListPopup
+import app.skipi.ui.components.WarningConfirmDialog
+import app.skipi.ui.layout.pageContentPaddingWithCutout
+import app.skipi.ui.layout.pageListPadding
+import app.skipi.ui.resources.common_clipboard_empty
+import app.skipi.ui.resources.configs_add_new
+import app.skipi.ui.resources.configs_exported_base64
+import app.skipi.ui.resources.configs_import_clipboard
+import app.skipi.ui.resources.configs_import_file
+import app.skipi.ui.resources.configs_import_url
+import app.skipi.ui.resources.common_delete
+import app.skipi.ui.resources.deletion_confirmation_delete_config
+import app.skipi.ui.resources.deletion_confirmation_summary
+import java.util.Base64
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.ListPopupDefaults
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -241,6 +265,8 @@ internal fun DesktopConfigsScreen(
     var updatingConfigIds by remember { mutableStateOf(emptySet<Int>()) }
     val newProfileName = stringResource(Res.string.configs_new_name, configLibrary.nextConfigId)
     val importedProfileName = stringResource(Res.string.configs_imported_name)
+    val clipboardEmptyMessage = stringResource(Res.string.common_clipboard_empty)
+    val exportedBase64Message = stringResource(Res.string.configs_exported_base64)
 
     fun openConfigEditor(config: DesktopStoredConfig) {
         editorSaveError = null
@@ -297,6 +323,19 @@ internal fun DesktopConfigsScreen(
                 }
                 false
             },
+        )
+    }
+
+    fun deleteConfig(config: DesktopStoredConfig) {
+        var removed = false
+        persist(
+            transform = { latest ->
+                val updated = DesktopConfigLibraries.remove(latest, config.id)
+                removed = updated.configs != latest.configs
+                updated
+            },
+            successMessage = "",
+            afterSave = { if (removed) message = "Конфиг удалён." },
         )
     }
 
@@ -791,13 +830,21 @@ internal fun DesktopConfigsScreen(
     ) { collection ->
         val profileStatusText = message.takeIf(String::isNotBlank)
         val collectionFailureMessage = collection.failureMessage?.takeIf(String::isNotBlank)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(ConfigBackground)
-                .padding(contentPadding),
-            contentAlignment = Alignment.TopCenter,
-        ) {
+        val pagePadding = pageListPadding(
+            pageContentPaddingWithCutout(
+                innerPadding = PaddingValues(0.dp),
+                outerPadding = contentPadding,
+                isWideScreen = true,
+            ),
+        )
+        val layoutDirection = LocalLayoutDirection.current
+        val listPadding = PaddingValues(
+            start = pagePadding.calculateStartPadding(layoutDirection) + 12.dp,
+            top = pagePadding.calculateTopPadding() + 8.dp,
+            end = pagePadding.calculateEndPadding(layoutDirection) + 12.dp,
+            bottom = pagePadding.calculateBottomPadding() + 12.dp,
+        )
+        Box(modifier = Modifier.fillMaxSize()) {
             SkipiTrafficConfigScreen(
                 profiles = trafficConfigProfiles.map { profile ->
                     TrafficConfigProfileItem(
@@ -811,7 +858,7 @@ internal fun DesktopConfigsScreen(
                 },
                 globalProxyGroups = collection.groups,
                 sourcedProxyGroups = sourcedProxyGroups,
-                contentPadding = PaddingValues(start = 28.dp, top = 20.dp, end = 28.dp, bottom = 28.dp),
+                contentPadding = listPadding,
                 onAddConfig = { showAddMenu = true },
                 onAddGlobalProxyGroup = collection.onAdd,
                 onSelectProfile = { id ->
@@ -827,7 +874,7 @@ internal fun DesktopConfigsScreen(
                 },
                 onDeleteProfile = { id ->
                     configLibrary.configs.firstOrNull { config -> config.id == id }?.let { config ->
-                        pendingDeletion = config
+                        if (desktopSettings.confirmDeletion) pendingDeletion = config else deleteConfig(config)
                     }
                 },
                 onUpdateProfile = { id ->
@@ -841,140 +888,17 @@ internal fun DesktopConfigsScreen(
                 },
                 onDeleteGlobalProxyGroup = collection.onDelete,
                 onGlobalProxyGroupMenu = collection.onContextMenu,
-                headerContent = {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().height(54.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column {
-                                Text("Конфиги", color = SkipiTheme.colors.onSurface, fontSize = 25.sp, fontWeight = FontWeight.Black)
-                                Text("Профили трафика SKIPI", color = SkipiTheme.colors.onSurfaceVariant, fontSize = 14.sp)
-                            }
-                            Box {
-                                IconButton(onClick = { showAddMenu = true }) {
-                                    Icon(Icons.Outlined.Add, "Добавить конфиг", tint = SkipiTheme.colors.onSurface, modifier = Modifier.size(32.dp))
-                                }
-                                DropdownMenu(expanded = showAddMenu, onDismissRequest = { showAddMenu = false }) {
-                                    DropdownMenuItem(
-                                        text = { Text("Новый конфиг") },
-                                        leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null) },
-                                        onClick = {
-                                            showAddMenu = false
-                                            editorDraft = DesktopConfigDraft(
-                                                id = null,
-                                                name = newProfileName,
-                                                content = defaultShadowrocketConfig(),
-                                                sourceUrl = "",
-                                                updateLocked = false,
-                                                lastUpdatedAtMillis = 0L,
-                                            )
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Открыть .conf") },
-                                        leadingIcon = { Icon(Icons.Outlined.FolderOpen, contentDescription = null) },
-                                        onClick = {
-                                            showAddMenu = false
-                                            DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
-                                                DesktopProfileFiles.read(path).onSuccess { content ->
-                                                    importRawConfig(content, path.fileName.toString().substringBeforeLast('.'))
-                                                }.onFailure { error ->
-                                                    message = "Не удалось открыть файл: ${error.message.orEmpty()}"
-                                                }
-                                            }
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Импортировать из буфера") },
-                                        leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
-                                        onClick = {
-                                            showAddMenu = false
-                                            val text = runCatching {
-                                                Toolkit.getDefaultToolkit().systemClipboard
-                                                    .getData(DataFlavor.stringFlavor)
-                                                    .toString()
-                                            }.getOrDefault("").trim()
-                                            when {
-                                                text.startsWith("http://", true) || text.startsWith("https://", true) -> importUrlFromClipboard(text)
-                                                text.isNotBlank() -> importRawConfig(text, "Конфиг из буфера")
-                                                else -> message = "Буфер обмена пуст."
-                                            }
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Импортировать по URL") },
-                                        leadingIcon = { Icon(Icons.Outlined.Link, contentDescription = null) },
-                                        onClick = { showAddMenu = false; importUrlDialog = true },
-                                    )
-                                }
-                            }
-                        }
-                        ConfigLibrarySummary(configLibrary)
-                    }
-                },
-                emptyProfilesContent = {
-                    EmptyConfigsCard(onCreate = {
-                        editorDraft = DesktopConfigDraft(
-                            id = null,
-                            name = newProfileName,
-                            content = defaultShadowrocketConfig(),
-                            sourceUrl = "",
-                            updateLocked = false,
-                            lastUpdatedAtMillis = 0L,
-                        )
-                    })
-                },
-                profileSupportingContent = { item ->
-                    val profile = item.profile
-                    val analysis = remember(profile.rawConfig) { profile.rawConfig.analyzeShadowrocketConfig() }
-                    Text(
-                        profile.sourceUrl.ifBlank { "Локальный профиль" },
-                        color = SkipiTheme.colors.onSurfaceVariant,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            "Правила: ${analysis.rules.size} · Группы: ${analysis.proxyGroups.size}",
-                            color = SkipiTheme.colors.onSurfaceVariant,
-                            fontSize = 12.sp,
-                        )
-                        if (profile.updateLocked) {
-                            Text("Обновление заблокировано", color = SkipiTheme.colors.onSurfaceVariant, fontSize = 12.sp)
-                        }
-                        if (analysis.diagnostics.isNotEmpty()) {
-                            Text("Диагностика: ${analysis.diagnostics.size}", color = SkipiTheme.colors.error, fontSize = 12.sp)
-                        }
-                    }
-                },
+                // Mouse users cannot long-press, so the profile menu also gets an explicit button.
                 profileTrailingActions = { item ->
-                    val config = configLibrary.configs.firstOrNull { config -> config.id == item.profile.id }
-                    if (config != null) {
-                        IconButton(onClick = {
-                            runCatching {
-                                Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(config.content), null)
-                            }.onSuccess {
-                                message = "Содержимое конфига скопировано."
-                            }.onFailure { error ->
-                                message = "Не удалось скопировать конфиг: ${error.message.orEmpty()}"
-                            }
-                        }) {
-                            Icon(Icons.Outlined.ContentCopy, "Копировать содержимое")
-                        }
-                        IconButton(onClick = { contextMenuConfig = config }) {
-                            Icon(Icons.Outlined.MoreVert, "Ещё")
-                        }
+                    IconButton(onClick = {
+                        contextMenuConfig = configLibrary.configs.firstOrNull { config -> config.id == item.profile.id }
+                    }) {
+                        Icon(MiuixIcons.More, contentDescription = "Ещё", tint = MiuixTheme.colorScheme.onSurface)
                     }
                 },
                 statusContent = profileStatusText?.let { text ->
-                    { Text(text, color = SkipiTheme.colors.onSurfaceVariant, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp)) }
+                    { Text(text, color = MiuixTheme.colorScheme.onSurfaceVariantSummary, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 8.dp)) }
                 },
-                showAddProfileAction = false,
-                showProfilesHeaderWhenEmpty = false,
-                modifier = Modifier.widthIn(max = 980.dp).fillMaxSize(),
             )
             collectionFailureMessage?.let { failure ->
                 Surface(
@@ -999,6 +923,67 @@ internal fun DesktopConfigsScreen(
         }
     }
 
+    if (showAddMenu) {
+        AppCascadingListPopup(
+            show = true,
+            entries = listOf(
+                DropdownEntry(
+                    items = listOf(
+                        DropdownItem(
+                            text = stringResource(Res.string.configs_add_new),
+                            onClick = {
+                                showAddMenu = false
+                                editorDraft = DesktopConfigDraft(
+                                    id = null,
+                                    name = newProfileName,
+                                    content = defaultShadowrocketConfig(),
+                                    sourceUrl = "",
+                                    updateLocked = false,
+                                    lastUpdatedAtMillis = 0L,
+                                )
+                            },
+                        ),
+                        DropdownItem(
+                            text = stringResource(Res.string.configs_import_file),
+                            onClick = {
+                                showAddMenu = false
+                                DesktopProfileFiles.chooseProfileToOpen()?.let { path ->
+                                    DesktopProfileFiles.read(path).onSuccess { content ->
+                                        importRawConfig(content, path.fileName.toString().substringBeforeLast('.'))
+                                    }.onFailure { error ->
+                                        message = "Не удалось открыть файл: ${error.message.orEmpty()}"
+                                    }
+                                }
+                            },
+                        ),
+                        DropdownItem(
+                            text = stringResource(Res.string.configs_import_clipboard),
+                            onClick = {
+                                showAddMenu = false
+                                val text = runCatching {
+                                    Toolkit.getDefaultToolkit().systemClipboard
+                                        .getData(DataFlavor.stringFlavor)
+                                        .toString()
+                                }.getOrDefault("").trim()
+                                when {
+                                    text.startsWith("http://", true) || text.startsWith("https://", true) -> importUrlFromClipboard(text)
+                                    text.isNotBlank() -> importRawConfig(text, importedProfileName)
+                                    else -> message = clipboardEmptyMessage
+                                }
+                            },
+                        ),
+                        DropdownItem(
+                            text = stringResource(Res.string.configs_import_url),
+                            onClick = { showAddMenu = false; importUrlDialog = true },
+                        ),
+                    ),
+                ),
+            ),
+            popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
+            alignment = PopupPositionProvider.Align.TopEnd,
+            onDismissRequest = { showAddMenu = false },
+        )
+    }
     SkipiTrafficConfigUrlImportDialog(
         show = importUrlDialog,
         url = importUrl,
@@ -1011,30 +996,19 @@ internal fun DesktopConfigsScreen(
         },
     )
     pendingUnlockAndRefresh?.let { pending ->
-        AlertDialog(
+        WarningConfirmDialog(
+            show = true,
+            title = stringResource(Res.string.configs_update_locked_warning_title),
+            summary = stringResource(Res.string.configs_update_locked_warning_summary),
+            confirmText = stringResource(Res.string.configs_update_anyway),
+            dismissText = stringResource(Res.string.common_cancel),
             onDismissRequest = {
                 TrafficConfigProfileRefreshOperations.dismissUnlockAndRefresh(pending)
                 pendingUnlockAndRefresh = null
             },
-            title = { Text(stringResource(Res.string.configs_update_locked_warning_title)) },
-            text = { Text(stringResource(Res.string.configs_update_locked_warning_summary)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    pendingUnlockAndRefresh = null
-                    startProfileRefresh(
-                        TrafficConfigProfileRefreshOperations.confirmUnlockAndRefresh(pending),
-                    )
-                }) {
-                    Text(stringResource(Res.string.configs_update_anyway))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    TrafficConfigProfileRefreshOperations.dismissUnlockAndRefresh(pending)
-                    pendingUnlockAndRefresh = null
-                }) {
-                    Text(stringResource(Res.string.common_cancel))
-                }
+            onConfirm = {
+                pendingUnlockAndRefresh = null
+                startProfileRefresh(TrafficConfigProfileRefreshOperations.confirmUnlockAndRefresh(pending))
             },
         )
     }
@@ -1043,13 +1017,6 @@ internal fun DesktopConfigsScreen(
         SkipiTrafficConfigContextMenu(
             show = true,
             onDismissRequest = { contextMenuConfig = null },
-            showRawEdit = true,
-            showUiEdit = true,
-            showDuplicate = true,
-            showExport = true,
-            showExportBase64 = false,
-            showDelete = true,
-            showEnable = true,
             onUpdate = if (config.sourceUrl.isNotBlank() && config.id !in updatingConfigIds) {
                 { contextMenuConfig = null; refreshConfigFromUrl(config) }
             } else null,
@@ -1078,7 +1045,15 @@ internal fun DesktopConfigsScreen(
                     }.onFailure { error -> message = "Не удалось экспортировать конфиг: ${error.message.orEmpty()}" }
                 }
             },
-            onExportBase64 = { contextMenuConfig = null },
+            onExportBase64 = {
+                contextMenuConfig = null
+                val encoded = Base64.getEncoder().encodeToString(config.content.toByteArray(Charsets.UTF_8))
+                runCatching {
+                    Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(encoded), null)
+                }.onSuccess {
+                    message = exportedBase64Message
+                }.onFailure { error -> message = "Не удалось скопировать конфиг: ${error.message.orEmpty()}" }
+            },
             onDelete = { contextMenuConfig = null; pendingDeletion = config },
             onEnable = {
                 contextMenuConfig = null
@@ -1090,94 +1065,17 @@ internal fun DesktopConfigsScreen(
         )
     }
     pendingDeletion?.let { config ->
-        AlertDialog(
+        WarningConfirmDialog(
+            show = true,
+            title = stringResource(Res.string.deletion_confirmation_delete_config),
+            summary = stringResource(Res.string.deletion_confirmation_summary),
+            confirmText = stringResource(Res.string.common_delete),
+            dismissText = stringResource(Res.string.common_cancel),
             onDismissRequest = { pendingDeletion = null },
-            title = { Text("Удалить конфиг?") },
-            text = { Text("«${config.name}» будет удалён из локальной библиотеки.") },
-            confirmButton = {
-                Button(onClick = {
-                    var removed = false
-                    persist(
-                        transform = { latest ->
-                            val updated = DesktopConfigLibraries.remove(latest, config.id)
-                            removed = updated.configs != latest.configs
-                            updated
-                        },
-                        successMessage = "",
-                        afterSave = { if (removed) message = "Конфиг удалён." },
-                    )
-                    pendingDeletion = null
-                }) { Text("Удалить") }
+            onConfirm = {
+                pendingDeletion = null
+                deleteConfig(config)
             },
-            dismissButton = { TextButton(onClick = { pendingDeletion = null }) { Text("Отмена") } },
-        )
-    }
-}
-
-@Composable
-private fun ConfigLibrarySummary(library: DesktopConfigLibrary) {
-    val active = library.configs.firstOrNull { it.id == library.selectedConfigId }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = ConfigSurface),
-        border = BorderStroke(1.dp, ConfigBorder),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(ConfigRaisedSurface),
-                contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Outlined.Description, contentDescription = null, tint = ConfigText) }
-            Spacer(Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(active?.name ?: "Активный конфиг не выбран", color = ConfigText, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    if (active == null) "Профилей: ${library.configs.size}" else "Применяется при следующем подключении Xray",
-                    color = ConfigMuted,
-                    fontSize = 14.sp,
-                )
-            }
-            Surface(color = ConfigGreen.copy(alpha = 0.18f), shape = RoundedCornerShape(8.dp)) {
-                Text("SKIPI", color = ConfigGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyConfigsCard(onCreate: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = ConfigSurface),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text("Пока нет конфигов", color = ConfigText, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text("Создайте профиль, откройте .conf или импортируйте ссылку.", color = ConfigMuted)
-            Button(onClick = onCreate) { Text("Новый конфиг") }
-        }
-    }
-}
-
-@Composable
-private fun ConfigChip(text: String, accent: Color? = null) {
-    Surface(
-        color = (accent ?: ConfigMuted).copy(alpha = 0.16f),
-        shape = RoundedCornerShape(8.dp),
-    ) {
-        Text(
-            text,
-            color = accent ?: ConfigMuted,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
         )
     }
 }

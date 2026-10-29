@@ -38,24 +38,6 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 import androidx.compose.foundation.layout.aspectRatio
 
-internal const val SkipiBugReportUri = "https://github.com/ZloyRadetski/skipi-box/issues/new"
-internal const val SkipiTelegramChannelUri = "https://t.me/skipi_public"
-
-@Composable
-internal fun AboutAppLogo(
-    modifier: Modifier = Modifier,
-) {
-    Image(
-        painter = painterResource(R.drawable.ic_about_logo),
-        contentDescription = ProjectInfo.PROJECT_NAME,
-        contentScale = ContentScale.Fit,
-        modifier = modifier
-            .height(150.dp)
-            .aspectRatio(2f)
-            .clip(RoundedCornerShape(30.dp)),
-    )
-}
-
 @Composable
 internal fun AboutUpdatesCard(
     modifier: Modifier = Modifier,
