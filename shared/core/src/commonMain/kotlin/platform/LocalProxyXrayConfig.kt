@@ -3,6 +3,8 @@
 
 package platform
 
+import engine.xray.XrayDnsPlan
+import engine.xray.buildXrayDnsConfig
 import engine.xray.XraySniffingOptions
 import engine.xray.toJson
 import engine.xray.XrayFragmentOutboundOptions
@@ -136,6 +138,7 @@ object LocalProxyXrayConfigFactory {
             outbounds = outbounds,
             routing = routing,
             observatory = observatory,
+            dnsPlan = renderingOptions.dnsPlan,
         )
     }
 
@@ -214,6 +217,7 @@ object LocalProxyXrayConfigFactory {
         outbounds: JsonArray,
         routing: JsonObject? = null,
         observatory: JsonObject? = null,
+        dnsPlan: XrayDnsPlan? = null,
     ): String {
         val config = buildJsonObject {
             put("log", buildJsonObject { put("loglevel", options.logLevel) })
@@ -222,6 +226,8 @@ object LocalProxyXrayConfigFactory {
                     put("servers", buildJsonArray { options.dnsServers.forEach { add(JsonPrimitive(it)) } })
                     put("queryStrategy", "UseIPv4")
                 })
+            } else if (dnsPlan != null) {
+                put("dns", buildXrayDnsConfig(dnsPlan))
             }
             put("inbounds", buildJsonArray {
                 add(buildSocksInbound(options).withSniffing(options.sniffing))

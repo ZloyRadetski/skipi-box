@@ -4,6 +4,7 @@ package app.skipi.desktop
 
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -67,7 +68,10 @@ class DesktopTrafficProfileXrayConfigTest {
 
         assertEquals(20_480, inbound.getValue("port").jsonPrimitive.content.toInt())
         assertEquals("IPOnDemand", routing.getValue("domainStrategy").jsonPrimitive.content)
-        assertEquals("1.1.1.1", root.getValue("dns").jsonObject.getValue("servers").jsonArray.first().jsonPrimitive.content)
+        assertTrue(
+            root.getValue("dns").jsonObject.getValue("servers").jsonArray
+                .any { server -> server is JsonPrimitive && server.content == "1.1.1.1" },
+        )
         assertEquals("UseIP", root.getValue("dns").jsonObject.getValue("queryStrategy").jsonPrimitive.content)
         assertEquals(
             listOf("203.0.113.9", "203.0.113.10"),
@@ -168,8 +172,10 @@ class DesktopTrafficProfileXrayConfigTest {
         val root = Json.parseToJsonElement(
             DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions()),
         ).jsonObject
+        // Plain entries are the proxy DNS list; direct-DNS bootstrap entries are objects.
         val dnsServers = root.getValue("dns").jsonObject.getValue("servers").jsonArray
-            .map { value -> value.jsonPrimitive.content }
+            .filterIsInstance<JsonPrimitive>()
+            .map { value -> value.content }
 
         assertEquals(listOf("1.1.1.1", "https://dns.example/dns-query"), dnsServers)
     }
@@ -271,7 +277,11 @@ class DesktopTrafficProfileXrayConfigTest {
         ).jsonObject
         val rules = root.getValue("routing").jsonObject.getValue("rules").jsonArray
 
-        assertEquals("Missing", rules.first().jsonObject.getValue("outboundTag").jsonPrimitive.content)
+        // DNS upstream rules precede user rules, as in Android's routing plan.
+        assertEquals(
+            "Missing",
+            rules.first { rule -> rule.jsonObject["inboundTag"] == null }.jsonObject.getValue("outboundTag").jsonPrimitive.content,
+        )
         assertEquals("skipi-proxy", rules.last().jsonObject.getValue("outboundTag").jsonPrimitive.content)
     }
 

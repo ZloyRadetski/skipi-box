@@ -39,6 +39,8 @@ data class TrafficProfileXrayPlan(
     val analysis: ShadowrocketConfigAnalysis,
     val selectedServer: TrafficProfileServerRecord,
     val proxyOutbounds: List<JsonObject>,
+    /** Servers behind [proxyOutbounds], used for DNS bootstrap domains. */
+    val proxyServers: List<ProxyServer<*>>,
     val routingRules: List<JsonObject>,
     val balancers: List<XrayBalancerPlan>,
     val observatorySelectors: List<String>,
@@ -71,10 +73,14 @@ object TrafficProfileXrayPlanner {
         val usableServers = servers.filter { record -> record.server.isTrafficProfileUsable() }
         val addedOutboundTags = mutableSetOf<String>()
         val proxyOutbounds = mutableListOf<JsonObject>()
+        val proxyServers = mutableListOf<ProxyServer<*>>()
         fun outboundTagFor(candidate: TrafficProfileServerRecord): String =
             if (candidate.id == selected.id) ProfileProxyTag else "$ProfileServerTagPrefix${candidate.id}"
         fun addOutbound(candidate: TrafficProfileServerRecord, tag: String) {
-            if (addedOutboundTags.add(tag)) proxyOutbounds += candidate.server.toXrayOutbound(tag).toJsonObject()
+            if (addedOutboundTags.add(tag)) {
+                proxyOutbounds += candidate.server.toXrayOutbound(tag).toJsonObject()
+                proxyServers += candidate.server
+            }
         }
         fun normalTarget(candidate: TrafficProfileServerRecord): XrayRouteTarget {
             val tag = outboundTagFor(candidate)
@@ -212,6 +218,7 @@ object TrafficProfileXrayPlanner {
             analysis = analysis,
             selectedServer = selected,
             proxyOutbounds = proxyOutbounds,
+            proxyServers = proxyServers,
             routingRules = routingRules,
             balancers = balancers,
             observatorySelectors = observatorySelectors,
@@ -287,7 +294,7 @@ private fun String.toTrafficProfileExternalRuleSetReference(): Pair<String, Stri
     return source to dataName
 }
 
-private const val ProfileProxyTag = "skipi-proxy"
+const val ProfileProxyTag = "skipi-proxy"
 private const val ProfileServerTagPrefix = "skipi-server-"
 private const val ProfileGroupTagPrefix = "skipi-group-"
 private const val ProfileGroupMemberTagPrefix = "skipi-group-member-"

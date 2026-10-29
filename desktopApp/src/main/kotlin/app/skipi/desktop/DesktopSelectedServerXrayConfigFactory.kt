@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import engine.xray.XrayRouteTarget
+import engine.xray.XrayRouteTargetKind
+import engine.xray.startupProxyServerDnsDomains
 import app.skipi.app.model.RoutingConfigRecord
 import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.XrayOutboundPlanner
@@ -84,19 +87,27 @@ object DesktopSelectedServerXrayConfigFactory {
                     stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
                 ),
             )
+            val ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = hasResourceTag)
+            val dnsPlan = planDesktopXrayDns(
+                inputs = DesktopDnsInputs(),
+                startupProxyServerDomains = plan.proxyOutbounds.startupProxyServerDnsDomains(),
+                ruleValidator = ruleValidator,
+            )
+            val routeTargets = plan.routeTargets +
+                (XrayTags.DIRECT to XrayRouteTarget(XrayTags.DIRECT, XrayRouteTargetKind.Outbound))
             val routingPlan = planXrayRouting(
                 request = XrayRoutingRequest(
                     routeDomainStrategy = routing.domainStrategy,
                     routeRules = routing.rules,
                     defaultRouteOutboundTag = routing.defaultOutboundTag,
-                    routeTargets = plan.routeTargets,
+                    routeTargets = routeTargets,
                     balancers = buildXrayBalancers(plan.balancers),
                     enableLocalDns = false,
-                    routeProxyDns = false,
-                    routeDirectDns = false,
+                    routeProxyDns = dnsPlan.routingOptions.routeProxyDns,
+                    routeDirectDns = dnsPlan.routingOptions.routeDirectDns,
                     dnsHijackInboundTags = emptyList(),
                 ),
-                ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = hasResourceTag),
+                ruleValidator = ruleValidator,
             )
             plan.proxyOutbounds.forEach { outbound ->
                 outbound.server?.let { server ->
@@ -119,7 +130,7 @@ object DesktopSelectedServerXrayConfigFactory {
                 renderingOptions = XrayOutboundRenderingOptions(
                     primaryOutboundTag = plan.routeTargets[XrayTags.PROXY]?.tag ?: XrayTags.PROXY,
                     enableLocalDns = false,
-                    dnsPlan = null,
+                    dnsPlan = dnsPlan,
                     dnsProxyOutboundTag = null,
                     transport = null,
                     mux = null,

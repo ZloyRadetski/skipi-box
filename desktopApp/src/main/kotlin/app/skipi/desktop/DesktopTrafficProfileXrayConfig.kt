@@ -2,6 +2,15 @@
 
 package app.skipi.desktop
 
+import engine.xray.XrayResourceRoutingRuleValidator
+import engine.xray.ProfileProxyTag
+import engine.xray.XrayTags
+import engine.xray.buildXrayDnsConfig
+import engine.xray.startupProxyServerHostDnsDomains
+import features.config.TrafficConfigDnsInputs
+import features.config.TrafficConfigRuntimePlanInput
+import features.config.TrafficConfigRuntimePlanner
+import features.proxy.server.model.serverHost
 import engine.xray.XraySniffingOptions
 import platform.withSniffing
 import engine.xray.XrayFragmentOutboundOptions
@@ -74,23 +83,49 @@ object DesktopTrafficProfileXrayConfigFactory {
         val routingRules = plan.routingRules
         val balancers = plan.balancers
 
-        val dnsServers = analysis.general["dns-server"]
-            ?.split(',')
-            .orEmpty()
-            .filterNot { value -> value.trim().equals("system", ignoreCase = true) }
-            .toSupportedXrayDnsServers()
-        val hosts = analysis.sections["host"].orEmpty().toDesktopXrayHosts()
-        val ipv6Enabled = analysis.general["ipv6"].toConfigBooleanOrDefault(false)
-        val ipv6Preferred = analysis.general["prefer-ipv6"].toConfigBooleanOrDefault(false)
+        // Like Android's withActiveTrafficConfigApplied, the active profile replaces global Mux/Fragment.
+        val profileSettings = TrafficConfigState(id = profile.id, name = profile.name, rawConfig = profile.content)
+            .withSkipiSettingsReadFromRawConfig()
+            .androidSettings
+        // Same precedence as Android's withActiveTrafficConfigApplied: profile [SKIPI]/[General]/[Host]
+        // values replace the global defaults, then the shared DNS planner builds the section.
+        val runtimePlan = TrafficConfigRuntimePlanner.plan(
+            TrafficConfigRuntimePlanInput(
+                rawConfig = profile.content,
+                configs = configs.map { config -> TrafficConfigReference(config.id, config.content) },
+                servers = emptyList(),
+                enableIpv6Fallback = false,
+                enableIpv6PreferFallback = false,
+                dnsInputs = TrafficConfigDnsInputs(
+                    profileProxyDns = profileSettings.proxyDns,
+                    profileDirectDns = profileSettings.directDns,
+                    profileDirectDnsDomains = profileSettings.directDnsDomains,
+                    profileDnsHosts = profileSettings.dnsHosts,
+                    existingProxyDns = DesktopDnsInputs().proxyDns,
+                    existingDirectDns = DesktopDnsInputs().directDns,
+                    existingDirectDnsDomains = DesktopDnsInputs().directDnsDomains,
+                    existingDnsHosts = DesktopDnsInputs().dnsHosts,
+                ),
+            ),
+        )
+        val dnsPlan = planDesktopXrayDns(
+            inputs = DesktopDnsInputs(
+                proxyDns = runtimePlan.proxyDns,
+                directDns = runtimePlan.directDns,
+                directDnsDomains = runtimePlan.directDnsDomains,
+                dnsHosts = runtimePlan.dnsHosts,
+                enableIpv6 = runtimePlan.enableIpv6,
+            ),
+            startupProxyServerDomains = plan.proxyServers.mapNotNull { it.serverHost() }.startupProxyServerHostDnsDomains(),
+            ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
+        )
+        val ipv6Enabled = runtimePlan.enableIpv6
+        val ipv6Preferred = runtimePlan.enableIpv6Prefer
         val routeDomainStrategy = profile.content
             .shadowrocketSectionValue("SKIPI", "route-domain-strategy")
             .toDesktopRouteDomainStrategyOrNull()
             ?: if (ipv6Enabled) "IPIfNonMatch" else "AsIs"
 
-        // Like Android's withActiveTrafficConfigApplied, the active profile replaces global Mux/Fragment.
-        val profileSettings = TrafficConfigState(id = profile.id, name = profile.name, rawConfig = profile.content)
-            .withSkipiSettingsReadFromRawConfig()
-            .androidSettings
         val muxOptions = if (profileSettings.enableMux) {
             XrayMuxOutboundOptions(
                 profileSettings.muxConcurrency,
@@ -112,6 +147,11 @@ object DesktopTrafficProfileXrayConfigFactory {
         }
         val overlaidProxyOutbounds = proxyOutbounds.withXrayMuxAndFragmentOverlay(muxOptions, fragmentOptions)
 
+        // Upstream DNS queries must bypass the user's rules, as in Android's routing plan.
+        val dnsUpstreamRules = buildList {
+            if (dnsPlan.routingOptions.routeDirectDns) add(dnsUpstreamRule(XrayTags.DIRECT_DNS, DirectTag))
+            if (dnsPlan.routingOptions.routeProxyDns) add(dnsUpstreamRule(XrayTags.PROXY_DNS, ProfileProxyTag))
+        }
         val config = buildJsonObject {
             put(
                 "log",
@@ -119,31 +159,7 @@ object DesktopTrafficProfileXrayConfigFactory {
                     put("loglevel", options.logLevel)
                 },
             )
-            if (dnsServers.isNotEmpty() || hosts.isNotEmpty()) {
-                put(
-                    "dns",
-                    buildJsonObject {
-                        put("queryStrategy", if (ipv6Enabled) "UseIP" else "UseIPv4")
-                        if (dnsServers.isNotEmpty()) {
-                            putJsonArray("servers") { dnsServers.forEach(::add) }
-                        }
-                        if (hosts.isNotEmpty()) {
-                            put(
-                                "hosts",
-                                buildJsonObject {
-                                    hosts.forEach { (domain, targets) ->
-                                        if (targets.size == 1) {
-                                            put(domain, targets.single())
-                                        } else {
-                                            putJsonArray(domain) { targets.forEach(::add) }
-                                        }
-                                    }
-                                },
-                            )
-                        }
-                    },
-                )
-            }
+            put("dns", buildXrayDnsConfig(dnsPlan))
             put(
                 "inbounds",
                 buildJsonArray {
@@ -194,7 +210,10 @@ object DesktopTrafficProfileXrayConfigFactory {
                 "routing",
                 buildJsonObject {
                     put("domainStrategy", routeDomainStrategy)
-                    putJsonArray("rules") { routingRules.forEach(::add) }
+                    putJsonArray("rules") {
+                        dnsUpstreamRules.forEach(::add)
+                        routingRules.forEach(::add)
+                    }
                     if (balancers.isNotEmpty()) {
                         putJsonArray("balancers") { buildXrayBalancers(balancers).forEach(::add) }
                     }
@@ -262,3 +281,8 @@ private val DesktopTrafficProfileXrayCapabilities = TrafficProfileXrayCapabiliti
 )
 
 private val DesktopProfileXrayJson = Json { encodeDefaults = true }
+
+private fun dnsUpstreamRule(inboundTag: String, outboundTag: String) = buildJsonObject {
+    putJsonArray("inboundTag") { add(inboundTag) }
+    put("outboundTag", outboundTag)
+}
