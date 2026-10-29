@@ -40,7 +40,7 @@ import app.modes.BackgroundStyleAurora
 import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
-import app.skipi.ui.background.drawAuroraMesh
+import app.skipi.ui.background.SkipiAppBackground
 import app.skipi.ui.anim.rememberInfinitePulse
 import java.io.File
 import java.io.FileOutputStream
@@ -201,177 +201,22 @@ fun AppBackground(
     val appState by stateStore.collectAppState()
     val context = LocalContext.current
     val photoSeed = backgroundPhotoUpdateSeed
-
-    val isDark = AppTheme.colors.isDark
-    val solidFallback = AppTheme.colors.background
-
-    when (appState.backgroundStyle) {
-        BackgroundStylePhoto -> {
-            val photoBitmap: ImageBitmap? = remember(photoSeed, appState.backgroundStyle) {
-                loadCustomBackgroundBitmap(context)
-            }
-
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(solidFallback),
-            ) {
-                if (photoBitmap != null) {
-                    Image(
-                        bitmap = photoBitmap,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    val dimPercent = appState.backgroundPhotoDimPercent.coerceIn(0, 100)
-                    if (dimPercent > 0) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = dimPercent / 100f)),
-                        )
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        if (isDark) Color(0xFF312E81) else Color(0xFFC7D2FE),
-                                        if (isDark) Color(0xFF1E1B4B) else Color(0xFFE0E7FF),
-                                        solidFallback,
-                                    ),
-                                ),
-                            ),
-                    )
-                }
-                content()
-            }
-        }
-
-        BackgroundStyleConnection -> {
-            val isRunning = appState.proxyRunning
-            // Ambient breathing runs only while the tunnel is active; when idle
-            // the background rests statically to avoid constant redraws.
-            val pulse by rememberInfinitePulse(
-                enabled = isRunning,
-                initialValue = 0.90f,
-                targetValue = 1.10f,
-                durationMillis = 2400,
-                restingValue = 1.00f,
-            )
-
-            val activeColor1 by animateColorAsState(
-                targetValue = if (isRunning) Color(0xFF10B981) else (if (isDark) Color(0xFF6366F1) else Color(0xFF4F46E5)),
-                animationSpec = tween(durationMillis = 500),
-                label = "activeColor1",
-            )
-            val activeColor2 by animateColorAsState(
-                targetValue = if (isRunning) Color(0xFF06B6D4) else (if (isDark) Color(0xFF8B5CF6) else Color(0xFF7C3AED)),
-                animationSpec = tween(durationMillis = 500),
-                label = "activeColor2",
-            )
-
-            val primaryAlpha = (if (isRunning) (if (isDark) 0.58f else 0.40f) else (if (isDark) 0.45f else 0.30f)) * pulse
-            val secondaryAlpha = (if (isRunning) (if (isDark) 0.32f else 0.20f) else (if (isDark) 0.22f else 0.14f)) * pulse
-
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(solidFallback)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                activeColor1.copy(alpha = primaryAlpha),
-                                activeColor2.copy(alpha = secondaryAlpha),
-                                Color.Transparent,
-                            ),
-                            startY = 0f,
-                            endY = 1400f,
-                        ),
-                    ),
-            ) {
-                content()
-            }
-        }
-
-        BackgroundStyleAurora -> {
-            val dimPercent = appState.backgroundPhotoDimPercent.coerceIn(0, 100)
-            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-            val isPowerSaveMode = powerManager?.isPowerSaveMode == true
-
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(solidFallback),
-            ) {
-                if (isPowerSaveMode) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        drawAuroraMesh(isDark, t1 = 0.50f, t2 = 0.35f, t3 = 0.65f, t4 = 0.45f)
-                    }
-                } else {
-                    val auroraTransition = rememberInfiniteTransition(label = "auroraMesh")
-                    val auroraT1 by auroraTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(durationMillis = 17000, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                        label = "auroraT1",
-                    )
-                    val auroraT2 by auroraTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(durationMillis = 13000, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                        label = "auroraT2",
-                    )
-                    val auroraT3 by auroraTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(durationMillis = 21000, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                        label = "auroraT3",
-                    )
-                    val auroraT4 by auroraTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(durationMillis = 11000, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                        label = "auroraT4",
-                    )
-
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        drawAuroraMesh(isDark, auroraT1, auroraT2, auroraT3, auroraT4)
-                    }
-                }
-                if (dimPercent > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = dimPercent / 100f)),
-                    )
-                }
-                content()
-            }
-        }
-
-        else -> {
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(solidFallback),
-            ) {
-                content()
-            }
-        }
+    val photo: ImageBitmap? = if (appState.backgroundStyle == BackgroundStylePhoto) {
+        remember(photoSeed) { loadCustomBackgroundBitmap(context) }
+    } else {
+        null
     }
+    val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+
+    SkipiAppBackground(
+        style = appState.backgroundStyle,
+        isDark = AppTheme.colors.isDark,
+        solidColor = AppTheme.colors.background,
+        isConnected = appState.proxyRunning,
+        dimPercent = appState.backgroundPhotoDimPercent,
+        photo = photo,
+        reduceMotion = powerManager?.isPowerSaveMode == true,
+        modifier = modifier,
+        content = content,
+    )
 }

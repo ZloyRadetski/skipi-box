@@ -9,6 +9,7 @@ import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
 import features.networkautomation.policy.NetworkAutomationRules
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_copied
+import app.skipi.ui.settings.AppearanceSettingValues
 import app.skipi.ui.resources.settings_local_proxy_port_invalid
 import app.skipi.ui.resources.settings_local_proxy_copied_toast
 import app.skipi.ui.resources.settings_local_proxy_generated_toast
@@ -428,7 +429,7 @@ private fun DesktopSettingsOverview(
 internal fun desktopAppearanceSettingsCapabilities() = AppearanceSettingsCapabilities(
     systemTheme = false,
     appIcon = false,
-    wallpaper = false,
+    wallpaper = true,
     dynamicColors = false,
     customColors = true,
     fonts = true,
@@ -522,7 +523,7 @@ private fun DesktopAppearanceSettings(
         padding = contentPadding,
         isWideScreen = true,
         currentKeyColor = SkipiTheme.colors.accent,
-        hasCustomBackgroundPhoto = false,
+        hasCustomBackgroundPhoto = DesktopBackgroundPhoto.version >= 0L && DesktopBackgroundPhoto.exists(),
         appIconTitle = "",
         onSettingsChange = { transform ->
             val next = draft.withAppearanceState(transform(draft.toAppearanceSettingsState()))
@@ -531,8 +532,16 @@ private fun DesktopAppearanceSettings(
             next.toAppearanceSettingsState()
         },
         onBack = onBack,
-        onChooseBackgroundPhoto = {},
-        onRemoveBackgroundPhoto = {},
+        onChooseBackgroundPhoto = {
+            DesktopBackgroundPhoto.choose()?.let { source ->
+                if (DesktopBackgroundPhoto.save(source)) {
+                    val next = draft.copy(backgroundStyle = AppearanceSettingValues.BackgroundStylePhoto)
+                    draft = next
+                    onPersist(next, "Настройки оформления сохранены.")
+                }
+            }
+        },
+        onRemoveBackgroundPhoto = { DesktopBackgroundPhoto.clear() },
         onRequestAppIconSelection = {},
         onColorsReset = { message -> onPersist(draft, message) },
         capabilities = desktopAppearanceSettingsCapabilities(),

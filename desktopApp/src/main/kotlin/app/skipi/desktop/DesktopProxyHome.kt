@@ -651,6 +651,7 @@ internal fun DesktopProxyHome(
             store = homeStore,
             contentPadding = contentPadding,
             topContentPadding = 40.dp,
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
         )
     }
 

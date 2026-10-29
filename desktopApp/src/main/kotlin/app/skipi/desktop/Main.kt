@@ -130,12 +130,14 @@ fun main() = application {
             mutableStateOf(DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
         }
                 val homeSortSaveMutex = remember { Mutex() }
+        var backgroundConnected by remember { mutableStateOf(false) }
         CompositionLocalProvider(
             LocalDesktopThemeMode provides desktopSettings.themeMode,
             LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
         ) {
             DesktopAppTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = DesktopContentBackground) {
+                DesktopAppBackground(settings = desktopSettings, isConnected = backgroundConnected) {
+                Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent) {
                 val subscriptionScope = rememberCoroutineScope()
                 val duplicatesDeletedTemplate = stringResource(Res.string.proxy_server_list_duplicates_deleted)
                 val noDuplicatesMessage = stringResource(Res.string.proxy_server_list_no_duplicates)
@@ -213,6 +215,7 @@ fun main() = application {
                 var systemProxyRecoveryInProgress by remember { mutableStateOf(systemProxyManager.isSupportedHost()) }
                 var tunnelOperationInProgress by remember { mutableStateOf(false) }
                 var desiredTunnelRunning by remember { mutableStateOf(coreState.isRunning) }
+                LaunchedEffect(coreState.isRunning) { backgroundConnected = coreState.isRunning }
                 var tunnelIntentVersion by remember { mutableStateOf(0L) }
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
                 val desktopLocalProxyRuntime = remember { DesktopLocalProxyRuntime() }
@@ -1173,6 +1176,7 @@ fun main() = application {
                 }
 
                 Scaffold(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     bottomBar = {
                         DesktopBottomNavigation(
                             selected = currentSection,
@@ -1941,6 +1945,7 @@ fun main() = application {
                             },
                         )
                     }
+                }
                 }
             }
         }
