@@ -1,65 +1,32 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-@file:OptIn(ExperimentalScrollBarApi::class)
-
 package features.logs
 
 import android.content.Context
 import android.net.Uri
-import app.LocalIsWideScreen
-import app.LocalNavigator
-import app.LocalAppServices
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import app.LocalAppServices
+import app.LocalIsWideScreen
+import app.LocalNavigator
 import app.R
-import ui.components.BackNavigationIcon
-import ui.components.NavigationIcon
+import app.skipi.ui.logs.SkipiLogViewerScreen
+import app.skipi.ui.logs.exportText
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.ui.res.stringResource
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import ui.components.AppPullToRefresh
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.ScrollBarDefaults
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Share
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.layout.AdaptiveTopAppBar
-import ui.text.formatTemplate
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageScrollModifiers
 import ui.clipboard.setPlainText
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import ui.AppTheme
-import androidx.compose.ui.graphics.Color
 
 @Composable
 fun CoreLogsPage(
@@ -110,7 +77,6 @@ private fun LogViewerPage(
     showLogMetadata: Boolean = false,
     onClear: suspend () -> Unit = {},
 ) {
-    val isWideScreen = LocalIsWideScreen.current
     val navigator = LocalNavigator.current
     val clipboard = LocalClipboard.current
     val context = LocalContext.current
@@ -118,12 +84,7 @@ private fun LogViewerPage(
     val tipNotifier = services.tipNotifier
     val logFileCreator = services.logFileCreator
     val scope = rememberCoroutineScope()
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
-    var refreshing by remember { mutableStateOf(false) }
     var logEntries by remember(repository) { mutableStateOf(repository.entries.value) }
-    val displayedLogEntries = remember(logEntries) { logEntries.asReversed() }
-    val copiedMessage = stringResource(R.string.logs_copied_to_clipboard)
-    val exportDescription = stringResource(R.string.logs_export)
     val exportedMessage = stringResource(R.string.logs_exported)
     val exportFailedMessage = stringResource(R.string.logs_export_failed)
 
@@ -133,154 +94,47 @@ private fun LogViewerPage(
     }
 
     LaunchedEffect(repository) {
-        // A tailer pushes new entries into this flow. Re-reading the complete
-        // log file every 1.5 seconds made the viewer wake storage and rebuild
-        // its list even while no line had arrived.
+        // A tailer pushes new entries into this flow. Re-reading the complete log file every
+        // 1.5 seconds made the viewer wake storage and rebuild its list while no line arrived.
         repository.refresh()
-        repository.entries.collect { entries ->
-            logEntries = entries
-        }
+        repository.entries.collect { entries -> logEntries = entries }
     }
 
-    Scaffold(
-        containerColor = AppTheme.colors.background,
-        topBar = {
-            AdaptiveTopAppBar(
-                title = title,
-                subtitle = stringResource(R.string.logs_count).formatTemplate("count" to logEntries.size),
-                isWideScreen = isWideScreen,
-                scrollBehavior = topAppBarScrollBehavior,
-                navigationIcon = {
-                    BackNavigationIcon(
-                        onClick = { navigator.pop() },
-                    )
-                },
-                actions = {
-                    NavigationIcon(
-                        onClick = {
-                            val exportEntries = logEntries.toList()
-                            scope.launch {
-                                val uri = logFileCreator(logExportFileName(title)) ?: return@launch
-                                runCatching {
-                                    context.exportLogEntries(uri, exportEntries, showLogMetadata)
-                                }.onSuccess {
-                                    tipNotifier.show(exportedMessage)
-                                }.onFailure { error ->
-                                    tipNotifier.showError(error, exportFailedMessage)
-                                }
-                            }
-                        },
-                        imageVector = MiuixIcons.Share,
-                        contentDescription = exportDescription,
-                    )
-                    NavigationIcon(
-                        onClick = {
-                            scope.launch {
-                                onClear()
-                                repository.clear()
-                                logEntries = emptyList()
-                            }
-                        },
-                        imageVector = MiuixIcons.Delete,
-                        contentDescription = stringResource(R.string.common_delete),
-                    )
-                },
-            )
+    SkipiLogViewerScreen(
+        title = title,
+        entries = logEntries,
+        showMetadata = showLogMetadata,
+        padding = padding,
+        isWideScreen = LocalIsWideScreen.current,
+        onBack = { navigator.pop() },
+        onRefresh = {
+            repository.refresh()
+            logEntries = repository.entries.value
         },
-    ) { innerPadding ->
-        val lazyListState = rememberLazyListState()
-        val contentPadding = pageContentPaddingWithCutout(
-            innerPadding = innerPadding,
-            outerPadding = padding,
-            isWideScreen = isWideScreen,
-        )
-        val listPadding = PaddingValues(bottom = 12.dp)
-
-        Box {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-            ) {
-                SmallTitle(text = stringResource(R.string.logs_output))
-                Box(modifier = Modifier.weight(1f)) {
-                    AppPullToRefresh(
-                        isRefreshing = refreshing,
-                        onRefresh = {
-                            if (!refreshing) {
-                                scope.launch {
-                                    refreshing = true
-                                    withFrameNanos { }
-                                    try {
-                                        repository.refresh()
-                                        logEntries = repository.entries.value
-                                    } finally {
-                                        withFrameNanos { }
-                                        refreshing = false
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = listPadding,
-                        topAppBarScrollBehavior = topAppBarScrollBehavior,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        refreshTexts = listOf(
-                            stringResource(R.string.logs_pull_to_refresh),
-                            stringResource(R.string.logs_release_to_refresh),
-                            stringResource(R.string.logs_refreshing),
-                            stringResource(R.string.logs_refreshed),
-                        ),
-                    ) {
-                        LazyColumn(
-                            state = lazyListState,
-                            modifier = Modifier.pageScrollModifiers(
-                                topAppBarScrollBehavior,
-                            ),
-                            contentPadding = listPadding,
-                        ) {
-                            if (displayedLogEntries.isEmpty()) {
-                                item(key = "log_empty") {
-                                    LogEmptyCard()
-                                }
-                            } else {
-                                items(
-                                    items = displayedLogEntries,
-                                    key = { it.id },
-                                ) { entry ->
-                                    LogEntryCard(
-                                        entry = entry,
-                                        showMetadata = showLogMetadata,
-                                        onClick = {
-                                            scope.launch {
-                                                clipboard.setPlainText(entry.copyText(showLogMetadata))
-                                                tipNotifier.show(copiedMessage)
-                                            }
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    VerticalScrollBar(
-                        adapter = rememberScrollBarAdapter(lazyListState),
-                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                        trackPadding = listPadding,
-                        thumbWidth = 5.dp,
-                        thumbMinLength = 48.dp,
-                        colors = ScrollBarDefaults.scrollBarColors(
-                            thumbColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        ),
-                    )
+        onClear = {
+            onClear()
+            repository.clear()
+            logEntries = emptyList()
+        },
+        onExport = { exportEntries, exportTitle ->
+            scope.launch {
+                val uri = logFileCreator(logExportFileName(exportTitle)) ?: return@launch
+                runCatching {
+                    context.exportLogEntries(uri, exportEntries, showLogMetadata)
+                }.onSuccess {
+                    tipNotifier.show(exportedMessage)
+                }.onFailure { error ->
+                    tipNotifier.showError(error, exportFailedMessage)
                 }
             }
-        }
-    }
-}
-
-private fun CoreLogEntry.copyText(showMetadata: Boolean): String {
-    if (!showMetadata) return message
-    return "$time  ${level.uppercase()}  $message"
+        },
+        onCopy = { text, confirmation ->
+            scope.launch {
+                clipboard.setPlainText(text)
+                tipNotifier.show(confirmation)
+            }
+        },
+    )
 }
 
 private suspend fun Context.exportLogEntries(
@@ -293,7 +147,7 @@ private suspend fun Context.exportLogEntries(
         outputStream.writer(Charsets.UTF_8).use { writer ->
             entries.forEachIndexed { index, entry ->
                 if (index > 0) writer.write("\n")
-                writer.write(entry.copyText(showMetadata))
+                writer.write(entry.exportText(showMetadata))
             }
         }
     }

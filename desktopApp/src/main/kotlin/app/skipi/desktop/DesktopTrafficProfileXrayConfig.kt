@@ -2,6 +2,7 @@
 
 package app.skipi.desktop
 
+import platform.buildLogJson
 import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.ProfileProxyTag
 import engine.xray.XrayTags
@@ -153,12 +154,7 @@ object DesktopTrafficProfileXrayConfigFactory {
             if (dnsPlan.routingOptions.routeProxyDns) add(dnsUpstreamRule(XrayTags.PROXY_DNS, ProfileProxyTag))
         }
         val config = buildJsonObject {
-            put(
-                "log",
-                buildJsonObject {
-                    put("loglevel", options.logLevel)
-                },
-            )
+            put("log", options.buildLogJson())
             put("dns", buildXrayDnsConfig(dnsPlan))
             put(
                 "inbounds",

@@ -3,6 +3,8 @@
 
 package platform
 
+import engine.xray.XrayLogConfigRequest
+import engine.xray.buildXrayLogConfig
 import engine.xray.XrayDnsPlan
 import engine.xray.buildXrayDnsConfig
 import engine.xray.XraySniffingOptions
@@ -61,6 +63,8 @@ data class LocalProxyXrayConfigOptions(
     val fragment: XrayFragmentOutboundOptions? = null,
     /** Sniffing added to the SOCKS inbound by [LocalProxyXrayConfigFactory.buildFromPlan]; null adds none. */
     val sniffing: XraySniffingOptions? = null,
+    /** Android's log section (level index, access log, file paths); null keeps a bare `loglevel`. */
+    val log: XrayLogConfigRequest? = null,
 )
 
 object LocalProxyXrayConfigFactory {
@@ -220,7 +224,7 @@ object LocalProxyXrayConfigFactory {
         dnsPlan: XrayDnsPlan? = null,
     ): String {
         val config = buildJsonObject {
-            put("log", buildJsonObject { put("loglevel", options.logLevel) })
+            put("log", options.buildLogJson())
             if (options.dnsServers.isNotEmpty()) {
                 put("dns", buildJsonObject {
                     put("servers", buildJsonArray { options.dnsServers.forEach { add(JsonPrimitive(it)) } })
@@ -307,3 +311,7 @@ fun JsonObject.withSniffing(sniffing: XraySniffingOptions?): JsonObject =
         this@withSniffing.forEach { (key, value) -> put(key, value) }
         put("sniffing", sniffing.toJson())
     }
+
+/** The `log` section every Desktop config path shares, so a profile or raw config cannot silence the app's logs. */
+fun LocalProxyXrayConfigOptions.buildLogJson(): JsonObject =
+    log?.let(::buildXrayLogConfig) ?: buildJsonObject { put("loglevel", logLevel) }

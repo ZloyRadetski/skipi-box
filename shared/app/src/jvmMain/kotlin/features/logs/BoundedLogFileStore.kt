@@ -5,7 +5,7 @@ package features.logs
 
 import java.io.File
 
-internal class BoundedLogFileStore(
+class BoundedLogFileStore(
     private val file: () -> File?,
     private val logTag: String,
     private val maxLines: Int = CoreLogMaxEntries,

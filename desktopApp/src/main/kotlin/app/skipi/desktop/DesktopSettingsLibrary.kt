@@ -49,7 +49,7 @@ data class DesktopAppSettings(
     val enableLocalProxyAuth: Boolean = false,
     val localProxyUsername: String = "",
     val localProxyPassword: String = "",
-    val coreLogLevel: String = "warning",
+    val coreLogLevel: String = "error",
     val subscriptionUserAgent: String = DefaultDesktopSubscriptionUserAgent,
     val subscriptionFetchTimeoutSeconds: Int = 30,
     val subscriptionPingMode: Int = SubscriptionPingModeHttp,
@@ -116,6 +116,8 @@ data class DesktopAppSettings(
     val muxConcurrency: String = DefaultMuxConcurrency,
     val muxXudpConcurrency: String = DefaultMuxXudpConcurrency,
     val muxXudpProxyUdp443: Int = DefaultMuxUdp443Mode,
+    val enableAccessLog: Boolean = false,
+    val logRetentionDays: Int = DefaultLogRetentionDays,
     val enableSniffing: Boolean = true,
     val enableSniffingRouteOnly: Boolean = true,
     val enableFragment: Boolean = false,
@@ -165,6 +167,10 @@ object DesktopSettingsLibraries {
 
 val DesktopCoreLogLevels = listOf("debug", "info", "warning", "error", "none")
 
+/** Android's retention choices in days; 0 keeps logs indefinitely. */
+val DesktopLogRetentionDays = listOf(1, 3, 7, 14, 30, 0)
+const val DefaultLogRetentionDays = 7
+
 /**
  * Normalizes persisted settings without letting a Windows-only preference leak
  * into macOS/Linux. The SOCKS listener remains independent: its address may be
@@ -208,10 +214,11 @@ internal fun DesktopAppSettings.normalized(
         localProxyListenAddress = normalizedListenAddress,
         useSystemProxy = effectiveSystemProxy,
         useWindowsSystemProxy = effectiveSystemProxy,
-        coreLogLevel = coreLogLevel.trim().lowercase().takeIf { it in DesktopCoreLogLevels } ?: "warning",
+        coreLogLevel = coreLogLevel.trim().lowercase().takeIf { it in DesktopCoreLogLevels } ?: "error",
         subscriptionUserAgent = subscriptionUserAgent.trim().ifBlank { DefaultDesktopSubscriptionUserAgent },
         subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(10, 120),
         proxyServerListColumns = proxyServerListColumns.coerceIn(1, 3),
+        logRetentionDays = logRetentionDays.takeIf { it in DesktopLogRetentionDays } ?: DefaultLogRetentionDays,
         sendDeviceHeaders = sendDeviceHeaders,
         installationUuid = installationUuid.trim(),
     )

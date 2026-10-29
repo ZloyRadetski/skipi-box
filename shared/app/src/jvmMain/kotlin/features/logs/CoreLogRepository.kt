@@ -9,13 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-data class CoreLogEntry(
-    val id: Long,
-    val time: String,
-    val level: String,
-    val message: String,
-)
-
 interface CoreLogRepository {
     val entries: StateFlow<List<CoreLogEntry>>
 

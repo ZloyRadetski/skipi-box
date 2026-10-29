@@ -6,7 +6,7 @@ package features.logs
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import org.junit.Test
+import kotlin.test.Test
 import java.io.File
 import kotlin.test.assertTrue
 

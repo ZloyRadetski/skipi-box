@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import engine.xray.XrayLogConfigRequest
 import engine.xray.XraySniffingOptions
 import engine.xray.XrayFragmentOutboundOptions
 import engine.xray.XrayMuxOutboundOptions
@@ -36,6 +37,7 @@ internal fun allocateDesktopLocalProxyPort(
 /** Builds the current local Core listener options, including enabled SOCKS credentials. */
 internal fun DesktopAppSettings.toLocalProxyXrayConfigOptions(
     resolvedSocksPort: Int? = null,
+    logPaths: DesktopCoreLogPaths = DesktopCoreLogPaths.default(),
 ): LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(
     socksPort = resolvedSocksPort
         ?: (localProxyPortRaw ?: localProxyPort.toString()).toPortOrNull()
@@ -46,6 +48,12 @@ internal fun DesktopAppSettings.toLocalProxyXrayConfigOptions(
     username = if (enableLocalProxyAuth) localProxyUsername.trim() else "",
     password = if (enableLocalProxyAuth) localProxyPassword else "",
     logLevel = coreLogLevel,
+    log = XrayLogConfigRequest(
+        coreLogLevel = DesktopCoreLogLevels.indexOf(coreLogLevel).takeIf { it >= 0 } ?: 3,
+        enableAccessLog = enableAccessLog,
+        accessLogPath = logPaths.accessLogPath,
+        errorLogPath = logPaths.errorLogPath,
+    ),
     sniffing = XraySniffingOptions(enabled = enableSniffing, routeOnly = enableSniffingRouteOnly),
     mux = if (enableMux) XrayMuxOutboundOptions(muxConcurrency, muxXudpConcurrency, muxXudpProxyUdp443) else null,
     fragment = if (enableFragment) {

@@ -17,6 +17,7 @@ internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): Lis
                 logFiles = listOf(errorLogFile()),
                 repository = AndroidCoreLogRepository,
                 startAtEnd = false,
+                onFailure = { message, error -> AndroidAppLogger.warn("CoreLogFileTailer", message, error) },
             ),
         )
         if (enableAccessLog) {
@@ -25,6 +26,7 @@ internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): Lis
                     logFiles = listOf(accessLogFile()),
                     repository = AndroidAccessLogRepository,
                     startAtEnd = false,
+                    onFailure = { message, error -> AndroidAppLogger.warn("CoreLogFileTailer", message, error) },
                 ),
             )
         }

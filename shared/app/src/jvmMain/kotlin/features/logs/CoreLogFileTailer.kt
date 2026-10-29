@@ -16,15 +16,16 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
-internal data class CoreLogFile(
+data class CoreLogFile(
     val path: String,
     val defaultLevel: String,
 )
 
-internal class CoreLogFileTailer(
+class CoreLogFileTailer(
     private val logFiles: List<CoreLogFile>,
     private val repository: CoreLogRepository,
     private val startAtEnd: Boolean = true,
+    private val onFailure: (message: String, error: Throwable) -> Unit = { _, _ -> },
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -78,7 +79,7 @@ internal class CoreLogFileTailer(
                 failureLogged = false
             }.onFailure { error ->
                 if (!failureLogged) {
-                    AndroidAppLogger.warn(LogTag, "Failed to tail Xray log file: ${file.absolutePath}", error)
+                    onFailure("Failed to tail Xray log file: ${file.absolutePath}", error)
                     failureLogged = true
                 }
             }
@@ -91,10 +92,6 @@ internal class CoreLogFileTailer(
         return readLine()?.let { line ->
             String(line.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
         }
-    }
-
-    private companion object {
-        private const val LogTag = "CoreLogFileTailer"
     }
 }
 
@@ -132,25 +129,25 @@ private fun toLocalXrayLogTime(rawXrayTime: String): String? {
     return runCatching { formatter.format(instant) }.getOrNull()
 }
 
-internal fun parseCoreLogTimeMillis(time: String): Long? {
+fun parseCoreLogTimeMillis(time: String): Long? {
     val formatter = localXrayLogTimeFormatter.get() ?: return null
     formatter.timeZone = TimeZone.getDefault()
     return runCatching { formatter.parse(time.trim())?.time }.getOrNull()
 }
 
-internal fun ParsedCoreLogLine.isOlderThanDays(days: Int, nowMillis: Long = System.currentTimeMillis()): Boolean {
+fun ParsedCoreLogLine.isOlderThanDays(days: Int, nowMillis: Long = System.currentTimeMillis()): Boolean {
     if (days <= 0 || time == null) return false
     val millis = parseCoreLogTimeMillis(time) ?: return false
     return millis < (nowMillis - days * 24L * 60L * 60L * 1000L)
 }
 
-internal fun CoreLogEntry.isOlderThanDays(days: Int, nowMillis: Long = System.currentTimeMillis()): Boolean {
+fun CoreLogEntry.isOlderThanDays(days: Int, nowMillis: Long = System.currentTimeMillis()): Boolean {
     if (days <= 0) return false
     val millis = parseCoreLogTimeMillis(time) ?: return false
     return millis < (nowMillis - days * 24L * 60L * 60L * 1000L)
 }
 
-internal fun CoreLogRepository.appendParsedCoreLogLine(line: String, defaultLevel: String) {
+fun CoreLogRepository.appendParsedCoreLogLine(line: String, defaultLevel: String) {
     val parsedLine = parseCoreLogLine(line, defaultLevel) ?: return
     if (parsedLine.time == null) {
         append(level = parsedLine.level, message = parsedLine.message)
@@ -159,11 +156,11 @@ internal fun CoreLogRepository.appendParsedCoreLogLine(line: String, defaultLeve
     }
 }
 
-internal fun CoreLogRepository.appendParsedCoreLogLines(lines: List<String>, defaultLevel: String) {
+fun CoreLogRepository.appendParsedCoreLogLines(lines: List<String>, defaultLevel: String) {
     appendBatch(lines.mapNotNull { line -> parseCoreLogLine(line, defaultLevel) })
 }
 
-internal fun parseCoreLogLine(line: String, defaultLevel: String): ParsedCoreLogLine? {
+fun parseCoreLogLine(line: String, defaultLevel: String): ParsedCoreLogLine? {
     val trimmedLine = line.trim()
     if (trimmedLine.isEmpty()) {
         return null

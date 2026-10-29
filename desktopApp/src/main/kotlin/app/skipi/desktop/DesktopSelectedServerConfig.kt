@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import platform.buildLogJson
 import engine.xray.XraySniffingOptions
 import platform.withSniffing
 import app.skipi.app.model.RoutingConfigRecord
@@ -100,12 +101,7 @@ internal fun buildDesktopCustomXrayConfig(
         }
     }
     val cleanConfig = buildJsonObject {
-        put(
-            "log",
-            buildJsonObject {
-                put("loglevel", options.logLevel)
-            },
-        )
+        put("log", options.buildLogJson())
         put("inbounds", inbounds)
         customJson.forEach { (key, value) ->
             if (key != "inbounds" && key != "log") {

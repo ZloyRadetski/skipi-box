@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * user is actively reading logs. File tailers are intentionally kept simple
  * because Xray may recreate its output files during a tunnel restart.
  */
-internal object CoreLogTailerPollingPolicy {
+object CoreLogTailerPollingPolicy {
     private val activeViewers = AtomicInteger(0)
 
     fun acquireViewer(): Closeable {
@@ -33,9 +33,9 @@ internal object CoreLogTailerPollingPolicy {
     }
 }
 
-internal fun coreLogTailIntervalMillis(hasVisibleViewer: Boolean): Long {
+fun coreLogTailIntervalMillis(hasVisibleViewer: Boolean): Long {
     return if (hasVisibleViewer) CoreLogForegroundTailIntervalMillis else CoreLogBackgroundTailIntervalMillis
 }
 
-internal const val CoreLogForegroundTailIntervalMillis = 500L
-internal const val CoreLogBackgroundTailIntervalMillis = 5_000L
+const val CoreLogForegroundTailIntervalMillis = 500L
+const val CoreLogBackgroundTailIntervalMillis = 5_000L

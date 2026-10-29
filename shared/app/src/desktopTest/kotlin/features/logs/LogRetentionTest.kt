@@ -3,7 +3,7 @@
 
 package features.logs
 
-import org.junit.Test
+import kotlin.test.Test
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

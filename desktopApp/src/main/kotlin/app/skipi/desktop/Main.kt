@@ -215,6 +215,10 @@ fun main() = application {
                 var tunnelIntentVersion by remember { mutableStateOf(0L) }
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
                 val desktopLocalProxyRuntime = remember { DesktopLocalProxyRuntime() }
+                val desktopCoreLogs = remember { DesktopCoreLogs() }
+                LaunchedEffect(desktopCoreLogs) {
+                    withContext(Dispatchers.IO) { desktopCoreLogs.restore(desktopSettings.logRetentionDays) }
+                }
                 val desktopDiagnostics = remember {
                     DesktopDiagnostics(
                         activeOptions = { desktopLocalProxyRuntime.activeOptions(coreController.state().isRunning) },
@@ -783,12 +787,17 @@ fun main() = application {
                             }
                         },
                         startCore = { request ->
+                            // Like Android: truncate the previous run's files, then follow the new ones.
+                            desktopCoreLogs.clear()
+                            desktopCoreLogs.startTailers(latestDesktopSettings)
                             desktopLocalProxyRuntime.onCoreStarted(
                                 coreController.start(request.configuration, request.assetsDirectory),
                             )
                         },
                         stopCore = {
-                            desktopLocalProxyRuntime.onCoreStopped(coreController.stop())
+                            desktopLocalProxyRuntime.onCoreStopped(coreController.stop()).also {
+                                desktopCoreLogs.stopTailers()
+                            }
                         },
                         coreState = coreController::state,
                         readCoreTraffic = coreController::readTunnelTraffic,
@@ -1870,12 +1879,14 @@ fun main() = application {
                         SkipiMainDestination.Settings -> DesktopSettingsScreen(
                             settings = desktopSettings,
                             diagnostics = desktopDiagnostics,
+                            coreLogs = desktopCoreLogs,
                             onSettingsChange = { updated ->
                                 val restartRequired = desktopSettings.localProxyPort != updated.localProxyPort ||
                                     desktopSettings.localHttpProxyPort != updated.localHttpProxyPort ||
                                     desktopSettings.useSystemProxy != updated.useSystemProxy ||
                                     desktopSettings.localProxyListenAddress != updated.localProxyListenAddress ||
-                                    desktopSettings.coreLogLevel != updated.coreLogLevel
+                                    desktopSettings.coreLogLevel != updated.coreLogLevel ||
+                                    desktopSettings.enableAccessLog != updated.enableAccessLog
                                 desktopSettings = updated
                                 if (restartRequired && coreState.isRunning) {
                                     requestTunnelReconnect("Параметры локального прокси изменены.")

@@ -3,6 +3,29 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.about_bug_report
+import app.skipi.ui.resources.about_bug_report_summary
+import app.skipi.ui.resources.settings_access_logs
+import app.skipi.ui.resources.settings_category_logs
+import app.skipi.ui.resources.settings_core_logs
+import app.skipi.ui.resources.settings_feedback
+import app.skipi.ui.resources.settings_log_level
+import app.skipi.ui.resources.settings_log_retention
+import app.skipi.ui.resources.settings_log_retention_summary
+import app.skipi.ui.resources.settings_logcat
+import app.skipi.ui.resources.settings_logs
+import app.skipi.ui.resources.settings_record_access_log
+import app.skipi.ui.resources.access_logs_title
+import app.skipi.ui.resources.core_logs_title
+import app.skipi.ui.resources.settings_log_retention_14_days
+import app.skipi.ui.resources.settings_log_retention_1_day
+import app.skipi.ui.resources.settings_log_retention_30_days
+import app.skipi.ui.resources.settings_log_retention_3_days
+import app.skipi.ui.resources.settings_log_retention_7_days
+import app.skipi.ui.resources.settings_log_retention_unlimited
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import app.skipi.ui.diagnostics.SkipiDnsLeakTestScreen
@@ -106,7 +129,7 @@ private val SettingsRed = Color(0xFFFF5B62)
 
 private enum class DesktopSettingsDestination {
     Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
-    SpeedTest, DnsLeakTest, IpInfo, Integration, Diagnostics, About,
+    SpeedTest, DnsLeakTest, IpInfo, Integration, Diagnostics, CoreLogs, AccessLogs, About,
 }
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
@@ -116,6 +139,7 @@ internal fun DesktopSettingsScreen(
     onSettingsChange: (DesktopAppSettings) -> Unit,
     contentPadding: PaddingValues,
     diagnostics: DesktopDiagnostics,
+    coreLogs: DesktopCoreLogs,
     isTunnelRunning: Boolean = false,
     onClearSystemProxy: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -239,7 +263,26 @@ internal fun DesktopSettingsScreen(
             onBack = { destination = DesktopSettingsDestination.Overview },
             onPersist = ::persist,
             onMessage = { message = it },
+            onPruneLogs = coreLogs::pruneOlderThanDays,
+            onOpenCoreLogs = { destination = DesktopSettingsDestination.CoreLogs },
+            onOpenAccessLogs = { destination = DesktopSettingsDestination.AccessLogs },
             contentPadding = contentPadding,
+        )
+        DesktopSettingsDestination.CoreLogs -> DesktopLogViewer(
+            title = stringResource(Res.string.core_logs_title),
+            repository = coreLogs.core,
+            padding = contentPadding,
+            onBack = { destination = DesktopSettingsDestination.Diagnostics },
+            onClear = coreLogs::clearCore,
+            onMessage = { message = it },
+        )
+        DesktopSettingsDestination.AccessLogs -> DesktopLogViewer(
+            title = stringResource(Res.string.access_logs_title),
+            repository = coreLogs.access,
+            padding = contentPadding,
+            onBack = { destination = DesktopSettingsDestination.Diagnostics },
+            onClear = coreLogs::clearAccess,
+            onMessage = { message = it },
         )
         DesktopSettingsDestination.About -> DesktopAboutSettings(
             onBack = { destination = DesktopSettingsDestination.Overview },
@@ -814,54 +857,54 @@ private fun DesktopLogsSettings(
     onBack: () -> Unit,
     onPersist: (DesktopAppSettings, String) -> Unit,
     onMessage: (String) -> Unit,
+    onPruneLogs: (Int) -> Unit,
+    onOpenCoreLogs: () -> Unit,
+    onOpenAccessLogs: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val logLevels = DesktopCoreLogLevels
-
+    val saved = "Параметры журналов сохранены."
     SkipiLogsSettingsScreen(
         state = LogsSettingsState(
-            coreLogLevelIndex = 0,
-            retentionDays = 30,
-            accessLogEnabled = false,
+            coreLogLevelIndex = DesktopCoreLogLevels.indexOf(settings.coreLogLevel).coerceAtLeast(0),
+            retentionDays = settings.logRetentionDays,
+            accessLogEnabled = settings.enableAccessLog,
         ),
         labels = LogsSettingsLabels(
-            screenTitle = "Диагностика",
-            optionsSectionTitle = "ЖУРНАЛЫ",
-            logLevelTitle = "Уровень журналирования SKIPI Core",
-            logLevels = logLevels.map(String::uppercase),
-            retentionTitle = "Срок хранения журналов",
-            retentionSummary = "Недоступно в Desktop.",
-            retentionOptions = listOf("30 дней"),
-            retentionDays = listOf(30),
-            accessLogTitle = "Журнал подключений",
-            viewersSectionTitle = "ПРОСМОТР ЖУРНАЛОВ",
-            coreLogsTitle = "Открыть папку с логами",
-            accessLogsTitle = "Журнал подключений",
-            logcatTitle = "Журнал приложения",
-            feedbackSectionTitle = "ОБРАТНАЯ СВЯЗЬ",
-            bugReportTitle = "Сообщить об ошибке",
-            bugReportSummary = "Недоступно в Desktop.",
+            screenTitle = stringResource(Res.string.settings_category_logs),
+            optionsSectionTitle = stringResource(Res.string.settings_logs),
+            logLevelTitle = stringResource(Res.string.settings_log_level),
+            logLevels = DesktopCoreLogLevels,
+            retentionTitle = stringResource(Res.string.settings_log_retention),
+            retentionSummary = stringResource(Res.string.settings_log_retention_summary),
+            retentionOptions = DesktopLogRetentionDays.map { days -> stringResource(logRetentionLabel(days)) },
+            retentionDays = DesktopLogRetentionDays,
+            accessLogTitle = stringResource(Res.string.settings_record_access_log),
+            viewersSectionTitle = stringResource(Res.string.settings_access_logs),
+            coreLogsTitle = stringResource(Res.string.settings_core_logs),
+            accessLogsTitle = stringResource(Res.string.settings_access_logs),
+            logcatTitle = stringResource(Res.string.settings_logcat),
+            feedbackSectionTitle = stringResource(Res.string.settings_feedback),
+            bugReportTitle = stringResource(Res.string.about_bug_report),
+            bugReportSummary = stringResource(Res.string.about_bug_report_summary),
         ),
         padding = contentPadding,
         isWideScreen = true,
-        showAccessLogs = false,
+        showAccessLogs = settings.enableAccessLog,
         onBack = onBack,
-        onLogLevelChange = {},
-        onRetentionDaysChange = {},
-        onAccessLogChange = {},
-        onOpenCoreLogs = {},
-        onOpenAccessLogs = {},
+        onLogLevelChange = { index ->
+            DesktopCoreLogLevels.getOrNull(index)?.let { level -> onPersist(settings.copy(coreLogLevel = level), saved) }
+        },
+        onRetentionDaysChange = { days ->
+            onPersist(settings.copy(logRetentionDays = days), saved)
+            onPruneLogs(days)
+        },
+        onAccessLogChange = { enabled -> onPersist(settings.copy(enableAccessLog = enabled), saved) },
+        onOpenCoreLogs = onOpenCoreLogs,
+        onOpenAccessLogs = onOpenAccessLogs,
         onOpenLogcat = {},
         onOpenBugReport = {},
-        capabilities = LogsSettingsCapabilities(
-            logLevel = false,
-            retention = false,
-            accessLog = false,
-            coreLogs = false,
-            accessLogs = false,
-            logcat = false,
-            bugReport = false,
-        ),
+        // The application log (Logcat) and bug-report links are Android-only entries.
+        capabilities = LogsSettingsCapabilities(logcat = false, bugReport = false),
         platformContent = {
             DesktopDiagnosticsContent(
                 settings = settings,
@@ -871,6 +914,15 @@ private fun DesktopLogsSettings(
             )
         },
     )
+}
+
+private fun logRetentionLabel(days: Int): StringResource = when (days) {
+    1 -> Res.string.settings_log_retention_1_day
+    3 -> Res.string.settings_log_retention_3_days
+    7 -> Res.string.settings_log_retention_7_days
+    14 -> Res.string.settings_log_retention_14_days
+    30 -> Res.string.settings_log_retention_30_days
+    else -> Res.string.settings_log_retention_unlimited
 }
 
 @Composable
