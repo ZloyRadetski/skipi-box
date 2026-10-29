@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -214,6 +215,12 @@ fun main() = application {
                 var tunnelIntentVersion by remember { mutableStateOf(0L) }
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
                 val desktopLocalProxyRuntime = remember { DesktopLocalProxyRuntime() }
+                val desktopDiagnostics = remember {
+                    DesktopDiagnostics(
+                        activeOptions = { desktopLocalProxyRuntime.activeOptions(coreController.state().isRunning) },
+                    )
+                }
+                DisposableEffect(desktopDiagnostics) { onDispose { desktopDiagnostics.close() } }
                 val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
 
                 fun requestTunnelReconnect(reason: String) {
@@ -983,6 +990,9 @@ fun main() = application {
                         }
                     }
                 }
+
+                // A measurement started before a tunnel change would report the wrong path.
+                LaunchedEffect(coreState.isRunning) { desktopDiagnostics.stopAll() }
 
                 LaunchedEffect(closeRequested) {
                     if (!closeRequested) return@LaunchedEffect
@@ -1859,6 +1869,7 @@ fun main() = application {
 
                         SkipiMainDestination.Settings -> DesktopSettingsScreen(
                             settings = desktopSettings,
+                            diagnostics = desktopDiagnostics,
                             onSettingsChange = { updated ->
                                 val restartRequired = desktopSettings.localProxyPort != updated.localProxyPort ||
                                     desktopSettings.localHttpProxyPort != updated.localHttpProxyPort ||

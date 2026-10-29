@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Serializable
-internal data class IpWhoIsFullResponse(
+data class IpWhoIsFullResponse(
     val ip: String = "",
     val success: Boolean = false,
     val type: String = "IPv4",
@@ -33,14 +33,14 @@ internal data class IpWhoIsFullResponse(
 )
 
 @Serializable
-internal data class IpWhoIsFlag(
+data class IpWhoIsFlag(
     val img: String = "",
     val emoji: String = "",
     @SerialName("emoji_unicode") val emojiUnicode: String = "",
 )
 
 @Serializable
-internal data class IpWhoIsConnectionDetails(
+data class IpWhoIsConnectionDetails(
     val asn: Int? = null,
     val org: String = "",
     val isp: String = "",
@@ -48,7 +48,7 @@ internal data class IpWhoIsConnectionDetails(
 )
 
 @Serializable
-internal data class IpWhoIsTimezone(
+data class IpWhoIsTimezone(
     val id: String = "",
     val abbr: String = "",
     @SerialName("is_dst") val isDst: Boolean = false,
@@ -112,7 +112,7 @@ sealed interface IpInfoState {
     data class Failure(val errorMessage: String?, val isTunnelIssue: Boolean) : IpInfoState
 }
 
-internal object IpInfoAnalysis {
+object IpInfoAnalysis {
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -124,14 +124,7 @@ internal object IpInfoAnalysis {
             ?.takeIf { it.success }
     }
 
-    fun countryFlagEmoji(countryCode: String?): String? {
-        if (countryCode == null) return null
-        val normalized = countryCode.trim().uppercase()
-        if (normalized.length != 2 || !normalized.all { it in 'A'..'Z' }) return null
-        val first = Character.toChars(0x1F1E6 + (normalized[0] - 'A'))
-        val second = Character.toChars(0x1F1E6 + (normalized[1] - 'A'))
-        return String(first) + String(second)
-    }
+    fun countryFlagEmoji(countryCode: String?): String? = features.tools.countryFlagEmoji(countryCode)
 
     fun mapToIpInfoData(
         response: IpWhoIsFullResponse,

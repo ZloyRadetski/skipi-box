@@ -49,7 +49,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = releaseStoreFile?.let(::File)
+            storeFile = "C:\\Dev\\APK SKIPI KEYS"
             storePassword = releaseStorePassword
             keyAlias = releaseKeyAlias
             keyPassword = releaseKeyPassword

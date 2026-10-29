@@ -295,17 +295,17 @@ fun AppContent(
                 }
                 appEntry<Route.SpeedTest> {
                     key(languageMode) {
-                        features.tools.speedtest.SpeedTestPage(padding = padding)
+                        features.tools.SpeedTestPage(padding = padding)
                     }
                 }
                 appEntry<Route.DnsLeakTest> {
                     key(languageMode) {
-                        features.tools.dnsleak.DnsLeakTestPage(padding = padding)
+                        features.tools.DnsLeakTestPage(padding = padding)
                     }
                 }
                 appEntry<Route.IpInfo> {
                     key(languageMode) {
-                        features.tools.ipinfo.IpInfoPage(padding = padding)
+                        features.tools.IpInfoPage(padding = padding)
                     }
                 }
                 appEntry<Route.ResourceManagement> { route ->

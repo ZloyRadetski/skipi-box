@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
 
 /** Geo response of ipwho.is for a single IP address. */
 @Serializable
-internal data class IpWhoIsResponse(
+data class IpWhoIsResponse(
     val ip: String = "",
     val success: Boolean = false,
     val country: String = "",
@@ -18,7 +18,7 @@ internal data class IpWhoIsResponse(
 )
 
 @Serializable
-internal data class IpWhoIsConnection(
+data class IpWhoIsConnection(
     val asn: Int? = null,
     val isp: String = "",
     val org: String = "",
@@ -31,7 +31,7 @@ internal data class IpWhoIsConnection(
  * resolver believed our query came from. The latter is the strongest leak
  * signal, so it wins when both are available.
  */
-internal data class DnsLeakResolver(
+data class DnsLeakResolver(
     val server: String,
     val isSystemServer: Boolean,
     val egressIp: String,
@@ -47,7 +47,7 @@ internal data class DnsLeakResolver(
 }
 
 /** The HTTP exit of the device, used as the reference point for the verdict. */
-internal data class DnsLeakExitInfo(
+data class DnsLeakExitInfo(
     val ip: String,
     val countryCode: String,
     val countryName: String,
@@ -55,11 +55,8 @@ internal data class DnsLeakExitInfo(
     val asn: Int?,
 )
 
-/**
- * Why the test could not collect any data at all; picks a localized UI hint.
- */
 /** Pure analysis helpers over raw probe results; unit tested. */
-internal object DnsLeakAnalysis {
+object DnsLeakAnalysis {
     private val json = Json { ignoreUnknownKeys = true }
 
     private val ipv4Regex = Regex("""^(\d{1,3}\.){3}\d{1,3}$""")
@@ -126,24 +123,42 @@ internal object DnsLeakAnalysis {
         return DnsLeakResultPolicy.failureKind(hasVpnNetwork)
     }
 
-    /** Converts a two-letter country code into its flag emoji, e.g. "DE" -> 🇩🇪. */
-    fun countryFlagEmoji(countryCode: String?): String? {
-        val code = countryCode?.trim()?.uppercase() ?: return null
-        if (code.length != 2 || code.any { it !in 'A'..'Z' }) return null
-        return buildString {
-            appendCodePoint(RegionalIndicatorA + (code[0] - 'A'))
-            appendCodePoint(RegionalIndicatorA + (code[1] - 'A'))
-        }
-    }
+    /** Converts a two-letter country code into its flag emoji, e.g. "DE" -> flag. */
+    fun countryFlagEmoji(countryCode: String?): String? = features.tools.countryFlagEmoji(countryCode)
 
-    internal const val EdnsClientSubnetPrefix = "edns0-client-subnet"
-    private const val RegionalIndicatorA = 0x1F1E6
+    const val EdnsClientSubnetPrefix = "edns0-client-subnet"
 }
 
 /** Raw result of probing one DNS server. */
-internal data class DnsProbeResult(
+data class DnsProbeResult(
     val server: String,
     val isSystemServer: Boolean,
     val egressIp: String,
     val clientSubnetIp: String?,
 )
+
+/** Result of one completed DNS leak test run. */
+data class DnsLeakTestOutcome(
+    val resolvers: List<DnsLeakResolver>,
+    val verdict: DnsLeakVerdict,
+    val exit: DnsLeakExitInfo? = null,
+)
+
+/**
+ * Thrown when neither the exit check nor any DNS probe produced an answer.
+ * The message names the actionable cause: with a VPN network detected the
+ * probes went through it, so total silence points at a dead tunnel rather
+ * than a missing internet connection.
+ */
+class DnsLeakTestFailure(
+    hasVpnNetwork: Boolean,
+) : Exception(if (hasVpnNetwork) TunnelDownMessage else OfflineMessage) {
+    /** Selects the localized hint shown on the test page. */
+    val kind: DnsLeakFailureKind = DnsLeakAnalysis.failureKind(hasVpnNetwork)
+
+    private companion object {
+        const val TunnelDownMessage =
+            "VPN tunnel is up but passes no traffic - reconnect the VPN or change the server"
+        const val OfflineMessage = "No internet connection - check the network"
+    }
+}

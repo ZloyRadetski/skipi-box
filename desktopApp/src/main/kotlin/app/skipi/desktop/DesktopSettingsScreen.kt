@@ -3,6 +3,11 @@
 
 package app.skipi.desktop
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import app.skipi.ui.diagnostics.SkipiDnsLeakTestScreen
+import app.skipi.ui.diagnostics.SkipiIpInfoScreen
+import app.skipi.ui.diagnostics.SkipiSpeedTestScreen
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -101,7 +106,7 @@ private val SettingsRed = Color(0xFFFF5B62)
 
 private enum class DesktopSettingsDestination {
     Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
-    Integration, Diagnostics, About,
+    SpeedTest, DnsLeakTest, IpInfo, Integration, Diagnostics, About,
 }
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
@@ -110,6 +115,7 @@ internal fun DesktopSettingsScreen(
     settings: DesktopAppSettings,
     onSettingsChange: (DesktopAppSettings) -> Unit,
     contentPadding: PaddingValues,
+    diagnostics: DesktopDiagnostics,
     isTunnelRunning: Boolean = false,
     onClearSystemProxy: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -184,6 +190,43 @@ internal fun DesktopSettingsScreen(
             onPersist = ::persist,
             contentPadding = contentPadding,
         )
+        DesktopSettingsDestination.SpeedTest -> {
+            val state by diagnostics.speedTest.state.collectAsState()
+            SkipiSpeedTestScreen(
+                state = state,
+                padding = contentPadding,
+                isWideScreen = true,
+                onBack = { diagnostics.speedTest.stop(); destination = DesktopSettingsDestination.Overview },
+                onStart = diagnostics.speedTest::start,
+                onStop = diagnostics.speedTest::stop,
+            )
+        }
+        DesktopSettingsDestination.DnsLeakTest -> {
+            val state by diagnostics.dnsLeak.state.collectAsState()
+            SkipiDnsLeakTestScreen(
+                state = state,
+                padding = contentPadding,
+                isWideScreen = true,
+                onBack = { diagnostics.dnsLeak.stop(); destination = DesktopSettingsDestination.Overview },
+                onStart = diagnostics.dnsLeak::start,
+                onStop = diagnostics.dnsLeak::stop,
+            )
+        }
+        DesktopSettingsDestination.IpInfo -> {
+            val state by diagnostics.ipInfo.state.collectAsState()
+            SkipiIpInfoScreen(
+                state = state,
+                padding = contentPadding,
+                isWideScreen = true,
+                onBack = { diagnostics.ipInfo.stop(); destination = DesktopSettingsDestination.Overview },
+                onRefresh = diagnostics.ipInfo::refresh,
+                onCopy = { text, confirmation ->
+                    runCatching {
+                        Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
+                    }.onSuccess { message = confirmation }
+                },
+            )
+        }
         DesktopSettingsDestination.Integration -> DesktopIntegrationSettings(
             onBack = { destination = DesktopSettingsDestination.Overview },
             onMessage = { message = it },
@@ -223,15 +266,7 @@ private fun DesktopSettingsOverview(
             localProxyPort = settings.localProxyPort.toString(),
             coreLogLevel = settings.coreLogLevel.uppercase(),
             categoryIconColor = Color(0xFF5C6DB0),
-            visibleDestinations = setOf(
-                SkipiSettingsDestination.Appearance,
-                SkipiSettingsDestination.General,
-                SkipiSettingsDestination.LocalProxy,
-                SkipiSettingsDestination.Subscriptions,
-                SkipiSettingsDestination.Integration,
-                SkipiSettingsDestination.Logs,
-                SkipiSettingsDestination.About,
-            ),
+            visibleDestinations = desktopSettingsVisibleDestinations(),
         ),
         padding = contentPadding,
         onNavigate = { selected ->
@@ -240,6 +275,9 @@ private fun DesktopSettingsOverview(
                 SkipiSettingsDestination.General -> onNavigate(DesktopSettingsDestination.General)
                 SkipiSettingsDestination.LocalProxy -> onNavigate(DesktopSettingsDestination.LocalProxy)
                 SkipiSettingsDestination.Subscriptions -> onNavigate(DesktopSettingsDestination.Subscriptions)
+                SkipiSettingsDestination.SpeedTest -> onNavigate(DesktopSettingsDestination.SpeedTest)
+                SkipiSettingsDestination.DnsLeakTest -> onNavigate(DesktopSettingsDestination.DnsLeakTest)
+                SkipiSettingsDestination.IpInfo -> onNavigate(DesktopSettingsDestination.IpInfo)
                 SkipiSettingsDestination.Integration -> onNavigate(DesktopSettingsDestination.Integration)
                 SkipiSettingsDestination.Logs -> onNavigate(DesktopSettingsDestination.Diagnostics)
                 SkipiSettingsDestination.About -> onNavigate(DesktopSettingsDestination.About)

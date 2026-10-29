@@ -4,8 +4,7 @@
 package features.proxy.server.usecase
 
 import features.logs.AndroidAppLogger
-import features.tools.dnsleak.DnsLeakTestSession
-import features.tools.speedtest.SpeedTestSession
+import features.tools.AndroidDiagnostics
 import kotlinx.coroutines.Job
 import java.util.concurrent.ConcurrentHashMap
 
@@ -40,13 +39,6 @@ internal object ProxyServerLatencyTracker {
         }
 
         // Also stop speedtest and DNS leak tests if running
-        runCatching {
-            SpeedTestSession.stop()
-        }
-        runCatching {
-            if (DnsLeakTestSession.running) {
-                DnsLeakTestSession.stop()
-            }
-        }
+        runCatching { AndroidDiagnostics.stopAll() }
     }
 }
