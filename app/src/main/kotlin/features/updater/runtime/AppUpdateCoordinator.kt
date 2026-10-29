@@ -13,7 +13,9 @@ import androidx.work.workDataOf
 import app.AppState
 import data.AndroidAppStateStore
 import features.updater.AppUpdateDownloadStatus
+import features.updater.AppUpdateRestoreAction
 import features.updater.AppUpdateInfo
+import features.updater.isSameReleaseAs
 import features.updater.AppUpdateNotifier
 import features.updater.GitHubReleaseCheckResult
 import features.updater.GitHubReleaseChecker
@@ -57,23 +59,16 @@ internal class AppUpdateCheckCoordinator(
             is GitHubReleaseCheckResult.Success -> {
                 checkStore.recordSuccessfulCheck(result.eTag)
                 val update = result.update
+                var notify = false
+                stateStore.update { state ->
+                    val transition = state.appUpdateState().applyCheckedRelease(update)
+                    notify = transition.notify
+                    state.withAppUpdateState(transition.state)
+                }
                 if (update == null) {
-                    stateStore.update { state -> state.clearAppUpdate() }
                     AppUpdateCheckOutcome.UpToDate
                 } else {
-                    val previous = stateStore.currentState.availableAppUpdate
-                    val isNewRelease = previous == null || !previous.isSameReleaseAs(update)
-                    stateStore.update { state ->
-                        if (state.availableAppUpdate?.isSameReleaseAs(update) == true) {
-                            state.copy(availableAppUpdate = update)
-                        } else {
-                            state.withAvailableAppUpdate(update)
-                        }
-                    }
-                    val current = stateStore.currentState
-                    if (isNewRelease && current.dismissedUpdateVersion != update.versionName) {
-                        AppUpdateNotifier.showUpdateAvailable(appContext, update)
-                    }
+                    if (notify) AppUpdateNotifier.showUpdateAvailable(appContext, update)
                     AppUpdateCheckOutcome.UpdateAvailable(update)
                 }
             }
@@ -108,7 +103,7 @@ internal class AppUpdateDownloadCoordinator(
             return
         }
 
-        stateStore.update { state -> state.withQueuedAppUpdateDownload(update, automatic) }
+        stateStore.update { state -> state.updatingAppUpdate { withQueuedDownload(update, automatic) } }
         enqueueWork(update, automatic, ExistingWorkPolicy.REPLACE)
     }
 
@@ -116,63 +111,34 @@ internal class AppUpdateDownloadCoordinator(
     fun restorePendingDownload() {
         val state = stateStore.currentState
         val update = state.availableAppUpdate ?: return
-        when (state.appUpdateDownloadStatus) {
-            AppUpdateDownloadStatus.READY_TO_INSTALL -> {
-                val apkFile = state.appUpdateApkFilePath?.let(::File)
-                if (apkFile?.isFile != true) {
-                    stateStore.update { it.withAvailableAppUpdate(update) }
-                }
-            }
-
-            AppUpdateDownloadStatus.QUEUED,
-            AppUpdateDownloadStatus.DOWNLOADING -> enqueueWork(
+        val updateState = state.appUpdateState()
+        val apkFileExists = state.appUpdateApkFilePath?.let(::File)?.isFile == true
+        when (val action = updateState.restoreAction(apkFileExists)) {
+            AppUpdateRestoreAction.None -> Unit
+            AppUpdateRestoreAction.ResetToAvailable ->
+                stateStore.update { it.updatingAppUpdate { withAvailableUpdate(update) } }
+            is AppUpdateRestoreAction.Resume -> enqueueWork(
                 update = update,
-                automatic = state.appUpdateDownloadIsAutomatic,
+                automatic = action.automatic,
                 policy = ExistingWorkPolicy.KEEP,
             )
-
-            else -> Unit
         }
     }
 
     fun markDownloading(update: AppUpdateInfo) {
-        stateStore.update { state ->
-            if (!state.matchesUpdate(update)) state else state.copy(
-                appUpdateDownloadStatus = AppUpdateDownloadStatus.DOWNLOADING,
-                appUpdateDownloadError = null,
-            )
-        }
+        stateStore.update { state -> state.updatingAppUpdate { markDownloading(update) } }
     }
 
     fun markProgress(update: AppUpdateInfo, downloadedBytes: Long, totalBytes: Long) {
-        stateStore.update { state ->
-            if (!state.matchesUpdate(update)) state else state.copy(
-                appUpdateDownloadStatus = AppUpdateDownloadStatus.DOWNLOADING,
-                appUpdateDownloadedBytes = downloadedBytes.coerceAtLeast(0L),
-                appUpdateTotalBytes = totalBytes.coerceAtLeast(0L),
-                appUpdateDownloadError = null,
-            )
-        }
+        stateStore.update { state -> state.updatingAppUpdate { markProgress(update, downloadedBytes, totalBytes) } }
     }
 
     fun markReady(update: AppUpdateInfo, apkFilePath: String) {
-        stateStore.update { state ->
-            if (!state.matchesUpdate(update)) state else state.copy(
-                appUpdateDownloadStatus = AppUpdateDownloadStatus.READY_TO_INSTALL,
-                appUpdateDownloadedBytes = maxOf(state.appUpdateDownloadedBytes, state.appUpdateTotalBytes),
-                appUpdateApkFilePath = apkFilePath,
-                appUpdateDownloadError = null,
-            )
-        }
+        stateStore.update { state -> state.updatingAppUpdate { markReady(update, apkFilePath) } }
     }
 
     fun markFailed(update: AppUpdateInfo, errorMessage: String) {
-        stateStore.update { state ->
-            if (!state.matchesUpdate(update)) state else state.copy(
-                appUpdateDownloadStatus = AppUpdateDownloadStatus.FAILED,
-                appUpdateDownloadError = errorMessage,
-            )
-        }
+        stateStore.update { state -> state.updatingAppUpdate { markFailed(update, errorMessage) } }
     }
 
     private fun enqueueWork(
@@ -198,57 +164,6 @@ internal class AppUpdateDownloadCoordinator(
             .build()
         workManager.enqueueUniqueWork(AppUpdateDownloadWorkName, policy, request)
     }
-}
-
-internal fun AppState.matchesUpdate(update: AppUpdateInfo): Boolean {
-    return availableAppUpdate?.isSameReleaseAs(update) == true
-}
-
-internal fun AppUpdateInfo.isSameReleaseAs(other: AppUpdateInfo): Boolean {
-    return versionCode == other.versionCode && versionName == other.versionName && assetName == other.assetName
-}
-
-private fun AppState.withAvailableAppUpdate(update: AppUpdateInfo): AppState {
-    return copy(
-        availableAppUpdate = update,
-        dismissedUpdateVersion = "",
-        appUpdateDownloadStatus = AppUpdateDownloadStatus.IDLE,
-        appUpdateDownloadedBytes = 0L,
-        appUpdateTotalBytes = 0L,
-        appUpdateApkFilePath = null,
-        appUpdateDownloadError = null,
-        appUpdateDownloadIsAutomatic = false,
-    )
-}
-
-private fun AppState.withQueuedAppUpdateDownload(update: AppUpdateInfo, automatic: Boolean): AppState {
-    return copy(
-        availableAppUpdate = update,
-        dismissedUpdateVersion = if (availableAppUpdate?.isSameReleaseAs(update) == true) {
-            dismissedUpdateVersion
-        } else {
-            ""
-        },
-        appUpdateDownloadStatus = AppUpdateDownloadStatus.QUEUED,
-        appUpdateDownloadedBytes = 0L,
-        appUpdateTotalBytes = update.apkSizeBytes,
-        appUpdateApkFilePath = null,
-        appUpdateDownloadError = null,
-        appUpdateDownloadIsAutomatic = automatic,
-    )
-}
-
-private fun AppState.clearAppUpdate(): AppState {
-    return copy(
-        availableAppUpdate = null,
-        dismissedUpdateVersion = "",
-        appUpdateDownloadStatus = AppUpdateDownloadStatus.IDLE,
-        appUpdateDownloadedBytes = 0L,
-        appUpdateTotalBytes = 0L,
-        appUpdateApkFilePath = null,
-        appUpdateDownloadError = null,
-        appUpdateDownloadIsAutomatic = false,
-    )
 }
 
 internal const val AppUpdateDownloadWorkName = "app-update-download"

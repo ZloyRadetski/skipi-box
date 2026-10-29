@@ -1,13 +1,13 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.updater.runtime
+package features.updater
 
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class AppUpdateCheckStoreTest {
+class AppUpdateCheckPolicyTest {
     @Test
     fun automatic_check_is_due_only_after_the_ttl() {
         val now = 1_000_000_000L

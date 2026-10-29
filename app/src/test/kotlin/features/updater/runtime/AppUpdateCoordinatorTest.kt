@@ -5,6 +5,7 @@ package features.updater.runtime
 
 import app.AppState
 import features.updater.AppUpdateInfo
+import features.updater.isSameReleaseAs
 import org.junit.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

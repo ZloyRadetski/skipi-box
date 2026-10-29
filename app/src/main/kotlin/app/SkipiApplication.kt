@@ -5,6 +5,7 @@ package app
 
 import android.app.Application
 import system.AndroidAppIconFetcher
+import features.updater.runtime.updatingAppUpdate
 import features.logs.AndroidAccessLogRepository
 import features.logs.AndroidCoreLogRepository
 import features.logs.AndroidLogcatRepository
@@ -141,25 +142,14 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
                 }
         }
         val cachedUpdate = stateStore.state.value.availableAppUpdate
-        if (cachedUpdate != null && !features.updater.GitHubReleaseChecker.isVersionNewer(
+        if (cachedUpdate != null && !features.updater.AppReleaseVersions.isVersionNewer(
                 currentVersionName = ProjectInfo.VERSION_NAME,
                 currentVersionCode = ProjectInfo.VERSION_CODE,
                 remoteVersionName = cachedUpdate.versionName,
                 remoteVersionCode = cachedUpdate.versionCode,
             )
         ) {
-            stateStore.update {
-                it.copy(
-                    availableAppUpdate = null,
-                    dismissedUpdateVersion = "",
-                    appUpdateDownloadStatus = features.updater.AppUpdateDownloadStatus.IDLE,
-                    appUpdateDownloadedBytes = 0L,
-                    appUpdateTotalBytes = 0L,
-                    appUpdateApkFilePath = null,
-                    appUpdateDownloadError = null,
-                    appUpdateDownloadIsAutomatic = false,
-                )
-            }
+            stateStore.update { it.updatingAppUpdate { cleared() } }
         }
         appScope.launch {
             stateStore.state

@@ -4,6 +4,8 @@
 package features.updater.runtime
 
 import android.content.Context
+import features.updater.isAppUpdateAutomaticAttemptDue
+import features.updater.isAppUpdateCheckDue
 import androidx.core.content.edit
 
 /** Small persistent cache used only by automatic release checks. */
@@ -46,25 +48,6 @@ internal class AppUpdateCheckStore(context: Context) {
         preferences.edit { putLong(KeyLastAttemptMillis, nowMillis) }
     }
 }
-
-internal fun isAppUpdateCheckDue(
-    lastCheckMillis: Long,
-    nowMillis: Long,
-): Boolean {
-    return lastCheckMillis <= 0L ||
-        nowMillis - lastCheckMillis >= AppUpdateCheckTtlMillis
-}
-
-internal fun isAppUpdateAutomaticAttemptDue(
-    lastAttemptMillis: Long,
-    nowMillis: Long,
-): Boolean {
-    return lastAttemptMillis <= 0L ||
-        nowMillis - lastAttemptMillis >= AppUpdateAutomaticRetryMinMillis
-}
-
-internal const val AppUpdateCheckTtlMillis = 24L * 60L * 60L * 1_000L
-internal const val AppUpdateAutomaticRetryMinMillis = 60L * 60L * 1_000L
 
 private const val PreferencesName = "app_update_check"
 private const val KeyLastCheckMillis = "last_check_millis"

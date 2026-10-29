@@ -63,6 +63,8 @@ internal class GitHubReleaseChecker(
                     when (val statusCode = connection.responseCode) {
                         HttpURLConnection.HTTP_OK -> {
                             val responseText = connection.inputStream.bufferedReader().use(BufferedReader::readText)
+                            // A malformed body throws and is reported as a failed check, so a
+                            // previously discovered update is never cleared by a corrupt response.
                             val releaseJson = json.parseToJsonElement(responseText).jsonObject
                             GitHubReleaseCheckResult.Success(
                                 update = parseRelease(releaseJson),
@@ -86,111 +88,11 @@ internal class GitHubReleaseChecker(
         }.getOrElse { GitHubReleaseCheckResult.Failed }
     }
 
-    private fun parseRelease(root: JsonObject): AppUpdateInfo? {
-        val tagName = root["tag_name"]?.jsonPrimitive?.contentOrNull.orEmpty().trim()
-        val releaseTitle = root["name"]?.jsonPrimitive?.contentOrNull.orEmpty().ifBlank { tagName }
-        val changelog = root["body"]?.jsonPrimitive?.contentOrNull.orEmpty().trim()
-        val publishedAt = root["published_at"]?.jsonPrimitive?.contentOrNull.orEmpty()
-        val assets = root["assets"]?.jsonArray ?: return null
-
-        // tag_name is the single source of truth for the release version.
-        val remoteVersionName = tagName.removePrefix("v").trim()
-        if (remoteVersionName.isBlank()) return null
-
-        // APK asset names carry no version information ("SKIPI-universal.apk"),
-        // so the code is read from the release notes ("Version code: 180").
-        val remoteVersionCode = extractVersionCodeFromBody(changelog)
-
-        val bestAsset = selectBestApkAsset(assets) ?: return null
-        val downloadUrl = bestAsset["browser_download_url"]?.jsonPrimitive?.contentOrNull ?: return null
-        val assetName = bestAsset["name"]?.jsonPrimitive?.contentOrNull ?: "SKIPI.apk"
-        val apkSize = bestAsset["size"]?.jsonPrimitive?.longOrNull ?: 0L
-        val assetSha256 = bestAsset["digest"]?.jsonPrimitive?.contentOrNull
-            ?.takeIf { digest -> digest.startsWith("sha256:", ignoreCase = true) }
-
-        val isNewer = isVersionNewer(
-            currentVersionName = ProjectInfo.VERSION_NAME,
-            currentVersionCode = ProjectInfo.VERSION_CODE,
-            remoteVersionName = remoteVersionName,
-            remoteVersionCode = remoteVersionCode,
-        )
-
-        if (!isNewer) {
-            AndroidAppLogger.debug(LogTag, "Already up-to-date: current=${ProjectInfo.VERSION_NAME} remote=$remoteVersionName")
-            return null
-        }
-
-        return AppUpdateInfo(
-            versionName = remoteVersionName,
-            versionCode = remoteVersionCode ?: (ProjectInfo.VERSION_CODE + 1),
-            releaseTitle = releaseTitle,
-            changelog = changelog,
-            downloadUrl = downloadUrl,
-            assetName = assetName,
-            apkSizeBytes = apkSize,
-            publishedAt = publishedAt,
-            assetSha256 = assetSha256,
-        )
-    }
-
-    private fun selectBestApkAsset(assets: JsonArray): JsonObject? {
-        val apkAssets = assets.mapNotNull { it as? JsonObject }.filter {
-            val name = it["name"]?.jsonPrimitive?.contentOrNull.orEmpty().lowercase()
-            name.endsWith(".apk")
-        }
-        if (apkAssets.isEmpty()) return null
-
-        val supportedAbis = Build.SUPPORTED_ABIS.map { it.lowercase() }
-        for (abi in supportedAbis) {
-            val matched = apkAssets.firstOrNull { asset ->
-                val name = asset["name"]?.jsonPrimitive?.contentOrNull.orEmpty().lowercase()
-                name.contains(abi)
-            }
-            if (matched != null) {
-                return matched
-            }
-        }
-
-        return apkAssets.firstOrNull {
-            val name = it["name"]?.jsonPrimitive?.contentOrNull.orEmpty().lowercase()
-            name.contains("universal")
-        } ?: apkAssets.firstOrNull()
-    }
-
-    companion object {
-        /**
-         * Reads the version code from the release notes, e.g.
-         * "- Version code: 180". Asset file names do not contain it.
-         */
-        internal fun extractVersionCodeFromBody(body: String): Int? {
-            return Regex("""version\s*code\s*[:=\-]?\s*(\d+)""", RegexOption.IGNORE_CASE)
-                .find(body)?.groupValues?.getOrNull(1)?.toIntOrNull()
-        }
-
-        fun isVersionNewer(
-            currentVersionName: String,
-            currentVersionCode: Int,
-            remoteVersionName: String,
-            remoteVersionCode: Int?,
-        ): Boolean {
-            if (remoteVersionCode != null && remoteVersionCode > currentVersionCode) {
-                return true
-            }
-
-            val currentParts = currentVersionName.trim().removePrefix("v").split('.').mapNotNull { it.toIntOrNull() }
-            val remoteParts = remoteVersionName.trim().removePrefix("v").split('.').mapNotNull { it.toIntOrNull() }
-
-            val maxLen = maxOf(currentParts.size, remoteParts.size)
-            for (i in 0 until maxLen) {
-                val c = currentParts.getOrElse(i) { 0 }
-                val r = remoteParts.getOrElse(i) { 0 }
-                if (r > c) return true
-                if (r < c) return false
-            }
-
-            return (remoteVersionCode ?: 0) > currentVersionCode
-        }
-    }
+    private fun parseRelease(root: JsonObject): AppUpdateInfo? = GitHubReleaseParser.parse(
+        root = root,
+        current = CurrentAppVersion(name = ProjectInfo.VERSION_NAME, code = ProjectInfo.VERSION_CODE),
+        supportedAbis = Build.SUPPORTED_ABIS.toList(),
+    )
 }
 
 internal sealed interface GitHubReleaseCheckResult {

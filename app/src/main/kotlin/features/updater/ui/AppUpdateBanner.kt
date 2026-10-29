@@ -24,6 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import features.updater.bannerModel
+import features.updater.runtime.appUpdateState
+import features.updater.runtime.updatingAppUpdate
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,16 +67,15 @@ fun AppUpdateBanner(
 ) {
     val stateStore = LocalAppStateStore.current
     val appState by stateStore.collectAppState()
-    val updateInfo = appState.availableAppUpdate ?: return
-    if (updateInfo.versionName == appState.dismissedUpdateVersion) return
+    val banner = appState.appUpdateState().bannerModel() ?: return
+    val updateInfo = banner.update
 
     val context = LocalContext.current
     val services = LocalAppServices.current
     val updateAppState = LocalUpdateAppState.current
     var showChangelog by remember(updateInfo.versionCode, updateInfo.versionName) { mutableStateOf(false) }
-    val status = appState.appUpdateDownloadStatus
-    val isDownloading = status == AppUpdateDownloadStatus.QUEUED || status == AppUpdateDownloadStatus.DOWNLOADING
-    val isReadyToInstall = status == AppUpdateDownloadStatus.READY_TO_INSTALL
+    val isDownloading = banner.isDownloading
+    val isReadyToInstall = banner.isReadyToInstall
 
     fun startOrInstall() {
         if (isReadyToInstall) {
@@ -134,13 +136,8 @@ fun AppUpdateBanner(
                                 fontWeight = themedFontWeight(FontWeight.Bold),
                                 color = MiuixTheme.colorScheme.onSurface,
                             )
-                            val sizeText = if (updateInfo.apkSizeBytes > 0) {
-                                String.format(Locale.US, "%.1f MB", updateInfo.apkSizeBytes / (1024f * 1024f))
-                            } else {
-                                ""
-                            }
                             Text(
-                                text = if (sizeText.isNotBlank()) sizeText else stringResource(R.string.app_update_ready_description),
+                                text = banner.sizeText ?: stringResource(R.string.app_update_ready_description),
                                 fontSize = 12.sp,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
@@ -149,7 +146,7 @@ fun AppUpdateBanner(
 
                     IconButton(
                         onClick = {
-                            updateAppState { it.copy(dismissedUpdateVersion = updateInfo.versionName) }
+                            updateAppState { it.updatingAppUpdate { dismissed() } }
                         },
                     ) {
                         Icon(
@@ -162,12 +159,7 @@ fun AppUpdateBanner(
                 }
 
                 if (isDownloading) {
-                    val total = appState.appUpdateTotalBytes
-                    val progress = if (total > 0L) {
-                        (appState.appUpdateDownloadedBytes.toFloat() / total.toFloat()).coerceIn(0f, 1f)
-                    } else {
-                        0f
-                    }
+                    val progress = banner.progress ?: 0f
                     Spacer(modifier = Modifier.height(10.dp))
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Box(
@@ -186,14 +178,14 @@ fun AppUpdateBanner(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (total > 0L) "${(progress * 100).toInt()}%" else stringResource(R.string.app_update_downloading_action),
+                            text = banner.progressPercent?.let { "$it%" } ?: stringResource(R.string.app_update_downloading_action),
                             fontSize = 11.sp,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             modifier = Modifier.align(Alignment.End),
                         )
                     }
-                } else if (status == AppUpdateDownloadStatus.FAILED) {
-                    appState.appUpdateDownloadError?.takeIf(String::isNotBlank)?.let { error ->
+                } else {
+                    banner.errorMessage?.let { error ->
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = error,
@@ -210,7 +202,7 @@ fun AppUpdateBanner(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (updateInfo.changelog.isNotBlank()) {
+                    if (banner.hasChangelog) {
                         TextButton(
                             text = stringResource(R.string.app_update_changelog_action),
                             onClick = { showChangelog = true },
