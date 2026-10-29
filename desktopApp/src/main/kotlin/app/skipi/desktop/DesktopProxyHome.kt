@@ -656,6 +656,8 @@ internal fun DesktopProxyHome(
                 store = homeStore,
                 modifier = androidx.compose.ui.Modifier.weight(1f),
                 contentPadding = contentPadding,
+                // The floating bar overlays the list (as on Android) instead of cutting it off.
+                floatingNavigationBottomInset = contentPadding.calculateBottomPadding(),
                 topContentPadding = 40.dp,
                 containerColor = androidx.compose.ui.graphics.Color.Transparent,
             )
