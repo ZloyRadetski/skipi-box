@@ -40,58 +40,6 @@ internal fun SettingsSectionCard(
     )
 }
 
-@Composable
-internal fun SettingsCategoryGroupCard(
-    modifier: Modifier = Modifier,
-    bottomPadding: Dp = 12.dp,
-    content: @Composable () -> Unit,
-) {
-    SkipiSettingsCategoryGroupCard(
-        modifier = modifier,
-        bottomPadding = bottomPadding,
-        content = content,
-    )
-}
-
-@Composable
-internal fun SettingsCategoryEntry(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconColor: Color = MiuixTheme.colorScheme.onPrimary,
-    iconBackgroundColor: Color = MiuixTheme.colorScheme.primary,
-    title: String,
-    summary: String? = null,
-    value: String? = null,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    showDivider: Boolean = false,
-) {
-    SkipiSettingsCategoryEntry(
-        icon = icon,
-        title = title,
-        summary = summary,
-        value = value,
-        onClick = onClick,
-        modifier = modifier,
-        iconColor = iconColor,
-        iconBackgroundColor = iconBackgroundColor,
-        trailingIcon = SettingsIcons.ChevronRight,
-        showDivider = showDivider,
-    )
-}
-
-
-@Composable
-internal fun localProxySettingsSummary(
-    port: String,
-    listenAllInterfaces: Boolean,
-): String {
-    val summary = if (listenAllInterfaces) {
-        stringResource(R.string.settings_local_proxy_summary_all_interfaces)
-    } else {
-        stringResource(R.string.settings_local_proxy_summary_fixed)
-    }
-    return summary.formatTemplate("port" to port)
-}
 
 @Composable
 internal fun subscriptionPingSettingsSummary(

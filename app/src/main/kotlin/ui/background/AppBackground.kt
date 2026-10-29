@@ -66,11 +66,6 @@ fun customBackgroundPhotoFile(context: Context): File =
 fun customBackgroundPhotoExists(context: Context): Boolean =
     customBackgroundPhotoFile(context).exists()
 
-fun customBackgroundPhotoPath(context: Context): String? {
-    val file = customBackgroundPhotoFile(context)
-    return if (file.exists()) file.absolutePath else null
-}
-
 fun loadCustomBackgroundBitmap(context: Context): ImageBitmap? {
     val file = customBackgroundPhotoFile(context)
     if (!file.exists() || file.length() == 0L) return null

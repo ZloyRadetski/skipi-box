@@ -63,23 +63,6 @@ internal class AppUpdateScheduleGateway(
         )
     }
 
-    fun triggerImmediateCheck() {
-        val request = OneTimeWorkRequestBuilder<AppUpdateWorker>()
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build(),
-            )
-            .setInputData(workDataOf(AppUpdateForceCheckInputKey to true))
-            .build()
-
-        workManager.enqueueUniqueWork(
-            AppUpdateManualWorkName,
-            ExistingWorkPolicy.REPLACE,
-            request,
-        )
-    }
-
     private fun checkConstraints(): Constraints {
         return Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)

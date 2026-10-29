@@ -88,56 +88,6 @@ internal class AndroidResourceFileStore(
         kind.applyPermissions(file(kind))
     }
 
-    fun stageBundledXrayCoreCandidate(): File {
-        val source = bundledXrayCoreFileOrNull()
-            ?: error("Bundled ${ResourceFileKind.XrayCore.fileName} is not available for ${currentRuntimeAbi()}")
-        return source.inputStream().use(::writeXrayCoreCandidate)
-    }
-
-    fun installInitialXrayCoreCandidate(candidate: File): Boolean {
-        require(candidate.isFile && candidate.length() > 0) { "Xray core candidate is empty" }
-        require(dataDir.exists() || dataDir.mkdirs()) { "Failed to create ${dataDir.absolutePath}" }
-        val target = file(ResourceFileKind.XrayCore)
-        return withResourceFileWriteLock(target) {
-            if (target.exists()) return@withResourceFileWriteLock false
-            val temp = File.createTempFile(".xray-initial-", ".tmp", dataDir)
-            try {
-                candidate.inputStream().use { input ->
-                    temp.outputStream().use { output ->
-                        input.copyTo(output)
-                        output.flush()
-                        output.fd.sync()
-                    }
-                }
-                require(temp.length() > 0) { "Xray core candidate is empty" }
-                Os.chmod(temp.absolutePath, XrayExecutableMode)
-                try {
-                    Os.link(temp.absolutePath, target.absolutePath)
-                } catch (error: ErrnoException) {
-                    if (error.errno == OsConstants.EEXIST) return@withResourceFileWriteLock false
-                    throw error
-                }
-                syncDirectory(dataDir)
-                true
-            } finally {
-                temp.delete()
-            }
-        }
-    }
-
-    fun shouldPublishBundledXrayCore(
-        resourceFileSource: Int,
-        restoreAfterPackageUpdate: Boolean,
-    ): Boolean {
-        val bundledUpdatedAtMillis = appContext.packageUpdatedAtMillis()
-        return bundledXrayCoreFileOrNull() != null && file(ResourceFileKind.XrayCore).shouldRestoreBundled(
-            kind = ResourceFileKind.XrayCore,
-            resourceFileSource = resourceFileSource,
-            bundledUpdatedAtMillis = bundledUpdatedAtMillis,
-            restoreAfterPackageUpdate = restoreAfterPackageUpdate,
-        )
-    }
-
     private fun bundledXrayCoreFileOrNull(): File? {
         if (currentRuntimeAbi() != Arm64Abi) return null
         return File(appContext.applicationInfo.nativeLibraryDir, XrayCoreLibraryName)
@@ -149,37 +99,6 @@ internal class AndroidResourceFileStore(
             appContext.contentResolver.openInputStream(uri) ?: throw FileNotFoundException(uri.toString())
         }
         kind.applyPermissions(file(kind))
-    }
-
-    fun stageXrayCoreCandidate(uri: Uri): File {
-        val uploaded = appContext.contentResolver.openInputStream(uri)?.use(::writeXrayCoreCandidate)
-            ?: throw FileNotFoundException(uri.toString())
-        val extracted = createXrayCoreCandidateFile()
-        val found = runCatching {
-            ZipInputStream(uploaded.inputStream()).use { zip ->
-                var entry = zip.nextEntry
-                while (entry != null) {
-                    if (!entry.isDirectory && entry.name.substringAfterLast('/') == "xray") {
-                        extracted.outputStream().use { output ->
-                            zip.copyTo(output)
-                            output.flush()
-                            output.fd.sync()
-                        }
-                        return@runCatching extracted.length() > 0
-                    }
-                    zip.closeEntry()
-                    entry = zip.nextEntry
-                }
-                false
-            }
-        }.getOrDefault(false)
-        return if (found) {
-            uploaded.delete()
-            extracted
-        } else {
-            extracted.delete()
-            uploaded
-        }
     }
 
     private fun writeXrayCoreCandidate(input: java.io.InputStream): File {
@@ -294,10 +213,6 @@ internal fun Context.prepareXrayResourceFilePaths(
         resourceFileSource = scope?.resourceFileSource ?: ResourceFileSourceLoyalsoldierGithub,
         restoreBundledFiles = restoreBundledFiles,
     )
-}
-
-internal fun Context.xrayResourceFilePaths(scope: XrayResourceFileScope? = null): XrayResourceFilePaths {
-    return AndroidResourceFileStore(this, scope).currentPaths()
 }
 
 private fun currentRuntimeAbi(): String {

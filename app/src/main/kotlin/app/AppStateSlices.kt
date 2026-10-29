@@ -110,23 +110,6 @@ fun AppStateStore.collectProxyServerListState(): State<ProxyServerListState> {
     }
 }
 
-@Composable
-fun AppStateStore.collectProxyServerLatency(
-    serverId: Int,
-    initialLatency: String = "",
-): State<String> {
-    val latencyFlow = remember(this, serverId) {
-        state
-            .map { appState: AppState -> appState.proxyServers }
-            .distinctUntilChanged()
-            .map { servers: List<ProxyServerState> ->
-                servers.firstOrNull { server -> server.id == serverId }?.latency.orEmpty()
-            }
-            .distinctUntilChanged()
-    }
-    return latencyFlow.collectAsState(initial = initialLatency)
-}
-
 private fun AppState.toAppChromeState(): AppChromeState {
     return AppChromeState(
         colorMode = colorMode,

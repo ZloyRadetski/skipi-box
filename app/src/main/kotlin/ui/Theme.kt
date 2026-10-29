@@ -217,9 +217,6 @@ fun AppTheme(
 }
 
 @Composable
-fun isInDarkTheme(): Boolean = LocalResolvedDarkTheme.current
-
-@Composable
 private fun SynchronizeSplashTheme(colorMode: Int) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
     val view = LocalView.current

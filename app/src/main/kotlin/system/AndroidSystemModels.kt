@@ -26,23 +26,3 @@ data class AndroidUser(
     val id: Int,
     val name: String,
 )
-
-internal fun parseAndroidUsers(output: String): List<AndroidUser> {
-    return output
-        .lineSequence()
-        .mapNotNull { line ->
-            val body = line.substringAfter("UserInfo{", missingDelimiterValue = "")
-                .substringBefore("}", missingDelimiterValue = "")
-            if (body.isBlank()) {
-                return@mapNotNull null
-            }
-            val parts = body.split(":", limit = 3)
-            val id = parts.firstOrNull()?.toIntOrNull() ?: return@mapNotNull null
-            AndroidUser(
-                id = id,
-                name = parts.getOrNull(1).orEmpty().ifBlank { "User $id" },
-            )
-        }
-        .distinctBy { it.id }
-        .toList()
-}

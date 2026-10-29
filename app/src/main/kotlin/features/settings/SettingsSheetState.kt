@@ -34,40 +34,11 @@ internal class SettingsSheetState(
     var showServiceControl by mutableStateOf(false)
     var serviceControlDraft by mutableStateOf(features.settings.servicecontrol.ServiceControlSettings())
 
-    fun openLocalProxySettings(appState: AppState) {
-        localProxySettingsDraft = appState.toLocalProxySettingsDraft()
-        showLocalProxySettings = true
-    }
-
     fun openTunSettings(appState: AppState) {
         tunSettingsDraft = appState.toTunSettingsDraft()
         showTunSettings = true
     }
 
-    fun openDnsSettings(appState: AppState) {
-        dnsSettingsDraft = appState.toDnsSettingsDraft()
-        showDnsSettings = true
-    }
-
-    fun openMuxSettings(appState: AppState) {
-        muxSettingsDraft = appState.toMuxSettingsDraft()
-        showMuxSettings = true
-    }
-
-    fun openFragmentSettings(appState: AppState) {
-        fragmentSettingsDraft = appState.toFragmentSettingsDraft()
-        showFragmentSettings = true
-    }
-
-    fun openSubscriptionPingSettings(appState: AppState) {
-        subscriptionPingSettingsDraft = appState.toSubscriptionPingSettingsDraft()
-        showSubscriptionPingSettings = true
-    }
-
-    fun openServiceControl(appState: AppState) {
-        serviceControlDraft = appState.serviceControl
-        showServiceControl = true
-    }
 }
 
 @Composable

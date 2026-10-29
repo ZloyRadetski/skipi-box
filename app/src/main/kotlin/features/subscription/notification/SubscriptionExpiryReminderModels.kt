@@ -11,16 +11,6 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 
-internal fun SubscriptionExpiryReminder.formatLabel(context: Context): String {
-    return when (unit) {
-        ExpiryReminderUnit.AtExpiration -> context.getString(R.string.subscription_expiry_reminder_format_at_expiration)
-        ExpiryReminderUnit.Minutes -> context.getString(R.string.subscription_expiry_reminder_format_minutes, value)
-        ExpiryReminderUnit.Hours -> context.getString(R.string.subscription_expiry_reminder_format_hours, value)
-        ExpiryReminderUnit.Days -> context.getString(R.string.subscription_expiry_reminder_format_days, value)
-        ExpiryReminderUnit.Weeks -> context.getString(R.string.subscription_expiry_reminder_format_weeks, value)
-    }
-}
-
 internal fun formatRemainingDuration(context: Context, seconds: Long): String {
     if (seconds <= 0L) return context.getString(R.string.subscription_expiry_reminder_format_at_expiration)
     val minutes = seconds / 60L

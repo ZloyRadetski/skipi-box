@@ -104,55 +104,11 @@ internal data class ProxyServerListInvalidDeleteResult(
     val removedServerIds: Set<Int>,
 )
 
-internal fun AppState.withImportedProxyServers(
-    importResult: ProxyServerImportResult,
-    groupId: Int,
-): AppState {
-    if (importResult.servers.isEmpty()) return this
-    val result = importProxyServerRecords(
-        servers = proxyServers.map { ProxyServerRecord(it.id, it.groupId, it.server, it.latency) },
-        imported = importResult.servers,
-        groupId = groupId,
-        nextServerId = nextProxyServerId,
-        selectedServerId = selectedProxyServerId,
-    )
-    return copy(
-        proxyServers = result.servers.map { ProxyServerState(it.id, it.server, it.groupId, it.latency) },
-        nextProxyServerId = result.nextServerId,
-        selectedProxyServerId = result.selectedServerId,
-    )
-}
-
 internal data class ProxyServerEditApplyResult(
     val state: AppState,
     val existingGroupId: Int?,
     val wasExisting: Boolean,
 )
-
-internal fun AppState.withSavedProxyServer(
-    serverId: Int,
-    server: ProxyServer<*>,
-    groupId: Int?,
-): ProxyServerEditApplyResult {
-    val result = saveProxyServerRecord(
-        servers = proxyServers.map { ProxyServerRecord(it.id, it.groupId, it.server, it.latency) },
-        serverId = serverId,
-        server = server,
-        groupId = groupId,
-        nextServerId = nextProxyServerId,
-        selectedServerId = selectedProxyServerId,
-    )
-    val collection = result.collection
-    return ProxyServerEditApplyResult(
-        state = copy(
-            proxyServers = collection.servers.map { ProxyServerState(it.id, it.server, it.groupId, it.latency) },
-            nextProxyServerId = collection.nextServerId,
-            selectedProxyServerId = collection.selectedServerId,
-        ),
-        existingGroupId = result.existingGroupId,
-        wasExisting = result.wasExisting,
-    )
-}
 
 internal fun AppState.withUpdatedSubscriptionServers(
     updates: List<ProxyServerListSubscriptionUpdate>,
@@ -368,49 +324,6 @@ private fun ProxyServerListSubscriptionUpdate.toLoadedSubscriptionRefresh() = Lo
         )
     },
 )
-
-/** Shared-catalog half of subscription refresh; metadata/config state stays in the AppState adapter. */
-internal fun reconcileUpdatedSubscriptionProxyRecords(
-    servers: List<app.skipi.app.model.ProxyServerRecord>,
-    groups: List<SubscriptionGroupState>,
-    updates: List<ProxyServerListSubscriptionUpdate>,
-    nextServerId: Int,
-    selectedServerId: Int,
-): ProxyServerCatalog {
-    val applicableUpdates = updates.filter { update ->
-        groups.any { group -> group.id == update.groupId && group.subscriptionFetchIdentity() == update.sourceIdentity }
-    }
-    if (applicableUpdates.isEmpty()) return ProxyServerCatalog(servers, nextServerId, selectedServerId)
-    val collection = reconcileSubscriptionServerCollection(
-        servers = servers.map { record ->
-            ProxyServerRecord(
-                id = record.id,
-                groupId = record.sourceSubscriptionId ?: DefaultSubscriptionGroupId,
-                server = record.server,
-            )
-        },
-        updates = applicableUpdates.map { update ->
-            SubscriptionServerCollectionUpdate(
-                groupId = update.groupId,
-                servers = update.servers,
-                autoOverrideRules = groups.firstOrNull { it.id == update.groupId }?.autoOverrideRules,
-            )
-        },
-        nextServerId = nextServerId,
-        selectedServerId = selectedServerId,
-    )
-    return ProxyServerCatalog(
-        servers = collection.servers.map { record ->
-        app.skipi.app.model.ProxyServerRecord(
-            id = record.id,
-            server = record.server,
-            sourceSubscriptionId = record.groupId.takeIf { it != DefaultSubscriptionGroupId },
-        )
-        },
-        nextServerId = collection.nextServerId,
-        selectedServerId = collection.selectedServerId,
-    )
-}
 
 internal suspend fun applyProxySubscriptionUpdates(
     stateStore: AndroidAppStateStore,
@@ -657,22 +570,6 @@ internal fun List<ProxyServerState>.deleteInvalidServersInGroup(
     )
 }
 
-internal fun AppState.withDeletedProxyServers(deletedServerIds: Set<Int>): AppState {
-    if (deletedServerIds.isEmpty()) return this
-    val result = deleteProxyServerRecords(
-        servers = proxyServers.map { ProxyServerRecord(it.id, it.groupId, it.server, it.latency) },
-        deletedServerIds = deletedServerIds,
-        nextServerId = nextProxyServerId,
-        selectedServerId = selectedProxyServerId,
-        proxyRunning = proxyRunning,
-    )
-    return copy(
-        proxyServers = result.servers.map { ProxyServerState(it.id, it.server, it.groupId, it.latency) },
-        selectedProxyServerId = result.selectedServerId,
-        proxyRunning = result.proxyRunning,
-    )
-}
-
 internal fun createProxyServer(action: ProxyServerListAddAction): ProxyServer<*> {
     return createProxyServerDraft(action.toProxyHomeServerKind())
 }
@@ -695,12 +592,4 @@ internal fun ProxyServerListAddAction.toProxyHomeServerKind(): ProxyHomeServerKi
     ProxyServerListAddAction.AmneziaWg -> ProxyHomeServerKind.AmneziaWg
     ProxyServerListAddAction.OlcRtc -> ProxyHomeServerKind.OlcRtc
     ProxyServerListAddAction.Custom -> ProxyHomeServerKind.Custom
-}
-
-private fun AppState.selectedProxyServerIdOrFirstAvailable(nextServers: List<ProxyServerState>): Int {
-    return if (nextServers.any { server -> server.id == selectedProxyServerId }) {
-        selectedProxyServerId
-    } else {
-        nextServers.firstOrNull()?.id ?: selectedProxyServerId
-    }
 }
