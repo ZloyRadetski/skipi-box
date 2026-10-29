@@ -51,6 +51,7 @@ fun SettingsPage(
             val route = when (destination) {
                 SkipiSettingsDestination.Appearance -> Route.SettingsAppearance
                 SkipiSettingsDestination.Vpn -> Route.SettingsVpn
+                SkipiSettingsDestination.NetworkAutomation -> Route.SettingsNetworkAutomation
                 SkipiSettingsDestination.LocalProxy -> Route.LocalProxySettings
                 SkipiSettingsDestination.Subscriptions -> Route.SettingsSubscriptions
                 SkipiSettingsDestination.General -> Route.SettingsGeneral
