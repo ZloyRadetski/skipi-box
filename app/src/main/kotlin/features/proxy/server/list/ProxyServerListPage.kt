@@ -631,14 +631,23 @@ fun ProxyServerListPage(
         },
     )
 
-    val groupState = proxyServerListGroups(
-        state = proxyListState,
-        selectedGroupId = selectedGroupId,
-        searchValue = searchValue,
-        allGroupName = allGroupName,
-        defaultGroupName = defaultGroupName,
-        autoBalancerGroupName = autoBalancerGroupName,
-    )
+    val groupState = remember(
+        proxyListState,
+        selectedGroupId,
+        searchValue,
+        allGroupName,
+        defaultGroupName,
+        autoBalancerGroupName,
+    ) {
+        proxyServerListGroups(
+            state = proxyListState,
+            selectedGroupId = selectedGroupId,
+            searchValue = searchValue,
+            allGroupName = allGroupName,
+            defaultGroupName = defaultGroupName,
+            autoBalancerGroupName = autoBalancerGroupName,
+        )
+    }
     val homeServerSummaryFormatter = rememberProxyServerListItemTextFormatter(
         groupNames = groupState.groupNames,
         unknownGroupName = unknownGroupName,
@@ -668,12 +677,13 @@ fun ProxyServerListPage(
         proxyRunning,
         proxyListState.showTunnelMemoryOnHome,
     ) {
+        // The key changes with both flags, so a disabled counter needs no polling loop at all.
+        if (!proxyRunning || !proxyListState.showTunnelMemoryOnHome) {
+            value = 0L
+            return@produceState
+        }
         while (true) {
-            value = if (proxyRunning && proxyListState.showTunnelMemoryOnHome) {
-                context.currentTunnelMemoryPssKb()
-            } else {
-                0L
-            }
+            value = context.currentTunnelMemoryPssKb()
             kotlinx.coroutines.delay(3_000)
         }
     }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.produceState
@@ -187,16 +188,29 @@ fun clearCustomBackgroundPhoto(context: Context): Boolean {
     return deleted
 }
 
+private data class BackgroundSettings(
+    val style: Int,
+    val dimPercent: Int,
+    val connected: Boolean,
+)
+
 @Composable
 fun AppBackground(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     val stateStore = LocalAppStateStore.current
-    val appState by stateStore.collectAppState()
+    val appState = stateStore.collectAppState()
+    // Only these three fields matter here; unrelated state changes must not rebuild the background.
+    val settings by remember {
+        derivedStateOf {
+            val state = appState.value
+            BackgroundSettings(state.backgroundStyle, state.backgroundPhotoDimPercent, state.proxyRunning)
+        }
+    }
     val context = LocalContext.current
     val photoSeed = backgroundPhotoUpdateSeed
-    val photo: ImageBitmap? = if (appState.backgroundStyle == BackgroundStylePhoto) {
+    val photo: ImageBitmap? = if (settings.style == BackgroundStylePhoto) {
         remember(photoSeed) { loadCustomBackgroundBitmap(context) }
     } else {
         null
@@ -204,11 +218,11 @@ fun AppBackground(
     val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
 
     SkipiAppBackground(
-        style = appState.backgroundStyle,
+        style = settings.style,
         isDark = AppTheme.colors.isDark,
         solidColor = AppTheme.colors.background,
-        isConnected = appState.proxyRunning,
-        dimPercent = appState.backgroundPhotoDimPercent,
+        isConnected = settings.connected,
+        dimPercent = settings.dimPercent,
         photo = photo,
         reduceMotion = powerManager?.isPowerSaveMode == true,
         modifier = modifier,

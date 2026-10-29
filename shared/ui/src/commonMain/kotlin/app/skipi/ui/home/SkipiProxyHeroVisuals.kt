@@ -106,7 +106,7 @@ fun SkipiProxyHeroPowerButtonWaves(
     modifier: Modifier = Modifier,
 ) {
     val transition = rememberInfiniteTransition(label = "skipiProxyHeroPowerWaves")
-    val firstProgress by transition.animateFloat(
+    val firstProgress = transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -115,7 +115,7 @@ fun SkipiProxyHeroPowerButtonWaves(
         ),
         label = "skipiProxyHeroPowerWaveOne",
     )
-    val secondProgress by transition.animateFloat(
+    val secondProgress = transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -126,11 +126,12 @@ fun SkipiProxyHeroPowerButtonWaves(
     )
 
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
-        listOf(firstProgress, secondProgress).forEach { progress ->
+        listOf(firstProgress, secondProgress).forEach { progressState ->
             Box(
                 modifier = Modifier
                     .size(size)
                     .graphicsLayer {
+                        val progress = progressState.value
                         val scale = 1f + 0.35f * progress
                         scaleX = scale
                         scaleY = scale

@@ -19,6 +19,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import app.skipi.app.home.LatencyResultBatcher
 import engine.proxy.latency.AndroidProxyLatencyTester
 import engine.proxy.latency.ProxyServerLatencyTestMode
 import engine.proxy.latency.ProxyServerLatencyTestResult
@@ -129,6 +130,16 @@ internal fun runProxyServerLatencyTest(
     val previousLatencies = targetServers.associate { it.id to it.latency }
 
     val job = scope.launch {
+        // One state write per window instead of one per finished probe (each rewrites the whole list).
+        val resultBatcher = LatencyResultBatcher<Int, String>(this, intervalMillis = LatencyUpdateWindowMillis) { batch ->
+            stateStore.update(persist = false) { state ->
+                state.copy(
+                    proxyServers = state.proxyServers.map { server ->
+                        batch[server.id]?.let { latency -> server.copy(latency = latency) } ?: server
+                    },
+                )
+            }
+        }
         try {
             val stateSnapshot = stateStore.state.value
             val targetIds = targetServers.map { server -> server.id }.toSet()
@@ -162,13 +173,7 @@ internal fun runProxyServerLatencyTest(
                 onProbeFailure = { ProxyServerLatencyTestResult.Failed },
                 onResult = { server, result ->
                     val latency = result.toLatencyText(latencyFailedMessage)
-                    stateStore.update(persist = false) { state ->
-                        state.copy(
-                            proxyServers = state.proxyServers.map {
-                                if (it.id == server.id) it.copy(latency = latency) else it
-                            },
-                        )
-                    }
+                    resultBatcher.add(server.id, latency)
                     if (showSingleResult) {
                         val serverName = server.server.getInfo().remarks.ifBlank { server.server.getInfo().protocol }
                         tipNotifier.show(
@@ -181,12 +186,14 @@ internal fun runProxyServerLatencyTest(
                 },
                 probeLimiter = { runProbe -> runProbe() },
             ).execute(targetServers)
+            resultBatcher.flush()
 
             if (!showSingleResult) {
                 tipNotifier.show(doneTemplate.formatTemplate("count" to targetServers.size))
             }
         } finally {
             withContext(NonCancellable) {
+                resultBatcher.flush()
                 // Latency results and the in-progress marker are host UI runtime data.
                 // Keep them in this process without creating another persisted proxy-catalog writer.
                 stateStore.update(persist = false) { state ->
@@ -210,6 +217,8 @@ internal fun runProxyServerLatencyTest(
     ProxyServerLatencyTracker.register(job)
     return job
 }
+
+private const val LatencyUpdateWindowMillis = 150L
 
 private fun ProxyServerLatencyTestResult.toLatencyText(failedMessage: String): String {
     return if (elapsedMillis >= 0) "$elapsedMillis ms" else failedMessage

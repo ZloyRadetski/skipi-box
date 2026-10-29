@@ -16,6 +16,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -87,7 +88,7 @@ fun SkipiAppBackground(
 
         AppearanceSettingValues.BackgroundStyleConnection -> {
             // Breathing runs only while connected; when idle the background rests statically.
-            val pulse by rememberInfinitePulse(
+            val pulse = rememberInfinitePulse(
                 enabled = isConnected,
                 initialValue = 0.90f,
                 targetValue = 1.10f,
@@ -95,23 +96,27 @@ fun SkipiAppBackground(
                 restingValue = 1.00f,
             )
             val spec = connectionBackgroundSpec(isConnected, isDark)
-            val first by animateColorAsState(spec.firstColor, tween(500), label = "activeColor1")
-            val second by animateColorAsState(spec.secondColor, tween(500), label = "activeColor2")
+            val first = animateColorAsState(spec.firstColor, tween(500), label = "activeColor1")
+            val second = animateColorAsState(spec.secondColor, tween(500), label = "activeColor2")
+            // Pulse and colour are read while drawing so the breathing never recomposes the page.
             Box(
                 modifier
                     .fillMaxSize()
                     .background(solidColor)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                first.copy(alpha = spec.primaryAlpha * pulse),
-                                second.copy(alpha = spec.secondaryAlpha * pulse),
-                                Color.Transparent,
+                    .drawBehind {
+                        val breathing = pulse.value
+                        drawRect(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    first.value.copy(alpha = (spec.primaryAlpha * breathing).coerceIn(0f, 1f)),
+                                    second.value.copy(alpha = (spec.secondaryAlpha * breathing).coerceIn(0f, 1f)),
+                                    Color.Transparent,
+                                ),
+                                startY = 0f,
+                                endY = 1400f,
                             ),
-                            startY = 0f,
-                            endY = 1400f,
-                        ),
-                    ),
+                        )
+                    },
             ) { content() }
         }
 

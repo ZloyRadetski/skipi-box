@@ -759,6 +759,14 @@ private fun PageServerGrid(
     val providerBorder = SkipiTheme.colors.onSurface.copy(alpha = 0.14f)
     val providerDivider = SkipiTheme.colors.onSurface.copy(alpha = 0.08f)
     val gridState = rememberLazyGridState()
+    val rowContext = remember(
+        state.sortMode,
+        state.searchQuery,
+        state.availableActions,
+        state.busyActions,
+        state.availableCopyFormats,
+        state.displayOptions,
+    ) { state.toServerRowContext() }
     val reorderEnabled = proxyHomeCanReorderServers(
         columns = columns,
         sortMode = state.sortMode,
@@ -887,7 +895,7 @@ private fun PageServerGrid(
                             ) {
                                 ServerListItem(
                                     server = server,
-                                    state = state,
+                                    context = rowContext,
                                     serverIndex = serverIndex,
                                     totalServers = pageServers.size,
                                     columns = columns,
@@ -935,7 +943,7 @@ private fun PageServerGrid(
                         )
                         ServerListItem(
                             server = server,
-                            state = state,
+                            context = rowContext,
                             serverIndex = serverIndex,
                             totalServers = pageServers.size,
                             columns = columns,
@@ -1382,48 +1390,16 @@ private fun ServerDetailValue(label: String, value: String) {
 }
 
 @Composable
-private fun buildServerMenuActions(
-    server: ProxyServerSummary,
-    state: ProxyHomeUiState,
-    serverIndex: Int,
-    totalServers: Int,
-): List<SkipiProxyServerCardMenuAction> {
-    val canMove = state.sortMode == ProxyHomeSortMode.Default && state.searchQuery.isBlank() &&
-        canUseHomeAction(state, ProxyHomeActionId.MoveServer)
-    return buildList {
-        val serverCopyFormats = if (canUseHomeAction(state, ProxyHomeActionId.CopyServer)) {
-            server.availableCopyFormats.intersect(state.availableCopyFormats)
-        } else {
-            emptySet()
-        }
-        if (serverCopyFormats.isNotEmpty()) {
-            serverCopyFormats.forEach { format ->
-                add(SkipiProxyServerCardMenuAction("copy:" + format.name, copyFormatTitle(format)))
-            }
-        }
-        if (
-            canUseHomeAction(state, ProxyHomeActionId.ShowServerQr) &&
-            ProxyHomeCopyFormat.QrCode in server.availableCopyFormats &&
-            ProxyHomeCopyFormat.QrCode in state.availableCopyFormats
-        ) {
-            add(SkipiProxyServerCardMenuAction("show-qr", stringResource(Res.string.home_show_qr_code)))
-        }
-        if (canUseHomeAction(state, ProxyHomeActionId.EditServer)) {
-            add(SkipiProxyServerCardMenuAction("edit", stringResource(Res.string.common_edit)))
-        }
-        if (canUseHomeAction(state, ProxyHomeActionId.DeleteServer)) {
-            add(SkipiProxyServerCardMenuAction("delete", stringResource(Res.string.common_delete)))
-        }
-        if (server.isStrategyGroup && canUseHomeAction(state, ProxyHomeActionId.OpenStrategyMemberPicker)) {
-            add(SkipiProxyServerCardMenuAction("strategy-members", stringResource(Res.string.proxy_editor_strategy_group_select_servers)))
-        }
-        if (canMove && serverIndex > 0) {
-            add(SkipiProxyServerCardMenuAction("move-up", stringResource(Res.string.home_move_up)))
-        }
-        if (canMove && serverIndex in 0 until (totalServers - 1)) {
-            add(SkipiProxyServerCardMenuAction("move-down", stringResource(Res.string.home_move_down)))
-        }
-    }
+private fun serverMenuActionTitle(id: String): String = when {
+    id.startsWith("copy:") -> copyFormatTitle(
+        ProxyHomeCopyFormat.entries.first { it.name == id.substringAfter("copy:") },
+    )
+    id == "show-qr" -> stringResource(Res.string.home_show_qr_code)
+    id == "edit" -> stringResource(Res.string.common_edit)
+    id == "delete" -> stringResource(Res.string.common_delete)
+    id == "strategy-members" -> stringResource(Res.string.proxy_editor_strategy_group_select_servers)
+    id == "move-up" -> stringResource(Res.string.home_move_up)
+    else -> stringResource(Res.string.home_move_down)
 }
 
 private fun handleServerMenuAction(
@@ -1447,7 +1423,7 @@ private fun handleServerMenuAction(
 @Composable
 private fun ServerListItem(
     server: ProxyServerSummary,
-    state: ProxyHomeUiState,
+    context: ServerRowContext,
     serverIndex: Int,
     totalServers: Int,
     columns: Int,
@@ -1457,7 +1433,7 @@ private fun ServerListItem(
     dragModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
 ) {
-    val menuActions = buildServerMenuActions(server, state, serverIndex, totalServers)
+    val menuActions = serverMenuActionIds(server, context, serverIndex, totalServers)
     val serverLatencyMs = server.latencyMs
     val latencyText = when {
         server.latencyTesting -> stringResource(Res.string.home_server_testing_latency)
@@ -1466,7 +1442,7 @@ private fun ServerListItem(
             ?: stringResource(Res.string.proxy_server_list_latency_failed)
         else -> null
     }
-    val latencyColor = serverLatencyColor(server, state.displayOptions)
+    val latencyColor = serverLatencyColor(server, context.displayOptions)
     val protocolColor = when (server.protocol.lowercase()) {
         "vless", "vmess" -> Color(0xFF5C6DB0)
         "hysteria2", "hy2" -> Color(0xFFB65A3D)
@@ -1511,14 +1487,13 @@ private fun ServerListItem(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
                     ) {
-                        menuActions.forEach { action ->
+                        menuActions.forEach { actionId ->
                             DropdownMenuItem(
-                                text = { Text(action.title) },
-                                enabled = action.enabled,
+                                text = { Text(serverMenuActionTitle(actionId)) },
                                 colors = skipiHomeDropdownItemColors(),
                                 onClick = {
                                     menuExpanded = false
-                                    handleServerMenuAction(action.id, server, onAction)
+                                    handleServerMenuAction(actionId, server, onAction)
                                 },
                             )
                         }
@@ -1529,10 +1504,10 @@ private fun ServerListItem(
             dragModifier = dragModifier,
         )
     } else {
-        val copyMenuActions = menuActions.filter { it.id.startsWith("copy:") }
+        val copyMenuActions = menuActions.filter { it.startsWith("copy:") }
         val overflowActions = menuActions.filterNot {
-            it.id.startsWith("copy:") || it.id == "edit" ||
-                (it.id == "strategy-members" && server.isStrategyGroup)
+            it.startsWith("copy:") || it == "edit" ||
+                (it == "strategy-members" && server.isStrategyGroup)
         }
         var copyMenuExpanded by remember(server.id) { mutableStateOf(false) }
         var overflowMenuExpanded by remember(server.id) { mutableStateOf(false) }
@@ -1579,21 +1554,20 @@ private fun ServerListItem(
                             expanded = copyMenuExpanded,
                             onDismissRequest = { copyMenuExpanded = false },
                         ) {
-                            copyMenuActions.forEach { action ->
+                            copyMenuActions.forEach { actionId ->
                                 DropdownMenuItem(
-                                    text = { Text(action.title) },
-                                    enabled = action.enabled,
+                                    text = { Text(serverMenuActionTitle(actionId)) },
                                     colors = skipiHomeDropdownItemColors(),
                                     onClick = {
                                         copyMenuExpanded = false
-                                        handleServerMenuAction(action.id, server, onAction)
+                                        handleServerMenuAction(actionId, server, onAction)
                                     },
                                 )
                             }
                         }
                     }
                 }
-                if (menuActions.any { it.id == "edit" }) {
+                if ("edit" in menuActions) {
                     IconButton(onClick = { handleServerMenuAction("edit", server, onAction) }) {
                         Icon(Icons.Outlined.Edit, contentDescription = stringResource(Res.string.common_edit), tint = SkipiTheme.colors.onSurface)
                     }
@@ -1613,14 +1587,13 @@ private fun ServerListItem(
                             expanded = overflowMenuExpanded,
                             onDismissRequest = { overflowMenuExpanded = false },
                         ) {
-                            overflowActions.forEach { action ->
+                            overflowActions.forEach { actionId ->
                                 DropdownMenuItem(
-                                    text = { Text(action.title) },
-                                    enabled = action.enabled,
+                                    text = { Text(serverMenuActionTitle(actionId)) },
                                     colors = skipiHomeDropdownItemColors(),
                                     onClick = {
                                         overflowMenuExpanded = false
-                                        handleServerMenuAction(action.id, server, onAction)
+                                        handleServerMenuAction(actionId, server, onAction)
                                     },
                                 )
                             }

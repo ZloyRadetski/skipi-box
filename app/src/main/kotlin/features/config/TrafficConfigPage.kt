@@ -396,22 +396,30 @@ fun TrafficConfigPage(
         bottom = pagePadding.calculateBottomPadding() + 12.dp,
     )
 
+    // Parsing every profile is expensive; redo it only when the profiles themselves change.
+    val profileItems = remember(appState.trafficConfigs, appState.activeTrafficConfigId, updatingConfigIds) {
+        appState.trafficConfigs.map { config ->
+            TrafficConfigProfileItem(
+                profile = config,
+                active = config.id == appState.activeTrafficConfigId,
+                updating = config.id in updatingConfigIds,
+                canDelete = appState.trafficConfigs.size > 1,
+                hasUnsupportedSections = config.rawConfig.analyzeShadowrocketConfig().unsupportedSections.isNotEmpty(),
+            )
+        }
+    }
+    val globalProxyGroupItems = remember(appState.proxyServers) {
+        projectTrafficConfigGlobalProxyGroups(appState.proxyServers)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding(),
     ) {
         SkipiTrafficConfigScreen(
-            profiles = appState.trafficConfigs.map { config ->
-                TrafficConfigProfileItem(
-                    profile = config,
-                    active = config.id == appState.activeTrafficConfigId,
-                    updating = config.id in updatingConfigIds,
-                    canDelete = appState.trafficConfigs.size > 1,
-                    hasUnsupportedSections = config.rawConfig.analyzeShadowrocketConfig().unsupportedSections.isNotEmpty(),
-                )
-            },
-            globalProxyGroups = projectTrafficConfigGlobalProxyGroups(appState.proxyServers),
+            profiles = profileItems,
+            globalProxyGroups = globalProxyGroupItems,
             sourcedProxyGroups = configProxyGroups,
             contentPadding = listPadding,
             onAddConfig = { showAddMenu = true },

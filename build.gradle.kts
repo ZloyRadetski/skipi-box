@@ -19,3 +19,12 @@ tasks.register<UpdateResourceFileAssetsTask>("updateResourceFileAssets") {
     forceUpdate.set(forceUpdateGeoAssets)
 }
 
+
+// Immutable value models the Compose compiler cannot prove stable (see compose-stability.conf).
+subprojects {
+    pluginManager.withPlugin("org.jetbrains.kotlin.plugin.compose") {
+        extensions.configure<org.jetbrains.kotlin.compose.compiler.gradle.ComposeCompilerGradlePluginExtension> {
+            stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("compose-stability.conf"))
+        }
+    }
+}
