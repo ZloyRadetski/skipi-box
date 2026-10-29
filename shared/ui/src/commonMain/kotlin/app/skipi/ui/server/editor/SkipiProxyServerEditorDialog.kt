@@ -174,7 +174,9 @@ private fun CustomServerEditorFields(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SmallTitle(text = stringResource(Res.string.proxy_editor_custom_json))
+            androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
+                SmallTitle(text = stringResource(Res.string.proxy_editor_custom_json))
+            }
             TextButton(
                 text = stringResource(Res.string.proxy_editor_custom_format_json),
                 onClick = {

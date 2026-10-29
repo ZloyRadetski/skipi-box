@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -75,6 +76,7 @@ internal fun SubscriptionSummaryDetails(
                     Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .clickable(role = Role.Button, onClick = announcementAction)
+                        .defaultMinSize(minHeight = 40.dp)
                         .padding(vertical = 2.dp)
                 },
             )
@@ -150,7 +152,9 @@ private fun SubscriptionMetadataLink(
             .clip(RoundedCornerShape(8.dp))
             .background(color.copy(alpha = 0.08f))
             .clickable(role = Role.Button, onClick = onClick)
+            .defaultMinSize(minHeight = 40.dp)
             .padding(horizontal = 12.dp, vertical = 6.dp),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
     ) {
         Text(
             text = label,

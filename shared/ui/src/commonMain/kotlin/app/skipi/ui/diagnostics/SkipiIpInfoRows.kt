@@ -39,7 +39,15 @@ fun SkipiIpAddressRow(label: String, ip: String, copyDescription: String, onCopy
         Column(Modifier.weight(1f)) {
             Text(label, fontSize = 12.sp, fontWeight = themedFontWeight(FontWeight.SemiBold), color = MiuixTheme.colorScheme.primary)
             Spacer(Modifier.size(2.dp))
-            Text(ip, fontSize = if (ip.length > 20) 17.sp else 22.sp, fontWeight = themedFontWeight(FontWeight.Bold), color = MiuixTheme.colorScheme.onSurface)
+            // A zero-width space after each colon lets a long IPv6 address wrap at a group boundary.
+            Text(
+                ip.replace(":", ":\u200B"),
+                fontSize = when {
+                    ip.length > 30 -> 14.sp
+                    ip.length > 20 -> 17.sp
+                    else -> 22.sp
+                },
+                fontWeight = themedFontWeight(FontWeight.Bold), color = MiuixTheme.colorScheme.onSurface)
         }
         Spacer(Modifier.width(8.dp))
         Box(

@@ -477,17 +477,20 @@ private fun ImportStep(state: SkipiOnboardingState, actions: SkipiOnboardingActi
         Spacer(Modifier.height(24.dp))
         detectedClipboard?.let { clipboardText ->
             SurfaceCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(MiuixIcons.Copy, null, tint = SkipiTheme.colors.accent, modifier = Modifier.size(28.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(Res.string.onboarding_clipboard_detected_title), fontWeight = themedFontWeight(FontWeight.Bold), color = SkipiTheme.colors.onSurface)
-                        Text(clipboardText.take(34) + "...", fontSize = 11.sp, color = SkipiTheme.colors.onSurfaceVariant, maxLines = 1)
+                // The action sits under the text: beside it the title was squeezed to ~100dp on a phone.
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(MiuixIcons.Copy, null, tint = SkipiTheme.colors.accent, modifier = Modifier.size(28.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(Res.string.onboarding_clipboard_detected_title), fontWeight = themedFontWeight(FontWeight.Bold), color = SkipiTheme.colors.onSurface, maxLines = 2)
+                            Text(clipboardText.take(34) + "...", fontSize = 11.sp, color = SkipiTheme.colors.onSurfaceVariant, maxLines = 1)
+                        }
                     }
                     ChoiceChip(
                         label = stringResource(Res.string.onboarding_clipboard_import_btn),
                         selected = true,
-                        modifier = Modifier,
+                        modifier = Modifier.fillMaxWidth(),
                         onClick = {
                             scope.launch {
                                 actions.onImportText(clipboardText, false)
@@ -665,21 +668,26 @@ private fun AccentDot(color: Color, selected: Boolean, onClick: () -> Unit) {
 private fun PermissionCard(icon: ImageVector, iconColor: Color, title: String, description: String, granted: Boolean, onGrant: () -> Unit) {
     val shape = RoundedCornerShape(18.dp)
     SurfaceCard {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (granted) PermissionGreen.copy(alpha = 0.16f) else iconColor.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
-                Icon(if (granted) MiuixIcons.Ok else icon, null, tint = if (granted) PermissionGreen else iconColor, modifier = Modifier.size(24.dp))
+        // Icon + text on top, the action on its own full-width row: beside the text it left ~120dp.
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(if (granted) PermissionGreen.copy(alpha = 0.16f) else iconColor.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+                    Icon(if (granted) MiuixIcons.Ok else icon, null, tint = if (granted) PermissionGreen else iconColor, modifier = Modifier.size(24.dp))
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(title, fontWeight = themedFontWeight(FontWeight.Bold), fontSize = 15.sp, color = SkipiTheme.colors.onSurface)
+                    Spacer(Modifier.height(2.dp))
+                    Text(description, fontSize = 12.sp, color = SkipiTheme.colors.onSurfaceVariant, lineHeight = 16.sp)
+                }
             }
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, fontWeight = themedFontWeight(FontWeight.Bold), fontSize = 15.sp, color = SkipiTheme.colors.onSurface)
-                Spacer(Modifier.height(2.dp))
-                Text(description, fontSize = 12.sp, color = SkipiTheme.colors.onSurfaceVariant, lineHeight = 16.sp)
-            }
-            Spacer(Modifier.width(12.dp))
             if (granted) {
                 Text("✓ ${stringResource(Res.string.onboarding_perm_granted)}", color = PermissionGreen, fontWeight = themedFontWeight(FontWeight.Bold), fontSize = 12.sp)
             } else {
-                Box(Modifier.clip(RoundedCornerShape(10.dp)).background(iconColor).clickable(onClick = onGrant).padding(horizontal = 12.dp, vertical = 8.dp)) {
+                Box(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(iconColor).clickable(onClick = onGrant).padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Text(stringResource(Res.string.onboarding_perm_grant), color = Color.White, fontWeight = themedFontWeight(FontWeight.Bold), fontSize = 12.sp)
                 }
             }

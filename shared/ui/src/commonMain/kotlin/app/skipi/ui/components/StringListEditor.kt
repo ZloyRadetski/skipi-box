@@ -128,7 +128,7 @@ fun StringListEditor(
         showBulkEditor = false
         bulkInput = ""
     }
-    val sanitizedValues = values.normalizedStringList(normalizeInput)
+    val sanitizedValues = remember(values, normalizeInput) { values.normalizedStringList(normalizeInput) }
     LaunchedEffect(sanitizedValues.size, editingIndex) {
         if (editingIndex != NoEditingIndex && editingIndex !in sanitizedValues.indices) {
             editingIndex = NoEditingIndex
@@ -185,11 +185,13 @@ fun StringListEditor(
         bulkInput = draft
         showBulkEditor = true
     }
-    val bulkParseResult = parseStringListDraft(
-        text = bulkInput,
-        validateInput = validateInput,
-        normalizeInput = normalizeInput,
-    )
+    val bulkParseResult = remember(bulkInput, validateInput, normalizeInput) {
+        parseStringListDraft(
+            text = bulkInput,
+            validateInput = validateInput,
+            normalizeInput = normalizeInput,
+        )
+    }
     val bulkErrorText = bulkParseResult.error?.let { error ->
         stringResource(Res.string.string_list_line_error, error.lineNumber, error.message)
     }
@@ -222,6 +224,8 @@ fun StringListEditor(
                     fontSize = StringListTitleFontSize,
                     fontWeight = themedFontWeight(FontWeight.Medium),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -264,7 +268,7 @@ fun StringListEditor(
                 )
                 Spacer(Modifier.width(2.dp))
                 IconButton(
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(44.dp),
                     onClick = addInput,
                     enabled = canAddInput,
                 ) {
@@ -717,14 +721,14 @@ private fun scrollToVisible(
 }
 
 private val StringListItemActionSpacing = 2.dp
-private val StringListItemRowHeight = 34.dp
-private val StringListItemActionButtonSize = 30.dp
+private val StringListItemRowHeight = 44.dp
+private val StringListItemActionButtonSize = 44.dp
 private val StringListItemActionIconSize = 17.dp
 private val StringListItemEditingRowVerticalPadding = 1.dp
 private val StringListItemEditFieldInsideMargin = DpSize(width = 8.dp, height = 6.dp)
 private val StringListItemEditFieldCornerRadius = 6.dp
 private val StringListTitleFontSize = 17.sp
-private val StringListBulkEditButtonSize = 38.dp
+private val StringListBulkEditButtonSize = 44.dp
 private val StringListBulkEditIconSize = 20.dp
 private val StringListBulkTextFieldCornerRadius = 16.dp
 private val StringListBulkTextFieldBorderWidth = 2.dp

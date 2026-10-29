@@ -1501,10 +1501,12 @@ private fun ServerListItem(
             dragModifier = dragModifier,
         )
     } else {
-        val copyMenuActions = menuActions.filter { it.startsWith("copy:") }
-        val overflowActions = menuActions.filterNot {
-            it.startsWith("copy:") || it == "edit" ||
-                (it == "strategy-members" && server.isStrategyGroup)
+        val copyMenuActions = remember(menuActions) { menuActions.filter { it.startsWith("copy:") } }
+        val overflowActions = remember(menuActions, server.isStrategyGroup) {
+            menuActions.filterNot {
+                it.startsWith("copy:") || it == "edit" ||
+                    (it == "strategy-members" && server.isStrategyGroup)
+            }
         }
         var copyMenuExpanded by remember(server.id) { mutableStateOf(false) }
         var overflowMenuExpanded by remember(server.id) { mutableStateOf(false) }

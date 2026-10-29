@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -172,7 +173,7 @@ fun SkipiProxyServerCompactListCard(
                                 text = transport,
                                 textColor = state.transportTextColor,
                                 containerColor = state.transportContainerColor,
-                                modifier = Modifier.weight(1f, fill = false),
+                                modifier = Modifier.weight(1f, fill = false).widthIn(max = 96.dp),
                                 compact = true,
                                 fontWeight = latencyFontWeight,
                             )

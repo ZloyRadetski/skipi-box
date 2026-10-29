@@ -100,12 +100,14 @@ fun SkipiDnsLeakResolverCard(resolver: DnsLeakResolverUi, modifier: Modifier = M
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(countryFlagEmoji(resolver.observedCountryCode), fontSize = 22.sp)
-            Column {
+            Column(Modifier.weight(1f)) {
                 Text(
                     resolver.isp.ifBlank { stringResource(Res.string.tools_dns_isp_unknown) },
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
                 val serverLabel = stringResource(
                     if (resolver.isSystemServer) Res.string.tools_dns_server_system else Res.string.tools_dns_server_public,
@@ -120,6 +122,8 @@ fun SkipiDnsLeakResolverCard(resolver: DnsLeakResolverUi, modifier: Modifier = M
                     listOfNotNull(serverLabel, observedLabel).joinToString(" · "),
                     fontSize = 12.sp,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 3,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
         }

@@ -65,6 +65,7 @@ import app.skipi.ui.resources.network_automation_switch_summary
 import app.skipi.ui.resources.network_automation_switch_title
 import app.skipi.ui.resources.network_automation_type_any_wifi
 import app.skipi.ui.resources.network_automation_type_cellular
+import app.skipi.ui.resources.network_automation_wifi_rule_title
 import app.skipi.ui.resources.network_automation_type_exists_error
 import app.skipi.ui.resources.network_automation_type_specific_wifi
 import app.skipi.ui.resources.network_automation_use_current_wifi
@@ -238,7 +239,7 @@ private fun RuleCard(
     val typeTitle = when (rule.type) {
         NetworkRuleType.CELLULAR -> stringResource(Res.string.network_automation_type_cellular)
         NetworkRuleType.ANY_WIFI -> stringResource(Res.string.network_automation_type_any_wifi)
-        NetworkRuleType.SPECIFIC_WIFI -> "Wi-Fi: ${rule.ssid.orEmpty()}"
+        NetworkRuleType.SPECIFIC_WIFI -> stringResource(Res.string.network_automation_wifi_rule_title, rule.ssid.orEmpty())
     }
     val actionSummary = when (rule.action) {
         NetworkRuleAction.DISCONNECT_VPN -> stringResource(Res.string.network_automation_action_disconnect)

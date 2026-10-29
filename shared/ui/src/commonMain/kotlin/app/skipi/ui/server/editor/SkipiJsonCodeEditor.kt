@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -143,7 +144,7 @@ fun SkipiCodeEditor(
                 BasicText(
                     text = gutterText,
                     style = textStyle.copy(color = colors.lineNumber, textAlign = TextAlign.End),
-                    modifier = Modifier.width(32.dp),
+                    modifier = Modifier.widthIn(min = 32.dp),
                 )
             }
             Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(colors.separator))

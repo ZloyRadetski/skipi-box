@@ -1131,6 +1131,7 @@
     <string name="network_automation_rules_section">Правила для сетей</string>
     <string name="network_automation_add_rule">Добавить правило</string>
     <string name="network_automation_rule_type">Тип сети</string>
+    <string name="network_automation_wifi_rule_title">Wi-Fi: %1$s</string>
     <string name="network_automation_type_cellular">Мобильная сеть (LTE / 5G)</string>
     <string name="network_automation_type_any_wifi">Любой Wi-Fi</string>
     <string name="network_automation_type_specific_wifi">Конкретный Wi-Fi SSID</string>

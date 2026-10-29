@@ -599,6 +599,8 @@ private fun ResourceFileStatusChip(text: String, ready: Boolean) {
             fontSize = 12.sp,
             fontWeight = themedFontWeight(FontWeight.Medium),
             color = if (ready) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.error,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }

@@ -102,8 +102,8 @@ fun SkipiRouteRuleEditorForm(
             modifier = Modifier.fillMaxWidth(),
         )
         Column {
-            TextButton(onClick = { outboundMenu = true }) {
-                Text("${stringResource(Res.string.routing_outbound_tag_label)}: ${outboundOptions.firstOrNull { it.tag == outbound }?.label ?: outbound}")
+            TextButton(onClick = { outboundMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("${stringResource(Res.string.routing_outbound_tag_label)}: ${outboundOptions.firstOrNull { it.tag == outbound }?.label ?: outbound}", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
             DropdownMenu(expanded = outboundMenu, onDismissRequest = { outboundMenu = false }) {
                 outboundOptions.forEach { option ->

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -242,8 +243,8 @@ private fun DnsServerListCard(
                 Text(dnsProtocol(value), fontSize = 11.sp, color = MiuixTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
                 Text(value, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MiuixTheme.textStyles.body1)
-                IconButton(onClick = { onEdit(index) }, modifier = Modifier.size(32.dp)) { Icon(MiuixIcons.Edit, stringResource(Res.string.configs_dns_edit_server), modifier = Modifier.size(18.dp)) }
-                IconButton(onClick = { onDelete(index) }, modifier = Modifier.size(32.dp)) { Icon(MiuixIcons.Delete, stringResource(Res.string.common_delete), modifier = Modifier.size(18.dp)) }
+                IconButton(onClick = { onEdit(index) }, modifier = Modifier.size(44.dp)) { Icon(MiuixIcons.Edit, stringResource(Res.string.configs_dns_edit_server), modifier = Modifier.size(18.dp)) }
+                IconButton(onClick = { onDelete(index) }, modifier = Modifier.size(44.dp)) { Icon(MiuixIcons.Delete, stringResource(Res.string.common_delete), modifier = Modifier.size(18.dp)) }
             }
         }
         Row(Modifier.fillMaxWidth().clickable(onClick = onAdd).padding(14.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
@@ -256,7 +257,7 @@ private fun DnsServerListCard(
 private fun DnsQuickChips(items: List<Pair<String, String>>, onClick: (String) -> Unit) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEach { (label, value) ->
-            Row(Modifier.clip(RoundedCornerShape(16.dp)).background(MiuixTheme.colorScheme.surfaceVariant).clickable { onClick(value) }.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(16.dp)).background(MiuixTheme.colorScheme.surfaceVariant).clickable { onClick(value) }.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(MiuixIcons.Add, null, tint = MiuixTheme.colorScheme.primary, modifier = Modifier.size(13.dp)); Spacer(Modifier.width(4.dp)); Text(label, style = MiuixTheme.textStyles.body2, fontSize = 12.sp, maxLines = 1)
             }
         }

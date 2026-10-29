@@ -80,10 +80,10 @@ fun SkipiRouteRuleCard(
             RuleLine(stringResource(Res.string.routing_protocol_label), rule.protocol)
             RuleLine(stringResource(Res.string.routing_network_label), rule.network)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onEdit, modifier = Modifier.size(44.dp)) {
                     Icon(MiuixIcons.Edit, contentDescription = stringResource(Res.string.routing_edit), tint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
                 }
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(44.dp)) {
                     Icon(MiuixIcons.Delete, contentDescription = stringResource(Res.string.routing_delete), tint = MiuixTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
                 }
             }

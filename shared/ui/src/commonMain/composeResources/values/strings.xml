@@ -1141,6 +1141,7 @@
     <string name="network_automation_rules_section">Network rules</string>
     <string name="network_automation_add_rule">Add rule</string>
     <string name="network_automation_rule_type">Network type</string>
+    <string name="network_automation_wifi_rule_title">Wi-Fi: %1$s</string>
     <string name="network_automation_type_cellular">Cellular (LTE / 5G)</string>
     <string name="network_automation_type_any_wifi">Any Wi-Fi</string>
     <string name="network_automation_type_specific_wifi">Specific Wi-Fi SSID</string>
