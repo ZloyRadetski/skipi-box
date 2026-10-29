@@ -9,6 +9,10 @@ import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
 import features.networkautomation.policy.NetworkAutomationRules
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_copied
+import app.skipi.ui.resources.app_update_available_title
+import app.skipi.ui.resources.app_update_check_failed
+import app.skipi.ui.resources.app_update_checking
+import app.skipi.ui.resources.app_update_already_latest
 import app.skipi.ui.resources.network_automation_no_wifi_detected
 import app.skipi.ui.settings.AppearanceSettingValues
 import app.skipi.ui.resources.settings_local_proxy_port_invalid
@@ -95,6 +99,8 @@ import app.skipi.ui.settings.SkipiSettingsTextField
 import app.skipi.ui.settings.AboutRuntimeInfo
 import app.skipi.ui.settings.AboutSettingsCapabilities
 import app.skipi.ui.settings.AboutSettingsLabels
+import app.skipi.ui.updater.SkipiAppUpdatesSettingsCard
+import features.updater.AppUpdateState
 import app.skipi.ui.settings.AppearanceSettingsCapabilities
 import app.skipi.ui.settings.GeneralSettingsCapabilities
 import app.skipi.ui.settings.GeneralSettingsState
@@ -166,6 +172,8 @@ internal fun DesktopSettingsScreen(
     automationServers: List<NetworkAutomationServerOption>,
     backupHost: DesktopBackupHost,
     isTunnelRunning: Boolean = false,
+    appUpdateState: AppUpdateState = AppUpdateState(),
+    onCheckForAppUpdate: suspend () -> DesktopAppUpdateCheck = { DesktopAppUpdateCheck.Failed },
     onClearSystemProxy: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -374,6 +382,10 @@ internal fun DesktopSettingsScreen(
             onMessage = { message = it },
         )
         DesktopSettingsDestination.About -> DesktopAboutSettings(
+            settings = currentSettings,
+            appUpdateState = appUpdateState,
+            onCheckForAppUpdate = onCheckForAppUpdate,
+            onAutoCheckChange = { enabled -> persist(currentSettings.copy(autoCheckAppUpdates = enabled), "") },
             onReplayOnboarding = { persist(currentSettings.copy(onboardingCompleted = false), "") },
             onBack = { destination = DesktopSettingsDestination.Overview },
             onMessage = { message = it },
@@ -955,6 +967,10 @@ private fun DesktopDiagnosticsContent(
 
 @Composable
 private fun DesktopAboutSettings(
+    settings: DesktopAppSettings,
+    appUpdateState: AppUpdateState,
+    onCheckForAppUpdate: suspend () -> DesktopAppUpdateCheck,
+    onAutoCheckChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onReplayOnboarding: () -> Unit,
     onMessage: (String) -> Unit,
@@ -979,8 +995,42 @@ private fun DesktopAboutSettings(
         onOpenTelegram = { browse(SkipiTelegramChannelUri, onMessage) },
         onOpenBugReport = { browse(SkipiBugReportUri, onMessage) },
         onOpenSource = { browse(SkipiSourceUri, onMessage) },
-        updatesContent = {},
-        capabilities = AboutSettingsCapabilities(updates = false),
+        updatesContent = {
+            val scope = rememberCoroutineScope()
+            var checking by remember { mutableStateOf(false) }
+            var result by remember { mutableStateOf<DesktopAppUpdateCheck?>(null) }
+            val checkingText = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.app_update_checking)
+            val latestText = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.app_update_already_latest)
+            val failedText = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.app_update_check_failed)
+            val availableText = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.app_update_available_title)
+            val known0 = appUpdateState.availableUpdate
+            SkipiAppUpdatesSettingsCard(
+                autoCheckEnabled = settings.autoCheckAppUpdates,
+                onAutoCheckChange = onAutoCheckChange,
+                nightInstallEnabled = null,
+                onNightInstallChange = {},
+                checkSummary = when {
+                    checking -> checkingText
+                    known0 != null -> "$availableText v${known0.versionName}"
+                    result == DesktopAppUpdateCheck.UpToDate -> latestText
+                    result == DesktopAppUpdateCheck.Failed -> failedText
+                    else -> null
+                },
+                onCheckNow = {
+                    val known = appUpdateState.availableUpdate
+                    if (known != null) {
+                        browse(known.downloadUrl, onMessage)
+                    } else if (!checking) {
+                        checking = true
+                        scope.launch {
+                            result = onCheckForAppUpdate()
+                            checking = false
+                        }
+                    }
+                },
+            )
+        },
+        capabilities = AboutSettingsCapabilities(),
         platformContent = {
             SkipiSettingsGroup(title = "ХРАНИЛИЩЕ") {
                 SkipiSettingsInfoRow("Хранилище", settingsPath.toString())
@@ -990,7 +1040,7 @@ private fun DesktopAboutSettings(
     )
 }
 
-private fun browse(uri: String, onMessage: (String) -> Unit) {
+internal fun browse(uri: String, onMessage: (String) -> Unit) {
     runCatching {
         check(Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
             "Открытие ссылок не поддерживается системой."

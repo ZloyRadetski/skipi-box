@@ -3,7 +3,9 @@
 
 package app.skipi.desktop
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeDisplayOptions
@@ -152,6 +154,7 @@ internal fun DesktopProxyHome(
     onCancelLatencyTests: (() -> Unit)? = null,
     onPrepareSubscription: suspend (DesktopSubscriptionInstallUri) -> Result<String>,
     onImport: suspend (DesktopProxyImportInput) -> Result<String>,
+    updateBanner: (@Composable () -> Unit)? = null,
     onSaveSubscriptionGroup: suspend (SubscriptionGroupUiState, Boolean, Boolean) -> SubscriptionEditorSaveResult,
     onSetSubscriptionEnabled: suspend (Int, Boolean) -> Unit,
     onDeleteSubscription: suspend (Int) -> Unit,
@@ -647,12 +650,16 @@ internal fun DesktopProxyHome(
     }
 
     if (editingServerModel == null) {
-        ProxyHomeScreen(
-            store = homeStore,
-            contentPadding = contentPadding,
-            topContentPadding = 40.dp,
-            containerColor = androidx.compose.ui.graphics.Color.Transparent,
-        )
+        Column(androidx.compose.ui.Modifier.fillMaxSize()) {
+            updateBanner?.invoke()
+            ProxyHomeScreen(
+                store = homeStore,
+                modifier = androidx.compose.ui.Modifier.weight(1f),
+                contentPadding = contentPadding,
+                topContentPadding = 40.dp,
+                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            )
+        }
     }
 
     qrPayload?.let { payload ->

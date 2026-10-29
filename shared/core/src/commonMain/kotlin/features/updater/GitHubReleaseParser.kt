@@ -65,6 +65,38 @@ object GitHubReleaseParser {
         )
     }
 
+    /**
+     * Availability-only variant for hosts that cannot install an APK (Desktop): a newer release is
+     * offered through its public page. Null for malformed bodies, releases without a page, or
+     * releases that are not newer than [current].
+     */
+    fun parseAvailability(body: String, current: CurrentAppVersion): AppUpdateInfo? {
+        val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return null
+        val tagName = root.string("tag_name").trim()
+        val remoteVersionName = tagName.removePrefix("v").trim()
+        val pageUrl = root.string("html_url").takeIf(String::isNotBlank) ?: return null
+        if (remoteVersionName.isBlank()) return null
+        val changelog = root.string("body").trim()
+        val remoteVersionCode = AppReleaseVersions.extractVersionCodeFromBody(changelog)
+        val isNewer = AppReleaseVersions.isVersionNewer(
+            currentVersionName = current.name,
+            currentVersionCode = current.code,
+            remoteVersionName = remoteVersionName,
+            remoteVersionCode = remoteVersionCode,
+        )
+        if (!isNewer) return null
+        return AppUpdateInfo(
+            versionName = remoteVersionName,
+            versionCode = remoteVersionCode ?: (current.code + 1),
+            releaseTitle = root.string("name").ifBlank { tagName },
+            changelog = changelog,
+            downloadUrl = pageUrl,
+            assetName = "",
+            apkSizeBytes = 0L,
+            publishedAt = root.string("published_at"),
+        )
+    }
+
     private fun selectBestApkAsset(assets: JsonArray, supportedAbis: List<String>): JsonObject? {
         val apkAssets = assets.mapNotNull { it as? JsonObject }.filter { it.assetName().endsWith(".apk") }
         if (apkAssets.isEmpty()) return null

@@ -82,3 +82,33 @@ class GitHubReleaseParserTest {
         assertEquals(0L, update?.apkSizeBytes)
     }
 }
+
+class GitHubReleaseAvailabilityTest {
+    private val current = CurrentAppVersion(name = "0.4.1", code = 180)
+
+    private fun release(tag: String, body: String = "Version code: 190", assets: String = "") =
+        """{"tag_name": "$tag", "name": "Title", "body": "$body", "html_url": "https://example.invalid/release",
+            "published_at": "2026-10-01T00:00:00Z", "assets": [$assets]}"""
+
+    @Test
+    fun newerReleaseIsOfferedByItsPageEvenWithoutAnApkAsset() {
+        val update = GitHubReleaseParser.parseAvailability(release("v0.5.0"), current)
+
+        assertEquals("0.5.0", update?.versionName)
+        assertEquals(190, update?.versionCode)
+        assertEquals("https://example.invalid/release", update?.downloadUrl)
+        assertEquals(0L, update?.apkSizeBytes)
+    }
+
+    @Test
+    fun olderOrEqualReleaseIsNotOffered() {
+        assertNull(GitHubReleaseParser.parseAvailability(release("v0.4.1", "Version code: 180"), current))
+        assertNull(GitHubReleaseParser.parseAvailability(release("v0.3.0", "Version code: 100"), current))
+    }
+
+    @Test
+    fun malformedBodyOrMissingPageYieldsNothing() {
+        assertNull(GitHubReleaseParser.parseAvailability("not json", current))
+        assertNull(GitHubReleaseParser.parseAvailability("""{"tag_name": "v9.0.0", "assets": []}""", current))
+    }
+}

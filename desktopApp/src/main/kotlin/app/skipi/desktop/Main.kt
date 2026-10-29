@@ -66,6 +66,9 @@ import app.skipi.ui.home.formatSubscriptionRefreshMessage
 import app.skipi.ui.home.formatSubscriptionInstallMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
+import app.skipi.ui.updater.SkipiAppUpdateBanner
+import features.updater.AppUpdateState
+import features.updater.bannerModel
 import features.networkautomation.policy.NetworkAutomationAction
 import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
@@ -232,6 +235,22 @@ fun main() = application {
                 }
                 DisposableEffect(desktopDiagnostics) { onDispose { desktopDiagnostics.close() } }
                 val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
+
+                var appUpdateState by remember { mutableStateOf(AppUpdateState()) }
+                val appUpdateChecker = remember { DesktopAppUpdateChecker() }
+                suspend fun checkForAppUpdate(): DesktopAppUpdateCheck {
+                    val outcome = appUpdateChecker.check()
+                    when (outcome) {
+                        is DesktopAppUpdateCheck.Available ->
+                            appUpdateState = appUpdateState.applyCheckedRelease(outcome.update).state
+                        DesktopAppUpdateCheck.UpToDate -> appUpdateState = appUpdateState.applyCheckedRelease(null).state
+                        DesktopAppUpdateCheck.Failed -> Unit
+                    }
+                    return outcome
+                }
+                LaunchedEffect(desktopSettings.autoCheckAppUpdates) {
+                    if (desktopSettings.autoCheckAppUpdates) checkForAppUpdate()
+                }
 
                 fun requestTunnelReconnect(reason: String) {
                     pendingTunnelReconnectReason = reason
@@ -1516,6 +1535,15 @@ fun main() = application {
                     }
                     when (currentSection) {
                         SkipiMainDestination.Proxy -> DesktopProxyHome(
+                            updateBanner = appUpdateState.bannerModel()?.let { banner ->
+                                {
+                                    SkipiAppUpdateBanner(
+                                        banner = banner,
+                                        onDismiss = { appUpdateState = appUpdateState.dismissed() },
+                                        onPrimaryAction = { browse(banner.update.downloadUrl) { coreMessage = it } },
+                                    )
+                                }
+                            },
                             serverLibrary = serverLibrary,
                             subscriptionLibrary = subscriptionLibrary,
                             subscriptionCatalog = desktopSharedApplication.subscriptions.catalog.value,
@@ -1991,6 +2019,8 @@ fun main() = application {
                         )
 
                         SkipiMainDestination.Settings -> DesktopSettingsScreen(
+                            appUpdateState = appUpdateState,
+                            onCheckForAppUpdate = ::checkForAppUpdate,
                             settings = desktopSettings,
                             diagnostics = desktopDiagnostics,
                             coreLogs = desktopCoreLogs,

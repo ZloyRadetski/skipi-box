@@ -132,6 +132,7 @@ data class DesktopAppSettings(
     val languageTag: String? = null,
     val hapticsEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
+    val autoCheckAppUpdates: Boolean = true,
 )
 
 object DesktopSettingsLibraries {

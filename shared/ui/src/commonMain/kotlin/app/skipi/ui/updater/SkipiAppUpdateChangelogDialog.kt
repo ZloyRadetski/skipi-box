@@ -1,7 +1,7 @@
 // Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
-package features.updater.ui
+package app.skipi.ui.updater
 
 import androidx.compose.foundation.background
 import app.skipi.ui.text.themedFontWeight
@@ -19,16 +19,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.app_update_install_action
+import app.skipi.ui.resources.app_update_dismiss_action
+import app.skipi.ui.resources.app_update_size
+import app.skipi.ui.resources.app_update_available_title
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import app.R
 import features.updater.AppUpdateInfo
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -36,19 +40,19 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.util.Locale
 
 @Composable
-fun AppUpdateChangelogDialog(
+fun SkipiAppUpdateChangelogDialog(
     show: Boolean,
     updateInfo: AppUpdateInfo?,
     onDismiss: () -> Unit,
     onInstallClick: () -> Unit,
+    actionLabel: String = stringResource(Res.string.app_update_install_action),
 ) {
     if (!show || updateInfo == null) return
 
     val formattedSize = if (updateInfo.apkSizeBytes > 0) {
-        String.format(Locale.US, "%.1f MB", updateInfo.apkSizeBytes / (1024f * 1024f))
+        formatUpdateSizeMegabytes(updateInfo.apkSizeBytes) + " MB"
     } else ""
 
     Dialog(
@@ -68,7 +72,7 @@ fun AppUpdateChangelogDialog(
                     .padding(24.dp),
             ) {
                 Text(
-                    text = "${stringResource(R.string.app_update_available_title)} v${updateInfo.versionName}",
+                    text = "${stringResource(Res.string.app_update_available_title)} v${updateInfo.versionName}",
                     fontSize = 19.sp,
                     fontWeight = themedFontWeight(FontWeight.Bold),
                     color = MiuixTheme.colorScheme.onSurface,
@@ -77,7 +81,7 @@ fun AppUpdateChangelogDialog(
                 if (formattedSize.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "${stringResource(R.string.app_update_size)}: $formattedSize",
+                        text = "${stringResource(Res.string.app_update_size)}: $formattedSize",
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         fontSize = 13.sp,
                     )
@@ -113,7 +117,7 @@ fun AppUpdateChangelogDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(
-                        text = stringResource(R.string.app_update_dismiss_action),
+                        text = stringResource(Res.string.app_update_dismiss_action),
                         modifier = Modifier.weight(1f),
                         onClick = onDismiss,
                     )
@@ -127,7 +131,7 @@ fun AppUpdateChangelogDialog(
                         },
                     ) {
                         Text(
-                            text = stringResource(R.string.app_update_install_action),
+                            text = actionLabel,
                             color = MiuixTheme.colorScheme.onPrimary,
                         )
                     }
@@ -135,4 +139,9 @@ fun AppUpdateChangelogDialog(
             }
         }
     }
+}
+
+internal fun formatUpdateSizeMegabytes(bytes: Long): String {
+    val tenths = kotlin.math.round(bytes / (1024f * 1024f) * 10f).toInt()
+    return "${tenths / 10}.${tenths % 10}"
 }
