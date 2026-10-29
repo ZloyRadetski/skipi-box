@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.routing.ui
@@ -219,63 +219,6 @@ fun ProcessAppPickerDialog(
                 TextButton(
                     text = stringResource(R.string.common_close),
                     onClick = onDismissRequest,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun SuggestionChipsRow(
-    chips: List<String>,
-    onChipClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    actionButtonText: String? = null,
-    onActionClick: (() -> Unit)? = null,
-    selectedChip: String? = null,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (actionButtonText != null && onActionClick != null) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(AppTheme.colors.accent)
-                    .clickable(onClick = onActionClick)
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-            ) {
-                Text(
-                    text = actionButtonText,
-                    fontSize = 12.sp,
-                    fontWeight = themedFontWeight(FontWeight.SemiBold),
-                    color = AppTheme.colors.onAccent,
-                )
-            }
-        }
-
-        chips.forEach { chip ->
-            val isSelected = selectedChip == chip
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (isSelected) AppTheme.colors.accent
-                        else AppTheme.colors.surfaceVariant,
-                    )
-                    .clickable { onChipClick(chip) }
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-            ) {
-                Text(
-                    text = chip,
-                    fontSize = 12.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (isSelected) AppTheme.colors.onAccent else MiuixTheme.colorScheme.onSurface,
                 )
             }
         }

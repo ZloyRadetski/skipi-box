@@ -24,32 +24,38 @@ internal fun buildXrayOutbounds(
         enableLocalDns = appState.effectiveLocalDnsEnabled,
         dnsPlan = dnsPlan,
         dnsProxyOutboundTag = dnsProxyOutboundTag,
-        transport = XrayOutboundTransportOptions(
-            directDomainStrategy = appState.xrayDirectOutboundDomainStrategy(),
-            wireguardDomainStrategy = appState.wireguardDomainStrategy(),
-            tcpSockopt = appState.xrayTcpSockopt(),
-        ),
-        mux = if (appState.enableMux) {
-            XrayMuxOutboundOptions(
-                concurrency = appState.muxConcurrency,
-                xudpConcurrency = appState.muxXudpConcurrency,
-                xudpProxyUdp443Mode = appState.muxXudpProxyUdp443,
-            )
-        } else {
-            null
-        },
-        fragment = if (appState.enableFragment) {
-            XrayFragmentOutboundOptions(
-                domainStrategy = appState.xrayDirectOutboundDomainStrategy(),
-                packets = appState.fragmentPackets,
-                length = appState.fragmentLength,
-                interval = appState.fragmentInterval,
-            )
-        } else {
-            null
-        },
+        transport = appState.xrayTransportOptions(),
+        mux = appState.xrayMuxOptions(),
+        fragment = appState.xrayFragmentOptions(),
     ),
 )
+
+internal fun AppState.xrayTransportOptions() = XrayOutboundTransportOptions(
+    directDomainStrategy = xrayDirectOutboundDomainStrategy(),
+    wireguardDomainStrategy = wireguardDomainStrategy(),
+    tcpSockopt = xrayTcpSockopt(),
+)
+
+internal fun AppState.xrayMuxOptions(): XrayMuxOutboundOptions? = if (enableMux) {
+    XrayMuxOutboundOptions(
+        concurrency = muxConcurrency,
+        xudpConcurrency = muxXudpConcurrency,
+        xudpProxyUdp443Mode = muxXudpProxyUdp443,
+    )
+} else {
+    null
+}
+
+internal fun AppState.xrayFragmentOptions(): XrayFragmentOutboundOptions? = if (enableFragment) {
+    XrayFragmentOutboundOptions(
+        domainStrategy = xrayDirectOutboundDomainStrategy(),
+        packets = fragmentPackets,
+        length = fragmentLength,
+        interval = fragmentInterval,
+    )
+} else {
+    null
+}
 
 /** Android adapter for the shared direct-outbound strategy selection. */
 internal fun AppState.xrayDirectOutboundDomainStrategy(): String =

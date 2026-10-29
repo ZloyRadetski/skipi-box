@@ -442,26 +442,19 @@ fun main() = application {
                     ?.name
                 val exportProxyServerFullJson: suspend (ProxyServerEditResult) -> String = { editResult ->
                     val serverLibrarySnapshot = serverLibrary
-                    val configLibrarySnapshot = configLibrary
-                    val routingSnapshot = desktopSettings.toRoutingConfigRecord()
-                    val optionsSnapshot = localProxyOptions
+                    val settingsSnapshot = desktopSettings
                     val trafficConfigContentSnapshot = trafficConfigContentById
-                    val subscriptionPingUrlSnapshot = desktopSettings.subscriptionPingUrl
                     val latencySnapshot = latencyByServerId.toMap()
                     withContext(Dispatchers.IO) {
                         val copyTarget = editResult.toProxyServerCopyTarget(
                             defaultGroupId = DesktopProxyGroupIds.DefaultManualSubscriptionId,
                         )
-                        val tempServerLibrary = serverLibrarySnapshot.withProxyServerCopyTarget(copyTarget)
-                        buildDesktopSelectedServerConfig(
-                            serverLibrary = tempServerLibrary,
-                            configLibrary = configLibrarySnapshot,
-                            routing = routingSnapshot,
-                            options = optionsSnapshot,
+                        buildDesktopFullJsonExport(
+                            serverLibrary = serverLibrarySnapshot.withProxyServerCopyTarget(copyTarget),
+                            settings = settingsSnapshot,
                             trafficConfigContentById = trafficConfigContentSnapshot,
-                            subscriptionPingUrl = subscriptionPingUrlSnapshot,
                             latencyByServerId = latencySnapshot,
-                        )?.getOrThrow() ?: error("Select a working server before exporting")
+                        ).getOrThrow()
                     }
                 }
                 val latestSelectedServerConfig by rememberUpdatedState(selectedServerConfig)

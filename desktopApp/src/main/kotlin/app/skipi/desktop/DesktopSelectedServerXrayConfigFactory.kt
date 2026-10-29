@@ -148,10 +148,11 @@ object DesktopSelectedServerXrayConfigFactory {
         }
     }
 
-    private fun DesktopServerLatencyResult?.toPlannerLatency(): String = when (this) {
-        is DesktopServerLatencyResult.Success -> "$milliseconds ms"
-        DesktopServerLatencyResult.Timeout -> "Timeout"
-        is DesktopServerLatencyResult.Error -> "Failed"
-        null -> ""
-    }
+}
+
+internal fun DesktopServerLatencyResult?.toPlannerLatency(): String = when (this) {
+    is DesktopServerLatencyResult.Success -> "$milliseconds ms"
+    DesktopServerLatencyResult.Timeout -> "Timeout"
+    is DesktopServerLatencyResult.Error -> "Failed"
+    null -> ""
 }
