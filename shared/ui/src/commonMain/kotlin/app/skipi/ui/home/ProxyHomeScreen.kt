@@ -836,7 +836,7 @@ private fun PageServerGrid(
                         subscription = subscription,
                         expanded = page.subscriptionExpanded,
                         onToggleExpanded = { onAction(ProxyHomeAction.ToggleSubscriptionExpanded(page.group.id)) },
-                        state = state,
+                        context = rowContext,
                         onAction = onAction,
                     )
                 }
@@ -887,11 +887,6 @@ private fun PageServerGrid(
                                 surfaceColor = providerSurface,
                                 borderColor = providerBorder,
                                 dividerColor = providerDivider,
-                                modifier = Modifier.animateItem(
-                                    fadeInSpec = tween(durationMillis = 180),
-                                    fadeOutSpec = tween(durationMillis = 120),
-                                    placementSpec = null,
-                                ),
                             ) {
                                 ServerListItem(
                                     server = server,
@@ -934,7 +929,7 @@ private fun PageServerGrid(
                         state = reorderableState.reorderableState,
                         key = "server-${server.id}",
                         enabled = reorderEnabled,
-                        animateItemModifier = Modifier.animateItem(placementSpec = null),
+                        animateItemModifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null, placementSpec = null),
                     ) { isDragging ->
                         val dragModifier = Modifier.longPressReorderDragHandle(
                             scope = this,
@@ -1228,7 +1223,7 @@ private fun HomeSubscriptionCard(
     subscription: ProxySubscriptionSummary,
     expanded: Boolean,
     onToggleExpanded: () -> Unit,
-    state: ProxyHomeUiState,
+    context: ServerRowContext,
     onAction: (ProxyHomeAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1266,23 +1261,23 @@ private fun HomeSubscriptionCard(
                     formatSubscriptionUpdateTimestamp(timestamp),
                 )
             },
-            canRefresh = canUseHomeAction(state, ProxyHomeActionId.RefreshSubscription),
-        canPingAction = canUseHomeAction(state, ProxyHomeActionId.PingSubscription) &&
+            canRefresh = context.canUse(ProxyHomeActionId.RefreshSubscription),
+        canPingAction = context.canUse(ProxyHomeActionId.PingSubscription) &&
                 (!subscription.pinging || subscription.canCancelPing),
-            canEdit = canUseHomeAction(state, ProxyHomeActionId.EditSubscription),
+            canEdit = context.canUse(ProxyHomeActionId.EditSubscription),
         ),
         actions = SkipiSubscriptionSummaryActions(
             onRefresh = { onAction(ProxyHomeAction.RefreshSubscription(subscription.id)) },
             onPing = { onAction(ProxyHomeAction.PingSubscription(subscription.id)) },
             onEdit = { onAction(ProxyHomeAction.EditSubscription(subscription.id)) },
             onAnnouncement = subscription.announcementUrl
-                ?.takeIf { canUseHomeAction(state, ProxyHomeActionId.OpenExternalLink) }
+                ?.takeIf { context.canUse(ProxyHomeActionId.OpenExternalLink) }
                 ?.let { url -> { onAction(ProxyHomeAction.OpenExternalLink(url)) } },
             onSupport = subscription.supportUrl
-                ?.takeIf { canUseHomeAction(state, ProxyHomeActionId.OpenExternalLink) }
+                ?.takeIf { context.canUse(ProxyHomeActionId.OpenExternalLink) }
                 ?.let { url -> { onAction(ProxyHomeAction.OpenExternalLink(url)) } },
             onSite = subscription.siteUrl
-                ?.takeIf { canUseHomeAction(state, ProxyHomeActionId.OpenExternalLink) }
+                ?.takeIf { context.canUse(ProxyHomeActionId.OpenExternalLink) }
                 ?.let { url -> { onAction(ProxyHomeAction.OpenExternalLink(url)) } },
         ),
         colors = SkipiSubscriptionSummaryColors(

@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import app.ProxyServerState
+import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.ChainProxy
 import app.R
 import features.proxy.server.presentation.ProxyServerPresentationFormatter
 import features.proxy.server.presentation.ProxyServerPresentationLabels
@@ -19,14 +21,28 @@ internal typealias ProxyServerListItemDisplayText = ProxyServerPresentationText
 internal class ProxyServerListItemTextFormatter(
     private val delegate: ProxyServerPresentationFormatter,
 ) {
+    // Home formats every visible server against the same list; map it once, not once per server.
+    private var nodesSource: List<ProxyServerState>? = null
+    private var nodes: List<ProxyServerPresentationNode> = emptyList()
+
     fun displayOf(
         serverState: ProxyServerState,
         servers: List<ProxyServerState>,
     ): ProxyServerListItemDisplayText {
+        // Only strategy groups and chains describe other servers; a plain server needs none.
+        val needsMembers = serverState.server is StrategyGroup || serverState.server is ChainProxy
         return delegate.displayOf(
             serverNode = serverState.toPresentationNode(),
-            servers = servers.map(ProxyServerState::toPresentationNode),
+            servers = if (needsMembers) nodesOf(servers) else emptyList(),
         )
+    }
+
+    private fun nodesOf(servers: List<ProxyServerState>): List<ProxyServerPresentationNode> {
+        if (servers !== nodesSource) {
+            nodes = servers.map(ProxyServerState::toPresentationNode)
+            nodesSource = servers
+        }
+        return nodes
     }
 }
 

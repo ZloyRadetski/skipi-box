@@ -9,6 +9,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
+import engine.xray.configFingerprint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo

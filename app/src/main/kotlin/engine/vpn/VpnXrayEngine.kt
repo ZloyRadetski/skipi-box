@@ -4,6 +4,7 @@
 package engine.vpn
 
 import android.content.Context
+import engine.xray.configFingerprint
 import android.content.Intent
 import android.net.VpnService
 import android.os.SystemClock
