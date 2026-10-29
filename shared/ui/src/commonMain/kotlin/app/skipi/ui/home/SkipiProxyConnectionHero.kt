@@ -606,7 +606,7 @@ private fun SkipiProxyHeroCompactPowerButton(
 
     Box(
         modifier = modifier
-            .size(36.dp)
+            .size(40.dp)
             .graphicsLayer {
                 scaleX = pressScale
                 scaleY = pressScale
