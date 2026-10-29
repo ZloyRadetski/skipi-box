@@ -195,7 +195,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             ),
         ) { screen ->
             assertNotNull(awaitText(screen.scene, globalGroupsTitle))
-            clickContentDescriptionAction(screen.scene, addLabel)
+            clickSectionContentDescriptionAction(screen.scene, globalGroupsTitle, addLabel)
             assertEquals("", awaitEditableText(screen.scene, ""), "Adding a global group should start with a blank strategy draft")
             assertEquals(0, screen.applyRequests().size, "Opening a new group editor must not apply its blank draft")
 
@@ -2130,6 +2130,22 @@ $ActiveProfileGroupName = select, DIRECT
     private fun clickContentDescriptionAction(scene: ImageComposeScene, label: String) {
         val node = assertNotNull(awaitContentDescription(scene, label), "Expected accessible control '$label'")
         clickNodeAction(scene, node.nearestClickableAncestor() ?: node, "The '$label' control")
+    }
+
+    private fun clickSectionContentDescriptionAction(
+        scene: ImageComposeScene,
+        sectionTitle: String,
+        actionLabel: String,
+    ) {
+        val title = assertNotNull(awaitText(scene, sectionTitle), "Expected section title '$sectionTitle'")
+        val action = assertNotNull(
+            awaitNode(scene) { candidate ->
+                candidate.hasContentDescription(actionLabel) &&
+                    candidate.boundsInRoot.center.y in title.boundsInRoot.top - 24f..title.boundsInRoot.bottom + 24f
+            },
+            "Expected '$actionLabel' in the '$sectionTitle' section header",
+        )
+        clickNodeAction(scene, action.nearestClickableAncestor() ?: action, "The '$actionLabel' section action")
     }
 
     private fun clickRowContentDescriptionAction(scene: ImageComposeScene, rowLabel: String, actionLabel: String) {

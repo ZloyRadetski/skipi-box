@@ -255,7 +255,7 @@ class DesktopTrafficProfileXrayConfigTest {
     }
 
     @Test
-    fun refusesProfilePolicyThatCannotBeResolvedToDesktopServerOrGroup() {
+    fun preservesAndroidOutboundTagForPolicyWithoutLocalServerOrGroup() {
         val server = ProxyServer.parse(
             "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha",
         )
@@ -266,9 +266,13 @@ class DesktopTrafficProfileXrayConfigTest {
             content = "[Rule]\nDOMAIN,example.com,Missing\nFINAL,PROXY\n",
         )
 
-        assertFailsWith<IllegalStateException> {
-            DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions())
-        }
+        val root = Json.parseToJsonElement(
+            DesktopTrafficProfileXrayConfigFactory.build(profile, library, LocalProxyXrayConfigOptions()),
+        ).jsonObject
+        val rules = root.getValue("routing").jsonObject.getValue("rules").jsonArray
+
+        assertEquals("Missing", rules.first().jsonObject.getValue("outboundTag").jsonPrimitive.content)
+        assertEquals("skipi-proxy", rules.last().jsonObject.getValue("outboundTag").jsonPrimitive.content)
     }
 
     @Test

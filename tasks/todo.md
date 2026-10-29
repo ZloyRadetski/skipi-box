@@ -1,6 +1,6 @@
 # Чек-лист завершения Android → shared
 
-**S03 и R03 завершены 24 октября в выбранном пользователем порядке.** [R03 acceptance](shared-migration-20261024/r03-acceptance-verification.md): **2960/2960 full GREEN1m19s**, failures/errors/skips0, real Core9/9, actual shared-UI7/7, Desktop compile/debug APK GREEN, 25 Kotlin SHA неизменны. Закрыто **16/39 карточек по количеству**, не по объёму. [Продолжение](shared-migration-20261024/r03-handoff.md): ближайшая implementation-карточка основного порядка H01, ещё не начата.
+**H01 завершена 28 октября.** [H01 acceptance](shared-migration-20261028/h01-acceptance-verification.md): **3023/3023 GREEN**, failures/errors/skips 0, Desktop compile/debug APK GREEN. Общие grouping/sorting/Home projection и оба host bindings приняты; пользовательский порядок и режим сортировки Desktop сохраняются. Закрыто **17/39 карточек по количеству**, не по объёму. Следующая implementation-карточка — H02. Real Core и физическая UI QA в срезе H01 не выполнялись.
 
 Предыдущая полная контрольная точка: [S03 acceptance](shared-migration-20261023/s03-acceptance-verification.md) — **2906/2906 GREEN3m53s**, failures/errors/skips 0, восемь свежих targets, реальные Core **9/9**, Desktop compile/debug APK GREEN, 30 Kotlin hashes неизменны. На тот момент закрыто15/39 карточек; исторический source checkpoint `20bbe10`. Актуальная приёмка R03 приведена выше.
 
