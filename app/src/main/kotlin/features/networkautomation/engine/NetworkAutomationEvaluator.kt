@@ -10,22 +10,14 @@ import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import app.AppState
-import features.networkautomation.policy.NetworkAutomationDecision as SharedNetworkAutomationDecision
+import features.networkautomation.policy.NetworkAutomationDecision
 import features.networkautomation.policy.NetworkAutomationPolicy
 import features.networkautomation.policy.NetworkAutomationPolicyInput
 import features.networkautomation.policy.ObservedNetwork
 import features.networkautomation.policy.ObservedNetworkTransport
 import features.networkautomation.model.NetworkAutomationRule
 
-sealed interface NetworkAutomationDecision {
-    data class SwitchServer(val serverId: Int, val requireAlreadyRunning: Boolean = false) : NetworkAutomationDecision
-    data object DisconnectVpn : NetworkAutomationDecision
-    data object NoChange : NetworkAutomationDecision
-}
-
 object NetworkAutomationEvaluator {
-
-    internal const val DisconnectedNetworkIdentifier = "DISCONNECTED"
 
     /**
      * Do not read the SSID merely to identify a Wi-Fi transport. SSID is
@@ -37,16 +29,14 @@ object NetworkAutomationEvaluator {
         capabilities: NetworkCapabilities? = null,
         includeWifiSsid: Boolean = false,
     ): String {
-        val physicalCaps = getActivePhysicalCapabilities(context, capabilities) ?: return DisconnectedNetworkIdentifier
-        return when {
-            physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
-                val ssid = if (includeWifiSsid) getCurrentWifiSsid(context, physicalCaps) else null
-                if (!ssid.isNullOrBlank()) "WIFI:$ssid" else "WIFI:ANY"
-            }
-            physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
-            physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
-            else -> "UNKNOWN"
+        val physicalCaps = getActivePhysicalCapabilities(context, capabilities)
+            ?: return NetworkAutomationPolicy.DisconnectedNetworkIdentifier
+        val ssid = if (includeWifiSsid && physicalCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            getCurrentWifiSsid(context, physicalCaps)
+        } else {
+            null
         }
+        return NetworkAutomationPolicy.networkIdentifier(physicalCaps.toObservedNetwork(ssid))
     }
 
     @Suppress("DEPRECATION")
@@ -193,7 +183,7 @@ object NetworkAutomationEvaluator {
                 availableServerIds = state.proxyServers.mapTo(mutableSetOf()) { it.id },
             ),
         )
-        return decision.toAndroidDecision()
+        return decision
     }
 
     fun requiresWifiSsid(rules: List<NetworkAutomationRule>): Boolean {
@@ -223,17 +213,18 @@ object NetworkAutomationEvaluator {
         return NetworkAutomationPolicy.makeDecision(
             matchedRule = matchedRule,
             availableServerIds = state.proxyServers.mapTo(mutableSetOf()) { it.id },
-        ).toAndroidDecision()
+        )
     }
 }
 
-private fun SharedNetworkAutomationDecision.toAndroidDecision(): NetworkAutomationDecision =
-    when (this) {
-        is SharedNetworkAutomationDecision.SwitchServer ->
-            NetworkAutomationDecision.SwitchServer(serverId, requireAlreadyRunning)
-        SharedNetworkAutomationDecision.DisconnectVpn -> NetworkAutomationDecision.DisconnectVpn
-        SharedNetworkAutomationDecision.NoChange -> NetworkAutomationDecision.NoChange
-    }
+private fun NetworkCapabilities.toObservedNetwork(wifiSsid: String?) = ObservedNetwork(
+    transports = buildSet {
+        if (hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) add(ObservedNetworkTransport.WIFI)
+        if (hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) add(ObservedNetworkTransport.ETHERNET)
+        if (hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) add(ObservedNetworkTransport.CELLULAR)
+    },
+    wifiSsid = wifiSsid,
+)
 
 /**
  * Identifies a physical transport that may be considered by a network rule.

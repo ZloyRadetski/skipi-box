@@ -27,6 +27,9 @@ sealed interface NetworkAutomationDecision {
     data object NoChange : NetworkAutomationDecision
 }
 
+/** Whether a host should observe the network at all, and whether it needs Wi-Fi names for that. */
+data class NetworkObservationPlan(val shouldListen: Boolean, val requiresWifiSsid: Boolean)
+
 data class NetworkAutomationPolicyInput(
     val networkAutomationEnabled: Boolean,
     val onDemandVpnEnabled: Boolean,
@@ -37,6 +40,31 @@ data class NetworkAutomationPolicyInput(
 
 /** Chooses the configured action from observed network facts without platform APIs. */
 object NetworkAutomationPolicy {
+    const val DisconnectedNetworkIdentifier = "DISCONNECTED"
+
+    fun observationPlan(
+        networkAutomationEnabled: Boolean,
+        onDemandVpnEnabled: Boolean,
+        rules: List<NetworkAutomationRule>,
+    ): NetworkObservationPlan {
+        val enabledRules = rules.filter { it.enabled }
+        return NetworkObservationPlan(
+            shouldListen = (networkAutomationEnabled || onDemandVpnEnabled) && enabledRules.isNotEmpty(),
+            requiresWifiSsid = requiresWifiSsid(enabledRules),
+        )
+    }
+
+    /** Stable name of a physical network, used to detect that the user moved to another one. */
+    fun networkIdentifier(network: ObservedNetwork?): String {
+        if (network == null) return DisconnectedNetworkIdentifier
+        return when (preferredTransport(network)) {
+            ObservedNetworkTransport.WIFI ->
+                network.wifiSsid?.takeIf(String::isNotBlank)?.let { "WIFI:$it" } ?: "WIFI:ANY"
+            ObservedNetworkTransport.ETHERNET -> "ETHERNET"
+            ObservedNetworkTransport.CELLULAR -> "CELLULAR"
+            else -> "UNKNOWN"
+        }
+    }
 
     /** Transport order matches physical-network selection in the Android adapter. */
     fun preferredTransport(network: ObservedNetwork): ObservedNetworkTransport? = when {

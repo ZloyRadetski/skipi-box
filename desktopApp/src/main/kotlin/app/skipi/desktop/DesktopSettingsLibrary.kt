@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.networkautomation.model.NetworkAutomationRule
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
 import engine.xray.DefaultFragmentPackets
@@ -116,6 +117,9 @@ data class DesktopAppSettings(
     val muxConcurrency: String = DefaultMuxConcurrency,
     val muxXudpConcurrency: String = DefaultMuxXudpConcurrency,
     val muxXudpProxyUdp443: Int = DefaultMuxUdp443Mode,
+    val enableNetworkAutomation: Boolean = false,
+    val enableOnDemandVpn: Boolean = false,
+    val networkAutomationRules: List<NetworkAutomationRule> = emptyList(),
     val enableAccessLog: Boolean = false,
     val logRetentionDays: Int = DefaultLogRetentionDays,
     val enableSniffing: Boolean = true,

@@ -6,6 +6,7 @@ package features.networkautomation.engine
 import app.AppState
 import app.ProxyServerState
 import features.networkautomation.model.NetworkAutomationRule
+import features.networkautomation.policy.NetworkAutomationDecision
 import features.networkautomation.model.NetworkRuleAction
 import features.networkautomation.model.NetworkRuleType
 import features.proxy.server.model.VLESS

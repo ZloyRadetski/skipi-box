@@ -61,6 +61,7 @@ internal fun desktopSettingsVisibleDestinations(): Set<SkipiSettingsDestination>
     SkipiSettingsDestination.Appearance,
     SkipiSettingsDestination.General,
     SkipiSettingsDestination.LocalProxy,
+    SkipiSettingsDestination.NetworkAutomation,
     SkipiSettingsDestination.Subscriptions,
     SkipiSettingsDestination.SpeedTest,
     SkipiSettingsDestination.DnsLeakTest,

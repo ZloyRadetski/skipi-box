@@ -3,6 +3,9 @@
 
 package app.skipi.desktop
 
+import app.skipi.ui.networkautomation.NetworkAutomationServerOption
+import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
+import features.networkautomation.policy.NetworkAutomationRules
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.about_bug_report
 import app.skipi.ui.resources.about_bug_report_summary
@@ -129,7 +132,7 @@ private val SettingsRed = Color(0xFFFF5B62)
 
 private enum class DesktopSettingsDestination {
     Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
-    SpeedTest, DnsLeakTest, IpInfo, Integration, Diagnostics, CoreLogs, AccessLogs, About,
+    NetworkAutomation, SpeedTest, DnsLeakTest, IpInfo, Integration, Diagnostics, CoreLogs, AccessLogs, About,
 }
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
@@ -140,6 +143,7 @@ internal fun DesktopSettingsScreen(
     contentPadding: PaddingValues,
     diagnostics: DesktopDiagnostics,
     coreLogs: DesktopCoreLogs,
+    automationServers: List<NetworkAutomationServerOption>,
     isTunnelRunning: Boolean = false,
     onClearSystemProxy: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -163,6 +167,7 @@ internal fun DesktopSettingsScreen(
         }
     }
 
+    val automationSavedMessage = "Правила сети сохранены."
     when (destination) {
         DesktopSettingsDestination.Overview -> DesktopSettingsOverview(
             settings = currentSettings,
@@ -213,6 +218,57 @@ internal fun DesktopSettingsScreen(
             onBack = { destination = DesktopSettingsDestination.Subscriptions },
             onPersist = ::persist,
             contentPadding = contentPadding,
+        )
+        DesktopSettingsDestination.NetworkAutomation -> SkipiNetworkAutomationScreen(
+            networkAutomationEnabled = currentSettings.enableNetworkAutomation,
+            onDemandEnabled = currentSettings.enableOnDemandVpn,
+            rules = currentSettings.networkAutomationRules,
+            servers = automationServers,
+            padding = contentPadding,
+            isWideScreen = true,
+            onBack = { destination = DesktopSettingsDestination.Overview },
+            onNetworkAutomationChange = { enabled ->
+                persist(currentSettings.copy(enableNetworkAutomation = enabled), automationSavedMessage)
+            },
+            onOnDemandChange = { enabled ->
+                persist(currentSettings.copy(enableOnDemandVpn = enabled), automationSavedMessage)
+            },
+            onSaveRule = { rule ->
+                persist(
+                    currentSettings.copy(
+                        networkAutomationRules = NetworkAutomationRules.upsert(currentSettings.networkAutomationRules, rule),
+                    ),
+                    automationSavedMessage,
+                )
+            },
+            onDeleteRule = { id ->
+                persist(
+                    currentSettings.copy(
+                        networkAutomationRules = NetworkAutomationRules.remove(currentSettings.networkAutomationRules, id),
+                    ),
+                    automationSavedMessage,
+                )
+            },
+            onRuleEnabledChange = { id, enabled ->
+                persist(
+                    currentSettings.copy(
+                        networkAutomationRules = NetworkAutomationRules.setEnabled(
+                            currentSettings.networkAutomationRules, id, enabled,
+                        ),
+                    ),
+                    automationSavedMessage,
+                )
+            },
+            // Desktop reads no Wi-Fi name, so the editor offers no "insert current Wi-Fi" action.
+            onRequestCurrentWifi = null,
+            footer = {
+                Text(
+                    "Desktop сохраняет правила, но не отслеживает смену сети: они применяются только в Android.",
+                    color = SettingsMuted,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            },
         )
         DesktopSettingsDestination.SpeedTest -> {
             val state by diagnostics.speedTest.state.collectAsState()
@@ -318,6 +374,7 @@ private fun DesktopSettingsOverview(
                 SkipiSettingsDestination.General -> onNavigate(DesktopSettingsDestination.General)
                 SkipiSettingsDestination.LocalProxy -> onNavigate(DesktopSettingsDestination.LocalProxy)
                 SkipiSettingsDestination.Subscriptions -> onNavigate(DesktopSettingsDestination.Subscriptions)
+                SkipiSettingsDestination.NetworkAutomation -> onNavigate(DesktopSettingsDestination.NetworkAutomation)
                 SkipiSettingsDestination.SpeedTest -> onNavigate(DesktopSettingsDestination.SpeedTest)
                 SkipiSettingsDestination.DnsLeakTest -> onNavigate(DesktopSettingsDestination.DnsLeakTest)
                 SkipiSettingsDestination.IpInfo -> onNavigate(DesktopSettingsDestination.IpInfo)

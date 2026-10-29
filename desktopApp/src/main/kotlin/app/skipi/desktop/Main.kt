@@ -1880,6 +1880,7 @@ fun main() = application {
                             settings = desktopSettings,
                             diagnostics = desktopDiagnostics,
                             coreLogs = desktopCoreLogs,
+                            automationServers = desktopNetworkAutomationServers(serverLibrary),
                             onSettingsChange = { updated ->
                                 val restartRequired = desktopSettings.localProxyPort != updated.localProxyPort ||
                                     desktopSettings.localHttpProxyPort != updated.localHttpProxyPort ||
