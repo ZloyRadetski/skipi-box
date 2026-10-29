@@ -9,6 +9,7 @@ import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
 import features.networkautomation.policy.NetworkAutomationRules
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_copied
+import app.skipi.ui.resources.network_automation_no_wifi_detected
 import app.skipi.ui.settings.AppearanceSettingValues
 import app.skipi.ui.resources.settings_local_proxy_port_invalid
 import app.skipi.ui.resources.settings_local_proxy_copied_toast
@@ -189,6 +190,7 @@ internal fun DesktopSettingsScreen(
         }
     }
 
+    val noWifiMessage = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.network_automation_no_wifi_detected)
     val automationSavedMessage = "Правила сети сохранены."
     when (destination) {
         DesktopSettingsDestination.Overview -> DesktopSettingsOverview(
@@ -291,10 +293,11 @@ internal fun DesktopSettingsScreen(
                     automationSavedMessage,
                 )
             },
-            // Desktop reads no Wi-Fi name, so the editor offers no "insert current Wi-Fi" action.
-            onRequestCurrentWifi = null,
-            footer = {
-                SkipiSettingsStatusMessage("Desktop сохраняет правила, но не отслеживает смену сети: они применяются только в Android.")
+            onRequestCurrentWifi = { onSsidReceived ->
+                scope.launch {
+                    val ssid = withContext(Dispatchers.IO) { readDesktopWifiSsid() }
+                    if (ssid.isNullOrBlank()) message = noWifiMessage else onSsidReceived(ssid)
+                }
             },
         )
         DesktopSettingsDestination.SpeedTest -> {

@@ -66,6 +66,7 @@ import app.skipi.ui.home.formatSubscriptionRefreshMessage
 import app.skipi.ui.home.formatSubscriptionInstallMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
+import features.networkautomation.policy.NetworkAutomationAction
 import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.navigation.SkipiNavigationBarSize
@@ -1360,80 +1361,7 @@ fun main() = application {
                                         diagnostics.takeIf(String::isNotBlank)?.let { " $it" }.orEmpty(),
                                 )
                             }
-                    if (!desktopSettings.onboardingCompleted) {
-                        val onboardingLocale = remember { DesktopApplicationLocale(java.util.Locale.getDefault(), java.util.Locale::setDefault) }
-                        DesktopOnboardingScreen(
-                            settings = desktopSettings,
-                            serverCount = serverLibrary.servers.size,
-                            subscriptionCount = subscriptionLibrary.subscriptions.size,
-                            onSettingsChange = { next ->
-                                if (next.languageTag != desktopSettings.languageTag) onboardingLocale.apply(next.languageTag)
-                                desktopSettings = next
-                                subscriptionScope.launch(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(next) }
-                            },
-                            onImportText = { text, _ ->
-                                val trimmed = text.trim()
-                                if (trimmed.isNotEmpty()) {
-                                    val install = trimmed.toDesktopSubscriptionInstallClipboardUriOrNull()
-                                    if (install != null) {
-                                        desktopPrepareSubscription(install)
-                                    } else {
-                                        desktopImportProxies(DesktopProxyImportInput.Clipboard(trimmed))
-                                    }
-                                }
-                            },
-                            onFinish = {
-                                val next = desktopSettings.withOnboardingCompleted()
-                                desktopSettings = next
-                                subscriptionScope.launch(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(next) }
-                            },
-                        )
-                        return@Scaffold
-                    }
-                    when (currentSection) {
-                        SkipiMainDestination.Proxy -> DesktopProxyHome(
-                            serverLibrary = serverLibrary,
-                            subscriptionLibrary = subscriptionLibrary,
-                            subscriptionCatalog = desktopSharedApplication.subscriptions.catalog.value,
-                            subscriptionUpdate = subscriptionUpdate,
-                            serverLink = serverLink,
-                            subscriptionUrl = subscriptionUrl,
-                            updatingSubscription = subscriptionUpdateInProgress,
-                            refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
-                                batchRefreshingSubscriptionIds,
-                            running = coreState.isRunning,
-                            connecting = tunnelOperationInProgress && desiredTunnelRunning,
-                            // Keep the connected hero actionable while a reconnect is underway:
-                            // the handler records a newer user intent before it observes the
-                            // operation guard, so a click on Power can still cancel/reverse it.
-                            canToggleTunnel = !closeRequested && (
-                                coreState.isRunning || (
-                                    !tunnelOperationInProgress &&
-                                    selectedServerConfig?.isSuccess == true && !systemProxyRecoveryInProgress
-                                    )
-                                ),
-                            tunnelMessage = coreMessage,
-                            serverMessage = serverLibraryMessage,
-                            subscriptionMessage = subscriptionMessage,
-                            confirmDeletion = desktopSettings.confirmDeletion,
-                            activeProfileName = activeProfileName,
-                            activeTrafficConfigId = configLibrary.selectedConfigId,
-                            trafficConfigContentById = trafficConfigContentById,
-                            exportFullJson = exportProxyServerFullJson,
-                            latencyByServerId = latencyByServerId,
-                            testingServerIds = testingServerIds,
-                            pingingSubscriptionIds = pingingSubscriptionIds,
-                            onServerLinkChange = { serverLink = it },
-                            onSubscriptionUrlChange = { url ->
-                                if (subscriptionUpdateInProgress) {
-                                    subscriptionMessage = "Дождитесь завершения обновления подписки."
-                                } else {
-                                    subscriptionUrl = url
-                                    subscriptionUpdate = null
-                                    subscriptionMessage = ""
-                                }
-                            },
-                            onToggleTunnel = toggleTunnel@{
+                val desktopToggleTunnel: () -> Unit = toggleTunnel@{
                                 if (closeRequested) return@toggleTunnel
                                 // Record intent before looking at the in-flight operation.  This
                                 // makes a Power click stronger than an older automatic reconnect.
@@ -1513,7 +1441,123 @@ fun main() = application {
                                         }
                                     }
                                 }
+                            }
+                    val automationPlan = desktopNetworkObservationPlan(desktopSettings)
+                    LaunchedEffect(
+                        automationPlan.shouldListen,
+                        desktopSettings.enableNetworkAutomation,
+                        desktopSettings.enableOnDemandVpn,
+                        desktopSettings.networkAutomationRules,
+                    ) {
+                        if (!automationPlan.shouldListen) return@LaunchedEffect
+                        var previousNetworkId: String? = null
+                        while (true) {
+                            val observed = withContext(Dispatchers.IO) {
+                                observeDesktopNetwork(
+                                    interfaces = readDesktopNetworkInterfaces(),
+                                    ssidProvider = { if (automationPlan.requiresWifiSsid) readDesktopWifiSsid() else null },
+                                )
+                            }
+                            val step = evaluateDesktopNetworkAutomation(
+                                settings = desktopSettings,
+                                availableServerIds = serverLibrary.servers.mapTo(mutableSetOf()) { it.id },
+                                selectedServerId = serverLibrary.selectedServerId,
+                                vpnRunning = coreState.isRunning,
+                                previousNetworkId = previousNetworkId,
+                                observed = observed,
+                            )
+                            previousNetworkId = step.networkId
+                            when (val action = step.action) {
+                                NetworkAutomationAction.None -> Unit
+                                NetworkAutomationAction.Disconnect -> if (desiredTunnelRunning && !tunnelOperationInProgress) {
+                                    desktopToggleTunnel()
+                                }
+                                is NetworkAutomationAction.Restart -> {
+                                    runCatching { proxyServerRepository.selectAndCommit(action.serverId) }
+                                    requestTunnelReconnect("Автоматизация сети: смена сервера.")
+                                }
+                                is NetworkAutomationAction.Start -> {
+                                    runCatching { proxyServerRepository.selectAndCommit(action.serverId) }
+                                    if (!desiredTunnelRunning && !tunnelOperationInProgress) desktopToggleTunnel()
+                                }
+                            }
+                            delay(NetworkAutomationPollMillis)
+                        }
+                    }
+                    if (!desktopSettings.onboardingCompleted) {
+                        val onboardingLocale = remember { DesktopApplicationLocale(java.util.Locale.getDefault(), java.util.Locale::setDefault) }
+                        DesktopOnboardingScreen(
+                            settings = desktopSettings,
+                            serverCount = serverLibrary.servers.size,
+                            subscriptionCount = subscriptionLibrary.subscriptions.size,
+                            onSettingsChange = { next ->
+                                if (next.languageTag != desktopSettings.languageTag) onboardingLocale.apply(next.languageTag)
+                                desktopSettings = next
+                                subscriptionScope.launch(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(next) }
                             },
+                            onImportText = { text, _ ->
+                                val trimmed = text.trim()
+                                if (trimmed.isNotEmpty()) {
+                                    val install = trimmed.toDesktopSubscriptionInstallClipboardUriOrNull()
+                                    if (install != null) {
+                                        desktopPrepareSubscription(install)
+                                    } else {
+                                        desktopImportProxies(DesktopProxyImportInput.Clipboard(trimmed))
+                                    }
+                                }
+                            },
+                            onFinish = {
+                                val next = desktopSettings.withOnboardingCompleted()
+                                desktopSettings = next
+                                subscriptionScope.launch(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(next) }
+                            },
+                        )
+                        return@Scaffold
+                    }
+                    when (currentSection) {
+                        SkipiMainDestination.Proxy -> DesktopProxyHome(
+                            serverLibrary = serverLibrary,
+                            subscriptionLibrary = subscriptionLibrary,
+                            subscriptionCatalog = desktopSharedApplication.subscriptions.catalog.value,
+                            subscriptionUpdate = subscriptionUpdate,
+                            serverLink = serverLink,
+                            subscriptionUrl = subscriptionUrl,
+                            updatingSubscription = subscriptionUpdateInProgress,
+                            refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
+                                batchRefreshingSubscriptionIds,
+                            running = coreState.isRunning,
+                            connecting = tunnelOperationInProgress && desiredTunnelRunning,
+                            // Keep the connected hero actionable while a reconnect is underway:
+                            // the handler records a newer user intent before it observes the
+                            // operation guard, so a click on Power can still cancel/reverse it.
+                            canToggleTunnel = !closeRequested && (
+                                coreState.isRunning || (
+                                    !tunnelOperationInProgress &&
+                                    selectedServerConfig?.isSuccess == true && !systemProxyRecoveryInProgress
+                                    )
+                                ),
+                            tunnelMessage = coreMessage,
+                            serverMessage = serverLibraryMessage,
+                            subscriptionMessage = subscriptionMessage,
+                            confirmDeletion = desktopSettings.confirmDeletion,
+                            activeProfileName = activeProfileName,
+                            activeTrafficConfigId = configLibrary.selectedConfigId,
+                            trafficConfigContentById = trafficConfigContentById,
+                            exportFullJson = exportProxyServerFullJson,
+                            latencyByServerId = latencyByServerId,
+                            testingServerIds = testingServerIds,
+                            pingingSubscriptionIds = pingingSubscriptionIds,
+                            onServerLinkChange = { serverLink = it },
+                            onSubscriptionUrlChange = { url ->
+                                if (subscriptionUpdateInProgress) {
+                                    subscriptionMessage = "Дождитесь завершения обновления подписки."
+                                } else {
+                                    subscriptionUrl = url
+                                    subscriptionUpdate = null
+                                    subscriptionMessage = ""
+                                }
+                            },
+                            onToggleTunnel = desktopToggleTunnel,
                             onSelectServer = { serverId ->
                                 runCatching {
                                     proxyServerRepository.selectAndCommit(serverId)
@@ -2031,6 +2075,7 @@ private fun DesktopBottomNavigation(
 
 private val SkipiBackground: Color
     @Composable get() = DesktopContentBackground
+private const val NetworkAutomationPollMillis = 5_000L
 private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
 private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L
 private fun TrafficConfigState.toDesktopTrafficConfigRefreshTarget() = TrafficConfigRefreshTarget(
