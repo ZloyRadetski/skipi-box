@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import engine.xray.XraySniffingOptions
+import platform.withSniffing
 import app.skipi.app.model.RoutingConfigRecord
 import features.proxy.server.model.Custom
 import features.proxy.server.model.formatCustomXrayConfigJson
@@ -73,23 +75,11 @@ internal fun buildDesktopCustomXrayConfig(
     val inbounds = buildJsonArray {
         add(
             buildJsonObject {
-                LocalProxyXrayConfigFactory.buildSocksInbound(options).forEach { (key, value) ->
-                    put(key, value)
-                }
-                put(
-                    "sniffing",
-                    buildJsonObject {
-                        put("enabled", true)
-                        put(
-                            "destOverride",
-                            buildJsonArray {
-                                add(JsonPrimitive("http"))
-                                add(JsonPrimitive("tls"))
-                                add(JsonPrimitive("fakedns"))
-                            },
-                        )
-                    },
-                )
+                LocalProxyXrayConfigFactory.buildSocksInbound(options)
+                    .withSniffing(options.sniffing ?: XraySniffingOptions())
+                    .forEach { (key, value) ->
+                        put(key, value)
+                    }
             },
         )
         if (options.enableHttpProxy) {

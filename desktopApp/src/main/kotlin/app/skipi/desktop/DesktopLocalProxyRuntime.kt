@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import engine.xray.XraySniffingOptions
 import engine.xray.XrayFragmentOutboundOptions
 import engine.xray.XrayMuxOutboundOptions
 import engine.xray.xrayDirectOutboundDomainStrategy
@@ -45,6 +46,7 @@ internal fun DesktopAppSettings.toLocalProxyXrayConfigOptions(
     username = if (enableLocalProxyAuth) localProxyUsername.trim() else "",
     password = if (enableLocalProxyAuth) localProxyPassword else "",
     logLevel = coreLogLevel,
+    sniffing = XraySniffingOptions(enabled = enableSniffing, routeOnly = enableSniffingRouteOnly),
     mux = if (enableMux) XrayMuxOutboundOptions(muxConcurrency, muxXudpConcurrency, muxXudpProxyUdp443) else null,
     fragment = if (enableFragment) {
         XrayFragmentOutboundOptions(

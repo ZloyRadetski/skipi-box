@@ -116,6 +116,8 @@ data class DesktopAppSettings(
     val muxConcurrency: String = DefaultMuxConcurrency,
     val muxXudpConcurrency: String = DefaultMuxXudpConcurrency,
     val muxXudpProxyUdp443: Int = DefaultMuxUdp443Mode,
+    val enableSniffing: Boolean = true,
+    val enableSniffingRouteOnly: Boolean = true,
     val enableFragment: Boolean = false,
     val fragmentPackets: String = DefaultFragmentPackets,
     val fragmentLength: String = DefaultFragmentLength,

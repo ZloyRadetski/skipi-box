@@ -2,6 +2,8 @@
 
 package app.skipi.desktop
 
+import engine.xray.XraySniffingOptions
+import platform.withSniffing
 import engine.xray.XrayFragmentOutboundOptions
 import engine.xray.XrayMuxOutboundOptions
 import engine.xray.buildXrayFragmentOutbound
@@ -145,7 +147,14 @@ object DesktopTrafficProfileXrayConfigFactory {
             put(
                 "inbounds",
                 buildJsonArray {
-                    add(LocalProxyXrayConfigFactory.buildSocksInbound(options, tag = SocksInboundTag))
+                    add(
+                        LocalProxyXrayConfigFactory.buildSocksInbound(options, tag = SocksInboundTag).withSniffing(
+                            XraySniffingOptions(
+                                enabled = profileSettings.enableSniffing,
+                                routeOnly = profileSettings.enableSniffingRouteOnly,
+                            ),
+                        ),
+                    )
                     if (options.enableHttpProxy) {
                         add(
                             buildJsonObject {

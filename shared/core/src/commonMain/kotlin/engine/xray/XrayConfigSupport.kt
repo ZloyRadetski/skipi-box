@@ -81,6 +81,19 @@ fun xraySniffingDestOverrides(enableFakeDns: Boolean): List<String> = buildList 
     }
 }
 
+/** Inbound sniffing values shared by every host's local SOCKS listener. */
+data class XraySniffingOptions(
+    val enabled: Boolean = true,
+    val routeOnly: Boolean = true,
+    val enableFakeDns: Boolean = false,
+)
+
+fun XraySniffingOptions.toJson(): JsonObject = buildJsonObject {
+    put("enabled", enabled)
+    put("destOverride", xraySniffingDestOverrides(enableFakeDns).toJsonStringArray())
+    put("routeOnly", routeOnly)
+}
+
 fun Iterable<String>.toJsonStringArray(): JsonArray = buildJsonArray {
     forEach { item -> add(JsonPrimitive(item)) }
 }

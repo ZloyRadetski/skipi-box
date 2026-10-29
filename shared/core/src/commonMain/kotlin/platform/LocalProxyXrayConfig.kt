@@ -3,6 +3,8 @@
 
 package platform
 
+import engine.xray.XraySniffingOptions
+import engine.xray.toJson
 import engine.xray.XrayFragmentOutboundOptions
 import engine.xray.XrayMuxOutboundOptions
 import engine.xray.XrayOutboundPlan
@@ -55,6 +57,8 @@ data class LocalProxyXrayConfigOptions(
     val mux: XrayMuxOutboundOptions? = null,
     /** Global Fragment overlay for generated proxy outbounds; null when disabled. */
     val fragment: XrayFragmentOutboundOptions? = null,
+    /** Sniffing added to the SOCKS inbound by [LocalProxyXrayConfigFactory.buildFromPlan]; null adds none. */
+    val sniffing: XraySniffingOptions? = null,
 )
 
 object LocalProxyXrayConfigFactory {
@@ -220,7 +224,7 @@ object LocalProxyXrayConfigFactory {
                 })
             }
             put("inbounds", buildJsonArray {
-                add(buildSocksInbound(options))
+                add(buildSocksInbound(options).withSniffing(options.sniffing))
                 if (options.enableHttpProxy) {
                     add(buildJsonObject {
                         put("tag", HttpInboundTag)
@@ -290,3 +294,10 @@ private object LocalProxyRoutingRuleValidator : XrayRoutingRuleValidator {
     override fun isDomainRuleValid(rule: String): Boolean = true
     override fun isIpRuleValid(rule: String): Boolean = true
 }
+
+/** Adds Android's inbound sniffing object when the host configured one. */
+fun JsonObject.withSniffing(sniffing: XraySniffingOptions?): JsonObject =
+    if (sniffing == null) this else buildJsonObject {
+        this@withSniffing.forEach { (key, value) -> put(key, value) }
+        put("sniffing", sniffing.toJson())
+    }
