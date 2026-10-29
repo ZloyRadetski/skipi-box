@@ -18,7 +18,7 @@ import features.subscription.subscriptionTrafficSummary
 import java.text.DateFormat
 import java.util.Date
 import androidx.compose.ui.res.stringResource
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Android adapter for subscription metadata and legacy resource strings. */

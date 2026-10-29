@@ -33,7 +33,7 @@ import features.config.withConfigProxyGroupsReflected
 import features.resources.ResourceFileUpdateCoordinator
 import features.resources.ResourceFileUpdateRequest
 import features.resources.ResourceFileUseCase
-import features.resources.runtime.AndroidResourceFileDownloadCancellation
+import features.resources.runtime.ResourceFileDownloadCancellation
 import features.settings.locale.ProvideAppLanguage
 import features.settings.locale.RecreateActivityOnAppLanguageChange
 import system.AndroidPackageProvider
@@ -101,7 +101,7 @@ fun App(
                     )
                 }
             },
-            cancelRunning = AndroidResourceFileDownloadCancellation::cancel,
+            cancelRunning = ResourceFileDownloadCancellation::cancel,
         )
     }
     val appBackupUseCase = remember(appContext, resourceFilePicker, logFileCreator) {

@@ -67,8 +67,8 @@ internal class AndroidResourceFileDownloader(
             }
         },
         publishAtomically = { write -> writeAtomically(target, write) },
-        isCancelled = AndroidResourceFileDownloadCancellation::isCancelled,
-        throwIfCancelled = AndroidResourceFileDownloadCancellation::throwIfCancelled,
+        isCancelled = ResourceFileDownloadCancellation::isCancelled,
+        throwIfCancelled = ResourceFileDownloadCancellation::throwIfCancelled,
     )
 }
 
@@ -92,18 +92,18 @@ private class AndroidResourceFileDownloadConnection(
 
     override val responseCode: Int
         get() {
-            AndroidResourceFileDownloadCancellation.track(connection)
-            AndroidResourceFileDownloadCancellation.throwIfCancelled()
+            ResourceFileDownloadCancellation.track(connection)
+            ResourceFileDownloadCancellation.throwIfCancelled()
             return try {
                 connection.responseCode
             } catch (error: SocketException) {
                 if (vpnNetwork.network != null) {
                     AndroidResourceFileLogger.info("VPN socket binding failed ($error), falling back to direct network")
                     vpnNetwork.network = null
-                    AndroidResourceFileDownloadCancellation.untrack(connection)
+                    ResourceFileDownloadCancellation.untrack(connection)
                     connection.disconnect()
                     connection = uri.toUrlConnection(proxy, userAgent, null)
-                    AndroidResourceFileDownloadCancellation.track(connection)
+                    ResourceFileDownloadCancellation.track(connection)
                     connection.responseCode
                 } else {
                     throw error
@@ -121,7 +121,7 @@ private class AndroidResourceFileDownloadConnection(
         get() = connection.inputStream
 
     override fun disconnect() {
-        AndroidResourceFileDownloadCancellation.untrack(connection)
+        ResourceFileDownloadCancellation.untrack(connection)
         connection.disconnect()
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.settings
@@ -14,7 +14,7 @@ import app.skipi.ui.settings.SkipiSettingsCategoryGroupCard
 import app.skipi.ui.settings.SkipiSettingsSectionCard
 import app.R
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 
 internal val SettingsLogLevelOptions = listOf("debug", "info", "warning", "error", "none")
 

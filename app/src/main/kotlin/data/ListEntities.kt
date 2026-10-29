@@ -8,7 +8,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import app.ProxyServerState
-import app.SubscriptionExpiryReminder
+import features.subscription.SubscriptionExpiryReminder
 import app.SubscriptionGroupState
 import features.logs.AndroidAppLogger
 import features.proxy.server.model.decodePersistedProxyServer

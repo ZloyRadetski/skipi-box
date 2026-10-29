@@ -7,12 +7,11 @@ import androidx.compose.runtime.Stable
 import features.config.TrafficConfigCustomResourceFile
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.Serializable
-
-typealias ExpiryReminderUnit = features.subscription.ExpiryReminderUnit
-typealias SubscriptionExpiryReminder = features.subscription.SubscriptionExpiryReminder
-
-val DefaultSubscriptionExpiryReminders: List<SubscriptionExpiryReminder> =
-    features.subscription.DefaultSubscriptionExpiryReminders
+import features.subscription.SubscriptionExpiryReminder
+import features.resources.ResourceFileKind
+import features.resources.ResourceFileStatus
+import features.resources.ResourceFilesStatus
+import features.resources.ResourceFileUpdateSource
 
 @Stable
 data class SubscriptionGroupState(
@@ -58,25 +57,7 @@ fun ProxyServerState.proxyServerOutboundTag(): String {
     return id.toString()
 }
 
-typealias ResourceFileKind = features.resources.ResourceFileKind
-
-typealias ResourceFileStatus = features.resources.ResourceFileStatus
-
 /** Android source-compatible name for the portable shared resource-file record. */
-typealias CustomResourceFileState = TrafficConfigCustomResourceFile
-
-typealias CustomResourceFileStatus = features.resources.CustomResourceFileStatus
-
-typealias ResourceFilesStatus = features.resources.ResourceFilesStatus
-
-typealias ResourceFileUpdateSource = features.resources.ResourceFileUpdateSource
-
-val ResourceFileUpdateSources = features.resources.ResourceFileUpdateSources
-
-fun resourceFileUpdateSourceAt(index: Int): ResourceFileUpdateSource {
-    return features.resources.resourceFileUpdateSourceAt(index)
-}
-
 fun AppState.resourceFileUpdateSource(): ResourceFileUpdateSource = features.resources.resolveResourceFileUpdateSource(
     source = resourceFileSource,
     customGeoIpUrl = customResourceFileGeoIpUrl,
@@ -97,10 +78,3 @@ fun ResourceFilesStatus.statusOf(kind: ResourceFileKind): ResourceFileStatus {
     }
 }
 
-fun sanitizeCustomResourceFileName(value: String, fallback: String): String {
-    return features.config.sanitizeCustomResourceFileName(value, fallback)
-}
-
-fun customResourceFileNameOrNull(value: String): String? {
-    return features.config.customResourceFileNameOrNull(value)
-}

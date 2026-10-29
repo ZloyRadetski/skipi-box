@@ -45,7 +45,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.feedback.LocalAppHaptics
-import ui.text.themedFontWeight
+import app.skipi.ui.text.themedFontWeight
 
 private val WarningIcon: ImageVector by lazy {
     ImageVector.Builder(

@@ -6,7 +6,7 @@ package features.proxy.server.display
 import features.subscription.DefaultSubscriptionGroupId
 import app.ProxyServerState
 import app.SubscriptionGroupState
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 
 internal fun SubscriptionGroupState.displayName(defaultGroupName: String): String {
     return if (builtIn && id == DefaultSubscriptionGroupId) {

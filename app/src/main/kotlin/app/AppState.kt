@@ -44,6 +44,10 @@ import features.config.DefaultTrafficConfigs
 import features.config.TrafficConfigState
 import features.config.ShadowrocketPolicyGroup
 import features.config.withSkipiSettingsInRawConfig
+import features.settings.servicecontrol.ServiceControlSettings
+import features.subscription.SubscriptionExpiryReminder
+import features.subscription.DefaultSubscriptionExpiryReminders
+import features.config.TrafficConfigCustomResourceFile
 
 data class AppState(
     val appIcon: Int = AppIconDefault,
@@ -165,7 +169,7 @@ data class AppState(
     val customResourceFileGeoIpOnlyCnPrivateUrl: String = ResourceFileV2FlyGeoIpOnlyCnPrivateUrl,
     val customResourceFileDirectCidrIpv4Url: String = ResourceFileDirectCidrIpv4Url,
     val customResourceFileDirectCidrIpv6Url: String = ResourceFileDirectCidrIpv6Url,
-    val customResourceFiles: List<CustomResourceFileState> = emptyList(),
+    val customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     val nextCustomResourceFileId: Int = 1,
     val resourceFileUserAgent: String = DefaultSubscriptionUserAgent,
     val enableSniffing: Boolean = true,

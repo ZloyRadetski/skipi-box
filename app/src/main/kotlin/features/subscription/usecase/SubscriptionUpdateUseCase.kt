@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 import kotlin.time.Clock
 
 private const val LogTag = "SubscriptionUpdateUseCase"

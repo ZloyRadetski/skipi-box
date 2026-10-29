@@ -3,7 +3,7 @@
 
 package features.subscription.runtime
 
-internal typealias SubscriptionAgeCrypto = features.subscription.SubscriptionAgeCrypto
+import features.subscription.SubscriptionAgeCrypto
 
 internal object UnsupportedSubscriptionAgeCrypto : SubscriptionAgeCrypto {
     override fun publicKey(secretKey: String): String {

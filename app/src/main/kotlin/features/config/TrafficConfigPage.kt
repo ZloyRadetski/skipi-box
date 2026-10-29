@@ -4,8 +4,8 @@
 package features.config
 
 import androidx.compose.foundation.background
-import ui.text.themedFontWeight
-import ui.components.AppWindowDialog
+import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.components.AppWindowDialog
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -115,11 +115,11 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 import ui.AppTheme
 import ui.clipboard.getPlainText
 import ui.clipboard.setPlainText
-import ui.components.AppCascadingListPopup
-import ui.components.WarningConfirmDialog
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageListPadding
-import ui.text.formatTemplate
+import app.skipi.ui.components.AppCascadingListPopup
+import app.skipi.ui.components.WarningConfirmDialog
+import app.skipi.ui.layout.pageContentPaddingWithCutout
+import app.skipi.ui.layout.pageListPadding
+import app.skipi.ui.text.formatTemplate
 import utils.encodeBase64
 
 @OptIn(ExperimentalScrollBarApi::class)

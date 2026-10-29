@@ -11,7 +11,7 @@ import features.proxy.app.model.toUserSpaceTabs
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import system.user.AndroidUserSpace
+import features.proxy.app.model.ProxyAppListUserSpace
 
 class ProxyAppListProjectionAndroidOracleTest {
 
@@ -58,8 +58,8 @@ class ProxyAppListProjectionAndroidOracleTest {
                 app("com.owner.app", "Owner App", userId = 0, uid = 10012),
             ),
             userSpaces = listOf(
-                AndroidUserSpace(id = 10, name = "Work"),
-                AndroidUserSpace(id = 0, name = ""),
+                ProxyAppListUserSpace(id = 10, name = "Work"),
+                ProxyAppListUserSpace(id = 0, name = ""),
             ),
         )
 
@@ -69,9 +69,9 @@ class ProxyAppListProjectionAndroidOracleTest {
 
         assertEquals(
             listOf(
-                AndroidUserSpace(id = 0, name = ""),
-                AndroidUserSpace(id = 3, name = "User 3"),
-                AndroidUserSpace(id = 10, name = "Work"),
+                ProxyAppListUserSpace(id = 0, name = ""),
+                ProxyAppListUserSpace(id = 3, name = "User 3"),
+                ProxyAppListUserSpace(id = 10, name = "Work"),
             ),
             prepared.displayedUserSpaces,
         )
@@ -88,8 +88,8 @@ class ProxyAppListProjectionAndroidOracleTest {
                 app("com.example.alpha", "Alpha work", userId = 1, uid = 110042),
             ),
             userSpaces = listOf(
-                AndroidUserSpace(id = 0, name = "Owner"),
-                AndroidUserSpace(id = 1, name = "Work"),
+                ProxyAppListUserSpace(id = 0, name = "Owner"),
+                ProxyAppListUserSpace(id = 1, name = "Work"),
             ),
         )
         val ownerItems = prepared.allItemsByUser.getValue(0)
@@ -118,7 +118,7 @@ class ProxyAppListProjectionAndroidOracleTest {
                 app("com.example.other", "Other", userId = 2, uid = 299999),
                 app("com.example.current", "Already fixed", userId = 9, uid = 900007),
             ),
-            userSpaces = listOf(AndroidUserSpace(id = 9, name = "User 9")),
+            userSpaces = listOf(ProxyAppListUserSpace(id = 9, name = "User 9")),
             fixedUserId = 9,
         )
         val items = prepared.allItemsByUser.getValue(9)
@@ -161,7 +161,7 @@ class ProxyAppListProjectionAndroidOracleTest {
     private suspend fun prepare(
         appPackages: List<AppPackageEntry>,
         searchValue: String = "",
-        userSpaces: List<AndroidUserSpace> = listOf(AndroidUserSpace(id = 0, name = "Owner")),
+        userSpaces: List<ProxyAppListUserSpace> = listOf(ProxyAppListUserSpace(id = 0, name = "Owner")),
         fixedUserId: Int? = null,
     ): ProxyAppListPreparedData = prepareProxyAppListData(
         userSpaces = userSpaces,

@@ -6,7 +6,7 @@ package system
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import system.user.AndroidUserSpace
+import features.proxy.app.model.ProxyAppListUserSpace
 import system.user.AndroidUserSpaceRepository
 
 class AndroidUserSpaceProvider(
@@ -23,11 +23,11 @@ class AndroidUserSpaceProvider(
         return listOf(getCurrentAndroidUser())
     }
 
-    suspend fun currentAndroidUserSpace(): AndroidUserSpace {
+    suspend fun currentAndroidUserSpace(): ProxyAppListUserSpace {
         return userSpaceRepository.currentAndroidUserSpace()
     }
 
-    suspend fun listAndroidUserSpaces(): List<AndroidUserSpace> {
+    suspend fun listAndroidUserSpaces(): List<ProxyAppListUserSpace> {
         return userSpaceRepository.listAndroidUserSpaces()
     }
 }

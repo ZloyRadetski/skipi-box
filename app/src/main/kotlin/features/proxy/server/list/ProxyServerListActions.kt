@@ -43,7 +43,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import ui.clipboard.getPlainText
 import ui.feedback.AndroidToastTipNotifier
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 
 internal val ProxyServerListToolAction.isDeletion: Boolean
     get() = when (this) {

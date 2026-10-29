@@ -30,7 +30,7 @@ import features.subscription.subscriptionTrafficProgress
 import features.subscription.subscriptionTrafficSummary
 import java.text.DateFormat
 import java.util.Date
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 
 /** Adapts Android state records to the shared route-outbound projection. */
 internal fun projectRouteOutboundPicker(

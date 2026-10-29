@@ -6,7 +6,7 @@ package features.resources.runtime
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.test.core.app.ApplicationProvider
-import app.ResourceFileKind
+import features.resources.ResourceFileKind
 import features.resources.ResourceFileSourceLoyalsoldierGithub
 import features.resources.ResourceFileSourceRoscomvpnGithub
 import features.resources.ResourceFileSourceV2FlyGithub

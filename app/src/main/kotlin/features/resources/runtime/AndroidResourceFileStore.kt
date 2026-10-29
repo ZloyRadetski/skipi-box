@@ -10,8 +10,8 @@ import android.os.Build
 import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
-import app.CustomResourceFileState
-import app.ResourceFilesStatus
+import features.config.TrafficConfigCustomResourceFile
+import features.resources.ResourceFilesStatus
 import features.resources.ResourceFileKind
 import features.resources.ResourceFileSourceLoyalsoldierGithub
 import features.resources.ResourceSnapshotFiles
@@ -34,11 +34,11 @@ internal class AndroidResourceFileStore(
     val dataDir: File
         get() = snapshotFiles.dataDir
 
-    fun status(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus {
+    fun status(customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList()): ResourceFilesStatus {
         return currentStatus(customResourceFiles)
     }
 
-    fun currentStatus(customResourceFiles: List<CustomResourceFileState> = emptyList()): ResourceFilesStatus {
+    fun currentStatus(customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList()): ResourceFilesStatus {
         return snapshotFiles.currentStatus(customResourceFiles)
     }
 
@@ -46,7 +46,7 @@ internal class AndroidResourceFileStore(
         return snapshotFiles.file(kind)
     }
 
-    fun file(customFile: CustomResourceFileState): File {
+    fun file(customFile: TrafficConfigCustomResourceFile): File {
         return snapshotFiles.file(customFile)
     }
 
@@ -203,7 +203,7 @@ internal class AndroidResourceFileStore(
         return File.createTempFile("xray-core-", ".candidate", appContext.cacheDir)
     }
 
-    fun replaceCustom(customFile: CustomResourceFileState, uri: Uri) {
+    fun replaceCustom(customFile: TrafficConfigCustomResourceFile, uri: Uri) {
         snapshotFiles.replaceCustom(customFile) {
             appContext.contentResolver.openInputStream(uri) ?: throw FileNotFoundException(uri.toString())
         }
@@ -218,11 +218,11 @@ internal class AndroidResourceFileStore(
         snapshotFiles.markResourceFileSource(resourceFileSource)
     }
 
-    fun deleteCustom(customFile: CustomResourceFileState) {
+    fun deleteCustom(customFile: TrafficConfigCustomResourceFile) {
         snapshotFiles.deleteCustom(customFile)
     }
 
-    fun renameCustom(previousFile: CustomResourceFileState, customFile: CustomResourceFileState) {
+    fun renameCustom(previousFile: TrafficConfigCustomResourceFile, customFile: TrafficConfigCustomResourceFile) {
         snapshotFiles.renameCustom(previousFile, customFile)
     }
 

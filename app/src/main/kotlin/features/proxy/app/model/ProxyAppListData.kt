@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 import system.AndroidPackageProvider
 import system.AndroidUser
 import system.InstalledPackageInfo
-import system.user.AndroidUserSpace
+import features.proxy.app.model.ProxyAppListUserSpace
 import utils.toTrimmedNonEmptyDistinctList
 
 @Immutable
@@ -55,12 +55,12 @@ internal suspend fun AndroidPackageProvider.loadProxyAppListPackages(
         )
 }
 
-internal fun AndroidUser.toAndroidUserSpace(): AndroidUserSpace {
-    return AndroidUserSpace(id = id, name = name)
+internal fun AndroidUser.toAndroidUserSpace(): ProxyAppListUserSpace {
+    return ProxyAppListUserSpace(id = id, name = name)
 }
 
 internal suspend fun prepareProxyAppListData(
-    userSpaces: List<AndroidUserSpace>,
+    userSpaces: List<ProxyAppListUserSpace>,
     appPackages: List<AppPackageEntry>,
     searchValue: String,
     fixedUserId: Int?,

@@ -15,6 +15,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import java.net.InetSocketAddress
 import kotlin.test.assertFailsWith
+import features.subscription.SubscriptionAgeCrypto
 
 class AndroidSubscriptionFetcherTest {
     @Test

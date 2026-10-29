@@ -42,7 +42,7 @@ import org.robolectric.annotation.Config
 class AndroidResourceFileDownloadProxyOracleTest {
     @Before
     fun resetCancellationState() {
-        AndroidResourceFileDownloadCancellation.begin()
+        ResourceFileDownloadCancellation.begin()
     }
 
     @Test

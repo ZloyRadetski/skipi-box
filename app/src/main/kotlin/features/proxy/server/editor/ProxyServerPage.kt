@@ -40,7 +40,7 @@ import features.proxy.server.model.canBeUsedInGeneratedProxyPlan
 import features.proxy.server.model.isCompositeProxyServer
 import features.proxy.server.usecase.ProxyServerCopyTextResult
 import features.proxy.server.usecase.proxyServerCopyText
-import features.proxy.server.validation.rememberProxyServerValidationMessageResolver
+import app.skipi.ui.server.validation.rememberProxyServerValidationMessageResolver
 import features.subscription.toSubscriptionGroupUiState
 import kotlinx.coroutines.launch
 import ui.clipboard.setPlainText
@@ -48,8 +48,11 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import app.skipi.app.store.SharedApplicationAction
-import ui.components.DeleteConfirmationDialog
-import ui.text.formatTemplate
+import app.skipi.ui.components.DeleteConfirmationDialog
+import app.skipi.ui.text.formatTemplate
+import app.skipi.ui.server.editor.ProxyServerEditorOptions
+import app.skipi.ui.server.editor.ProxyServerEditorMemberOption
+import app.skipi.ui.server.editor.editorTitle
 
 @Composable
 fun ProxyServerPage(

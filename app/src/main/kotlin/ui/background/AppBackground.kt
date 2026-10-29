@@ -41,7 +41,7 @@ import app.modes.BackgroundStyleClassic
 import app.modes.BackgroundStyleConnection
 import app.modes.BackgroundStylePhoto
 import app.skipi.ui.background.drawAuroraMesh
-import ui.anim.rememberInfinitePulse
+import app.skipi.ui.anim.rememberInfinitePulse
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers

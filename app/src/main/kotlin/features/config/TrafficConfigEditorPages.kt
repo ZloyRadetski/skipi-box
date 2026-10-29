@@ -6,7 +6,7 @@
 package features.config
 
 import androidx.compose.foundation.background
-import ui.text.themedFontWeight
+import app.skipi.ui.text.themedFontWeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,12 +82,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 import ui.AppTheme
 import ui.clipboard.setPlainText
-import ui.components.BackNavigationIcon
-import ui.components.NavigationIcon
-import ui.layout.AdaptiveTopAppBar
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageListPadding
-import ui.layout.pageScrollModifiers
+import app.skipi.ui.components.BackNavigationIcon
+import app.skipi.ui.components.NavigationIcon
+import app.skipi.ui.layout.AdaptiveTopAppBar
+import app.skipi.ui.layout.pageContentPaddingWithCutout
+import app.skipi.ui.layout.pageListPadding
+import app.skipi.ui.layout.pageScrollModifiers
 
 /** The full-screen Material entry point for a single SKIPI traffic profile. */
 @Composable

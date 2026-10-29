@@ -27,7 +27,7 @@ import app.skipi.ui.server.editor.ServerPickerSubscriptionSummary
 import app.skipi.ui.server.editor.SkipiStrategyGroupMemberSelectorScreen
 import app.skipi.ui.server.editor.StrategyMemberSelectorGroup as SharedStrategyMemberSelectorGroup
 import app.skipi.ui.server.editor.StrategyMemberSelectorItem
-import features.proxy.server.display.CountryFlagUtils
+import app.skipi.ui.server.display.CountryFlagUtils
 import features.proxy.server.model.getTransportDisplay
 import features.subscription.subscriptionExpirySummary
 import features.subscription.subscriptionTrafficProgress
@@ -36,7 +36,7 @@ import java.text.DateFormat
 import java.util.Date
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 
 internal data class StrategyMemberSelectorGroup(
     val key: String,

@@ -52,8 +52,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
-import ui.components.AppWindowDialog
-import ui.text.themedFontWeight
+import app.skipi.ui.components.AppWindowDialog
+import app.skipi.ui.text.themedFontWeight
 import features.proxy.app.model.AppPackageEntry
 import features.proxy.app.model.loadProxyAppListPackages
 

@@ -6,10 +6,10 @@ package features.resources.runtime
 import android.content.Context
 import android.net.Uri
 import app.R
-import app.CustomResourceFileState
-import app.ResourceFileKind
-import app.ResourceFilesStatus
-import app.ResourceFileUpdateSource
+import features.config.TrafficConfigCustomResourceFile
+import features.resources.ResourceFileKind
+import features.resources.ResourceFilesStatus
+import features.resources.ResourceFileUpdateSource
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
 import engine.network.isPort
@@ -34,7 +34,7 @@ internal class AndroidResourceFileRepository(
 
     suspend fun status(
         scope: XrayResourceFileScope,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus =
         withContext(Dispatchers.IO) {
             store(scope).status(customResourceFiles)
@@ -48,8 +48,8 @@ internal class AndroidResourceFileRepository(
 
     suspend fun deleteCustom(
         scope: XrayResourceFileScope,
-        customFile: CustomResourceFileState,
-        customResourceFiles: List<CustomResourceFileState>,
+        customFile: TrafficConfigCustomResourceFile,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         val store = store(scope)
         store.deleteCustom(customFile)
@@ -58,9 +58,9 @@ internal class AndroidResourceFileRepository(
 
     suspend fun renameCustom(
         scope: XrayResourceFileScope,
-        previousFile: CustomResourceFileState,
-        customFile: CustomResourceFileState,
-        customResourceFiles: List<CustomResourceFileState>,
+        previousFile: TrafficConfigCustomResourceFile,
+        customFile: TrafficConfigCustomResourceFile,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         val store = store(scope)
         store.renameCustom(previousFile, customFile)
@@ -71,7 +71,7 @@ internal class AndroidResourceFileRepository(
         scope: XrayResourceFileScope,
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
             plan = planAllResourceFileDownloads(
@@ -89,7 +89,7 @@ internal class AndroidResourceFileRepository(
         kind: ResourceFileKind,
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
             plan = planBuiltInResourceFileDownload(
@@ -104,9 +104,9 @@ internal class AndroidResourceFileRepository(
 
     suspend fun updateCustom(
         scope: XrayResourceFileScope,
-        customFile: CustomResourceFileState,
+        customFile: TrafficConfigCustomResourceFile,
         options: ResourceFileUpdateOptions,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         updateTargets(
             plan = planCustomResourceFileDownload(
@@ -121,7 +121,7 @@ internal class AndroidResourceFileRepository(
     private fun updateTargets(
         plan: ResourceFileUpdateDownloadPlan,
         options: ResourceFileUpdateOptions,
-        customResourceFiles: List<CustomResourceFileState>,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus {
         val scope = plan.scope
         val store = store(scope)
@@ -131,7 +131,7 @@ internal class AndroidResourceFileRepository(
             currentStatus = { store.currentStatus(customResourceFiles) },
             prepareSession = {
                 store.dataDir.mkdirs()
-                AndroidResourceFileDownloadCancellation.begin()
+                ResourceFileDownloadCancellation.begin()
                 val notifier = AndroidResourceFileDownloadNotifier(
                     context = appContext,
                     notificationsEnabled = options.showNotifications,
@@ -174,7 +174,7 @@ internal class AndroidResourceFileRepository(
             },
             markSource = { source -> store.markResourceFileSource(source) },
             mapCancellationError = {
-                AndroidResourceFileDownloadCancelledException(
+                ResourceFileDownloadCancelledException(
                     appContext.getString(R.string.resource_file_download_notification_cancelled),
                 )
             },
@@ -200,9 +200,9 @@ internal class AndroidResourceFileRepository(
 
     suspend fun replaceCustom(
         scope: XrayResourceFileScope,
-        customFile: CustomResourceFileState,
+        customFile: TrafficConfigCustomResourceFile,
         uri: Uri,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         val store = store(scope)
         store.replaceCustom(customFile, uri)
@@ -213,7 +213,7 @@ internal class AndroidResourceFileRepository(
         scope: XrayResourceFileScope,
         kind: ResourceFileKind,
         uri: Uri,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         val store = store(scope)
         store.replace(kind, uri)
@@ -223,7 +223,7 @@ internal class AndroidResourceFileRepository(
     suspend fun restoreBundled(
         scope: XrayResourceFileScope,
         kind: ResourceFileKind,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus = withContext(Dispatchers.IO) {
         val store = store(scope)
         store.restoreBundled(kind, scope.resourceFileSource)

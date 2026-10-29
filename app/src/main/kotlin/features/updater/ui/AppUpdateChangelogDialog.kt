@@ -1,10 +1,10 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.updater.ui
 
 import androidx.compose.foundation.background
-import ui.text.themedFontWeight
+import app.skipi.ui.text.themedFontWeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

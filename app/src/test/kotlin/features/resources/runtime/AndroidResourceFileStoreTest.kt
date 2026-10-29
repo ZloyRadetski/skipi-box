@@ -3,7 +3,7 @@
 
 package features.resources.runtime
 
-import app.ResourceFileKind
+import features.resources.ResourceFileKind
 import features.resources.ResourceFileSourceChocolate4UGithub
 import features.resources.ResourceFileSourceCustom
 import features.resources.ResourceFileSourceLoyalsoldierGithub

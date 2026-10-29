@@ -3,8 +3,8 @@
 
 package data
 
-import app.CustomResourceFileState
-import app.sanitizeCustomResourceFileName
+import features.config.TrafficConfigCustomResourceFile
+import features.config.sanitizeCustomResourceFileName
 import features.config.TrafficConfigState
 import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigNetworkActivation
@@ -37,11 +37,11 @@ internal object StringListJson {
 }
 
 internal object CustomResourceFileListJson {
-    fun encode(values: List<CustomResourceFileState>): String {
+    fun encode(values: List<TrafficConfigCustomResourceFile>): String {
         return appStateJson.encodeToString(values.map(PersistedCustomResourceFile::from))
     }
 
-    fun decode(payload: String): List<CustomResourceFileState> {
+    fun decode(payload: String): List<TrafficConfigCustomResourceFile> {
         return runCatching {
             appStateJson.decodeFromString<List<PersistedCustomResourceFile>>(payload)
                 .mapNotNull(PersistedCustomResourceFile::toStateOrNull)
@@ -92,11 +92,11 @@ private data class PersistedCustomResourceFile(
     val name: String,
     val url: String,
 ) {
-    fun toStateOrNull(): CustomResourceFileState? {
+    fun toStateOrNull(): TrafficConfigCustomResourceFile? {
         val fileName = sanitizeCustomResourceFileName(name, fallback = "")
         val updateUrl = url.trim()
         if (id <= 0 || fileName.isBlank()) return null
-        return CustomResourceFileState(
+        return TrafficConfigCustomResourceFile(
             id = id,
             name = fileName,
             url = updateUrl,
@@ -104,7 +104,7 @@ private data class PersistedCustomResourceFile(
     }
 
     companion object {
-        fun from(state: CustomResourceFileState): PersistedCustomResourceFile {
+        fun from(state: TrafficConfigCustomResourceFile): PersistedCustomResourceFile {
             return PersistedCustomResourceFile(
                 id = state.id,
                 name = state.name,

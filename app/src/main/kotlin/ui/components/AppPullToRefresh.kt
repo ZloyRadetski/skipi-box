@@ -19,7 +19,7 @@ import app.skipi.ui.components.AppRefreshState as SharedAppRefreshState
 import app.skipi.ui.components.rememberAppPullToRefreshState as sharedRememberAppPullToRefreshState
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.text.themedFontWeight
+import app.skipi.ui.text.themedFontWeight
 
 typealias AppRefreshState = SharedAppRefreshState
 typealias AppPullToRefreshState = SharedAppPullToRefreshState

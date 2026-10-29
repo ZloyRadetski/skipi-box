@@ -13,7 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import app.AppState
 import app.R
-import app.SubscriptionExpiryReminder
+import features.subscription.SubscriptionExpiryReminder
 import app.SubscriptionGroupState
 
 internal object SubscriptionExpiryNotifier {

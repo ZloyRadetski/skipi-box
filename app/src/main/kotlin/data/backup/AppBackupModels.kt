@@ -4,22 +4,8 @@
 package data.backup
 
 import app.AppState
-typealias AppBackupCustomResourceFile = features.backup.AppBackupCustomResourceFile
-typealias AppBackupData = features.backup.AppBackupData
-typealias AppBackupFile = features.backup.AppBackupFile
-typealias AppBackupProxyServer = features.backup.AppBackupProxyServer
-typealias AppBackupRouteRule = features.backup.AppBackupRouteRule
-typealias AppBackupServiceControl = features.backup.AppBackupServiceControl
-typealias AppBackupServiceControlSchedule = features.backup.AppBackupServiceControlSchedule
-typealias AppBackupServiceControlWifi = features.backup.AppBackupServiceControlWifi
-typealias AppBackupServiceControlWifiRule = features.backup.AppBackupServiceControlWifiRule
-typealias AppBackupSettings = features.backup.AppBackupSettings
-typealias AppBackupSubscriptionGroup = features.backup.AppBackupSubscriptionGroup
-typealias AppBackupTrafficConfig = features.backup.AppBackupTrafficConfig
-
-internal const val AppBackupFormat = features.backup.AppBackupFormat
-internal const val CurrentAppBackupVersion = features.backup.CurrentAppBackupVersion
-
+import features.backup.AppBackupFile
+import features.backup.AppBackupWarning
 internal data class AppBackupRestorePreview(
     val backup: AppBackupFile,
     val restoredState: AppState,
@@ -38,4 +24,3 @@ internal data class AppBackupRestorePreview(
         get() = restoredState.trafficConfigs.size
 }
 
-internal typealias AppBackupWarning = features.backup.AppBackupWarning

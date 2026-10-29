@@ -5,7 +5,7 @@ package data.backup
 
 import features.backup.appBackupRestoreWarnings
 import app.AppState
-import app.CustomResourceFileState
+import features.config.TrafficConfigCustomResourceFile
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.modes.RunModeVpnService
@@ -29,6 +29,17 @@ import features.proxy.server.model.decodeProxyServer
 import features.proxy.server.model.toPersistedProxyServer
 import features.routing.model.RouteRule
 import features.subscription.DefaultSubscriptionGroupId
+import features.backup.AppBackupCustomResourceFile
+import features.backup.AppBackupData
+import features.backup.AppBackupFile
+import features.backup.AppBackupProxyServer
+import features.backup.AppBackupRouteRule
+import features.backup.AppBackupSettings
+import features.backup.AppBackupSubscriptionGroup
+import features.backup.AppBackupTrafficConfig
+import features.backup.AppBackupFormat
+import features.backup.CurrentAppBackupVersion
+import features.backup.AppBackupWarning
 
 internal fun AppState.toAppBackupFile(
     createdAtMillis: Long,
@@ -147,7 +158,7 @@ private fun AppState.toBackupSettings(): AppBackupSettings {
         customResourceFileGeoIpOnlyCnPrivateUrl = customResourceFileGeoIpOnlyCnPrivateUrl,
         customResourceFileDirectCidrIpv4Url = customResourceFileDirectCidrIpv4Url,
         customResourceFileDirectCidrIpv6Url = customResourceFileDirectCidrIpv6Url,
-        customResourceFiles = customResourceFiles.map(CustomResourceFileState::toBackup),
+        customResourceFiles = customResourceFiles.map(TrafficConfigCustomResourceFile::toBackup),
         enableSniffing = enableSniffing,
         enableSniffingRouteOnly = enableSniffingRouteOnly,
         enableMux = enableMux,
@@ -226,7 +237,7 @@ private fun ProxyServerState.toBackup(): AppBackupProxyServer {
     )
 }
 
-private fun CustomResourceFileState.toBackup(): AppBackupCustomResourceFile {
+private fun TrafficConfigCustomResourceFile.toBackup(): AppBackupCustomResourceFile {
     return AppBackupCustomResourceFile(
         id = id,
         name = name,
@@ -468,8 +479,8 @@ private fun AppBackupProxyServer.toState(
     )
 }
 
-private fun AppBackupCustomResourceFile.toState(): CustomResourceFileState {
-    return CustomResourceFileState(
+private fun AppBackupCustomResourceFile.toState(): TrafficConfigCustomResourceFile {
+    return TrafficConfigCustomResourceFile(
         id = id,
         name = name,
         url = url,

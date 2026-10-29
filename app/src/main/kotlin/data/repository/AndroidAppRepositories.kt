@@ -588,4 +588,4 @@ internal fun TrafficConfigRecord.toAndroidTrafficConfig(existing: TrafficConfigS
 
 private fun Int.saturatedIncrement(): Int = if (this == Int.MAX_VALUE) Int.MAX_VALUE else this + 1
 
-private fun ResourceDefinition.toAndroidResource() = app.CustomResourceFileState(id = id, name = name, url = url)
+private fun ResourceDefinition.toAndroidResource() = features.config.TrafficConfigCustomResourceFile(id = id, name = name, url = url)

@@ -56,7 +56,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import ui.text.themedFontWeight
+import app.skipi.ui.text.themedFontWeight
 import java.io.File
 import java.util.Locale
 

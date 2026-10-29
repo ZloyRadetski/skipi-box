@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import features.resources.ResourceFileDownloadCancelledException
 
 /** Android source oracle for the existing HTTP resource downloader behavior. */
 @RunWith(RobolectricTestRunner::class)
@@ -30,7 +31,7 @@ import org.robolectric.annotation.Config
 class AndroidResourceFileDownloaderOracleTest {
     @Before
     fun resetCancellationState() {
-        AndroidResourceFileDownloadCancellation.begin()
+        ResourceFileDownloadCancellation.begin()
     }
 
     @Test
@@ -244,7 +245,7 @@ class AndroidResourceFileDownloaderOracleTest {
                 exchange.respond(200, "must not be downloaded".encodeToByteArray())
             }
 
-            AndroidResourceFileDownloadCancellation.cancel()
+            ResourceFileDownloadCancellation.cancel()
             runCatching {
                 AndroidResourceFileDownloader(context = null).download(
                     url = "http://127.0.0.1:${server.address.port}/pre-cancelled",
@@ -253,7 +254,7 @@ class AndroidResourceFileDownloaderOracleTest {
             }.exceptionOrNull()
         }
 
-        assertTrue("expected cancellation, got $error", error is AndroidResourceFileDownloadCancelledException)
+        assertTrue("expected cancellation, got $error", error is ResourceFileDownloadCancelledException)
         assertEquals(0, requests.get())
         assertEquals("previous", target.readText())
         assertEquals(listOf(target), directory.listFiles()?.toList())
@@ -277,14 +278,14 @@ class AndroidResourceFileDownloaderOracleTest {
                     target = target,
                     onProgress = { downloadedBytes, _ ->
                         if (downloadedBytes > 0L && cancellationSent.compareAndSet(false, true)) {
-                            AndroidResourceFileDownloadCancellation.cancel()
+                            ResourceFileDownloadCancellation.cancel()
                         }
                     },
                 )
             }.exceptionOrNull()
         }
 
-        assertTrue("expected cancellation, got $error", error is AndroidResourceFileDownloadCancelledException)
+        assertTrue("expected cancellation, got $error", error is ResourceFileDownloadCancelledException)
         assertTrue(cancellationSent.get())
         assertEquals(1, requests.get())
         assertEquals("previous", target.readText())

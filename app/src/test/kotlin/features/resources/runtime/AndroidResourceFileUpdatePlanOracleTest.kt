@@ -6,8 +6,8 @@ package features.resources.runtime
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.test.core.app.ApplicationProvider
-import app.ResourceFileKind
-import app.ResourceFileUpdateSource
+import features.resources.ResourceFileKind
+import features.resources.ResourceFileUpdateSource
 import com.sun.net.httpserver.HttpServer
 import features.config.TrafficConfigCustomResourceFile
 import features.resources.ResourceFileScope

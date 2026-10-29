@@ -117,8 +117,8 @@ import top.yukonga.miuix.kmp.icon.extended.MindMap
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
-import ui.layout.pageWindowPadding
-import ui.layout.shouldShowSplitPane
+import app.skipi.ui.layout.pageWindowPadding
+import app.skipi.ui.layout.shouldShowSplitPane
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 

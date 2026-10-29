@@ -1,11 +1,11 @@
-﻿// Copyright 2026, Radetski
+// Copyright 2026, Radetski
 // SPDX-License-Identifier: GPL-3.0
 
 package features.config
 
 import androidx.compose.foundation.layout.Column
-import ui.components.AppWindowDialog
-import ui.components.AppWindowDropdownPreference
+import app.skipi.ui.components.AppWindowDialog
+import app.skipi.ui.components.AppWindowDropdownPreference
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth

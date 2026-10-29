@@ -6,8 +6,8 @@ package features.resources.runtime
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.test.core.app.ApplicationProvider
-import app.ResourceFileKind
-import app.ResourceFileUpdateSource
+import features.resources.ResourceFileKind
+import features.resources.ResourceFileUpdateSource
 import com.sun.net.httpserver.HttpServer
 import engine.proxy.LocalProxyRuntime
 import features.config.TrafficConfigCustomResourceFile
@@ -27,6 +27,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import features.resources.ResourceFileDownloadCancelledException
 
 /** Android-source baseline for the shared batch executor boundary. */
 @RunWith(RobolectricTestRunner::class)
@@ -38,13 +39,13 @@ import org.robolectric.annotation.Config
 class AndroidResourceFileUpdateBatchOracleTest {
     @Before
     fun resetHostDownloadState() {
-        AndroidResourceFileDownloadCancellation.begin()
+        ResourceFileDownloadCancellation.begin()
         LocalProxyRuntime.clear()
     }
 
     @After
     fun clearHostDownloadState() {
-        AndroidResourceFileDownloadCancellation.begin()
+        ResourceFileDownloadCancellation.begin()
         LocalProxyRuntime.clear()
     }
 
@@ -58,7 +59,7 @@ class AndroidResourceFileUpdateBatchOracleTest {
                 url = " \t ",
             )
             val store = AndroidResourceFileStore(context, scope)
-            AndroidResourceFileDownloadCancellation.cancel()
+            ResourceFileDownloadCancellation.cancel()
 
             val status = runBlocking {
                 AndroidResourceFileRepository(context).updateCustom(
@@ -77,7 +78,7 @@ class AndroidResourceFileUpdateBatchOracleTest {
             assertFalse(status.customResourceFiles.single().status.exists)
             assertFalse(store.dataDir.exists())
             assertFalse(File(root, "xray/profiles/${scope.trafficConfigId}").exists())
-            assertTrue(AndroidResourceFileDownloadCancellation.isCancelled())
+            assertTrue(ResourceFileDownloadCancellation.isCancelled())
         }
     }
 
@@ -102,7 +103,7 @@ class AndroidResourceFileUpdateBatchOracleTest {
                     }
                 }.exceptionOrNull()
 
-                assertTrue(error is AndroidResourceFileDownloadCancelledException)
+                assertTrue(error is ResourceFileDownloadCancelledException)
                 assertEquals(
                     context.getString(app.R.string.resource_file_download_notification_cancelled),
                     error?.message,
@@ -112,7 +113,7 @@ class AndroidResourceFileUpdateBatchOracleTest {
                 assertEquals("old geosite", store.file(ResourceFileKind.GeoSite).readText())
                 assertEquals("old direct-v4", store.file(ResourceFileKind.DirectCidrIpv4).readText())
                 assertFalse(sourceMarker(root, scope).exists())
-                assertTrue(AndroidResourceFileDownloadCancellation.isCancelled())
+                assertTrue(ResourceFileDownloadCancellation.isCancelled())
             }
         }
     }
@@ -156,7 +157,7 @@ class AndroidResourceFileUpdateBatchOracleTest {
             requests += path
             val bytes = "response:$path".encodeToByteArray()
             if (path == cancelPath) {
-                AndroidResourceFileDownloadCancellation.cancel()
+                ResourceFileDownloadCancellation.cancel()
                 try {
                     exchange.sendResponseHeaders(200, bytes.size.toLong())
                     exchange.responseBody.use { output -> output.write(bytes) }

@@ -83,10 +83,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import ui.AppTheme
-import ui.layout.pageContentPaddingWithCutout
-import ui.layout.pageListPadding
-import ui.layout.pageWindowPadding
-import ui.components.DeleteConfirmationDialog
+import app.skipi.ui.layout.pageContentPaddingWithCutout
+import app.skipi.ui.layout.pageListPadding
+import app.skipi.ui.layout.pageWindowPadding
+import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.home.SkipiProxyHomeScaffold
 import app.skipi.ui.home.SkipiProxyHomeScaffoldState
 import app.skipi.app.home.ProxyHomeCopyFormat
@@ -114,7 +114,7 @@ import app.skipi.ui.home.ProxyHomeScreen
 import app.skipi.ui.home.rememberSaveableProxyHomePresentation
 import app.skipi.ui.home.rememberSaveableProxyHomeDialogsState
 import data.repository.toSubscriptionRecord
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 import platform.TunnelConnectRequest
 import platform.TunnelFailure
 import platform.TunnelPhase
@@ -123,7 +123,7 @@ import features.proxy.server.model.StrategyGroupConstants
 import features.proxy.server.usecase.ProxyServerCopyTextResult
 import features.proxy.server.usecase.ProxyServerCopyTextType
 import features.proxy.server.usecase.proxyServerCopyText
-import features.proxy.server.validation.rememberProxyServerValidationMessageResolver
+import app.skipi.ui.server.validation.rememberProxyServerValidationMessageResolver
 import features.settings.currentTunnelMemoryPssKb
 import features.settings.formatTunnelMemory
 import app.proxyServerIdFromOutboundTag

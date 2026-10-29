@@ -28,7 +28,7 @@ import features.subscription.usecase.toSubscriptionFetchOptions
 import features.subscription.usecase.updateSubscriptions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 
 @Composable
 fun SubscriptionGroupListPage(

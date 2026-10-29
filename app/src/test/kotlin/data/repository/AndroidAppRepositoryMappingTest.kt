@@ -4,7 +4,7 @@
 package data.repository
 
 import app.AppState
-import app.CustomResourceFileState
+import features.config.TrafficConfigCustomResourceFile
 import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.modes.ColorModeAurora
@@ -396,7 +396,7 @@ class AndroidAppRepositoryMappingTest {
             defaultRouteOutboundTag = "proxy",
             resourceFileSource = 2,
             resourceFileUserAgent = "resource agent",
-            customResourceFiles = listOf(CustomResourceFileState(5, "custom", "https://example.test/geo")),
+            customResourceFiles = listOf(TrafficConfigCustomResourceFile(5, "custom", "https://example.test/geo")),
         )
 
         assertEquals(3, state.toRoutingConfigRecord().domainStrategy)

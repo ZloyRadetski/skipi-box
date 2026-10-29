@@ -14,6 +14,9 @@ import features.resources.ResourceFileSourceV2FlyGithub
 import features.resources.resourceFileUpdateSource as profileResourceFileUpdateSource
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import features.resources.ResourceFileUpdateSource
+import features.resources.ResourceFileUpdateSources
+import features.resources.resourceFileUpdateSourceAt
 
 /** Source-backed baseline for the Android global and profile resource-update resolvers. */
 class AndroidResourceFileUpdateSourceOracleTest {

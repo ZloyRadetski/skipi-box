@@ -3,7 +3,7 @@
 
 package features.config
 
-import app.ResourceFileUpdateSources
+import features.resources.ResourceFileUpdateSources
 import features.resources.ResourceFileSourceCustom
 import kotlinx.serialization.json.JsonObject
 

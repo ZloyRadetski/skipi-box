@@ -14,7 +14,7 @@ import app.collectAppState
 import app.skipi.ui.server.editor.GroupMemberChoice
 import app.skipi.ui.server.editor.SkipiSelectGroupMemberDialog
 import engine.xray.strategyGroupMembers
-import features.proxy.server.display.CountryFlagUtils
+import app.skipi.ui.server.display.CountryFlagUtils
 import features.proxy.server.model.StrategyGroup
 
 /** Android selector-state adapter; the shared dialog owns its presentation. */

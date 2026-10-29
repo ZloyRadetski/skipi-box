@@ -10,15 +10,16 @@ import features.logs.AndroidAppLogger
 import system.toAndroidUserId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import features.proxy.app.model.ProxyAppListUserSpace
 
 class AndroidUserSpaceRepository(context: Context) {
     private val appContext = context.applicationContext
 
-    suspend fun currentAndroidUserSpace(): AndroidUserSpace = withContext(Dispatchers.Default) {
+    suspend fun currentAndroidUserSpace(): ProxyAppListUserSpace = withContext(Dispatchers.Default) {
         appContext.currentAndroidUserSpace()
     }
 
-    suspend fun listAndroidUserSpaces(): List<AndroidUserSpace> = withContext(Dispatchers.Default) {
+    suspend fun listAndroidUserSpaces(): List<ProxyAppListUserSpace> = withContext(Dispatchers.Default) {
         val userManager = appContext.getSystemService(Context.USER_SERVICE) as UserManager
         val currentUserHandle = Process.myUserHandle()
         val currentUserSpace = appContext.currentAndroidUserSpace()
@@ -29,7 +30,7 @@ class AndroidUserSpaceRepository(context: Context) {
         profiles
             .map { userHandle ->
                 val userId = userHandle.hashCode()
-                AndroidUserSpace(
+                ProxyAppListUserSpace(
                     id = userId,
                     name = if (userId == currentUserSpace.id) {
                         currentUserSpace.name
@@ -43,9 +44,9 @@ class AndroidUserSpaceRepository(context: Context) {
             .ifEmpty { listOf(currentUserSpace) }
     }
 
-    private fun Context.currentAndroidUserSpace(): AndroidUserSpace {
+    private fun Context.currentAndroidUserSpace(): ProxyAppListUserSpace {
         val userId = Process.myUid().toAndroidUserId()
-        return AndroidUserSpace(
+        return ProxyAppListUserSpace(
             id = userId,
             name = "User $userId",
         )

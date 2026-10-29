@@ -17,7 +17,7 @@ import app.skipi.app.proxy.reconcileConfigProxyGroups
 import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ProxyServerRecord as CatalogProxyServerRecord
 import features.subscription.DefaultSubscriptionGroupId
-import features.proxy.server.display.CountryFlagUtils
+import app.skipi.ui.server.display.CountryFlagUtils
 import features.proxy.server.list.AutoBalancerGroupId
 
 internal data class AndroidTrafficConfigCreation(

@@ -11,7 +11,7 @@ import app.skipi.app.store.SharedApplicationStore
 import app.navigation.Navigator
 import app.navigation.ProxyServerEditResult
 import ui.feedback.AndroidToastTipNotifier
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 
 @Composable
 internal fun ProxyServerEditResultHandler(

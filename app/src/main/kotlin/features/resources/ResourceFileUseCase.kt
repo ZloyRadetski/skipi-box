@@ -5,10 +5,10 @@ package features.resources
 
 import android.content.Context
 import android.net.Uri
-import app.CustomResourceFileState
-import app.ResourceFileKind
-import app.ResourceFilesStatus
-import app.ResourceFileUpdateSource
+import features.config.TrafficConfigCustomResourceFile
+import features.resources.ResourceFileKind
+import features.resources.ResourceFilesStatus
+import features.resources.ResourceFileUpdateSource
 import features.resources.runtime.AndroidResourceFileRepository
 import features.resources.runtime.XrayResourceFileScope
 import features.resources.ResourceFileOperations
@@ -21,7 +21,7 @@ internal class ResourceFileUseCase(
 
     override suspend fun status(
         scope: XrayResourceFileScope,
-        customResourceFiles: List<CustomResourceFileState>,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus {
         return repository.status(scope, customResourceFiles)
     }
@@ -34,7 +34,7 @@ internal class ResourceFileUseCase(
         scope: XrayResourceFileScope,
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions = ResourceFileUpdateOptions(),
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus {
         return repository.update(scope, source, options, customResourceFiles)
     }
@@ -44,25 +44,25 @@ internal class ResourceFileUseCase(
         kind: ResourceFileKind,
         source: ResourceFileUpdateSource,
         options: ResourceFileUpdateOptions = ResourceFileUpdateOptions(),
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus {
         return repository.update(scope, kind, source, options, customResourceFiles)
     }
 
     suspend fun updateCustom(
         scope: XrayResourceFileScope,
-        customFile: CustomResourceFileState,
+        customFile: TrafficConfigCustomResourceFile,
         options: ResourceFileUpdateOptions = ResourceFileUpdateOptions(),
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ): ResourceFilesStatus {
         return repository.updateCustom(scope, customFile, options, customResourceFiles)
     }
 
     override suspend fun renameCustom(
         scope: XrayResourceFileScope,
-        previousFile: CustomResourceFileState,
-        customFile: CustomResourceFileState,
-        customResourceFiles: List<CustomResourceFileState>,
+        previousFile: TrafficConfigCustomResourceFile,
+        customFile: TrafficConfigCustomResourceFile,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus {
         return repository.renameCustom(scope, previousFile, customFile, customResourceFiles)
     }
@@ -70,7 +70,7 @@ internal class ResourceFileUseCase(
     override suspend fun replace(
         scope: XrayResourceFileScope,
         kind: ResourceFileKind,
-        customResourceFiles: List<CustomResourceFileState>,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus? {
         val uri = resourceFilePicker() ?: return null
         return repository.replace(scope, kind, uri, customResourceFiles)
@@ -78,8 +78,8 @@ internal class ResourceFileUseCase(
 
     override suspend fun replaceCustom(
         scope: XrayResourceFileScope,
-        customFile: CustomResourceFileState,
-        customResourceFiles: List<CustomResourceFileState>,
+        customFile: TrafficConfigCustomResourceFile,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus? {
         val uri = resourceFilePicker() ?: return null
         return repository.replaceCustom(scope, customFile, uri, customResourceFiles)
@@ -88,15 +88,15 @@ internal class ResourceFileUseCase(
     override suspend fun restoreBundled(
         scope: XrayResourceFileScope,
         kind: ResourceFileKind,
-        customResourceFiles: List<CustomResourceFileState>,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus {
         return repository.restoreBundled(scope, kind, customResourceFiles)
     }
 
     override suspend fun deleteCustom(
         scope: XrayResourceFileScope,
-        customFile: CustomResourceFileState,
-        customResourceFiles: List<CustomResourceFileState>,
+        customFile: TrafficConfigCustomResourceFile,
+        customResourceFiles: List<TrafficConfigCustomResourceFile>,
     ): ResourceFilesStatus {
         return repository.deleteCustom(scope, customFile, customResourceFiles)
     }

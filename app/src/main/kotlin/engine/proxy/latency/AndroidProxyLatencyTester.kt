@@ -18,7 +18,7 @@ import features.resources.runtime.XrayResourceFileScope
 import engine.xray.prepareXrayCoreLogPaths
 import engine.network.NetworkDefaults
 import engine.xray.strategyGroupMembers
-import features.proxy.server.display.CountryFlagUtils
+import app.skipi.ui.server.display.CountryFlagUtils
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP

@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import features.subscription.SubscriptionExpiryReminder
 
 class SkipiApplication : Application(), SingletonImageLoader.Factory {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -210,7 +211,7 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
 
     private data class SubscriptionExpiryStateKey(
         val enabled: Boolean,
-        val globalReminders: List<app.SubscriptionExpiryReminder>,
+        val globalReminders: List<features.subscription.SubscriptionExpiryReminder>,
         val groups: List<SubscriptionExpiryGroupKey>,
     )
 
@@ -219,7 +220,7 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
         val enabled: Boolean,
         val notify: Boolean,
         val expire: Long,
-        val customReminders: List<app.SubscriptionExpiryReminder>?,
+        val customReminders: List<features.subscription.SubscriptionExpiryReminder>?,
     )
 
     private data class TrafficConfigScheduleKey(

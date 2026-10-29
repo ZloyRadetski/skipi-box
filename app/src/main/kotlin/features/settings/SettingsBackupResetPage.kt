@@ -26,7 +26,7 @@ import app.skipi.ui.settings.SkipiBackupResetSettingsScreen
 import data.backup.AppBackupRestorePreview
 import features.proxy.server.usecase.ProxyServiceResult
 import kotlinx.coroutines.launch
-import ui.components.WarningConfirmDialog
+import app.skipi.ui.components.WarningConfirmDialog
 
 @Composable
 fun SettingsBackupResetPage(

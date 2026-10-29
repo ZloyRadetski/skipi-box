@@ -3,8 +3,8 @@
 
 package features.subscription
 
-import app.ExpiryReminderUnit
-import app.SubscriptionExpiryReminder
+import features.subscription.ExpiryReminderUnit
+import features.subscription.SubscriptionExpiryReminder
 import app.SubscriptionGroupState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

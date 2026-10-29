@@ -10,7 +10,7 @@ import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
 import androidx.test.core.app.ApplicationProvider
-import app.ResourceFileKind
+import features.resources.ResourceFileKind
 import features.config.TrafficConfigCustomResourceFile
 import features.resources.ResourceFileSourceLoyalsoldierGithub
 import java.io.File

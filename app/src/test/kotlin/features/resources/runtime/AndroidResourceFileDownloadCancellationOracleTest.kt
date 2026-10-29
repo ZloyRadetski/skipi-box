@@ -23,26 +23,26 @@ import org.junit.Test
 class AndroidResourceFileDownloadCancellationOracleTest {
     @Before
     fun resetCancellationState() {
-        AndroidResourceFileDownloadCancellation.begin()
+        ResourceFileDownloadCancellation.begin()
     }
 
     @After
     fun clearCancellationState() {
-        AndroidResourceFileDownloadCancellation.begin()
+        ResourceFileDownloadCancellation.begin()
     }
 
     @Test
     fun beginClearsCancelledFlagAndTrackedReferenceWithoutDisconnectingItAgain() {
         val connection = FakeConnection()
-        AndroidResourceFileDownloadCancellation.track(connection)
-        AndroidResourceFileDownloadCancellation.cancel()
+        ResourceFileDownloadCancellation.track(connection)
+        ResourceFileDownloadCancellation.cancel()
         assertEquals(1, connection.disconnectCount.get())
-        assertTrue(AndroidResourceFileDownloadCancellation.isCancelled())
+        assertTrue(ResourceFileDownloadCancellation.isCancelled())
 
-        AndroidResourceFileDownloadCancellation.begin()
+        ResourceFileDownloadCancellation.begin()
 
-        assertFalse(AndroidResourceFileDownloadCancellation.isCancelled())
-        AndroidResourceFileDownloadCancellation.cancel()
+        assertFalse(ResourceFileDownloadCancellation.isCancelled())
+        ResourceFileDownloadCancellation.cancel()
         assertEquals(1, connection.disconnectCount.get())
     }
 
@@ -50,31 +50,31 @@ class AndroidResourceFileDownloadCancellationOracleTest {
     fun cancelDisconnectsTheMostRecentlyTrackedConnection() {
         val first = FakeConnection()
         val latest = FakeConnection()
-        AndroidResourceFileDownloadCancellation.track(first)
-        AndroidResourceFileDownloadCancellation.track(latest)
+        ResourceFileDownloadCancellation.track(first)
+        ResourceFileDownloadCancellation.track(latest)
 
-        AndroidResourceFileDownloadCancellation.cancel()
+        ResourceFileDownloadCancellation.cancel()
 
         assertEquals(0, first.disconnectCount.get())
         assertEquals(1, latest.disconnectCount.get())
-        assertTrue(AndroidResourceFileDownloadCancellation.isCancelled())
+        assertTrue(ResourceFileDownloadCancellation.isCancelled())
     }
 
     @Test
     fun untrackingAnOlderConnectionDoesNotClearTheNewerTrackedConnection() {
         val older = FakeConnection()
         val newer = FakeConnection()
-        AndroidResourceFileDownloadCancellation.track(older)
-        AndroidResourceFileDownloadCancellation.track(newer)
+        ResourceFileDownloadCancellation.track(older)
+        ResourceFileDownloadCancellation.track(newer)
 
-        AndroidResourceFileDownloadCancellation.untrack(older)
-        AndroidResourceFileDownloadCancellation.cancel()
+        ResourceFileDownloadCancellation.untrack(older)
+        ResourceFileDownloadCancellation.cancel()
 
         assertEquals(0, older.disconnectCount.get())
         assertEquals(1, newer.disconnectCount.get())
 
-        AndroidResourceFileDownloadCancellation.untrack(newer)
-        AndroidResourceFileDownloadCancellation.cancel()
+        ResourceFileDownloadCancellation.untrack(newer)
+        ResourceFileDownloadCancellation.cancel()
 
         assertEquals(1, newer.disconnectCount.get())
     }
@@ -82,25 +82,25 @@ class AndroidResourceFileDownloadCancellationOracleTest {
     @Test
     fun trackingAfterCancellationStoresConnectionBeforeThrowing() {
         val connection = FakeConnection()
-        AndroidResourceFileDownloadCancellation.cancel()
+        ResourceFileDownloadCancellation.cancel()
 
         val error = captureFailure {
-            AndroidResourceFileDownloadCancellation.track(connection)
+            ResourceFileDownloadCancellation.track(connection)
         }
         assertTrue("expected shared cancellation exception, got $error", error is ResourceFileDownloadCancelledException)
         assertEquals("Resource file update cancelled", error?.message)
 
-        AndroidResourceFileDownloadCancellation.cancel()
+        ResourceFileDownloadCancellation.cancel()
 
         assertEquals(1, connection.disconnectCount.get())
     }
 
     @Test
     fun throwIfCancelledUsesTheExistingDefaultMessage() {
-        AndroidResourceFileDownloadCancellation.cancel()
+        ResourceFileDownloadCancellation.cancel()
 
         val error = captureFailure {
-            AndroidResourceFileDownloadCancellation.throwIfCancelled()
+            ResourceFileDownloadCancellation.throwIfCancelled()
         }
 
         assertTrue("expected shared cancellation exception, got $error", error is ResourceFileDownloadCancelledException)
@@ -121,18 +121,18 @@ class AndroidResourceFileDownloadCancellationOracleTest {
                 readFinished.countDown()
             }
         }
-        AndroidResourceFileDownloadCancellation.track(connection)
+        ResourceFileDownloadCancellation.track(connection)
         reader.start()
 
         try {
             assertTrue(connection.readStarted.await(2, TimeUnit.SECONDS))
-            AndroidResourceFileDownloadCancellation.cancel()
+            ResourceFileDownloadCancellation.cancel()
             assertTrue(readFinished.await(2, TimeUnit.SECONDS))
             assertEquals("fake stream released by disconnect", readFailure.get()?.message)
             assertEquals(1, connection.disconnectCount.get())
         } finally {
             if (reader.isAlive) {
-                AndroidResourceFileDownloadCancellation.cancel()
+                ResourceFileDownloadCancellation.cancel()
                 reader.interrupt()
                 reader.join(1_000)
             }

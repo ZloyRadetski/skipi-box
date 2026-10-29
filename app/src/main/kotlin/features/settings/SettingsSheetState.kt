@@ -32,7 +32,7 @@ internal class SettingsSheetState(
     var subscriptionPingSettingsDraft by mutableStateOf(SubscriptionPingSettingsDraft())
 
     var showServiceControl by mutableStateOf(false)
-    var serviceControlDraft by mutableStateOf(app.ServiceControlSettings())
+    var serviceControlDraft by mutableStateOf(features.settings.servicecontrol.ServiceControlSettings())
 
     fun openLocalProxySettings(appState: AppState) {
         localProxySettingsDraft = appState.toLocalProxySettingsDraft()

@@ -17,11 +17,11 @@ import features.updater.AppUpdateDownloadStatus
 import features.updater.AppUpdateInfo
 import features.config.TrafficConfigState
 import features.networkautomation.model.NetworkAutomationRule
-import app.CustomResourceFileState
-import app.ServiceControlSchedule
-import app.ServiceControlSettings
-import app.ServiceControlWifi
-import app.ServiceControlWifiRule
+import features.config.TrafficConfigCustomResourceFile
+import features.settings.servicecontrol.ServiceControlSchedule
+import features.settings.servicecontrol.ServiceControlSettings
+import features.settings.servicecontrol.ServiceControlWifi
+import features.settings.servicecontrol.ServiceControlWifiRule
 import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeLight
 import app.modes.ColorModeThemeSystem
@@ -259,7 +259,7 @@ internal class AppSettingsPreferences(
             subscriptionExpiryReminders = preferences.getStringList(
                 KeySubscriptionExpiryReminders,
                 defaults.subscriptionExpiryReminders.map { it.toSerializedString() },
-            ).mapNotNull { app.SubscriptionExpiryReminder.fromSerializedStringOrNull(it) }
+            ).mapNotNull { features.subscription.SubscriptionExpiryReminder.fromSerializedStringOrNull(it) }
                 .ifEmpty { defaults.subscriptionExpiryReminders },
             trafficConfigs = trafficConfigs,
             nextTrafficConfigId = nextTrafficConfigId,
@@ -708,14 +708,14 @@ internal class AppSettingsPreferences(
 
     private fun SharedPreferences.getCustomResourceFileList(
         key: String,
-        defaultValue: List<CustomResourceFileState>,
-    ): List<CustomResourceFileState> {
+        defaultValue: List<TrafficConfigCustomResourceFile>,
+    ): List<TrafficConfigCustomResourceFile> {
         return getString(key, null)?.let(CustomResourceFileListJson::decode) ?: defaultValue
     }
 
     private fun SharedPreferences.Editor.putCustomResourceFileList(
         key: String,
-        values: List<CustomResourceFileState>,
+        values: List<TrafficConfigCustomResourceFile>,
     ): SharedPreferences.Editor {
         return putString(key, CustomResourceFileListJson.encode(values))
     }

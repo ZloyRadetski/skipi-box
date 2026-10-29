@@ -4,9 +4,9 @@
 package features.subscription.notification
 
 import android.content.Context
-import app.ExpiryReminderUnit
+import features.subscription.ExpiryReminderUnit
 import app.R
-import app.SubscriptionExpiryReminder
+import features.subscription.SubscriptionExpiryReminder
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale

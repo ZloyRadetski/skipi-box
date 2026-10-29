@@ -27,7 +27,7 @@ import engine.proxy.ProxyEngineStartRequest
 import engine.stats.ProxyTrafficStatsRuntimeStore
 import data.AndroidAppStateStore
 import ui.feedback.AndroidToastTipNotifier
-import ui.text.formatTemplate
+import app.skipi.ui.text.formatTemplate
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
 

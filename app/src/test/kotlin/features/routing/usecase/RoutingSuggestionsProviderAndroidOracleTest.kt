@@ -6,9 +6,8 @@ package features.routing.usecase
 import android.content.Context
 import android.content.ContextWrapper
 import app.AppState
-import app.CustomResourceFileState
-import app.customResourceFileNameOrNull
-import app.sanitizeCustomResourceFileName
+import features.config.customResourceFileNameOrNull
+import features.config.sanitizeCustomResourceFileName
 import features.config.TrafficConfigCustomResourceFile
 import features.config.TrafficConfigResourceSettings
 import features.config.TrafficConfigState
@@ -142,7 +141,7 @@ class RoutingSuggestionsProviderAndroidOracleTest {
         resourceSettings = TrafficConfigResourceSettings(customFiles = customFiles),
     )
 
-    private fun customFile(id: Int, name: String) = CustomResourceFileState(
+    private fun customFile(id: Int, name: String) = TrafficConfigCustomResourceFile(
         id = id,
         name = name,
         url = "https://resources.example/$id.dat",

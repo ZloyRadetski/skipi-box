@@ -26,7 +26,7 @@ import features.proxy.app.model.toUserSpaceTabs
 import kotlinx.coroutines.CancellationException
 import system.AndroidPackageProvider
 import system.AndroidUserSpaceProvider
-import system.user.AndroidUserSpace
+import features.proxy.app.model.ProxyAppListUserSpace
 import ui.feedback.AndroidToastTipNotifier
 
 @Composable
@@ -36,7 +36,7 @@ internal fun rememberProxyAppListPageState(): ProxyAppListPageState {
 
 @Stable
 internal class ProxyAppListPageState {
-    var userSpaces by mutableStateOf<List<AndroidUserSpace>>(emptyList())
+    var userSpaces by mutableStateOf<List<ProxyAppListUserSpace>>(emptyList())
     var selectedUserId by mutableStateOf<Int?>(null)
     var appPackages by mutableStateOf<List<AppPackageEntry>>(emptyList())
     var loadingApps by mutableStateOf(false)
@@ -199,18 +199,18 @@ private fun ProxyAppListPackageEffect(
     }
 }
 
-private suspend fun AndroidUserSpaceProvider.fallbackCurrentUserSpace(): AndroidUserSpace {
+private suspend fun AndroidUserSpaceProvider.fallbackCurrentUserSpace(): ProxyAppListUserSpace {
     return runCatching {
         currentAndroidUserSpace()
     }.getOrElse {
-        AndroidUserSpace(id = 0, name = "User 0")
+        ProxyAppListUserSpace(id = 0, name = "User 0")
     }
 }
 
 private suspend fun loadProxyAppListUserSpaces(
     userSpaces: AndroidUserSpaceProvider,
-    fallbackCurrentUser: AndroidUserSpace,
-): List<AndroidUserSpace> {
+    fallbackCurrentUser: ProxyAppListUserSpace,
+): List<ProxyAppListUserSpace> {
     return runCatching {
         userSpaces.listAndroidUsers().map { user -> user.toAndroidUserSpace() }
     }.getOrElse {

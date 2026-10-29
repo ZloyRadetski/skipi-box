@@ -10,7 +10,7 @@ import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.XrayOutboundPlanner as SharedXrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
 import app.skipi.app.proxy.resolveStrategyGroupMembers
-import features.proxy.server.display.CountryFlagUtils
+import app.skipi.ui.server.display.CountryFlagUtils
 import features.proxy.server.model.StrategyGroup
 
 internal fun AppState.buildXrayOutboundPlan(selectedServer: ProxyServerState): XrayOutboundPlan {

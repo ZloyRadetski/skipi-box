@@ -3,9 +3,9 @@
 
 package features.resources
 
-import app.CustomResourceFileState
-import app.ResourceFileUpdateSource
-import features.resources.runtime.AndroidResourceFileDownloadCancelledException
+import features.config.TrafficConfigCustomResourceFile
+import features.resources.ResourceFileUpdateSource
+import features.resources.ResourceFileDownloadCancelledException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -116,10 +116,10 @@ class ResourceFileUpdateCoordinatorTest {
     @Test
     fun allRequestIncludesFiveBuiltInsAndOnlyCustomFilesWithNonblankUrls() {
         val customFiles = listOf(
-            CustomResourceFileState(id = 1, name = "custom-rules.dat", url = " https://files.example/custom.dat "),
-            CustomResourceFileState(id = 2, name = "blank-url.dat", url = "  "),
+            TrafficConfigCustomResourceFile(id = 1, name = "custom-rules.dat", url = " https://files.example/custom.dat "),
+            TrafficConfigCustomResourceFile(id = 2, name = "blank-url.dat", url = "  "),
             // The coordinator snapshots configured targets; the downloader separately filters reserved names.
-            CustomResourceFileState(id = 3, name = ResourceFileKind.GeoIp.fileName, url = "https://files.example/geoip"),
+            TrafficConfigCustomResourceFile(id = 3, name = ResourceFileKind.GeoIp.fileName, url = "https://files.example/geoip"),
         )
 
         val request = all(scope(id = 7), customFiles)
@@ -143,8 +143,8 @@ class ResourceFileUpdateCoordinatorTest {
     fun requestKeepsItsCapturedScopeAndCopiesTheCustomFileList() = runTest {
         val originalScope = scope(id = 11, source = 4)
         val nextScope = scope(id = 12, source = 1)
-        val firstCustom = CustomResourceFileState(id = 5, name = "before.dat", url = "https://files.example/5")
-        val secondCustom = CustomResourceFileState(id = 6, name = "after.dat", url = "https://files.example/6")
+        val firstCustom = TrafficConfigCustomResourceFile(id = 5, name = "before.dat", url = "https://files.example/5")
+        val secondCustom = TrafficConfigCustomResourceFile(id = 6, name = "after.dat", url = "https://files.example/6")
         val mutableCustomFiles = mutableListOf(firstCustom)
         var currentScope = originalScope
         val options = ResourceFileUpdateOptions(userAgent = "captured-agent")
@@ -252,7 +252,7 @@ class ResourceFileUpdateCoordinatorTest {
             execute = { request ->
                 executed += request
                 if (request === cancelledRequest) {
-                    throw AndroidResourceFileDownloadCancelledException()
+                    throw ResourceFileDownloadCancelledException()
                 }
                 ResourceFilesStatus()
             },
@@ -365,7 +365,7 @@ class ResourceFileUpdateCoordinatorTest {
     private fun builtIn(
         scope: ResourceFileScope,
         kind: ResourceFileKind,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ) = ResourceFileUpdateRequest.BuiltIn(
         scope = scope,
         kind = kind,
@@ -376,7 +376,7 @@ class ResourceFileUpdateCoordinatorTest {
 
     private fun all(
         scope: ResourceFileScope,
-        customResourceFiles: List<CustomResourceFileState> = emptyList(),
+        customResourceFiles: List<TrafficConfigCustomResourceFile> = emptyList(),
     ) = ResourceFileUpdateRequest.All(
         scope = scope,
         source = source(scope.resourceFileSource),
