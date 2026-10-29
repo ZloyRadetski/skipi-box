@@ -371,6 +371,7 @@ internal fun DesktopSettingsScreen(
             onMessage = { message = it },
         )
         DesktopSettingsDestination.About -> DesktopAboutSettings(
+            onReplayOnboarding = { persist(currentSettings.copy(onboardingCompleted = false), "") },
             onBack = { destination = DesktopSettingsDestination.Overview },
             onMessage = { message = it },
             message = message,
@@ -952,6 +953,7 @@ private fun DesktopDiagnosticsContent(
 @Composable
 private fun DesktopAboutSettings(
     onBack: () -> Unit,
+    onReplayOnboarding: () -> Unit,
     onMessage: (String) -> Unit,
     message: String,
     contentPadding: PaddingValues,
@@ -970,12 +972,12 @@ private fun DesktopAboutSettings(
         isWideScreen = true,
         onBack = onBack,
         onOpenCoreInfo = { browse(SkipiCoreSourceUri, onMessage) },
-        onReplayOnboarding = {},
+        onReplayOnboarding = onReplayOnboarding,
         onOpenTelegram = { browse(SkipiTelegramChannelUri, onMessage) },
         onOpenBugReport = { browse(SkipiBugReportUri, onMessage) },
         onOpenSource = { browse(SkipiSourceUri, onMessage) },
         updatesContent = {},
-        capabilities = AboutSettingsCapabilities(updates = false, replayOnboarding = false),
+        capabilities = AboutSettingsCapabilities(updates = false),
         platformContent = {
             SkipiSettingsGroup(title = "ХРАНИЛИЩЕ") {
                 SkipiSettingsInfoRow("Хранилище", settingsPath.toString())

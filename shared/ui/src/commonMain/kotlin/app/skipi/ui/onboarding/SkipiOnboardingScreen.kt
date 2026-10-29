@@ -69,7 +69,6 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Tune
 
-private const val OnboardingPageCount = 6
 private val TelegramBlue = Color(0xFF2AABEE)
 private val PermissionGreen = Color(0xFF10B981)
 private val PermissionBlue = Color(0xFF0070F3)
@@ -78,6 +77,12 @@ private val AccentPresets = listOf(
     Color(0xFF3482FF), Color(0xFF36D167), Color(0xFF7C4DFF), Color(0xFFFFB21D),
     Color(0xFFFF5722), Color(0xFFE91E63), Color(0xFF00BCD4),
 )
+
+enum class OnboardingStep { Welcome, Telegram, Permissions, Appearance, Import, Complete }
+
+/** Steps shown for [state]; hosts without OS runtime permissions skip the permissions page. */
+fun onboardingSteps(state: SkipiOnboardingState): List<OnboardingStep> =
+    OnboardingStep.entries.filter { it != OnboardingStep.Permissions || state.showPermissionsStep }
 
 enum class OnboardingLanguage { FollowSystem, English, Chinese, Russian, Persian }
 enum class OnboardingAppearance { System, Light, Dark, Amoled, Other }
@@ -98,6 +103,10 @@ data class SkipiOnboardingState(
     val proxyServerCount: Int = 0,
     val subscriptionGroupCount: Int = 0,
     val permissions: OnboardingPermissionState = OnboardingPermissionState(),
+    val showPermissionsStep: Boolean = true,
+    val qrScanAvailable: Boolean = true,
+    val showSystemAppearance: Boolean = true,
+    val showAccentColors: Boolean = true,
 )
 
 data class SkipiOnboardingActions(
@@ -124,12 +133,14 @@ fun SkipiOnboardingScreen(
     logoPainter: Painter? = null,
     modifier: Modifier = Modifier,
 ) {
-    val pagerState = rememberPagerState(pageCount = { OnboardingPageCount })
+    val steps = onboardingSteps(state)
+    val pageCount = steps.size
+    val pagerState = rememberPagerState(pageCount = { pageCount })
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     val colors = SkipiTheme.colors
     val currentPage = pagerState.currentPage
-    val isLastPage = currentPage == OnboardingPageCount - 1
+    val isLastPage = currentPage == pageCount - 1
     val headerChipBg = if (colors.isDark) Color(0xFF1C1D24) else Color.White
     val headerChipBorder = if (colors.isDark) Color(0xFF2C2D38) else Color(0xFFE5E7EB)
 
@@ -150,7 +161,7 @@ fun SkipiOnboardingScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 HeaderChip(
-                    text = "${currentPage + 1} / $OnboardingPageCount",
+                    text = "${currentPage + 1} / $pageCount",
                     background = headerChipBg,
                     border = headerChipBorder,
                 )
@@ -180,13 +191,13 @@ fun SkipiOnboardingScreen(
                 state = pagerState,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             ) { page ->
-                when (page) {
-                    0 -> WelcomeStep(state, actions, logoPainter)
-                    1 -> SkipiOnboardingTelegramScreen(actions.onOpenTelegram, actions.onCopyTelegram)
-                    2 -> PermissionsStep(state.permissions, actions)
-                    3 -> AppearanceStep(state, actions)
-                    4 -> ImportStep(state, actions)
-                    5 -> CompleteStep(state)
+                when (steps[page]) {
+                    OnboardingStep.Welcome -> WelcomeStep(state, actions, logoPainter)
+                    OnboardingStep.Telegram -> SkipiOnboardingTelegramScreen(actions.onOpenTelegram, actions.onCopyTelegram)
+                    OnboardingStep.Permissions -> PermissionsStep(state.permissions, actions)
+                    OnboardingStep.Appearance -> AppearanceStep(state, actions)
+                    OnboardingStep.Import -> ImportStep(state, actions)
+                    OnboardingStep.Complete -> CompleteStep(state)
                 }
             }
 
@@ -218,7 +229,7 @@ fun SkipiOnboardingScreen(
                 } else Spacer(Modifier.size(50.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    repeat(OnboardingPageCount) { index ->
+                    repeat(pageCount) { index ->
                         val selected = currentPage == index
                         val width by animateDpAsState(
                             targetValue = if (selected) 28.dp else 8.dp,
@@ -389,6 +400,7 @@ private fun AppearanceStep(state: SkipiOnboardingState, actions: SkipiOnboarding
             Column {
                 Text(stringResource(Res.string.onboarding_theme_mode), fontWeight = themedFontWeight(FontWeight.Bold), color = SkipiTheme.colors.onSurface)
                 Spacer(Modifier.height(12.dp))
+                if (state.showSystemAppearance) {
                 ChoiceChip(
                     label = stringResource(Res.string.option_follow_system),
                     selected = state.appearance == OnboardingAppearance.System,
@@ -396,6 +408,7 @@ private fun AppearanceStep(state: SkipiOnboardingState, actions: SkipiOnboarding
                     onClick = { actions.onAppearanceSelected(OnboardingAppearance.System) },
                 )
                 Spacer(Modifier.height(8.dp))
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
                         OnboardingAppearance.Light to stringResource(Res.string.option_light),
@@ -408,6 +421,7 @@ private fun AppearanceStep(state: SkipiOnboardingState, actions: SkipiOnboarding
             }
         }
         Spacer(Modifier.height(12.dp))
+        if (state.showAccentColors) {
         SurfaceCard {
             Column {
                 Text(stringResource(Res.string.onboarding_accent_color), fontWeight = themedFontWeight(FontWeight.Bold), color = SkipiTheme.colors.onSurface)
@@ -421,6 +435,7 @@ private fun AppearanceStep(state: SkipiOnboardingState, actions: SkipiOnboarding
             }
         }
         Spacer(Modifier.height(12.dp))
+        }
         SurfaceCard {
             Column {
                 Text(stringResource(Res.string.onboarding_bottom_bar_size), fontWeight = themedFontWeight(FontWeight.Bold), color = SkipiTheme.colors.onSurface)
@@ -493,6 +508,7 @@ private fun ImportStep(state: SkipiOnboardingState, actions: SkipiOnboardingActi
             scope.launch { actions.onImportText(actions.onReadClipboard().orEmpty(), true) }
         }
         Spacer(Modifier.height(12.dp))
+        if (state.qrScanAvailable) {
         ImportActionCard(
             icon = MiuixIcons.Add,
             iconColor = PermissionBlue,
@@ -500,6 +516,7 @@ private fun ImportStep(state: SkipiOnboardingState, actions: SkipiOnboardingActi
             description = stringResource(Res.string.onboarding_scan_qr_desc),
         ) {
             scope.launch { actions.onScanQr()?.takeIf(String::isNotBlank)?.let { actions.onImportText(it, false) } }
+        }
         }
         Spacer(Modifier.height(18.dp))
         val total = state.proxyServerCount + state.subscriptionGroupCount
