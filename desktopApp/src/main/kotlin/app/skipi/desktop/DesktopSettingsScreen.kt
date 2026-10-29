@@ -9,6 +9,9 @@ import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
 import features.networkautomation.policy.NetworkAutomationRules
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_copied
+import app.skipi.ui.resources.settings_local_proxy_port_invalid
+import app.skipi.ui.resources.settings_local_proxy_copied_toast
+import app.skipi.ui.resources.settings_local_proxy_generated_toast
 import app.skipi.ui.resources.about_bug_report
 import app.skipi.ui.resources.about_bug_report_summary
 import app.skipi.ui.resources.settings_access_logs
@@ -109,6 +112,8 @@ import app.skipi.ui.settings.SkipiSourceUri
 import app.skipi.ui.settings.SkipiTelegramChannelUri
 import app.skipi.ui.settings.SkipiUrlSchemesScreen
 import app.skipi.ui.settings.rememberAboutSettingsLabels
+import app.skipi.ui.settings.rememberLocalProxySettingsLabels
+import app.skipi.ui.settings.rememberSubscriptionSettingsLabels
 import app.skipi.ui.settings.rememberIntegrationSettingsLabels
 import app.skipi.ui.settings.SkipiAppearanceSettingsScreen
 import app.skipi.ui.settings.SkipiGeneralSettingsScreen
@@ -145,7 +150,7 @@ import app.modes.SubscriptionPingModeHttp
 
 private enum class DesktopSettingsDestination {
     Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
-    NetworkAutomation, BackupReset, SpeedTest, DnsLeakTest, IpInfo, Integration, UrlSchemes, Diagnostics, CoreLogs, AccessLogs, About,
+    NetworkAutomation, BackupReset, SpeedTest, DnsLeakTest, IpInfo, UrlSchemes, Diagnostics, CoreLogs, AccessLogs, About,
 }
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
@@ -202,6 +207,8 @@ internal fun DesktopSettingsScreen(
             settings = currentSettings,
             message = message,
             onBack = { destination = DesktopSettingsDestination.Overview },
+            onOpenUrlSchemes = { destination = DesktopSettingsDestination.UrlSchemes },
+            onOpenBackupReset = { destination = DesktopSettingsDestination.BackupReset },
             onPersist = ::persist,
             contentPadding = contentPadding,
         )
@@ -325,15 +332,10 @@ internal fun DesktopSettingsScreen(
                 },
             )
         }
-        DesktopSettingsDestination.Integration -> DesktopIntegrationSettings(
-            onBack = { destination = DesktopSettingsDestination.Overview },
-            onOpenUrlSchemes = { destination = DesktopSettingsDestination.UrlSchemes },
-            contentPadding = contentPadding,
-        )
         DesktopSettingsDestination.UrlSchemes -> SkipiUrlSchemesScreen(
             padding = contentPadding,
             isWideScreen = true,
-            onBack = { destination = DesktopSettingsDestination.Integration },
+            onBack = { destination = DesktopSettingsDestination.General },
             onCopyCommand = { command ->
                 copyToClipboard(command).onSuccess { message = copiedMessage }
             },
@@ -386,7 +388,7 @@ private fun DesktopSettingsOverview(
     Box(modifier = modifier.fillMaxSize()) {
         SkipiSettingsHomeScreen(
         state = SkipiSettingsHomeState(
-            versionLabel = "Desktop",
+            versionLabel = "v${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
             tunMtu = "—",
             localProxyPort = settings.localProxyPort.toString(),
             coreLogLevel = settings.coreLogLevel.uppercase(),
@@ -405,7 +407,6 @@ private fun DesktopSettingsOverview(
                 SkipiSettingsDestination.SpeedTest -> onNavigate(DesktopSettingsDestination.SpeedTest)
                 SkipiSettingsDestination.DnsLeakTest -> onNavigate(DesktopSettingsDestination.DnsLeakTest)
                 SkipiSettingsDestination.IpInfo -> onNavigate(DesktopSettingsDestination.IpInfo)
-                SkipiSettingsDestination.Integration -> onNavigate(DesktopSettingsDestination.Integration)
                 SkipiSettingsDestination.Logs -> onNavigate(DesktopSettingsDestination.Diagnostics)
                 SkipiSettingsDestination.About -> onNavigate(DesktopSettingsDestination.About)
                 else -> Unit
@@ -439,6 +440,8 @@ private fun DesktopGeneralSettings(
     settings: DesktopAppSettings,
     message: String,
     onBack: () -> Unit,
+    onOpenUrlSchemes: () -> Unit,
+    onOpenBackupReset: () -> Unit,
     onPersist: (DesktopAppSettings, String) -> Unit,
     contentPadding: PaddingValues,
 ) {
@@ -471,8 +474,8 @@ private fun DesktopGeneralSettings(
             next.toGeneralSettingsState()
         },
         onBack = onBack,
-        onOpenUrlSchemes = {},
-        onOpenBackupReset = {},
+        onOpenUrlSchemes = onOpenUrlSchemes,
+        onOpenBackupReset = onOpenBackupReset,
         capabilities = GeneralSettingsCapabilities.Desktop,
     )
     if (message.isNotBlank()) SkipiSettingsStatusMessage(message)
@@ -548,7 +551,9 @@ private fun DesktopLocalProxySettings(
 ) {
     val supportsSystemProxy = isDesktopSystemProxySupported()
     val saved = "Параметры локального прокси сохранены."
-    val portInvalid = "Порт должен быть в диапазоне 1–65535."
+    val portInvalid = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.settings_local_proxy_port_invalid)
+    val copiedTemplate = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.settings_local_proxy_copied_toast)
+    val generatedToast = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.settings_local_proxy_generated_toast)
     var feedbackMessage by remember(message) { mutableStateOf(message) }
     var portText by remember(settings.localProxyPortRaw, settings.localProxyPort) {
         mutableStateOf(settings.localProxyPortRaw ?: settings.localProxyPort.toString())
@@ -578,33 +583,7 @@ private fun DesktopLocalProxySettings(
 
     SkipiLocalProxySettingsScreen(
         state = sharedState,
-        labels = LocalProxySettingsLabels(
-            screenTitle = "Локальный прокси",
-            networkSectionTitle = "ПАРАМЕТРЫ СЕТИ",
-            dynamicPortTitle = "Динамический порт",
-            dynamicPortSummary = "Автоматически выбирать доступный порт при запуске.",
-            portLabel = "Порт SOCKS5",
-            listenAllTitle = "Разрешить доступ из локальной сети",
-            listenAllSummary = "Использовать 0.0.0.0 вместо loopback-адреса 127.0.0.1.",
-            lanSectionTitle = "ДОСТУП ИЗ СЕТИ",
-            lanInstruction = "Устройства локальной сети могут подключаться к локальному прокси.",
-            ipLabel = "IP-адрес",
-            socksEndpointLabel = "SOCKS5",
-            httpEndpointLabel = "HTTP",
-            securitySectionTitle = "БЕЗОПАСНОСТЬ",
-            authenticationTitle = "Аутентификация",
-            authenticationSummary = "Требовать имя пользователя и пароль.",
-            credentialsSectionTitle = "УЧЁТНЫЕ ДАННЫЕ",
-            authorizationTitle = "Авторизация прокси",
-            tapToCopy = "Нажмите, чтобы скопировать",
-            usernameLabel = "Имя пользователя",
-            passwordLabel = "Пароль",
-            generateText = "Создать",
-            showText = "Показать",
-            hideText = "Скрыть",
-            copyUsernameDescription = "Копировать имя пользователя",
-            copyPasswordDescription = "Копировать пароль",
-        ),
+        labels = rememberLocalProxySettingsLabels(),
         padding = contentPadding,
         isWideScreen = true,
         onBack = onBack,
@@ -621,12 +600,12 @@ private fun DesktopLocalProxySettings(
                     localProxyUsername = generateRandomProxyCredential(),
                     localProxyPassword = generateRandomProxyCredential(),
                 ),
-                "Учётные данные созданы.",
+                generatedToast,
             )
         },
         onCopy = { text, label ->
             copyToClipboard(text).fold(
-                onSuccess = { feedbackMessage = "$label скопировано." },
+                onSuccess = { feedbackMessage = copiedTemplate.replace("%s", label).replace("%1\$s", label) },
                 onFailure = { feedbackMessage = "Не удалось скопировать $label: ${it.message.orEmpty()}" },
             )
         },
@@ -686,30 +665,7 @@ private fun DesktopSubscriptionSettings(
 
     SkipiSubscriptionSettingsScreen(
         state = draft.toSubscriptionSettingsState(),
-        labels = SubscriptionSettingsLabels(
-            screenTitle = "Подписки",
-            generalSectionTitle = "ЗАГРУЗКА И УДАЛЕНИЕ",
-            fetchTimeoutTitle = "Тайм-аут загрузки",
-            fetchTimeoutSummary = "Максимальное время HTTP-запроса при обновлении подписки.",
-            timeoutOptions = listOf(10, 15, 20, 30, 45, 60, 90, 120).map { "$it с" },
-            userAgentsTitle = "User-Agent",
-            userAgentsSummary = "Значение по умолчанию для загрузки подписок.",
-            deviceHeadersTitle = "Отправлять данные устройства и HWID",
-            deviceHeadersSummary = "Передавать X-HWID, X-Device-ID, ОС и модель устройства при обновлении подписок.",
-            deletionConfirmationTitle = "Подтверждать удаление",
-            deletionConfirmationSummary = "Спрашивать перед удалением сервера, подписки или конфига.",
-            expirySectionTitle = "СРОК ДЕЙСТВИЯ",
-            expiryEnabledTitle = "Уведомлять об истечении подписки",
-            expiryEnabledSummary = "Показывать напоминание до окончания подписки.",
-            expiryRemindersTitle = "Напоминания",
-            expiryRemindersSummary = "Настроить интервалы напоминаний.",
-            pingSectionTitle = "ПРОВЕРКА PING",
-            pingTitle = "Параметры проверки ping",
-            disableHeadersDialogTitle = "Отключить данные устройства?",
-            disableHeadersDialogSummary = "Сервер подписки может перестать обновляться без этих заголовков.",
-            cancelText = "Отмена",
-            disableHeadersAction = "Отключить",
-        ),
+        labels = rememberSubscriptionSettingsLabels(draft.subscriptionUserAgents.size),
         padding = contentPadding,
         isWideScreen = true,
         onBack = onBack,
@@ -817,24 +773,6 @@ private fun DesktopSubscriptionUserAgents(
 }
 
 @Composable
-private fun DesktopIntegrationSettings(
-    onBack: () -> Unit,
-    onOpenUrlSchemes: () -> Unit,
-    contentPadding: PaddingValues,
-) {
-    SkipiIntegrationSettingsScreen(
-        state = IntegrationSettingsState(broadcastControlEnabled = false),
-        labels = rememberIntegrationSettingsLabels(),
-        padding = contentPadding,
-        isWideScreen = true,
-        onBack = onBack,
-        onOpenUrlSchemes = onOpenUrlSchemes,
-        onBroadcastControlChange = {},
-        capabilities = IntegrationSettingsCapabilities(urlSchemes = true, broadcastControl = false),
-    )
-}
-
-@Composable
 private fun DesktopLogsSettings(
     settings: DesktopAppSettings,
     isTunnelRunning: Boolean,
@@ -887,9 +825,9 @@ private fun DesktopLogsSettings(
         onOpenCoreLogs = onOpenCoreLogs,
         onOpenAccessLogs = onOpenAccessLogs,
         onOpenLogcat = {},
-        onOpenBugReport = {},
-        // The application log (Logcat) and bug-report links are Android-only entries.
-        capabilities = LogsSettingsCapabilities(logcat = false, bugReport = false),
+        onOpenBugReport = { browse(SkipiBugReportUri, onMessage) },
+        // Logcat is an Android-only log source.
+        capabilities = LogsSettingsCapabilities(logcat = false),
         platformContent = {
             DesktopDiagnosticsContent(
                 isTunnelRunning = isTunnelRunning,

@@ -3,6 +3,29 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.resources.common_cancel
+import app.skipi.ui.resources.settings_category_subscriptions
+import app.skipi.ui.resources.settings_deletion_confirmation
+import app.skipi.ui.resources.settings_deletion_confirmation_summary
+import app.skipi.ui.resources.settings_header_subscriptions
+import app.skipi.ui.resources.settings_subscription_device_headers
+import app.skipi.ui.resources.settings_subscription_device_headers_disable_action
+import app.skipi.ui.resources.settings_subscription_device_headers_disable_summary
+import app.skipi.ui.resources.settings_subscription_device_headers_disable_title
+import app.skipi.ui.resources.settings_subscription_device_headers_summary
+import app.skipi.ui.resources.settings_subscription_fetch_timeout
+import app.skipi.ui.resources.settings_subscription_fetch_timeout_summary
+import app.skipi.ui.resources.settings_user_agents
+import app.skipi.ui.resources.settings_user_agents_summary
+import app.skipi.ui.resources.subscription_expiry_notifications_enable
+import app.skipi.ui.resources.subscription_expiry_notifications_enable_summary
+import app.skipi.ui.resources.subscription_expiry_notifications_section
+import app.skipi.ui.resources.subscription_expiry_reminders_summary
+import app.skipi.ui.resources.subscription_expiry_reminders_title
+import app.skipi.ui.resources.subscription_ping_settings
+import app.skipi.ui.resources.unit_seconds_short
+import app.skipi.ui.resources.Res
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -246,3 +269,30 @@ fun SkipiSubscriptionSettingsScreen(
         }
     }
 }
+
+/** Localized subscription-settings labels shared by every host. */
+@Composable
+fun rememberSubscriptionSettingsLabels(userAgentCount: Int): SubscriptionSettingsLabels = SubscriptionSettingsLabels(
+        screenTitle = stringResource(Res.string.settings_category_subscriptions),
+        generalSectionTitle = stringResource(Res.string.settings_header_subscriptions),
+        fetchTimeoutTitle = stringResource(Res.string.settings_subscription_fetch_timeout),
+        fetchTimeoutSummary = stringResource(Res.string.settings_subscription_fetch_timeout_summary),
+        timeoutOptions = listOf(10, 15, 20, 30, 45, 60, 90, 120).map { "$it ${stringResource(Res.string.unit_seconds_short)}" },
+        userAgentsTitle = stringResource(Res.string.settings_user_agents),
+        userAgentsSummary = stringResource(Res.string.settings_user_agents_summary, userAgentCount),
+        deviceHeadersTitle = stringResource(Res.string.settings_subscription_device_headers),
+        deviceHeadersSummary = stringResource(Res.string.settings_subscription_device_headers_summary),
+        deletionConfirmationTitle = stringResource(Res.string.settings_deletion_confirmation),
+        deletionConfirmationSummary = stringResource(Res.string.settings_deletion_confirmation_summary),
+        expirySectionTitle = stringResource(Res.string.subscription_expiry_notifications_section),
+        expiryEnabledTitle = stringResource(Res.string.subscription_expiry_notifications_enable),
+        expiryEnabledSummary = stringResource(Res.string.subscription_expiry_notifications_enable_summary),
+        expiryRemindersTitle = stringResource(Res.string.subscription_expiry_reminders_title),
+        expiryRemindersSummary = stringResource(Res.string.subscription_expiry_reminders_summary),
+        pingSectionTitle = stringResource(Res.string.subscription_ping_settings),
+        pingTitle = stringResource(Res.string.subscription_ping_settings),
+        disableHeadersDialogTitle = stringResource(Res.string.settings_subscription_device_headers_disable_title),
+        disableHeadersDialogSummary = stringResource(Res.string.settings_subscription_device_headers_disable_summary),
+        cancelText = stringResource(Res.string.common_cancel),
+        disableHeadersAction = stringResource(Res.string.settings_subscription_device_headers_disable_action),
+    )

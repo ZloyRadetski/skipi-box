@@ -19,6 +19,8 @@ class AndroidToastTipNotifier(context: Context) {
     }
 
     suspend fun showError(error: Throwable, fallbackMessage: String? = null) {
+        // A cancelled coroutine is not a failure the user can act on.
+        if (error is kotlinx.coroutines.CancellationException) return
         show(error.tipMessage(fallbackMessage))
     }
 }

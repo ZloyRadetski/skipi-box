@@ -121,9 +121,7 @@ data class GeneralSettingsCapabilities(
             haptics = false,
             trafficStatsNotifications = false,
             resourceFileNotifications = false,
-            urlSchemes = false,
             broadcastControl = false,
-            backupAndReset = false,
         )
     }
 }

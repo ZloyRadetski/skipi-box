@@ -19,7 +19,7 @@ import app.R
 import app.collectAppState
 import app.skipi.app.settings.generateRandomProxyCredential
 import app.skipi.app.settings.localNetworkIpAddresses
-import app.skipi.ui.settings.LocalProxySettingsLabels
+import app.skipi.ui.settings.rememberLocalProxySettingsLabels
 import app.skipi.ui.settings.LocalProxySettingsState
 import app.skipi.ui.settings.SkipiLocalProxySettingsScreen
 import app.skipi.ui.settings.isValidLocalProxyPort
@@ -56,33 +56,7 @@ fun LocalProxySettingsPage(padding: PaddingValues) {
     val httpPort = localPort.toIntOrNull()?.let(::fallbackAppendHttpProxyPort)
         ?: (VpnDefaults.LOCAL_PROXY_PORT + 1)
     val displayIp = remember { localNetworkIpAddresses().firstOrNull() ?: "192.168.43.1" }
-    val labels = LocalProxySettingsLabels(
-        screenTitle = stringResource(R.string.settings_local_proxy),
-        networkSectionTitle = stringResource(R.string.settings_local_proxy_network_params),
-        dynamicPortTitle = stringResource(R.string.settings_local_proxy_dynamic_port),
-        dynamicPortSummary = stringResource(R.string.settings_local_proxy_dynamic_port_summary),
-        portLabel = stringResource(R.string.settings_local_proxy_port),
-        listenAllTitle = stringResource(R.string.settings_local_proxy_listen_all_interfaces),
-        listenAllSummary = stringResource(R.string.settings_local_proxy_listen_all_interfaces_summary),
-        lanSectionTitle = stringResource(R.string.settings_local_proxy_lan_sharing_section),
-        lanInstruction = stringResource(R.string.settings_local_proxy_lan_instruction),
-        ipLabel = stringResource(R.string.settings_local_proxy_lan_ip_label),
-        socksEndpointLabel = stringResource(R.string.settings_local_proxy_lan_socks_endpoint),
-        httpEndpointLabel = stringResource(R.string.settings_local_proxy_lan_http_endpoint),
-        securitySectionTitle = stringResource(R.string.settings_local_proxy_security_section),
-        authenticationTitle = stringResource(R.string.settings_local_proxy_enable_auth),
-        authenticationSummary = stringResource(R.string.settings_local_proxy_enable_auth_summary),
-        credentialsSectionTitle = stringResource(R.string.settings_local_proxy_credentials_section),
-        authorizationTitle = stringResource(R.string.settings_local_proxy_auth_title),
-        tapToCopy = stringResource(R.string.settings_local_proxy_tap_to_copy),
-        usernameLabel = usernameLabel,
-        passwordLabel = passwordLabel,
-        generateText = stringResource(R.string.settings_local_proxy_generate),
-        showText = stringResource(R.string.common_show),
-        hideText = stringResource(R.string.common_hide),
-        copyUsernameDescription = stringResource(R.string.settings_local_proxy_copy_username),
-        copyPasswordDescription = stringResource(R.string.settings_local_proxy_copy_password),
-    )
+    val labels = rememberLocalProxySettingsLabels()
 
     SkipiLocalProxySettingsScreen(
         state = LocalProxySettingsState(

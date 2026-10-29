@@ -1191,10 +1191,6 @@ fun ProxyServerListPage(
             .pageWindowPadding(padding),
     ) {
         features.updater.ui.AppUpdateBanner()
-        features.routing.ui.UnappliedRulesWarningNotification(
-            unappliedRules = proxyListState.unappliedRoutingRules,
-            onDismiss = { updateAppState { state -> state.copy(unappliedRoutingRules = emptyList()) } },
-        )
         ProxyHomeScreen(
             store = homeStore,
             modifier = Modifier.weight(1f),

@@ -25,11 +25,13 @@ class GeneralSettingsCapabilitiesTest {
     }
 
     @Test
-    fun desktopShowsLanguageAndWorkingDeletionConfirmationOnly() {
+    fun desktopShowsEveryControlItCanHonourLikeAndroid() {
         assertEquals(
             setOf(
                 GeneralSettingsControl.Language,
                 GeneralSettingsControl.DeletionConfirmation,
+                GeneralSettingsControl.UrlSchemes,
+                GeneralSettingsControl.BackupAndReset,
             ),
             GeneralSettingsCapabilities.Desktop.visibleControls,
         )

@@ -67,7 +67,6 @@ internal fun desktopSettingsVisibleDestinations(): Set<SkipiSettingsDestination>
     SkipiSettingsDestination.SpeedTest,
     SkipiSettingsDestination.DnsLeakTest,
     SkipiSettingsDestination.IpInfo,
-    SkipiSettingsDestination.Integration,
     SkipiSettingsDestination.Logs,
     SkipiSettingsDestination.About,
 )

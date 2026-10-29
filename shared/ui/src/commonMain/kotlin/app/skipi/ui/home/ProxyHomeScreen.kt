@@ -811,26 +811,6 @@ private fun PageServerGrid(
                 }
             }
         }
-        item(key = "home-status-notice", span = { GridItemSpan(maxLineSpan) }, contentType = "status") {
-            val currentPresentation = state.localError?.let { localError ->
-                ProxyHomeStatusPresentation(
-                    message = proxyHomeLocalErrorMessage(
-                        error = localError,
-                        unavailable = stringResource(Res.string.home_action_unavailable),
-                        variantUnavailable = stringResource(Res.string.home_action_variant_unavailable),
-                        operationFailed = stringResource(Res.string.home_operation_failed),
-                    ),
-                    isError = true,
-                )
-            } ?: state.statusMessage
-                ?.takeIf(String::isNotBlank)
-                ?.let { message -> ProxyHomeStatusPresentation(message, state.isStatusError) }
-
-            ProxyHomeStatusNotice(
-                currentPresentation = currentPresentation,
-                onDismiss = { onAction(ProxyHomeAction.DismissMessage) },
-            )
-        }
         if (subscriptionGroup && subscription != null) {
             proxyHomeGroupSection(groupSelector)
             item(key = "subscription-${subscription.id}", span = { GridItemSpan(maxLineSpan) }, contentType = "subscription") {
@@ -1704,107 +1684,6 @@ private fun EmptyServerListCard(
                     color = SkipiTheme.colors.onSurfaceVariant,
                     style = SkipiTheme.typography.bodyMedium,
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProxyHomeStatusNotice(
-    currentPresentation: ProxyHomeStatusPresentation?,
-    onDismiss: () -> Unit,
-) {
-    var retainedPresentation by remember { mutableStateOf(currentPresentation) }
-    SideEffect {
-        if (currentPresentation != null) retainedPresentation = currentPresentation
-    }
-    val displayedPresentation = currentPresentation ?: retainedPresentation
-
-    AnimatedVisibility(
-        visible = currentPresentation != null,
-        modifier = Modifier.fillMaxWidth(),
-        enter = fadeIn(animationSpec = tween(200)) +
-            expandVertically(expandFrom = Alignment.Top, animationSpec = tween(200)),
-        exit = shrinkVertically(shrinkTowards = Alignment.Top, animationSpec = tween(180)) +
-            fadeOut(animationSpec = tween(160)),
-        label = "home_status_notice_visibility",
-    ) {
-        displayedPresentation?.let { presentation ->
-            AnimatedContent(
-                targetState = presentation,
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(130)) togetherWith
-                        fadeOut(animationSpec = tween(110))
-                },
-                label = "home_status_notice_content",
-            ) { targetPresentation ->
-                Box(Modifier.fillMaxWidth().padding(bottom = SkipiTheme.spacing.small)) {
-                    StatusBanner(
-                        message = targetPresentation.message,
-                        isError = targetPresentation.isError,
-                        onDismiss = onDismiss,
-                    )
-                }
-            }
-        }
-    }
-}
-
-private data class ProxyHomeStatusPresentation(
-    val message: String,
-    val isError: Boolean,
-)
-
-@Composable
-private fun StatusBanner(
-    message: String,
-    isError: Boolean,
-    onDismiss: () -> Unit,
-) {
-    if (isError) {
-        Surface(
-            shape = SkipiTheme.shapes.medium,
-            color = SkipiTheme.colorScheme.errorContainer,
-            border = BorderStroke(1.dp, SkipiTheme.colorScheme.error.copy(alpha = 0.6f)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = SkipiTheme.spacing.extraSmall, vertical = SkipiTheme.spacing.extraSmall),
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = SkipiTheme.spacing.medium, vertical = SkipiTheme.spacing.small),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.ErrorOutline,
-                    contentDescription = stringResource(Res.string.home_status_error_description),
-                    tint = SkipiTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = message,
-                    color = SkipiTheme.colorScheme.onErrorContainer,
-                    style = SkipiTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Outlined.Close, contentDescription = stringResource(Res.string.common_close), tint = SkipiTheme.colorScheme.onErrorContainer)
-                }
-            }
-        }
-    } else {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = SkipiTheme.spacing.small, vertical = SkipiTheme.spacing.extraSmall),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = message,
-                color = SkipiTheme.colors.onSurfaceVariant,
-                style = SkipiTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onDismiss) {
-                Icon(Icons.Outlined.Close, contentDescription = stringResource(Res.string.common_close), tint = SkipiTheme.colors.onSurfaceVariant)
             }
         }
     }

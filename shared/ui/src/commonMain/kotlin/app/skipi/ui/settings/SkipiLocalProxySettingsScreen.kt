@@ -3,6 +3,33 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.resources.common_hide
+import app.skipi.ui.resources.common_show
+import app.skipi.ui.resources.settings_local_proxy
+import app.skipi.ui.resources.settings_local_proxy_auth_title
+import app.skipi.ui.resources.settings_local_proxy_copy_password
+import app.skipi.ui.resources.settings_local_proxy_copy_username
+import app.skipi.ui.resources.settings_local_proxy_credentials_section
+import app.skipi.ui.resources.settings_local_proxy_dynamic_port
+import app.skipi.ui.resources.settings_local_proxy_dynamic_port_summary
+import app.skipi.ui.resources.settings_local_proxy_enable_auth
+import app.skipi.ui.resources.settings_local_proxy_enable_auth_summary
+import app.skipi.ui.resources.settings_local_proxy_generate
+import app.skipi.ui.resources.settings_local_proxy_lan_http_endpoint
+import app.skipi.ui.resources.settings_local_proxy_lan_instruction
+import app.skipi.ui.resources.settings_local_proxy_lan_ip_label
+import app.skipi.ui.resources.settings_local_proxy_lan_sharing_section
+import app.skipi.ui.resources.settings_local_proxy_lan_socks_endpoint
+import app.skipi.ui.resources.settings_local_proxy_listen_all_interfaces
+import app.skipi.ui.resources.settings_local_proxy_listen_all_interfaces_summary
+import app.skipi.ui.resources.settings_local_proxy_network_params
+import app.skipi.ui.resources.settings_local_proxy_password
+import app.skipi.ui.resources.settings_local_proxy_port
+import app.skipi.ui.resources.settings_local_proxy_security_section
+import app.skipi.ui.resources.settings_local_proxy_tap_to_copy
+import app.skipi.ui.resources.settings_local_proxy_username
+import app.skipi.ui.resources.Res
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -366,3 +393,33 @@ private fun CredentialRow(
 
 private fun LocalProxySettingsLabels.usernameLabelOrFallback(): String = usernameLabel
 private fun LocalProxySettingsLabels.passwordLabelOrFallback(): String = passwordLabel
+
+/** Localized local-proxy labels shared by every host. */
+@Composable
+fun rememberLocalProxySettingsLabels(): LocalProxySettingsLabels = LocalProxySettingsLabels(
+        screenTitle = stringResource(Res.string.settings_local_proxy),
+        networkSectionTitle = stringResource(Res.string.settings_local_proxy_network_params),
+        dynamicPortTitle = stringResource(Res.string.settings_local_proxy_dynamic_port),
+        dynamicPortSummary = stringResource(Res.string.settings_local_proxy_dynamic_port_summary),
+        portLabel = stringResource(Res.string.settings_local_proxy_port),
+        listenAllTitle = stringResource(Res.string.settings_local_proxy_listen_all_interfaces),
+        listenAllSummary = stringResource(Res.string.settings_local_proxy_listen_all_interfaces_summary),
+        lanSectionTitle = stringResource(Res.string.settings_local_proxy_lan_sharing_section),
+        lanInstruction = stringResource(Res.string.settings_local_proxy_lan_instruction),
+        ipLabel = stringResource(Res.string.settings_local_proxy_lan_ip_label),
+        socksEndpointLabel = stringResource(Res.string.settings_local_proxy_lan_socks_endpoint),
+        httpEndpointLabel = stringResource(Res.string.settings_local_proxy_lan_http_endpoint),
+        securitySectionTitle = stringResource(Res.string.settings_local_proxy_security_section),
+        authenticationTitle = stringResource(Res.string.settings_local_proxy_enable_auth),
+        authenticationSummary = stringResource(Res.string.settings_local_proxy_enable_auth_summary),
+        credentialsSectionTitle = stringResource(Res.string.settings_local_proxy_credentials_section),
+        authorizationTitle = stringResource(Res.string.settings_local_proxy_auth_title),
+        tapToCopy = stringResource(Res.string.settings_local_proxy_tap_to_copy),
+        usernameLabel = stringResource(Res.string.settings_local_proxy_username),
+        passwordLabel = stringResource(Res.string.settings_local_proxy_password),
+        generateText = stringResource(Res.string.settings_local_proxy_generate),
+        showText = stringResource(Res.string.common_show),
+        hideText = stringResource(Res.string.common_hide),
+        copyUsernameDescription = stringResource(Res.string.settings_local_proxy_copy_username),
+        copyPasswordDescription = stringResource(Res.string.settings_local_proxy_copy_password),
+    )

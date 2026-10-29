@@ -15,7 +15,7 @@ import app.R
 import app.collectAppState
 import app.navigation.Route
 import app.skipi.ui.settings.SkipiSubscriptionSettingsScreen
-import app.skipi.ui.settings.SubscriptionSettingsLabels
+import app.skipi.ui.settings.rememberSubscriptionSettingsLabels
 import app.skipi.ui.settings.SubscriptionSettingsState
 
 @Composable
@@ -26,30 +26,7 @@ fun SettingsSubscriptionsPage(padding: PaddingValues) {
     val isWideScreen = LocalIsWideScreen.current
     val timeoutValues = listOf(10, 15, 20, 30, 45, 60, 90, 120)
     val secondsUnit = stringResource(R.string.unit_seconds_short)
-    val labels = SubscriptionSettingsLabels(
-        screenTitle = stringResource(R.string.settings_category_subscriptions),
-        generalSectionTitle = stringResource(R.string.settings_header_subscriptions),
-        fetchTimeoutTitle = stringResource(R.string.settings_subscription_fetch_timeout),
-        fetchTimeoutSummary = stringResource(R.string.settings_subscription_fetch_timeout_summary),
-        timeoutOptions = timeoutValues.map { "$it $secondsUnit" },
-        userAgentsTitle = stringResource(R.string.settings_user_agents),
-        userAgentsSummary = stringResource(R.string.settings_user_agents_summary, appState.subscriptionUserAgents.size),
-        deviceHeadersTitle = stringResource(R.string.settings_subscription_device_headers),
-        deviceHeadersSummary = stringResource(R.string.settings_subscription_device_headers_summary),
-        deletionConfirmationTitle = stringResource(R.string.settings_deletion_confirmation),
-        deletionConfirmationSummary = stringResource(R.string.settings_deletion_confirmation_summary),
-        expirySectionTitle = stringResource(R.string.subscription_expiry_notifications_section),
-        expiryEnabledTitle = stringResource(R.string.subscription_expiry_notifications_enable),
-        expiryEnabledSummary = stringResource(R.string.subscription_expiry_notifications_enable_summary),
-        expiryRemindersTitle = stringResource(R.string.subscription_expiry_reminders_title),
-        expiryRemindersSummary = stringResource(R.string.subscription_expiry_reminders_summary),
-        pingSectionTitle = stringResource(R.string.subscription_ping_settings),
-        pingTitle = stringResource(R.string.subscription_ping_settings),
-        disableHeadersDialogTitle = stringResource(R.string.settings_subscription_device_headers_disable_title),
-        disableHeadersDialogSummary = stringResource(R.string.settings_subscription_device_headers_disable_summary),
-        cancelText = stringResource(R.string.common_cancel),
-        disableHeadersAction = stringResource(R.string.settings_subscription_device_headers_disable_action),
-    )
+    val labels = rememberSubscriptionSettingsLabels(appState.subscriptionUserAgents.size)
 
     SkipiSubscriptionSettingsScreen(
         state = SubscriptionSettingsState(
