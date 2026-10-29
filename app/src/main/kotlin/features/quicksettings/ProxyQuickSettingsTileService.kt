@@ -25,7 +25,7 @@ import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.SkipiVpnService
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import features.settings.locale.localizedAppContext
@@ -313,7 +313,7 @@ class ProxyQuickSettingsTileService : TileService() {
                     tileService.refreshTileState()
                 }
             }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to refresh quick settings tile after proxy toggle", error)
+                AppLog.warn(LogTag, "Failed to refresh quick settings tile after proxy toggle", error)
             }
 
             delay(TileRefreshSettleDelayMillis.milliseconds)
@@ -327,7 +327,7 @@ class ProxyQuickSettingsTileService : TileService() {
                     ComponentName(context, ProxyQuickSettingsTileService::class.java),
                 )
             }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to request quick settings tile refresh", error)
+                AppLog.warn(LogTag, "Failed to request quick settings tile refresh", error)
             }
         }
 

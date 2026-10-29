@@ -15,7 +15,7 @@ import data.AndroidAppStateStore
 import engine.stats.CoreTrafficStatsSampler
 import engine.stats.ProxyTrafficStatsRuntime
 import engine.stats.XrayTrafficBytes
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -53,7 +53,7 @@ internal class ProxyWidgetRuntime(
                         if (hasWidgets()) {
                             runCatching { SkipiWidgetRenderer.renderAll(this@ProxyWidgetRuntime.context) }
                                 .onFailure { error ->
-                                    AndroidAppLogger.warn(LogTag, "Failed to refresh widgets after screen-on", error)
+                                    AppLog.warn(LogTag, "Failed to refresh widgets after screen-on", error)
                                 }
                         }
                     }
@@ -95,7 +95,7 @@ internal class ProxyWidgetRuntime(
                         if (!key.running) WidgetSpeedStore.clear(context)
                     }
                     runCatching { SkipiWidgetRenderer.renderAll(context) }.onFailure { error ->
-                        AndroidAppLogger.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
+                        AppLog.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
                     }
                     if (key.running && hasWidgets()) startPolling()
                 }
@@ -146,7 +146,7 @@ internal class ProxyWidgetRuntime(
                                     if (isScreenInteractive) {
                                         runCatching { SkipiWidgetRenderer.updateTraffic(context, sample) }
                                             .onFailure { error ->
-                                                AndroidAppLogger.warn(LogTag, "Failed to update widget traffic", error)
+                                                AppLog.warn(LogTag, "Failed to update widget traffic", error)
                                             }
                                     }
                                 }

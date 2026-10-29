@@ -9,7 +9,7 @@ import app.AppState
 import app.ProxyServerState
 import app.skipi.app.home.resolveProxyHomeLatencyTimeoutMillis
 import app.activeTrafficConfig
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import engine.xray.XrayConfigRequest
 import engine.xray.XraySpeedTestConfigFactory
 import engine.xray.initializeAndroidXrayCoreEnvironment
@@ -235,7 +235,7 @@ internal class AndroidProxyLatencyTester(
         if (members.isEmpty()) return@withContext emptyMap()
         val tcpProbeMembers = members.filter { member -> member.server.supportsTcpStartupProbe() }
         if (tcpProbeMembers.isEmpty()) {
-            AndroidAppLogger.debug(
+            AppLog.debug(
                 LogTag,
                 "Startup TCP probe skipped: group has no TCP-compatible members",
             )
@@ -260,7 +260,7 @@ internal class AndroidProxyLatencyTester(
             )
 
             if (verifiedWinner != null) {
-                AndroidAppLogger.debug(
+                AppLog.debug(
                     LogTag,
                     "Startup member from ping cache: serverId=${verifiedWinner.first} result=${verifiedWinner.second}ms",
                 )
@@ -294,7 +294,7 @@ internal class AndroidProxyLatencyTester(
             )
 
             if (coldWinner != null) {
-                AndroidAppLogger.debug(
+                AppLog.debug(
                     LogTag,
                     "Startup member from cold race: serverId=${coldWinner.first} result=${coldWinner.second}ms",
                 )
@@ -392,7 +392,7 @@ internal class AndroidProxyLatencyTester(
         } ?: FailedDelayMillis
 
         val totalLatency = if (connectElapsed >= 0) dnsElapsed + connectElapsed else FailedDelayMillis
-        AndroidAppLogger.debug(LogTag, "TCP latency test serverId=${server.id} result=${totalLatency}ms (dns=${dnsElapsed}ms, connect=${connectElapsed}ms)")
+        AppLog.debug(LogTag, "TCP latency test serverId=${server.id} result=${totalLatency}ms (dns=${dnsElapsed}ms, connect=${connectElapsed}ms)")
         return totalLatency
     }
 
@@ -421,9 +421,9 @@ internal class AndroidProxyLatencyTester(
             }
         }.onFailure { error ->
             when (error) {
-                is UnknownHostException -> AndroidAppLogger.debug(LogTag, "Unknown host for TCP latency test: ${address.hostAddress}")
-                is IOException -> AndroidAppLogger.debug(LogTag, "TCP latency test IO failure: ${address.hostAddress}:$port ${error.message}")
-                else -> AndroidAppLogger.warn(LogTag, "TCP latency test failed: ${address.hostAddress}:$port ${error.logSummary()}")
+                is UnknownHostException -> AppLog.debug(LogTag, "Unknown host for TCP latency test: ${address.hostAddress}")
+                is IOException -> AppLog.debug(LogTag, "TCP latency test IO failure: ${address.hostAddress}:$port ${error.message}")
+                else -> AppLog.warn(LogTag, "TCP latency test failed: ${address.hostAddress}:$port ${error.logSummary()}")
             }
         }.getOrDefault(FailedDelayMillis)
     }
@@ -584,7 +584,7 @@ internal class AndroidProxyLatencyTester(
             )
             executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
         } catch (e: Throwable) {
-            AndroidAppLogger.warn(LogTag, "Standalone olcRTC latency test failed: ${e.logSummary()}")
+            AppLog.warn(LogTag, "Standalone olcRTC latency test failed: ${e.logSummary()}")
             FailedDelayMillis
         } finally {
             if (!SkipiCoreRuntime.isRunning() && !SkipiVpnService.isRunning() && SkipiCoreRuntime.activeOlcRtcBridge == null) {
@@ -648,7 +648,7 @@ internal class AndroidProxyLatencyTester(
             )
             executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
         } catch (error: Throwable) {
-            AndroidAppLogger.warn(LogTag, "Standalone AmneziaWG latency test failed: ${error.logSummary()}")
+            AppLog.warn(LogTag, "Standalone AmneziaWG latency test failed: ${error.logSummary()}")
             FailedDelayMillis
         } finally {
             if (!SkipiCoreRuntime.isRunning() && !SkipiVpnService.isRunning() && SkipiCoreRuntime.activeAmneziaWgBridge == null) {
@@ -670,9 +670,9 @@ internal class AndroidProxyLatencyTester(
                         val configJson = XraySpeedTestConfigFactory.buildXraySpeedTestConfig(request)
                         Skipicore.measureOutboundDelay(configJson, pingUrl)
                     }.onSuccess { delay ->
-                        AndroidAppLogger.debug(LogTag, "Real connection latency test serverId=$serverId result=${delay}ms")
+                        AppLog.debug(LogTag, "Real connection latency test serverId=$serverId result=${delay}ms")
                     }.onFailure { error ->
-                        AndroidAppLogger.warn(
+                        AppLog.warn(
                             LogTag,
                             "Real connection latency test failed serverId=$serverId: ${error.logSummary()}",
                         )

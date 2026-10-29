@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import java.io.File
 
 private const val LogTag = "AppUpdateInstaller"
@@ -17,7 +17,7 @@ internal object AppUpdateInstaller {
 
     fun installApk(context: Context, apkFile: File) {
         if (!apkFile.exists()) {
-            AndroidAppLogger.warn(LogTag, "Cannot install APK: file does not exist ${apkFile.absolutePath}")
+            AppLog.warn(LogTag, "Cannot install APK: file does not exist ${apkFile.absolutePath}")
             return
         }
 
@@ -34,7 +34,7 @@ internal object AppUpdateInstaller {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            AndroidAppLogger.warn(LogTag, "Failed to launch package installer intent: ${e.message}", e)
+            AppLog.warn(LogTag, "Failed to launch package installer intent: ${e.message}", e)
         }
     }
 

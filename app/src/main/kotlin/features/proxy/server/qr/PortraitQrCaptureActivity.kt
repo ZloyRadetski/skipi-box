@@ -14,7 +14,7 @@ import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.TextView
 import app.R
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import ui.feedback.AndroidToastTipNotifier
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.android.Intents
@@ -72,7 +72,7 @@ class PortraitQrCaptureActivity : CaptureActivity() {
                 runCatching {
                     decodeQrCodeFromImage(this@PortraitQrCaptureActivity, uri)
                 }.onFailure { error ->
-                    AndroidAppLogger.warn(LogTag, "Failed to decode QR code from selected image: $uri", error)
+                    AppLog.warn(LogTag, "Failed to decode QR code from selected image: $uri", error)
                 }.getOrNull()
             }
             if (text.isNullOrBlank()) {
@@ -142,7 +142,7 @@ class PortraitQrCaptureActivity : CaptureActivity() {
                 ImagePickerRequestCode,
             )
         }.onFailure { error ->
-            AndroidAppLogger.error(LogTag, "Failed to open image picker", error)
+            AppLog.error(LogTag, "Failed to open image picker", error)
         }
     }
 

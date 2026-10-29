@@ -18,7 +18,7 @@ import app.R
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import engine.stats.toTrafficSizeString
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.display.displayName
 
 /** Builds and pushes RemoteViews for every placed SKIPI home screen widget. */
@@ -96,7 +96,7 @@ internal object SkipiWidgetRenderer {
                 .status(appState = state)
                 .running
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to read proxy status for widget render", error)
+            AppLog.warn(LogTag, "Failed to read proxy status for widget render", error)
         }.getOrElse { state.proxyRunning }
     }
 

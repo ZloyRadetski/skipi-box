@@ -18,7 +18,7 @@ import engine.stats.ProxyTrafficStatsService
 import engine.vpn.VpnXrayEngine
 import engine.vpn.withStrictFullTunnelApplied
 import engine.xray.strategyGroupMembers
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -85,12 +85,12 @@ class AndroidProxyEngine(
         runCatching {
             ProxyTrafficStatsService.reconcile(appContext, null)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop traffic statistics during forced tunnel shutdown", error)
+            AppLog.warn(LogTag, "Failed to stop traffic statistics during forced tunnel shutdown", error)
         }
         runCatching {
             ProxyTrafficStatsRuntimeStore.clear(appContext)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to clear traffic statistics during forced tunnel shutdown", error)
+            AppLog.warn(LogTag, "Failed to clear traffic statistics during forced tunnel shutdown", error)
         }
         vpnXrayEngine.forceStop()
         ProxyEngineStatus(running = false, runMode = RunModeVpnService)
@@ -188,7 +188,7 @@ class AndroidProxyEngine(
             val selectedServer = vpnState.proxyServers
                 .firstOrNull { server -> server.id == initialSelectedServer.id }
                 ?: initialSelectedServer
-            AndroidAppLogger.info(
+            AppLog.info(
                 LogTag,
                 "VPN start prepared in ${SystemClock.elapsedRealtime() - requestedAt}ms; " +
                     "engineLockWait=${engineLockWaitMillis}ms, selectedServerId=${selectedServer.id}, " +
@@ -205,7 +205,7 @@ class AndroidProxyEngine(
                 vpnXrayEngine.start(resolvedRequest).copy(appState = vpnState, runMode = RunModeVpnService)
             }
             startResult.onSuccess { status ->
-                AndroidAppLogger.info(
+                AppLog.info(
                     LogTag,
                     "VPN start completed in ${SystemClock.elapsedRealtime() - requestedAt}ms; running=${status.running}",
                 )
@@ -231,7 +231,7 @@ class AndroidProxyEngine(
             )
             if (canRetryWithAnotherPort) {
                 vpnState.localProxyPort.toIntOrNull()?.let(attemptedDynamicPorts::add)
-                AndroidAppLogger.warn(
+                AppLog.warn(
                     LogTag,
                     "Local proxy port ${vpnState.localProxyPort} was claimed during startup; retrying with a new port",
                     error,

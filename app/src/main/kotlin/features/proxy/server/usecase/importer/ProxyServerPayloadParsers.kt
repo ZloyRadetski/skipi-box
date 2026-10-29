@@ -5,14 +5,14 @@ package features.proxy.server.usecase.importer
 
 import app.skipi.app.proxy.importProxyServerPayload
 import app.skipi.app.proxy.importProxyServerProviderPayload
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerPayloadParser
 import features.proxy.server.usecase.importer.standardProxyServerPayloadParsers
 
 /** Android supplies the SnakeYAML parser and logging adapters to the shared pipeline. */
-internal suspend fun parseProxyServersFromPayloads(
+suspend fun parseProxyServersFromPayloads(
     payloads: List<String>,
     context: ProxyServerImportContext,
 ): ProxyServerImportResult = parseProxyServerPayloads(
@@ -21,7 +21,7 @@ internal suspend fun parseProxyServersFromPayloads(
     parsers = AndroidProxyServerImportParsers,
 )
 
-internal suspend fun importProxyServersFromPayloadText(
+suspend fun importProxyServersFromPayloadText(
     text: String,
     context: ProxyServerImportContext,
 ): ProxyServerImportResult = importProxyServerPayload(
@@ -30,7 +30,7 @@ internal suspend fun importProxyServersFromPayloadText(
     parsers = AndroidProxyServerImportParsers,
 )
 
-internal suspend fun parseProxyServersFromMihomoProviderText(
+suspend fun parseProxyServersFromMihomoProviderText(
     text: String,
     parentContext: ProxyServerImportContext,
     providerUrl: String,
@@ -44,18 +44,18 @@ internal suspend fun parseProxyServersFromMihomoProviderText(
 private val AndroidProxyServerImportParsers: List<ProxyServerPayloadParser> = standardProxyServerPayloadParsers(
     mihomoYamlParser = ::parseProxyServersFromMihomoYamlConfig,
     onRejectedCustomJson = { context, imported ->
-        AndroidAppLogger.warn(
+        AppLog.warn(
             "ProxyServerJsonImport",
             "Imported ${imported.servers.size} ${context.source.logName} custom JSON configs, " +
                 "skipped ${imported.rejectedConfigCount}/${imported.configCount} failed configs",
         )
     },
     onInvalidWireguard = { _, error ->
-        AndroidAppLogger.warn("WireguardConfImport", "Failed to parse WireGuard / AmneziaWG conf", error)
+        AppLog.warn("WireguardConfImport", "Failed to parse WireGuard / AmneziaWG conf", error)
     },
     onUrlFailure = { context, failure ->
         val protocol = failure.url.substringBefore("://", missingDelimiterValue = "").ifBlank { "<blank>" }
-        AndroidAppLogger.warn(
+        AppLog.warn(
             "ProxyServerImport",
             "Failed to import proxy server URL source=${context.source.logName} " +
                 "index=${failure.index} protocol=$protocol length=${failure.url.length}",

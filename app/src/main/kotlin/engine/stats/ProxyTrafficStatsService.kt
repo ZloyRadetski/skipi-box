@@ -28,7 +28,7 @@ import engine.proxy.StrategyGroupActiveMemberStore
 import engine.proxy.strategyGroupMemberIdForOutbound
 import engine.vpn.SkipiVpnService
 import engine.vpn.VpnForegroundNotification
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -339,7 +339,7 @@ class ProxyTrafficStatsService : Service() {
                 // prevents an accidental second stop and its timeout delay.
                 pauseStopJob?.join()
                 val stoppedAt = SystemClock.elapsedRealtime()
-                AndroidAppLogger.info(
+                AppLog.info(
                     LogTag,
                     "Notification resume: previous stop waited ${stoppedAt - startedAt}ms",
                 )
@@ -349,7 +349,7 @@ class ProxyTrafficStatsService : Service() {
                 }
                 when (val result = notificationProxyServiceUseCase.start(state, selectedServer)) {
                     is ProxyServiceResult.Success -> {
-                        AndroidAppLogger.info(
+                        AppLog.info(
                             LogTag,
                             "Notification resume: VPN started in ${SystemClock.elapsedRealtime() - startedAt}ms",
                         )
@@ -362,11 +362,11 @@ class ProxyTrafficStatsService : Service() {
                     }
 
                     ProxyServiceResult.MissingServer -> {
-                        AndroidAppLogger.warn(LogTag, "Cannot resume VPN from notification: selected server is missing")
+                        AppLog.warn(LogTag, "Cannot resume VPN from notification: selected server is missing")
                     }
 
                     is ProxyServiceResult.Failed -> {
-                        AndroidAppLogger.warn(LogTag, "Cannot resume VPN from notification", result.error)
+                        AppLog.warn(LogTag, "Cannot resume VPN from notification", result.error)
                     }
                 }
             } finally {
@@ -480,7 +480,7 @@ class ProxyTrafficStatsService : Service() {
                 startForegroundCompat(notification)
                 ownsForegroundNotification = true
             }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to promote paused traffic notification", error)
+                AppLog.warn(LogTag, "Failed to promote paused traffic notification", error)
             }.isSuccess
         }
         if (ownsForegroundNotification) {
@@ -527,7 +527,7 @@ class ProxyTrafficStatsService : Service() {
                     appContext.startService(startIntent)
                 }
             }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to request traffic stats service start", error)
+                AppLog.warn(LogTag, "Failed to request traffic stats service start", error)
             }
         }
 

@@ -5,7 +5,7 @@ package features.updater
 
 import android.content.Context
 import engine.network.TunnelNetworks
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -130,7 +130,7 @@ internal class AppUpdateDownloader(
             // Do not convert cancellation into a failure or delete the partial file: the work will resume.
             throw cancelled
         } catch (error: Exception) {
-            AndroidAppLogger.warn(LogTag, "APK download failed: ${error.message}", error)
+            AppLog.warn(LogTag, "APK download failed: ${error.message}", error)
             emit(AppUpdateDownloadProgress.Failed(error.localizedMessage ?: "Download failed"))
         }
     }.flowOn(Dispatchers.IO)

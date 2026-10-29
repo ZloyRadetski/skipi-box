@@ -115,6 +115,7 @@ import java.time.Duration
 
 @OptIn(ExperimentalMaterial3Api::class)
 fun main() = application {
+    remember { features.logs.AppLog.install(DesktopAppLogSink) }
     val coreController = remember { DesktopCoreController() }
     val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
     // Closing is handled from the composable below so it can serialize with an

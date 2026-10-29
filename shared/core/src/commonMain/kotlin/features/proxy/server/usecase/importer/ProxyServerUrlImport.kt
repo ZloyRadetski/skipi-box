@@ -3,17 +3,17 @@
 
 package features.proxy.server.usecase.importer
 
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportSource
 
-internal suspend fun parseProxyServersFromUrls(
+suspend fun parseProxyServersFromUrls(
     text: String,
     context: ProxyServerImportContext,
 ): ProxyServerImportResult {
     return parseProxyUrlProxyServerPayload(text, context) { sourceContext, failure ->
-        AndroidAppLogger.warn(
+        AppLog.warn(
             ProxyServerImportLogTag,
             failure.url.importFailureMessage(index = failure.index, source = sourceContext.source),
             failure.error,

@@ -7,7 +7,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.SkipiApplication
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 
 private const val LogTag = "AppUpdateWorker"
 
@@ -23,21 +23,21 @@ internal class AppUpdateWorker(
         val forceCheck = inputData.getBoolean(AppUpdateForceCheckInputKey, false)
 
         if (!forceCheck && !appState.autoCheckAppUpdates) {
-            AndroidAppLogger.debug(LogTag, "Auto-check updates is disabled. Skipping worker.")
+            AppLog.debug(LogTag, "Auto-check updates is disabled. Skipping worker.")
             return Result.success()
         }
 
         val checkStore = AppUpdateCheckStore(applicationContext)
         if (!forceCheck && !checkStore.isDue()) {
-            AndroidAppLogger.debug(LogTag, "App update check is still within its TTL. Skipping worker.")
+            AppLog.debug(LogTag, "App update check is still within its TTL. Skipping worker.")
             return Result.success()
         }
 
-        AndroidAppLogger.debug(LogTag, "Checking for app updates in background worker...")
+        AppLog.debug(LogTag, "Checking for app updates in background worker...")
         checkStore.recordAttempt()
         return when (val outcome = application.appUpdateCheckCoordinator.checkLatestRelease()) {
             is AppUpdateCheckOutcome.UpdateAvailable -> {
-                AndroidAppLogger.info(LogTag, "Found new app update: v${outcome.update.versionName} (${outcome.update.assetName})")
+                AppLog.info(LogTag, "Found new app update: v${outcome.update.versionName} (${outcome.update.assetName})")
                 if (!forceCheck && appState.autoInstallAppUpdatesAtNight) {
                     // The compatibility setting now means "download on Wi-Fi while charging".
                     // Installation is always left to Android's explicit user confirmation.

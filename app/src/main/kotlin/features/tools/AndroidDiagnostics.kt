@@ -24,7 +24,7 @@ import engine.network.NetworkDefaults
 import engine.network.TunnelNetworks
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.proxy.LocalProxyRuntime
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -74,7 +74,7 @@ internal object AndroidDiagnostics {
                         hasVpnNetwork = environment.hasTunnel,
                     ).run()
                 } catch (error: Throwable) {
-                    AndroidAppLogger.warn(LogTag, "DNS leak test failed", error)
+                    AppLog.warn(LogTag, "DNS leak test failed", error)
                     throw error
                 }
             }
@@ -89,7 +89,7 @@ internal object AndroidDiagnostics {
                 try {
                     IpInfoRunner(environment.httpClient, environment.hasTunnel).fetch()
                 } catch (error: Throwable) {
-                    AndroidAppLogger.warn(LogTag, "Failed to fetch IP details", error)
+                    AppLog.warn(LogTag, "Failed to fetch IP details", error)
                     throw error
                 }
             }
@@ -124,7 +124,7 @@ private class AndroidDiagnosticsEnvironment(
     val httpClient get() = JvmDiagnosticsHttpClient(
         route = route,
         binding = binding,
-        onFailure = { url, error -> AndroidAppLogger.debug("Diagnostics", "HTTP request failed: $url (${error.message})") },
+        onFailure = { url, error -> AppLog.debug("Diagnostics", "HTTP request failed: $url (${error.message})") },
     )
 
     /**

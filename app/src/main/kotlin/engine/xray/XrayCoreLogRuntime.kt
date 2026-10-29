@@ -4,7 +4,7 @@
 package engine.xray
 
 import features.logs.AndroidAccessLogRepository
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.logs.AndroidCoreLogRepository
 import features.logs.CoreLogFile
 import features.logs.CoreLogFileTailer
@@ -17,7 +17,7 @@ internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): Lis
                 logFiles = listOf(errorLogFile()),
                 repository = AndroidCoreLogRepository,
                 startAtEnd = false,
-                onFailure = { message, error -> AndroidAppLogger.warn("CoreLogFileTailer", message, error) },
+                onFailure = { message, error -> AppLog.warn("CoreLogFileTailer", message, error) },
             ),
         )
         if (enableAccessLog) {
@@ -26,7 +26,7 @@ internal fun XrayCoreLogPaths.startCoreLogTailers(enableAccessLog: Boolean): Lis
                     logFiles = listOf(accessLogFile()),
                     repository = AndroidAccessLogRepository,
                     startAtEnd = false,
-                    onFailure = { message, error -> AndroidAppLogger.warn("CoreLogFileTailer", message, error) },
+                    onFailure = { message, error -> AppLog.warn("CoreLogFileTailer", message, error) },
                 ),
             )
         }
@@ -60,7 +60,7 @@ internal fun clearCoreLogFilesAsApp(logPaths: List<String>, logTag: String) {
                     writeText("")
                 }
             }.onFailure { error ->
-                AndroidAppLogger.warn(logTag, "Failed to clear Xray log file: $logPath", error)
+                AppLog.warn(logTag, "Failed to clear Xray log file: $logPath", error)
             }
         }
 }

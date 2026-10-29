@@ -7,7 +7,7 @@ import android.content.Context
 import android.os.Build
 import app.ProjectInfo
 import engine.network.TunnelNetworks
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -75,7 +75,7 @@ internal class GitHubReleaseChecker(
                         HttpURLConnection.HTTP_NOT_MODIFIED -> GitHubReleaseCheckResult.NotModified
 
                         else -> {
-                            AndroidAppLogger.warn(LogTag, "GitHub release check failed: HTTP $statusCode")
+                            AppLog.warn(LogTag, "GitHub release check failed: HTTP $statusCode")
                             GitHubReleaseCheckResult.Failed
                         }
                     }
@@ -84,7 +84,7 @@ internal class GitHubReleaseChecker(
                 }
             }
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Error checking GitHub release: ${error.message}", error)
+            AppLog.warn(LogTag, "Error checking GitHub release: ${error.message}", error)
         }.getOrElse { GitHubReleaseCheckResult.Failed }
     }
 

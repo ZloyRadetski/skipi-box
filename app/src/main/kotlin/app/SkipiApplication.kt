@@ -3,6 +3,8 @@
 
 package app
 
+import features.logs.AndroidAppLogSink
+import features.logs.AppLog
 import android.app.Application
 import system.AndroidAppIconFetcher
 import features.updater.runtime.updatingAppUpdate
@@ -65,6 +67,7 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        AppLog.install(AndroidAppLogSink)
         // A Quick Settings tile can be the first component that starts this
         // process.  Keep Application.onCreate short so Android can deliver the
         // tile click and the VPN foreground-service request without waiting

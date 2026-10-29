@@ -3,20 +3,20 @@
 
 package features.resources.runtime
 
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 
-internal object AndroidResourceFileLogger {
+object AndroidResourceFileLogger {
     private const val Tag = "AndroidResourceFiles"
 
     fun info(message: String) {
-        AndroidAppLogger.info(Tag, message)
+        AppLog.info(Tag, message)
     }
 
     fun warn(message: String, error: Throwable? = null) {
-        AndroidAppLogger.warn(Tag, message, error)
+        AppLog.warn(Tag, message, error)
     }
 
     fun error(message: String, error: Throwable? = null) {
-        AndroidAppLogger.error(Tag, message, error)
+        AppLog.error(Tag, message, error)
     }
 }

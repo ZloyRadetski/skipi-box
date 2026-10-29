@@ -5,7 +5,7 @@ package engine.xray
 
 import app.AppState
 import app.ProxyServerState
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.OlcRtc
@@ -257,7 +257,7 @@ private fun buildCustomXrayConfig(
  */
 private fun encodeRuntimeXrayConfig(config: JsonObject): String {
     val json = XrayConfigJson.encodeToString(config).withSingleTrailingLf()
-    AndroidAppLogger.debug(
+    AppLog.debug(
         LogTag,
         "Generated Xray config: chars=${json.length}, fingerprint=${json.hashCode().toUInt().toString(16)}",
     )

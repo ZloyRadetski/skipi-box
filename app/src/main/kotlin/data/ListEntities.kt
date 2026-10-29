@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
 import app.ProxyServerState
 import features.subscription.SubscriptionExpiryReminder
 import app.SubscriptionGroupState
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.model.decodePersistedProxyServer
 import features.proxy.server.model.encodePersistedProxyServer
 import features.routing.model.RouteRule
@@ -132,7 +132,7 @@ internal data class ProxyServerEntity(
                 groupId = groupId,
             )
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to parse persisted proxy server id=$id", error)
+            AppLog.warn(LogTag, "Failed to parse persisted proxy server id=$id", error)
         }.getOrNull()
     }
 

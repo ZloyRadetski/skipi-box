@@ -13,7 +13,7 @@ import app.skipi.app.subscription.SubscriptionRefreshBatchProgress
 import app.skipi.app.subscription.loadSubscriptionRefresh
 import app.skipi.app.subscription.refreshSubscriptions
 import data.repository.toSubscriptionRecord
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServerListSubscriptionFailure
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdate
 import features.proxy.server.usecase.ProxyServerListSubscriptionUpdateResult
@@ -170,7 +170,7 @@ internal class AndroidSubscriptionRefreshBatchRunner(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Throwable) {
-            AndroidAppLogger.warn(
+            AppLog.warn(
                 LogTag,
                 "Subscription update failed ${context.group.logIdentity()}",
                 error,
@@ -236,7 +236,7 @@ private suspend fun updateSubscriptionGroup(
     } catch (cancelled: CancellationException) {
         throw cancelled
     } catch (error: Throwable) {
-        AndroidAppLogger.warn(
+        AppLog.warn(
             LogTag,
             "Subscription update failed ${group.logIdentity()}",
             error,

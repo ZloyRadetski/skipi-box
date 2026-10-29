@@ -22,7 +22,7 @@ import app.modes.AppIconSunset
 import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeSystem
 import data.AndroidAppStateStore
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -44,7 +44,7 @@ internal fun LauncherIconSynchronizer(
                         appContext.setLauncherIcon(targetActivityName)
                     }
                 }.onFailure { error ->
-                    AndroidAppLogger.warn(
+                    AppLog.warn(
                         LogTag,
                         "Failed to synchronize launcher icon to $targetActivityName",
                         error,

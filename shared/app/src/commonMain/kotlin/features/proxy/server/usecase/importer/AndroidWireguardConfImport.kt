@@ -3,15 +3,15 @@
 
 package features.proxy.server.usecase.importer
 
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
 
 private const val LogTag = "WireguardConfImport"
 
-internal suspend fun parseProxyServersFromWireguardConf(
+suspend fun parseProxyServersFromWireguardConf(
     text: String,
     context: ProxyServerImportContext,
 ): ProxyServerImportResult = parseWireguardProxyServerPayload(text, context) { _, error ->
-    AndroidAppLogger.warn(LogTag, "Failed to parse WireGuard / AmneziaWG conf", error)
+    AppLog.warn(LogTag, "Failed to parse WireGuard / AmneziaWG conf", error)
 }

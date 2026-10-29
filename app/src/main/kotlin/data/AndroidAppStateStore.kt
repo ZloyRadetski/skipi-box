@@ -12,7 +12,7 @@ import data.repository.AndroidAppRepositories
 import data.repository.AndroidProxyServerRepository
 import features.proxy.server.usecase.AndroidRuntimeStateRepository
 import features.proxy.server.usecase.createAndroidRuntimeStateRepository
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -136,7 +136,7 @@ class AndroidAppStateStore private constructor(
             val persistedState = runCatching {
                 dao.loadState()
             }.onFailure { error ->
-                AndroidAppLogger.error(LogTag, "Failed to load app state", error)
+                AppLog.error(LogTag, "Failed to load app state", error)
                 resetDatabase()
             }.getOrNull()
             val settingsState = settingsPreferences.load()
@@ -174,7 +174,7 @@ class AndroidAppStateStore private constructor(
                     hasPersistedState.set(true)
                     persistenceTracker.markPersisted(plan.nextState)
                 }.onFailure { error ->
-                    AndroidAppLogger.error(LogTag, "Failed to persist app state", error)
+                    AppLog.error(LogTag, "Failed to persist app state", error)
                     resetDatabase()
                     runCatching {
                         settingsPreferences.save(nextState)
@@ -186,7 +186,7 @@ class AndroidAppStateStore private constructor(
                         hasPersistedState.set(true)
                         persistenceTracker.markPersisted(nextState)
                     }.onFailure { retryError ->
-                        AndroidAppLogger.error(LogTag, "Failed to persist app state after database reset", retryError)
+                        AppLog.error(LogTag, "Failed to persist app state after database reset", retryError)
                     }
                 }
             }
@@ -215,9 +215,9 @@ class AndroidAppStateStore private constructor(
 
     private fun resetDatabase() {
         runCatching { database.close() }
-            .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to close app state database before reset", error) }
+            .onFailure { error -> AppLog.warn(LogTag, "Failed to close app state database before reset", error) }
         runCatching { appContext.deleteDatabase(SkipiDatabaseName) }
-            .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to delete app state database during reset", error) }
+            .onFailure { error -> AppLog.warn(LogTag, "Failed to delete app state database during reset", error) }
         database = buildDatabase()
         dao = database.appStateDao()
         hasPersistedState.set(false)

@@ -6,7 +6,7 @@ package system
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Process
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -37,7 +37,7 @@ internal class AndroidPackageRepository(
             val applicationInfo = applicationInfoCache.getOrPut(entry.packageName) {
                 runCatching { packageManager.getApplicationInfoCompat(entry.packageName) }
                     .onFailure { error ->
-                        AndroidAppLogger.warn(LogTag, "Failed to load application info for ${entry.packageName}", error)
+                        AppLog.warn(LogTag, "Failed to load application info for ${entry.packageName}", error)
                     }
                     .getOrNull()
             }

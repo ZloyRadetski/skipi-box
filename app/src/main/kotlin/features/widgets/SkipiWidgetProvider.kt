@@ -22,7 +22,7 @@ import engine.proxy.AndroidProxyEngine
 import data.repository.reconcileTrafficConfigProxyGroups
 import features.config.withActiveTrafficConfigProfile
 import features.config.withConfigProxyGroupsReflected
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.display.displayName
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
@@ -82,7 +82,7 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
         operationScope.launch {
             try {
                 runCatching { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
-                    AndroidAppLogger.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
+                    AppLog.warn(LogTag, "Failed to render SKIPI home screen widgets", error)
                 }
             } finally {
                 result.finish()
@@ -117,13 +117,13 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
                 operation()
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error
-                AndroidAppLogger.warn(LogTag, "Failed to handle action from home screen widget", error)
+                AppLog.warn(LogTag, "Failed to handle action from home screen widget", error)
                 showToast(appContext, appContext.getString(R.string.quick_settings_tile_toggle_failed))
             } finally {
                 try {
                     delay(WidgetRenderSettleDelayMillis.milliseconds)
                     runCatching { SkipiWidgetRenderer.renderAll(appContext) }.onFailure { error ->
-                        AndroidAppLogger.warn(LogTag, "Failed to refresh SKIPI home screen widgets", error)
+                        AppLog.warn(LogTag, "Failed to refresh SKIPI home screen widgets", error)
                     }
                 } finally {
                     operationInProgress.set(false)
@@ -346,7 +346,7 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
         val running =
             runCatching { proxyEngine.status(appState = currentState).running }
                 .onFailure { error ->
-                    AndroidAppLogger.warn(LogTag, "Failed to read proxy status from home screen widget", error)
+                    AppLog.warn(LogTag, "Failed to read proxy status from home screen widget", error)
                 }
                 .getOrElse { currentState.proxyRunning }
         if (currentState.proxyRunning != running) {

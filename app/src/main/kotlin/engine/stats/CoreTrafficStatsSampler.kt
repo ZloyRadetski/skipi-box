@@ -7,7 +7,7 @@ import android.content.Context
 import android.os.PowerManager
 import android.os.SystemClock
 import engine.vpn.SkipiCoreRuntime
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
@@ -178,7 +178,7 @@ internal object CoreTrafficStatsSampler {
             }.onFailure { error ->
                 consecutiveFailures += 1
                 if (consecutiveFailures == 1 || consecutiveFailures == MaxConsecutiveFailures) {
-                    AndroidAppLogger.warn(
+                    AppLog.warn(
                         LogTag,
                         "Failed to query shared SKIPI Core traffic stats (attempt $consecutiveFailures)",
                         error,

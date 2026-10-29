@@ -10,7 +10,7 @@ import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigNetworkActivation
 import features.config.TrafficConfigResourceSettings
 import features.config.androidDefaultTrafficConfigResourceSettings
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.networkautomation.model.NetworkAutomationRule
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -29,7 +29,7 @@ internal object StringListJson {
         return runCatching {
             appStateJson.decodeFromString<List<String>>(payload)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to decode persisted string list", error)
+            AppLog.warn(LogTag, "Failed to decode persisted string list", error)
         }.getOrDefault(emptyList())
     }
 
@@ -46,7 +46,7 @@ internal object CustomResourceFileListJson {
             appStateJson.decodeFromString<List<PersistedCustomResourceFile>>(payload)
                 .mapNotNull(PersistedCustomResourceFile::toStateOrNull)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to decode persisted custom resource files", error)
+            AppLog.warn(LogTag, "Failed to decode persisted custom resource files", error)
         }.getOrDefault(emptyList())
     }
 
@@ -63,7 +63,7 @@ internal object TrafficConfigListJson {
             appStateJson.decodeFromString<List<PersistedTrafficConfig>>(payload)
                 .mapNotNull(PersistedTrafficConfig::toStateOrNull)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to decode persisted traffic configs", error)
+            AppLog.warn(LogTag, "Failed to decode persisted traffic configs", error)
         }.getOrDefault(emptyList())
     }
 
@@ -79,7 +79,7 @@ internal object NetworkAutomationRuleListJson {
         return runCatching {
             appStateJson.decodeFromString<List<NetworkAutomationRule>>(payload)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to decode persisted network automation rules", error)
+            AppLog.warn(LogTag, "Failed to decode persisted network automation rules", error)
         }.getOrDefault(emptyList())
     }
 

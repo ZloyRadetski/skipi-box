@@ -3,7 +3,7 @@
 
 package features.proxy.server.usecase
 
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.tools.AndroidDiagnostics
 import kotlinx.coroutines.Job
 import java.util.concurrent.ConcurrentHashMap
@@ -31,7 +31,7 @@ internal object ProxyServerLatencyTracker {
     fun cancelAll() {
         val jobs = activeJobs.keys.toList()
         if (jobs.isNotEmpty()) {
-            AndroidAppLogger.info(LogTag, "Cancelling ${jobs.size} active latency test job(s)")
+            AppLog.info(LogTag, "Cancelling ${jobs.size} active latency test job(s)")
             for (job in jobs) {
                 runCatching { job.cancel() }
             }

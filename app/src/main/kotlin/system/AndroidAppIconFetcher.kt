@@ -8,7 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import coil3.ImageLoader
 import coil3.asImage
 import coil3.decode.DataSource
@@ -42,7 +42,7 @@ internal class AndroidAppIconFetcher(
                     dataSource = DataSource.DISK,
                 )
             }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to load app icon for ${data.packageName}", error)
+                AppLog.warn(LogTag, "Failed to load app icon for ${data.packageName}", error)
             }.getOrNull()
         }
     }

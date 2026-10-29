@@ -5,7 +5,7 @@ package engine.vpn
 
 import android.content.Context
 import app.R
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import engine.xray.initializeAndroidXrayCoreEnvironment
 import app.skipi.core.skipicore.CoreCallbackHandler
 import app.skipi.core.skipicore.CoreController
@@ -71,7 +71,7 @@ internal object SkipiCoreRuntime {
             stopNativeBridges()
             runCatching { controller.stopLoop() }
                 .onFailure { stopError ->
-                    AndroidAppLogger.warn(LogTag, "Failed to stop SKIPI Core after start failure", stopError)
+                    AppLog.warn(LogTag, "Failed to stop SKIPI Core after start failure", stopError)
                 }
             throw IllegalStateException(
                 context.getString(R.string.error_skipi_core_start_failed, error.readableMessage()),
@@ -89,7 +89,7 @@ internal object SkipiCoreRuntime {
         runCatching {
             controller.stopLoop()
         }.onFailure { error ->
-            AndroidAppLogger.error(LogTag, "Failed to stop SKIPI Core", error)
+            AppLog.error(LogTag, "Failed to stop SKIPI Core", error)
         }
         coreController = null
     }
@@ -101,15 +101,15 @@ internal object SkipiCoreRuntime {
             amneziaWgSocketProtectorConfigured = installSocketProtector("setAmneziaWgSocketProtector", proxyInstance)
             when {
                 olcRtcConfigured && amneziaWgSocketProtectorConfigured ->
-                    AndroidAppLogger.info(LogTag, "Configured socket protectors for olcRTC and AmneziaWG")
+                    AppLog.info(LogTag, "Configured socket protectors for olcRTC and AmneziaWG")
                 olcRtcConfigured ->
-                    AndroidAppLogger.warn(LogTag, "AmneziaWG socket-protector API is unavailable in the current SkipiCore build")
+                    AppLog.warn(LogTag, "AmneziaWG socket-protector API is unavailable in the current SkipiCore build")
                 else ->
-                    AndroidAppLogger.warn(LogTag, "olcRTC socket-protector API is unavailable in the current SkipiCore build")
+                    AppLog.warn(LogTag, "olcRTC socket-protector API is unavailable in the current SkipiCore build")
             }
         }.onFailure { error ->
             amneziaWgSocketProtectorConfigured = false
-            AndroidAppLogger.warn(LogTag, "Failed to set socket protector on Skipicore", error)
+            AppLog.warn(LogTag, "Failed to set socket protector on Skipicore", error)
         }
     }
 
@@ -133,7 +133,7 @@ internal object SkipiCoreRuntime {
             method.invoke(null, proxyInstance)
             true
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to invoke $methodName", error)
+            AppLog.warn(LogTag, "Failed to invoke $methodName", error)
         }.getOrDefault(false)
     }
 
@@ -151,13 +151,13 @@ internal object SkipiCoreRuntime {
             } else {
                 method.invoke(null, configYaml)
             }
-            AndroidAppLogger.info(LogTag, "OLCRTC started on socks port $socksPort")
+            AppLog.info(LogTag, "OLCRTC started on socks port $socksPort")
         } catch (e: java.lang.reflect.InvocationTargetException) {
             val cause = e.targetException ?: e
-            AndroidAppLogger.error(LogTag, "Failed to start OLCRTC", cause)
+            AppLog.error(LogTag, "Failed to start OLCRTC", cause)
             throw cause
         } catch (e: Throwable) {
-            AndroidAppLogger.error(LogTag, "Failed to start OLCRTC", e)
+            AppLog.error(LogTag, "Failed to start OLCRTC", e)
             throw e
         }
     }
@@ -166,9 +166,9 @@ internal object SkipiCoreRuntime {
         runCatching {
             val method = Skipicore::class.java.methods.firstOrNull { it.name == "stopOlcRtc" }
             method?.invoke(null)
-            AndroidAppLogger.info(LogTag, "OLCRTC stopped")
+            AppLog.info(LogTag, "OLCRTC stopped")
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop OLCRTC", error)
+            AppLog.warn(LogTag, "Failed to stop OLCRTC", error)
         }
     }
 
@@ -190,13 +190,13 @@ internal object SkipiCoreRuntime {
             ?: error("startAmneziaWg is not available in the loaded SkipiCore library")
         try {
             invokeStartWithPort(method, configJson, socksPort)
-            AndroidAppLogger.info(LogTag, "AmneziaWG started on socks port $socksPort")
+            AppLog.info(LogTag, "AmneziaWG started on socks port $socksPort")
         } catch (error: java.lang.reflect.InvocationTargetException) {
             val cause = error.targetException ?: error
-            AndroidAppLogger.error(LogTag, "Failed to start AmneziaWG", cause)
+            AppLog.error(LogTag, "Failed to start AmneziaWG", cause)
             throw cause
         } catch (error: Throwable) {
-            AndroidAppLogger.error(LogTag, "Failed to start AmneziaWG", error)
+            AppLog.error(LogTag, "Failed to start AmneziaWG", error)
             throw error
         }
     }
@@ -206,10 +206,10 @@ internal object SkipiCoreRuntime {
             val method = Skipicore::class.java.methods.firstOrNull { it.name == "stopAmneziaWg" }
             if (method != null) {
                 method.invoke(null)
-                AndroidAppLogger.info(LogTag, "AmneziaWG stopped")
+                AppLog.info(LogTag, "AmneziaWG stopped")
             }
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop AmneziaWG", error)
+            AppLog.warn(LogTag, "Failed to stop AmneziaWG", error)
         }
     }
 
@@ -251,7 +251,7 @@ internal object SkipiCoreRuntime {
         port: Int,
         timeoutMs: Long,
     ): Boolean {
-        AndroidAppLogger.info(LogTag, "Waiting for $runtimeName local SOCKS 127.0.0.1:$port to accept connections (timeout ${timeoutMs}ms)")
+        AppLog.info(LogTag, "Waiting for $runtimeName local SOCKS 127.0.0.1:$port to accept connections (timeout ${timeoutMs}ms)")
         val ready = awaitOlcRtcReadiness(timeoutMs) {
             withContext(Dispatchers.IO) {
                 try {
@@ -270,9 +270,9 @@ internal object SkipiCoreRuntime {
             }
         }
         if (ready) {
-            AndroidAppLogger.info(LogTag, "$runtimeName local SOCKS 127.0.0.1:$port is ready")
+            AppLog.info(LogTag, "$runtimeName local SOCKS 127.0.0.1:$port is ready")
         } else {
-            AndroidAppLogger.warn(LogTag, "$runtimeName local SOCKS 127.0.0.1:$port did not become ready within ${timeoutMs}ms")
+            AppLog.warn(LogTag, "$runtimeName local SOCKS 127.0.0.1:$port did not become ready within ${timeoutMs}ms")
         }
         return ready
     }
@@ -347,18 +347,18 @@ internal suspend fun awaitOlcRtcReadiness(
 
 private class SkipiCoreCallbackHandler : CoreCallbackHandler {
     override fun startup(): Long {
-        AndroidAppLogger.info("SkipiCore", "SKIPI Core started")
+        AppLog.info("SkipiCore", "SKIPI Core started")
         return 0
     }
 
     override fun shutdown(): Long {
-        AndroidAppLogger.info("SkipiCore", "SKIPI Core stopped")
+        AppLog.info("SkipiCore", "SKIPI Core stopped")
         return 0
     }
 
     override fun onEmitStatus(code: Long, message: String?): Long {
         val text = message.orEmpty().ifBlank { "status code: $code" }
-        AndroidAppLogger.info("SkipiCore", text)
+        AppLog.info("SkipiCore", text)
         return 0
     }
 }

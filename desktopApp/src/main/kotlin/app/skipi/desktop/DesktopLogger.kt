@@ -27,6 +27,11 @@ object DesktopLogger {
     fun logFile(): Path = logDirectory().resolve("skipi.log")
 
     @Synchronized
+    fun debug(tag: String, message: String, throwable: Throwable? = null) {
+        log("DEBUG", tag, message, throwable)
+    }
+
+    @Synchronized
     fun info(tag: String, message: String) {
         log("INFO", tag, message, null)
     }
@@ -78,6 +83,25 @@ object DesktopLogger {
             )
         } catch (_: Throwable) {
             // Logging should never crash caller
+        }
+    }
+}
+
+/** Routes the shared [features.logs.AppLog] into the Desktop log file. */
+object DesktopAppLogSink : features.logs.AppLogSink {
+    override fun log(
+        level: features.logs.AppLogLevel,
+        tag: String,
+        message: String,
+        error: Throwable?,
+        recordInApp: Boolean,
+    ) {
+        if (!recordInApp) return
+        when (level) {
+            features.logs.AppLogLevel.Debug -> DesktopLogger.debug(tag, message, error)
+            features.logs.AppLogLevel.Info -> DesktopLogger.info(tag, message)
+            features.logs.AppLogLevel.Warning -> DesktopLogger.warn(tag, message, error)
+            features.logs.AppLogLevel.Error -> DesktopLogger.error(tag, message, error)
         }
     }
 }

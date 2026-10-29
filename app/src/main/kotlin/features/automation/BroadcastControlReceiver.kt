@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.Intent
 import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -34,7 +34,7 @@ class BroadcastControlReceiver : BroadcastReceiver() {
                 if (error is CancellationException) {
                     throw error
                 }
-                AndroidAppLogger.error(LogTag, "Broadcast control ${command.actionName} failed unexpectedly", error)
+                AppLog.error(LogTag, "Broadcast control ${command.actionName} failed unexpectedly", error)
             } finally {
                 pendingResult.finish()
             }
@@ -60,7 +60,7 @@ private class BroadcastControlHandler(
         AndroidProxyEngine(
             context = appContext,
             requestVpnPermission = {
-                AndroidAppLogger.warn(LogTag, "Broadcast control cannot request VPN permission in the background")
+                AppLog.warn(LogTag, "Broadcast control cannot request VPN permission in the background")
                 false
             },
         )
@@ -70,7 +70,7 @@ private class BroadcastControlHandler(
     suspend fun handle(command: ProxyControlCommand) {
         val configuredState = stateStore.state.value
         if (!configuredState.enableBroadcastControl) {
-            AndroidAppLogger.warn(LogTag, "Ignored ${command.actionName} because broadcast control is disabled")
+            AppLog.warn(LogTag, "Ignored ${command.actionName} because broadcast control is disabled")
             return
         }
 
@@ -105,7 +105,7 @@ private class BroadcastControlHandler(
         val currentState = stateStore.state.value
         val running = runCatching { proxyEngine.status(runMode, currentState).running }
             .onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to read proxy status for external control", error)
+                AppLog.warn(LogTag, "Failed to read proxy status for external control", error)
             }
             .getOrElse { currentState.proxyRunning }
         if (currentState.proxyRunning != running) {
@@ -126,11 +126,11 @@ private class BroadcastControlHandler(
                         localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
                     )
                 }
-                AndroidAppLogger.info(LogTag, "Broadcast control ${command.actionName} completed: running=${result.proxyRunning}")
+                AppLog.info(LogTag, "Broadcast control ${command.actionName} completed: running=${result.proxyRunning}")
             }
 
             ProxyServiceResult.MissingServer -> {
-                AndroidAppLogger.warn(LogTag, "Broadcast control ${command.actionName} ignored because no proxy server is selected")
+                AppLog.warn(LogTag, "Broadcast control ${command.actionName} ignored because no proxy server is selected")
             }
 
             is ProxyServiceResult.Failed -> {
@@ -138,7 +138,7 @@ private class BroadcastControlHandler(
                     throw result.error
                 }
                 stateStore.update { state -> state.copy(proxyRunning = false) }
-                AndroidAppLogger.error(LogTag, "Broadcast control ${command.actionName} failed", result.error)
+                AppLog.error(LogTag, "Broadcast control ${command.actionName} failed", result.error)
             }
         }
     }

@@ -5,7 +5,7 @@ package engine.proxy
 
 import android.content.Context
 import androidx.core.content.edit
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -78,7 +78,7 @@ internal object StrategyGroupActiveMemberStore {
             .getString(KeyEntries, null)
             ?.let { payload ->
                 runCatching { json.decodeFromString<Map<Int, Entry>>(payload) }
-                    .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to decode active balancer member cache", error) }
+                    .onFailure { error -> AppLog.warn(LogTag, "Failed to decode active balancer member cache", error) }
                     .getOrNull()
             }
             .orEmpty()
@@ -91,7 +91,7 @@ internal object StrategyGroupActiveMemberStore {
                 .getSharedPreferences(PreferencesName, Context.MODE_PRIVATE)
                 .edit { putString(KeyEntries, json.encodeToString(entries)) }
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to persist active balancer member cache", error)
+            AppLog.warn(LogTag, "Failed to persist active balancer member cache", error)
         }
     }
 

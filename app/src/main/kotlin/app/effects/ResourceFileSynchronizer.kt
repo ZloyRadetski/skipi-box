@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import data.AndroidAppStateStore
 import app.activeTrafficConfig
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.resources.ResourceFileUseCase
 import features.resources.runtime.XrayResourceFileScope
 
@@ -27,7 +27,7 @@ internal fun ResourceFileSynchronizer(
             )
         }
             .onFailure { error ->
-                AndroidAppLogger.warn(
+                AppLog.warn(
                     LogTag,
                     "Failed to synchronize bundled resource files",
                     error,

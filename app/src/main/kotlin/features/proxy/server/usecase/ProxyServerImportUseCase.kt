@@ -7,7 +7,7 @@ import features.proxy.server.usecase.importer.importProxyServersFromPayloadText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal suspend fun importProxyServersFromText(
+suspend fun importProxyServersFromText(
     text: String,
     source: ProxyServerImportSource,
     providerUrlFetcher: ProxyServerProviderUrlFetcher? = null,

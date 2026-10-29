@@ -3,7 +3,7 @@
 
 package engine.xray
 
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.routing.usecase.GeoDatParser
 import java.io.File
 
@@ -18,13 +18,13 @@ internal object XrayGeoRuleSanitizer {
         if (tag.isBlank()) return false
         val datFile = File(dataDir, fileName)
         if (!datFile.isFile || datFile.length() <= 0) {
-            AndroidAppLogger.warn(LogTag, "Resource file '$fileName' not found or empty in '$dataDir', skipping rule '$originalRule' to prevent Xray crash")
+            AppLog.warn(LogTag, "Resource file '$fileName' not found or empty in '$dataDir', skipping rule '$originalRule' to prevent Xray crash")
             return false
         }
         val tags = GeoDatParser.parseTags(datFile)
         val exists = tags.any { it.equals(tag, ignoreCase = true) }
         if (!exists) {
-            AndroidAppLogger.warn(LogTag, "Geo tag '$tag' not found in '$fileName', skipping rule '$originalRule' to prevent Xray crash")
+            AppLog.warn(LogTag, "Geo tag '$tag' not found in '$fileName', skipping rule '$originalRule' to prevent Xray crash")
             return false
         }
         return true
@@ -44,7 +44,7 @@ internal object XrayGeoRuleSanitizer {
         return XrayResourceRoutingRuleValidator(
             hasResourceTag = hasResourceTag,
             onInvalidIpRule = { rule ->
-                AndroidAppLogger.warn(LogTag, "Invalid IP/CIDR rule '$rule', skipping rule to prevent Xray crash")
+                AppLog.warn(LogTag, "Invalid IP/CIDR rule '$rule', skipping rule to prevent Xray crash")
             },
         )
     }

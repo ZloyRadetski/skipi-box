@@ -5,7 +5,7 @@ package engine.proxy.latency
 
 import android.content.Context
 import androidx.core.content.edit
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -83,7 +83,7 @@ internal object ProxyPingResultCache {
             .getString(KeyEntries, null)
             ?.let { payload ->
                 runCatching { json.decodeFromString<Map<Int, CachedLatency>>(payload) }
-                    .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to decode persisted ping cache", error) }
+                    .onFailure { error -> AppLog.warn(LogTag, "Failed to decode persisted ping cache", error) }
                     .getOrNull()
             }
             .orEmpty()
@@ -99,7 +99,7 @@ internal object ProxyPingResultCache {
             appContext.getSharedPreferences(PreferencesName, Context.MODE_PRIVATE)
                 .edit { putString(KeyEntries, json.encodeToString(entries)) }
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to persist ping cache", error)
+            AppLog.warn(LogTag, "Failed to persist ping cache", error)
         }
     }
 

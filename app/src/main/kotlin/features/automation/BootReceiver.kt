@@ -13,7 +13,7 @@ import data.AndroidAppStateStore
 import engine.proxy.AndroidProxyEngine
 import data.repository.reconcileTrafficConfigProxyGroups
 import features.config.withActiveTrafficConfigProfile
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +24,7 @@ private const val LogTag = "BootReceiver"
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action ?: return
-        AndroidAppLogger.debug(LogTag, "Received broadcast: $action")
+        AppLog.debug(LogTag, "Received broadcast: $action")
 
         val validActions = setOf(
             Intent.ACTION_BOOT_COMPLETED,
@@ -39,12 +39,12 @@ class BootReceiver : BroadcastReceiver() {
         val state = stateStore.state.value
 
         if (!state.autoConnectOnBoot) {
-            AndroidAppLogger.debug(LogTag, "Auto-connect on boot is disabled in settings")
+            AppLog.debug(LogTag, "Auto-connect on boot is disabled in settings")
             return
         }
 
         if (VpnService.prepare(application) != null) {
-            AndroidAppLogger.warn(LogTag, "Cannot auto-connect on boot: VPN permission not granted")
+            AppLog.warn(LogTag, "Cannot auto-connect on boot: VPN permission not granted")
             return
         }
 
@@ -56,7 +56,7 @@ class BootReceiver : BroadcastReceiver() {
             }
             val targetServer = resolvedState.proxyServers.firstOrNull { it.id == resolvedState.selectedProxyServerId }
             if (targetServer == null) {
-                AndroidAppLogger.warn(LogTag, "Cannot auto-connect on boot: No active proxy server selected")
+                AppLog.warn(LogTag, "Cannot auto-connect on boot: No active proxy server selected")
                 return@launch
             }
 
@@ -64,7 +64,7 @@ class BootReceiver : BroadcastReceiver() {
             val proxyServiceUseCase = ProxyServiceUseCase(proxyEngine)
             when (val result = proxyServiceUseCase.start(resolvedState, targetServer)) {
                 is ProxyServiceResult.Success -> {
-                    AndroidAppLogger.info(LogTag, "Auto-connected VPN on boot successfully")
+                    AppLog.info(LogTag, "Auto-connected VPN on boot successfully")
                     stateStore.update { current ->
                         current.copy(
                             proxyRunning = result.proxyRunning,
@@ -73,10 +73,10 @@ class BootReceiver : BroadcastReceiver() {
                     }
                 }
                 is ProxyServiceResult.Failed -> {
-                    AndroidAppLogger.error(LogTag, "Failed to auto-connect VPN on boot: ${result.error.message}", result.error)
+                    AppLog.error(LogTag, "Failed to auto-connect VPN on boot: ${result.error.message}", result.error)
                 }
                 ProxyServiceResult.MissingServer -> {
-                    AndroidAppLogger.warn(LogTag, "Cannot auto-connect on boot: Missing server")
+                    AppLog.warn(LogTag, "Cannot auto-connect on boot: Missing server")
                 }
             }
         }

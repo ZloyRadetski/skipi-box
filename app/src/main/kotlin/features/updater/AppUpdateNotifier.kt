@@ -16,7 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.ForegroundInfo
 import app.MainActivity
 import app.R
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import java.io.File
 
 /** Owns the single notification channel used by update checks and transfers. */
@@ -38,7 +38,7 @@ internal object AppUpdateNotifier {
                 .build()
             notificationManager(context).notify(AvailableNotificationId, notification)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Could not show update notification: ${error.message}", error)
+            AppLog.warn(LogTag, "Could not show update notification: ${error.message}", error)
         }
     }
 
@@ -55,7 +55,7 @@ internal object AppUpdateNotifier {
                 .build()
             notificationManager(context).notify(ReadyNotificationId, notification)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Could not show ready-to-install notification: ${error.message}", error)
+            AppLog.warn(LogTag, "Could not show ready-to-install notification: ${error.message}", error)
         }
     }
 

@@ -22,7 +22,7 @@ import engine.vpn.SkipiVpnService
 import data.repository.reconcileTrafficConfigProxyGroups
 import features.config.withActiveTrafficConfigProfile
 import features.config.withConfigProxyGroupsReflected
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.proxy.server.usecase.ProxyServiceResult
 import features.proxy.server.usecase.ProxyServiceUseCase
 import features.networkautomation.policy.NetworkAutomationAction
@@ -136,12 +136,12 @@ class NetworkAutomationMonitor(
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
                 .build()
             cm.registerNetworkCallback(request, callback)
-            AndroidAppLogger.info(LogTag, "Network automation observer registered (initial network: $lastKnownNetworkId)")
+            AppLog.info(LogTag, "Network automation observer registered (initial network: $lastKnownNetworkId)")
         }.onFailure { error ->
             networkCallback = null
             observesWifiSsid = false
             observedPhysicalNetworks.clear()
-            AndroidAppLogger.warn(LogTag, "Failed to register network automation observer", error)
+            AppLog.warn(LogTag, "Failed to register network automation observer", error)
         }
     }
 
@@ -197,9 +197,9 @@ class NetworkAutomationMonitor(
         if (callback == null) return
         runCatching {
             appContext.getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
-            AndroidAppLogger.info(LogTag, "Network automation observer unregistered")
+            AppLog.info(LogTag, "Network automation observer unregistered")
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to unregister network automation observer", error)
+            AppLog.warn(LogTag, "Failed to unregister network automation observer", error)
         }
     }
 
@@ -245,7 +245,7 @@ class NetworkAutomationMonitor(
                 // without an observed physical upstream, never start, restart,
                 // or switch a VPN.
                 if (currentNetworkId == NetworkAutomationPolicy.DisconnectedNetworkIdentifier) {
-                    AndroidAppLogger.info(LogTag, "Network automation: physical network unavailable; waiting for an observed upstream")
+                    AppLog.info(LogTag, "Network automation: physical network unavailable; waiting for an observed upstream")
                     return@withLock
                 }
 
@@ -283,7 +283,7 @@ class NetworkAutomationMonitor(
                     NetworkAutomationAction.None -> Unit
 
                     NetworkAutomationAction.Disconnect -> {
-                        AndroidAppLogger.info(LogTag, "On-Demand VPN: Disconnecting VPN on network switch to $currentNetworkId")
+                        AppLog.info(LogTag, "On-Demand VPN: Disconnecting VPN on network switch to $currentNetworkId")
                         withNetworkHandoverOwnership {
                             proxyServiceUseCase.stop(state.runMode)
                         }
@@ -292,7 +292,7 @@ class NetworkAutomationMonitor(
 
                     is NetworkAutomationAction.Restart -> {
                         val server = checkNotNull(targetServer)
-                        AndroidAppLogger.info(
+                        AppLog.info(
                             LogTag,
                             "Network automation: Auto-switching server to #${server.id} (${server.server.getInfo().remarks}) on network $currentNetworkId",
                         )
@@ -300,14 +300,14 @@ class NetworkAutomationMonitor(
                             .withConfigProxyGroupsReflected().copy(selectedProxyServerId = server.id)
                         when (val result = withNetworkHandoverOwnership { proxyServiceUseCase.restart(updatedState, server) }) {
                             is ProxyServiceResult.Success -> applyStartedServer(server.id, resolvedState.activeTrafficConfigId, result)
-                            is ProxyServiceResult.Failed -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server", result.error)
-                            ProxyServiceResult.MissingServer -> AndroidAppLogger.warn(LogTag, "Failed to restart VPN on new server: server missing")
+                            is ProxyServiceResult.Failed -> AppLog.warn(LogTag, "Failed to restart VPN on new server", result.error)
+                            ProxyServiceResult.MissingServer -> AppLog.warn(LogTag, "Failed to restart VPN on new server: server missing")
                         }
                     }
 
                     is NetworkAutomationAction.Start -> {
                         val server = checkNotNull(targetServer)
-                        AndroidAppLogger.info(
+                        AppLog.info(
                             LogTag,
                             "On-Demand VPN: Auto-starting VPN on server #${server.id} (${server.server.getInfo().remarks}) on network transition to $currentNetworkId",
                         )
@@ -315,14 +315,14 @@ class NetworkAutomationMonitor(
                             .withConfigProxyGroupsReflected().copy(selectedProxyServerId = server.id)
                         when (val result = proxyServiceUseCase.start(updatedState, server)) {
                             is ProxyServiceResult.Success -> applyStartedServer(server.id, resolvedState.activeTrafficConfigId, result)
-                            is ProxyServiceResult.Failed -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN", result.error)
-                            ProxyServiceResult.MissingServer -> AndroidAppLogger.warn(LogTag, "Failed to start On-Demand VPN: server missing")
+                            is ProxyServiceResult.Failed -> AppLog.warn(LogTag, "Failed to start On-Demand VPN", result.error)
+                            ProxyServiceResult.MissingServer -> AppLog.warn(LogTag, "Failed to start On-Demand VPN: server missing")
                         }
                     }
                 }
             }.onFailure { error ->
                 if (error !is CancellationException) {
-                    AndroidAppLogger.error(LogTag, "Error during network automation reconciliation", error)
+                    AppLog.error(LogTag, "Error during network automation reconciliation", error)
                 }
             }
         }
@@ -361,10 +361,10 @@ class NetworkAutomationMonitor(
         when (val outcome = result.outcome) {
             SharedApplicationActionOutcome.Completed -> Unit
             is SharedApplicationActionOutcome.Rejected -> {
-                AndroidAppLogger.warn(LogTag, "Network automation could not select server #$serverId: ${outcome.reason}")
+                AppLog.warn(LogTag, "Network automation could not select server #$serverId: ${outcome.reason}")
             }
             is SharedApplicationActionOutcome.Failed -> {
-                AndroidAppLogger.warn(LogTag, "Network automation failed to select server #$serverId: ${outcome.reason}")
+                AppLog.warn(LogTag, "Network automation failed to select server #$serverId: ${outcome.reason}")
             }
         }
     }

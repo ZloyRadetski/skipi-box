@@ -7,7 +7,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.SkipiApplication
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.updater.AppUpdateDownloadProgress
 import features.updater.AppUpdateDownloader
 import features.updater.AppUpdateNotifier
@@ -62,7 +62,7 @@ internal class AppUpdateDownloadWorker(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            AndroidAppLogger.warn(LogTag, "APK download worker failed: ${error.message}", error)
+            AppLog.warn(LogTag, "APK download worker failed: ${error.message}", error)
             failureMessage = error.localizedMessage ?: "Download failed"
         } finally {
             if (!automatic) AppUpdateNotifier.cancelDownloadProgress(applicationContext)
@@ -83,7 +83,7 @@ internal class AppUpdateDownloadWorker(
             setForeground(AppUpdateNotifier.foregroundInfo(applicationContext, update, downloadedBytes, totalBytes))
         }.onFailure { error ->
             // A notification restriction must not discard an already resumable APK transfer.
-            AndroidAppLogger.warn(LogTag, "Could not show update foreground notification: ${error.message}", error)
+            AppLog.warn(LogTag, "Could not show update foreground notification: ${error.message}", error)
         }
     }
 

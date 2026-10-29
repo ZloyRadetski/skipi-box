@@ -6,7 +6,7 @@ package system.user
 import android.content.Context
 import android.os.Process
 import android.os.UserManager
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import system.toAndroidUserId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,7 +24,7 @@ class AndroidUserSpaceRepository(context: Context) {
         val currentUserHandle = Process.myUserHandle()
         val currentUserSpace = appContext.currentAndroidUserSpace()
         val profiles = runCatching { userManager.userProfiles }
-            .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to list Android user profiles", error) }
+            .onFailure { error -> AppLog.warn(LogTag, "Failed to list Android user profiles", error) }
             .getOrDefault(listOf(currentUserHandle))
 
         profiles

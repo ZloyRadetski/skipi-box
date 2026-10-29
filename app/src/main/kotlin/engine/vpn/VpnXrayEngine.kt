@@ -13,7 +13,7 @@ import app.withTunnelStopped
 import engine.proxy.mode.AndroidModeProxyEngine
 import engine.proxy.ProxyEngineStartRequest
 import engine.proxy.ProxyEngineStatus
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 
 internal class VpnXrayEngine(
     private val context: Context,
@@ -30,7 +30,7 @@ internal class VpnXrayEngine(
         val configStartedAt = SystemClock.elapsedRealtime()
         val config = VpnXrayConfigFactory.create(context, request)
         val configReadyAt = SystemClock.elapsedRealtime()
-        AndroidAppLogger.info(
+        AppLog.info(
             LogTag,
             "Prepared VPN tunnel config for server '${request.selectedServer.server.getInfo().remarks}' (id=${request.selectedServer.id}). Xray config:\n${config.xrayConfigJson}",
         )
@@ -41,7 +41,7 @@ internal class VpnXrayEngine(
         (context.applicationContext as? app.SkipiApplication)?.stateStore?.update(persist = false) { current ->
             current.copy(unappliedRoutingRules = config.unappliedRules)
         }
-        AndroidAppLogger.info(
+        AppLog.info(
             LogTag,
             "VPN startup timing: config=${configReadyAt - configStartedAt}ms, service=${SystemClock.elapsedRealtime() - configReadyAt}ms",
         )

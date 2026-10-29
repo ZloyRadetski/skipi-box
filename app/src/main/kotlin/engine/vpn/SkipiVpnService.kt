@@ -46,7 +46,7 @@ import engine.vpn.hevtun.HevTunRuntime
 import engine.xray.clearCoreLogs
 import engine.xray.startCoreLogTailers
 import engine.xray.stopCoreLogTailers
-import features.logs.AndroidAppLogger
+import features.logs.AppLog
 import features.logs.CoreLogFileTailer
 import ui.feedback.AppHapticFeedback
 import kotlinx.coroutines.CompletableDeferred
@@ -108,7 +108,7 @@ class SkipiVpnService : VpnService() {
                 startSystemManagedVpn(startId)
                 return Service.START_STICKY
             }
-            AndroidAppLogger.warn(LogTag, "Ignoring VPN service request without an operation id: action=$action")
+            AppLog.warn(LogTag, "Ignoring VPN service request without an operation id: action=$action")
             if (action == SkipiVpnServiceIntents.ACTION_START) {
                 stopSelfOnMain(startId)
             }
@@ -159,7 +159,7 @@ class SkipiVpnService : VpnService() {
                 runCatching {
                     promoteVpnForeground(config, connecting = true)
                 }.onFailure { error ->
-                    AndroidAppLogger.error(LogTag, "Failed to enter foreground before VPN start", error)
+                    AppLog.error(LogTag, "Failed to enter foreground before VPN start", error)
                     completeStart(operationId, Result.failure(error))
                     stopSelfOnMain(startId)
                     return Service.START_NOT_STICKY
@@ -180,7 +180,7 @@ class SkipiVpnService : VpnService() {
                                 stopVpn(ForegroundNotificationDisposition.Remove)
                             }
                         }.onFailure { error ->
-                            AndroidAppLogger.error(LogTag, "Failed to start VPN Service", error)
+                            AppLog.error(LogTag, "Failed to start VPN Service", error)
                             triggerHapticFeedback { vpnError() }
                             stopVpn(
                                 notificationDisposition = ForegroundNotificationDisposition.Remove,
@@ -235,10 +235,10 @@ class SkipiVpnService : VpnService() {
                             unappliedRoutingRules = config.unappliedRules,
                         )
                     }
-                    AndroidAppLogger.info(LogTag, "Started system-managed Always-on VPN")
+                    AppLog.info(LogTag, "Started system-managed Always-on VPN")
                 }.onFailure { error ->
                     failed = true
-                    AndroidAppLogger.error(LogTag, "Failed to start system-managed Always-on VPN", error)
+                    AppLog.error(LogTag, "Failed to start system-managed Always-on VPN", error)
                     triggerHapticFeedback { vpnError() }
                     stopVpn(ForegroundNotificationDisposition.Remove)
                     stateStore.update { state -> state.copy(proxyRunning = false, unappliedRoutingRules = emptyList()) }
@@ -256,7 +256,7 @@ class SkipiVpnService : VpnService() {
                     stopVpn(ForegroundNotificationDisposition.Remove)
                 }
             }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to stop VPN Service while destroying service", error)
+                AppLog.warn(LogTag, "Failed to stop VPN Service while destroying service", error)
             }
             serviceJob.cancel()
         }
@@ -272,7 +272,7 @@ class SkipiVpnService : VpnService() {
                     stopVpn(ForegroundNotificationDisposition.Remove)
                 }
             }.onFailure { error ->
-                AndroidAppLogger.warn(LogTag, "Failed to clean up revoked VPN Service", error)
+                AppLog.warn(LogTag, "Failed to clean up revoked VPN Service", error)
             }
             stateStore.update { state -> state.copy(proxyRunning = false) }
             ProxyTrafficStatsRuntimeStore.clear(applicationContext)
@@ -304,7 +304,7 @@ class SkipiVpnService : VpnService() {
     }
 
     private suspend fun startVpn(config: VpnServiceStartConfig) = coroutineScope {
-        AndroidAppLogger.info(
+        AppLog.info(
             LogTag,
             "Starting VPN tunnel (session=${config.sessionName}, mtu=${config.mtu}, hevTun=${config.hevSocks5TunnelConfig != null}). Xray config:\n${config.xrayConfigJson}",
         )
@@ -349,7 +349,7 @@ class SkipiVpnService : VpnService() {
             promoteVpnForeground(config, connecting = false)
             ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
             triggerHapticFeedback { vpnConnected() }
-            AndroidAppLogger.info(
+            AppLog.info(
                 LogTag,
                 "VPN start timing (parallel): stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, hev=${hevReadyAt - coreReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
             )
@@ -368,7 +368,7 @@ class SkipiVpnService : VpnService() {
             promoteVpnForeground(config, connecting = false)
             ProxyQuickSettingsTileService.notifyVpnStateChanged(applicationContext, running = true)
             triggerHapticFeedback { vpnConnected() }
-            AndroidAppLogger.info(
+            AppLog.info(
                 LogTag,
                 "VPN start timing: stop=${stoppedAt - startedAt}ms, tun=${tunReadyAt - stoppedAt}ms, core=${coreReadyAt - tunReadyAt}ms, total=${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
             )
@@ -438,14 +438,14 @@ class SkipiVpnService : VpnService() {
 
             else -> Unit
         }
-        AndroidAppLogger.info(LogTag, "Excluded self package from VPN routing: $selfPackageName")
+        AppLog.info(LogTag, "Excluded self package from VPN routing: $selfPackageName")
         return this
     }
 
     private fun Builder.applyAppendHttpProxy(config: VpnServiceStartConfig): Builder {
         if (config.appendHttpProxyOptions.enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             setHttpProxy(ProxyInfo.buildDirectProxy(LocalProxyLoopbackAddress, config.appendHttpProxyOptions.port))
-            AndroidAppLogger.info(
+            AppLog.info(
                 LogTag,
                 "Appended VPN HTTP proxy: $LocalProxyLoopbackAddress:${config.appendHttpProxyOptions.port}",
             )
@@ -500,23 +500,23 @@ class SkipiVpnService : VpnService() {
         runCatching {
             hevTunRuntime?.stop()
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop Hev TUN while stopping VPN Service", error)
+            AppLog.warn(LogTag, "Failed to stop Hev TUN while stopping VPN Service", error)
         }
         runCatching {
             SkipiCoreRuntime.stop()
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop SKIPI Core while stopping VPN Service", error)
+            AppLog.warn(LogTag, "Failed to stop SKIPI Core while stopping VPN Service", error)
         }
         runCatching {
             coreLogTailers.stopCoreLogTailers()
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop Xray log tailers while stopping VPN Service", error)
+            AppLog.warn(LogTag, "Failed to stop Xray log tailers while stopping VPN Service", error)
         }
         coreLogTailers = emptyList()
         runCatching {
             tunFileDescriptor?.close()
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to close VPN TUN file descriptor", error)
+            AppLog.warn(LogTag, "Failed to close VPN TUN file descriptor", error)
         }
         tunFileDescriptor = null
         LocalProxyRuntime.clear()
@@ -599,9 +599,9 @@ class SkipiVpnService : VpnService() {
                 setReferenceCounted(false)
                 acquire()
             }
-            AndroidAppLogger.info(LogTag, "Acquired partial WakeLock for VPN tunnel")
+            AppLog.info(LogTag, "Acquired partial WakeLock for VPN tunnel")
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to acquire partial WakeLock", error)
+            AppLog.warn(LogTag, "Failed to acquire partial WakeLock", error)
         }
     }
 
@@ -611,7 +611,7 @@ class SkipiVpnService : VpnService() {
                 if (it.isHeld) it.release()
             }
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to release partial WakeLock", error)
+            AppLog.warn(LogTag, "Failed to release partial WakeLock", error)
         }
         wakeLock = null
     }
@@ -655,13 +655,13 @@ class SkipiVpnService : VpnService() {
                 .build()
             connectivityManager.registerNetworkCallback(request, callback)
             updateUnderlyingNetworks(initialNetwork)
-            AndroidAppLogger.info(LogTag, "Registered physical-network handover observer (initial=$initialNetwork)")
+            AppLog.info(LogTag, "Registered physical-network handover observer (initial=$initialNetwork)")
         }.onFailure { error ->
             if (networkHandoverCallback === callback) {
                 networkHandoverCallback = null
             }
             physicalNetworkHandoverTracker.clear()
-            AndroidAppLogger.warn(LogTag, "Failed to observe physical network handovers", error)
+            AppLog.warn(LogTag, "Failed to observe physical network handovers", error)
         }
     }
 
@@ -674,7 +674,7 @@ class SkipiVpnService : VpnService() {
         runCatching {
             getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to stop physical-network handover observer", error)
+            AppLog.warn(LogTag, "Failed to stop physical-network handover observer", error)
         }
     }
 
@@ -776,10 +776,10 @@ class SkipiVpnService : VpnService() {
         runCatching {
             val updated = setUnderlyingNetworks(network?.let(::arrayOf))
             if (!updated) {
-                AndroidAppLogger.warn(LogTag, "Could not update VPN underlying network: tunnel is no longer established")
+                AppLog.warn(LogTag, "Could not update VPN underlying network: tunnel is no longer established")
             }
         }.onFailure { error ->
-            AndroidAppLogger.warn(LogTag, "Failed to update VPN underlying network", error)
+            AppLog.warn(LogTag, "Failed to update VPN underlying network", error)
         }
     }
 
@@ -787,14 +787,14 @@ class SkipiVpnService : VpnService() {
         config: VpnServiceStartConfig,
         network: Network,
     ) {
-        AndroidAppLogger.info(LogTag, "Physical network changed to $network; recreating TUN and proxy runtime")
+        AppLog.info(LogTag, "Physical network changed to $network; recreating TUN and proxy runtime")
         runCatching {
             runCatching { hevTunRuntime?.stop() }
-                .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to stop Hev TUN for network handover", error) }
+                .onFailure { error -> AppLog.warn(LogTag, "Failed to stop Hev TUN for network handover", error) }
             runCatching { SkipiCoreRuntime.stop() }
-                .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to stop SKIPI Core for network handover", error) }
+                .onFailure { error -> AppLog.warn(LogTag, "Failed to stop SKIPI Core for network handover", error) }
             runCatching { tunFileDescriptor?.close() }
-                .onFailure { error -> AndroidAppLogger.warn(LogTag, "Failed to close TUN for network handover", error) }
+                .onFailure { error -> AppLog.warn(LogTag, "Failed to close TUN for network handover", error) }
             tunFileDescriptor = null
 
             val newTun = establishTun(config)
@@ -813,9 +813,9 @@ class SkipiVpnService : VpnService() {
                 runtime.start(hevConfig, newTun.fd)
             }
         }.onSuccess {
-            AndroidAppLogger.info(LogTag, "Recovered VPN runtime after physical network handover")
+            AppLog.info(LogTag, "Recovered VPN runtime after physical network handover")
         }.onFailure { error ->
-            AndroidAppLogger.error(LogTag, "Failed to recover VPN runtime after physical network handover", error)
+            AppLog.error(LogTag, "Failed to recover VPN runtime after physical network handover", error)
             stopVpn(ForegroundNotificationDisposition.Remove)
             stateStore.update { state -> state.copy(proxyRunning = false) }
             ProxyTrafficStatsRuntimeStore.clear(applicationContext)
@@ -866,7 +866,7 @@ class SkipiVpnService : VpnService() {
             startMutex.withLock {
                 val lockWaitMillis = SystemClock.elapsedRealtime() - queuedAt
                 if (lockWaitMillis >= RequestQueueLogThresholdMillis) {
-                    AndroidAppLogger.info(LogTag, "VPN start waited ${lockWaitMillis}ms for a service request")
+                    AppLog.info(LogTag, "VPN start waited ${lockWaitMillis}ms for a service request")
                 }
                 val request = PendingStart(
                     operationId = nextOperationId(),
@@ -942,7 +942,7 @@ class SkipiVpnService : VpnService() {
                         ),
                     )
                 }.onFailure { error ->
-                    AndroidAppLogger.warn(LogTag, "Failed to request VPN service stop", error)
+                    AppLog.warn(LogTag, "Failed to request VPN service stop", error)
                     pending.result.complete(Unit)
                 }
             }
@@ -956,7 +956,7 @@ class SkipiVpnService : VpnService() {
             } catch (error: TimeoutCancellationException) {
                 // Keep this operation current. A delayed STOP must still
                 // tear down the old core unless a newer START supersedes it.
-                AndroidAppLogger.warn(LogTag, "VPN service stop timed out", error)
+                AppLog.warn(LogTag, "VPN service stop timed out", error)
             } finally {
                 clearPendingStop(request)
             }
