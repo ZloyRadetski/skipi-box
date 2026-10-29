@@ -79,6 +79,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.skipi.ui.settings.SkipiSettingsActionRow
+import app.skipi.ui.settings.SkipiSettingsGroup
+import app.skipi.ui.settings.SkipiSettingsInfoRow
+import app.skipi.ui.settings.SkipiSettingsNumberField
+import app.skipi.ui.settings.SkipiSettingsStatusMessage
+import app.skipi.ui.settings.SkipiSettingsSwitchRow
+import app.skipi.ui.settings.SkipiSettingsTextField
 import app.skipi.ui.settings.AboutRuntimeInfo
 import app.skipi.ui.settings.AboutSettingsCapabilities
 import app.skipi.ui.settings.AboutSettingsLabels
@@ -122,14 +129,11 @@ import java.awt.datatransfer.StringSelection
 import java.nio.file.Files
 import java.util.Locale
 import app.skipi.app.settings.generateRandomProxyCredential
+import app.skipi.app.settings.localNetworkIpAddresses
+import app.skipi.ui.settings.isValidLocalProxyPort
+import app.skipi.ui.settings.sanitizeLocalProxyPort
 import app.modes.SubscriptionPingModeHttp
 
-private val SettingsSurface = Color(0xFF202126)
-private val SettingsBorder = Color(0xFF3C3E45)
-private val SettingsText = Color(0xFFF4F4F6)
-private val SettingsMuted = Color(0xFFA2A5AF)
-private val SettingsGreen = Color(0xFF58D27A)
-private val SettingsRed = Color(0xFFFF5B62)
 
 private enum class DesktopSettingsDestination {
     Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
@@ -272,12 +276,7 @@ internal fun DesktopSettingsScreen(
             // Desktop reads no Wi-Fi name, so the editor offers no "insert current Wi-Fi" action.
             onRequestCurrentWifi = null,
             footer = {
-                Text(
-                    "Desktop сохраняет правила, но не отслеживает смену сети: они применяются только в Android.",
-                    color = SettingsMuted,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
+                SkipiSettingsStatusMessage("Desktop сохраняет правила, но не отслеживает смену сети: они применяются только в Android.")
             },
         )
         DesktopSettingsDestination.SpeedTest -> {
@@ -400,7 +399,7 @@ private fun DesktopSettingsOverview(
         if (message.isNotBlank()) {
             Text(
                 message,
-                color = SettingsMuted,
+                color = SkipiTheme.colors.onSurface.copy(alpha = 0.6f),
                 fontSize = 13.sp,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp),
             )
@@ -459,7 +458,7 @@ private fun DesktopGeneralSettings(
         onOpenBackupReset = {},
         capabilities = GeneralSettingsCapabilities.Desktop,
     )
-    if (message.isNotBlank()) SettingsStatusMessage(message)
+    if (message.isNotBlank()) SkipiSettingsStatusMessage(message)
 }
 
 private fun String?.toGeneralLanguageMode(): Int = when (this?.substringBefore('-')?.lowercase()) {
@@ -517,7 +516,7 @@ private fun DesktopAppearanceSettings(
         onRequestAppIconSelection = {},
         onColorsReset = { message -> onPersist(draft, message) },
         capabilities = desktopAppearanceSettingsCapabilities(),
-        platformContent = { SettingsStatusMessage(message) },
+        platformContent = { SkipiSettingsStatusMessage(message) },
     )
 }
 
@@ -531,35 +530,32 @@ private fun DesktopLocalProxySettings(
     contentPadding: PaddingValues,
 ) {
     val supportsSystemProxy = isDesktopSystemProxySupported()
+    val saved = "Параметры локального прокси сохранены."
+    val portInvalid = "Порт должен быть в диапазоне 1–65535."
     var feedbackMessage by remember(message) { mutableStateOf(message) }
-    var draft by remember(settings) { mutableStateOf(settings) }
     var portText by remember(settings.localProxyPortRaw, settings.localProxyPort) {
         mutableStateOf(settings.localProxyPortRaw ?: settings.localProxyPort.toString())
     }
     var httpPortText by remember(settings.localHttpProxyPort) { mutableStateOf(settings.localHttpProxyPort.toString()) }
-    var listenAddress by remember(settings.localProxyListenAddress) { mutableStateOf(settings.localProxyListenAddress) }
-    var useSystemProxy by remember(settings.useSystemProxy) { mutableStateOf(settings.useSystemProxy) }
-    var logLevel by remember(settings.coreLogLevel) { mutableStateOf(settings.coreLogLevel) }
-    var logLevelExpanded by remember { mutableStateOf(false) }
-    LaunchedEffect(settings) { draft = settings }
+    val lanAddress = remember { localNetworkIpAddresses().firstOrNull() }
 
-    val port = portText.toIntOrNull()
     val portError = when {
-        portText.isBlank() -> "Укажите порт SOCKS5."
-        port == null || port !in 1..65_535 -> "Порт должен быть в диапазоне 1–65535."
+        settings.enableDynamicLocalProxyPort -> null
+        !isValidLocalProxyPort(portText) -> portInvalid
+        portText.toInt() == settings.localHttpProxyPort -> "Порт SOCKS5 должен отличаться от порта HTTP-прокси."
         else -> null
     }
-    val httpPort = httpPortText.toIntOrNull()
     val httpPortError = when {
-        httpPortText.isBlank() -> "Укажите порт HTTP-прокси."
-        httpPort == null || httpPort !in 1..65_535 -> "Порт должен быть в диапазоне 1–65535."
-        httpPort == port -> "HTTP-порт должен отличаться от порта SOCKS5."
+        !isValidLocalProxyPort(httpPortText) -> portInvalid
+        httpPortText.toInt() == settings.localProxyPort -> "HTTP-порт должен отличаться от порта SOCKS5."
         else -> null
     }
-    val addressError = if (listenAddress.isBlank()) "Укажите адрес прослушивания." else null
-    val sharedState = draft.toLocalProxySettingsState().copy(
+    val displayIp = lanAddress ?: settings.localProxyListenAddress
+    val sharedState = settings.toLocalProxySettingsState().copy(
         port = portText,
-        listenAllInterfaces = listenAddress.trim() != "127.0.0.1",
+        displayIp = displayIp,
+        socksEndpoint = "$displayIp:${settings.localProxyPort}",
+        httpEndpoint = "$displayIp:${settings.localHttpProxyPort}",
         portError = portError,
     )
 
@@ -575,7 +571,7 @@ private fun DesktopLocalProxySettings(
             listenAllSummary = "Использовать 0.0.0.0 вместо loopback-адреса 127.0.0.1.",
             lanSectionTitle = "ДОСТУП ИЗ СЕТИ",
             lanInstruction = "Устройства локальной сети могут подключаться к локальному прокси.",
-            ipLabel = "Адрес прослушивания",
+            ipLabel = "IP-адрес",
             socksEndpointLabel = "SOCKS5",
             httpEndpointLabel = "HTTP",
             securitySectionTitle = "БЕЗОПАСНОСТЬ",
@@ -595,25 +591,21 @@ private fun DesktopLocalProxySettings(
         padding = contentPadding,
         isWideScreen = true,
         onBack = onBack,
-        onDynamicPortChange = { enabled ->
-            val next = draft.copy(enableDynamicLocalProxyPort = enabled)
-            draft = next
-            onPersist(next, "Параметры локального прокси сохранены.")
+        onDynamicPortChange = { enabled -> onPersist(settings.copy(enableDynamicLocalProxyPort = enabled), saved) },
+        onPortChange = { text ->
+            portText = text
+            settings.withLocalProxyPort(text)?.let { next -> onPersist(next, saved) }
         },
-        onPortChange = { portText = it },
-        onListenAllInterfacesChange = { allow -> listenAddress = if (allow) "0.0.0.0" else "127.0.0.1" },
-        onAuthenticationChange = { enabled ->
-            val next = draft.copy(enableLocalProxyAuth = enabled)
-            draft = next
-            onPersist(next, "Параметры локального прокси сохранены.")
-        },
+        onListenAllInterfacesChange = { allow -> onPersist(settings.withListenAllInterfaces(allow), saved) },
+        onAuthenticationChange = { enabled -> onPersist(settings.copy(enableLocalProxyAuth = enabled), saved) },
         onGenerateCredentials = {
-            val next = draft.copy(
-                localProxyUsername = generateRandomProxyCredential(),
-                localProxyPassword = generateRandomProxyCredential(),
+            onPersist(
+                settings.copy(
+                    localProxyUsername = generateRandomProxyCredential(),
+                    localProxyPassword = generateRandomProxyCredential(),
+                ),
+                "Учётные данные созданы.",
             )
-            draft = next
-            onPersist(next, "Учётные данные созданы.")
         },
         onCopy = { text, label ->
             copyToClipboard(text).fold(
@@ -626,87 +618,36 @@ private fun DesktopLocalProxySettings(
             listenAllInterfaces = true,
             authentication = true,
             credentials = true,
-            lanEndpoints = false,
+            lanEndpoints = true,
         ),
         platformContent = {
-            SettingsGroup(title = "НАСТРОЙКИ DESKTOP") {
-                if (supportsSystemProxy) {
-                    SettingsSwitchPreference(
+            if (supportsSystemProxy) {
+                SkipiSettingsGroup(title = "СИСТЕМНЫЙ ПРОКСИ") {
+                    SkipiSettingsSwitchRow(
                         title = "Использовать системный прокси",
                         summary = "SKIPI временно настраивает системный HTTP/SOCKS прокси во время подключения.",
-                        checked = useSystemProxy,
-                        onCheckedChange = { useSystemProxy = it },
+                        checked = settings.useSystemProxy,
+                        onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
                     )
-                    OutlinedTextField(
+                    SkipiSettingsNumberField(
                         value = httpPortText,
-                        onValueChange = { httpPortText = it.filter(Char::isDigit).take(5) },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        label = { Text("Порт HTTP-прокси") },
-                        singleLine = true,
-                        isError = httpPortError != null,
+                        onValueChange = { text ->
+                            httpPortText = sanitizeLocalProxyPort(text)
+                            settings.withLocalHttpProxyPort(httpPortText)?.let { next -> onPersist(next, saved) }
+                        },
+                        label = "Порт HTTP-прокси",
+                        error = httpPortError,
                     )
-                    if (httpPortError != null) SettingsInlineError(httpPortError)
-                    SettingsInfoRow("HTTP endpoint", "127.0.0.1:${httpPort ?: "—"} · всегда слушает только loopback")
-                }
-                OutlinedTextField(
-                    value = listenAddress,
-                    onValueChange = { listenAddress = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    label = { Text("Адрес прослушивания") },
-                    singleLine = true,
-                    isError = addressError != null,
-                )
-                if (addressError != null) SettingsInlineError(addressError)
-                Box {
-                    SettingsPreferenceRow(
-                        title = "Уровень журналирования SKIPI Core",
-                        summary = "Используется при следующем запуске локального туннеля.",
-                        value = logLevel.uppercase(),
-                        onClick = { logLevelExpanded = true },
-                        showDivider = true,
-                    )
-                    DropdownMenu(expanded = logLevelExpanded, onDismissRequest = { logLevelExpanded = false }) {
-                        DesktopCoreLogLevels.forEach { value ->
-                            DropdownMenuItem(
-                                text = { Text(value.uppercase()) },
-                                onClick = { logLevel = value; logLevelExpanded = false },
-                            )
-                        }
+                    if (onClearSystemProxy != null) {
+                        SkipiSettingsActionRow(
+                            title = "Сбросить системный прокси",
+                            summary = "Вернуть прежние настройки прокси Windows.",
+                            onClick = onClearSystemProxy,
+                        )
                     }
                 }
-                Text(
-                    "Изменения применяются при следующем подключении SKIPI Core.",
-                    color = SettingsMuted,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-                Button(
-                    onClick = {
-                        if (portError == null && httpPortError == null && addressError == null && port != null && httpPort != null) {
-                            val next = draft.copy(
-                                localProxyPort = port,
-                                localProxyPortRaw = portText,
-                                localHttpProxyPort = httpPort,
-                                localProxyListenAddress = listenAddress.trim(),
-                                useSystemProxy = supportsSystemProxy && useSystemProxy,
-                                useWindowsSystemProxy = supportsSystemProxy && useSystemProxy,
-                                coreLogLevel = logLevel,
-                            )
-                            draft = next
-                            onPersist(next, "Параметры локального прокси сохранены.")
-                        }
-                    },
-                    enabled = portError == null && httpPortError == null && addressError == null,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                ) { Text("Сохранить параметры") }
-                if (supportsSystemProxy && onClearSystemProxy != null) {
-                    OutlinedButton(
-                        onClick = onClearSystemProxy,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                    ) { Text("Сбросить системный прокси") }
-                }
-                SettingsStatusMessage(feedbackMessage)
             }
+            SkipiSettingsStatusMessage(feedbackMessage)
         },
     )
 }
@@ -722,7 +663,7 @@ private fun DesktopSubscriptionSettings(
     contentPadding: PaddingValues,
 ) {
     var draft by remember(settings) { mutableStateOf(settings) }
-    var userAgent by remember(settings.subscriptionUserAgent) { mutableStateOf(settings.subscriptionUserAgent) }
+    var userAgent by remember { mutableStateOf(settings.subscriptionUserAgent) }
     val hwid = remember(settings.installationUuid) { DesktopDeviceIdentity.computeHwid(settings.installationUuid) }
     LaunchedEffect(settings) { draft = settings }
 
@@ -791,46 +732,26 @@ private fun DesktopSubscriptionSettings(
             pingSettings = true,
         ),
         platformContent = {
-            SettingsGroup(title = "ИДЕНТИФИКАЦИЯ УСТРОЙСТВА И USER-AGENT") {
-                OutlinedTextField(
+            SkipiSettingsGroup(title = "ЗАПАСНОЙ USER-AGENT И УСТРОЙСТВО") {
+                SkipiSettingsTextField(
+                    value = userAgent,
+                    onValueChange = { text ->
+                        userAgent = text
+                        onPersist(
+                            draft.copy(subscriptionUserAgent = text.trim().ifBlank { DefaultDesktopSubscriptionUserAgent }),
+                            "Параметры подписок сохранены.",
+                        )
+                    },
+                    label = "User-Agent, если у подписки не задан свой",
+                )
+                SkipiSettingsTextField(
                     value = hwid,
                     onValueChange = {},
+                    label = "Идентификатор устройства (HWID)",
                     readOnly = true,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    label = { Text("Идентификатор устройства (HWID)") },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodySmall,
                 )
-                SettingsInfoRow(
-                    title = "Использование HWID",
-                    summary = "Идентификатор передаётся серверам подписок для учёта лимита активных устройств.",
-                    showDivider = true,
-                )
-                OutlinedTextField(
-                    value = userAgent,
-                    onValueChange = { userAgent = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    label = { Text("User-Agent по умолчанию") },
-                    singleLine = true,
-                )
-                Text(
-                    "Применяется по умолчанию ко всем подпискам. Для отдельного User-Agent настройте конкретную подписку.",
-                    color = SettingsMuted,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
-                Button(
-                    onClick = {
-                        val next = draft.copy(
-                            subscriptionUserAgent = userAgent.trim().ifBlank { DefaultDesktopSubscriptionUserAgent },
-                        )
-                        draft = next
-                        onPersist(next, "Параметры подписок сохранены.")
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                ) { Text("Сохранить параметры") }
-                SettingsStatusMessage(message)
             }
+            SkipiSettingsStatusMessage(message)
         },
     )
 }
@@ -901,14 +822,14 @@ private fun DesktopIntegrationSettings(
         onBroadcastControlChange = {},
         capabilities = IntegrationSettingsCapabilities(urlSchemes = false, broadcastControl = false),
         platformContent = {
-            SettingsGroup(title = "КОМАНДЫ DESKTOP") {
+            SkipiSettingsGroup(title = "КОМАНДЫ DESKTOP") {
                 IntegrationCommandRow("skipi://connect", "Запустить подключение", onMessage)
-                IntegrationCommandRow("skipi://disconnect", "Остановить подключение", onMessage, showDivider = true)
-                IntegrationCommandRow("skipi://toggle", "Переключить состояние", onMessage, showDivider = true)
+                IntegrationCommandRow("skipi://disconnect", "Остановить подключение", onMessage)
+                IntegrationCommandRow("skipi://toggle", "Переключить состояние", onMessage)
                 IntegrationCommandRow("skipi://add/{url}", "Добавить подписку по URL", onMessage)
-                IntegrationCommandRow("skipi://import/{base64}", "Импортировать закодированную ссылку", onMessage, showDivider = true)
-                IntegrationCommandRow("skipi://conf/add/{base64}", "Добавить профиль конфигурации", onMessage, showDivider = true)
-                SettingsInfoRow(
+                IntegrationCommandRow("skipi://import/{base64}", "Импортировать закодированную ссылку", onMessage)
+                IntegrationCommandRow("skipi://conf/add/{base64}", "Добавить профиль конфигурации", onMessage)
+                SkipiSettingsInfoRow(
                     title = "Обработчик URL-схемы",
                     summary = "Обработчик skipi:// ещё не зарегистрирован системой. Используйте импорт из буфера или URL в приложении.",
                 )
@@ -975,7 +896,6 @@ private fun DesktopLogsSettings(
         capabilities = LogsSettingsCapabilities(logcat = false, bugReport = false),
         platformContent = {
             DesktopDiagnosticsContent(
-                settings = settings,
                 isTunnelRunning = isTunnelRunning,
                 onMessage = onMessage,
                 message = message,
@@ -995,7 +915,6 @@ private fun logRetentionLabel(days: Int): StringResource = when (days) {
 
 @Composable
 private fun DesktopDiagnosticsContent(
-    settings: DesktopAppSettings,
     isTunnelRunning: Boolean,
     onMessage: (String) -> Unit,
     message: String,
@@ -1010,89 +929,60 @@ private fun DesktopDiagnosticsContent(
     val logDir = remember { DesktopLogger.logDirectory() }
     val logSize = remember(logFile) { runCatching { Files.size(logFile) }.getOrNull() }
 
-    SettingsGroup(title = "НАСТРОЙКИ DESKTOP") {
-        SettingsInfoRow(
+    SkipiSettingsGroup(title = "СОСТОЯНИЕ DESKTOP") {
+        SkipiSettingsInfoRow(
             title = if (isTunnelRunning) "Локальный туннель запущен" else "Локальный туннель остановлен",
             summary = if (isTunnelRunning) {
                 "SKIPI Core работает в процессе приложения. Изменения применятся после переподключения."
             } else {
                 "Выберите сервер на главном экране и подключитесь для запуска SKIPI Core."
             },
-            accent = if (isTunnelRunning) SettingsGreen else SettingsMuted,
-            showDivider = true,
         )
-        SettingsInfoRow(
+        SkipiSettingsInfoRow(
             title = if (runtime != null) "SKIPI Core найден" else "SKIPI Core не найден",
             summary = runtime?.directory?.toString()
                 ?: runtimeCheck.exceptionOrNull()?.message.orEmpty().ifBlank { "Проверьте ресурсы установленного приложения." },
-            accent = if (runtime != null) SettingsGreen else SettingsRed,
-            showDivider = true,
         )
-        SettingsPreferenceRow(
+        SkipiSettingsActionRow(
             title = "Проверить runtime снова",
             summary = "Найти библиотеку SKIPI Core и файлы geoip.dat/geosite.dat.",
             onClick = { runtimeCheck = DesktopCoreRuntimes.discover() },
-            showDivider = true,
         )
-        SettingsInfoRow(
-            title = "Уровень журналирования",
-            summary = "${settings.coreLogLevel.uppercase()} · изменяется в настройках локального прокси.",
-            showDivider = true,
-        )
-        SettingsPreferenceRow(
+    }
+    SkipiSettingsGroup(title = "ЖУРНАЛ ПРИЛОЖЕНИЯ") {
+        SkipiSettingsActionRow(
             title = "Открыть папку с логами",
             summary = logDir.toString(),
             onClick = {
-                val result = runCatching {
-                    Files.createDirectories(logDir)
-                    check(Desktop.isDesktopSupported()) { "Открытие папки не поддерживается системой." }
-                    Desktop.getDesktop().open(logDir.toFile())
-                }
+                val result = openDirectory(logDir)
                 onMessage(result.fold({ "Папка журналов открыта." }, { "Не удалось открыть папку: ${it.message.orEmpty()}" }))
             },
-            showDivider = true,
         )
-        SettingsPreferenceRow(
+        SkipiSettingsActionRow(
             title = if (showRecentLogs) "Скрыть журнал" else "Показать последние записи журнала",
             summary = logSize?.let { "Размер файла: $it байт" } ?: "Файл журнала ещё не создан",
             onClick = {
                 recentLogs = DesktopLogger.recentEntries(40)
                 showRecentLogs = !showRecentLogs
             },
-            showDivider = true,
         )
         if (showRecentLogs) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF141416)),
-                border = BorderStroke(1.dp, SettingsBorder),
-            ) {
-                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("skipi.log (последние записи)", color = SettingsMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            "Обновить",
-                            color = SettingsGreen,
-                            fontSize = 12.sp,
-                            modifier = Modifier.clickable { recentLogs = DesktopLogger.recentEntries(40) },
-                        )
-                    }
-                    Text(
-                        text = recentLogs.ifEmpty { listOf("Записей пока нет") }.joinToString("\n"),
-                        color = Color(0xFFD4D4D4),
-                        fontSize = 11.sp,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                        lineHeight = 15.sp,
-                    )
-                }
-            }
+            Text(
+                text = recentLogs.ifEmpty { listOf("Записей пока нет") }.joinToString("\n"),
+                fontSize = 11.sp,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                lineHeight = 15.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            SkipiSettingsActionRow(
+                title = "Обновить",
+                summary = "",
+                onClick = { recentLogs = DesktopLogger.recentEntries(40) },
+            )
         }
-        SettingsPreferenceRow(
+    }
+    SkipiSettingsGroup(title = "ДАННЫЕ") {
+        SkipiSettingsActionRow(
             title = "Каталог данных SKIPI",
             summary = dataDirectory?.toString().orEmpty(),
             onClick = {
@@ -1100,9 +990,8 @@ private fun DesktopDiagnosticsContent(
                     ?: Result.failure(IllegalStateException("Каталог данных не найден."))
                 onMessage(result.fold({ "Каталог данных открыт." }, { "Не удалось открыть каталог: ${it.message.orEmpty()}" }))
             },
-            showDivider = true,
         )
-        SettingsPreferenceRow(
+        SkipiSettingsActionRow(
             title = "Скопировать путь к settings.json",
             summary = settingsPath.toString(),
             onClick = {
@@ -1112,8 +1001,8 @@ private fun DesktopDiagnosticsContent(
                 )
             },
         )
-        SettingsStatusMessage(message)
     }
+    SkipiSettingsStatusMessage(message)
 }
 
 @Composable
@@ -1163,13 +1052,12 @@ private fun DesktopAboutSettings(
             source = false,
         ),
         platformContent = {
-            SettingsGroup(title = "КОМПОНЕНТЫ") {
-                SettingsInfoRow("skipi-core", "Общие модели прокси, подписок, конфигов и туннеля", showDivider = true)
-                SettingsInfoRow("SKIPI Core", "Встроенный runtime в процессе приложения", showDivider = true)
-                SettingsInfoRow("Хранилище", settingsPath.toString())
+            SkipiSettingsGroup(title = "КОМПОНЕНТЫ") {
+                SkipiSettingsInfoRow("SKIPI Core", "Встроенный runtime в процессе приложения")
+                SkipiSettingsInfoRow("Хранилище", settingsPath.toString())
             }
-            SettingsGroup(title = "ЛИЦЕНЗИЯ") {
-                SettingsPreferenceRow(
+            SkipiSettingsGroup(title = "ЛИЦЕНЗИЯ") {
+                SkipiSettingsActionRow(
                     title = "GPL-3.0",
                     summary = "Исходный код и условия распространения находятся в корне проекта.",
                     onClick = {
@@ -1177,106 +1065,9 @@ private fun DesktopAboutSettings(
                     },
                 )
             }
-            SettingsStatusMessage(message)
+            SkipiSettingsStatusMessage(message)
         },
     )
-}
-
-@Composable
-private fun SettingsGroup(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
-        Text(
-            title,
-            color = SettingsMuted,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
-        )
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = SettingsSurface),
-            border = BorderStroke(1.dp, SettingsBorder),
-        ) { Column(content = content) }
-    }
-}
-
-@Composable
-private fun SettingsPreferenceRow(
-    title: String,
-    summary: String,
-    onClick: () -> Unit,
-    value: String? = null,
-    showDivider: Boolean = false,
-) {
-    Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(title, color = SettingsText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                if (summary.isNotBlank()) {
-                    Text(summary, color = SettingsMuted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            if (value != null) {
-                Spacer(Modifier.width(8.dp))
-                Text(value, color = SettingsMuted, fontSize = 12.sp)
-            }
-        }
-        if (showDivider) HorizontalDivider(Modifier.padding(horizontal = 18.dp), color = SettingsBorder.copy(alpha = 0.7f))
-    }
-}
-
-@Composable
-private fun SettingsInfoRow(
-    title: String,
-    summary: String,
-    accent: Color = SettingsMuted,
-    showDivider: Boolean = false,
-) {
-    Column(Modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 11.dp)) {
-            Text(title, color = accent, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(summary, color = SettingsMuted, fontSize = 12.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-        }
-        if (showDivider) HorizontalDivider(Modifier.padding(horizontal = 18.dp), color = SettingsBorder.copy(alpha = 0.7f))
-    }
-}
-
-@Composable
-private fun SettingsSwitchPreference(
-    title: String,
-    summary: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(title, color = SettingsText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(summary, color = SettingsMuted, fontSize = 12.sp)
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
-
-@Composable
-private fun SettingsInlineError(text: String) {
-    Text(text, color = SettingsRed, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 2.dp))
-}
-
-@Composable
-private fun SettingsStatusMessage(message: String) {
-    if (message.isNotBlank()) {
-        Text(message, color = SettingsMuted, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-    }
 }
 
 @Composable
@@ -1284,28 +1075,17 @@ private fun IntegrationCommandRow(
     command: String,
     description: String,
     onMessage: (String) -> Unit,
-    showDivider: Boolean = false,
 ) {
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(command, color = SettingsGreen, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                Text(description, color = SettingsMuted, fontSize = 12.sp)
-            }
-            IconButton(
-                onClick = {
-                    copyToClipboard(command).fold(
-                        onSuccess = { onMessage("Команда скопирована: $command") },
-                        onFailure = { onMessage("Не удалось скопировать команду: ${it.message.orEmpty()}") },
-                    )
-                },
-            ) { Icon(Icons.Outlined.ContentCopy, contentDescription = "Копировать", tint = SettingsText) }
-        }
-        if (showDivider) HorizontalDivider(Modifier.padding(horizontal = 18.dp), color = SettingsBorder.copy(alpha = 0.7f))
-    }
+    SkipiSettingsActionRow(
+        title = command,
+        summary = "$description · нажмите, чтобы скопировать",
+        onClick = {
+            copyToClipboard(command).fold(
+                onSuccess = { onMessage("Команда скопирована: $command") },
+                onFailure = { onMessage("Не удалось скопировать команду: ${it.message.orEmpty()}") },
+            )
+        },
+    )
 }
 
 private fun openDirectory(path: java.nio.file.Path): Result<Unit> = runCatching {

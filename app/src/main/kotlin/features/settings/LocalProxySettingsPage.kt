@@ -18,6 +18,7 @@ import app.LocalUpdateAppState
 import app.R
 import app.collectAppState
 import app.generateRandomProxyCredential
+import app.skipi.app.settings.localNetworkIpAddresses
 import app.skipi.ui.settings.LocalProxySettingsLabels
 import app.skipi.ui.settings.LocalProxySettingsState
 import app.skipi.ui.settings.SkipiLocalProxySettingsScreen
@@ -26,8 +27,6 @@ import engine.vpn.VpnDefaults
 import engine.vpn.fallbackAppendHttpProxyPort
 import kotlinx.coroutines.launch
 import ui.clipboard.setPlainText
-import java.net.Inet4Address
-import java.net.NetworkInterface
 
 @Composable
 fun LocalProxySettingsPage(padding: PaddingValues) {
@@ -56,7 +55,7 @@ fun LocalProxySettingsPage(padding: PaddingValues) {
     val localPort = appState.localProxyPort.ifBlank { VpnDefaults.LOCAL_PROXY_PORT.toString() }
     val httpPort = localPort.toIntOrNull()?.let(::fallbackAppendHttpProxyPort)
         ?: (VpnDefaults.LOCAL_PROXY_PORT + 1)
-    val displayIp = remember { getLocalNetworkIpAddresses().firstOrNull() ?: "192.168.43.1" }
+    val displayIp = remember { localNetworkIpAddresses().firstOrNull() ?: "192.168.43.1" }
     val labels = LocalProxySettingsLabels(
         screenTitle = stringResource(R.string.settings_local_proxy),
         networkSectionTitle = stringResource(R.string.settings_local_proxy_network_params),
@@ -116,15 +115,3 @@ fun LocalProxySettingsPage(padding: PaddingValues) {
         onCopy = ::copyText,
     )
 }
-
-private fun getLocalNetworkIpAddresses(): List<String> = runCatching {
-    NetworkInterface.getNetworkInterfaces()
-        ?.asSequence()
-        ?.filter { it.isUp && !it.isLoopback && !it.isPointToPoint && !it.name.startsWith("skipi") && !it.name.startsWith("tun") }
-        ?.flatMap { it.inetAddresses.asSequence() }
-        ?.filter { it is Inet4Address && !it.isLoopbackAddress && it.hostAddress != null }
-        ?.mapNotNull { it.hostAddress }
-        ?.distinct()
-        ?.toList()
-        .orEmpty()
-}.getOrDefault(emptyList())
