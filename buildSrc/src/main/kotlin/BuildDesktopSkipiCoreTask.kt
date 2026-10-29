@@ -80,7 +80,13 @@ abstract class BuildDesktopSkipiCoreTask : DefaultTask() {
             environment("CGO_ENABLED", "1")
             environment("CC", cc.absolutePath)
             environment("CXX", cxx.absolutePath)
-            environment("PATH", cc.parentFile.absolutePath + File.pathSeparator + System.getenv("PATH").orEmpty())
+            // Windows spells the variable "Path"; a second "PATH" key would leave Go and gcc with the
+            // original value, so gcc's own DLL directory would be missing and cgo would die silently.
+            val pathKey = System.getenv().keys.firstOrNull { it.equals("PATH", ignoreCase = true) } ?: "PATH"
+            environment(
+                pathKey,
+                cc.parentFile.absolutePath + File.pathSeparator + System.getenv(pathKey).orEmpty(),
+            )
         }.rethrowFailure()
 
         require(destination.isFile && destination.length() > 0) {
