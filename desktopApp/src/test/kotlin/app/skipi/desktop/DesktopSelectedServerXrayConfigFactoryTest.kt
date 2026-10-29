@@ -5,6 +5,7 @@ package app.skipi.desktop
 import app.skipi.app.model.RoutingConfigRecord
 import engine.xray.XrayTags
 import features.proxy.server.model.ChainProxy
+import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Socks
 import features.proxy.server.model.StrategyGroup
@@ -297,6 +298,47 @@ class DesktopSelectedServerXrayConfigFactoryTest {
             ),
         )
 
+        assertTrue(assertNotNull(result).isFailure)
+    }
+
+    @Test
+    fun customProfileWithoutOverrideKeepsItsOwnInboundsAndOutbounds() {
+        val raw = """{"log":{"loglevel":"none"},"inbounds":[{"tag":"mine","port":1234,"protocol":"socks"}],""" +
+            """"outbounds":[{"tag":"my-out","protocol":"freedom"}]}"""
+        val root = Json.parseToJsonElement(
+            build(library(selectedId = 7, stored(7, Custom(remarks = "Raw", overrideInboundAndDns = false, configJson = raw)))),
+        ).jsonObject
+
+        assertEquals(listOf("mine"), root.getValue("inbounds").jsonArray.tags())
+        assertEquals(listOf("my-out"), root.getValue("outbounds").jsonArray.tags())
+        // Logging belongs to the application, never to a pasted profile.
+        assertFalse(root.getValue("log").jsonObject["loglevel"]?.jsonPrimitive?.content == "none")
+    }
+
+    @Test
+    fun customProfileWithOverrideGetsTheLocalListenerAndAppDnsButKeepsItsProxyOutbound() {
+        val raw = """{"inbounds":[{"tag":"mine","port":1234,"protocol":"socks"}],""" +
+            """"outbounds":[{"tag":"my-proxy","protocol":"vless","settings":{"vnext":[{"address":"edge.example","port":443,""" +
+            """"users":[{"id":"00000000-0000-0000-0000-000000000000","encryption":"none"}]}]}}]}"""
+        val root = Json.parseToJsonElement(
+            build(
+                library(selectedId = 7, stored(7, Custom(remarks = "Raw", overrideInboundAndDns = true, configJson = raw))),
+                options = LocalProxyXrayConfigOptions(socksPort = 19_080),
+            ),
+        ).jsonObject
+
+        val inbound = root.getValue("inbounds").jsonArray.single().jsonObject
+        assertEquals("skipi-socks", inbound.getValue("tag").jsonPrimitive.content)
+        assertEquals(19_080, inbound.getValue("port").jsonPrimitive.content.toInt())
+        assertTrue("dns" in root)
+        assertTrue("my-proxy" in root.getValue("outbounds").jsonArray.tags())
+    }
+
+    @Test
+    fun invalidCustomJsonFailsInsteadOfStartingCore() {
+        val result = buildResult(
+            library(selectedId = 7, stored(7, Custom(remarks = "Broken", configJson = "not json"))),
+        )
         assertTrue(assertNotNull(result).isFailure)
     }
 

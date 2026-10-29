@@ -26,6 +26,16 @@ import features.proxy.server.model.stripLeadingCountryFlag
 import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
 import java.nio.file.Path
+import engine.xray.CustomXrayDnsRewriteRequest
+import engine.xray.XrayConfigJson
+import engine.xray.buildFreedomOutbound
+import engine.xray.rewriteCustomXrayDnsConfig
+import engine.xray.startupProxyServerHostDnsDomains
+import features.proxy.server.model.customXrayConfigProxyServerHosts
+import features.proxy.server.model.parseCustomXrayConfigJsonObject
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonObject
+import platform.buildLogJson
 
 /** Builds a local listener config from the selected row and Android's shared proxy planner. */
 object DesktopSelectedServerXrayConfigFactory {
@@ -42,8 +52,8 @@ object DesktopSelectedServerXrayConfigFactory {
         val selectedStored = serverLibrary.servers.firstOrNull { stored -> stored.id == selectedId } ?: return null
         return selectedStored.decode().mapCatching { selectedServer ->
             LocalProxyXrayConfigFactory.validateOptions(options)
-            require(selectedServer !is Custom) { "Raw custom Xray JSON needs a dedicated desktop adapter" }
             validateServer(selectedServer)
+            if (selectedServer is Custom) return@mapCatching buildCustom(selectedServer, options)
             routingDataDirectory?.let { dataDirectory ->
                 validateXrayExternalDomainResources(routing.rules) { fileName ->
                     val file = dataDirectory.resolve(fileName).toFile()
@@ -139,6 +149,36 @@ object DesktopSelectedServerXrayConfigFactory {
                 routingPlan = routingPlan,
             )
         }
+    }
+
+    /**
+     * Mirrors Android's raw-profile path: the profile's own proxy outbounds and routing survive,
+     * the application owns logging, and (when requested) the local listener and DNS.
+     */
+    private fun buildCustom(server: Custom, options: LocalProxyXrayConfigOptions): String {
+        val config = parseCustomXrayConfigJsonObject(server.configJson)
+        val rewritten = if (server.overrideInboundAndDns) {
+            val dnsPlan = planDesktopXrayDns(
+                inputs = DesktopDnsInputs(),
+                startupProxyServerDomains = customXrayConfigProxyServerHosts(server.configJson)
+                    .startupProxyServerHostDnsDomains(),
+                ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
+            )
+            rewriteCustomXrayDnsConfig(
+                CustomXrayDnsRewriteRequest(
+                    config = config,
+                    inbounds = LocalProxyXrayConfigFactory.buildInbounds(options),
+                    dnsPlan = dnsPlan,
+                    enableLocalDns = false,
+                    dnsHijackInboundTags = emptyList(),
+                    directOutbound = buildFreedomOutbound(tag = XrayTags.DIRECT, domainStrategy = "UseIP"),
+                ),
+            )
+        } else {
+            config
+        }
+        val withLog = JsonObject(rewritten + ("log" to options.buildLogJson()))
+        return XrayConfigJson.encodeToString(withLog) + "\n"
     }
 
     private fun validateServer(server: ProxyServer<*>) {

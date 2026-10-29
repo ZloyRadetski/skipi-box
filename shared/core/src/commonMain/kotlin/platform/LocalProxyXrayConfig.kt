@@ -216,6 +216,20 @@ object LocalProxyXrayConfigFactory {
         )
     }
 
+    /** The local SOCKS inbound plus the optional loopback HTTP inbound, as written to every local config. */
+    fun buildInbounds(options: LocalProxyXrayConfigOptions): List<JsonObject> = buildList {
+        add(buildSocksInbound(options).withSniffing(options.sniffing))
+        if (options.enableHttpProxy) {
+            add(buildJsonObject {
+                put("tag", HttpInboundTag)
+                put("listen", options.httpProxyListenAddress)
+                put("port", options.httpProxyPort)
+                put("protocol", "http")
+                put("settings", buildJsonObject { put("allowTransparent", false) })
+            })
+        }
+    }
+
     private fun buildConfigJson(
         options: LocalProxyXrayConfigOptions,
         outbounds: JsonArray,
@@ -233,18 +247,7 @@ object LocalProxyXrayConfigFactory {
             } else if (dnsPlan != null) {
                 put("dns", buildXrayDnsConfig(dnsPlan))
             }
-            put("inbounds", buildJsonArray {
-                add(buildSocksInbound(options).withSniffing(options.sniffing))
-                if (options.enableHttpProxy) {
-                    add(buildJsonObject {
-                        put("tag", HttpInboundTag)
-                        put("listen", options.httpProxyListenAddress)
-                        put("port", options.httpProxyPort)
-                        put("protocol", "http")
-                        put("settings", buildJsonObject { put("allowTransparent", false) })
-                    })
-                }
-            })
+            put("inbounds", buildJsonArray { buildInbounds(options).forEach(::add) })
             put("outbounds", outbounds)
             routing?.let { put("routing", it) }
             observatory?.let { put("observatory", it) }
