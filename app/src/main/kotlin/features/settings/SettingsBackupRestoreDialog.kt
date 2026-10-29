@@ -8,7 +8,7 @@ import app.skipi.ui.settings.SettingsRestorePreviewState
 import app.skipi.ui.settings.SettingsRestoreWarning
 import app.skipi.ui.settings.SkipiSettingsRestoreConfirmDialog
 import data.backup.AppBackupRestorePreview
-import data.backup.AppBackupWarning
+import features.backup.AppBackupWarning
 import java.text.DateFormat
 import java.util.Date
 

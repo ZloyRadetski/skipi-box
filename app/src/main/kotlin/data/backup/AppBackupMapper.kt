@@ -3,6 +3,7 @@
 
 package data.backup
 
+import features.backup.appBackupRestoreWarnings
 import app.AppState
 import app.CustomResourceFileState
 import app.ProxyServerState
@@ -475,29 +476,8 @@ private fun AppBackupCustomResourceFile.toState(): CustomResourceFileState {
     )
 }
 
-private fun AppState.restoreWarnings(): List<AppBackupWarning> {
-    val serverIds = proxyServers.mapTo(mutableSetOf()) { server -> server.id }
-    val missingChainMemberCount = proxyServers.sumOf { server ->
-        (server.server as? ChainProxy)
-            ?.proxyServerIds
-            ?.count { memberId -> memberId !in serverIds }
-            ?: 0
-    }
-    val missingStrategyMemberCount = proxyServers.sumOf { server ->
-        val strategy = server.server as? StrategyGroup
-        if (strategy?.sourceTrafficConfigId == null) {
-            strategy?.proxyServerIds?.count { memberId -> memberId !in serverIds } ?: 0
-        } else 0
-    }
-    return buildList {
-        if (missingChainMemberCount > 0) {
-            add(AppBackupWarning.MissingChainProxyMembers(missingChainMemberCount))
-        }
-        if (missingStrategyMemberCount > 0) {
-            add(AppBackupWarning.MissingStrategyGroupMembers(missingStrategyMemberCount))
-        }
-    }
-}
+private fun AppState.restoreWarnings(): List<AppBackupWarning> =
+    appBackupRestoreWarnings(proxyServers.map { server -> server.id to server.server })
 
 private fun nextId(defaultValue: Int, ids: List<Int>): Int {
     return maxOf(defaultValue, (ids.maxOrNull() ?: 0) + 1)

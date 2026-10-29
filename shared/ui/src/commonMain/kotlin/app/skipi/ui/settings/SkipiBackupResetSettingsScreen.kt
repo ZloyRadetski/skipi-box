@@ -51,6 +51,8 @@ fun SkipiBackupResetSettingsScreen(
     onResetTunnel: () -> Unit,
     onResetVpn: () -> Unit,
     onResetApp: () -> Unit,
+    /** Desktop has no VPN/TUN settings, so it hides this row. */
+    showResetVpn: Boolean = true,
     overlays: @Composable () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
@@ -80,7 +82,9 @@ fun SkipiBackupResetSettingsScreen(
                     SmallTitle(text = labels.resetSectionTitle)
                     SkipiSettingsSectionCard {
                         ArrowPreference(title = labels.resetTunnelTitle, summary = labels.resetTunnelSummary, onClick = onResetTunnel)
-                        ArrowPreference(title = labels.resetVpnTitle, summary = labels.resetVpnSummary, onClick = onResetVpn)
+                        if (showResetVpn) {
+                            ArrowPreference(title = labels.resetVpnTitle, summary = labels.resetVpnSummary, onClick = onResetVpn)
+                        }
                         ArrowPreference(title = labels.resetAppTitle, summary = labels.resetAppSummary, onClick = onResetApp)
                     }
                 }

@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import app.ProjectInfo
 import app.skipi.ui.networkautomation.NetworkAutomationServerOption
 import app.skipi.ui.networkautomation.SkipiNetworkAutomationScreen
 import features.networkautomation.policy.NetworkAutomationRules
@@ -132,7 +133,7 @@ private val SettingsRed = Color(0xFFFF5B62)
 
 private enum class DesktopSettingsDestination {
     Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
-    NetworkAutomation, SpeedTest, DnsLeakTest, IpInfo, Integration, Diagnostics, CoreLogs, AccessLogs, About,
+    NetworkAutomation, BackupReset, SpeedTest, DnsLeakTest, IpInfo, Integration, Diagnostics, CoreLogs, AccessLogs, About,
 }
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
@@ -144,6 +145,7 @@ internal fun DesktopSettingsScreen(
     diagnostics: DesktopDiagnostics,
     coreLogs: DesktopCoreLogs,
     automationServers: List<NetworkAutomationServerOption>,
+    backupHost: DesktopBackupHost,
     isTunnelRunning: Boolean = false,
     onClearSystemProxy: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -218,6 +220,14 @@ internal fun DesktopSettingsScreen(
             onBack = { destination = DesktopSettingsDestination.Subscriptions },
             onPersist = ::persist,
             contentPadding = contentPadding,
+        )
+        DesktopSettingsDestination.BackupReset -> DesktopBackupResetSettings(
+            host = backupHost,
+            appVersionName = ProjectInfo.VERSION_NAME,
+            appVersionCode = ProjectInfo.VERSION_CODE,
+            padding = contentPadding,
+            onBack = { destination = DesktopSettingsDestination.Overview },
+            onMessage = { message = it },
         )
         DesktopSettingsDestination.NetworkAutomation -> SkipiNetworkAutomationScreen(
             networkAutomationEnabled = currentSettings.enableNetworkAutomation,
@@ -375,6 +385,7 @@ private fun DesktopSettingsOverview(
                 SkipiSettingsDestination.LocalProxy -> onNavigate(DesktopSettingsDestination.LocalProxy)
                 SkipiSettingsDestination.Subscriptions -> onNavigate(DesktopSettingsDestination.Subscriptions)
                 SkipiSettingsDestination.NetworkAutomation -> onNavigate(DesktopSettingsDestination.NetworkAutomation)
+                SkipiSettingsDestination.BackupReset -> onNavigate(DesktopSettingsDestination.BackupReset)
                 SkipiSettingsDestination.SpeedTest -> onNavigate(DesktopSettingsDestination.SpeedTest)
                 SkipiSettingsDestination.DnsLeakTest -> onNavigate(DesktopSettingsDestination.DnsLeakTest)
                 SkipiSettingsDestination.IpInfo -> onNavigate(DesktopSettingsDestination.IpInfo)

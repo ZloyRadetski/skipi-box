@@ -38,8 +38,4 @@ internal data class AppBackupRestorePreview(
         get() = restoredState.trafficConfigs.size
 }
 
-internal sealed interface AppBackupWarning {
-    data class MissingChainProxyMembers(val count: Int) : AppBackupWarning
-
-    data class MissingStrategyGroupMembers(val count: Int) : AppBackupWarning
-}
+internal typealias AppBackupWarning = features.backup.AppBackupWarning

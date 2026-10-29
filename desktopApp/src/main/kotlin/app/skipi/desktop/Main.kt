@@ -1186,6 +1186,44 @@ fun main() = application {
                         )
                     },
                 ) { contentPadding ->
+                    val desktopBackupHost = remember {
+                        object : DesktopBackupHost {
+                            override fun currentUserData() = DesktopUserData(
+                                settings = latestDesktopSettings,
+                                servers = latestServerLibrary,
+                                subscriptions = subscriptionLibrary,
+                                configs = latestConfigLibrary,
+                            )
+
+                            override suspend fun stopTunnel(): Result<Unit> {
+                                if (!coreController.state().isRunning) return Result.success(Unit)
+                                desiredTunnelRunning = false
+                                tunnelIntentVersion += 1
+                                val result = withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
+                                coreState = coreController.state()
+                                return result.map { }
+                            }
+
+                            override suspend fun apply(userData: DesktopUserData): Result<Unit> {
+                                val saved = withContext(Dispatchers.IO) {
+                                    runCatching {
+                                        DesktopServerLibraries.saveDefault(userData.servers).getOrThrow()
+                                        DesktopSubscriptionLibraries.saveDefault(userData.subscriptions).getOrThrow()
+                                        DesktopConfigLibraries.saveDefault(userData.configs).getOrThrow()
+                                        DesktopSettingsLibraries.saveDefault(userData.settings).getOrThrow()
+                                    }
+                                }
+                                saved.onSuccess {
+                                    serverLibrary = userData.servers
+                                    subscriptionLibrary = userData.subscriptions
+                                    configLibrary = userData.configs
+                                    desktopSettings = userData.settings
+                                    desktopCoreLogs.pruneOlderThanDays(userData.settings.logRetentionDays)
+                                }
+                                return saved
+                            }
+                        }
+                    }
                     when (currentSection) {
                         SkipiMainDestination.Proxy -> DesktopProxyHome(
                             serverLibrary = serverLibrary,
@@ -1881,6 +1919,7 @@ fun main() = application {
                             diagnostics = desktopDiagnostics,
                             coreLogs = desktopCoreLogs,
                             automationServers = desktopNetworkAutomationServers(serverLibrary),
+                            backupHost = desktopBackupHost,
                             onSettingsChange = { updated ->
                                 val restartRequired = desktopSettings.localProxyPort != updated.localProxyPort ||
                                     desktopSettings.localHttpProxyPort != updated.localHttpProxyPort ||
