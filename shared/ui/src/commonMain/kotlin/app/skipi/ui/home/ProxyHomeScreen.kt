@@ -876,6 +876,8 @@ private fun PageServerGrid(
                             state = reorderableState.reorderableState,
                             key = "server-${server.id}",
                             enabled = reorderEnabled,
+                            // Rows appear and disappear instantly; the default spring would animate every row.
+                            animateItemModifier = Modifier,
                         ) { isDragging ->
                             val dragModifier = Modifier.longPressReorderDragHandle(
                                 scope = this,
@@ -929,7 +931,7 @@ private fun PageServerGrid(
                         state = reorderableState.reorderableState,
                         key = "server-${server.id}",
                         enabled = reorderEnabled,
-                        animateItemModifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null, placementSpec = null),
+                        animateItemModifier = Modifier,
                     ) { isDragging ->
                         val dragModifier = Modifier.longPressReorderDragHandle(
                             scope = this,

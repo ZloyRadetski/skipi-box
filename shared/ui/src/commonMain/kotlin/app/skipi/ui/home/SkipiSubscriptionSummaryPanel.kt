@@ -3,11 +3,6 @@
 
 package app.skipi.ui.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -121,12 +116,7 @@ internal fun SubscriptionSummaryCardContent(
             SubscriptionHeaderActions(state = state, actions = actions, labels = labels, colors = colors)
         }
 
-        AnimatedVisibility(
-            visible = isExpanded,
-            // Linear and short: no easing curve to interpolate, and rows below never animate.
-            enter = expandVertically(animationSpec = tween(SubscriptionToggleMillis, easing = LinearEasing)),
-            exit = shrinkVertically(animationSpec = tween(SubscriptionToggleMillis, easing = LinearEasing)),
-        ) {
+        if (isExpanded) {
             SubscriptionSummaryDetails(state = state, actions = actions, colors = colors)
         }
     }
@@ -209,5 +199,3 @@ private fun SubscriptionHeaderActions(
         }
     }
 }
-
-private const val SubscriptionToggleMillis = 150
