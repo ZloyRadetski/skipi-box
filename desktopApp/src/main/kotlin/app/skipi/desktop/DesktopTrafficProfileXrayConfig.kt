@@ -2,6 +2,12 @@
 
 package app.skipi.desktop
 
+import engine.xray.XrayFragmentOutboundOptions
+import engine.xray.XrayMuxOutboundOptions
+import engine.xray.buildXrayFragmentOutbound
+import engine.xray.withXrayMuxAndFragmentOverlay
+import features.config.TrafficConfigState
+import features.config.withSkipiSettingsReadFromRawConfig
 import engine.xray.XrayProtocols
 import engine.xray.TrafficProfileServerRecord
 import engine.xray.TrafficProfileXrayCapabilities
@@ -79,6 +85,31 @@ object DesktopTrafficProfileXrayConfigFactory {
             .toDesktopRouteDomainStrategyOrNull()
             ?: if (ipv6Enabled) "IPIfNonMatch" else "AsIs"
 
+        // Like Android's withActiveTrafficConfigApplied, the active profile replaces global Mux/Fragment.
+        val profileSettings = TrafficConfigState(id = profile.id, name = profile.name, rawConfig = profile.content)
+            .withSkipiSettingsReadFromRawConfig()
+            .androidSettings
+        val muxOptions = if (profileSettings.enableMux) {
+            XrayMuxOutboundOptions(
+                profileSettings.muxConcurrency,
+                profileSettings.muxXudpConcurrency,
+                profileSettings.muxXudpProxyUdp443,
+            )
+        } else {
+            null
+        }
+        val fragmentOptions = if (profileSettings.enableFragment) {
+            XrayFragmentOutboundOptions(
+                domainStrategy = xrayDirectOutboundDomainStrategy(ipv6Enabled, ipv6Preferred),
+                packets = profileSettings.fragmentPackets,
+                length = profileSettings.fragmentLength,
+                interval = profileSettings.fragmentInterval,
+            )
+        } else {
+            null
+        }
+        val overlaidProxyOutbounds = proxyOutbounds.withXrayMuxAndFragmentOverlay(muxOptions, fragmentOptions)
+
         val config = buildJsonObject {
             put(
                 "log",
@@ -136,7 +167,7 @@ object DesktopTrafficProfileXrayConfigFactory {
             put(
                 "outbounds",
                 buildJsonArray {
-                    proxyOutbounds.forEach(::add)
+                    overlaidProxyOutbounds.forEach(::add)
                     add(
                         buildFreedomOutbound(
                             tag = DirectTag,
@@ -147,6 +178,7 @@ object DesktopTrafficProfileXrayConfigFactory {
                         ),
                     )
                     add(buildSimpleOutbound(BlockTag, XrayProtocols.BLACKHOLE))
+                    fragmentOptions?.let { add(buildXrayFragmentOutbound(it)) }
                 },
             )
             put(

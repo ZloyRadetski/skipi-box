@@ -141,3 +141,24 @@ private fun JsonObject.applyProxyOutboundTransport(transport: XrayOutboundTransp
         put("tcpUserTimeout", transport.tcpSockopt.tcpUserTimeout)
     }
 }
+
+/**
+ * Applies the same Mux and Fragment overlay as [renderXrayOutbounds] to already rendered
+ * proxy outbounds. The caller appends [buildXrayFragmentOutbound] when [fragment] is set.
+ */
+fun List<JsonObject>.withXrayMuxAndFragmentOverlay(
+    mux: XrayMuxOutboundOptions?,
+    fragment: XrayFragmentOutboundOptions?,
+): List<JsonObject> = map { source ->
+    var outbound = source
+    mux?.let {
+        outbound = outbound.updated {
+            put(
+                "mux",
+                buildXrayMuxConfig(it.concurrency, it.xudpConcurrency, it.xudpProxyUdp443Mode),
+            )
+        }
+    }
+    if (fragment != null) outbound = outbound.withDialerProxyTag(XrayTags.FRAGMENT)
+    outbound
+}
