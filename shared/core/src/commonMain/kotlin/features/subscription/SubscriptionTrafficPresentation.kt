@@ -9,7 +9,9 @@ private const val UnlimitedSubscriptionTrafficThreshold = Long.MAX_VALUE / 2L
 /** Returns the remaining whole days using the metadata's epoch-second expiry. */
 fun subscriptionExpiryDays(expireAtSeconds: Long, nowMillis: Long): Long? {
     if (expireAtSeconds <= 0L) return null
-    return ((expireAtSeconds * 1_000L - nowMillis).coerceAtLeast(0L) / MillisPerDay)
+    // Saturate instead of wrapping: a far-future expiry must not read as "expired".
+    val expireMillis = if (expireAtSeconds > Long.MAX_VALUE / 1_000L) Long.MAX_VALUE else expireAtSeconds * 1_000L
+    return (expireMillis - nowMillis).coerceAtLeast(0L) / MillisPerDay
 }
 
 /** Returns the finite traffic ratio, or null when the total is unknown or unlimited. */

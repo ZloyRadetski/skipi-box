@@ -5,11 +5,6 @@ package app.skipi.ui.background
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.InfiniteTransition
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -18,7 +13,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -26,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import app.skipi.ui.anim.rememberInfinitePulse
+import kotlinx.coroutines.delay
+import kotlin.time.TimeSource
 import app.skipi.ui.settings.AppearanceSettingValues
 
 /** Palette and opacity of the "connection" background before the breathing pulse is applied. */
@@ -124,12 +124,21 @@ fun SkipiAppBackground(
             if (reduceMotion) {
                 Canvas(Modifier.fillMaxSize()) { drawAuroraMesh(isDark, t1 = 0.50f, t2 = 0.35f, t3 = 0.65f, t4 = 0.45f) }
             } else {
-                val transition = rememberInfiniteTransition(label = "auroraMesh")
-                val t1 by transition.auroraPhase(17000, "auroraT1")
-                val t2 by transition.auroraPhase(13000, "auroraT2")
-                val t3 by transition.auroraPhase(21000, "auroraT3")
-                val t4 by transition.auroraPhase(11000, "auroraT4")
-                Canvas(Modifier.fillMaxSize()) { drawAuroraMesh(isDark, t1, t2, t3, t4) }
+                // The mesh drifts over tens of seconds, so ~20 redraws per second look identical to 60
+                // while costing a third of the GPU work; time is read only while drawing.
+                val elapsed = remember { mutableLongStateOf(0L) }
+                LaunchedEffect(Unit) {
+                    val started = TimeSource.Monotonic.markNow()
+                    while (true) {
+                        // Waiting for a frame means a stopped or covered window costs nothing.
+                        withFrameNanos { elapsed.longValue = started.elapsedNow().inWholeMilliseconds }
+                        delay(AuroraFrameMillis)
+                    }
+                }
+                Canvas(Modifier.fillMaxSize()) {
+                    val phases = auroraPhases(elapsed.longValue)
+                    drawAuroraMesh(isDark, phases.t1, phases.t2, phases.t3, phases.t4)
+                }
             }
             if (dimPercent.coerceIn(0, 100) > 0) DimLayer(dimPercent)
             content()
@@ -144,14 +153,24 @@ private fun DimLayer(percent: Int) {
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = backgroundDimAlpha(percent))))
 }
 
-@Composable
-private fun InfiniteTransition.auroraPhase(durationMillis: Int, label: String): State<Float> =
-    animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = durationMillis, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = label,
+private const val AuroraFrameMillis = 50L
+
+/** The four independent drift phases of the aurora mesh. */
+data class AuroraPhases(val t1: Float, val t2: Float, val t3: Float, val t4: Float)
+
+private val AuroraDurationsMillis = longArrayOf(17_000, 13_000, 21_000, 11_000)
+
+/** Phases at [elapsedMillis]: each ping-pongs 0..1..0 over twice its duration with fast-out-slow-in easing. */
+fun auroraPhases(elapsedMillis: Long): AuroraPhases {
+    fun phase(duration: Long): Float {
+        val cycle = elapsedMillis.coerceAtLeast(0L) % (2 * duration)
+        val linear = if (cycle <= duration) cycle.toFloat() / duration else 2f - cycle.toFloat() / duration
+        return FastOutSlowInEasing.transform(linear.coerceIn(0f, 1f))
+    }
+    return AuroraPhases(
+        phase(AuroraDurationsMillis[0]),
+        phase(AuroraDurationsMillis[1]),
+        phase(AuroraDurationsMillis[2]),
+        phase(AuroraDurationsMillis[3]),
     )
+}

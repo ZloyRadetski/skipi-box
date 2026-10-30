@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -671,21 +672,26 @@ fun ProxyServerListPage(
         } while (true)
     }
     val tunnelSnapshot = measuredTunnelSnapshot
+    val memoryLifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val tunnelMemoryKb by produceState(
         initialValue = 0L,
         context,
         proxyRunning,
         proxyListState.showTunnelMemoryOnHome,
+        memoryLifecycleOwner,
     ) {
         // The key changes with both flags, so a disabled counter needs no polling loop at all.
         if (!proxyRunning || !proxyListState.showTunnelMemoryOnHome) {
             value = 0L
             return@produceState
         }
-        while (true) {
-            // Reflection, JSON and a binder call: keep them off the UI thread.
-            value = kotlinx.coroutines.withContext(Dispatchers.IO) { context.currentTunnelMemoryPssKb() }
-            kotlinx.coroutines.delay(3_000)
+        // Poll only while the app is visible: a backgrounded screen must not wake the CPU every 3 s.
+        memoryLifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            while (true) {
+                // Reflection, JSON and a binder call: keep them off the UI thread.
+                value = kotlinx.coroutines.withContext(Dispatchers.IO) { context.currentTunnelMemoryPssKb() }
+                kotlinx.coroutines.delay(3_000)
+            }
         }
     }
     val runtimeOutboundMetric = if (

@@ -50,3 +50,33 @@ class AppBackgroundSpecTest {
         assertEquals(listOf(Color(0xFFC7D2FE), Color(0xFFE0E7FF)), photoFallbackGradient(isDark = false))
     }
 }
+
+class AuroraPhasesTest {
+    @Test
+    fun everyPhaseStartsAtRestAndPeaksAfterItsOwnDuration() {
+        val start = auroraPhases(0)
+        assertEquals(listOf(0f, 0f, 0f, 0f), listOf(start.t1, start.t2, start.t3, start.t4))
+        assertEquals(1f, auroraPhases(17_000).t1)
+        assertEquals(1f, auroraPhases(13_000).t2)
+        assertEquals(1f, auroraPhases(21_000).t3)
+        assertEquals(1f, auroraPhases(11_000).t4)
+    }
+
+    @Test
+    fun phasesReverseLikeTheOriginalReverseRepeatAnimation() {
+        assertEquals(0f, auroraPhases(34_000).t1)
+        assertEquals(auroraPhases(8_500).t1, auroraPhases(25_500).t1, 1e-4f)
+        assertEquals(auroraPhases(5_000).t4, auroraPhases(17_000).t4, 1e-4f)
+    }
+
+    @Test
+    fun phasesStayInRangeAndRiseDuringTheFirstHalfCycle() {
+        var previous = -1f
+        for (elapsed in 0L..17_000L step 500L) {
+            val value = auroraPhases(elapsed).t1
+            assertEquals(true, value in 0f..1f)
+            assertEquals(true, value >= previous)
+            previous = value
+        }
+    }
+}

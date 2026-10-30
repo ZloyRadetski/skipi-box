@@ -31,7 +31,7 @@ data class SubscriptionExpiryReminder(
             ExpiryReminderUnit.Minutes -> value.coerceAtLeast(1) * 60L
             ExpiryReminderUnit.Hours -> value.coerceAtLeast(1) * 3600L
             ExpiryReminderUnit.Days -> value.coerceAtLeast(1) * 86400L
-            ExpiryReminderUnit.Weeks -> value.coerceAtLeast(1) * 7 * 86400L
+            ExpiryReminderUnit.Weeks -> value.coerceAtLeast(1).toLong() * 7L * 86400L
         }
 
     fun toSerializedString(): String = "$value:${unit.name}"

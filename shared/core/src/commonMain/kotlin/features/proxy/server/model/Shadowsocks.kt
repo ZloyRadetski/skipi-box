@@ -64,7 +64,10 @@ data class Shadowsocks(
 
     internal fun parseLegacy(value: String, remarks: String): Shadowsocks {
         this.remarks = remarks
-        val infoAndServer = value.trimEnd('/').split('@', limit = 2)
+        // The host follows the LAST '@': a password may itself contain '@'.
+        val trimmed = value.trimEnd('/')
+        val at = trimmed.lastIndexOf('@')
+        val infoAndServer = if (at < 0) listOf(trimmed) else listOf(trimmed.substring(0, at), trimmed.substring(at + 1))
         if (infoAndServer.size == 2) {
             val methodAndPassword = infoAndServer[0].split(':', limit = 2)
             if (methodAndPassword.size == 2) {
