@@ -19,10 +19,17 @@ plugins {
 val generatedXrayCoreJniLibsDir: Provider<Directory> = layout.buildDirectory.dir("generated/xrayCoreJniLibs")
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val androidTestJavaHome = providers.gradleProperty("skipiAndroidTestJavaHome").orNull
-val releaseStoreFile = providers.environmentVariable("SKIPI_RELEASE_STORE_FILE").orNull
-val releaseStorePassword = providers.environmentVariable("SKIPI_RELEASE_STORE_PASSWORD").orNull
-val releaseKeyAlias = providers.environmentVariable("SKIPI_RELEASE_KEY_ALIAS").orNull
-val releaseKeyPassword = providers.environmentVariable("SKIPI_RELEASE_KEY_PASSWORD").orNull
+// Release signing secrets come from the user-level ~/.gradle/gradle.properties or, for CI, from environment
+// variables of the same names. They never live in the repository; without them release stays unsigned.
+fun releaseSigningValue(name: String): String? =
+    providers.gradleProperty(name).orNull?.takeIf(String::isNotBlank)
+        ?: providers.environmentVariable(name).orNull?.takeIf(String::isNotBlank)
+
+val releaseStoreFile = releaseSigningValue("SKIPI_RELEASE_STORE_FILE")
+val releaseStorePassword = releaseSigningValue("SKIPI_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = releaseSigningValue("SKIPI_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = releaseSigningValue("SKIPI_RELEASE_KEY_PASSWORD")
+val hasReleaseSigning = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { it != null }
 
 android {
     namespace = "app"
@@ -48,11 +55,13 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = "C:\\Dev\\APK SKIPI KEYS"
-            storePassword = releaseStorePassword
-            keyAlias = releaseKeyAlias
-            keyPassword = releaseKeyPassword
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
         }
     }
 
@@ -84,7 +93,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                logger.warn("Release signing is not configured (SKIPI_RELEASE_* in ~/.gradle/gradle.properties); the release APK will be unsigned.")
+            }
         }
     }
 
