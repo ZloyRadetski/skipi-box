@@ -48,6 +48,7 @@ data class AppearanceSettingsState(
     val seedIndex: Int = 0,
     val showServerSearch: Boolean = true,
     val showTunnelMemoryOnHome: Boolean = false,
+    val showTunnelIpOnHome: Boolean = true,
 )
 
 enum class AppearanceColorTarget {

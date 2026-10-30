@@ -194,6 +194,8 @@ data class AppState(
     val showServerSearch: Boolean = false,
     /** Show the current VPN-core memory footprint above the server search field. */
     val showTunnelMemoryOnHome: Boolean = false,
+    /** Show the tunnel's public IP and country in the Home connection panel. */
+    val showTunnelIpOnHome: Boolean = true,
     val enableBroadcastControl: Boolean = true,
     val enableIpv6: Boolean = false,
     val enableIpv6Prefer: Boolean = false,

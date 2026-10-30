@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeDisplayOptions
+import app.skipi.app.home.ProxyHomeTunnelIp
 import app.skipi.app.home.proxyHomeProtocolColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -124,6 +125,7 @@ internal fun DesktopProxyHome(
     refreshingSubscriptionIds: Set<Int> = emptySet(),
     running: Boolean,
     connecting: Boolean = false,
+    tunnelIp: ProxyHomeTunnelIp? = null,
     canToggleTunnel: Boolean,
     tunnelMessage: String,
     serverMessage: String,
@@ -393,6 +395,7 @@ internal fun DesktopProxyHome(
         groups = proxyGroups,
         servers = allProxyServers,
         isTestingLatency = testingServerIds.isNotEmpty(),
+        tunnelIp = tunnelIp,
         statusMessage = combinedStatusMessage,
         isStatusError = isStatusError,
         sortMode = sortMode,
@@ -405,6 +408,7 @@ internal fun DesktopProxyHome(
             requestedColumns = desktopSettings.proxyServerListColumns,
             showAllGroup = desktopSettings.enableAllProxyGroup,
             showTunnelMemory = desktopSettings.showTunnelMemory,
+            showTunnelIp = desktopSettings.showTunnelIp,
             latencyFastColor = desktopSettings.customPingFastColor,
             latencyMediumColor = desktopSettings.customPingMediumColor,
             latencySlowColor = desktopSettings.customPingSlowColor,

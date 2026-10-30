@@ -11,6 +11,7 @@ import app.modes.ConnectionDisplayModeCompact
 import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeCopyFormat
+import app.skipi.app.home.ProxyHomeTunnelIp
 import app.skipi.app.home.ProxyHomeDisplayOptions
 import app.skipi.app.home.ProxyHomeGroupKind
 import app.skipi.app.home.ProxyHomeImportSource
@@ -43,6 +44,7 @@ internal fun AppState.toProxyHomeInput(
     pingingSubscriptionGroupIds: Set<Int> = emptySet(),
     presentationFormatter: ProxyServerListItemTextFormatter? = null,
     runtimeOutboundMetric: String? = null,
+    tunnelIp: ProxyHomeTunnelIp? = null,
 ): ProxyHomeInput {
     val selectedServerId = selectedProxyServerId
     // Shared Home owns presentation sorting. Keep canonical remarks in sortKey below so
@@ -115,6 +117,7 @@ internal fun AppState.toProxyHomeInput(
             requestedColumns = proxyServerListLayout.resolvedProxyServerListColumns(),
             showAllGroup = enableAllProxyGroup,
             showTunnelMemory = showTunnelMemoryOnHome,
+            showTunnelIp = showTunnelIpOnHome,
             protocolColors = proxyHomeProtocolColors(
                 vless = customProtocolVlessColor,
                 vmess = customProtocolVmessColor,
@@ -134,6 +137,7 @@ internal fun AppState.toProxyHomeInput(
             latencyErrorColor = customStatusStoppedColor,
         ),
         runtimeOutboundMetric = runtimeOutboundMetric,
+        tunnelIp = tunnelIp,
         availableImportSources = setOf(
             ProxyHomeImportSource.QrCode,
             ProxyHomeImportSource.Clipboard,

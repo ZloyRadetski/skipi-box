@@ -33,7 +33,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import app.skipi.app.home.ProxyHomeTunnelIp
+import app.skipi.app.home.resolveTunnelIp
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -237,6 +240,17 @@ fun main() = application {
                 }
                 DisposableEffect(desktopDiagnostics) { onDispose { desktopDiagnostics.close() } }
                 val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
+                // Re-resolved when the tunnel (re)starts or another server becomes active; off while the tile is off.
+                val tunnelIp by produceState<ProxyHomeTunnelIp?>(
+                    initialValue = null,
+                    coreState.isRunning,
+                    desktopSettings.showTunnelIp,
+                    serverLibrary.selectedServerId,
+                ) {
+                    value = null
+                    if (!coreState.isRunning || !desktopSettings.showTunnelIp) return@produceState
+                    value = resolveTunnelIp { desktopDiagnostics.fetchIpInfo() }
+                }
 
                 var appUpdateState by remember { mutableStateOf(AppUpdateState()) }
                 val appUpdateChecker = remember { DesktopAppUpdateChecker() }
@@ -1556,6 +1570,7 @@ fun main() = application {
                             refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
                                 batchRefreshingSubscriptionIds,
                             running = coreState.isRunning,
+                            tunnelIp = tunnelIp,
                             connecting = tunnelOperationInProgress && desiredTunnelRunning,
                             // Keep the connected hero actionable while a reconnect is underway:
                             // the handler records a newer user intent before it observes the

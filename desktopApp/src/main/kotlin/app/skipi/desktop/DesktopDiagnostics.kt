@@ -11,6 +11,7 @@ import app.skipi.app.tools.DnsTxtResolver
 import app.skipi.app.tools.IpInfoController
 import app.skipi.app.tools.IpInfoRunner
 import app.skipi.app.tools.JvmDiagnosticsHttpClient
+import features.tools.ipinfo.IpInfoData
 import app.skipi.app.tools.JvmDnsTxtResolver
 import app.skipi.app.tools.JvmSpeedTestTransport
 import app.skipi.app.tools.SpeedTestConfig
@@ -102,9 +103,12 @@ internal class DesktopDiagnostics(
         ).run()
     }
 
-    val ipInfo = IpInfoController(scope) {
+    val ipInfo = IpInfoController(scope) { fetchIpInfo() }
+
+    /** One lookup of the public address seen through the running tunnel's local proxy. */
+    suspend fun fetchIpInfo(): IpInfoData {
         val route = desktopDiagnosticsRoute(activeOptions())
-        IpInfoRunner(httpClientFor(route), isVpnTunnel = route is DiagnosticsRoute.Socks).fetch()
+        return IpInfoRunner(httpClientFor(route), isVpnTunnel = route is DiagnosticsRoute.Socks).fetch()
     }
 
     /** Running measurements stop whenever the tunnel changes underneath them. */

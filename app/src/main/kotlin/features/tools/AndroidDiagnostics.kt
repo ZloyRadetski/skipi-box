@@ -13,6 +13,7 @@ import app.skipi.app.tools.DnsLeakTestRunner
 import app.skipi.app.tools.IpInfoController
 import app.skipi.app.tools.IpInfoRunner
 import app.skipi.app.tools.JvmDiagnosticsHttpClient
+import features.tools.ipinfo.IpInfoData
 import app.skipi.app.tools.JvmDnsTxtResolver
 import app.skipi.app.tools.JvmSpeedTestTransport
 import app.skipi.app.tools.SpeedTestConfig
@@ -85,15 +86,20 @@ internal object AndroidDiagnostics {
         ipInfoController ?: run {
             val appContext = context.applicationContext
             IpInfoController(scope) {
-                val environment = AndroidDiagnosticsEnvironment.current(appContext)
                 try {
-                    IpInfoRunner(environment.httpClient, environment.hasTunnel).fetch()
+                    fetchIpInfo(appContext)
                 } catch (error: Throwable) {
                     AppLog.warn(LogTag, "Failed to fetch IP details", error)
                     throw error
                 }
             }
         }.also { ipInfoController = it }
+    }
+
+    /** One lookup of the current connection's public address and geo details. */
+    suspend fun fetchIpInfo(context: Context): IpInfoData {
+        val environment = AndroidDiagnosticsEnvironment.current(context.applicationContext)
+        return IpInfoRunner(environment.httpClient, environment.hasTunnel).fetch()
     }
 
     /** Stops running tests; used when a tunnel operation invalidates their measurements. */

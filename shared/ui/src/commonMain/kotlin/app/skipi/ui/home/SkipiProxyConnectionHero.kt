@@ -79,6 +79,9 @@ data class SkipiProxyHeroState(
     val sessionDurationText: String? = null,
     val latency: SkipiProxyHeroLatency? = null,
     val memoryText: String? = null,
+    /** Tunnel public address; null until resolved. Shown only when [showIp] is on. */
+    val ip: SkipiHeroIp? = null,
+    val showIp: Boolean = false,
     val toggleEnabled: Boolean = true,
 )
 
@@ -300,59 +303,86 @@ fun SkipiProxyHeroClassicCard(
                 }
             }
 
-            AnimatedVisibility(
-                visible = connected && state.sessionDurationText != null,
-                enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
-                exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
-            ) {
-                val sessionDuration = state.sessionDurationText.orEmpty()
-                Column {
-                    Spacer(Modifier.height(14.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = Modifier.size(8.dp).clip(CircleShape).background(colors.accent),
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = sessionDuration,
-                            fontSize = 13.sp,
-                            fontWeight = typography.body,
-                            color = colors.mutedText,
-                        )
-                        state.latency?.let { latency ->
-                            SkipiProxyHeroMetricSeparator(colors.mutedText)
-                            if (latency.testing) {
-                                SkipiProxyHeroAnimatedHourglassIcon(
-                                    color = latency.color,
-                                    size = 13.dp,
-                                )
-                            } else {
-                                SkipiProxyHeroSignalBarsIcon(
-                                    color = latency.color,
-                                    modifier = Modifier.size(12.dp),
-                                )
-                            }
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = latency.text,
-                                fontSize = 13.sp,
-                                fontWeight = typography.body,
-                                color = latency.color,
+            if (compact) {
+                AnimatedVisibility(
+                    visible = connected && state.sessionDurationText != null,
+                    enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
+                    exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
+                ) {
+                    val sessionDuration = state.sessionDurationText.orEmpty()
+                    Column {
+                        Spacer(Modifier.height(14.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier = Modifier.size(8.dp).clip(CircleShape).background(colors.accent),
                             )
-                        }
-                        state.memoryText?.let { memoryText ->
-                            SkipiProxyHeroMetricSeparator(colors.mutedText)
+                            Spacer(Modifier.width(6.dp))
                             Text(
-                                text = memoryText,
+                                text = sessionDuration,
                                 fontSize = 13.sp,
                                 fontWeight = typography.body,
                                 color = colors.mutedText,
                             )
+                            state.latency?.let { latency ->
+                                SkipiProxyHeroMetricSeparator(colors.mutedText)
+                                if (latency.testing) {
+                                    SkipiProxyHeroAnimatedHourglassIcon(
+                                        color = latency.color,
+                                        size = 13.dp,
+                                    )
+                                } else {
+                                    SkipiProxyHeroSignalBarsIcon(
+                                        color = latency.color,
+                                        modifier = Modifier.size(12.dp),
+                                    )
+                                }
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = latency.text,
+                                    fontSize = 13.sp,
+                                    fontWeight = typography.body,
+                                    color = latency.color,
+                                )
+                            }
+                            state.memoryText?.let { memoryText ->
+                                SkipiProxyHeroMetricSeparator(colors.mutedText)
+                                Text(
+                                    text = memoryText,
+                                    fontSize = 13.sp,
+                                    fontWeight = typography.body,
+                                    color = colors.mutedText,
+                                )
+                            }
                         }
+                    }
+                }
+            } else {
+                val tiles = skipiHeroInfoTiles(
+                    phase = state.phase,
+                    sessionDurationText = state.sessionDurationText,
+                    latency = state.latency,
+                    memoryText = state.memoryText,
+                    ip = state.ip,
+                    showIp = state.showIp,
+                )
+                AnimatedVisibility(
+                    visible = tiles.isNotEmpty(),
+                    enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
+                    exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
+                ) {
+                    Column {
+                        Spacer(Modifier.height(14.dp))
+                        SkipiHeroInfoTileGrid(
+                            tiles = tiles,
+                            surface = colors.raisedSurface.copy(alpha = 0.6f),
+                            labelColor = colors.mutedText,
+                            valueColor = colors.text,
+                            fontWeight = typography.emphasis,
+                        )
                     }
                 }
             }

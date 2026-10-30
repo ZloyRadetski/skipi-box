@@ -91,6 +91,9 @@ import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.home.SkipiProxyHomeScaffold
 import app.skipi.ui.home.SkipiProxyHomeScaffoldState
 import app.skipi.app.home.ProxyHomeCopyFormat
+import app.skipi.app.home.ProxyHomeTunnelIp
+import app.skipi.app.home.resolveTunnelIp
+import features.tools.AndroidDiagnostics
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.proxy.ProxyServerStopOutcome
 import app.skipi.app.proxy.proxyServerSingleDeleteRequiresStop
@@ -701,6 +704,19 @@ fun ProxyServerListPage(
     } else {
         null
     }
+    // The address is re-resolved whenever the tunnel (re)starts or another server becomes active, and
+    // not at all while the tile is switched off.
+    val tunnelIp by produceState<ProxyHomeTunnelIp?>(
+        initialValue = null,
+        context,
+        proxyRunning,
+        proxyListState.showTunnelIpOnHome,
+        appState.selectedProxyServerId,
+    ) {
+        value = null
+        if (!proxyRunning || !proxyListState.showTunnelIpOnHome) return@produceState
+        value = resolveTunnelIp { AndroidDiagnostics.fetchIpInfo(context) }
+    }
     val directName = stringResource(R.string.routing_outbound_direct)
     val blockName = stringResource(R.string.routing_outbound_block)
     val activeTunnelTitle = remember(appState, activeTunnelSample, directName, blockName) {
@@ -721,6 +737,7 @@ fun ProxyServerListPage(
         pingingGroupIds,
         homeServerSummaryFormatter,
         runtimeOutboundMetric,
+        tunnelIp,
         activeTunnelTitle,
     ) {
         appState.toProxyHomeInput(
@@ -733,6 +750,7 @@ fun ProxyServerListPage(
             pingingSubscriptionGroupIds = pingingGroupIds,
             presentationFormatter = homeServerSummaryFormatter,
             runtimeOutboundMetric = runtimeOutboundMetric,
+            tunnelIp = tunnelIp,
         ).let { input ->
             if (proxyRunning) input.copy(selectedServerTitle = activeTunnelTitle) else input
         }

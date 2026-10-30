@@ -873,6 +873,8 @@
     <string name="subscription_ping_mode_summary">Пинг проверяет TCP-соединение, а HTTP — запрос к настроенному URL.</string>
     <string name="settings_tunnel_memory_show_on_home">Показывать использование памяти на главной</string>
     <string name="settings_tunnel_memory_show_on_home_summary">Показывает память процесса VPN-ядра над поиском серверов, когда туннель запущен.</string>
+    <string name="settings_tunnel_ip_show_on_home">Показывать IP-адрес на главной</string>
+    <string name="settings_tunnel_ip_show_on_home_summary">Показывает публичный IP-адрес туннеля и страну в панели подключения, пока соединение установлено.</string>
     <string name="settings_tunnel_memory">Память туннеля</string>
     <string name="settings_user_agents">User-Agent</string>
     <string name="settings_user_agents_summary">%1$d заготовок для загрузки подписок</string>

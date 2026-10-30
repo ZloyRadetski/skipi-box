@@ -849,6 +849,8 @@
     <string name="subscription_ping_mode_summary">پینگ از اتصال TCP استفاده می کند. HTTP یک درخواست به URL پیکربندی شده را بررسی می کند.</string>
     <string name="settings_tunnel_memory_show_on_home">نمایش میزان مصرف حافظه در صفحه اصلی</string>
     <string name="settings_tunnel_memory_show_on_home_summary">در حالی که تونل در حال اجرا است، حافظه پردازش هسته VPN فعلی را در بالای جستجوی سرور نمایش دهید.</string>
+    <string name="settings_tunnel_ip_show_on_home">نمایش آدرس IP در صفحه اصلی</string>
+    <string name="settings_tunnel_ip_show_on_home_summary">آدرس IP عمومی تونل و کشور را هنگام اتصال در پنل اتصال نمایش دهید.</string>
     <string name="settings_user_agents">عوامل کاربر</string>
     <string name="settings_user_agents_summary">%1$dاز پیش تنظیم شده برای بارگیری اشتراک</string>
     <string name="settings_user_agents_description">برای هر اشتراک یک از پیش تنظیم شده انتخاب کنید، یا به تعداد دلخواه مقدار User-Agent سفارشی اضافه کنید.</string>

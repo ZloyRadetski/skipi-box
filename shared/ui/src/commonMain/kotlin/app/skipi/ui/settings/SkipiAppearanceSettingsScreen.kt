@@ -681,6 +681,14 @@ fun SkipiAppearanceSettingsScreen(
                             },
                         )
                         SwitchPreference(
+                            title = stringResource(Res.string.settings_tunnel_ip_show_on_home),
+                            summary = stringResource(Res.string.settings_tunnel_ip_show_on_home_summary),
+                            checked = appState.showTunnelIpOnHome,
+                            onCheckedChange = { enabled ->
+                                updateAppState { it.copy(showTunnelIpOnHome = enabled) }
+                            },
+                        )
+                        SwitchPreference(
                             title = stringResource(Res.string.settings_show_server_search),
                             summary = stringResource(Res.string.settings_show_server_search_summary),
                             checked = appState.showServerSearch,

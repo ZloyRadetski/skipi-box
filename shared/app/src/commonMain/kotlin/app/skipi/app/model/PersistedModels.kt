@@ -99,6 +99,7 @@ data class HomeDisplaySettings(
     val proxyServerListLayout: Int? = null,
     val enableAllProxyGroup: Boolean? = null,
     val showTunnelMemoryOnHome: Boolean? = null,
+    val showTunnelIpOnHome: Boolean? = null,
 )
 
 /** Small set of portable preferences; platform-owned settings stay in host extensions. */

@@ -871,6 +871,8 @@
     <string name="subscription_ping_mode_summary">Ping 使用 TCP 连接； HTTP 检查对配置的 URL 的请求。</string>
     <string name="settings_tunnel_memory_show_on_home">在主页上显示内存使用情况</string>
     <string name="settings_tunnel_memory_show_on_home_summary">隧道运行时，在服务器搜索上方显示当前 VPN 核心进程内存。</string>
+    <string name="settings_tunnel_ip_show_on_home">在主頁上顯示 IP 位址</string>
+    <string name="settings_tunnel_ip_show_on_home_summary">連線時在連線面板中顯示隧道的公網 IP 位址和國家。</string>
     <string name="settings_user_agents">用户代理</string>
     <string name="settings_user_agents_summary">用于订阅下载的%1$d预设</string>
     <string name="settings_user_agents_description">为每个订阅选择一个预设，或根据需要添加任意数量的自定义用户代理值。</string>

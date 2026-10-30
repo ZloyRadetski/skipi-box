@@ -18,6 +18,9 @@ enum class ProxyHomeConnectionMode {
     Compact,
 }
 
+/** Public address of the active tunnel and the flag emoji of its country, when resolved. */
+data class ProxyHomeTunnelIp(val value: String, val flag: String? = null)
+
 data class ProxyHomeDisplayOptions(
     val connectionMode: ProxyHomeConnectionMode = ProxyHomeConnectionMode.Classic,
     val pinConnectionPanel: Boolean = false,
@@ -25,6 +28,8 @@ data class ProxyHomeDisplayOptions(
     val requestedColumns: Int = 1,
     val showAllGroup: Boolean = false,
     val showTunnelMemory: Boolean = false,
+    /** Show the tunnel's public IP tile in the connection panel. */
+    val showTunnelIp: Boolean = true,
     /** Optional host customizations, encoded using Compose's packed ARGB Long representation. */
     val latencyFastColor: Long? = null,
     val latencyMediumColor: Long? = null,
@@ -56,6 +61,7 @@ data class ProxyHomeInput(
     val subscriptionSwipeEnabled: Boolean = true,
     val displayOptions: ProxyHomeDisplayOptions = ProxyHomeDisplayOptions(),
     val runtimeOutboundMetric: String? = null,
+    val tunnelIp: ProxyHomeTunnelIp? = null,
     val availableActions: Set<ProxyHomeActionId> = emptySet(),
     val availableImportSources: Set<ProxyHomeImportSource> = emptySet(),
     val availableCopyFormats: Set<ProxyHomeCopyFormat> = emptySet(),
@@ -266,6 +272,7 @@ data class ProxyHomeUiState(
     val displayOptions: ProxyHomeDisplayOptions = ProxyHomeDisplayOptions(),
     val sortMode: ProxyHomeSortMode,
     val runtimeOutboundMetric: String?,
+    val tunnelIp: ProxyHomeTunnelIp? = null,
     val statusMessage: String?,
     val isStatusError: Boolean,
     val localError: ProxyHomeLocalError?,
@@ -678,6 +685,7 @@ class ProxyHomeStore(
             displayOptions = normalizedDisplayOptions,
             sortMode = source.sortMode,
             runtimeOutboundMetric = source.runtimeOutboundMetric,
+            tunnelIp = source.tunnelIp,
             statusMessage = effectiveStatusMessage,
             isStatusError = effectiveStatusError,
             localError = operations.localError,

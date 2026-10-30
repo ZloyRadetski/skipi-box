@@ -37,6 +37,18 @@ class AndroidPortableSettingsContractTest {
     }
 
     @Test
+    fun tunnelIpTileSettingRoundTripsAndIsOnByDefault() {
+        assertTrue(AppState().showTunnelIpOnHome)
+
+        val off = AppState(showTunnelIpOnHome = false).toPersistedSettings()
+        assertEquals(false, off.home.showTunnelIpOnHome)
+        assertFalse(AppState().applyPersistedSettings(off).showTunnelIpOnHome)
+
+        val withoutField = off.copy(home = off.home.copy(showTunnelIpOnHome = null))
+        assertFalse(AppState(showTunnelIpOnHome = false).applyPersistedSettings(withoutField).showTunnelIpOnHome)
+    }
+
+    @Test
     fun nullHomeFieldsLeaveAndroidHostValuesUntouched() {
         val original = AppState(
             proxyServerListSort = 4,

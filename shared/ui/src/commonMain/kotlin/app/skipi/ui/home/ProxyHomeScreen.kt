@@ -1061,6 +1061,8 @@ private fun HomeConnectionPanel(
         sessionDurationText = sessionDuration,
         latency = latency,
         memoryText = memoryText,
+        ip = state.tunnelIp?.let { SkipiHeroIp(value = it.value, flag = it.flag) },
+        showIp = state.displayOptions.showTunnelIp,
         toggleEnabled = toggleEnabled,
     )
 

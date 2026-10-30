@@ -62,4 +62,8 @@
     <string name="home_server_latency">延遲</string>
     <string name="home_server_test_latency">測試延遲</string>
     <string name="home_server_testing_latency">正在測試延遲…</string>
+    <string name="home_tile_time">時間</string>
+    <string name="home_tile_ping">延遲</string>
+    <string name="home_tile_memory">記憶體</string>
+    <string name="home_tile_ip">IP</string>
 </resources>

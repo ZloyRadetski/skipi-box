@@ -87,6 +87,19 @@ class ProxyHomeInputProjectionTest {
     }
 
     @Test
+    fun projectionCarriesTunnelIpAndItsDisplayOption() {
+        val ip = ProxyHomeTunnelIp(value = "203.0.113.7", flag = "\uD83C\uDDF3\uD83C\uDDF1")
+        val projected = ProxyHomeInputSnapshot(
+            displayOptions = ProxyHomeDisplayOptions(showTunnelIp = false),
+            tunnelIp = ip,
+        ).toProxyHomeInput()
+
+        assertEquals(ip, projected.tunnelIp)
+        assertEquals(false, projected.displayOptions.showTunnelIp)
+        assertEquals(true, ProxyHomeDisplayOptions().showTunnelIp)
+    }
+
+    @Test
     fun sharedPresentationReducerRetainsUnrelatedFieldsAndGatesSearchVisibility() {
         val initial = ProxyHomePresentation(
             selectedGroupId = "group-1",

@@ -64,6 +64,7 @@ data class DesktopAppSettings(
     val themeMode: DesktopThemeMode = DesktopThemeMode.Dark,
     val compactHome: Boolean = false,
     val showTunnelMemory: Boolean = true,
+    val showTunnelIp: Boolean = true,
     val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,
     val enableAllProxyGroup: Boolean = false,

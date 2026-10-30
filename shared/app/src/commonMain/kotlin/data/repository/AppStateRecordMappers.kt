@@ -102,6 +102,7 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
         proxyServerListLayout = proxyServerListLayout,
         enableAllProxyGroup = enableAllProxyGroup,
         showTunnelMemoryOnHome = showTunnelMemoryOnHome,
+        showTunnelIpOnHome = showTunnelIpOnHome,
     ),
     traffic = TrafficSelectionSettings(activeConfigId = activeTrafficConfigId),
     application = ApplicationPreferences(
@@ -170,6 +171,7 @@ fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSetti
         proxyServerListLayout = settings.home.proxyServerListLayout ?: proxyServerListLayout,
         enableAllProxyGroup = settings.home.enableAllProxyGroup ?: enableAllProxyGroup,
         showTunnelMemoryOnHome = settings.home.showTunnelMemoryOnHome ?: showTunnelMemoryOnHome,
+        showTunnelIpOnHome = settings.home.showTunnelIpOnHome ?: showTunnelIpOnHome,
         seedIndex = settings.appearance.seedIndex,
         customMaterialYouSeed = settings.appearance.customMaterialYouSeed,
         enableCustomColors = settings.appearance.customColorsEnabled,

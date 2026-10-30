@@ -64,4 +64,8 @@
     <string name="home_server_latency">Задержка</string>
     <string name="home_server_test_latency">Проверить задержку</string>
     <string name="home_server_testing_latency">Проверка задержки…</string>
+    <string name="home_tile_time">Время</string>
+    <string name="home_tile_ping">Пинг</string>
+    <string name="home_tile_memory">Память</string>
+    <string name="home_tile_ip">IP</string>
 </resources>
