@@ -116,7 +116,7 @@
     <string name="app_icon">Icon</string>
     <string name="settings_app_icon">App icon</string>
     <string name="settings_app_icon_summary">Select app launcher icon style</string>
-    <string name="app_icon_default">Default (Gradient)</string>
+    <string name="app_icon_default">Default</string>
     <string name="app_icon_dark">Dark (AMOLED)</string>
     <string name="app_icon_light">Light</string>
     <string name="app_icon_monet">Material You (Dynamic)</string>

@@ -132,7 +132,7 @@
     <string name="app_icon">Иконка</string>
     <string name="settings_app_icon">Иконка приложения</string>
     <string name="settings_app_icon_summary">Стиль и цветовая тема иконки на рабочем столе</string>
-    <string name="app_icon_default">Фирменная (Градиент)</string>
+    <string name="app_icon_default">Фирменная</string>
     <string name="app_icon_dark">Тёмная (AMOLED)</string>
     <string name="app_icon_light">Светлая</string>
     <string name="app_icon_monet">Material You (Динамическая)</string>

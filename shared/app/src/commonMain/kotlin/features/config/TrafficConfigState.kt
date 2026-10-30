@@ -18,15 +18,15 @@ import app.skipi.app.model.ProxyServerCatalog
 import app.skipi.app.model.ProxyServerRecord as CatalogProxyServerRecord
 import features.subscription.DefaultSubscriptionGroupId
 import app.skipi.ui.server.display.CountryFlagUtils
-import features.proxy.server.list.AutoBalancerGroupId
+import app.skipi.app.proxy.DefaultAutoBalancerGroupId as AutoBalancerGroupId
 
-internal data class AndroidTrafficConfigCreation(
+data class AndroidTrafficConfigCreation(
     val state: AppState,
     val profileId: Int,
 )
 
 /** Allocates a profile ID while keeping resource defaults selected by Android. */
-internal fun AppState.withCreatedTrafficConfig(
+fun AppState.withCreatedTrafficConfig(
     name: String,
     rawDocument: String,
     sourceUrl: String = "",
@@ -50,7 +50,7 @@ internal fun AppState.withCreatedTrafficConfig(
 }
 
 /** Compatibility wrapper; catalog reconciliation is dispatched through the shared store. */
-internal fun AppState.withDuplicatedTrafficConfig(
+fun AppState.withDuplicatedTrafficConfig(
     source: TrafficConfigState,
     name: String,
 ): AndroidTrafficConfigCreation {
@@ -59,7 +59,7 @@ internal fun AppState.withDuplicatedTrafficConfig(
 }
 
 /** Duplicates a profile without writing the proxy catalog from the editor path. */
-internal fun AppState.withDuplicatedTrafficConfigProfile(
+fun AppState.withDuplicatedTrafficConfigProfile(
     source: TrafficConfigState,
     name: String,
 ): AndroidTrafficConfigCreation {
@@ -76,12 +76,12 @@ internal fun AppState.withDuplicatedTrafficConfigProfile(
 }
 
 /** Compatibility wrapper that changes profiles only; callers dispatch catalog reconciliation. */
-internal fun AppState.withDeletedTrafficConfig(profileId: Int): AppState {
+fun AppState.withDeletedTrafficConfig(profileId: Int): AppState {
     return withDeletedTrafficConfigProfile(profileId)
 }
 
 /** Deletes a profile without writing the proxy catalog from the editor path. */
-internal fun AppState.withDeletedTrafficConfigProfile(profileId: Int): AppState {
+fun AppState.withDeletedTrafficConfigProfile(profileId: Int): AppState {
     val update = deleteTrafficConfigProfile(trafficConfigs, activeTrafficConfigId, profileId)
     if (update.profiles === trafficConfigs) return this
     return copy(
@@ -94,7 +94,7 @@ internal fun AppState.withDeletedTrafficConfigProfile(profileId: Int): AppState 
  * Compatibility wrapper for callers that still update the Android profile snapshot.
  * Proxy catalog reconciliation must be dispatched separately through shared actions.
  */
-internal fun AppState.withUpdatedTrafficConfig(
+fun AppState.withUpdatedTrafficConfig(
     configId: Int,
     transform: (TrafficConfigState) -> TrafficConfigState,
 ): AppState {
@@ -102,7 +102,7 @@ internal fun AppState.withUpdatedTrafficConfig(
 }
 
 /** Updates a profile without writing the proxy catalog from the editor path. */
-internal fun AppState.withUpdatedTrafficConfigProfile(
+fun AppState.withUpdatedTrafficConfigProfile(
     configId: Int,
     transform: (TrafficConfigState) -> TrafficConfigState,
 ): AppState {
@@ -112,7 +112,7 @@ internal fun AppState.withUpdatedTrafficConfigProfile(
 }
 
 /** Commits a fetched response against the latest profile row while keeping AppState metadata intact. */
-internal fun AppState.withCommittedTrafficConfigRefresh(
+fun AppState.withCommittedTrafficConfigRefresh(
     configId: Int,
     normalizedDocument: String,
     capturedUrl: String,
@@ -133,7 +133,7 @@ internal fun AppState.withCommittedTrafficConfigRefresh(
  * display. They keep a source reference, so their member set is resolved from
  * the config on every connection instead of becoming stale after a refresh.
  */
-internal fun AppState.withConfigProxyGroupsReflected(): AppState {
+fun AppState.withConfigProxyGroupsReflected(): AppState {
     val currentCatalog = ProxyServerCatalog(
         servers = proxyServers.map { server ->
             CatalogProxyServerRecord(
@@ -162,7 +162,7 @@ internal fun AppState.withConfigProxyGroupsReflected(): AppState {
 }
 
 /** Builds the profile-derived proxy catalog as a value for one shared-store update. */
-internal fun AppState.withConfigProxyGroupsReflected(catalog: ProxyServerCatalog): ProxyServerCatalog {
+fun AppState.withConfigProxyGroupsReflected(catalog: ProxyServerCatalog): ProxyServerCatalog {
     val existingById = catalog.servers.associateBy(CatalogProxyServerRecord::id)
     val result = reconcileConfigProxyGroups(
         trafficConfigs = trafficConfigs,
@@ -195,19 +195,19 @@ internal fun AppState.withConfigProxyGroupsReflected(catalog: ProxyServerCatalog
 }
 
 /** Restores the caller's catalog after legacy Android profile helpers run. */
-internal fun AppState.withProxyCatalogFrom(previous: AppState): AppState = copy(
+fun AppState.withProxyCatalogFrom(previous: AppState): AppState = copy(
     proxyServers = previous.proxyServers,
     nextProxyServerId = previous.nextProxyServerId,
     selectedProxyServerId = previous.selectedProxyServerId,
 )
 
 /** Compatibility wrapper that selects a profile only; callers dispatch catalog reconciliation. */
-internal fun AppState.withActiveTrafficConfig(configId: Int): AppState {
+fun AppState.withActiveTrafficConfig(configId: Int): AppState {
     return withActiveTrafficConfigProfile(configId)
 }
 
 /** Selects a profile without writing the proxy catalog from the editor path. */
-internal fun AppState.withActiveTrafficConfigProfile(configId: Int): AppState {
+fun AppState.withActiveTrafficConfigProfile(configId: Int): AppState {
     val selectedId = selectTrafficConfigProfile(trafficConfigs, activeTrafficConfigId, configId)
     if (activeTrafficConfigId == selectedId) return this
     return copy(activeTrafficConfigId = selectedId)
