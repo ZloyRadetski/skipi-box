@@ -5,8 +5,8 @@
 
 package app.skipi.ui.config
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -36,7 +36,6 @@ import app.skipi.ui.resources.proxy_app_list_pull_to_refresh
 import app.skipi.ui.resources.proxy_app_list_refreshed
 import app.skipi.ui.resources.proxy_app_list_refreshing
 import app.skipi.ui.resources.proxy_app_list_release_to_refresh
-import app.skipi.ui.theme.SkipiTheme
 import features.proxy.app.model.AppPackageEntry
 import features.proxy.app.model.ProxyAppListItem
 import features.proxy.app.model.ProxyAppListUserSpaceTabUi
@@ -117,8 +116,7 @@ fun SkipiTrafficConfigProxyAppListPages(
     )
     Box(
         modifier = modifier
-            .fillMaxSize()
-            .background(SkipiTheme.colors.background),
+            .fillMaxSize(),
     ) {
         AppPullToRefresh(
             isRefreshing = isRefreshing,

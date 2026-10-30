@@ -58,7 +58,6 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.*
-import app.skipi.ui.theme.SkipiTheme
 import features.subscription.SubscriptionPingSettingsRules
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.Color
@@ -103,7 +102,7 @@ fun SkipiSubscriptionPingSettingsScreen(
     )
 
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         modifier = Modifier
             .fillMaxSize(),
         topBar = {

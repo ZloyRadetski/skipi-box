@@ -3,7 +3,6 @@
 
 package app.skipi.ui.server.editor
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -29,7 +28,6 @@ import app.skipi.ui.layout.AdaptiveTopAppBar
 import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
 import app.skipi.ui.layout.pageScrollModifiers
-import app.skipi.ui.theme.SkipiTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
@@ -86,7 +84,7 @@ fun SkipiStrategyGroupMemberSelectorScreen(
     }
 
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
@@ -100,7 +98,7 @@ fun SkipiStrategyGroupMemberSelectorScreen(
         },
     ) { innerPadding ->
         val contentPadding = pageContentPaddingWithCutout(innerPadding, padding, isWideScreen)
-        Box(Modifier.fillMaxSize().background(SkipiTheme.colors.background)) {
+        Box(Modifier.fillMaxSize()) {
             LazyColumn(state = listState, modifier = Modifier.pageScrollModifiers(scrollBehavior), contentPadding = pageListPadding(contentPadding)) {
                 groups.forEach { group ->
                     val expanded = expandedGroups[group.key] ?: true

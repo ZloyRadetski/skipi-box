@@ -3,6 +3,7 @@
 
 package app.skipi.ui.networkautomation
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -129,7 +130,7 @@ fun SkipiNetworkAutomationScreen(
     var editingRule by remember { mutableStateOf<NetworkAutomationRule?>(null) }
 
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         topBar = {
             AdaptiveTopAppBar(
                 title = stringResource(Res.string.settings_network_automation_title),

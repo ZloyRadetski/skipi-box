@@ -3,6 +3,7 @@
 
 package app.skipi.ui.server.editor
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,7 +43,6 @@ import app.skipi.ui.resources.common_copy
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.common_more
 import app.skipi.ui.resources.common_save
-import app.skipi.ui.theme.SkipiTheme
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
@@ -97,7 +97,7 @@ fun SkipiProxyServerEditorScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val listState = rememberLazyListState()
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
@@ -166,7 +166,7 @@ fun SkipiProxyServerEditorScreen(
         if (serverEdit is Custom) {
             customEditor(serverEdit, contentPadding)
         } else {
-            Box(Modifier.fillMaxSize().background(SkipiTheme.colors.background)) {
+            Box(Modifier.fillMaxSize()) {
                 LazyColumn(state = listState, modifier = Modifier.pageScrollModifiers(scrollBehavior), contentPadding = editorPadding) {
                     proxyServerEditorContent(serverEdit, options)
                 }

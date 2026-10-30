@@ -5,6 +5,7 @@
 
 package app.skipi.ui.resourcefiles
 
+import androidx.compose.ui.graphics.Color
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.components.DeleteConfirmationDialog
 import app.skipi.ui.components.NavigationIcon
@@ -29,7 +30,6 @@ import app.skipi.ui.resources.settings_resource_files_restored
 import app.skipi.ui.resources.settings_resource_files_updated
 import app.skipi.ui.text.formatTemplate
 import app.skipi.ui.theme.SkipiTheme
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -305,7 +305,7 @@ fun ResourceManagementScreen(
     }
 
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
@@ -337,8 +337,7 @@ fun ResourceManagementScreen(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(SkipiTheme.colors.background),
+                .fillMaxSize(),
         ) {
             LazyColumn(
                 state = lazyListState,

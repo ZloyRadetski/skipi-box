@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.background
 import app.skipi.ui.layout.AdaptiveTopAppBar
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.components.NavigationIcon
@@ -59,14 +58,14 @@ fun SkipiTrafficConfigFullScreenScaffold(
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(
                 title = title,
                 isWideScreen = isWideScreen,
                 scrollBehavior = scrollBehavior,
-                color = SkipiTheme.colors.background,
+                color = Color.Transparent,
                 subtitle = subtitle,
                 navigationIcon = { onBack?.let { back -> BackNavigationIcon(onClick = back) } },
                 actions = {
@@ -88,7 +87,7 @@ fun SkipiTrafficConfigFullScreenScaffold(
             end = basePadding.calculateEndPadding(layoutDirection) + 12.dp,
             bottom = basePadding.calculateBottomPadding() + 12.dp,
         )
-        Box(modifier = Modifier.fillMaxSize().background(SkipiTheme.colors.background)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             content(contentPadding, listPadding, scrollBehavior)
         }
     }

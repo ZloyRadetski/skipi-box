@@ -3,6 +3,7 @@
 
 package app.skipi.ui.diagnostics
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,7 +89,6 @@ import app.skipi.ui.resources.tools_ip_info_tunnel_vpn
 import app.skipi.ui.resources.tools_ip_info_utc_offset
 import app.skipi.ui.resources.tools_speed_test_title
 import app.skipi.ui.text.themedFontWeight
-import app.skipi.ui.theme.SkipiTheme
 import features.tools.dnsleak.DnsLeakFailureKind
 import features.tools.dnsleak.DnsLeakVerdict
 import features.tools.ipinfo.IpInfoData
@@ -127,7 +127,7 @@ private fun DiagnosticsPageScaffold(
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         topBar = {
             AdaptiveTopAppBar(
                 title = title,

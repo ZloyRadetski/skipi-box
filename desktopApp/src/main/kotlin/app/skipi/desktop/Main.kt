@@ -703,7 +703,7 @@ fun main() = application {
                         readServers = { latestServerLibrary },
                         readConfigs = { latestConfigLibrary },
                         readLatency = { latestLatencyByServerId },
-                    )
+                    ).also(tunnel::attach)
                 }
                 val selectedTunnelProfileId = configLibrary.selectedConfigId?.toString()
                     ?: serverLibrary.selectedServerId?.toString()

@@ -5,6 +5,7 @@
 
 package app.skipi.ui.logs
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -93,7 +94,7 @@ fun SkipiLogViewerScreen(
     val hapticFeedback = LocalHapticFeedback.current
 
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         topBar = {
             AdaptiveTopAppBar(
                 title = title,

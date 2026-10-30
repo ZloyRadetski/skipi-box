@@ -3,6 +3,7 @@
 
 package app.skipi.ui.subscription
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -20,7 +21,6 @@ import app.skipi.ui.layout.AdaptiveTopAppBar
 import app.skipi.ui.layout.pageContentPaddingWithCutout
 import app.skipi.ui.layout.pageListPadding
 import app.skipi.ui.layout.pageScrollModifiers
-import app.skipi.ui.theme.SkipiTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -62,7 +62,7 @@ fun <DeletionPayload> SubscriptionGroupListScreen(
     }
 
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         topBar = {
             AdaptiveTopAppBar(
                 title = title,

@@ -3,6 +3,7 @@
 
 package app.skipi.ui.routing
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +12,6 @@ import androidx.compose.ui.Modifier
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.layout.AdaptiveTopAppBar
 import app.skipi.ui.layout.pageContentPaddingWithCutout
-import app.skipi.ui.theme.SkipiTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -30,7 +30,7 @@ fun SkipiRoutingPageScaffold(
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AdaptiveTopAppBar(

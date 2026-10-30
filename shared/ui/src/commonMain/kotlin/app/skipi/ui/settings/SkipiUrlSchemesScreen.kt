@@ -69,7 +69,7 @@ fun SkipiUrlSchemesScreen(
     val listState = rememberLazyListState()
 
     Scaffold(
-        containerColor = SkipiTheme.colors.background,
+        containerColor = Color.Transparent,
         modifier = Modifier
             .fillMaxSize(),
         topBar = {
