@@ -18,6 +18,7 @@ import app.skipi.app.home.ProxyHomeInput
 import app.skipi.app.home.ProxyHomeInputSnapshot
 import app.skipi.app.home.ProxyHomeServerKind
 import app.skipi.app.home.ProxyHomeServerTool
+import app.skipi.app.home.proxyHomeProtocolColors
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
 import app.skipi.app.home.toProxyHomeInput
@@ -114,6 +115,19 @@ internal fun AppState.toProxyHomeInput(
             requestedColumns = proxyServerListLayout.resolvedProxyServerListColumns(),
             showAllGroup = enableAllProxyGroup,
             showTunnelMemory = showTunnelMemoryOnHome,
+            protocolColors = proxyHomeProtocolColors(
+                vless = customProtocolVlessColor,
+                vmess = customProtocolVmessColor,
+                hysteria2 = customProtocolHysteria2Color,
+                trojan = customProtocolTrojanColor,
+                shadowsocks = customProtocolShadowsocksColor,
+                wireguard = customProtocolWireguardColor,
+                socks = customProtocolSocksColor,
+                http = customProtocolHttpColor,
+                strategy = customProtocolStrategyColor,
+                chain = customProtocolChainColor,
+                json = customProtocolJsonColor,
+            ),
             latencyFastColor = customPingFastColor,
             latencyMediumColor = customPingMediumColor,
             latencySlowColor = customPingSlowColor,

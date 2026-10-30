@@ -189,6 +189,7 @@ import app.skipi.ui.resources.subscription_delete_group
 import app.skipi.ui.resources.subscription_edit_group
 import app.skipi.ui.server.display.CountryFlagUtils
 import app.skipi.ui.text.themedFontWeight
+import app.skipi.ui.server.display.ProtocolColorUtils
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.theme.SkipiWindowClass
 import features.subscription.formatSubscriptionUpdateTimestamp
@@ -1435,13 +1436,12 @@ private fun ServerListItem(
         else -> null
     }
     val latencyColor = serverLatencyColor(server, context.displayOptions)
-    val protocolColor = when (server.protocol.lowercase()) {
-        "vless", "vmess" -> Color(0xFF5C6DB0)
-        "hysteria2", "hy2" -> Color(0xFFB65A3D)
-        "shadowsocks", "ss" -> Color(0xFF387D58)
-        "trojan" -> Color(0xFF9C4146)
-        else -> Color(0xFF426A4B)
-    }
+    // User-chosen protocol colors win; otherwise the theme-aware defaults (readable in light and dark).
+    val protocolColor = ProtocolColorUtils.resolveProtocolColor(
+        protocol = server.protocol,
+        isDark = SkipiTheme.colors.isDark,
+        customColors = context.displayOptions.protocolColors,
+    )
 
     if (columns > 1 || inSubscriptionGroup) {
         var menuExpanded by remember(server.id) { mutableStateOf(false) }

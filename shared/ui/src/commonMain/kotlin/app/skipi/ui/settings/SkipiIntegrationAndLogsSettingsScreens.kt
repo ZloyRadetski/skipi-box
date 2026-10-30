@@ -36,6 +36,7 @@ import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.common_back
 import app.skipi.ui.resources.settings_broadcast_control
 import app.skipi.ui.resources.settings_broadcast_control_summary
 import app.skipi.ui.resources.settings_category_integration
@@ -53,7 +54,7 @@ internal fun SettingsBackTopBar(
     val scrollBehavior = MiuixScrollBehavior()
     val back: @Composable () -> Unit = {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.common_back))
         }
     }
     SmallTopAppBar(

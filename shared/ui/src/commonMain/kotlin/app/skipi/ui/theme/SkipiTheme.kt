@@ -443,13 +443,15 @@ private fun shapesFor(profile: SkipiVisualProfile): SkipiShapes {
     )
 }
 
-private fun materialShapes(profile: SkipiVisualProfile) = Shapes(
-    extraSmall = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 6.dp else 10.dp),
-    small = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 10.dp else 16.dp),
-    medium = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 14.dp else 20.dp),
-    large = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 18.dp else 26.dp),
-    extraLarge = RoundedCornerShape(if (profile is SkipiVisualProfile.Desktop) 24.dp else 32.dp),
-)
+private fun materialShapes(profile: SkipiVisualProfile): Shapes = shapesFor(profile).let { shapes ->
+    Shapes(
+        extraSmall = shapes.extraSmall,
+        small = shapes.small,
+        medium = shapes.medium,
+        large = shapes.large,
+        extraLarge = shapes.extraLarge,
+    )
+}
 
 private fun Typography.withHostFont(
     fontFamily: androidx.compose.ui.text.font.FontFamily?,

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeDisplayOptions
+import app.skipi.app.home.proxyHomeProtocolColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -404,6 +405,23 @@ internal fun DesktopProxyHome(
             requestedColumns = desktopSettings.proxyServerListColumns,
             showAllGroup = desktopSettings.enableAllProxyGroup,
             showTunnelMemory = desktopSettings.showTunnelMemory,
+            latencyFastColor = desktopSettings.customPingFastColor,
+            latencyMediumColor = desktopSettings.customPingMediumColor,
+            latencySlowColor = desktopSettings.customPingSlowColor,
+            latencyErrorColor = desktopSettings.customStatusStoppedColor,
+            protocolColors = proxyHomeProtocolColors(
+                vless = desktopSettings.customProtocolVlessColor,
+                vmess = desktopSettings.customProtocolVmessColor,
+                hysteria2 = desktopSettings.customProtocolHysteria2Color,
+                trojan = desktopSettings.customProtocolTrojanColor,
+                shadowsocks = desktopSettings.customProtocolShadowsocksColor,
+                wireguard = desktopSettings.customProtocolWireguardColor,
+                socks = desktopSettings.customProtocolSocksColor,
+                http = desktopSettings.customProtocolHttpColor,
+                strategy = desktopSettings.customProtocolStrategyColor,
+                chain = desktopSettings.customProtocolChainColor,
+                json = desktopSettings.customProtocolJsonColor,
+            ),
         ),
         availableActions = availableActions,
         availableImportSources = setOf(

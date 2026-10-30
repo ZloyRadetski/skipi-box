@@ -30,6 +30,8 @@ data class ProxyHomeDisplayOptions(
     val latencyMediumColor: Long? = null,
     val latencySlowColor: Long? = null,
     val latencyErrorColor: Long? = null,
+    /** Per-protocol chip colors, see [proxyHomeProtocolColors]. */
+    val protocolColors: Map<String, Long> = emptyMap(),
 )
 
 /**

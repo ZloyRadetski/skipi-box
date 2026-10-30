@@ -42,6 +42,7 @@
     <string name="widget_toggle_description">Toggle proxy</string>
     <string name="widget_speed_format">\u2191 %1$s \u00B7 \u2193 %2$s</string>
 <!-- Common -->
+    <string name="common_back">Back</string>
     <string name="common_cancel">Cancel</string>
     <string name="common_save">Save</string>
     <string name="common_add">Add</string>

@@ -10,6 +10,7 @@ import app.skipi.ui.components.AppOverlayDropdownPreference
 import app.skipi.ui.components.AppSlider
 import app.skipi.ui.components.ColorPickerDialog
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.common_back
 import app.skipi.ui.resources.*
 import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.theme.SkipiTheme
@@ -208,7 +209,7 @@ fun SkipiAppearanceSettingsScreen(
             val title = stringResource(Res.string.settings_category_appearance)
             val navigationIcon: @Composable () -> Unit = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.common_back))
                 }
             }
             SmallTopAppBar(

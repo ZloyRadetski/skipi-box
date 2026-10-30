@@ -8,6 +8,8 @@ import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.deletion_confirmation_summary
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -17,6 +19,7 @@ fun DeleteConfirmationDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    val haptics = LocalHapticFeedback.current
     WarningConfirmDialog(
         show = show,
         title = title,
@@ -24,6 +27,9 @@ fun DeleteConfirmationDialog(
         dismissText = stringResource(Res.string.common_cancel),
         confirmText = stringResource(Res.string.common_delete),
         onDismissRequest = onDismissRequest,
-        onConfirm = onConfirm,
+        onConfirm = {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onConfirm()
+        },
     )
 }

@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import app.skipi.ui.components.StringListEditor
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.common_back
 import app.skipi.ui.resources.settings_user_agents
 import app.skipi.ui.resources.settings_user_agents_description
 import app.skipi.ui.resources.settings_user_agents_empty
@@ -61,7 +62,7 @@ fun SubscriptionUserAgentsScreen(
             val title = stringResource(Res.string.settings_user_agents)
             val navigateBack: @Composable () -> Unit = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.common_back))
                 }
             }
             SmallTopAppBar(
