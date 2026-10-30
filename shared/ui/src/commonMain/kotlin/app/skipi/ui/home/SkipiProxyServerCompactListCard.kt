@@ -28,6 +28,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -86,14 +88,8 @@ fun SkipiProxyServerCompactListCard(
     dragModifier: Modifier = Modifier,
 ) {
     val selectedShape = SkipiTheme.shapes.small
-    val compactCardHeight = if (state.inSubscriptionGroup) {
-        if (state.isStrategyGroup) 58.dp else 66.dp
-    } else {
-        maxOf(
-            if (state.isStrategyGroup) 58.dp else 66.dp,
-            SkipiTheme.homeMetrics.listRowMinHeight,
-        )
-    }
+    // One row thickness everywhere: manual servers, strategy groups and subscription servers match.
+    val compactCardHeight = if (state.isStrategyGroup) 58.dp else 66.dp
 
     Box(
         modifier = modifier
@@ -117,7 +113,9 @@ fun SkipiProxyServerCompactListCard(
                         onTap = { onSelect() },
                         onLongPress = onLongPress,
                     )
-                },
+                }
+                // Screen readers and tests reach the row menu through the standard long-click action.
+                .semantics { onLongClick { onLongPress(Offset.Zero); true } },
             colors = CardDefaults.defaultColors(
                 color = when {
                     state.selected -> colors.selectedSurface

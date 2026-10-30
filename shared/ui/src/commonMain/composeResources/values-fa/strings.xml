@@ -109,7 +109,7 @@
     <string name="app_icon">آیکون</string>
     <string name="settings_app_icon">آیکون برنامه</string>
     <string name="settings_app_icon_summary">سبک و تم آیکون برنامه را انتخاب کنید</string>
-    <string name="app_icon_default">پیش‌فرض (گرادیان)</string>
+    <string name="app_icon_default">پیش‌فرض</string>
     <string name="app_icon_dark">تاریک (AMOLED)</string>
     <string name="app_icon_light">روشن</string>
     <string name="app_icon_monet">Material You (پویا)</string>

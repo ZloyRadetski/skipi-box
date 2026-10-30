@@ -109,7 +109,7 @@
     <string name="app_icon">图标</string>
     <string name="settings_app_icon">应用图标</string>
     <string name="settings_app_icon_summary">选择启动器图标风格与主题</string>
-    <string name="app_icon_default">默认（渐变）</string>
+    <string name="app_icon_default">默认</string>
     <string name="app_icon_dark">深色（AMOLED）</string>
     <string name="app_icon_light">浅色</string>
     <string name="app_icon_monet">Material You（动态）</string>

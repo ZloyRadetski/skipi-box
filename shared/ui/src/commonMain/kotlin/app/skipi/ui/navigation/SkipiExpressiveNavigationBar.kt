@@ -60,6 +60,26 @@ enum class SkipiNavigationBarSize {
     Large,
 }
 
+/** Where the dragged capsule indicator sits and how far it may stretch. */
+internal data class NavigationIndicatorGeometry(val offsetPx: Float, val stretchX: Float)
+
+/**
+ * The indicator is kept inside the capsule: the offset is clamped to the first and last tab, and the
+ * velocity stretch may widen it only by the padding that surrounds it, so it can never poke out.
+ */
+internal fun navigationIndicatorGeometry(
+    rawOffsetPx: Float,
+    maxOffsetPx: Float,
+    velocityPxPerSecond: Float,
+    indicatorWidthPx: Float,
+    edgePaddingPx: Float,
+): NavigationIndicatorGeometry {
+    val offset = rawOffsetPx.coerceIn(0f, maxOffsetPx.coerceAtLeast(0f))
+    val headroom = if (indicatorWidthPx > 0f) 2f * edgePaddingPx / indicatorWidthPx else 0f
+    val wanted = (abs(velocityPxPerSecond) / 5000f).coerceAtMost(0.15f)
+    return NavigationIndicatorGeometry(offset, 1f + wanted.coerceAtMost(headroom))
+}
+
 /** Maps the persisted bottom-bar setting (0 small, 1 medium, anything else large). */
 fun navigationBarSizeForSetting(setting: Int): SkipiNavigationBarSize = when (setting) {
     0 -> SkipiNavigationBarSize.Small
@@ -233,13 +253,15 @@ fun SkipiExpressiveNavigationBar(
 
             val currentOffsetPx = dragOffset.value
             val currentProgress = if (tabWidthPx > 0f) currentOffsetPx / tabWidthPx else selectedPage.toFloat()
+            val edgePaddingPx = with(density) { innerPaddingHorizontal.toPx() }
             val stretchX = if (isDragging && tabWidthPx > 0f) {
-                val overdrag = when {
-                    currentOffsetPx < 0f -> -currentOffsetPx / tabWidthPx
-                    currentOffsetPx > maxOffsetPx -> (currentOffsetPx - maxOffsetPx) / tabWidthPx
-                    else -> 0f
-                }
-                1f + (abs(dragVelocity) / 5000f).coerceAtMost(0.15f) - (overdrag * 0.25f).coerceAtMost(0.12f)
+                navigationIndicatorGeometry(
+                    rawOffsetPx = currentOffsetPx,
+                    maxOffsetPx = maxOffsetPx,
+                    velocityPxPerSecond = dragVelocity,
+                    indicatorWidthPx = with(density) { indicatorWidth.toPx() },
+                    edgePaddingPx = edgePaddingPx,
+                ).stretchX
             } else {
                 1f
             }
@@ -268,11 +290,7 @@ fun SkipiExpressiveNavigationBar(
                             if (isGrabbed) {
                                 change.consume()
                                 val rawOffset = change.position.x - grabTouchOffsetX
-                                val dampedOffset = when {
-                                    rawOffset < 0f -> rawOffset * 0.35f
-                                    rawOffset > maxOffsetPx -> maxOffsetPx + (rawOffset - maxOffsetPx) * 0.35f
-                                    else -> rawOffset
-                                }
+                                val dampedOffset = rawOffset.coerceIn(0f, maxOffsetPx)
                                 dragVelocity = dragAmount * 60f
                                 coroutineScope.launch { dragOffset.snapTo(dampedOffset) }
                                 val hoverIndex = ((dampedOffset + tabWidthPx / 2f) / tabWidthPx)
@@ -347,7 +365,7 @@ fun SkipiExpressiveNavigationBar(
                             .padding(start = innerPaddingHorizontal, top = innerPaddingVertical)
                             .size(width = indicatorWidth, height = indicatorHeight)
                             .graphicsLayer {
-                                translationX = currentOffsetPx
+                                translationX = currentOffsetPx.coerceIn(0f, maxOffsetPx)
                                 scaleX = stretchX
                                 scaleY = stretchY
                             }

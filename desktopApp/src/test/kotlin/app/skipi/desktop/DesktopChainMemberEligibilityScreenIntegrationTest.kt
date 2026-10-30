@@ -176,7 +176,8 @@ class DesktopChainMemberEligibilityScreenIntegrationTest {
 
             render(scene)
             assertNotNull(awaitVisibleText(scene, targetChainName), "The selected target chain should be shown on Home")
-            clickRowAction(scene, targetChainName, editLabel)
+            longClickRow(scene, targetChainName)
+            clickClickableTextAction(scene, editLabel)
             assertNotNull(awaitVisibleText(scene, memberOneLabel), "Editing the target should show its first hop selector")
             assertNotNull(awaitVisibleText(scene, unselectedMemberLabel), "The target's first hop should start unselected")
 
@@ -235,6 +236,20 @@ class DesktopChainMemberEligibilityScreenIntegrationTest {
             "Expected the '$actionLabel' action to be inside Home row '$rowTitle'"
         }
         assertTrue(clickAction(), "The '$actionLabel' action for '$rowTitle' should succeed")
+        render(scene)
+    }
+
+    /** Server rows are compact cards: their actions live in the long-press menu. */
+    private fun longClickRow(scene: ImageComposeScene, rowTitle: String) {
+        // The selected server's name also appears in the connection hero, so match the list row only.
+        val title = requireNotNull(
+            awaitVisibleNode(scene) { candidate ->
+                candidate.hasText(rowTitle) &&
+                    candidate.ancestorsIncludingSelf().any { it.config.contains(SemanticsActions.OnLongClick) }
+            },
+        ) { "Expected Home row '$rowTitle' with a long-click action to be visible" }
+        val row = title.ancestorsIncludingSelf().first { it.config.contains(SemanticsActions.OnLongClick) }
+        assertTrue(requireNotNull(row.config[SemanticsActions.OnLongClick].action)(), "Long click on '$rowTitle' should succeed")
         render(scene)
     }
 

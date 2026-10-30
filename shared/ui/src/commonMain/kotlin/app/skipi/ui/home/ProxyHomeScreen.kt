@@ -710,21 +710,6 @@ private fun LazyGridScope.proxyHomeGroupSection(
 ) {
     if (groupSelector == null) return
     item(
-        key = "proxy-groups-heading",
-        span = { GridItemSpan(maxLineSpan) },
-        contentType = "proxy-groups-heading",
-    ) {
-        Text(
-            text = stringResource(Res.string.home_group_title),
-            color = SkipiTheme.colors.onSurface,
-            style = SkipiTheme.typography.titleMedium,
-            fontWeight = themedFontWeight(FontWeight.Bold),
-            modifier = Modifier
-                .padding(horizontal = SkipiTheme.spacing.extraSmall)
-                .padding(top = SkipiTheme.spacing.medium, bottom = SkipiTheme.spacing.small),
-        )
-    }
-    item(
         key = "proxy-groups-selector",
         span = { GridItemSpan(maxLineSpan) },
         contentType = "proxy-groups-selector",
@@ -1443,7 +1428,7 @@ private fun ServerListItem(
         customColors = context.displayOptions.protocolColors,
     )
 
-    if (columns > 1 || inSubscriptionGroup) {
+    run {
         var menuExpanded by remember(server.id) { mutableStateOf(false) }
         SkipiProxyServerCompactListCard(
             state = SkipiProxyServerCompactListCardState(
@@ -1488,109 +1473,6 @@ private fun ServerListItem(
                                     handleServerMenuAction(actionId, server, onAction)
                                 },
                             )
-                        }
-                    }
-                }
-            },
-            modifier = modifier,
-            dragModifier = dragModifier,
-        )
-    } else {
-        val copyMenuActions = remember(menuActions) { menuActions.filter { it.startsWith("copy:") } }
-        val overflowActions = remember(menuActions, server.isStrategyGroup) {
-            menuActions.filterNot {
-                it.startsWith("copy:") || it == "edit" ||
-                    (it == "strategy-members" && server.isStrategyGroup)
-            }
-        }
-        var copyMenuExpanded by remember(server.id) { mutableStateOf(false) }
-        var overflowMenuExpanded by remember(server.id) { mutableStateOf(false) }
-        SkipiProxyServerExpandedListCard(
-            state = SkipiProxyServerExpandedListCardState(
-                flag = server.flag,
-                title = server.title,
-                summary = server.address,
-                protocol = server.protocol,
-                protocolColor = protocolColor,
-                transport = server.transport,
-                transportTextColor = Color.White.copy(alpha = 0.9f),
-                transportContainerColor = Color(0xFF40505A).copy(alpha = 0.5f),
-                selected = server.selected,
-                groupName = null,
-                latencyText = latencyText,
-                latencyTesting = server.latencyTesting,
-                latencyColor = latencyColor,
-                progressColor = SkipiTheme.colors.accent,
-                isStrategyGroup = server.isStrategyGroup,
-                isDragging = isDragging,
-            ),
-            colors = SkipiProxyServerExpandedListCardColors(
-                surface = SkipiTheme.colors.surface,
-                selectedSurface = SkipiTheme.colorScheme.primaryContainer,
-                selectedBorder = SkipiTheme.colorScheme.outline,
-            ),
-            titleFontWeight = themedFontWeight(FontWeight.SemiBold),
-            latencyFontWeight = themedFontWeight(FontWeight.Medium),
-            onSelect = { onAction(ProxyHomeAction.SelectServer(server.id)) },
-            actions = {
-                val copyContentDescription = stringResource(Res.string.common_copy)
-                if (copyMenuActions.isNotEmpty()) {
-                    Box {
-                        IconButton(
-                            onClick = { copyMenuExpanded = true },
-                            modifier = Modifier.semantics {
-                                contentDescription = copyContentDescription
-                            },
-                        ) {
-                            Icon(Icons.Outlined.ContentCopy, contentDescription = null, tint = SkipiTheme.colors.onSurface)
-                        }
-                        SkipiHomeDropdownMenu(
-                            expanded = copyMenuExpanded,
-                            onDismissRequest = { copyMenuExpanded = false },
-                        ) {
-                            copyMenuActions.forEach { actionId ->
-                                DropdownMenuItem(
-                                    text = { Text(serverMenuActionTitle(actionId)) },
-                                    colors = skipiHomeDropdownItemColors(),
-                                    onClick = {
-                                        copyMenuExpanded = false
-                                        handleServerMenuAction(actionId, server, onAction)
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
-                if ("edit" in menuActions) {
-                    IconButton(onClick = { handleServerMenuAction("edit", server, onAction) }) {
-                        Icon(Icons.Outlined.Edit, contentDescription = stringResource(Res.string.common_edit), tint = SkipiTheme.colors.onSurface)
-                    }
-                }
-                if (overflowActions.isNotEmpty()) {
-                    val moreContentDesc = stringResource(Res.string.common_more) + ": " + server.title
-                    Box {
-                        IconButton(
-                            onClick = { overflowMenuExpanded = true },
-                            modifier = Modifier.semantics {
-                                contentDescription = moreContentDesc
-                            },
-                        ) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = null, tint = SkipiTheme.colors.onSurface)
-                        }
-                        SkipiHomeDropdownMenu(
-                            expanded = overflowMenuExpanded,
-                            onDismissRequest = { overflowMenuExpanded = false },
-                        ) {
-                            overflowActions.forEach { actionId ->
-                                DropdownMenuItem(
-                                    text = { Text(serverMenuActionTitle(actionId)) },
-                                    colors = skipiHomeDropdownItemColors(),
-                                    onClick = {
-                                        overflowMenuExpanded = false
-                                        handleServerMenuAction(actionId, server, onAction)
-                                    },
-                                )
-                            }
                         }
                     }
                 }
