@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -38,7 +39,8 @@ kotlin {
     applyDefaultHierarchyTemplate {
         common {
             group("jvm") {
-                withAndroidTarget()
+                // withAndroidTarget() does not know the android.kotlin.multiplatform.library target.
+                withCompilations { compilation -> compilation.platformType == KotlinPlatformType.androidJvm }
                 withJvm()
             }
         }

@@ -57,7 +57,12 @@ dependencyResolutionManagement {
                 includeModule("app.skipi.core", "skipicore")
             }
         }
-        mavenCentral()
+        mavenCentral {
+            content {
+                // The Skipi core is published only to the repositories above; never ask Maven Central for it.
+                excludeGroup("app.skipi.core")
+            }
+        }
         maven("https://jitpack.io") {
             content {
                 includeGroupAndSubgroups("com.github.android-password-store")
