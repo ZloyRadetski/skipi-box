@@ -353,7 +353,7 @@ class DesktopSubscriptionFetcher(
             }
             return SubscriptionFetchResponse(
                 body = responseBody,
-                headers = response.headers().map().mapValues { (_, values) -> values.joinToString(",") },
+                headers = response.headers().map().mapValues { (_, values) -> decodeRawUtf8HeaderValue(values.joinToString(",")) },
             )
         }
     }
@@ -445,7 +445,7 @@ class DesktopSubscriptionFetcher(
                         .filterKeys { name -> name != null }
                         .mapNotNull { (name, values) ->
                             name?.lowercase()?.let { normalizedName ->
-                                normalizedName to values.orEmpty().joinToString(",")
+                                normalizedName to decodeRawUtf8HeaderValue(values.orEmpty().joinToString(","))
                             }
                         }
                         .toMap()
@@ -754,3 +754,17 @@ private data class DesktopFetchedSubscriptionImport(
     val result: SubscriptionServerImportResult,
     val diagnostics: List<String>,
 )
+
+/**
+ * Java decodes HTTP header bytes as ISO-8859-1, but providers send titles (emoji, Cyrillic) as raw UTF-8.
+ * Restores the original text when the value is a valid UTF-8 byte sequence read as Latin-1.
+ */
+internal fun decodeRawUtf8HeaderValue(value: String): String {
+    if (value.all { it.code < 0x80 } || value.any { it.code > 0xFF }) return value
+    val decoder = StandardCharsets.UTF_8.newDecoder()
+        .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+        .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+    return runCatching {
+        decoder.decode(java.nio.ByteBuffer.wrap(value.toByteArray(StandardCharsets.ISO_8859_1))).toString()
+    }.getOrDefault(value)
+}

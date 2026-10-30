@@ -54,6 +54,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -383,13 +384,17 @@ fun ProxyHomeScreenContent(
         }
     }
 
-    LaunchedEffect(pagerState, state.pages) {
-        snapshotFlow { pagerState.settledPage }
-            .collect { settledIndex ->
-                val page = state.pages.getOrNull(settledIndex)
-                if (page != null && page.group.id != state.selectedGroupId) {
-                    send(ProxyHomeAction.SelectGroup(page.group.id))
-                }
+    val latestState by rememberUpdatedState(state)
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage to pagerState.layoutInfo.viewportSize.width }
+            .collect { (settledIndex, viewportWidth) ->
+                val current = latestState
+                pagerSettledGroupToSelect(
+                    groupIds = current.pages.map { it.group.id },
+                    settledIndex = settledIndex,
+                    viewportWidth = viewportWidth,
+                    selectedGroupId = current.selectedGroupId,
+                )?.let { groupId -> send(ProxyHomeAction.SelectGroup(groupId)) }
             }
     }
 
@@ -1710,4 +1715,19 @@ internal fun proxyHomeAddMenuIds(
         if (ProxyHomeImportSource.QrCode in importSources) add("import:" + ProxyHomeImportSource.QrCode.name)
     }
     if (canAddServer) add("add-server")
+}
+
+/**
+ * The group a settled pager page should select, or null when the pager must not override the selection:
+ * a collapsed (e.g. minimized window) viewport, an unknown page, or a page that is already selected.
+ */
+internal fun pagerSettledGroupToSelect(
+    groupIds: List<String>,
+    settledIndex: Int,
+    viewportWidth: Int,
+    selectedGroupId: String?,
+): String? {
+    if (viewportWidth <= 0) return null
+    val groupId = groupIds.getOrNull(settledIndex) ?: return null
+    return groupId.takeIf { it != selectedGroupId }
 }
