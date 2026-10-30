@@ -172,22 +172,15 @@ internal class DesktopSubscriptionRefreshBatchCommitAdapter(
         }
         if (updated == original) return
 
-        val activeBefore = original.selectedConfigId
-            ?.let { selectedId -> original.configs.firstOrNull { profile -> profile.id == selectedId } }
-        val activeAfter = updated.selectedConfigId
-            ?.let { selectedId -> updated.configs.firstOrNull { profile -> profile.id == selectedId } }
-        val configLibraryChanged = original.configs != updated.configs ||
-            original.selectedConfigId != updated.selectedConfigId
-        saveConfigs(updated).getOrThrow()
-        publishConfigs(updated)
-        profileLibraryChanged = activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
-        if (configLibraryChanged) {
-            DesktopTrafficConfigProxyGroupReconciler(
-                serverRepository = proxyServerRepository,
-                readConfigLibrary = readConfigs,
-                stripLeadingCountryFlag = { remarks -> remarks.stripLeadingCountryFlag() },
-            ).reconcile()
-        }
+        commitRefreshedConfigLibrary(
+            original = original,
+            updated = updated,
+            saveConfigs = saveConfigs,
+            publishConfigs = publishConfigs,
+            readConfigs = readConfigs,
+            proxyServerRepository = proxyServerRepository,
+            onActiveProfileChanged = { changed -> profileLibraryChanged = changed },
+        )
     }
 }
 

@@ -181,23 +181,15 @@ internal class DesktopSubscriptionRefreshCommitAdapter(
             configs = imported.trafficConfigs.map { profile -> profile.toDesktopConfigProfile() },
             nextConfigId = imported.nextTrafficConfigId,
         )
-        val activeBefore = latestLibrary.selectedConfigId
-            ?.let { selectedId -> latestLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
-        val activeAfter = updatedLibrary.selectedConfigId
-            ?.let { selectedId -> updatedLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
-        val activeProfileChanged = activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
-        val configLibraryChanged = latestLibrary.configs != updatedLibrary.configs ||
-            latestLibrary.selectedConfigId != updatedLibrary.selectedConfigId
-        saveConfigs(updatedLibrary).getOrThrow()
-        publishConfigs(updatedLibrary)
-        profileLibraryChanged = activeProfileChanged
-        if (configLibraryChanged) {
-            DesktopTrafficConfigProxyGroupReconciler(
-                serverRepository = proxyServerRepository,
-                readConfigLibrary = readConfigs,
-                stripLeadingCountryFlag = { remarks -> remarks.stripLeadingCountryFlag() },
-            ).reconcile()
-        }
+        commitRefreshedConfigLibrary(
+            original = latestLibrary,
+            updated = updatedLibrary,
+            saveConfigs = saveConfigs,
+            publishConfigs = publishConfigs,
+            readConfigs = readConfigs,
+            proxyServerRepository = proxyServerRepository,
+            onActiveProfileChanged = { changed -> profileLibraryChanged = changed },
+        )
         return true
     }
 
