@@ -100,7 +100,7 @@ internal fun SubscriptionSummaryCardContent(
                 Text(
                     text = state.title,
                     color = colors.text,
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = themedFontWeight(FontWeight.SemiBold),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
