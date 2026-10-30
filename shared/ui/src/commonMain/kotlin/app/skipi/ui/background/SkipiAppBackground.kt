@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import app.skipi.ui.anim.rememberInfinitePulse
 import kotlinx.coroutines.delay
@@ -98,26 +99,31 @@ fun SkipiAppBackground(
             val spec = connectionBackgroundSpec(isConnected, isDark)
             val first = animateColorAsState(spec.firstColor, tween(500), label = "activeColor1")
             val second = animateColorAsState(spec.secondColor, tween(500), label = "activeColor2")
-            // Pulse and colour are read while drawing so the breathing never recomposes the page.
-            Box(
-                modifier
-                    .fillMaxSize()
-                    .background(solidColor)
-                    .drawBehind {
-                        val breathing = pulse.value
-                        drawRect(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    first.value.copy(alpha = (spec.primaryAlpha * breathing).coerceIn(0f, 1f)),
-                                    second.value.copy(alpha = (spec.secondaryAlpha * breathing).coerceIn(0f, 1f)),
-                                    Color.Transparent,
+            // Pulse and colour are read while drawing so the breathing never recomposes the page. The
+            // gradient lives in its own layer next to the content: drawn behind it in the same layer,
+            // every breathing frame would re-record the whole UI.
+            Box(modifier.fillMaxSize().background(solidColor)) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { }
+                        .drawBehind {
+                            val breathing = pulse.value
+                            drawRect(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        first.value.copy(alpha = (spec.primaryAlpha * breathing).coerceIn(0f, 1f)),
+                                        second.value.copy(alpha = (spec.secondaryAlpha * breathing).coerceIn(0f, 1f)),
+                                        Color.Transparent,
+                                    ),
+                                    startY = 0f,
+                                    endY = 1400f,
                                 ),
-                                startY = 0f,
-                                endY = 1400f,
-                            ),
-                        )
-                    },
-            ) { content() }
+                            )
+                        },
+                )
+                content()
+            }
         }
 
         AppearanceSettingValues.BackgroundStyleAurora -> Box(modifier.fillMaxSize().background(solidColor)) {
@@ -135,7 +141,7 @@ fun SkipiAppBackground(
                         delay(AuroraFrameMillis)
                     }
                 }
-                Canvas(Modifier.fillMaxSize()) {
+                Canvas(Modifier.fillMaxSize().graphicsLayer { }) {
                     val phases = auroraPhases(elapsed.longValue)
                     drawAuroraMesh(isDark, phases.t1, phases.t2, phases.t3, phases.t4)
                 }
