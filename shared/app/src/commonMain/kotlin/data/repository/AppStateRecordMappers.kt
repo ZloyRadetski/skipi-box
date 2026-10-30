@@ -3,6 +3,8 @@
 
 package data.repository
 
+import features.subscription.DefaultSubscriptionGroupId
+import app.ProxyServerState
 import app.AppState
 import app.SubscriptionGroupState
 import app.skipi.app.model.ApplicationPreferences
@@ -353,3 +355,50 @@ fun TrafficConfigRecord.toAndroidTrafficConfig(existing: TrafficConfigState?): T
 fun Int.saturatedIncrement(): Int = if (this == Int.MAX_VALUE) Int.MAX_VALUE else this + 1
 
 fun ResourceDefinition.toAndroidResource() = features.config.TrafficConfigCustomResourceFile(id = id, name = name, url = url)
+
+fun AppState.toProxyServerCatalog(): ProxyServerCatalog = ProxyServerCatalog(
+    servers = proxyServers.map(ProxyServerState::toRecord),
+    nextServerId = nextProxyServerId,
+    selectedServerId = selectedProxyServerId,
+)
+
+fun AppState.withProxyServerCatalog(catalog: ProxyServerCatalog): AppState {
+    require(catalog.servers.all { it.id > 0 }) { "Proxy server IDs must be positive" }
+    require(catalog.servers.map { it.id }.distinct().size == catalog.servers.size) {
+        "Proxy server IDs must be unique"
+    }
+    require(catalog.nextServerId > 0) { "Next proxy server ID must be positive" }
+    val previousById = proxyServers.associateBy { it.id }
+    val nextServers = catalog.servers.map { record ->
+        record.toAndroidState().copy(latency = previousById[record.id]?.latency.orEmpty())
+    }
+    val nextServerId = maxOf(
+        nextProxyServerId,
+        catalog.nextServerId,
+        (nextServers.maxOfOrNull { it.id } ?: 0).saturatedIncrement(),
+    )
+    val selectedId = if (nextServers.any { it.id == catalog.selectedServerId }) {
+        catalog.selectedServerId
+    } else {
+        nextServers.firstOrNull()?.id ?: catalog.selectedServerId
+    }
+    return copy(
+        proxyServers = nextServers,
+        nextProxyServerId = nextServerId,
+        selectedProxyServerId = selectedId,
+    )
+}
+
+fun ProxyServerState.toRecord(): ProxyServerRecord = ProxyServerRecord(
+    id = id,
+    server = server,
+    sourceSubscriptionId = groupId.takeIf { it != DefaultSubscriptionGroupId },
+)
+
+fun ProxyServerRecord.toAndroidState(
+    groupId: Int = sourceSubscriptionId ?: DefaultSubscriptionGroupId,
+): ProxyServerState = ProxyServerState(
+    id = id,
+    server = server,
+    groupId = groupId,
+)

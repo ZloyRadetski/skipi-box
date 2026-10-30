@@ -47,7 +47,7 @@
 Unit-тесты всех модулей (`shared:core`, `shared:app`, `shared:ui`, `desktopApp`, `app`), компиляция Android и Desktop, `assembleDebug`; для этапа 2 реальный запуск ядра и сверка JSON до/после.
 
 ## Статус
-- [ ] Этап 1
+- [~] Этап 1 (30 октября): в shared перенесены, с сохранением пакетов и FQN, `AppState`-мапперы записей и настроек (`AppStateRecordMappers`), операции над профилями (`TrafficConfigState`), `CountryFlagUtils`, `ProxyServerStateOperations` (чистая часть `ProxyServerUseCases`), импорт профиля в `AppState` (`AppStateTrafficConfigImport`), `AppBackupMapper`. Все существующие Android-тесты (oracle) проходят без изменений: 3238 GREEN, `assembleDebug` GREEN. Осталось в Android: порты фиксации обновления подписок (`AndroidSubscriptionRefreshCommitPort`, нужен общий интерфейс каталога серверов), `SubscriptionUpdateUseCase` (использует `java.net.URI`, нужен jvmMain или замена), `ProxyServerRuntimeUseCases` (зависит от движка и тостов), `AppStateJson` (формат Room).
 - [ ] Этап 2
 - [ ] Этап 3
 - [ ] Этап 4

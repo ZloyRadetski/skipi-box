@@ -21,7 +21,7 @@ import features.config.TrafficConfigState
 import features.config.withAndroidDefaultUserAgent
 import features.config.withConfigProxyGroupsReflected
 import features.config.withSkipiSettingsInRawConfig
-import features.proxy.server.list.AutoBalancerGroupId
+import app.skipi.app.proxy.DefaultAutoBalancerGroupId as AutoBalancerGroupId
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.PersistedProxyServer
 import features.proxy.server.model.StrategyGroup
@@ -41,7 +41,7 @@ import features.backup.AppBackupFormat
 import features.backup.CurrentAppBackupVersion
 import features.backup.AppBackupWarning
 
-internal fun AppState.toAppBackupFile(
+fun AppState.toAppBackupFile(
     createdAtMillis: Long,
     appVersionName: String,
     appVersionCode: Int,
@@ -67,7 +67,7 @@ internal fun AppState.toAppBackupFile(
     )
 }
 
-internal fun AppBackupFile.toRestorePreview(): AppBackupRestorePreview {
+fun AppBackupFile.toRestorePreview(): AppBackupRestorePreview {
     val migrated = migrateAppBackup()
     val state = migrated.data.toAppState()
     return AppBackupRestorePreview(
