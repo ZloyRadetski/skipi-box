@@ -128,7 +128,6 @@ import app.skipi.ui.resources.home_latency_milliseconds
 import app.skipi.ui.resources.home_move_down
 import app.skipi.ui.resources.home_move_up
 import app.skipi.ui.resources.home_operation_failed
-import app.skipi.ui.resources.home_runtime_outbound_metric
 import app.skipi.ui.resources.proxy_server_list_latency_failed
 import app.skipi.ui.resources.home_search_servers
 import app.skipi.ui.resources.home_server_address
@@ -1040,9 +1039,7 @@ private fun HomeConnectionPanel(
     }
 
     val memoryText = if (state.displayOptions.showTunnelMemory) {
-        state.runtimeOutboundMetric?.takeIf(String::isNotBlank)?.let { metric ->
-            stringResource(Res.string.home_runtime_outbound_metric, metric)
-        }
+        state.runtimeOutboundMetric?.takeIf(String::isNotBlank)
     } else null
 
     val toggleEnabled = canToggleHomePower(

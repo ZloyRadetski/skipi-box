@@ -66,4 +66,6 @@
     <string name="home_tile_ping">پینگ</string>
     <string name="home_tile_memory">حافظه</string>
     <string name="home_tile_ip">IP</string>
+    <string name="home_memory_megabytes">%1$s مگابایت</string>
+    <string name="home_memory_kilobytes">%1$s کیلوبایت</string>
 </resources>

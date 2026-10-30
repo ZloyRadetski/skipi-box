@@ -68,4 +68,6 @@
     <string name="home_tile_ping">Пинг</string>
     <string name="home_tile_memory">Память</string>
     <string name="home_tile_ip">IP</string>
+    <string name="home_memory_megabytes">%1$s МБ</string>
+    <string name="home_memory_kilobytes">%1$s КБ</string>
 </resources>

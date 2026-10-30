@@ -59,6 +59,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.connection_status_tap_to_connect
+import app.skipi.ui.resources.home_runtime_outbound_metric
 import app.skipi.ui.resources.proxy_traffic_stats_notification_disconnect
 import app.skipi.ui.theme.SkipiTheme
 import org.jetbrains.compose.resources.stringResource
@@ -352,7 +353,7 @@ fun SkipiProxyHeroClassicCard(
                             state.memoryText?.let { memoryText ->
                                 SkipiProxyHeroMetricSeparator(colors.mutedText)
                                 Text(
-                                    text = memoryText,
+                                    text = stringResource(Res.string.home_runtime_outbound_metric, memoryText),
                                     fontSize = 13.sp,
                                     fontWeight = typography.body,
                                     color = colors.mutedText,
@@ -479,7 +480,7 @@ fun SkipiProxyHeroCompactCard(
                         }
                         state.memoryText?.let { memoryText ->
                             Text(
-                                text = memoryText,
+                                text = stringResource(Res.string.home_runtime_outbound_metric, memoryText),
                                 fontSize = 12.sp,
                                 fontWeight = typography.body,
                                 color = colors.mutedText,

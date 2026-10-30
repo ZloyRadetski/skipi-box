@@ -66,4 +66,6 @@
     <string name="home_tile_ping">延迟</string>
     <string name="home_tile_memory">内存</string>
     <string name="home_tile_ip">IP</string>
+    <string name="home_memory_megabytes">%1$s MB</string>
+    <string name="home_memory_kilobytes">%1$s KB</string>
 </resources>

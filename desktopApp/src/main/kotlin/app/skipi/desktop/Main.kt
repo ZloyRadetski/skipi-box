@@ -78,6 +78,8 @@ import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.navigation.SkipiNavigationBarSize
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.home_memory_kilobytes
+import app.skipi.ui.resources.home_memory_megabytes
 import app.skipi.ui.resources.ic_skipi_logo
 import app.skipi.ui.resources.proxy_server_list_duplicates_deleted
 import app.skipi.ui.resources.proxy_server_list_invalid_deleted
@@ -240,6 +242,23 @@ fun main() = application {
                 }
                 DisposableEffect(desktopDiagnostics) { onDispose { desktopDiagnostics.close() } }
                 val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
+                // The core lives in this process, so its footprint is the process's resident memory.
+                val tunnelMemoryKb by produceState(0L, coreState.isRunning, desktopSettings.showTunnelMemory) {
+                    value = 0L
+                    if (!coreState.isRunning || !desktopSettings.showTunnelMemory) return@produceState
+                    while (true) {
+                        value = withContext(Dispatchers.IO) { currentProcessResidentKb() } ?: 0L
+                        delay(3_000)
+                    }
+                }
+                val tunnelMemoryText = if (tunnelMemoryKb > 0L) {
+                    val megabytes = tunnelMemoryKb / 1_024.0
+                    if (tunnelMemoryKb >= 1_024L) {
+                        stringResource(Res.string.home_memory_megabytes, String.format(java.util.Locale.ROOT, "%.1f", megabytes))
+                    } else {
+                        stringResource(Res.string.home_memory_kilobytes, tunnelMemoryKb.toString())
+                    }
+                } else null
                 // Re-resolved when the tunnel (re)starts or another server becomes active; off while the tile is off.
                 val tunnelIp by produceState<ProxyHomeTunnelIp?>(
                     initialValue = null,
@@ -1571,6 +1590,7 @@ fun main() = application {
                                 batchRefreshingSubscriptionIds,
                             running = coreState.isRunning,
                             tunnelIp = tunnelIp,
+                            runtimeOutboundMetric = tunnelMemoryText,
                             connecting = tunnelOperationInProgress && desiredTunnelRunning,
                             // Keep the connected hero actionable while a reconnect is underway:
                             // the handler records a newer user intent before it observes the
