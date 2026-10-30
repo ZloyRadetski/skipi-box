@@ -1001,120 +1001,21 @@ fun main() = application {
                                     Result.failure(error)
                                 }
                             }
-                val desktopImportProxies: suspend (DesktopProxyImportInput) -> Result<String> = import@{ input ->
-                                val importDeviceHeaders = if (desktopSettings.sendDeviceHeaders) {
-                                    DesktopDeviceIdentity.deviceHeaders(desktopSettings.installationUuid)
-                                } else emptyMap()
-                                val importTimeout = Duration.ofSeconds(
-                                    desktopSettings.subscriptionFetchTimeoutSeconds.toLong(),
-                                )
-                                val plan = try {
-                                    DesktopProxyImportPlanner.planWithProviderFetcher(
-                                        input = input,
-                                        existing = DesktopProxyImportExisting(
-                                            serverFingerprints = serverLibrary.servers.mapNotNull { stored ->
-                                                stored.decode().getOrNull()?.connectionFingerprint()
-                                            }.toSet(),
-                                            subscriptionUrls = subscriptionLibrary.subscriptions.mapTo(mutableSetOf()) { it.url },
-                                            configContents = configLibrary.configs.mapTo(mutableSetOf()) { it.content },
-                                            serverDuplicatePolicy = DesktopProxyImportDuplicatePolicy.KeepExistingAndRepeated,
-                                            subscriptionDuplicatePolicy =
-                                                DesktopProxyImportDuplicatePolicy.KeepExistingDeduplicateRepeated,
-                                        ),
-                                        providerUrlFetcher = { providerUrl ->
-                                            withContext(Dispatchers.IO) {
-                                                subscriptionFetcher.fetch(
-                                                    url = providerUrl,
-                                                    userAgent = "",
-                                                    timeout = importTimeout,
-                                                    proxy = null,
-                                                    deviceHeaders = importDeviceHeaders,
-                                                ).body
-                                            }
-                                        },
-                                    )
-                                } catch (cancelled: CancellationException) {
-                                    throw cancelled
-                                } catch (error: Throwable) {
-                                    return@import Result.failure(error)
-                                }
-                                val errors = plan.diagnostics.filter { diagnostic ->
-                                    diagnostic.severity == DesktopProxyImportDiagnosticSeverity.Error
-                                }
-                                if (errors.isNotEmpty()) {
-                                    return@import Result.failure(
-                                        IllegalArgumentException(errors.joinToString(" ") { it.message }),
-                                    )
-                                }
-                                val committed = DesktopProxyImportCommitter.commit(
-                                    plan = plan,
-                                    subscriptionLibrary = subscriptionLibrary,
-                                    configLibrary = configLibrary,
-                                    subscriptionUserAgent = desktopSettings.subscriptionUserAgent,
-                                )
-                                val savedSections = mutableListOf<String>()
-                                var importedServerSelectionChanged = false
-                                try {
-                                    if (plan.servers.isNotEmpty()) {
-                                        val selectedServerBefore = serverLibrary.selectedServerId
-                                        val actionResult = desktopSharedApplication.store.dispatchAndAwaitInStoreScope(
-                                            SharedApplicationAction.ImportProxyServerBatch(plan.servers),
-                                        )
-                                        when (val outcome = actionResult.outcome) {
-                                            SharedApplicationActionOutcome.Completed -> savedSections += "серверы"
-                                            is SharedApplicationActionOutcome.Rejected ->
-                                                throw IllegalStateException(outcome.reason)
-
-                                            is SharedApplicationActionOutcome.Failed ->
-                                                throw IllegalStateException(outcome.reason)
-                                        }
-                                        importedServerSelectionChanged =
-                                            serverLibrary.selectedServerId != selectedServerBefore
-                                    }
-                                    if (committed.subscriptionLibrary != subscriptionLibrary) {
-                                        DesktopSubscriptionLibraries.saveDefault(committed.subscriptionLibrary).getOrThrow()
-                                        subscriptionLibrary = committed.subscriptionLibrary
-                                        savedSections += "подписки"
-                                    }
-                                    if (committed.configLibrary != configLibrary) {
-                                        val activeBefore = configLibrary.selectedConfigId
-                                        DesktopConfigLibraries.saveDefault(committed.configLibrary).getOrThrow()
-                                        configLibrary = committed.configLibrary
-                                        savedSections += "конфиги"
-                                        if (tunnel.coreState.isRunning && activeBefore != committed.configLibrary.selectedConfigId) {
-                                            tunnel.requestReconnect("Импорт изменил активный профиль.")
-                                        }
-                                    }
-                                } catch (cancelled: CancellationException) {
-                                    throw cancelled
-                                } catch (error: Throwable) {
-                                    val prefix = if (savedSections.isEmpty()) {
-                                        "Импорт не сохранён"
-                                    } else {
-                                        "Часть импорта уже сохранена (${savedSections.joinToString()})"
-                                    }
-                                    return@import Result.failure(
-                                        IllegalStateException("$prefix: ${error.message.orEmpty()}", error),
-                                    )
-                                }
-                                if (tunnel.coreState.isRunning && importedServerSelectionChanged) {
-                                    tunnel.requestReconnect("Импорт изменил выбранный сервер.")
-                                }
-                                val diagnostics = plan.diagnostics
-                                    .filter { diagnostic -> diagnostic.severity != DesktopProxyImportDiagnosticSeverity.Error }
-                                    .map(DesktopProxyImportDiagnostic::message)
-                                    .take(2)
-                                    .joinToString(" ")
-                                val subscriptionHint = if (committed.counts.addedSubscriptions + committed.counts.updatedSubscriptions > 0) {
-                                    " Подписки сохранены; их можно обновить из карточки."
-                                } else {
-                                    ""
-                                }
-                                Result.success(
-                                    committed.summary + subscriptionHint +
-                                        diagnostics.takeIf(String::isNotBlank)?.let { " $it" }.orEmpty(),
-                                )
-                            }
+                val desktopProxyImportRunner = remember {
+                    DesktopProxyImportRunner(
+                        readSettings = { desktopSettings },
+                        readServers = { serverLibrary },
+                        readSubscriptions = { subscriptionLibrary },
+                        publishSubscriptions = { subscriptionLibrary = it },
+                        readConfigs = { configLibrary },
+                        publishConfigs = { configLibrary = it },
+                        store = desktopSharedApplication.store,
+                        fetcher = subscriptionFetcher,
+                        isTunnelRunning = { tunnel.coreState.isRunning },
+                        requestReconnect = tunnel::requestReconnect,
+                    )
+                }
+                val desktopImportProxies: suspend (DesktopProxyImportInput) -> Result<String> = desktopProxyImportRunner::run
                 val desktopToggleTunnel: () -> Unit = {
                     tunnel.toggle(
                         scope = subscriptionScope,
