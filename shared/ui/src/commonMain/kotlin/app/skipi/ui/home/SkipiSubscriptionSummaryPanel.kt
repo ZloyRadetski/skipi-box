@@ -55,7 +55,7 @@ internal fun SubscriptionSummaryCardContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Row(
             modifier = Modifier
@@ -100,7 +100,7 @@ internal fun SubscriptionSummaryCardContent(
                 Text(
                     text = state.title,
                     color = colors.text,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = themedFontWeight(FontWeight.SemiBold),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -108,7 +108,7 @@ internal fun SubscriptionSummaryCardContent(
                 Text(
                     text = state.serverCountText,
                     color = colors.mutedText,
-                    style = SkipiTheme.typography.bodySmall,
+                    fontSize = 11.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

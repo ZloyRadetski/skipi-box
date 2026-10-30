@@ -17,6 +17,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import org.jetbrains.compose.resources.stringResource
+import app.skipi.ui.resources.common_more
+import app.skipi.ui.resources.common_less
+import app.skipi.ui.resources.Res
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +45,7 @@ internal fun SubscriptionSummaryDetails(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         state.statusText.takeIf(String::isNotBlank)?.let { statusText ->
             Text(
@@ -50,10 +59,15 @@ internal fun SubscriptionSummaryDetails(
         val trafficText = state.trafficText?.takeIf(String::isNotBlank)
         val expiryText = state.expiryText?.takeIf(String::isNotBlank)
         if (trafficText != null || expiryText != null) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                trafficText?.let { Text(it, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium) }
-                expiryText?.let { Text(it, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium) }
-            }
+            // One quiet line instead of two stacked paragraphs.
+            Text(
+                text = listOfNotNull(trafficText, expiryText).joinToString("  ·  "),
+                color = colors.mutedText,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
 
         state.trafficProgress?.let { progress ->
@@ -61,25 +75,49 @@ internal fun SubscriptionSummaryDetails(
         }
 
         state.description?.takeIf(String::isNotBlank)?.let { description ->
-            Text(description, color = colors.mutedText, style = SkipiTheme.typography.bodyMedium)
+            Text(
+                description,
+                color = colors.mutedText,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
 
         state.announcementText?.takeIf(String::isNotBlank)?.let { announcementText ->
             val announcementAction = actions.onAnnouncement
+            var announcementExpanded by remember(announcementText) { mutableStateOf(false) }
+            var announcementOverflows by remember(announcementText) { mutableStateOf(false) }
             Text(
                 text = announcementText,
                 color = if (announcementAction != null) colors.enabled else colors.mutedText,
-                style = SkipiTheme.typography.bodyMedium,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                maxLines = if (announcementExpanded) Int.MAX_VALUE else 2,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { layout -> if (!announcementExpanded) announcementOverflows = layout.hasVisualOverflow },
                 modifier = if (announcementAction == null) {
                     Modifier
                 } else {
                     Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .clickable(role = Role.Button, onClick = announcementAction)
-                        .defaultMinSize(minHeight = 40.dp)
                         .padding(vertical = 2.dp)
                 },
             )
+            if (announcementOverflows || announcementExpanded) {
+                Text(
+                    text = stringResource(if (announcementExpanded) Res.string.common_less else Res.string.common_more),
+                    color = colors.text,
+                    fontSize = 12.sp,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(role = Role.Button) { announcementExpanded = !announcementExpanded }
+                        .padding(vertical = 2.dp),
+                )
+            }
         }
 
         val supportLabel = state.supportLabel?.takeIf(String::isNotBlank)
@@ -128,14 +166,14 @@ private fun SubscriptionTrafficProgress(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(6.dp)
+            .height(4.dp)
             .clip(CircleShape)
             .background(colors.text.copy(alpha = 0.12f)),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(clampedProgress)
-                .height(6.dp)
+                .height(4.dp)
                 .background(colors.text.copy(alpha = 0.70f)),
         )
     }
@@ -152,14 +190,14 @@ private fun SubscriptionMetadataLink(
             .clip(RoundedCornerShape(8.dp))
             .background(color.copy(alpha = 0.08f))
             .clickable(role = Role.Button, onClick = onClick)
-            .defaultMinSize(minHeight = 40.dp)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .defaultMinSize(minHeight = 32.dp)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
         contentAlignment = androidx.compose.ui.Alignment.Center,
     ) {
         Text(
             text = label,
             color = color,
-            style = SkipiTheme.typography.bodySmall,
+            fontSize = 12.sp,
             fontWeight = themedFontWeight(FontWeight.Medium),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

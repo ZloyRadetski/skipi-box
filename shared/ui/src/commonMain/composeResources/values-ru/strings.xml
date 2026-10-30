@@ -55,6 +55,7 @@
     <string name="common_unknown_group">Неизвестная группа</string>
     <string name="common_copied">Скопировано</string>
     <string name="common_copy_field">Копировать %1$s</string>
+    <string name="common_less">Свернуть</string>
     <string name="common_more">Еще</string>
     <string name="common_import_from_clipboard">Импортировать из буфера обмена</string>
     <string name="common_export_to_clipboard">Экспортировать в буфер обмена</string>

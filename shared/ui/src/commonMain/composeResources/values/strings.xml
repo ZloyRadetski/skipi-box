@@ -62,6 +62,7 @@
     <string name="common_unknown_group">Unknown group</string>
     <string name="common_copied">Copied</string>
     <string name="common_copy_field">Copy %1$s</string>
+    <string name="common_less">Less</string>
     <string name="common_more">More</string>
     <string name="common_import_from_clipboard">Import from clipboard</string>
     <string name="common_export_to_clipboard">Export to clipboard</string>
