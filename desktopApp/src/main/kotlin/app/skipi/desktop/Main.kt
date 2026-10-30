@@ -3,46 +3,26 @@
 
 package app.skipi.desktop
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.outlined.Hexagon
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import app.skipi.app.home.ProxyHomeTunnelIp
 import app.skipi.app.home.resolveTunnelIp
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -75,7 +55,6 @@ import features.updater.bannerModel
 import features.networkautomation.policy.NetworkAutomationAction
 import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
-import app.skipi.ui.navigation.SkipiNavigationBarSize
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.home_memory_kilobytes
@@ -104,7 +83,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
@@ -115,9 +93,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.stripLeadingCountryFlag
-import platform.TunnelConnectRequest
 import features.config.runtime.ActiveGeoResourceRefreshTrigger
-import features.config.runtime.TrafficConfigRefreshTarget
 import features.config.TrafficConfigState
 import app.skipi.app.model.SubscriptionRecord
 import features.resources.ResourceFileDownloadCancelledException
@@ -129,18 +105,24 @@ fun main() = application {
     remember { features.logs.AppLog.install(DesktopAppLogSink) }
     val coreController = remember { DesktopCoreController() }
     val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
-    // Closing is handled from the composable below so it can serialize with an
-    // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
-    var closeRequested by remember { mutableStateOf(false) }
+    var desktopSettings by remember {
+        mutableStateOf(DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
+    }
+    val tunnel = remember {
+        DesktopTunnelSession(
+            coreController = coreController,
+            systemProxyManager = systemProxyManager,
+            readUseSystemProxy = { desktopSettings.useSystemProxy },
+        )
+    }
     Window(
         state = WindowState(size = DpSize(1180.dp, 860.dp)),
-        onCloseRequest = { closeRequested = true },
+        // Closing is handled from the composable below so it can serialize with an
+        // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
+        onCloseRequest = { tunnel.closeRequested = true },
         title = "SKIPI",
         icon = org.jetbrains.compose.resources.painterResource(Res.drawable.ic_skipi_logo),
     ) {
-        var desktopSettings by remember {
-            mutableStateOf(DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
-        }
                 val homeSortSaveMutex = remember { Mutex() }
         var backgroundConnected by remember { mutableStateOf(false) }
         CompositionLocalProvider(
@@ -216,19 +198,9 @@ fun main() = application {
                 var testingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 var pingingSubscriptionIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 val desktopHomeLatencyJobOwner = remember { DesktopProxyHomeLatencyJobOwner() }
-                var coreState by remember { mutableStateOf(coreController.state()) }
-                var coreMessage by remember { mutableStateOf("") }
                 val resourceFileFeedback = remember { MutableStateFlow("") }
                 val resourceFileStatusMessage by resourceFileFeedback.collectAsState()
-                var pendingTunnelReconnectReason by remember { mutableStateOf<String?>(null) }
-                // The reason is user-facing text; the revision is the actual event
-                // identity, so two successive edits with identical text still restart.
-                var pendingTunnelReconnectRevision by remember { mutableStateOf(0L) }
-                var systemProxyRecoveryInProgress by remember { mutableStateOf(systemProxyManager.isSupportedHost()) }
-                var tunnelOperationInProgress by remember { mutableStateOf(false) }
-                var desiredTunnelRunning by remember { mutableStateOf(coreState.isRunning) }
-                LaunchedEffect(coreState.isRunning) { backgroundConnected = coreState.isRunning }
-                var tunnelIntentVersion by remember { mutableStateOf(0L) }
+                LaunchedEffect(tunnel.coreState.isRunning) { backgroundConnected = tunnel.coreState.isRunning }
                 val localProxyReadiness = remember { DesktopLocalProxyReadiness() }
                 val desktopLocalProxyRuntime = remember { DesktopLocalProxyRuntime() }
                 val desktopCoreLogs = remember { DesktopCoreLogs() }
@@ -243,9 +215,9 @@ fun main() = application {
                 DisposableEffect(desktopDiagnostics) { onDispose { desktopDiagnostics.close() } }
                 val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
                 // The core lives in this process, so its footprint is the process's resident memory.
-                val tunnelMemoryKb by produceState(0L, coreState.isRunning, desktopSettings.showTunnelMemory) {
+                val tunnelMemoryKb by produceState(0L, tunnel.coreState.isRunning, desktopSettings.showTunnelMemory) {
                     value = 0L
-                    if (!coreState.isRunning || !desktopSettings.showTunnelMemory) return@produceState
+                    if (!tunnel.coreState.isRunning || !desktopSettings.showTunnelMemory) return@produceState
                     while (true) {
                         value = withContext(Dispatchers.IO) { currentProcessResidentKb() } ?: 0L
                         delay(3_000)
@@ -262,12 +234,12 @@ fun main() = application {
                 // Re-resolved when the tunnel (re)starts or another server becomes active; off while the tile is off.
                 val tunnelIp by produceState<ProxyHomeTunnelIp?>(
                     initialValue = null,
-                    coreState.isRunning,
+                    tunnel.coreState.isRunning,
                     desktopSettings.showTunnelIp,
                     serverLibrary.selectedServerId,
                 ) {
                     value = null
-                    if (!coreState.isRunning || !desktopSettings.showTunnelIp) return@produceState
+                    if (!tunnel.coreState.isRunning || !desktopSettings.showTunnelIp) return@produceState
                     value = resolveTunnelIp { desktopDiagnostics.fetchIpInfo() }
                 }
 
@@ -285,11 +257,6 @@ fun main() = application {
                 }
                 LaunchedEffect(desktopSettings.autoCheckAppUpdates) {
                     if (desktopSettings.autoCheckAppUpdates) checkForAppUpdate()
-                }
-
-                fun requestTunnelReconnect(reason: String) {
-                    pendingTunnelReconnectReason = reason
-                    pendingTunnelReconnectRevision += 1
                 }
 
                 val stopSelectedSubscriptionServer = remember { DesktopSubscriptionServerStopAction() }
@@ -326,13 +293,13 @@ fun main() = application {
                     )
                     val runtimeRepository = DesktopRuntimeStateRepository {
                         desktopRuntimeState(
-                            coreState = coreState,
+                            coreState = tunnel.coreState,
                             latencyByServerId = latencyByServerId,
                             testingServerIds = testingServerIds,
                             refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
                                 batchRefreshingSubscriptionIds,
-                            message = coreMessage.ifBlank { subscriptionMessage },
-                            isMessageError = coreMessage.isNotBlank(),
+                            message = tunnel.coreMessage.ifBlank { subscriptionMessage },
+                            isMessageError = tunnel.coreMessage.isNotBlank(),
                         )
                     }
                     val routingRepository = DesktopRoutingRepository(
@@ -387,7 +354,7 @@ fun main() = application {
                     runner = DesktopSubscriptionRefreshBatchRunner(
                         captureRequests = {
                             val settings = desktopSettings
-                            val proxyRunning = coreState.isRunning
+                            val proxyRunning = tunnel.coreState.isRunning
                             desktopSharedApplication.subscriptions.catalog.value.subscriptions.map { subscription ->
                                 SubscriptionRefreshLoadRequest(
                                     subscription = subscription,
@@ -418,7 +385,7 @@ fun main() = application {
                                 currentSelectedServerId = runner.currentSelectedServerId,
                             )
                             if (selectionChanged) {
-                                requestTunnelReconnect("Подписки обновлены.")
+                                tunnel.requestReconnect("Подписки обновлены.")
                             }
                         },
                     )
@@ -438,13 +405,13 @@ fun main() = application {
                     serverLibrary,
                     configLibrary,
                     subscriptionLibrary,
-                    coreState,
+                    tunnel.coreState,
                     latencyByServerId,
                     testingServerIds,
                     subscriptionUpdateInProgress,
                     refreshingSubscriptionId,
                     batchRefreshingSubscriptionIds,
-                    coreMessage,
+                    tunnel.coreMessage,
                     subscriptionMessage,
                 ) {
                     desktopSharedApplication.settings.refresh()
@@ -454,23 +421,7 @@ fun main() = application {
                     desktopSharedApplication.routing.refresh()
                 }
 
-                LaunchedEffect(systemProxyManager) {
-                    if (!systemProxyManager.isSupportedHost()) {
-                        systemProxyRecoveryInProgress = false
-                        return@LaunchedEffect
-                    }
-                    systemProxyRecoveryInProgress = true
-                    withContext(Dispatchers.IO) { systemProxyManager.recover() }
-                        .onSuccess { recovery ->
-                            if (recovery.action != DesktopSystemProxyLeaseAction.NothingToRelease) {
-                                coreMessage = recovery.message
-                            }
-                        }
-                        .onFailure { error ->
-                            coreMessage = "Не удалось восстановить системный прокси: ${error.message.orEmpty()}"
-                        }
-                    systemProxyRecoveryInProgress = false
-                }
+                LaunchedEffect(tunnel) { tunnel.recoverSystemProxy() }
                 val localProxyOptions = remember(desktopSettings) {
                     desktopSettings.toLocalProxyXrayConfigOptions()
                 }
@@ -558,7 +509,7 @@ fun main() = application {
                                         currentSelectedServerId = result.currentSelectedServerId,
                                     )
                                 ) {
-                                    requestTunnelReconnect("Подписка обновлена.")
+                                    tunnel.requestReconnect("Подписка обновлена.")
                                 }
                                 result
                             } catch (cancelled: CancellationException) {
@@ -593,7 +544,7 @@ fun main() = application {
                 }
                 DesktopAutomaticRefresh(
                     updater = desktopSubscriptionAutoUpdater,
-                    enabled = !closeRequested,
+                    enabled = !tunnel.closeRequested,
                     failureSource = "Subscriptions",
                     failureMessage = "Automatic subscription update failed",
                     runDue = desktopSubscriptionAutoUpdater::runDue,
@@ -872,172 +823,22 @@ fun main() = application {
                     ?: serverLibrary.selectedServerId?.toString()
                     ?: "selected-server"
 
-                stopSelectedSubscriptionServer.action = {
-                    check(!tunnelOperationInProgress) {
-                        "Дождитесь завершения операции SKIPI Core перед удалением активного сервера."
-                    }
-                    while (systemProxyRecoveryInProgress) {
-                        delay(50)
-                    }
-                    check(!tunnelOperationInProgress) {
-                        "Дождитесь завершения операции SKIPI Core перед удалением активного сервера."
-                    }
-                    tunnelOperationInProgress = true
-                    try {
-                        val stopResult = withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
-                        stopResult.getOrThrow()
-                        coreState = coreController.state()
-                        desiredTunnelRunning = false
-                        tunnelIntentVersion += 1
-                        pendingTunnelReconnectReason = null
-                        pendingTunnelReconnectRevision += 1
-                        coreMessage = if (desktopSettings.useSystemProxy) {
-                            "Туннель SKIPI Core и системный прокси остановлены для удаления активного сервера."
-                        } else {
-                            "Локальный туннель SKIPI Core остановлен для удаления активного сервера."
-                        }
-                    } catch (cancelled: CancellationException) {
-                        coreState = coreController.state()
-                        desiredTunnelRunning = coreState.isRunning
-                        throw cancelled
-                    } catch (error: Throwable) {
-                        coreState = coreController.state()
-                        desiredTunnelRunning = coreState.isRunning
-                        coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
-                        throw error
-                    } finally {
-                        tunnelOperationInProgress = false
-                        if (
-                            !closeRequested &&
-                            desiredTunnelRunning != coreController.state().isRunning
-                        ) {
-                            requestTunnelReconnect("Выполняю последнее действие с туннелем.")
-                        }
-                    }
-                }
+                stopSelectedSubscriptionServer.action = tunnel::stopForActiveServerDeletion
 
-                LaunchedEffect(coreController, desktopTunnelController) {
-                    while (true) {
-                        delay(750)
-                        val previous = coreState
-                        val current = coreController.state()
-                        if (current != previous) {
-                            coreState = current
-                            if (previous.isRunning && !current.isRunning) {
-                                val snapshot = withContext(Dispatchers.IO) { desktopTunnelController.snapshot() }
-                                desiredTunnelRunning = false
-                                val detail = snapshot.failure?.message.orEmpty()
-                                    .ifBlank { current.lastError }
-                                coreMessage = "SKIPI Core остановлен. $detail"
-                            }
-                        }
-                    }
-                }
+                LaunchedEffect(tunnel, desktopTunnelController) { tunnel.observeCore() }
 
-                LaunchedEffect(pendingTunnelReconnectReason, pendingTunnelReconnectRevision, closeRequested) {
-                    val reason = pendingTunnelReconnectReason ?: return@LaunchedEffect
-                    if (closeRequested) return@LaunchedEffect
-                    // A manual action carries a generation.  It can supersede a queued
-                    // automatic reconnect even after this coroutine has started waiting.
-                    val operationIntentVersion = tunnelIntentVersion
-                    val reconnectRevision = pendingTunnelReconnectRevision
-                    while (tunnelOperationInProgress || systemProxyRecoveryInProgress) {
-                        delay(50)
-                    }
-                    if (
-                        closeRequested ||
-                        operationIntentVersion != tunnelIntentVersion ||
-                        reconnectRevision != pendingTunnelReconnectRevision
-                    ) {
-                        return@LaunchedEffect
-                    }
-                    tunnelOperationInProgress = true
-                    try {
-                        val shouldRun = desiredTunnelRunning
-                        coreMessage = if (shouldRun) "$reason Переподключение SKIPI Core…" else "$reason Отключение SKIPI Core…"
-                        withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }.onFailure { error ->
-                            coreState = coreController.state()
-                            if (operationIntentVersion == tunnelIntentVersion) {
-                                desiredTunnelRunning = coreState.isRunning
-                            }
-                            coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
-                            return@LaunchedEffect
-                        }
-                        coreState = coreController.state()
-                        if (
-                            !shouldRun ||
-                            closeRequested ||
-                            operationIntentVersion != tunnelIntentVersion ||
-                            reconnectRevision != pendingTunnelReconnectRevision
-                        ) {
-                            if (operationIntentVersion == tunnelIntentVersion) {
-                                desiredTunnelRunning = false
-                                coreMessage = "$reason Локальный туннель SKIPI Core остановлен."
-                            }
-                            return@LaunchedEffect
-                        }
-                        withContext(Dispatchers.IO) {
-                            desktopTunnelController.connect(TunnelConnectRequest(selectedTunnelProfileId))
-                        }.onSuccess {
-                            coreState = coreController.state()
-                            val systemProxySuffix = if (desktopSettings.useSystemProxy) {
-                                " и системный прокси"
-                            } else {
-                                ""
-                            }
-                            coreMessage = "$reason SKIPI Core переподключён$systemProxySuffix."
-                        }.onFailure { error ->
-                            coreState = coreController.state()
-                            if (operationIntentVersion == tunnelIntentVersion) {
-                                desiredTunnelRunning = coreState.isRunning
-                            }
-                            coreMessage = "Не удалось переподключить SKIPI Core: ${error.message.orEmpty()}"
-                        }
-                    } finally {
-                        tunnelOperationInProgress = false
-                        if (
-                            !closeRequested &&
-                            operationIntentVersion != tunnelIntentVersion &&
-                            desiredTunnelRunning != coreController.state().isRunning
-                        ) {
-                            requestTunnelReconnect("Выполняю последнее действие с туннелем.")
-                        } else if (
-                            pendingTunnelReconnectRevision == reconnectRevision &&
-                            pendingTunnelReconnectReason == reason
-                        ) {
-                            pendingTunnelReconnectReason = null
-                        }
-                    }
+                LaunchedEffect(tunnel.pendingReconnectReason, tunnel.pendingReconnectRevision, tunnel.closeRequested) {
+                    tunnel.runPendingReconnect(
+                        selectedProfileId = selectedTunnelProfileId,
+                        systemProxyEnabled = { desktopSettings.useSystemProxy },
+                    )
                 }
 
                 // A measurement started before a tunnel change would report the wrong path.
-                LaunchedEffect(coreState.isRunning) { desktopDiagnostics.stopAll() }
+                LaunchedEffect(tunnel.coreState.isRunning) { desktopDiagnostics.stopAll() }
 
-                LaunchedEffect(closeRequested) {
-                    if (!closeRequested) return@LaunchedEffect
-                    // Do not let a queued settings/profile reconnect race shutdown.
-                    pendingTunnelReconnectReason = null
-                    while (tunnelOperationInProgress || systemProxyRecoveryInProgress) {
-                        delay(50)
-                    }
-                    tunnelOperationInProgress = true
-                    try {
-                        coreMessage = "Безопасное завершение SKIPI…"
-                        withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
-                            .onSuccess {
-                                coreState = coreController.state()
-                                exitApplication()
-                            }
-                            .onFailure { error ->
-                                coreState = coreController.state()
-                                coreMessage =
-                                    "Не удалось вернуть системный прокси; SKIPI Core оставлен запущенным. " +
-                                        "Повторите закрытие: ${error.message.orEmpty()}"
-                                closeRequested = false
-                            }
-                    } finally {
-                        tunnelOperationInProgress = false
-                    }
+                LaunchedEffect(tunnel.closeRequested) {
+                    if (tunnel.closeRequested) tunnel.shutDown(::exitApplication)
                 }
 
                 fun startDesktopHomeLatencyTest(
@@ -1094,63 +895,12 @@ fun main() = application {
                         applyStoppedState: () -> Unit,
                         onStopFailed: suspend (Throwable) -> Unit,
                     ) -> Unit,
-                ) {
-                    var ownsTunnelOperation = false
-                    try {
-                        operation(
-                            {
-                                while (systemProxyRecoveryInProgress) delay(50)
-                                if (closeRequested || tunnelOperationInProgress) {
-                                    ProxyServerStopOutcome.Failed(
-                                        IllegalStateException("Дождитесь завершения операции SKIPI Core."),
-                                    )
-                                } else {
-                                    tunnelOperationInProgress = true
-                                    ownsTunnelOperation = true
-                                    val stopResult = try {
-                                        withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
-                                    } catch (cancelled: CancellationException) {
-                                        throw cancelled
-                                    } catch (error: Throwable) {
-                                        Result.failure(error)
-                                    }
-                                    stopResult.fold(
-                                        onSuccess = {
-                                            coreState = coreController.state()
-                                            ProxyServerStopOutcome.Stopped
-                                        },
-                                        onFailure = ProxyServerStopOutcome::Failed,
-                                    )
-                                }
-                            },
-                            {
-                                coreState = coreController.state()
-                                desiredTunnelRunning = false
-                                tunnelIntentVersion += 1
-                                pendingTunnelReconnectReason = null
-                                pendingTunnelReconnectRevision += 1
-                                coreMessage = if (desktopSettings.useSystemProxy) {
-                                    "Туннель SKIPI Core и системный прокси остановлены для удаления серверов."
-                                } else {
-                                    "Локальный туннель SKIPI Core остановлен для удаления серверов."
-                                }
-                            },
-                            { error ->
-                                coreState = coreController.state()
-                                desiredTunnelRunning = coreState.isRunning
-                                coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
-                                serverLibraryMessage = "Не удалось удалить серверы: ${error.message.orEmpty()}"
-                            },
-                        )
-                    } finally {
-                        if (ownsTunnelOperation) {
-                            tunnelOperationInProgress = false
-                            if (!closeRequested && desiredTunnelRunning != coreController.state().isRunning) {
-                                requestTunnelReconnect("Выполняю последнее действие с туннелем.")
-                            }
-                        }
-                    }
-                }
+                ) = tunnel.withServerDeletionRuntime(
+                    onStopFailed = { error ->
+                        serverLibraryMessage = "Не удалось удалить серверы: ${error.message.orEmpty()}"
+                    },
+                    operation = operation,
+                )
 
                 suspend fun runHomeBulkDelete(
                     serverIds: Set<Int>,
@@ -1207,14 +957,7 @@ fun main() = application {
                                 configs = latestConfigLibrary,
                             )
 
-                            override suspend fun stopTunnel(): Result<Unit> {
-                                if (!coreController.state().isRunning) return Result.success(Unit)
-                                desiredTunnelRunning = false
-                                tunnelIntentVersion += 1
-                                val result = withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
-                                coreState = coreController.state()
-                                return result.map { }
-                            }
+                            override suspend fun stopTunnel(): Result<Unit> = tunnel.stopForBackup()
 
                             override suspend fun apply(userData: DesktopUserData): Result<Unit> {
                                 val saved = withContext(Dispatchers.IO) {
@@ -1338,8 +1081,8 @@ fun main() = application {
                                         DesktopConfigLibraries.saveDefault(committed.configLibrary).getOrThrow()
                                         configLibrary = committed.configLibrary
                                         savedSections += "конфиги"
-                                        if (coreState.isRunning && activeBefore != committed.configLibrary.selectedConfigId) {
-                                            requestTunnelReconnect("Импорт изменил активный профиль.")
+                                        if (tunnel.coreState.isRunning && activeBefore != committed.configLibrary.selectedConfigId) {
+                                            tunnel.requestReconnect("Импорт изменил активный профиль.")
                                         }
                                     }
                                 } catch (cancelled: CancellationException) {
@@ -1354,8 +1097,8 @@ fun main() = application {
                                         IllegalStateException("$prefix: ${error.message.orEmpty()}", error),
                                     )
                                 }
-                                if (coreState.isRunning && importedServerSelectionChanged) {
-                                    requestTunnelReconnect("Импорт изменил выбранный сервер.")
+                                if (tunnel.coreState.isRunning && importedServerSelectionChanged) {
+                                    tunnel.requestReconnect("Импорт изменил выбранный сервер.")
                                 }
                                 val diagnostics = plan.diagnostics
                                     .filter { diagnostic -> diagnostic.severity != DesktopProxyImportDiagnosticSeverity.Error }
@@ -1372,87 +1115,13 @@ fun main() = application {
                                         diagnostics.takeIf(String::isNotBlank)?.let { " $it" }.orEmpty(),
                                 )
                             }
-                val desktopToggleTunnel: () -> Unit = toggleTunnel@{
-                                if (closeRequested) return@toggleTunnel
-                                // Record intent before looking at the in-flight operation.  This
-                                // makes a Power click stronger than an older automatic reconnect.
-                                desiredTunnelRunning = !desiredTunnelRunning
-                                tunnelIntentVersion += 1
-                                val operationIntentVersion = tunnelIntentVersion
-                                pendingTunnelReconnectReason = null
-                                if (tunnelOperationInProgress) {
-                                    coreMessage = if (desiredTunnelRunning) {
-                                        "Подключение будет выполнено после текущей операции SKIPI Core."
-                                    } else {
-                                        "Отключение будет выполнено после текущей операции SKIPI Core."
-                                    }
-                                } else subscriptionScope.launch {
-                                    tunnelOperationInProgress = true
-                                    try {
-                                        if (desiredTunnelRunning) {
-                                            if (coreController.state().isRunning) {
-                                                coreState = coreController.state()
-                                                coreMessage = "Туннель SKIPI Core уже подключён."
-                                            } else {
-                                                coreMessage = "Подключение SKIPI Core…"
-                                                DesktopLogger.info("Tunnel", "Connecting to profile $selectedTunnelProfileId")
-                                                withContext(Dispatchers.IO) {
-                                                    desktopTunnelController.connect(TunnelConnectRequest(selectedTunnelProfileId))
-                                                }.onSuccess {
-                                                    coreState = coreController.state()
-                                                    val systemProxySuffix = if (desktopSettings.useSystemProxy) {
-                                                        " и системный прокси"
-                                                    } else {
-                                                        ""
-                                                    }
-                                                    coreMessage = "Туннель SKIPI Core$systemProxySuffix запущен."
-                                                    DesktopLogger.info("Tunnel", "Connected to in-process SKIPI Core")
-                                                }.onFailure { error ->
-                                                    coreState = coreController.state()
-                                                    if (operationIntentVersion == tunnelIntentVersion) {
-                                                        desiredTunnelRunning = coreState.isRunning
-                                                    }
-                                                    coreMessage = "Не удалось запустить SKIPI Core: ${error.message.orEmpty()}"
-                                                    DesktopLogger.error("Tunnel", "Connection failed", error)
-                                                }
-                                            }
-                                        } else {
-                                            coreMessage = "Отключение SKIPI Core…"
-                                            DesktopLogger.info("Tunnel", "Disconnecting tunnel")
-                                            withContext(Dispatchers.IO) { desktopTunnelController.disconnect() }
-                                                .onSuccess {
-                                                    coreState = coreController.state()
-                                                    if (operationIntentVersion == tunnelIntentVersion) {
-                                                        desiredTunnelRunning = false
-                                                    }
-                                                    coreMessage = if (desktopSettings.useSystemProxy) {
-                                                        "Туннель SKIPI Core и системный прокси остановлены."
-                                                    } else {
-                                                        "Локальный туннель SKIPI Core остановлен."
-                                                    }
-                                                    DesktopLogger.info("Tunnel", "Disconnected successfully")
-                                                }
-                                                .onFailure { error ->
-                                                    coreState = coreController.state()
-                                                    if (operationIntentVersion == tunnelIntentVersion) {
-                                                        desiredTunnelRunning = coreState.isRunning
-                                                    }
-                                                    coreMessage = "Не удалось остановить SKIPI Core: ${error.message.orEmpty()}"
-                                                    DesktopLogger.error("Tunnel", "Disconnect failed", error)
-                                                }
-                                        }
-                                    } finally {
-                                        tunnelOperationInProgress = false
-                                        if (
-                                            !closeRequested &&
-                                            operationIntentVersion != tunnelIntentVersion &&
-                                            desiredTunnelRunning != coreController.state().isRunning
-                                        ) {
-                                            requestTunnelReconnect("Выполняю последнее действие с туннелем.")
-                                        }
-                                    }
-                                }
-                            }
+                val desktopToggleTunnel: () -> Unit = {
+                    tunnel.toggle(
+                        scope = subscriptionScope,
+                        profileId = selectedTunnelProfileId,
+                        systemProxyEnabled = { desktopSettings.useSystemProxy },
+                    )
+                }
                     val automationPlan = desktopNetworkObservationPlan(desktopSettings)
                     LaunchedEffect(
                         automationPlan.shouldListen,
@@ -1473,23 +1142,23 @@ fun main() = application {
                                 settings = desktopSettings,
                                 availableServerIds = serverLibrary.servers.mapTo(mutableSetOf()) { it.id },
                                 selectedServerId = serverLibrary.selectedServerId,
-                                vpnRunning = coreState.isRunning,
+                                vpnRunning = tunnel.coreState.isRunning,
                                 previousNetworkId = previousNetworkId,
                                 observed = observed,
                             )
                             previousNetworkId = step.networkId
                             when (val action = step.action) {
                                 NetworkAutomationAction.None -> Unit
-                                NetworkAutomationAction.Disconnect -> if (desiredTunnelRunning && !tunnelOperationInProgress) {
+                                NetworkAutomationAction.Disconnect -> if (tunnel.desiredRunning && !tunnel.operationInProgress) {
                                     desktopToggleTunnel()
                                 }
                                 is NetworkAutomationAction.Restart -> {
                                     runCatching { proxyServerRepository.selectAndCommit(action.serverId) }
-                                    requestTunnelReconnect("Автоматизация сети: смена сервера.")
+                                    tunnel.requestReconnect("Автоматизация сети: смена сервера.")
                                 }
                                 is NetworkAutomationAction.Start -> {
                                     runCatching { proxyServerRepository.selectAndCommit(action.serverId) }
-                                    if (!desiredTunnelRunning && !tunnelOperationInProgress) desktopToggleTunnel()
+                                    if (!tunnel.desiredRunning && !tunnel.operationInProgress) desktopToggleTunnel()
                                 }
                             }
                             delay(NetworkAutomationPollMillis)
@@ -1532,7 +1201,7 @@ fun main() = application {
                                     SkipiAppUpdateBanner(
                                         banner = banner,
                                         onDismiss = { appUpdateState = appUpdateState.dismissed() },
-                                        onPrimaryAction = { browse(banner.update.downloadUrl) { coreMessage = it } },
+                                        onPrimaryAction = { browse(banner.update.downloadUrl) { tunnel.coreMessage = it } },
                                     )
                                 }
                             },
@@ -1545,20 +1214,20 @@ fun main() = application {
                             updatingSubscription = subscriptionUpdateInProgress,
                             refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
                                 batchRefreshingSubscriptionIds,
-                            running = coreState.isRunning,
+                            running = tunnel.coreState.isRunning,
                             tunnelIp = tunnelIp,
                             runtimeOutboundMetric = tunnelMemoryText,
-                            connecting = tunnelOperationInProgress && desiredTunnelRunning,
+                            connecting = tunnel.operationInProgress && tunnel.desiredRunning,
                             // Keep the connected hero actionable while a reconnect is underway:
                             // the handler records a newer user intent before it observes the
                             // operation guard, so a click on Power can still cancel/reverse it.
-                            canToggleTunnel = !closeRequested && (
-                                coreState.isRunning || (
-                                    !tunnelOperationInProgress &&
-                                    selectedServerConfig?.isSuccess == true && !systemProxyRecoveryInProgress
+                            canToggleTunnel = !tunnel.closeRequested && (
+                                tunnel.coreState.isRunning || (
+                                    !tunnel.operationInProgress &&
+                                    selectedServerConfig?.isSuccess == true && !tunnel.systemProxyRecoveryInProgress
                                     )
                                 ),
-                            tunnelMessage = coreMessage,
+                            tunnelMessage = tunnel.coreMessage,
                             serverMessage = serverLibraryMessage,
                             subscriptionMessage = subscriptionMessage,
                             confirmDeletion = desktopSettings.confirmDeletion,
@@ -1586,8 +1255,8 @@ fun main() = application {
                                 }
                                     .onSuccess {
                                         serverLibraryMessage = "Сервер выбран."
-                                        if (coreState.isRunning) {
-                                            requestTunnelReconnect("Сервер изменён.")
+                                        if (tunnel.coreState.isRunning) {
+                                            tunnel.requestReconnect("Сервер изменён.")
                                         }
                                     }
                                     .onFailure { error ->
@@ -1596,9 +1265,9 @@ fun main() = application {
                             },
                             onDeleteServer = { serverId ->
                                 val selectedServerId = serverLibrary.selectedServerId
-                                val tunnelWasRunning = coreState.isRunning
-                                val serviceOperationIsInProgress = closeRequested || tunnelOperationInProgress ||
-                                    systemProxyRecoveryInProgress
+                                val tunnelWasRunning = tunnel.coreState.isRunning
+                                val serviceOperationIsInProgress = tunnel.closeRequested || tunnel.operationInProgress ||
+                                    tunnel.systemProxyRecoveryInProgress
                                 subscriptionScope.launch(start = CoroutineStart.UNDISPATCHED) {
                                     withHomeDeleteRuntime { stopService, applyStoppedState, onStopFailed ->
                                         runDesktopProxyHomeSingleDelete(
@@ -1640,13 +1309,13 @@ fun main() = application {
                                                 serverLink = ""
                                                 val addedMessage = "Сервер ${result.server.getInfo().remarks} добавлен в список."
                                                 serverLibraryMessage = addedMessage
-                                                if (coreState.isRunning && serverLibrary.selectedServerId == outcome.serverId) {
-                                                    requestTunnelReconnect(addedMessage)
+                                                if (tunnel.coreState.isRunning && serverLibrary.selectedServerId == outcome.serverId) {
+                                                    tunnel.requestReconnect(addedMessage)
                                                 }
                                             } else {
                                                 serverLibraryMessage = "Сервер изменён."
-                                                if (serverLibrary.selectedServerId == result.serverId && coreState.isRunning) {
-                                                    requestTunnelReconnect("Активный сервер изменён.")
+                                                if (serverLibrary.selectedServerId == result.serverId && tunnel.coreState.isRunning) {
+                                                    tunnel.requestReconnect("Активный сервер изменён.")
                                                 }
                                             }
                                         }
@@ -1686,8 +1355,8 @@ fun main() = application {
                                                 onSuccess = {
                                                     serverLibrary = updated
                                                     serverLibraryMessage = "Активный сервер группы изменён."
-                                                    if (coreState.isRunning) {
-                                                        requestTunnelReconnect("Участник активной группы изменён.")
+                                                    if (tunnel.coreState.isRunning) {
+                                                        tunnel.requestReconnect("Участник активной группы изменён.")
                                                     }
                                                 },
                                                 onFailure = { error ->
@@ -1710,17 +1379,17 @@ fun main() = application {
                             },
                             onCancelLatencyTests = { desktopHomeLatencyJobOwner.cancel() },
                             onRestartService = restartService@{
-                                if (closeRequested || tunnelOperationInProgress || systemProxyRecoveryInProgress) {
+                                if (tunnel.closeRequested || tunnel.operationInProgress || tunnel.systemProxyRecoveryInProgress) {
                                     return@restartService
                                 }
                                 if (selectedServerConfig?.isSuccess != true) {
-                                    coreMessage = "Сначала выберите работающий сервер или профиль."
+                                    tunnel.coreMessage = "Сначала выберите работающий сервер или профиль."
                                     return@restartService
                                 }
                                 desktopHomeLatencyJobOwner.cancel()
-                                desiredTunnelRunning = true
-                                tunnelIntentVersion += 1
-                                requestTunnelReconnect("Перезапуск SKIPI Core.")
+                                tunnel.desiredRunning = true
+                                tunnel.intentVersion += 1
+                                tunnel.requestReconnect("Перезапуск SKIPI Core.")
                             },
                             onPrepareSubscription = desktopPrepareSubscription,
                             onDeleteDuplicateServers = { currentGroupServerIds ->
@@ -1746,9 +1415,9 @@ fun main() = application {
                             onDeleteInvalidServers = { currentGroupServerIds ->
                                 val capturedServers = proxyServerRepository.servers.value
                                 val selectedServerId = serverLibrary.selectedServerId
-                                val tunnelRunning = coreState.isRunning
-                                val serviceOperationInProgress = closeRequested || tunnelOperationInProgress ||
-                                    systemProxyRecoveryInProgress
+                                val tunnelRunning = tunnel.coreState.isRunning
+                                val serviceOperationInProgress = tunnel.closeRequested || tunnel.operationInProgress ||
+                                    tunnel.systemProxyRecoveryInProgress
                                 subscriptionScope.launch {
                                     withHomeDeleteRuntime { stopService, applyStoppedState, onStopFailed ->
                                         runDesktopProxyHomeDeleteInvalidServers(
@@ -1778,9 +1447,9 @@ fun main() = application {
                             },
                             onDeleteAllServers = { currentGroupServerIds ->
                                 val selectedServerId = serverLibrary.selectedServerId
-                                val tunnelRunning = coreState.isRunning
-                                val serviceOperationInProgress = closeRequested || tunnelOperationInProgress ||
-                                    systemProxyRecoveryInProgress
+                                val tunnelRunning = tunnel.coreState.isRunning
+                                val serviceOperationInProgress = tunnel.closeRequested || tunnel.operationInProgress ||
+                                    tunnel.systemProxyRecoveryInProgress
                                 subscriptionScope.launch {
                                     runHomeBulkDelete(
                                         serverIds = currentGroupServerIds,
@@ -1830,9 +1499,9 @@ fun main() = application {
                                     .asSequence()
                                     .filter { server -> server.sourceSubscriptionId == subscriptionId }
                                     .mapTo(linkedSetOf()) { server -> server.id }
-                                val tunnelWasRunning = coreState.isRunning
-                                val serviceOperationIsInProgress = closeRequested || tunnelOperationInProgress ||
-                                    systemProxyRecoveryInProgress
+                                val tunnelWasRunning = tunnel.coreState.isRunning
+                                val serviceOperationIsInProgress = tunnel.closeRequested || tunnel.operationInProgress ||
+                                    tunnel.systemProxyRecoveryInProgress
                                 subscriptionScope.launch(start = CoroutineStart.UNDISPATCHED) {
                                     withHomeDeleteRuntime { stopService, applyStoppedState, onStopFailed ->
                                         runDesktopProxyHomeSubscriptionGroupDelete(
@@ -1946,7 +1615,7 @@ fun main() = application {
                                         withContext(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(updated) }
                                             .onSuccess { desktopSettings = updated }
                                             .onFailure { error ->
-                                                coreMessage = "Не удалось сохранить настройки: ${error.message.orEmpty()}"
+                                                tunnel.coreMessage = "Не удалось сохранить настройки: ${error.message.orEmpty()}"
                                             }
                                     }
                                 }
@@ -1977,10 +1646,10 @@ fun main() = application {
                                     }
                                 }
                             }
-                                if (coreState.isRunning && (
+                                if (tunnel.coreState.isRunning && (
                                     activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
                                     )) {
-                                    requestTunnelReconnect("Активный профиль изменён.")
+                                    tunnel.requestReconnect("Активный профиль изменён.")
                                 }
                                 result.updated
                             },
@@ -2028,20 +1697,20 @@ fun main() = application {
                                     desktopSettings.coreLogLevel != updated.coreLogLevel ||
                                     desktopSettings.enableAccessLog != updated.enableAccessLog
                                 desktopSettings = updated
-                                if (restartRequired && coreState.isRunning) {
-                                    requestTunnelReconnect("Параметры локального прокси изменены.")
+                                if (restartRequired && tunnel.coreState.isRunning) {
+                                    tunnel.requestReconnect("Параметры локального прокси изменены.")
                                 }
                             },
                             contentPadding = contentPadding,
-                            isTunnelRunning = coreState.isRunning,
+                            isTunnelRunning = tunnel.coreState.isRunning,
                             onClearSystemProxy = {
                                 subscriptionScope.launch {
                                     withContext(Dispatchers.IO) { systemProxyManager.forceClear() }
                                         .onSuccess {
-                                            coreMessage = "Системный прокси успешно сброшен."
+                                            tunnel.coreMessage = "Системный прокси успешно сброшен."
                                         }
                                         .onFailure { error ->
-                                            coreMessage = "Не удалось сбросить системный прокси: ${error.message.orEmpty()}"
+                                            tunnel.coreMessage = "Не удалось сбросить системный прокси: ${error.message.orEmpty()}"
                                         }
                                 }
                             },
