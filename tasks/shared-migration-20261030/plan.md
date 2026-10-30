@@ -27,6 +27,7 @@
 3. Проверка на реальном ядре: Android до/после, Desktop с `SKIPI_CORE_INTEGRATION_DIR`.
 
 ## Этап 3. Хост-логика главной (H02–H03)
+Оценка после чтения кода: обработчик `ProxyHomeEffect` в `ProxyServerListPage` (≈ 400 строк) переплетён с локальным состоянием страницы (диалоги, навигатор, scope, задержки, QR/файловый выбор). Это не механический перенос: сначала нужен проект интерфейса портов хоста (`ProxyHomeHostPorts`: навигация к редакторам, диалоги подтверждения, буфер обмена, уведомления, запуск сервиса, пинг), затем тесты на обработчик с фейковыми портами по поведению Android и Desktop, и только потом переключение обоих хостов. Выполнять отдельным срезом с проверкой на устройстве.
 `ProxyServerListPage` (1378), `ProxyServerListActions` (650), `ProxyHomeAndroidInput` (258), `ProxyServerListGroups`, `ProxyServerEditResultHandler`.
 - Общий обработчик `ProxyHomeEffect` в `shared/app` с портами: буфер обмена, уведомления, навигация, запуск сервиса.
 - Android реализует порты; страница сокращается примерно до 400 строк; Desktop использует тот же обработчик.
@@ -47,7 +48,7 @@
 Unit-тесты всех модулей (`shared:core`, `shared:app`, `shared:ui`, `desktopApp`, `app`), компиляция Android и Desktop, `assembleDebug`; для этапа 2 реальный запуск ядра и сверка JSON до/после.
 
 ## Статус
-- [~] Этап 1 (30 октября): в shared перенесены, с сохранением пакетов и FQN, `AppState`-мапперы записей и настроек (`AppStateRecordMappers`), операции над профилями (`TrafficConfigState`), `CountryFlagUtils`, `ProxyServerStateOperations` (чистая часть `ProxyServerUseCases`), импорт профиля в `AppState` (`AppStateTrafficConfigImport`), `AppBackupMapper`. Все существующие Android-тесты (oracle) проходят без изменений: 3238 GREEN, `assembleDebug` GREEN. Осталось в Android: порты фиксации обновления подписок (`AndroidSubscriptionRefreshCommitPort`, нужен общий интерфейс каталога серверов), `SubscriptionUpdateUseCase` (использует `java.net.URI`, нужен jvmMain или замена), `ProxyServerRuntimeUseCases` (зависит от движка и тостов), `AppStateJson` (формат Room).
+- [~] Этап 1 (30 октября): в shared перенесены, с сохранением пакетов и FQN, `AppState`-мапперы записей и настроек (`AppStateRecordMappers`), операции над профилями (`TrafficConfigState`), `CountryFlagUtils`, `ProxyServerStateOperations` (чистая часть `ProxyServerUseCases`), импорт профиля в `AppState` (`AppStateTrafficConfigImport`), `AppBackupMapper`. Все существующие Android-тесты (oracle) проходят без изменений: 3238 GREEN, `assembleDebug` GREEN. Порты фиксации обновления подписок и `applyProxySubscriptionUpdates` перенесены в `shared/app` (`SubscriptionRefreshApplication`, на `AppStateStore` и `ProxyServerRepository`), Android оставил тонкую обёртку с прежней сигнатурой. Осталось в Android: `SubscriptionUpdateUseCase` (использует `java.net.URI`, нужен jvmMain или замена), `ProxyServerRuntimeUseCases` (зависит от движка и тостов), `AppStateJson` (формат Room).
 - [ ] Этап 2
 - [ ] Этап 3
 - [ ] Этап 4
