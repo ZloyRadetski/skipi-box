@@ -102,15 +102,35 @@ fun SkipiSettingsCategoryEntry(
 ) {
     val entryDescription = contentDescription
     Column(modifier = modifier.fillMaxWidth()) {
-        ListItem(
+        // A plain Row, not ListItem: ListItem reserves a fixed two/three-line height, which left an
+        // empty "chin" under short summaries.
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(role = Role.Button, onClick = onClick)
                 .semantics {
                     selected?.let { this.selected = it }
                     entryDescription?.let { this.contentDescription = it }
-                },
-            headlineContent = {
+                }
+                .padding(horizontal = SkipiTheme.spacing.medium, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(SkipiTheme.shapes.small)
+                    .background(iconBackgroundColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Spacer(Modifier.width(SkipiTheme.spacing.medium))
+            androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = SkipiTheme.typography.titleMedium,
@@ -118,51 +138,36 @@ fun SkipiSettingsCategoryEntry(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-            },
-            supportingContent = summary?.takeIf(String::isNotBlank)?.let { text ->
-                { Text(text, style = SkipiTheme.typography.bodyMedium, color = SkipiTheme.colors.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis) }
-            },
-            leadingContent = {
-                androidx.compose.foundation.layout.Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(SkipiTheme.shapes.small)
-                        .background(iconBackgroundColor),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconColor,
-                        modifier = Modifier.size(22.dp),
+                summary?.takeIf(String::isNotBlank)?.let { text ->
+                    Text(
+                        text = text,
+                        style = SkipiTheme.typography.bodyMedium,
+                        color = SkipiTheme.colors.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-            },
-            trailingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    value?.takeIf(String::isNotBlank)?.let {
-                        Text(
-                            text = it,
-                            style = SkipiTheme.typography.bodyMedium,
-                            color = SkipiTheme.colors.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Spacer(Modifier.width(SkipiTheme.spacing.small))
-                    }
-                    trailingIcon?.let {
-                        Icon(
-                            imageVector = it,
-                            contentDescription = null,
-                            tint = SkipiTheme.colors.onSurfaceVariant.copy(alpha = 0.72f),
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                }
-            },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            tonalElevation = 0.dp,
-        )
+            }
+            value?.takeIf(String::isNotBlank)?.let {
+                Spacer(Modifier.width(SkipiTheme.spacing.small))
+                Text(
+                    text = it,
+                    style = SkipiTheme.typography.bodyMedium,
+                    color = SkipiTheme.colors.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            trailingIcon?.let {
+                Spacer(Modifier.width(SkipiTheme.spacing.small))
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = SkipiTheme.colors.onSurfaceVariant.copy(alpha = 0.72f),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
         if (showDivider) {
             HorizontalDivider(
                 modifier = Modifier.padding(start = 72.dp, end = SkipiTheme.spacing.medium),

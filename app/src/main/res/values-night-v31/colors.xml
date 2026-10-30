@@ -1,5 +1,6 @@
 <resources>
     <color name="ic_launcher_background">#787AFF</color>
     <color name="ic_launcher_monet_background">@android:color/system_accent1_10</color>
+    <color name="ic_launcher_monet_accent">@android:color/system_accent1_300</color>
     <color name="ic_launcher_monet_foreground">@android:color/system_accent1_600</color>
 </resources>

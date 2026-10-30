@@ -75,6 +75,7 @@ import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.navigation.SkipiNavigationBarSize
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.ic_skipi_logo
 import app.skipi.ui.resources.proxy_server_list_duplicates_deleted
 import app.skipi.ui.resources.proxy_server_list_invalid_deleted
 import app.skipi.ui.resources.proxy_server_list_no_duplicates
@@ -130,6 +131,7 @@ fun main() = application {
         state = WindowState(size = DpSize(1180.dp, 860.dp)),
         onCloseRequest = { closeRequested = true },
         title = "SKIPI",
+        icon = org.jetbrains.compose.resources.painterResource(Res.drawable.ic_skipi_logo),
     ) {
         var desktopSettings by remember {
             mutableStateOf(DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })

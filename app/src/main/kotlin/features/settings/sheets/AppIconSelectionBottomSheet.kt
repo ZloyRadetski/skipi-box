@@ -84,7 +84,7 @@ internal enum class AppIconDescriptor(
         mode = AppIconDark,
         titleRes = R.string.app_icon_dark,
         backgroundDrawableRes = R.drawable.ic_launcher_dark_background,
-        foregroundDrawableRes = R.drawable.ic_launcher_foreground,
+        foregroundDrawableRes = R.drawable.ic_launcher_dark_foreground,
     ),
     Light(
         mode = AppIconLight,
@@ -108,19 +108,19 @@ internal enum class AppIconDescriptor(
         mode = AppIconSunset,
         titleRes = R.string.app_icon_sunset,
         backgroundDrawableRes = R.drawable.ic_launcher_sunset_background,
-        foregroundDrawableRes = R.drawable.ic_launcher_foreground,
+        foregroundDrawableRes = R.drawable.ic_launcher_sunset_foreground,
     ),
     Nordic(
         mode = AppIconNordic,
         titleRes = R.string.app_icon_nordic,
         backgroundDrawableRes = R.drawable.ic_launcher_nordic_background,
-        foregroundDrawableRes = R.drawable.ic_launcher_foreground,
+        foregroundDrawableRes = R.drawable.ic_launcher_nordic_foreground,
     ),
     Emerald(
         mode = AppIconEmerald,
         titleRes = R.string.app_icon_emerald,
         backgroundDrawableRes = R.drawable.ic_launcher_emerald_background,
-        foregroundDrawableRes = R.drawable.ic_launcher_foreground,
+        foregroundDrawableRes = R.drawable.ic_launcher_emerald_foreground,
     ),
     Stealth(
         mode = AppIconStealth,
