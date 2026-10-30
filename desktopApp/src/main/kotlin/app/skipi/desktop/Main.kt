@@ -119,7 +119,7 @@ import platform.TunnelConnectRequest
 import features.config.runtime.ActiveGeoResourceRefreshTrigger
 import features.config.runtime.TrafficConfigRefreshTarget
 import features.config.TrafficConfigState
-import features.subscription.runtime.SubscriptionRefreshTarget
+import app.skipi.app.model.SubscriptionRecord
 import features.resources.ResourceFileDownloadCancelledException
 import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
@@ -576,15 +576,8 @@ fun main() = application {
                 val desktopSubscriptionAutoUpdater = remember(desktopSubscriptionRefreshCoordinator) {
                     DesktopSubscriptionAutoUpdater(
                         readLatestTargets = {
-                            desktopSharedApplication.subscriptions.catalog.value.subscriptions.map { subscription ->
-                                SubscriptionRefreshTarget(
-                                    id = subscription.id,
-                                    url = subscription.url,
-                                    enabled = subscription.enabled,
-                                    updateInterval = subscription.updateInterval,
-                                    lastUpdatedAtMillis = subscription.lastUpdatedAtMillis ?: 0L,
-                                )
-                            }
+                            desktopSharedApplication.subscriptions.catalog.value.subscriptions
+                                .map(SubscriptionRecord::toRefreshTarget)
                         },
                         isNetworkConnected = ::isDesktopNetworkConnected,
                         updateAutomatically = desktopSubscriptionRefreshCoordinator::refreshScheduled,
@@ -594,32 +587,19 @@ fun main() = application {
                 val desktopSubscriptionAutoUpdateWakeups = remember { Channel<Unit>(Channel.CONFLATED) }
                 LaunchedEffect(desktopSubscriptionAutoUpdater, routeSubscriptionCatalog) {
                     desktopSubscriptionAutoUpdater.observeTargets(
-                        routeSubscriptionCatalog.subscriptions.map { subscription ->
-                            SubscriptionRefreshTarget(
-                                id = subscription.id,
-                                url = subscription.url,
-                                enabled = subscription.enabled,
-                                updateInterval = subscription.updateInterval,
-                                lastUpdatedAtMillis = subscription.lastUpdatedAtMillis ?: 0L,
-                            )
-                        },
+                        routeSubscriptionCatalog.subscriptions.map(SubscriptionRecord::toRefreshTarget),
                     )
                     desktopSubscriptionAutoUpdateWakeups.trySend(Unit)
                 }
-                LaunchedEffect(desktopSubscriptionAutoUpdater, closeRequested) {
-                    if (closeRequested) return@LaunchedEffect
-                    runDesktopAutomaticRefreshLoop(
-                        runDue = desktopSubscriptionAutoUpdater::runDue,
-                        nextWakeupAtMillis = desktopSubscriptionAutoUpdater::nextWakeupAtMillis,
-                        wakeups = desktopSubscriptionAutoUpdateWakeups,
-                        nowMillis = System::currentTimeMillis,
-                        minimumDelayMillis = DesktopSubscriptionSchedulerMinimumDelayMillis,
-                        idleDelayMillis = DesktopSubscriptionSchedulerIdleDelayMillis,
-                        onFailure = { error ->
-                            DesktopLogger.error("Subscriptions", "Automatic subscription update failed", error)
-                        },
-                    )
-                }
+                DesktopAutomaticRefresh(
+                    updater = desktopSubscriptionAutoUpdater,
+                    enabled = !closeRequested,
+                    failureSource = "Subscriptions",
+                    failureMessage = "Automatic subscription update failed",
+                    runDue = desktopSubscriptionAutoUpdater::runDue,
+                    nextWakeupAtMillis = desktopSubscriptionAutoUpdater::nextWakeupAtMillis,
+                    wakeups = desktopSubscriptionAutoUpdateWakeups,
+                )
                 val desktopResourceFileServices = remember(subscriptionScope, desktopProfileResourceFiles) {
                     DesktopResourceFileServices(
                         scope = subscriptionScope,
@@ -664,11 +644,7 @@ fun main() = application {
                 }
                 val resourceAutoUpdater = remember(desktopResourceFileServices) {
                     DesktopResourceAutoUpdater(
-                        readLatestTargets = {
-                            latestConfigLibrary.configs
-                                .map { it.toTrafficConfigState(desktopResourceProfileFallbackUserAgent()) }
-                                .map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget)
-                        },
+                        readLatestTargets = { latestConfigLibrary.toRefreshTargets() },
                         isNetworkConnected = ::isDesktopNetworkConnected,
                         updateAutomatically = desktopResourceFileServices::updateAutomatically,
                         nowMillis = System::currentTimeMillis,
@@ -709,11 +685,7 @@ fun main() = application {
                 }
                 val desktopTrafficConfigAutoUpdater = remember(desktopTrafficConfigAutoRefresh) {
                     DesktopTrafficConfigAutoUpdater(
-                        readLatestTargets = {
-                            latestConfigLibrary.configs
-                                .map { it.toTrafficConfigState(desktopResourceProfileFallbackUserAgent()) }
-                                .map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget)
-                        },
+                        readLatestTargets = { latestConfigLibrary.toRefreshTargets() },
                         isNetworkConnected = ::isDesktopNetworkConnected,
                         updateAutomatically = desktopTrafficConfigAutoRefresh::run,
                         nowMillis = System::currentTimeMillis,
@@ -742,9 +714,7 @@ fun main() = application {
 
                 LaunchedEffect(resourceAutoUpdater, latestConfigLibrary) {
                     val library = latestConfigLibrary
-                    val profiles = library.configs.map { profile ->
-                        profile.toTrafficConfigState(desktopResourceProfileFallbackUserAgent())
-                    }
+                    val profiles = library.toTrafficConfigStates()
                     resourceAutoUpdater.observeTargets(
                         profiles.map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget),
                     )
@@ -761,41 +731,28 @@ fun main() = application {
                     resourceAutoUpdateWakeups.trySend(Unit)
                 }
 
-                LaunchedEffect(resourceAutoUpdater) {
-                    runDesktopAutomaticRefreshLoop(
-                        runDue = resourceAutoUpdater::runDue,
-                        nextWakeupAtMillis = resourceAutoUpdater::nextWakeupAtMillis,
-                        wakeups = resourceAutoUpdateWakeups,
-                        nowMillis = System::currentTimeMillis,
-                        minimumDelayMillis = DesktopSubscriptionSchedulerMinimumDelayMillis,
-                        idleDelayMillis = DesktopSubscriptionSchedulerIdleDelayMillis,
-                        onFailure = { error ->
-                            DesktopLogger.error("ResourceFiles", "Automatic resource update failed", error)
-                        },
-                    )
-                }
+                DesktopAutomaticRefresh(
+                    updater = resourceAutoUpdater,
+                    failureSource = "ResourceFiles",
+                    failureMessage = "Automatic resource update failed",
+                    runDue = resourceAutoUpdater::runDue,
+                    nextWakeupAtMillis = resourceAutoUpdater::nextWakeupAtMillis,
+                    wakeups = resourceAutoUpdateWakeups,
+                )
 
                 LaunchedEffect(desktopTrafficConfigAutoUpdater, latestConfigLibrary) {
-                    val targets = latestConfigLibrary.configs
-                        .map { it.toTrafficConfigState(desktopResourceProfileFallbackUserAgent()) }
-                        .map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget)
-                    desktopTrafficConfigAutoUpdater.observeTargets(targets)
+                    desktopTrafficConfigAutoUpdater.observeTargets(latestConfigLibrary.toRefreshTargets())
                     desktopTrafficConfigAutoUpdateWakeups.trySend(Unit)
                 }
 
-                LaunchedEffect(desktopTrafficConfigAutoUpdater) {
-                    runDesktopAutomaticRefreshLoop(
-                        runDue = desktopTrafficConfigAutoUpdater::runDue,
-                        nextWakeupAtMillis = desktopTrafficConfigAutoUpdater::nextWakeupAtMillis,
-                        wakeups = desktopTrafficConfigAutoUpdateWakeups,
-                        nowMillis = System::currentTimeMillis,
-                        minimumDelayMillis = DesktopSubscriptionSchedulerMinimumDelayMillis,
-                        idleDelayMillis = DesktopSubscriptionSchedulerIdleDelayMillis,
-                        onFailure = { error ->
-                            DesktopLogger.error("TrafficConfig", "Automatic profile refresh failed", error)
-                        },
-                    )
-                }
+                DesktopAutomaticRefresh(
+                    updater = desktopTrafficConfigAutoUpdater,
+                    failureSource = "TrafficConfig",
+                    failureMessage = "Automatic profile refresh failed",
+                    runDue = desktopTrafficConfigAutoUpdater::runDue,
+                    nextWakeupAtMillis = desktopTrafficConfigAutoUpdater::nextWakeupAtMillis,
+                    wakeups = desktopTrafficConfigAutoUpdateWakeups,
+                )
                 val desktopTunnelController = remember(coreController, systemProxyManager) {
                     DesktopTunnelController(
                         configForProfile = {
@@ -2143,17 +2100,6 @@ private fun DesktopBottomNavigation(
 private val SkipiBackground: Color
     @Composable get() = DesktopContentBackground
 private const val NetworkAutomationPollMillis = 5_000L
-private const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
-private const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L
-private fun TrafficConfigState.toDesktopTrafficConfigRefreshTarget() = TrafficConfigRefreshTarget(
-    id = id,
-    sourceUrl = sourceUrl,
-    autoUpdate = autoUpdate,
-    updateLocked = updateLocked,
-    updateInterval = updateInterval,
-    resourceAutoUpdate = resourceSettings.autoUpdate,
-    resourceUpdateInterval = resourceSettings.updateInterval,
-)
 
 private class DesktopSubscriptionServerStopAction {
     var action: suspend () -> Unit = {}

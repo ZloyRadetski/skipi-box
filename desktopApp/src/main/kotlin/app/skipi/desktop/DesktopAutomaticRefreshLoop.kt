@@ -3,6 +3,13 @@
 
 package app.skipi.desktop
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import app.skipi.app.config.toTrafficConfigState
+import app.skipi.app.model.SubscriptionRecord
+import features.config.TrafficConfigState
+import features.config.runtime.TrafficConfigRefreshTarget
+import features.subscription.runtime.SubscriptionRefreshTarget
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -53,3 +60,56 @@ internal suspend fun runDesktopAutomaticRefreshLoop(
         launchDuePass()
     }
 }
+
+internal const val DesktopSubscriptionSchedulerMinimumDelayMillis = 1_000L
+internal const val DesktopSubscriptionSchedulerIdleDelayMillis = 60L * 60L * 1_000L
+
+/** Runs [runDue] on its schedule while [enabled]; the loop restarts when [updater] or [enabled] changes. */
+@Composable
+internal fun DesktopAutomaticRefresh(
+    updater: Any,
+    enabled: Boolean = true,
+    failureSource: String,
+    failureMessage: String,
+    runDue: suspend () -> Unit,
+    nextWakeupAtMillis: () -> Long?,
+    wakeups: ReceiveChannel<Unit>,
+) {
+    LaunchedEffect(updater, enabled) {
+        if (!enabled) return@LaunchedEffect
+        runDesktopAutomaticRefreshLoop(
+            runDue = runDue,
+            nextWakeupAtMillis = nextWakeupAtMillis,
+            wakeups = wakeups,
+            nowMillis = System::currentTimeMillis,
+            minimumDelayMillis = DesktopSubscriptionSchedulerMinimumDelayMillis,
+            idleDelayMillis = DesktopSubscriptionSchedulerIdleDelayMillis,
+            onFailure = { error -> DesktopLogger.error(failureSource, failureMessage, error) },
+        )
+    }
+}
+
+internal fun SubscriptionRecord.toRefreshTarget() = SubscriptionRefreshTarget(
+    id = id,
+    url = url,
+    enabled = enabled,
+    updateInterval = updateInterval,
+    lastUpdatedAtMillis = lastUpdatedAtMillis ?: 0L,
+)
+
+internal fun TrafficConfigState.toDesktopTrafficConfigRefreshTarget() = TrafficConfigRefreshTarget(
+    id = id,
+    sourceUrl = sourceUrl,
+    autoUpdate = autoUpdate,
+    updateLocked = updateLocked,
+    updateInterval = updateInterval,
+    resourceAutoUpdate = resourceSettings.autoUpdate,
+    resourceUpdateInterval = resourceSettings.updateInterval,
+)
+
+/** Profiles as traffic-config states, using Desktop's resource user-agent fallback. */
+internal fun DesktopConfigLibrary.toTrafficConfigStates(): List<TrafficConfigState> =
+    configs.map { profile -> profile.toTrafficConfigState(desktopResourceProfileFallbackUserAgent()) }
+
+internal fun DesktopConfigLibrary.toRefreshTargets(): List<TrafficConfigRefreshTarget> =
+    toTrafficConfigStates().map(TrafficConfigState::toDesktopTrafficConfigRefreshTarget)
