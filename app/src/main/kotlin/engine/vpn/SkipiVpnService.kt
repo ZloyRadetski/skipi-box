@@ -15,6 +15,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
 import android.net.Network
+import android.net.LinkProperties
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.ProxyInfo
@@ -627,7 +628,7 @@ class SkipiVpnService : VpnService() {
         if (!config.enableSeamlessNetworkSwitching || networkHandoverCallback != null) return
         val connectivityManager = getSystemService(ConnectivityManager::class.java) ?: return
         val initialNetwork = connectivityManager.activePhysicalNetwork()
-        physicalNetworkHandoverTracker.reset(initialNetwork)
+        physicalNetworkHandoverTracker.reset(initialNetwork, connectivityManager.linkFingerprint(initialNetwork))
 
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
@@ -642,6 +643,11 @@ class SkipiVpnService : VpnService() {
                 ) {
                     scheduleNetworkHandoverReconciliation(this)
                 }
+            }
+
+            // A cell change or reattach keeps the same Network but moves it to another interface or address.
+            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+                scheduleNetworkHandoverReconciliation(this)
             }
 
             override fun onLost(network: Network) {
@@ -731,7 +737,7 @@ class SkipiVpnService : VpnService() {
             // snapshot under the operation lock avoids recovering an upstream
             // that a concurrent full VPN restart has already replaced.
             val currentNetwork = connectivityManager.activePhysicalNetwork()
-            physicalNetworkHandoverTracker.observe(currentNetwork)
+            physicalNetworkHandoverTracker.observe(currentNetwork, connectivityManager.linkFingerprint(currentNetwork))
             updateUnderlyingNetworks(currentNetwork)
             if (currentNetwork == null || !physicalNetworkHandoverTracker.hasPendingRecovery(currentNetwork)) {
                 return@withLock
@@ -771,6 +777,14 @@ class SkipiVpnService : VpnService() {
                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) &&
                 !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
         }
+    }
+
+    private fun ConnectivityManager.linkFingerprint(network: Network?): String? {
+        val properties = network?.let(::getLinkProperties) ?: return null
+        return physicalLinkFingerprint(
+            interfaceName = properties.interfaceName,
+            addresses = properties.linkAddresses.map { link -> link.address.address },
+        )
     }
 
     private fun updateUnderlyingNetworks(network: Network?) {
