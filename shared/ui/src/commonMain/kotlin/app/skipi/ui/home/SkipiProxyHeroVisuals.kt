@@ -151,6 +151,7 @@ fun SkipiProxyHeroConnectingSpinner(
     size: Dp = 92.dp,
     modifier: Modifier = Modifier,
 ) {
+    // Read inside graphicsLayer, not here: reading the value in composition recomposed the spinner every frame.
     val rotation = rememberInfiniteTransition(label = "skipiProxyHeroConnectingSpinner")
         .animateFloat(
             initialValue = 0f,
@@ -161,12 +162,11 @@ fun SkipiProxyHeroConnectingSpinner(
             ),
             label = "skipiProxyHeroConnectingRotation",
         )
-        .value
 
     Box(
         modifier = modifier
             .size(size)
-            .graphicsLayer { rotationZ = rotation }
+            .graphicsLayer { rotationZ = rotation.value }
             .drawBehind {
                 drawArc(
                     brush = Brush.sweepGradient(
