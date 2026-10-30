@@ -212,11 +212,12 @@ fun SkipiProxyHeroClassicCard(
                 Box(modifier = Modifier.size(outerButtonSize), contentAlignment = Alignment.Center) {
                     if (connected) SkipiProxyHeroPowerButtonWaves(accent = colors.accent, size = buttonSize)
                     if (connecting) SkipiProxyHeroConnectingSpinner(accent = colors.accent, size = spinnerSize)
-                    val scale = stateScale * breathScale * pressScale
                     Box(
                         modifier = Modifier
                             .size(buttonSize)
                             .graphicsLayer {
+                                // Read while drawing: the breathing pulse must not recompose the card every frame.
+                                val scale = stateScale * breathScale * pressScale
                                 scaleX = scale
                                 scaleY = scale
                             }
