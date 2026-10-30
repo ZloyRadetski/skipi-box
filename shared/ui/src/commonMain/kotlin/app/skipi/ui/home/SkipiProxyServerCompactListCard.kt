@@ -136,8 +136,8 @@ fun SkipiProxyServerCompactListCard(
                     fallbackPainter = fallbackBadgePainter,
                     containerColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.07f),
                     fallbackTint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.85f),
-                    size = 32.dp,
-                    shapeRadius = 8.dp,
+                    size = if (state.inSubscriptionGroup) 28.dp else 32.dp,
+                    shapeRadius = if (state.inSubscriptionGroup) 7.dp else 8.dp,
                 )
                 Spacer(Modifier.width(SkipiTheme.spacing.small))
                 Column(
@@ -147,7 +147,7 @@ fun SkipiProxyServerCompactListCard(
                     Text(
                         text = state.title,
                         style = SkipiTheme.typography.titleSmall,
-                        fontSize = if (state.inSubscriptionGroup) 15.sp else SkipiTheme.typography.titleSmall.fontSize,
+                        fontSize = if (state.inSubscriptionGroup) 14.sp else SkipiTheme.typography.titleSmall.fontSize,
                         fontWeight = titleFontWeight,
                         color = MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
@@ -169,7 +169,7 @@ fun SkipiProxyServerCompactListCard(
                             },
                             modifier = Modifier.weight(1f),
                             style = SkipiTheme.typography.bodySmall,
-                            fontSize = if (state.inSubscriptionGroup) 12.sp else SkipiTheme.typography.bodySmall.fontSize,
+                            fontSize = if (state.inSubscriptionGroup) 11.sp else SkipiTheme.typography.bodySmall.fontSize,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -189,7 +189,7 @@ fun SkipiProxyServerCompactListCard(
                                 Text(
                                     text = state.latencyText,
                                     style = SkipiTheme.typography.labelSmall,
-                                    fontSize = if (state.inSubscriptionGroup) 12.sp else SkipiTheme.typography.labelSmall.fontSize,
+                                    fontSize = if (state.inSubscriptionGroup) 11.sp else SkipiTheme.typography.labelSmall.fontSize,
                                     fontWeight = latencyFontWeight,
                                     color = state.latencyColor,
                                     maxLines = 1,

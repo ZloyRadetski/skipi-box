@@ -17,14 +17,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import org.jetbrains.compose.resources.stringResource
-import app.skipi.ui.resources.common_more
-import app.skipi.ui.resources.common_less
 import app.skipi.ui.resources.Res
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,23 +75,16 @@ internal fun SubscriptionSummaryDetails(
                 color = colors.mutedText,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
         }
 
         state.announcementText?.takeIf(String::isNotBlank)?.let { announcementText ->
             val announcementAction = actions.onAnnouncement
-            var announcementExpanded by remember(announcementText) { mutableStateOf(false) }
-            var announcementOverflows by remember(announcementText) { mutableStateOf(false) }
             Text(
                 text = announcementText,
                 color = if (announcementAction != null) colors.enabled else colors.mutedText,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
-                maxLines = if (announcementExpanded) Int.MAX_VALUE else 2,
-                overflow = TextOverflow.Ellipsis,
-                onTextLayout = { layout -> if (!announcementExpanded) announcementOverflows = layout.hasVisualOverflow },
                 modifier = if (announcementAction == null) {
                     Modifier
                 } else {
@@ -106,18 +94,6 @@ internal fun SubscriptionSummaryDetails(
                         .padding(vertical = 2.dp)
                 },
             )
-            if (announcementOverflows || announcementExpanded) {
-                Text(
-                    text = stringResource(if (announcementExpanded) Res.string.common_less else Res.string.common_more),
-                    color = colors.text,
-                    fontSize = 12.sp,
-                    fontWeight = themedFontWeight(FontWeight.SemiBold),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable(role = Role.Button) { announcementExpanded = !announcementExpanded }
-                        .padding(vertical = 2.dp),
-                )
-            }
         }
 
         val supportLabel = state.supportLabel?.takeIf(String::isNotBlank)
