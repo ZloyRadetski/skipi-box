@@ -594,7 +594,9 @@ class ProxyHomeStore(
 
         val sortedServers = sortServers(filteredServers, source.sortMode)
         val processedServers = sortedServers.map { server ->
-            server.copy(selected = server.id == selectedServerId)
+            val selected = server.id == selectedServerId
+            // The host already marks the selection, so most rows keep their instance instead of being copied.
+            if (server.selected == selected) server else server.copy(selected = selected)
         }
 
         val groupBuckets = HashMap<String, ArrayList<ProxyServerSummary>>(source.groups.size)

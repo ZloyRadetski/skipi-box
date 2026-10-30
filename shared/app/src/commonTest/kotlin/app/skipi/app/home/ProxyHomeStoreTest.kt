@@ -864,6 +864,39 @@ class ProxyHomeStoreTest {
         assertTrue(searchedState.selectedServer?.selected == true)
     }
 
+    @Test
+    fun uiStateReusesServerSummariesWhoseSelectionFlagAlreadyMatches() {
+        val alpha = ProxyServerSummary(
+            id = "server-1",
+            title = "Alpha",
+            address = "alpha.example",
+            protocol = "vless",
+            groupId = "group-1",
+            selected = false,
+        )
+        val beta = ProxyServerSummary(
+            id = "server-2",
+            title = "Beta",
+            address = "beta.example",
+            protocol = "vmess",
+            groupId = "group-1",
+            selected = false,
+        )
+        val store = createStore(
+            ProxyHomeInput(
+                selectedServerId = "server-2",
+                servers = listOf(alpha, beta),
+                groups = listOf(group("group-1", "Group one", setOf("server-1", "server-2"))),
+            ),
+        )
+
+        val pageServers = store.uiState.value.pages.single().servers
+        assertEquals(listOf("server-1", "server-2"), pageServers.map { it.id })
+        assertTrue(pageServers[0] === alpha, "an unselected row that stays unselected must not be copied")
+        assertTrue(pageServers[1].selected, "the selected row is marked selected")
+        assertEquals(beta.copy(selected = true), pageServers[1])
+    }
+
     private fun createStore(
         input: ProxyHomeInput = ProxyHomeInput(),
         effects: RecordingEffectHandler = RecordingEffectHandler(),
