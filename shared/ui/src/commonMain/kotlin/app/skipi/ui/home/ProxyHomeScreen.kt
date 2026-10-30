@@ -52,6 +52,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -968,24 +969,31 @@ private fun PageServerGrid(
     }
 }
 
+/** `HH:MM:SS`; hours grow past two digits instead of wrapping. */
+internal fun formatSessionDuration(totalSeconds: Long): String {
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    val h = if (hours < 10) "0$hours" else "$hours"
+    val m = if (minutes < 10) "0$minutes" else "$minutes"
+    val s = if (seconds < 10) "0$seconds" else "$seconds"
+    return "$h:$m:$s"
+}
+
+/**
+ * The ticking state is returned unread: the panel must not read it, so the one-second tick
+ * recomposes only the text that shows it instead of the whole connection panel.
+ */
 @Composable
-private fun rememberSessionDurationText(connected: Boolean): String? {
+private fun rememberSessionDuration(connected: Boolean): State<String>? {
     if (!connected) return null
-    val sessionDuration by produceState(initialValue = "00:00:00", connected) {
+    return produceState(initialValue = formatSessionDuration(0), connected) {
         val mark = TimeSource.Monotonic.markNow()
         while (true) {
-            val totalSeconds = mark.elapsedNow().inWholeSeconds
-            val hours = totalSeconds / 3600
-            val minutes = (totalSeconds % 3600) / 60
-            val seconds = totalSeconds % 60
-            val h = if (hours < 10) "0$hours" else "$hours"
-            val m = if (minutes < 10) "0$minutes" else "$minutes"
-            val s = if (seconds < 10) "0$seconds" else "$seconds"
-            value = "$h:$m:$s"
+            value = formatSessionDuration(mark.elapsedNow().inWholeSeconds)
             delay(1000)
         }
     }
-    return sessionDuration
 }
 
 @Composable
@@ -1035,7 +1043,7 @@ private fun HomeConnectionPanel(
         }
     }
 
-    val sessionDuration = rememberSessionDurationText(state.connectionPhase == ProxyConnectionPhase.Connected)
+    val sessionDuration = rememberSessionDuration(state.connectionPhase == ProxyConnectionPhase.Connected)
 
     val currentServer = state.selectedServer
     val currentServerLatencyMs = currentServer?.latencyMs
@@ -1076,7 +1084,7 @@ private fun HomeConnectionPanel(
         title = title,
         subtitle = subtitle,
         flag = flag,
-        sessionDurationText = sessionDuration,
+        sessionDuration = sessionDuration,
         latency = latency,
         memoryText = memoryText,
         ip = state.tunnelIp?.let { SkipiHeroIp(value = it.value, flag = it.flag) },

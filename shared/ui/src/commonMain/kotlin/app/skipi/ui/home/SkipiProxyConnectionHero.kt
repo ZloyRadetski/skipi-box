@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -77,7 +78,8 @@ data class SkipiProxyHeroState(
     val subtitle: String,
     val profileText: String? = null,
     val flag: String? = null,
-    val sessionDurationText: String? = null,
+    /** Ticking session time; read only by the leaf text so a tick never recomposes the hero. */
+    val sessionDuration: State<String>? = null,
     val latency: SkipiProxyHeroLatency? = null,
     val memoryText: String? = null,
     /** Tunnel public address; null until resolved. Shown only when [showIp] is on. */
@@ -307,11 +309,10 @@ fun SkipiProxyHeroClassicCard(
 
             if (compact) {
                 AnimatedVisibility(
-                    visible = connected && state.sessionDurationText != null,
+                    visible = connected && state.sessionDuration != null,
                     enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
                     exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
                 ) {
-                    val sessionDuration = state.sessionDurationText.orEmpty()
                     Column {
                         Spacer(Modifier.height(14.dp))
                         Row(
@@ -324,7 +325,7 @@ fun SkipiProxyHeroClassicCard(
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = sessionDuration,
+                                text = state.sessionDuration?.value.orEmpty(),
                                 fontSize = 13.sp,
                                 fontWeight = typography.body,
                                 color = colors.mutedText,
@@ -365,7 +366,7 @@ fun SkipiProxyHeroClassicCard(
             } else {
                 val tiles = skipiHeroInfoTiles(
                     phase = state.phase,
-                    sessionDurationText = state.sessionDurationText,
+                    sessionDurationText = state.sessionDuration?.let { "" },
                     latency = state.latency,
                     memoryText = state.memoryText,
                     ip = state.ip,
@@ -385,6 +386,7 @@ fun SkipiProxyHeroClassicCard(
                             labelColor = colors.mutedText,
                             valueColor = colors.text,
                             fontWeight = typography.emphasis,
+                            timeValue = state.sessionDuration,
                         )
                     }
                 }

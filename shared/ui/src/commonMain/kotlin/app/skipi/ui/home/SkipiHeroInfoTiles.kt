@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -93,13 +94,14 @@ fun SkipiHeroInfoTileGrid(
     valueColor: Color,
     fontWeight: FontWeight,
     modifier: Modifier = Modifier,
+    timeValue: State<String>? = null,
 ) {
     if (tiles.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         tiles.chunked(2).forEach { rowTiles ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 rowTiles.forEach { tile ->
-                    SkipiHeroInfoTile(tile, surface, labelColor, valueColor, fontWeight, Modifier.weight(1f))
+                    SkipiHeroInfoTile(tile, surface, labelColor, valueColor, fontWeight, Modifier.weight(1f), timeValue)
                 }
                 if (rowTiles.size == 1) Spacer(Modifier.weight(1f))
             }
@@ -115,6 +117,7 @@ private fun SkipiHeroInfoTile(
     valueColor: Color,
     fontWeight: FontWeight,
     modifier: Modifier = Modifier,
+    timeValue: State<String>? = null,
 ) {
     Column(
         modifier = modifier
@@ -145,7 +148,7 @@ private fun SkipiHeroInfoTile(
                 Spacer(Modifier.width(6.dp))
             }
             Text(
-                text = tile.value,
+                text = if (tile.kind == SkipiHeroTileKind.Time && timeValue != null) timeValue.value else tile.value,
                 fontSize = 14.sp,
                 fontWeight = fontWeight,
                 color = tile.color ?: valueColor,
