@@ -692,118 +692,17 @@ fun main() = application {
                     wakeups = desktopTrafficConfigAutoUpdateWakeups,
                 )
                 val desktopTunnelController = remember(coreController, systemProxyManager) {
-                    DesktopTunnelController(
-                        configForProfile = {
-                            val settingsSnapshot = latestDesktopSettings
-                            val routingSnapshot = settingsSnapshot.toRoutingConfigRecord()
-                            val serverLibrarySnapshot = latestServerLibrary
-                            val configLibrarySnapshot = latestConfigLibrary
-                            val trafficConfigContentSnapshot = configLibrarySnapshot.configs
-                                .associate { config -> config.id to config.content }
-                            val latencySnapshot = latestLatencyByServerId.toMap()
-                            runCatching {
-                                val globalAssetsDirectory = DesktopCoreRuntimes.discover().getOrThrow().directory
-                                val options = desktopLocalProxyRuntime.prepareStart(settingsSnapshot)
-                                buildDesktopSelectedServerConfig(
-                                    serverLibrary = serverLibrarySnapshot,
-                                    configLibrary = configLibrarySnapshot,
-                                    routing = routingSnapshot,
-                                    options = options,
-                                    trafficConfigContentById = trafficConfigContentSnapshot,
-                                    subscriptionPingUrl = settingsSnapshot.subscriptionPingUrl,
-                                    latencyByServerId = latencySnapshot,
-                                    routingDataDirectory = globalAssetsDirectory,
-                                )?.getOrThrow()
-                                    ?: error("Select a working server before connecting")
-                            }
-                        },
-                        startPlanForProfile = { _ ->
-                            runCatching {
-                                val settingsSnapshot = latestDesktopSettings
-                                val serverLibrarySnapshot = latestServerLibrary
-                                val configLibrarySnapshot = latestConfigLibrary
-                                val latencySnapshot = latestLatencyByServerId.toMap()
-                                prepareDesktopTunnelStartPlan(
-                                    settings = settingsSnapshot,
-                                    serverLibrary = serverLibrarySnapshot,
-                                    configLibrary = configLibrarySnapshot,
-                                    latencyByServerId = latencySnapshot,
-                                    localProxyRuntime = desktopLocalProxyRuntime,
-                                    resourceFiles = desktopProfileResourceFiles,
-                                    globalAssetsDirectory = DesktopCoreRuntimes.discover().getOrThrow().directory,
-                                )
-                            }
-                        },
-                        startCore = { request ->
-                            // Like Android: truncate the previous run's files, then follow the new ones.
-                            desktopCoreLogs.clear()
-                            desktopCoreLogs.startTailers(latestDesktopSettings)
-                            desktopLocalProxyRuntime.onCoreStarted(
-                                coreController.start(request.configuration, request.assetsDirectory),
-                            )
-                        },
-                        stopCore = {
-                            desktopLocalProxyRuntime.onCoreStopped(coreController.stop()).also {
-                                desktopCoreLogs.stopTailers()
-                            }
-                        },
-                        coreState = coreController::state,
-                        readCoreTraffic = coreController::readTunnelTraffic,
-                        awaitSystemProxyEndpoint = {
-                            val settings = latestDesktopSettings
-                            if (!settings.useSystemProxy || !systemProxyManager.isSupportedHost()) {
-                                Result.success(Unit)
-                            } else {
-                                val runningOptions = desktopLocalProxyRuntime.activeOptions(
-                                    coreRunning = coreController.state().isRunning,
-                                )
-                                if (runningOptions?.enableHttpProxy != true) {
-                                    Result.failure(
-                                        IllegalStateException("The running Core has no configured system-proxy HTTP inbound"),
-                                    )
-                                } else {
-                                    localProxyReadiness.awaitLoopbackHttpEndpoint(
-                                        port = runningOptions.httpProxyPort,
-                                        coreState = coreController::state,
-                                    )
-                                }
-                            }
-                        },
-                        acquireSystemProxy = {
-                            val settings = latestDesktopSettings
-                            when {
-                                !settings.useSystemProxy -> Result.success(Unit)
-                                !systemProxyManager.isSupportedHost() -> Result.failure(
-                                    IllegalStateException("Системный прокси не поддерживается на этой платформе"),
-                                )
-
-                                else -> {
-                                    val runningOptions = desktopLocalProxyRuntime.activeOptions(
-                                        coreRunning = coreController.state().isRunning,
-                                    )
-                                    if (runningOptions?.enableHttpProxy != true) {
-                                        Result.failure(
-                                            IllegalStateException("The running Core has no configured system-proxy HTTP inbound"),
-                                        )
-                                    } else {
-                                        systemProxyManager.acquire(
-                                            DesktopSystemProxyEndpoints(
-                                                httpPort = runningOptions.httpProxyPort,
-                                                socksPort = runningOptions.socksPort,
-                                            ),
-                                        ).map { }
-                                    }
-                                }
-                            }
-                        },
-                        releaseSystemProxy = {
-                            if (systemProxyManager.isSupportedHost()) {
-                                systemProxyManager.release().map { }
-                            } else {
-                                Result.success(Unit)
-                            }
-                        },
-                        systemProxySupported = systemProxyManager::isSupportedHost,
+                    createDesktopTunnelController(
+                        coreController = coreController,
+                        systemProxyManager = systemProxyManager,
+                        localProxyRuntime = desktopLocalProxyRuntime,
+                        localProxyReadiness = localProxyReadiness,
+                        resourceFiles = desktopProfileResourceFiles,
+                        coreLogs = desktopCoreLogs,
+                        readSettings = { latestDesktopSettings },
+                        readServers = { latestServerLibrary },
+                        readConfigs = { latestConfigLibrary },
+                        readLatency = { latestLatencyByServerId },
                     )
                 }
                 val selectedTunnelProfileId = configLibrary.selectedConfigId?.toString()
