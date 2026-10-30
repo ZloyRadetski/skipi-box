@@ -351,6 +351,21 @@ fun ProxyHomeScreenContent(
         layoutDirection = LocalLayoutDirection.current,
     )
     val listBottomPadding = bottomInsetTreatment.listBottomPadding
+    // The server list scrolls full-bleed: it grows over the column's side padding (pages keep the padding
+    // as content padding) and fades at the top and bottom instead of ending in a visible edge.
+    val listEdge = SkipiTheme.spacing.screenHorizontal
+    val listFade = 12.dp
+    val listBottomBleed = SkipiTheme.spacing.screenVertical
+    val phoneListPadding = PaddingValues(
+        start = listEdge,
+        top = listFade,
+        end = listEdge,
+        bottom = listBottomPadding + listBottomBleed,
+    )
+    val phoneListModifier = Modifier
+        .fillMaxSize()
+        .scrollBleed(horizontal = listEdge, top = listFade, bottom = listBottomBleed)
+        .verticalEdgeFade(top = listFade, bottom = listFade)
 
     val pageCount = state.pages.size.coerceAtLeast(1)
     val selectedPageIndex = remember(state.pages, state.selectedGroupId) {
@@ -576,7 +591,8 @@ fun ProxyHomeScreenContent(
                             page = fallbackPage,
                             state = state,
                             columns = columns,
-                            contentPadding = PaddingValues(bottom = listBottomPadding),
+                            modifier = phoneListModifier,
+                            contentPadding = phoneListPadding,
                             pullRefreshController = pullRefreshController,
                             pullRefreshPresentation = pullRefreshPresentation,
                             groupSelector = groupSelectorContent,
@@ -617,7 +633,7 @@ fun ProxyHomeScreenContent(
                     } else {
                         HorizontalPager(
                             state = pagerState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = phoneListModifier,
                             userScrollEnabled = state.subscriptionSwipeEnabled,
                             verticalAlignment = Alignment.Top,
                             pageSpacing = SkipiTheme.spacing.medium,
@@ -628,7 +644,7 @@ fun ProxyHomeScreenContent(
                                 page = page,
                                 state = state,
                                 columns = columns,
-                                contentPadding = PaddingValues(bottom = listBottomPadding),
+                                contentPadding = phoneListPadding,
                                 pullRefreshController = pullRefreshController,
                                 pullRefreshPresentation = pullRefreshPresentation,
                                 groupSelector = groupSelectorContent,
