@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +29,10 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -157,28 +159,14 @@ fun SkipiProxyServerCompactListCard(
                             .padding(top = if (state.inSubscriptionGroup) 2.dp else SkipiTheme.spacing.extraSmall),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        SkipiProxyProtocolChip(
-                            text = state.protocol,
-                            chipColor = state.protocolColor,
-                            modifier = Modifier.weight(1f, fill = false),
-                            compact = true,
-                            selected = state.selected,
-                            fontWeight = titleFontWeight,
-                        )
-                        state.transport?.takeIf(String::isNotBlank)?.let { transport ->
-                            Spacer(Modifier.width(SkipiTheme.spacing.extraSmall))
-                            SkipiProxyTransportChip(
-                                text = transport,
-                                textColor = state.transportTextColor,
-                                containerColor = state.transportContainerColor,
-                                modifier = Modifier.weight(1f, fill = false).widthIn(max = 96.dp),
-                                compact = true,
-                                fontWeight = latencyFontWeight,
-                            )
-                        }
-                        Spacer(Modifier.width(SkipiTheme.spacing.small))
                         Text(
-                            text = state.summary,
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(color = state.protocolColor, fontWeight = titleFontWeight)) {
+                                    append(state.protocol)
+                                }
+                                state.transport?.takeIf(String::isNotBlank)?.let { append("  ·  $it") }
+                                if (state.summary.isNotBlank()) append("  ·  ${state.summary}")
+                            },
                             modifier = Modifier.weight(1f),
                             style = SkipiTheme.typography.bodySmall,
                             fontSize = if (state.inSubscriptionGroup) 12.sp else SkipiTheme.typography.bodySmall.fontSize,

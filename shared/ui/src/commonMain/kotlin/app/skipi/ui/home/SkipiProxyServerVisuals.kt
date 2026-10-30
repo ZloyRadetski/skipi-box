@@ -5,6 +5,7 @@ package app.skipi.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,7 @@ fun SkipiProxyServerFlagBadge(
     shapeRadius: Dp = 8.dp,
 ) {
     val shape = RoundedCornerShape(shapeRadius)
+    val flagBitmap = rememberCountryFlagBitmap(flag)
     Box(
         modifier = modifier
             .size(size)
@@ -41,7 +43,9 @@ fun SkipiProxyServerFlagBadge(
             .background(containerColor),
         contentAlignment = Alignment.Center,
     ) {
-        if (flag != null) {
+        if (flagBitmap != null) {
+            SkipiCountryFlagImage(flagBitmap, Modifier.fillMaxSize())
+        } else if (flag != null) {
             Text(
                 text = flag,
                 fontSize = (size.value * 0.58f).sp,

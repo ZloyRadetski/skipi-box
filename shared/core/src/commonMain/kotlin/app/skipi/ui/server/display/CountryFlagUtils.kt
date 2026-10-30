@@ -86,6 +86,23 @@ object CountryFlagUtils {
     }
 
     /**
+     * Lowercase ISO 3166-1 alpha-2 code (e.g. "nl") of the leading flag emoji in [text],
+     * or null when the text does not start with a regional-indicator flag.
+     */
+    fun countryCodeOfFlag(text: String?): String? {
+        if (text.isNullOrEmpty()) return null
+        val flag = extractLeadingCountryFlag(text) ?: return null
+        val first = codePointAt(flag, 0)
+        if (first !in REGIONAL_INDICATOR_MIN..REGIONAL_INDICATOR_MAX) return null
+        val second = codePointAt(flag, charCount(first))
+        if (second !in REGIONAL_INDICATOR_MIN..REGIONAL_INDICATOR_MAX) return null
+        return buildString(2) {
+            append('a' + (first - REGIONAL_INDICATOR_MIN))
+            append('a' + (second - REGIONAL_INDICATOR_MIN))
+        }
+    }
+
+    /**
      * Strips the leading country flag emoji (and following spaces) from [text],
      * returning the clean server name. If removing the flag would leave the string empty,
      * returns the original [text].
