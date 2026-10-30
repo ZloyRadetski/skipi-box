@@ -48,7 +48,6 @@ import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
 import app.skipi.ui.updater.SkipiAppUpdateBanner
 import features.updater.AppUpdateState
 import features.updater.bannerModel
-import features.networkautomation.policy.NetworkAutomationAction
 import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.theme.SkipiTheme
@@ -1021,39 +1020,14 @@ fun main() = application {
                         desktopSettings.networkAutomationRules,
                     ) {
                         if (!automationPlan.shouldListen) return@LaunchedEffect
-                        var previousNetworkId: String? = null
-                        while (true) {
-                            val observed = withContext(Dispatchers.IO) {
-                                observeDesktopNetwork(
-                                    interfaces = readDesktopNetworkInterfaces(),
-                                    ssidProvider = { if (automationPlan.requiresWifiSsid) readDesktopWifiSsid() else null },
-                                )
-                            }
-                            val step = evaluateDesktopNetworkAutomation(
-                                settings = desktopSettings,
-                                availableServerIds = serverLibrary.servers.mapTo(mutableSetOf()) { it.id },
-                                selectedServerId = serverLibrary.selectedServerId,
-                                vpnRunning = tunnel.coreState.isRunning,
-                                previousNetworkId = previousNetworkId,
-                                observed = observed,
-                            )
-                            previousNetworkId = step.networkId
-                            when (val action = step.action) {
-                                NetworkAutomationAction.None -> Unit
-                                NetworkAutomationAction.Disconnect -> if (tunnel.desiredRunning && !tunnel.operationInProgress) {
-                                    desktopToggleTunnel()
-                                }
-                                is NetworkAutomationAction.Restart -> {
-                                    runCatching { proxyServerRepository.selectAndCommit(action.serverId) }
-                                    tunnel.requestReconnect("Автоматизация сети: смена сервера.")
-                                }
-                                is NetworkAutomationAction.Start -> {
-                                    runCatching { proxyServerRepository.selectAndCommit(action.serverId) }
-                                    if (!tunnel.desiredRunning && !tunnel.operationInProgress) desktopToggleTunnel()
-                                }
-                            }
-                            delay(NetworkAutomationPollMillis)
-                        }
+                        runDesktopNetworkAutomation(
+                            plan = automationPlan,
+                            readSettings = { desktopSettings },
+                            readServers = { serverLibrary },
+                            tunnel = tunnel,
+                            proxyServerRepository = proxyServerRepository,
+                            toggleTunnel = desktopToggleTunnel,
+                        )
                     }
                     if (!desktopSettings.onboardingCompleted) {
                         val onboardingLocale = remember { DesktopApplicationLocale(java.util.Locale.getDefault(), java.util.Locale::setDefault) }
@@ -1624,7 +1598,6 @@ private fun DesktopBottomNavigation(
 
 private val SkipiBackground: Color
     @Composable get() = DesktopContentBackground
-private const val NetworkAutomationPollMillis = 5_000L
 
 private class DesktopSubscriptionServerStopAction {
     var action: suspend () -> Unit = {}
