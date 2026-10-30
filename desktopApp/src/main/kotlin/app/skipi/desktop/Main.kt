@@ -39,13 +39,9 @@ import app.skipi.app.proxy.deleteProxyServerRecords
 import app.skipi.app.proxy.ProxyServerStopOutcome
 import app.skipi.app.store.SharedApplicationAction
 import app.skipi.app.store.SharedApplicationActionOutcome
-import app.skipi.app.subscription.SubscriptionRefreshCommitScope
 import app.skipi.app.subscription.SubscriptionRefreshLoadRequest
 import app.skipi.app.subscription.SubscriptionRefreshLoader
-import app.skipi.app.subscription.SubscriptionRefreshResult
 import app.skipi.ui.subscription.toSubscriptionRecord
-import app.skipi.ui.home.SubscriptionRefreshMessageSummary
-import app.skipi.ui.home.formatSubscriptionRefreshMessage
 import app.skipi.ui.home.formatSubscriptionInstallMessage
 import app.skipi.ui.navigation.SkipiMainDestination
 import app.skipi.ui.navigation.SkipiExpressiveNavigationBar
@@ -161,12 +157,7 @@ fun main() = application {
                 }
                 var configLibrary by remember { mutableStateOf(DesktopConfigLibraries.loadDefault().getOrElse { DesktopConfigLibrary() }) }
                 var serverLink by remember { mutableStateOf("") }
-                var subscriptionUrl by remember { mutableStateOf("") }
-                var subscriptionUpdate by remember { mutableStateOf<DesktopSubscriptionUpdate?>(null) }
-                var subscriptionMessage by remember { mutableStateOf("") }
-                var subscriptionUpdateInProgress by remember { mutableStateOf(false) }
-                var refreshingSubscriptionId by remember { mutableStateOf<Int?>(null) }
-                var batchRefreshingSubscriptionIds by remember { mutableStateOf(emptySet<Int>()) }
+                val subscriptionUi = remember { DesktopSubscriptionUiState() }
                 var subscriptionLibrary by remember {
                     mutableStateOf(DesktopSubscriptionLibraries.loadDefault().getOrElse { DesktopSubscriptionLibrary() })
                 }
@@ -296,9 +287,8 @@ fun main() = application {
                             coreState = tunnel.coreState,
                             latencyByServerId = latencyByServerId,
                             testingServerIds = testingServerIds,
-                            refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
-                                batchRefreshingSubscriptionIds,
-                            message = tunnel.coreMessage.ifBlank { subscriptionMessage },
+                            refreshingSubscriptionIds = subscriptionUi.refreshingIds,
+                            message = tunnel.coreMessage.ifBlank { subscriptionUi.message },
                             isMessageError = tunnel.coreMessage.isNotBlank(),
                         )
                     }
@@ -393,7 +383,7 @@ fun main() = application {
                 }
                 LaunchedEffect(desktopSubscriptionRefreshBatchRunner) {
                     desktopSubscriptionRefreshBatchRunner.progress.collect { progress ->
-                        batchRefreshingSubscriptionIds = progress.refreshingSubscriptionIds
+                        subscriptionUi.batchRefreshingIds = progress.refreshingSubscriptionIds
                     }
                 }
 
@@ -408,11 +398,11 @@ fun main() = application {
                     tunnel.coreState,
                     latencyByServerId,
                     testingServerIds,
-                    subscriptionUpdateInProgress,
-                    refreshingSubscriptionId,
-                    batchRefreshingSubscriptionIds,
+                    subscriptionUi.updateInProgress,
+                    subscriptionUi.refreshingId,
+                    subscriptionUi.batchRefreshingIds,
                     tunnel.coreMessage,
-                    subscriptionMessage,
+                    subscriptionUi.message,
                 ) {
                     desktopSharedApplication.settings.refresh()
                     desktopSharedApplication.subscriptions.refresh(subscriptionLibrary)
@@ -486,12 +476,12 @@ fun main() = application {
                         subscriptionRepository = desktopSharedApplication.subscriptions,
                         isNetworkConnected = ::isDesktopNetworkConnected,
                         refresh = { subscription ->
-                            subscriptionUrl = subscription.url
-                            subscriptionUpdateInProgress = true
-                            refreshingSubscriptionId = subscription.id
+                            subscriptionUi.url = subscription.url
+                            subscriptionUi.updateInProgress = true
+                            subscriptionUi.refreshingId = subscription.id
                             try {
-                                subscriptionMessage = "Обновление подписки…"
-                                subscriptionUpdate = null
+                                subscriptionUi.message = "Обновление подписки…"
+                                subscriptionUi.update = null
                                 val result = desktopSubscriptionRefreshOperation.run(
                                     request = SubscriptionRefreshLoadRequest(
                                         subscription = subscription,
@@ -502,7 +492,7 @@ fun main() = application {
                                         ),
                                     ),
                                 )
-                                subscriptionMessage = desktopSubscriptionRefreshResultMessage(result.refresh)
+                                subscriptionUi.message = desktopSubscriptionRefreshResultMessage(result.refresh)
                                 if (shouldReconnectAfterSubscriptionRefresh(
                                         coreIsRunning = coreController.state().isRunning,
                                         previousSelectedServerId = result.previousSelectedServerId,
@@ -515,11 +505,11 @@ fun main() = application {
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (error: Throwable) {
-                                subscriptionMessage = "Не удалось обновить подписку: ${error.message.orEmpty()}"
+                                subscriptionUi.message = "Не удалось обновить подписку: ${error.message.orEmpty()}"
                                 throw error
                             } finally {
-                                refreshingSubscriptionId = null
-                                subscriptionUpdateInProgress = false
+                                subscriptionUi.refreshingId = null
+                                subscriptionUi.updateInProgress = false
                             }
                         },
                     )
@@ -993,7 +983,7 @@ fun main() = application {
                                         refreshMessage = refreshMessage,
                                         existingUrlTemplate = subscriptionInstallExistingUrlTemplate,
                                     )
-                                    subscriptionMessage = message
+                                    subscriptionUi.message = message
                                     Result.success(message)
                                 } catch (cancelled: CancellationException) {
                                     throw cancelled
@@ -1109,12 +1099,11 @@ fun main() = application {
                             serverLibrary = serverLibrary,
                             subscriptionLibrary = subscriptionLibrary,
                             subscriptionCatalog = desktopSharedApplication.subscriptions.catalog.value,
-                            subscriptionUpdate = subscriptionUpdate,
+                            subscriptionUpdate = subscriptionUi.update,
                             serverLink = serverLink,
-                            subscriptionUrl = subscriptionUrl,
-                            updatingSubscription = subscriptionUpdateInProgress,
-                            refreshingSubscriptionIds = setOfNotNull(refreshingSubscriptionId) +
-                                batchRefreshingSubscriptionIds,
+                            subscriptionUrl = subscriptionUi.url,
+                            updatingSubscription = subscriptionUi.updateInProgress,
+                            refreshingSubscriptionIds = subscriptionUi.refreshingIds,
                             running = tunnel.coreState.isRunning,
                             tunnelIp = tunnelIp,
                             runtimeOutboundMetric = tunnelMemoryText,
@@ -1130,7 +1119,7 @@ fun main() = application {
                                 ),
                             tunnelMessage = tunnel.coreMessage,
                             serverMessage = serverLibraryMessage,
-                            subscriptionMessage = subscriptionMessage,
+                            subscriptionMessage = subscriptionUi.message,
                             confirmDeletion = desktopSettings.confirmDeletion,
                             activeProfileName = activeProfileName,
                             activeTrafficConfigId = configLibrary.selectedConfigId,
@@ -1141,12 +1130,12 @@ fun main() = application {
                             pingingSubscriptionIds = pingingSubscriptionIds,
                             onServerLinkChange = { serverLink = it },
                             onSubscriptionUrlChange = { url ->
-                                if (subscriptionUpdateInProgress) {
-                                    subscriptionMessage = "Дождитесь завершения обновления подписки."
+                                if (subscriptionUi.updateInProgress) {
+                                    subscriptionUi.message = "Дождитесь завершения обновления подписки."
                                 } else {
-                                    subscriptionUrl = url
-                                    subscriptionUpdate = null
-                                    subscriptionMessage = ""
+                                    subscriptionUi.url = url
+                                    subscriptionUi.update = null
+                                    subscriptionUi.message = ""
                                 }
                             },
                             onToggleTunnel = desktopToggleTunnel,
@@ -1422,15 +1411,15 @@ fun main() = application {
                                             },
                                             applyStoppedState = applyStoppedState,
                                             onDeleted = {
-                                                if (removedSubscription?.url == subscriptionUrl) subscriptionUrl = ""
-                                                subscriptionMessage = "Подписка и её серверы удалены."
+                                                if (removedSubscription?.url == subscriptionUi.url) subscriptionUi.url = ""
+                                                subscriptionUi.message = "Подписка и её серверы удалены."
                                             },
                                             onMissingServer = {
                                                 serverLibraryMessage = "Сначала выберите работающий сервер или профиль."
                                             },
                                             onStopFailed = onStopFailed,
                                             onDeleteError = { error ->
-                                                subscriptionMessage = "Не удалось удалить подписку: ${error.message.orEmpty()}"
+                                                subscriptionUi.message = "Не удалось удалить подписку: ${error.message.orEmpty()}"
                                             },
                                         )
                                     }
@@ -1442,53 +1431,40 @@ fun main() = application {
                                     val precondition = result.exceptionOrNull()
                                         as? DesktopSubscriptionRefreshPreconditionException
                                     if (precondition != null) {
-                                        subscriptionMessage = precondition.message.orEmpty()
+                                        subscriptionUi.message = precondition.message.orEmpty()
                                     }
                                 }
                             },
                             onRefreshAllSubscriptions = {
                                 subscriptionScope.launch {
                                     desktopSubscriptionRefreshCoordinator.runBatch {
-                                        subscriptionUpdateInProgress = true
-                                        refreshingSubscriptionId = null
-                                        subscriptionUrl = ""
+                                        subscriptionUi.updateInProgress = true
+                                        subscriptionUi.refreshingId = null
+                                        subscriptionUi.url = ""
                                         try {
-                                            subscriptionMessage = "Обновление подписок…"
-                                            subscriptionUpdate = null
+                                            subscriptionUi.message = "Обновление подписок…"
+                                            subscriptionUi.update = null
                                             val result = desktopSubscriptionRefreshBatchRunner.run()
                                             val loaded = result.refresh.updates
                                             val failures = result.refresh.failures
                                             val commit = result.commitResult
                                             val singleFailure = commit?.singleCommitResult?.failure
-                                            subscriptionMessage = when {
-                                                loaded.isEmpty() && failures.isEmpty() ->
-                                                    noSubscriptionUpdatesMessage
-                                                singleFailure != null -> when (singleFailure.scope) {
-                                                    SubscriptionRefreshCommitScope.SERVERS ->
-                                                        "Список получен, но серверы не сохранены: ${singleFailure.error.message.orEmpty()}"
-                                                    SubscriptionRefreshCommitScope.SUBSCRIPTION ->
-                                                        "Серверы обновлены, но метаданные подписки не сохранены: ${singleFailure.error.message.orEmpty()}"
-                                                    SubscriptionRefreshCommitScope.PROFILE ->
-                                                        "Серверы и подписка обновлены, но обновление профиля не завершено: ${singleFailure.error.message.orEmpty()}"
-                                                }
-                                                else -> formatSubscriptionRefreshMessage(
-                                                    summary = SubscriptionRefreshMessageSummary(
-                                                        updatedGroupCount = loaded.size,
-                                                        failedGroupCount = failures.size,
-                                                        importedServerCount = loaded.sumOf { update -> update.servers.size },
-                                                        firstFailureMessage = failures.firstOrNull()?.error
-                                                            ?.let(::desktopSubscriptionRefreshFailureMessage),
-                                                    ),
-                                                    successTemplate = subscriptionRefreshSuccessTemplate,
-                                                    failedTemplate = subscriptionRefreshFailedTemplate,
-                                                )
-                                            }
+                                            subscriptionUi.message = desktopSubscriptionBatchRefreshMessage(
+                                                updatedCount = loaded.size,
+                                                importedServerCount = loaded.sumOf { update -> update.servers.size },
+                                                failedCount = failures.size,
+                                                firstFailure = failures.firstOrNull()?.error,
+                                                singleFailure = singleFailure,
+                                                noUpdatesMessage = noSubscriptionUpdatesMessage,
+                                                successTemplate = subscriptionRefreshSuccessTemplate,
+                                                failedTemplate = subscriptionRefreshFailedTemplate,
+                                            )
                                         } catch (cancelled: CancellationException) {
                                             throw cancelled
                                         } catch (error: Throwable) {
-                                            subscriptionMessage = "Не удалось обновить подписки: ${error.message.orEmpty()}"
+                                            subscriptionUi.message = "Не удалось обновить подписки: ${error.message.orEmpty()}"
                                         } finally {
-                                            subscriptionUpdateInProgress = false
+                                            subscriptionUi.updateInProgress = false
                                         }
                                     }
                                 }
@@ -1623,27 +1599,6 @@ fun main() = application {
         }
     }
 }
-}
-
-private fun desktopSubscriptionRefreshResultMessage(result: SubscriptionRefreshResult): String {
-    val commit = result.commit
-    val serverWasApplied = SubscriptionRefreshCommitScope.SERVERS in commit.appliedScopes
-    val failure = commit.failure
-    return when {
-        !commit.applicable && serverWasApplied ->
-            "Серверы обновлены (${result.loaded.servers.size}), но подписка была изменена или удалена до сохранения метаданных."
-        !commit.applicable ->
-            "Подписка была изменена или удалена во время загрузки; ответ не применён."
-        failure != null -> when (failure.scope) {
-            SubscriptionRefreshCommitScope.SERVERS ->
-                "Список получен, но серверы не сохранены: ${failure.error.message.orEmpty()}"
-            SubscriptionRefreshCommitScope.SUBSCRIPTION ->
-                "Серверы обновлены, но метаданные подписки не сохранены: ${failure.error.message.orEmpty()}"
-            SubscriptionRefreshCommitScope.PROFILE ->
-                "Серверы и подписка обновлены, но обновление профиля не завершено: ${failure.error.message.orEmpty()}"
-        }
-        else -> "Подписка обновлена: ${result.loaded.servers.size} серверов из ${result.loaded.urlCount} ссылок."
-    }
 }
 
 @Composable
