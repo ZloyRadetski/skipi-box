@@ -409,6 +409,7 @@ internal fun DesktopProxyHome(
             showAllGroup = desktopSettings.enableAllProxyGroup,
             showTunnelMemory = desktopSettings.showTunnelMemory,
             showTunnelIp = desktopSettings.showTunnelIp,
+            maskTunnelIp = desktopSettings.maskTunnelIp,
             latencyFastColor = desktopSettings.customPingFastColor,
             latencyMediumColor = desktopSettings.customPingMediumColor,
             latencySlowColor = desktopSettings.customPingSlowColor,

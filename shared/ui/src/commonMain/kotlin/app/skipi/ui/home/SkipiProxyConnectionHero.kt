@@ -82,6 +82,7 @@ data class SkipiProxyHeroState(
     /** Tunnel public address; null until resolved. Shown only when [showIp] is on. */
     val ip: SkipiHeroIp? = null,
     val showIp: Boolean = false,
+    val maskIp: Boolean = false,
     val toggleEnabled: Boolean = true,
 )
 
@@ -368,6 +369,7 @@ fun SkipiProxyHeroClassicCard(
                     memoryText = state.memoryText,
                     ip = state.ip,
                     showIp = state.showIp,
+                    maskIp = state.maskIp,
                 )
                 AnimatedVisibility(
                     visible = tiles.isNotEmpty(),

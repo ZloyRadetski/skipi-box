@@ -30,6 +30,7 @@ data class ProxyHomeDisplayOptions(
     val showTunnelMemory: Boolean = false,
     /** Show the tunnel's public IP tile in the connection panel. */
     val showTunnelIp: Boolean = true,
+    val maskTunnelIp: Boolean = false,
     /** Optional host customizations, encoded using Compose's packed ARGB Long representation. */
     val latencyFastColor: Long? = null,
     val latencyMediumColor: Long? = null,

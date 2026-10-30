@@ -939,6 +939,8 @@
     <string name="settings_tunnel_memory_show_on_home_summary">Display current VPN core process memory above server search while the tunnel is running.</string>
     <string name="settings_tunnel_ip_show_on_home">Show IP address on the main page</string>
     <string name="settings_tunnel_ip_show_on_home_summary">Display the public IP address of the tunnel and country in the connection panel while connected.</string>
+    <string name="settings_tunnel_ip_mask_on_home">Hide part of the IP address</string>
+    <string name="settings_tunnel_ip_mask_on_home_summary">Replace the end of the address with dots, for example 203.0.•••.•••.</string>
     <string name="settings_user_agents">User agents</string>
     <string name="settings_user_agents_summary">%1$d presets for subscription downloads</string>
     <string name="settings_user_agents_description">Choose a preset for each subscription, or add as many custom User-Agent values as needed.</string>

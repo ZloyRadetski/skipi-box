@@ -58,14 +58,30 @@ fun skipiHeroInfoTiles(
     memoryText: String?,
     ip: SkipiHeroIp?,
     showIp: Boolean,
+    maskIp: Boolean = false,
 ): List<SkipiHeroTile> {
     if (phase != SkipiConnectionHeroPhase.Connected) return emptyList()
     return buildList {
         sessionDurationText?.let { add(SkipiHeroTile(SkipiHeroTileKind.Time, it)) }
         latency?.let { add(SkipiHeroTile(SkipiHeroTileKind.Ping, it.text, color = it.color)) }
         memoryText?.let { add(SkipiHeroTile(SkipiHeroTileKind.Memory, it)) }
-        if (showIp) add(SkipiHeroTile(SkipiHeroTileKind.Ip, ip?.value ?: UnknownValue, flag = ip?.flag))
+        if (showIp) {
+            val address = ip?.value?.let { if (maskIp) maskIpAddress(it) else it } ?: UnknownValue
+            add(SkipiHeroTile(SkipiHeroTileKind.Ip, address, flag = ip?.flag))
+        }
     }
+}
+
+/** Hides the host part of an address: `203.0.113.7` becomes `203.0.•••.•••`, IPv6 keeps two groups. */
+fun maskIpAddress(address: String): String {
+    if (address == UnknownValue) return address
+    val octets = address.split('.')
+    if (octets.size == 4 && octets.all { part -> part.isNotEmpty() && part.all(Char::isDigit) }) {
+        return "${octets[0]}.${octets[1]}.•••.•••"
+    }
+    val groups = address.split(':')
+    if (groups.size > 2) return groups.take(2).joinToString(":") + ":•••"
+    return "•••"
 }
 
 /** Two tiles per row; a lone last tile keeps half width so columns stay aligned. */

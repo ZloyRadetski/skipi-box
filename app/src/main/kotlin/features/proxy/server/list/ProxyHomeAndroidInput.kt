@@ -118,6 +118,7 @@ internal fun AppState.toProxyHomeInput(
             showAllGroup = enableAllProxyGroup,
             showTunnelMemory = showTunnelMemoryOnHome,
             showTunnelIp = showTunnelIpOnHome,
+            maskTunnelIp = maskTunnelIpOnHome,
             protocolColors = proxyHomeProtocolColors(
                 vless = customProtocolVlessColor,
                 vmess = customProtocolVmessColor,

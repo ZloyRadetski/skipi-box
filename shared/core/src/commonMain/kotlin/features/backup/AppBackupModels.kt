@@ -108,6 +108,7 @@ private object BackupDefaults {
     const val classicShowFloatingPowerButton = false
     const val showTunnelMemoryOnHome = false
     const val showTunnelIpOnHome = true
+    const val maskTunnelIpOnHome = false
     const val enableBroadcastControl = true
     const val enableIpv6 = false
     const val enableIpv6Prefer = false
@@ -258,6 +259,7 @@ data class AppBackupSettings(
     val classicShowFloatingPowerButton: Boolean = BackupDefaults.classicShowFloatingPowerButton,
     val showTunnelMemoryOnHome: Boolean = BackupDefaults.showTunnelMemoryOnHome,
     val showTunnelIpOnHome: Boolean = BackupDefaults.showTunnelIpOnHome,
+    val maskTunnelIpOnHome: Boolean = BackupDefaults.maskTunnelIpOnHome,
     val enableBroadcastControl: Boolean = BackupDefaults.enableBroadcastControl,
     val enableIpv6: Boolean = BackupDefaults.enableIpv6,
     val enableIpv6Prefer: Boolean = BackupDefaults.enableIpv6Prefer,

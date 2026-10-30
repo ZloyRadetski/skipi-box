@@ -873,6 +873,8 @@
     <string name="settings_tunnel_memory_show_on_home_summary">隧道运行时，在服务器搜索上方显示当前 VPN 核心进程内存。</string>
     <string name="settings_tunnel_ip_show_on_home">在主页上显示 IP 地址</string>
     <string name="settings_tunnel_ip_show_on_home_summary">连接时在连接面板中显示隧道的公网 IP 地址和国家。</string>
+    <string name="settings_tunnel_ip_mask_on_home">隐藏部分 IP 地址</string>
+    <string name="settings_tunnel_ip_mask_on_home_summary">用圆点替换地址末尾，例如 203.0.•••.•••。</string>
     <string name="settings_user_agents">用户代理</string>
     <string name="settings_user_agents_summary">用于订阅下载的%1$d预设</string>
     <string name="settings_user_agents_description">为每个订阅选择一个预设，或根据需要添加任意数量的自定义用户代理值。</string>

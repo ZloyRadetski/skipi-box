@@ -65,6 +65,7 @@ data class DesktopAppSettings(
     val compactHome: Boolean = false,
     val showTunnelMemory: Boolean = true,
     val showTunnelIp: Boolean = true,
+    val maskTunnelIp: Boolean = false,
     val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,
     val enableAllProxyGroup: Boolean = false,

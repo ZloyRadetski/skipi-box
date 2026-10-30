@@ -390,6 +390,10 @@ internal class AppSettingsPreferences(
                 KeyShowTunnelIpOnHome,
                 defaults.showTunnelIpOnHome,
             ),
+            maskTunnelIpOnHome = preferences.getBoolean(
+                KeyMaskTunnelIpOnHome,
+                defaults.maskTunnelIpOnHome,
+            ),
             enableBroadcastControl = preferences.getBoolean(
                 KeyEnableBroadcastControl,
                 defaults.enableBroadcastControl,
@@ -556,6 +560,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyClassicShowFloatingPowerButton, state.classicShowFloatingPowerButton)
             .putBoolean(KeyShowTunnelMemoryOnHome, state.showTunnelMemoryOnHome)
             .putBoolean(KeyShowTunnelIpOnHome, state.showTunnelIpOnHome)
+            .putBoolean(KeyMaskTunnelIpOnHome, state.maskTunnelIpOnHome)
             .putBoolean(KeyEnableBroadcastControl, state.enableBroadcastControl)
             .putBoolean(KeyEnableIpv6, state.enableIpv6)
             .putBoolean(KeyEnableIpv6Prefer, state.enableIpv6Prefer)
@@ -950,6 +955,7 @@ private const val KeyEnableHaptics = "enable_haptics"
 private const val KeyClassicShowFloatingPowerButton = "classic_show_floating_power_button"
 private const val KeyShowTunnelMemoryOnHome = "show_tunnel_memory_on_home"
 private const val KeyShowTunnelIpOnHome = "show_tunnel_ip_on_home"
+private const val KeyMaskTunnelIpOnHome = "mask_tunnel_ip_on_home"
 private const val KeyEnableBroadcastControl = "enable_broadcast_control"
 private const val KeyEnableIpv6 = "enable_ipv6"
 private const val KeyEnableIpv6Prefer = "enable_ipv6_prefer"

@@ -485,6 +485,7 @@ private fun DesktopAppSettings.toPersistedSettings(
         enableAllProxyGroup = enableAllProxyGroup,
         showTunnelMemoryOnHome = showTunnelMemory,
         showTunnelIpOnHome = showTunnelIp,
+        maskTunnelIpOnHome = maskTunnelIp,
     ),
     traffic = TrafficSelectionSettings(activeConfigId = configs.selectedConfigId),
     application = ApplicationPreferences(
@@ -569,6 +570,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     showServerSearch = showServerSearch,
     showTunnelMemoryOnHome = showTunnelMemory,
     showTunnelIpOnHome = showTunnelIp,
+    maskTunnelIpOnHome = maskTunnelIp,
 )
 
 internal fun DesktopAppSettings.toLocalProxySettingsState(): LocalProxySettingsState {
@@ -631,6 +633,7 @@ internal fun DesktopAppSettings.withAppearanceState(state: AppearanceSettingsSta
         enableSubscriptionSwipe = state.enableSubscriptionSwipe,
         showTunnelMemory = state.showTunnelMemoryOnHome,
         showTunnelIp = state.showTunnelIpOnHome,
+        maskTunnelIp = state.maskTunnelIpOnHome,
         customColorsEnabled = state.enableCustomColors,
         customAccentColor = state.customAccentColor,
         customBackgroundColor = state.customBackgroundColor,
@@ -731,6 +734,7 @@ private fun DesktopAppSettings.withHomeDisplay(home: HomeDisplaySettings): Deskt
     enableAllProxyGroup = home.enableAllProxyGroup ?: enableAllProxyGroup,
     showTunnelMemory = home.showTunnelMemoryOnHome ?: showTunnelMemory,
     showTunnelIp = home.showTunnelIpOnHome ?: showTunnelIp,
+    maskTunnelIp = home.maskTunnelIpOnHome ?: maskTunnelIp,
 )
 
 private fun DesktopAppSettings.withApplicationPreferences(preferences: ApplicationPreferences): DesktopAppSettings = copy(

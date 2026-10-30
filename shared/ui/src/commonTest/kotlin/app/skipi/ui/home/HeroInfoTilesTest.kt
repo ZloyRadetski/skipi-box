@@ -62,6 +62,29 @@ class HeroInfoTilesTest {
     }
 
     @Test
+    fun maskingHidesTheTrailingPartOfTheAddress() {
+        assertEquals("203.0.•••.•••", maskIpAddress("203.0.113.7"))
+        assertEquals("2001:db8:•••", maskIpAddress("2001:db8:85a3::8a2e:370:7334"))
+        assertEquals("—", maskIpAddress("—"))
+        assertEquals("•••", maskIpAddress("localhost"))
+    }
+
+    @Test
+    fun maskedTileShowsTheMaskedAddressButKeepsTheFlag() {
+        val tiles = skipiHeroInfoTiles(
+            phase = SkipiConnectionHeroPhase.Connected,
+            sessionDurationText = null,
+            latency = null,
+            memoryText = null,
+            ip = SkipiHeroIp(value = "203.0.113.7", flag = "F"),
+            showIp = true,
+            maskIp = true,
+        )
+        assertEquals("203.0.•••.•••", tiles.single().value)
+        assertEquals("F", tiles.single().flag)
+    }
+
+    @Test
     fun disabledIpSettingHidesTheIpTile() {
         val tiles = skipiHeroInfoTiles(
             phase = SkipiConnectionHeroPhase.Connected,

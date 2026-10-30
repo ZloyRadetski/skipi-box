@@ -135,6 +135,7 @@ private fun app.AppState.toAppearanceSettingsState() = AppearanceSettingsState(
     showServerSearch = showServerSearch,
     showTunnelMemoryOnHome = showTunnelMemoryOnHome,
     showTunnelIpOnHome = showTunnelIpOnHome,
+    maskTunnelIpOnHome = maskTunnelIpOnHome,
 )
 
 private fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsState) = copy(
@@ -182,4 +183,5 @@ private fun app.AppState.withAppearanceSettings(settings: AppearanceSettingsStat
     showServerSearch = settings.showServerSearch,
     showTunnelMemoryOnHome = settings.showTunnelMemoryOnHome,
     showTunnelIpOnHome = settings.showTunnelIpOnHome,
+    maskTunnelIpOnHome = settings.maskTunnelIpOnHome,
 )
