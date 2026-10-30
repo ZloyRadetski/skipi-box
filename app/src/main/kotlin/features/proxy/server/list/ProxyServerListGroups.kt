@@ -43,6 +43,25 @@ internal data class ProxyServerListGroups(
     val currentFilteredServers: List<ProxyServerState>,
 )
 
+/**
+ * Grouping for the Home input. Home pages and filters by itself, so the visible servers, group names and
+ * memberships do not depend on the selected group or the search text; fixing both keeps a swipe or a
+ * keystroke from rebuilding the whole projection.
+ */
+internal fun proxyServerListHomeGroups(
+    state: ProxyServerListState,
+    allGroupName: String,
+    defaultGroupName: String,
+    autoBalancerGroupName: String,
+): ProxyServerListGroups = proxyServerListGroups(
+    state = state,
+    selectedGroupId = DefaultSubscriptionGroupId,
+    searchValue = "",
+    allGroupName = allGroupName,
+    defaultGroupName = defaultGroupName,
+    autoBalancerGroupName = autoBalancerGroupName,
+)
+
 internal fun proxyServerListGroups(
     state: ProxyServerListState,
     selectedGroupId: Int,

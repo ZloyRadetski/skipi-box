@@ -635,25 +635,31 @@ fun ProxyServerListPage(
         },
     )
 
-    val groupState = remember(
+    // Selection-independent: a swipe or a keystroke must not rebuild the Home projection.
+    val homeGroupState = remember(
         proxyListState,
-        selectedGroupId,
-        searchValue,
         allGroupName,
         defaultGroupName,
         autoBalancerGroupName,
     ) {
-        proxyServerListGroups(
+        proxyServerListHomeGroups(
             state = proxyListState,
-            selectedGroupId = selectedGroupId,
-            searchValue = searchValue,
             allGroupName = allGroupName,
             defaultGroupName = defaultGroupName,
             autoBalancerGroupName = autoBalancerGroupName,
         )
     }
+    // Selection-dependent grouping is needed only when an action runs, so it is built on demand.
+    fun groupStateForActions() = proxyServerListGroups(
+        state = proxyListState,
+        selectedGroupId = selectedGroupId,
+        searchValue = searchValue,
+        allGroupName = allGroupName,
+        defaultGroupName = defaultGroupName,
+        autoBalancerGroupName = autoBalancerGroupName,
+    )
     val homeServerSummaryFormatter = rememberProxyServerListItemTextFormatter(
-        groupNames = groupState.groupNames,
+        groupNames = homeGroupState.groupNames,
         unknownGroupName = unknownGroupName,
     )
     var measuredTunnelSnapshot by remember { mutableStateOf(TunnelSnapshot()) }
@@ -730,7 +736,7 @@ fun ProxyServerListPage(
     val homeInput = remember(
         appState,
         proxyListState,
-        groupState,
+        homeGroupState,
         tunnelSnapshot,
         serviceOperationInProgress,
         refreshingSubscriptionGroupIds + subscriptionRefreshBatchProgress.refreshingSubscriptionIds,
@@ -741,7 +747,7 @@ fun ProxyServerListPage(
         activeTunnelTitle,
     ) {
         appState.toProxyHomeInput(
-            groupState = groupState,
+            groupState = homeGroupState,
             tunnelSnapshot = tunnelSnapshot,
             tunnelBusy = serviceOperationInProgress,
             isTestingLatency = proxyListState.proxyServers.any { it.isTestingLatency },
@@ -852,7 +858,7 @@ fun ProxyServerListPage(
                         }
                         handleProxyServerListAddAction(
                             action = action,
-                            groupState = groupState,
+                            groupState = groupStateForActions(),
                             stateStore = stateStore,
                             updateAppState = updateAppState,
                             navigator = navigator,
@@ -883,7 +889,7 @@ fun ProxyServerListPage(
                         }
                         handleProxyServerListAddAction(
                             action = action,
-                            groupState = groupState,
+                            groupState = groupStateForActions(),
                             stateStore = stateStore,
                             updateAppState = updateAppState,
                             navigator = navigator,
@@ -1026,7 +1032,7 @@ fun ProxyServerListPage(
                             ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid server ID."))
                         val orderedIds = homeStoreReference.value?.uiState?.value?.servers
                             ?.mapNotNull { it.id.toIntOrNull() }
-                            ?: groupState.currentFilteredServers.map { it.id }
+                            ?: groupStateForActions().currentFilteredServers.map { it.id }
                         val fromIndex = orderedIds.indexOf(serverId)
                         val toId = orderedIds.getOrNull(fromIndex + effect.offset)
                             ?: return@ProxyHomeEffectHandler Result.success(Unit)
@@ -1135,7 +1141,7 @@ fun ProxyServerListPage(
                         } else {
                             handleProxyServerListToolAction(
                                 action = action,
-                                groupState = groupState,
+                                groupState = groupStateForActions(),
                                 selectedServer = stateStore.state.value.proxyServers.firstOrNull {
                                     it.id == stateStore.state.value.selectedProxyServerId
                                 },
@@ -1281,7 +1287,7 @@ fun ProxyServerListPage(
                 homeDialogs = homeDialogs.copy(pendingToolDeletion = null)
                 handleProxyServerListToolAction(
                     action = action,
-                    groupState = groupState,
+                    groupState = groupStateForActions(),
                     selectedServer = stateStore.state.value.proxyServers.firstOrNull {
                         it.id == stateStore.state.value.selectedProxyServerId
                     },
