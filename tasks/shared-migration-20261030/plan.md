@@ -21,6 +21,7 @@
 | `TrafficConfigState` | 214 | Только адаптер |
 
 ## Этап 2. Сборка конфига Xray (X01–X04), рискованный
+Разбор кода (30 октября): Android собирает конфиг из `AppState` (`XrayConfigRequest`: mux, fakeDns, fragment, sockopt, strict full-tunnel, observatory, мосты OLCRTC/AmneziaWG), а Desktop из `DesktopAppSettings` и урезанного набора входов (`DesktopSelectedServerXrayConfigFactory`, `DesktopTrafficProfileXrayConfig`). Общим уже являются планировщики (`XrayOutboundPlanner`, DNS, маршрутизация) и рендереры outbound. Остаётся сама сборка, и это не механический перенос: либо переносится сборка поверх `AppState` (он уже в `shared/core`) и Desktop получает адаптер `DesktopAppSettings → AppState`, либо вводится новая платформенно-нейтральная модель запроса. Оба варианта меняют поведение Desktop (mux, fragment, fakeDns, observatory станут доступны или потребуют настроек) и требуют сверки JSON и запуска реального ядра. Начинать только вместе с проверкой на устройстве.
 `XrayConfig`, `VpnXrayConfig`, `XrayRoutingConfig`, `XrayDnsConfig`, `XrayOutboundPlanner`, `XrayExportConfig` и два Desktop-аналога.
 1. Таблица различий Android/Desktop (инбаунды, DNS, sniffing, TUN, strict full-tunnel).
 2. Общий каркас в `shared/core`, различия параметрами хоста.
