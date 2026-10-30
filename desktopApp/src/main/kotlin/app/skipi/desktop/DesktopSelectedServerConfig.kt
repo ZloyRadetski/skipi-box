@@ -39,8 +39,7 @@ internal fun buildDesktopSelectedServerConfig(
         }
     }
 
-    val activeProfile = configLibrary.selectedConfigId
-        ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
+    val activeProfile = configLibrary.activeProfile
     if (activeProfile != null) {
         return runCatching {
             DesktopTrafficProfileXrayConfigFactory.build(

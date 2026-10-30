@@ -19,15 +19,11 @@ internal suspend fun commitRefreshedConfigLibrary(
     proxyServerRepository: DesktopProxyServerRepository,
     onActiveProfileChanged: (Boolean) -> Unit,
 ) {
-    val activeBefore = original.selectedConfigId
-        ?.let { selectedId -> original.configs.firstOrNull { profile -> profile.id == selectedId } }
-    val activeAfter = updated.selectedConfigId
-        ?.let { selectedId -> updated.configs.firstOrNull { profile -> profile.id == selectedId } }
     val configLibraryChanged = original.configs != updated.configs ||
         original.selectedConfigId != updated.selectedConfigId
     saveConfigs(updated).getOrThrow()
     publishConfigs(updated)
-    onActiveProfileChanged(activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content)
+    onActiveProfileChanged(updated.activeProfileChangedFrom(original))
     if (configLibraryChanged) {
         DesktopTrafficConfigProxyGroupReconciler(
             serverRepository = proxyServerRepository,

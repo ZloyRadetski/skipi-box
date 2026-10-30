@@ -437,9 +437,7 @@ fun main() = application {
                         latencyByServerId = latencyByServerId,
                     )
                 }
-                val activeProfileName = configLibrary.selectedConfigId
-                    ?.let { selectedId -> configLibrary.configs.firstOrNull { profile -> profile.id == selectedId } }
-                    ?.name
+                val activeProfileName = configLibrary.activeProfile?.name
                 val exportProxyServerFullJson: suspend (ProxyServerEditResult) -> String = { editResult ->
                     val serverLibrarySnapshot = serverLibrary
                     val settingsSnapshot = desktopSettings
@@ -1477,29 +1475,23 @@ fun main() = application {
                             configLibrary = configLibrary,
                             onTransformConfigLibrary = { transform ->
                                 val result = desktopSharedApplication.trafficConfigs.transformLatestWithPrevious(transform)
-                                val activeBefore = result.previous.selectedConfigId
-                                    ?.let { selectedId -> result.previous.configs.firstOrNull { profile -> profile.id == selectedId } }
-                                val activeAfter = result.updated.selectedConfigId
-                                    ?.let { selectedId -> result.updated.configs.firstOrNull { profile -> profile.id == selectedId } }
                                 configLibrary = result.updated
-                            val proxyGroupInputsChanged =
-                                result.previous.configs != result.updated.configs ||
-                                    result.previous.selectedConfigId != result.updated.selectedConfigId
-                            if (proxyGroupInputsChanged) {
-                                subscriptionScope.launch {
-                                    try {
-                                        configProxyGroupReconciler.reconcile()
-                                    } catch (cancelled: CancellationException) {
-                                        throw cancelled
-                                    } catch (error: Throwable) {
-                                        serverLibraryMessage =
-                                            "Не удалось синхронизировать группы серверов: ${error.message.orEmpty()}"
+                                val proxyGroupInputsChanged =
+                                    result.previous.configs != result.updated.configs ||
+                                        result.previous.selectedConfigId != result.updated.selectedConfigId
+                                if (proxyGroupInputsChanged) {
+                                    subscriptionScope.launch {
+                                        try {
+                                            configProxyGroupReconciler.reconcile()
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (error: Throwable) {
+                                            serverLibraryMessage =
+                                                "Не удалось синхронизировать группы серверов: ${error.message.orEmpty()}"
+                                        }
                                     }
                                 }
-                            }
-                                if (tunnel.coreState.isRunning && (
-                                    activeBefore?.id != activeAfter?.id || activeBefore?.content != activeAfter?.content
-                                    )) {
+                                if (tunnel.coreState.isRunning && result.updated.activeProfileChangedFrom(result.previous)) {
                                     tunnel.requestReconnect("Активный профиль изменён.")
                                 }
                                 result.updated

@@ -20,6 +20,17 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 typealias DesktopStoredConfig = ConfigProfile
 typealias DesktopConfigLibrary = ConfigProfileLibrary
 
+/** The selected profile, if the selection points at an existing one. */
+val DesktopConfigLibrary.activeProfile: DesktopStoredConfig?
+    get() = selectedConfigId?.let { selectedId -> configs.firstOrNull { profile -> profile.id == selectedId } }
+
+/** Whether the tunnel would run a different profile (or the same one with edited content) than in [previous]. */
+fun DesktopConfigLibrary.activeProfileChangedFrom(previous: DesktopConfigLibrary): Boolean {
+    val before = previous.activeProfile
+    val after = activeProfile
+    return before?.id != after?.id || before?.content != after?.content
+}
+
 /** Desktop filesystem/JSON adapter; config transformations live in shared core. */
 object DesktopConfigLibraries {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
