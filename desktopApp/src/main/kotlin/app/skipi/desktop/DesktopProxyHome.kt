@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.unit.dp
-import app.skipi.app.home.ProxyHomeConnectionMode
-import app.skipi.app.home.ProxyHomeDisplayOptions
 import app.skipi.app.home.ProxyHomeTunnelIp
-import app.skipi.app.home.proxyHomeProtocolColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -21,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeEffect
@@ -35,7 +31,6 @@ import app.skipi.app.home.ProxyHomeServerTool
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.proxyHomeSortModeFromAndroidValue
 import app.skipi.app.home.ProxyHomeStore
-import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.subscription.SubscriptionEditorSaveResult
 import app.skipi.app.server.ProxyServerEditResult
@@ -77,7 +72,6 @@ import app.skipi.ui.resources.routing_default_proxy_server
 import app.skipi.ui.server.editor.GroupMemberChoice
 import app.skipi.ui.server.editor.ProxyServerEditorMemberOption
 import app.skipi.ui.server.editor.SkipiSelectGroupMemberDialog
-import app.skipi.ui.server.editor.SkipiProxyServerQrCodeDialog
 import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.resolveStrategyGroupMembers
 import features.proxy.server.model.ProxyServer
@@ -321,70 +315,18 @@ internal fun DesktopProxyHome(
         onRestartService = onRestartService,
         onDeleteAllServers = onDeleteAllServers,
     )
-    val availableActions = buildSet {
-        addAll(desktopCapabilities.actions)
-        addAll(
-            setOf(
-                ProxyHomeActionId.SelectServer,
-                ProxyHomeActionId.AddServer,
-                ProxyHomeActionId.AddSubscription,
-                ProxyHomeActionId.ImportServers,
-                ProxyHomeActionId.SetSort,
-            ),
-        )
-        if (canToggleTunnel) add(ProxyHomeActionId.ToggleTunnel)
-        if (allProxyServers.isNotEmpty()) {
-            add(ProxyHomeActionId.EditServer)
-            add(ProxyHomeActionId.DeleteServer)
-            add(ProxyHomeActionId.CopyServer)
-        }
-        if (allProxyServers.any { server -> ProxyHomeCopyFormat.QrCode in server.availableCopyFormats }) {
-            add(ProxyHomeActionId.ShowServerQr)
-        }
-        if (testingServerIds.isNotEmpty() && onCancelLatencyTests != null) {
-            add(ProxyHomeActionId.CancelLatencyTests)
-        }
-        if (decodedServers.any { (_, server) -> server is StrategyGroup }) {
-            add(ProxyHomeActionId.OpenStrategyMemberPicker)
-            add(ProxyHomeActionId.SelectStrategyMember)
-        }
-        if (allProxyServers.any(ProxyServerSummary::canTest)) {
-            add(ProxyHomeActionId.TestServer)
-            add(ProxyHomeActionId.TestVisibleServers)
-            add(ProxyHomeActionId.TestGroup)
-        }
-        val pingableSubscription = subscriptionLibrary.subscriptions.any { subscription ->
-            subscription.url.isNotBlank() &&
-            groupCatalog.group(DesktopProxyGroupIds.subscription(subscription.id))
-                ?.serverIds
-                ?.any { serverId ->
-                    allProxyServers.firstOrNull { it.id == serverId.toString() }?.canTest == true
-                } == true
-        }
-        if (pingableSubscription && pingingSubscriptionIds.isEmpty()) add(ProxyHomeActionId.PingSubscription)
-        val hasRealSubscriptions = subscriptionLibrary.subscriptions.any { it.url.isNotBlank() }
-        if (hasRealSubscriptions && !updatingSubscription) {
-            add(ProxyHomeActionId.RefreshSubscription)
-        }
-        if (subscriptionLibrary.subscriptions.isNotEmpty()) {
-            add(ProxyHomeActionId.ToggleSubscriptionEnabled)
-        }
-        if (subscriptionLibrary.subscriptions.isNotEmpty()) {
-            add(ProxyHomeActionId.EditSubscription)
-        }
-        add(ProxyHomeActionId.EditGroup)
-        if (subscriptionLibrary.subscriptions.isNotEmpty()) {
-            add(ProxyHomeActionId.DeleteGroup)
-        }
-        if (subscriptionLibrary.subscriptions.size > 1) {
-            add(ProxyHomeActionId.MoveGroup)
-        }
-        if (sortMode == ProxyHomeSortMode.Default && allProxyServers.size > 1) {
-            add(ProxyHomeActionId.MoveServer)
-            add(ProxyHomeActionId.ReorderServer)
-        }
-        if (Desktop.isDesktopSupported()) add(ProxyHomeActionId.OpenExternalLink)
-    }
+    val availableActions = desktopProxyHomeAvailableActions(
+        capabilityActions = desktopCapabilities.actions,
+        servers = allProxyServers,
+        hasStrategyGroup = decodedServers.any { (_, server) -> server is StrategyGroup },
+        subscriptions = subscriptionLibrary.subscriptions,
+        groupCatalog = groupCatalog,
+        canToggleTunnel = canToggleTunnel,
+        hasCancelableLatencyTests = testingServerIds.isNotEmpty() && onCancelLatencyTests != null,
+        pingingSubscriptionIds = pingingSubscriptionIds,
+        updatingSubscription = updatingSubscription,
+        sortMode = sortMode,
+    )
 
     val homeInput = ProxyHomeInput(
         tunnelSnapshot = desktopProxyHomeTunnelSnapshot(running = running, connecting = connecting),
@@ -403,33 +345,7 @@ internal fun DesktopProxyHome(
         sortMode = sortMode,
         searchEnabled = desktopSettings.showServerSearch,
         subscriptionSwipeEnabled = desktopSettings.enableSubscriptionSwipe,
-        displayOptions = ProxyHomeDisplayOptions(
-            connectionMode = if (desktopSettings.compactHome) ProxyHomeConnectionMode.Compact else ProxyHomeConnectionMode.Classic,
-            pinConnectionPanel = desktopSettings.pinConnectionPanelOnHome,
-            classicFloatingPowerButton = desktopSettings.classicShowFloatingPowerButton,
-            requestedColumns = desktopSettings.proxyServerListColumns,
-            showAllGroup = desktopSettings.enableAllProxyGroup,
-            showTunnelMemory = desktopSettings.showTunnelMemory,
-            showTunnelIp = desktopSettings.showTunnelIp,
-            maskTunnelIp = desktopSettings.maskTunnelIp,
-            latencyFastColor = desktopSettings.customPingFastColor,
-            latencyMediumColor = desktopSettings.customPingMediumColor,
-            latencySlowColor = desktopSettings.customPingSlowColor,
-            latencyErrorColor = desktopSettings.customStatusStoppedColor,
-            protocolColors = proxyHomeProtocolColors(
-                vless = desktopSettings.customProtocolVlessColor,
-                vmess = desktopSettings.customProtocolVmessColor,
-                hysteria2 = desktopSettings.customProtocolHysteria2Color,
-                trojan = desktopSettings.customProtocolTrojanColor,
-                shadowsocks = desktopSettings.customProtocolShadowsocksColor,
-                wireguard = desktopSettings.customProtocolWireguardColor,
-                socks = desktopSettings.customProtocolSocksColor,
-                http = desktopSettings.customProtocolHttpColor,
-                strategy = desktopSettings.customProtocolStrategyColor,
-                chain = desktopSettings.customProtocolChainColor,
-                json = desktopSettings.customProtocolJsonColor,
-            ),
-        ),
+        displayOptions = desktopSettings.toProxyHomeDisplayOptions(),
         availableActions = availableActions,
         availableImportSources = setOf(
             ProxyHomeImportSource.ManualInput,
