@@ -26,23 +26,26 @@ internal class DesktopCoreController(
     private val runtimeProvider: () -> Result<DesktopCoreRuntime> = DesktopCoreRuntimes::discover,
     private val nativeLoader: (Path) -> DesktopCoreNative = ::DesktopCoreFfmNative,
 ) : AutoCloseable {
-    private var native: DesktopCoreNative? = null
-    private var loadedLibrary: Path? = null
-    private var activeHandle: Long? = null
-    private var activeCoreVersion: String? = null
-    private var diagnostic: String = ""
+    // Lifecycle calls (start/stop/close) hold the controller monitor for as long as the native call takes.
+    // [stateLock] guards only the fields below, so the UI thread can poll [state] without waiting for them.
+    private val stateLock = Any()
 
-    @Synchronized
-    fun state(): DesktopCoreState {
-        val handle = activeHandle ?: return inactiveState()
-        val core = native ?: return resetAfterUnexpectedStop(
+    @Volatile private var native: DesktopCoreNative? = null
+    private var loadedLibrary: Path? = null
+    @Volatile private var activeHandle: Long? = null
+    @Volatile private var activeCoreVersion: String? = null
+    @Volatile private var diagnostic: String = ""
+
+    fun state(): DesktopCoreState = synchronized(stateLock) {
+        val handle = activeHandle ?: return@synchronized inactiveState()
+        val core = native ?: return@synchronized resetAfterUnexpectedStop(
             handle = handle,
             error = IllegalStateException("SKIPI Core native library was released while a session was active"),
         )
         val running = runCatching { core.isRunning(handle) }
             .onFailure { error -> diagnostic = nativeDiagnostic("read Core state", error) }
             .getOrDefault(false)
-        return if (running) {
+        if (running) {
             DesktopCoreState(
                 isRunning = true,
                 sessionId = handle,
@@ -74,16 +77,18 @@ internal class DesktopCoreController(
             throw error
         }
 
-        activeHandle = handle
-        activeCoreVersion = core.coreVersion
-        diagnostic = ""
+        synchronized(stateLock) {
+            activeHandle = handle
+            activeCoreVersion = core.coreVersion
+            diagnostic = ""
+        }
         DesktopLogger.info(
             "CoreController",
             "Started in-process SKIPI Core ${activeCoreVersion.orEmpty()} (session $handle)",
         )
         state()
     }.onFailure { error ->
-        diagnostic = nativeDiagnostic("start SKIPI Core", error)
+        synchronized(stateLock) { diagnostic = nativeDiagnostic("start SKIPI Core", error) }
         DesktopLogger.error("CoreController", "Failed to start in-process SKIPI Core", error)
     }
 
@@ -91,8 +96,10 @@ internal class DesktopCoreController(
     fun stop(): Result<DesktopCoreState> = runCatching {
         val handle = activeHandle ?: return@runCatching inactiveState()
         val core = checkNotNull(native) { "SKIPI Core native library is unavailable" }
-        activeHandle = null
-        activeCoreVersion = null
+        synchronized(stateLock) {
+            activeHandle = null
+            activeCoreVersion = null
+        }
 
         var failure: Throwable? = null
         runCatching { core.stop(handle) }.onFailure { failure = it }
@@ -102,11 +109,11 @@ internal class DesktopCoreController(
         }
         failure?.let { throw it }
 
-        diagnostic = ""
+        synchronized(stateLock) { diagnostic = "" }
         DesktopLogger.info("CoreController", "Stopped in-process SKIPI Core session $handle")
         inactiveState()
     }.onFailure { error ->
-        diagnostic = nativeDiagnostic("stop SKIPI Core", error)
+        synchronized(stateLock) { diagnostic = nativeDiagnostic("stop SKIPI Core", error) }
         DesktopLogger.error("CoreController", "Failed to stop in-process SKIPI Core", error)
     }
 
@@ -174,7 +181,7 @@ internal class DesktopCoreController(
         val core = checkNotNull(native) { "SKIPI Core native library is unavailable" }
         action(core, handle)
     }.onFailure { error ->
-        diagnostic = nativeDiagnostic(operation, error)
+        synchronized(stateLock) { diagnostic = nativeDiagnostic(operation, error) }
     }
 
     private fun resetAfterUnexpectedStop(handle: Long, error: Throwable?): DesktopCoreState {

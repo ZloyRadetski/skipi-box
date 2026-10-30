@@ -220,7 +220,8 @@ fun SkipiProxyHeroAnimatedHourglassIcon(
     size: Dp = 20.dp,
 ) {
     val transition = rememberInfiniteTransition(label = "skipiProxyHeroHourglass")
-    val rotation by transition.animateFloat(
+    // Both values are read inside the Canvas draw lambda so the animation never recomposes this icon.
+    val rotation = transition.animateFloat(
         initialValue = 0f,
         targetValue = 180f,
         animationSpec = infiniteRepeatable(
@@ -235,7 +236,7 @@ fun SkipiProxyHeroAnimatedHourglassIcon(
         ),
         label = "skipiProxyHeroHourglassRotation",
     )
-    val sandFlow by transition.animateFloat(
+    val sandFlow = transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -251,8 +252,8 @@ fun SkipiProxyHeroAnimatedHourglassIcon(
     )
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(size)) {
-            rotate(rotation) {
-                drawSkipiProxyHeroHourglass(sandProgress = sandFlow, tint = color)
+            rotate(rotation.value) {
+                drawSkipiProxyHeroHourglass(sandProgress = sandFlow.value, tint = color)
             }
         }
     }
