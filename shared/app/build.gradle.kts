@@ -20,12 +20,18 @@ kotlin {
     }
     jvm("desktop")
 
-    sourceSets {
-        val sharedJvmMain = create("jvmMain") {
-            dependsOn(getByName("commonMain"))
+    // Android and Desktop share one JVM source set on top of the default hierarchy.
+    applyDefaultHierarchyTemplate {
+        common {
+            group("jvm") {
+                withAndroidTarget()
+                withJvm()
+            }
         }
-        getByName("androidMain").dependsOn(sharedJvmMain)
-        getByName("desktopMain").dependsOn(sharedJvmMain)
+    }
+
+    sourceSets {
+        val sharedJvmMain = getByName("jvmMain")
 
         commonMain.dependencies {
             // The application contracts expose core models and StateFlow in
