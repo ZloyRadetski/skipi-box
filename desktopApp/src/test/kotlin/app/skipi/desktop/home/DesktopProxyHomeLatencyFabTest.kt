@@ -67,52 +67,14 @@ class DesktopProxyHomeLatencyFabTest {
     }
 
     @Test
-    fun repeatingTheFloatingLatencyActionQuicklyTestsTheWholeGroupOfTheSelectedServer() {
-        val effects = renderAndClick(
-            input = connectedInput(selectedServerId = "selected"),
-            position = Offset(258f, 790f),
-            clicks = 2,
-        )
-
-        assertEquals(
-            listOf(ProxyHomeEffect.TestConnection("selected"), ProxyHomeEffect.TestGroup("selected-group")),
-            effects,
-        )
-    }
-
-    @Test
-    fun repeatingTheFloatingLatencyActionQuicklyPingsTheWholeSubscriptionOfTheSelectedServer() {
-        val effects = renderAndClick(
-            input = connectedSubscriptionInput().copy(
-                displayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = true),
-                availableActions = setOf(ProxyHomeActionId.TestConnection, ProxyHomeActionId.PingSubscription),
-            ),
-            position = Offset(258f, 790f),
-            clicks = 2,
-        )
-
-        assertEquals(
-            listOf(ProxyHomeEffect.TestConnection("selected"), ProxyHomeEffect.PingSubscription("subscription:7")),
-            effects,
-        )
-    }
-
-    @Test
-    fun theThirdQuickTapStartsOverWithTheConnection() {
+    fun repeatingTheFloatingLatencyActionStillMeasuresOnlyTheConnectionOfTheSelectedServer() {
         val effects = renderAndClick(
             input = connectedInput(selectedServerId = "selected"),
             position = Offset(258f, 790f),
             clicks = 3,
         )
 
-        assertEquals(
-            listOf(
-                ProxyHomeEffect.TestConnection("selected"),
-                ProxyHomeEffect.TestGroup("selected-group"),
-                ProxyHomeEffect.TestConnection("selected"),
-            ),
-            effects,
-        )
+        assertEquals(List(3) { ProxyHomeEffect.TestConnection("selected") }, effects)
     }
 
     @Test

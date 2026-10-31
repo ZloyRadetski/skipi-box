@@ -78,7 +78,9 @@ class ResourceSnapshotFiles(
             ) {
                 return@forEach
             }
-            if (!sourceChanged && !kind.hasBundledAsset(resourceFileSource)) return@forEach
+            // A kind the provider never ships has nothing to restore; failing here would keep the source
+            // uncommitted forever and re-restore (and overwrite) every file on each preparation.
+            if (!kind.hasBundledAsset(resourceFileSource)) return@forEach
             try {
                 restoreBundled(kind, resourceFileSource, openAsset)
             } catch (error: Throwable) {
@@ -252,9 +254,14 @@ class ResourceSnapshotFiles(
         val providerDir = resourceFileSourceAssetDir(resourceFileSource)
         return when (this) {
             ResourceFileKind.GeoIp,
-            ResourceFileKind.GeoSite,
-            ResourceFileKind.GeoIpOnlyCnPrivate ->
+            ResourceFileKind.GeoSite ->
                 if (providerDir != null) "$providerDir/$fileName" else fileName
+            // Only the v2fly bundle ships the CN/private list.
+            ResourceFileKind.GeoIpOnlyCnPrivate -> when {
+                providerDir == null -> fileName
+                resourceFileSource == ResourceFileSourceV2FlyGithub -> "$providerDir/$fileName"
+                else -> null
+            }
             ResourceFileKind.DirectCidrIpv4,
             ResourceFileKind.DirectCidrIpv6 ->
                 "$XrayBundledResourceFilesDir/$fileName"

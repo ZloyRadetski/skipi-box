@@ -45,73 +45,62 @@ class ResourceSnapshotFilesBundledFilesTest {
     }
 
     @Test
-    fun changedProviderKeepsSuccessfulPartialRestoresAndRetriesUntilTheMarkerCanCommit() = withXrayRoot { root ->
+    fun aProviderThatShipsNoCnPrivateFileStillCommitsTheSourceAndKeepsTheExistingOne() = withXrayRoot { root ->
         val snapshot = snapshot(root, id = 8, source = ResourceFileSourceLoyalsoldierGithub)
         snapshot.markResourceFileSource(ResourceFileSourceLoyalsoldierGithub)
         builtInKinds.forEach { kind -> snapshot.file(kind).apply { parentFile.mkdirs(); writeText("old:${kind.fileName}") } }
         val assets = FakeAssets(roscomVpnAssets(includeCnPrivate = false))
         val failures = mutableListOf<Pair<ResourceFileKind, Throwable>>()
-        val events = mutableListOf<String>()
 
         snapshot.ensureBundledFiles(
             resourceFileSource = ResourceFileSourceRoscomvpnGithub,
             bundledUpdatedAtMillis = 0L,
             restoreAfterPackageUpdate = false,
-            openAsset = { path ->
-                events += "open:$path"
-                assets.open(path)
-            },
-            onRestoreFailure = { kind, error ->
-                events += "failure:$kind"
-                failures += kind to error
-            },
+            openAsset = assets::open,
+            onRestoreFailure = { kind, error -> failures += kind to error },
         )
 
-        assertEquals(listOf(ResourceFileKind.GeoIpOnlyCnPrivate), failures.map { it.first })
-        assertTrue(failures.single().second is FileNotFoundException)
-        assertTrue(
-            events.indexOf("failure:${ResourceFileKind.GeoIpOnlyCnPrivate}") <
-                events.indexOf("open:xray/${ResourceFileKind.DirectCidrIpv4.fileName}.xz"),
-            "Failure reporting for one file should happen before the next file is opened",
-        )
+        assertTrue(failures.isEmpty(), "a file the provider never ships is not a failure: $failures")
         assertContentEquals("roscom:geoip".encodeToByteArray(), snapshot.file(ResourceFileKind.GeoIp).readBytes())
         assertContentEquals("roscom:geosite".encodeToByteArray(), snapshot.file(ResourceFileKind.GeoSite).readBytes())
         assertContentEquals(
             "old:${ResourceFileKind.GeoIpOnlyCnPrivate.fileName}".encodeToByteArray(),
             snapshot.file(ResourceFileKind.GeoIpOnlyCnPrivate).readBytes(),
         )
-        assertContentEquals(
-            "roscom:${ResourceFileKind.DirectCidrIpv4.fileName}".encodeToByteArray(),
-            snapshot.file(ResourceFileKind.DirectCidrIpv4).readBytes(),
-        )
-        assertContentEquals(
-            "roscom:${ResourceFileKind.DirectCidrIpv6.fileName}".encodeToByteArray(),
-            snapshot.file(ResourceFileKind.DirectCidrIpv6).readBytes(),
-        )
-        assertEquals("0", markerFile(snapshot).readText())
+        assertTrue(assets.requests.none { it.contains(ResourceFileKind.GeoIpOnlyCnPrivate.fileName) })
+        assertEquals("4", markerFile(snapshot).readText())
 
-        assets.values["geo/roscomvpn/${ResourceFileKind.GeoIpOnlyCnPrivate.fileName}"] =
-            "roscom:cn-private".encodeToByteArray()
-        failures.clear()
-        events.clear()
+        // The committed source is not activated again: nothing is reopened or overwritten.
+        assets.requests.clear()
+        snapshot.file(ResourceFileKind.GeoIp).writeText("downloaded update")
+        snapshot.ensureBundledFiles(
+            resourceFileSource = ResourceFileSourceRoscomvpnGithub,
+            bundledUpdatedAtMillis = 0L,
+            restoreAfterPackageUpdate = false,
+            openAsset = assets::open,
+            onRestoreFailure = { kind, error -> throw AssertionError("Unexpected restore failure for $kind", error) },
+        )
+        assertTrue(assets.requests.isEmpty())
+        assertEquals("downloaded update", snapshot.file(ResourceFileKind.GeoIp).readText())
+    }
+
+    @Test
+    fun aMissingGeoAssetOfAShippedKindStaysAFailureAndKeepsTheSourceUncommittedForRetry() = withXrayRoot { root ->
+        val snapshot = snapshot(root, id = 9, source = ResourceFileSourceLoyalsoldierGithub)
+        snapshot.markResourceFileSource(ResourceFileSourceLoyalsoldierGithub)
+        val assets = FakeAssets(roscomVpnAssets(includeCnPrivate = false) - "geo/roscomvpn/${ResourceFileKind.GeoSite.fileName}")
+        val failures = mutableListOf<ResourceFileKind>()
 
         snapshot.ensureBundledFiles(
             resourceFileSource = ResourceFileSourceRoscomvpnGithub,
             bundledUpdatedAtMillis = 0L,
             restoreAfterPackageUpdate = false,
-            openAsset = { path ->
-                events += "open:$path"
-                assets.open(path)
-            },
-            onRestoreFailure = { kind, error -> failures += kind to error },
+            openAsset = assets::open,
+            onRestoreFailure = { kind, _ -> failures += kind },
         )
 
-        assertTrue(failures.isEmpty())
-        assertContentEquals(
-            "roscom:cn-private".encodeToByteArray(),
-            snapshot.file(ResourceFileKind.GeoIpOnlyCnPrivate).readBytes(),
-        )
-        assertEquals("4", markerFile(snapshot).readText())
+        assertEquals(listOf(ResourceFileKind.GeoSite), failures)
+        assertEquals("0", markerFile(snapshot).readText())
     }
 
     @Test

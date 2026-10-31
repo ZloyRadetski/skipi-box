@@ -48,7 +48,7 @@ class AndroidResourceFileStoreBundledOracleTest {
     }
 
     @Test
-    fun missingRoscomVpnCnPrivateAssetLeavesTheSourceMarkerUncommitted() = withFilesContext { context ->
+    fun aRoscomVpnProfileWithoutABundledCnPrivateAssetStillCommitsTheSourceMarker() = withFilesContext { context ->
         val store = AndroidResourceFileStore(context, scope(trafficConfigId = 22, source = ResourceFileSourceRoscomvpnGithub))
 
         store.ensureBundledFiles(
@@ -58,14 +58,14 @@ class AndroidResourceFileStoreBundledOracleTest {
 
         val geoIpOnlyCnPrivate = store.file(ResourceFileKind.GeoIpOnlyCnPrivate)
         assertFalse(geoIpOnlyCnPrivate.exists())
-        assertFalse(File(store.dataDir, ResourceSourceMarkerFileName).exists())
+        assertEquals("4", File(store.dataDir, ResourceSourceMarkerFileName).readText())
         listOf(
             ResourceFileKind.GeoIp,
             ResourceFileKind.GeoSite,
             ResourceFileKind.DirectCidrIpv4,
             ResourceFileKind.DirectCidrIpv6,
         ).forEach { kind ->
-            assertTrue("${kind.fileName} should remain restored despite the missing provider asset", store.file(kind).length() > 0L)
+            assertTrue("${kind.fileName} should be restored from the provider bundle", store.file(kind).length() > 0L)
         }
     }
 
