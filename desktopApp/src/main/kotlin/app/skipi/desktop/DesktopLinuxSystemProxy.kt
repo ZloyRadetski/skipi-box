@@ -137,7 +137,7 @@ class DesktopLinuxSystemProxyLeaseManager(
             )
             DesktopLinuxSystemProxyLeaseStore.save(leasePath, preparedLease).getOrThrow()
 
-            applyProxyEndpoints(endpoints).getOrThrow()
+            applyProxyEndpoints(endpoints, snapshot).getOrThrow()
 
             DesktopLinuxSystemProxyLeaseStore.save(
                 leasePath,
@@ -253,7 +253,10 @@ class DesktopLinuxSystemProxyLeaseManager(
         )
     }
 
-    private fun applyProxyEndpoints(endpoints: DesktopSystemProxyEndpoints): Result<Unit> = runCatching {
+    private fun applyProxyEndpoints(
+        endpoints: DesktopSystemProxyEndpoints,
+        previous: DesktopLinuxSystemProxySnapshot,
+    ): Result<Unit> = runCatching {
         if (hasGsettings) {
             setGsettings("http", "host", "'${endpoints.host}'")
             setGsettings("http", "port", endpoints.httpPort.toString())
@@ -262,7 +265,7 @@ class DesktopLinuxSystemProxyLeaseManager(
             setGsettings("https", "port", endpoints.httpPort.toString())
             setGsettings("socks", "host", "'${endpoints.host}'")
             setGsettings("socks", "port", endpoints.socksPort.toString())
-            setGsettings("ignore-hosts", "['localhost', '127.0.0.0/8', '::1']")
+            setGsettings("ignore-hosts", mergeGsettingsIgnoreHosts(previous.gnomeIgnoreHosts))
             setGsettings("mode", "manual")
         }
 
@@ -270,26 +273,24 @@ class DesktopLinuxSystemProxyLeaseManager(
             writeKdeConfig(kdeWrite, "httpProxy", "http://${endpoints.host}:${endpoints.httpPort}")
             writeKdeConfig(kdeWrite, "httpsProxy", "http://${endpoints.host}:${endpoints.httpPort}")
             writeKdeConfig(kdeWrite, "socksProxy", "socks5://${endpoints.host}:${endpoints.socksPort}")
-            writeKdeConfig(kdeWrite, "NoProxyFor", "localhost,127.0.0.1,::1")
+            writeKdeConfig(kdeWrite, "NoProxyFor", mergeKdeNoProxyFor(previous.kdeNoProxyFor))
             writeKdeConfig(kdeWrite, "ProxyType", "1")
         }
     }
 
     private fun restoreSnapshot(snapshot: DesktopLinuxSystemProxySnapshot): Result<Unit> = runCatching {
         if (hasGsettings) {
-            if (snapshot.gnomeMode == "none" || snapshot.gnomeMode.isBlank()) {
-                setGsettings("mode", "none")
-            } else {
-                setGsettings("http", "host", "'${snapshot.gnomeHttpHost}'")
-                setGsettings("http", "port", snapshot.gnomeHttpPort.toString())
-                setGsettings("http", "enabled", snapshot.gnomeHttpEnabled.toString())
-                setGsettings("https", "host", "'${snapshot.gnomeHttpsHost}'")
-                setGsettings("https", "port", snapshot.gnomeHttpsPort.toString())
-                setGsettings("socks", "host", "'${snapshot.gnomeSocksHost}'")
-                setGsettings("socks", "port", snapshot.gnomeSocksPort.toString())
-                setGsettings("ignore-hosts", snapshot.gnomeIgnoreHosts)
-                setGsettings("mode", snapshot.gnomeMode)
-            }
+            // The values go back even when the proxy was off: the exclusion list and the endpoints are
+            // the user's too, and were overwritten while SKIPI owned the proxy.
+            setGsettings("http", "host", "'${snapshot.gnomeHttpHost}'")
+            setGsettings("http", "port", snapshot.gnomeHttpPort.toString())
+            setGsettings("http", "enabled", snapshot.gnomeHttpEnabled.toString())
+            setGsettings("https", "host", "'${snapshot.gnomeHttpsHost}'")
+            setGsettings("https", "port", snapshot.gnomeHttpsPort.toString())
+            setGsettings("socks", "host", "'${snapshot.gnomeSocksHost}'")
+            setGsettings("socks", "port", snapshot.gnomeSocksPort.toString())
+            setGsettings("ignore-hosts", snapshot.gnomeIgnoreHosts)
+            setGsettings("mode", snapshot.gnomeMode.ifBlank { "none" })
         }
 
         kdeWriteConfigExecutable?.let { kdeWrite ->
@@ -392,3 +393,24 @@ object DesktopLinuxSystemProxyLeaseStore {
         Files.deleteIfExists(path)
     }.map { }
 }
+
+
+private val GsettingsRequiredIgnoreHosts = listOf("localhost", "127.0.0.0/8", "::1")
+private val KdeRequiredNoProxyFor = listOf("localhost", "127.0.0.1", "::1")
+
+/** The user's GNOME exclusion list plus loopback, as a GVariant string array; nothing is listed twice. */
+internal fun mergeGsettingsIgnoreHosts(existing: String): String {
+    val current = existing.trim().removePrefix("@as").trim().removeSurrounding("[", "]")
+        .split(',')
+        .map { entry -> entry.trim().removeSurrounding("'").removeSurrounding("\"") }
+        .filter(String::isNotEmpty)
+    return (current + GsettingsRequiredIgnoreHosts)
+        .distinctBy { entry -> entry.lowercase() }
+        .joinToString(prefix = "[", postfix = "]", separator = ", ") { entry -> "'$entry'" }
+}
+
+/** The user's KDE exclusion list plus loopback, comma separated; nothing is listed twice. */
+internal fun mergeKdeNoProxyFor(existing: String?): String =
+    (existing.orEmpty().split(',').map(String::trim).filter(String::isNotEmpty) + KdeRequiredNoProxyFor)
+        .distinctBy { entry -> entry.lowercase() }
+        .joinToString(",")

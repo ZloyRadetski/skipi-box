@@ -83,6 +83,48 @@ class DesktopLinuxSystemProxyTest {
         fixture.close()
     }
 
+    private val ignoreHostsKey = "org.gnome.system.proxy ignore-hosts"
+
+    private fun ignoreHostsOf(fixture: LinuxProxyFixture): List<String> = fixture.gsettings.getValue(ignoreHostsKey)
+        .removePrefix("@as ").trim().removeSurrounding("[", "]")
+        .split(',').map { it.trim().removeSurrounding("'") }.filter(String::isNotEmpty)
+
+    @Test
+    fun keeps_the_users_ignore_hosts_while_the_proxy_is_on_and_restores_them_exactly_from_mode_none() {
+        val fixture = LinuxProxyFixture()
+        fixture.gsettings["org.gnome.system.proxy mode"] = "none"
+        val original = "['localhost', '10.0.0.0/8', 'corp.example']"
+        fixture.gsettings[ignoreHostsKey] = original
+
+        fixture.manager.acquire(DesktopSystemProxyEndpoints(httpPort = 10809, socksPort = 10808)).getOrThrow()
+
+        val applied = ignoreHostsOf(fixture)
+        assertTrue("10.0.0.0/8" in applied && "corp.example" in applied, "the user's exclusions stay: $applied")
+        assertTrue("127.0.0.0/8" in applied && "::1" in applied && "localhost" in applied, "loopback is always excluded: $applied")
+        assertEquals(applied.size, applied.map(String::lowercase).distinct().size, "no entry is repeated: $applied")
+
+        fixture.manager.release().getOrThrow()
+
+        assertEquals(original, fixture.gsettings[ignoreHostsKey])
+        fixture.close()
+    }
+
+    @Test
+    fun restores_the_ignore_hosts_of_a_proxy_the_user_already_had() {
+        val fixture = LinuxProxyFixture()
+        fixture.gsettings["org.gnome.system.proxy mode"] = "manual"
+        val original = "['192.168.0.0/16']"
+        fixture.gsettings[ignoreHostsKey] = original
+
+        fixture.manager.acquire(DesktopSystemProxyEndpoints(httpPort = 10809, socksPort = 10808)).getOrThrow()
+        assertTrue("192.168.0.0/16" in ignoreHostsOf(fixture))
+        fixture.manager.release().getOrThrow()
+
+        assertEquals(original, fixture.gsettings[ignoreHostsKey])
+        assertEquals("manual", fixture.gsettings["org.gnome.system.proxy mode"])
+        fixture.close()
+    }
+
     private class LinuxProxyFixture : AutoCloseable {
         val temporaryDirectory: Path = Files.createTempDirectory("skipi-linux-proxy-test")
         val leasePath: Path = temporaryDirectory.resolve("linux-system-proxy-lease.json")
