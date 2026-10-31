@@ -79,10 +79,14 @@ internal class DesktopHttpLatencyTester(
         }
         val measurement = probes.async { measure(probe.configJson, url, probe.amneziaWg) }
         val outcome = withTimeoutOrNull(timeoutMillis.toLong()) { measurement.await() }
-            ?: return DesktopServerLatencyResult.Timeout
+            ?: run {
+                DesktopLogger.warn("Ping", "HTTP ping timed out after $timeoutMillis ms: $url")
+                return DesktopServerLatencyResult.Timeout
+            }
         return outcome.fold(
             onSuccess = { delay -> DesktopServerLatencyResult.Success(delay) },
             onFailure = { error ->
+                DesktopLogger.warn("Ping", "HTTP ping failed: ${error.message.orEmpty().ifBlank { error.javaClass.simpleName }}")
                 DesktopServerLatencyResult.Error(
                     message = error.message.orEmpty().ifBlank { error.javaClass.simpleName },
                     cause = error,

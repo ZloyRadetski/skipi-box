@@ -30,6 +30,7 @@ internal class DesktopConnectionLatencyTest(
         val run = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 val milliseconds = measure()
+                if (milliseconds == null) DesktopLogger.warn("Ping", "Connection latency probe failed for server $serverId")
                 val result = milliseconds?.let(DesktopServerLatencyResult::Success) ?: DesktopServerLatencyResult.Timeout
                 publishLatencyByServerId(readLatencyByServerId() + (serverId to result))
             } finally {
