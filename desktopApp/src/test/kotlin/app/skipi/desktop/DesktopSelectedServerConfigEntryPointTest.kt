@@ -97,6 +97,8 @@ class DesktopSelectedServerConfigEntryPointTest {
     fun selectedRawCustomStillUsesItsRawConfigAndDedicatedDesktopAdapter() {
         val custom = Custom(
             remarks = "Raw custom",
+            // The profile's own DNS and outbounds are the subject here, as in the Android oracle.
+            overrideInboundAndDns = false,
             configJson = """
                 {
                   "outbounds": [
@@ -140,6 +142,8 @@ class DesktopSelectedServerConfigEntryPointTest {
     fun selectedRawCustomKeepsPrecedenceOverAnActiveTrafficProfile() {
         val custom = Custom(
             remarks = "Raw custom",
+            // The profile's own DNS and outbounds are the subject here, as in the Android oracle.
+            overrideInboundAndDns = false,
             configJson = """
                 {
                   "log": { "loglevel": "none" },

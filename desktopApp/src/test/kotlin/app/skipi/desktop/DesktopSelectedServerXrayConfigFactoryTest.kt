@@ -302,14 +302,15 @@ class DesktopSelectedServerXrayConfigFactoryTest {
     }
 
     @Test
-    fun customProfileWithoutOverrideKeepsItsOwnInboundsAndOutbounds() {
+    fun customProfileWithoutOverrideKeepsItsOwnOutboundsButUsesTheDesktopListener() {
         val raw = """{"log":{"loglevel":"none"},"inbounds":[{"tag":"mine","port":1234,"protocol":"socks"}],""" +
             """"outbounds":[{"tag":"my-out","protocol":"freedom"}]}"""
         val root = Json.parseToJsonElement(
             build(library(selectedId = 7, stored(7, Custom(remarks = "Raw", overrideInboundAndDns = false, configJson = raw)))),
         ).jsonObject
 
-        assertEquals(listOf("mine"), root.getValue("inbounds").jsonArray.tags())
+        // The application's local proxy, system proxy and diagnostics need Desktop's own listener.
+        assertEquals(listOf("skipi-socks"), root.getValue("inbounds").jsonArray.tags())
         assertEquals(listOf("my-out"), root.getValue("outbounds").jsonArray.tags())
         // Logging belongs to the application, never to a pasted profile.
         assertFalse(root.getValue("log").jsonObject["loglevel"]?.jsonPrimitive?.content == "none")

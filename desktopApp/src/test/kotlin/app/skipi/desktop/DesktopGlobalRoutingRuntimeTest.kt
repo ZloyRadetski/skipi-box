@@ -161,6 +161,8 @@ class DesktopGlobalRoutingRuntimeTest {
     fun rawCustomKeepsItsRoutingAndPrecedenceOverProfileAndGlobalSettings() = withXrayRoot { xrayRoot ->
         val custom = Custom(
             remarks = "Raw custom",
+            // The profile's own DNS and outbounds are the subject here, as in the Android oracle.
+            overrideInboundAndDns = false,
             configJson = """
                 {
                   "outbounds": [{ "tag": "raw-custom-out", "protocol": "freedom" }],
