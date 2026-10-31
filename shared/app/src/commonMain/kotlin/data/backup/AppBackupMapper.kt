@@ -24,6 +24,7 @@ import features.config.withSkipiSettingsInRawConfig
 import app.skipi.app.proxy.DefaultAutoBalancerGroupId as AutoBalancerGroupId
 import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.PersistedProxyServer
+import features.proxy.server.model.RemovedProxyProtocols
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.decodeProxyServer
 import features.proxy.server.model.toPersistedProxyServer
@@ -257,7 +258,8 @@ private fun AppBackupData.toAppState(): AppState {
     val fallbackGroupId = restoredSubscriptionGroups.firstOrNull { group -> group.builtIn }?.id
         ?: restoredSubscriptionGroups.firstOrNull()?.id
         ?: DefaultSubscriptionGroupId
-    val restoredProxyServers = proxyServers.map { server ->
+    // Servers of a removed protocol are dropped; they used to make the whole restore fail.
+    val restoredProxyServers = proxyServers.filter { server -> server.protocol.lowercase() !in RemovedProxyProtocols }.map { server ->
         server.toState(
             validGroupIds = validGroupIds,
             fallbackGroupId = fallbackGroupId,

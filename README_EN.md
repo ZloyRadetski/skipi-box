@@ -40,7 +40,7 @@ Project channel: **[@skipi_public](https://t.me/skipi_public)**
 
 SKIPI is an Android client that combines flexible networking capabilities with an intuitive Jetpack Compose interface supporting Material You themes.
 
-Under the hood, it is powered by Xray-core, SKIPI Core, hev-socks5-tunnel, as well as AmneziaWG and olcRTC engines.
+Under the hood, it is powered by Xray-core, SKIPI Core, hev-socks5-tunnel, as well as the AmneziaWG engine.
 
 ---
 
@@ -58,7 +58,7 @@ Under the hood, it is powered by Xray-core, SKIPI Core, hev-socks5-tunnel, as we
 
 ## Features
 
-* Support for VLESS, AmneziaWG, olcRTC, Hysteria 2, Trojan, VMess, Shadowsocks, and WireGuard
+* Support for VLESS, AmneziaWG, Hysteria 2, Trojan, VMess, Shadowsocks, and WireGuard
 * Shadowrocket rule-based routing (.conf), domain lists, GeoIP, and GeoSite with a visual rule editor
 * Subscription import from v2rayNG, Clash, Clash Meta (with age-key decryption), and Base64
 * Scheduled background updates for subscriptions and Geo databases via WorkManager
@@ -74,7 +74,6 @@ Under the hood, it is powered by Xray-core, SKIPI Core, hev-socks5-tunnel, as we
 | :--- | :--- |
 | VLESS | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
 | AmneziaWG | UDP with custom headers and anti-DPI protection |
-| olcRTC | WebRTC transport |
 | WireGuard | Standard UDP tunnel |
 | Hysteria 2 | UDP / QUIC |
 | VMess | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |

@@ -581,25 +581,3 @@ private fun String.isValidAmneziaWgHeaderRange(): Boolean {
         lower <= upper
 }
 
-// ── OLCRTC ───────────────────────────────────────────────────────────────────
-
-private val OlcRtcEncryptionKeyRegex = Regex("[0-9a-fA-F]{64}")
-
-internal fun MutableList<ProxyServerValidationIssue>.validateOlcRtcProvider(provider: String) {
-    if (provider.trim().lowercase() !in OlcRtc.AllowedProviders) {
-        addIssue(ProxyServerValidationError.OlcRtcProviderInvalid, OlcRtc.AllowedProviders.joinToString(", "))
-    }
-}
-
-internal fun MutableList<ProxyServerValidationIssue>.validateOlcRtcTransport(transport: String) {
-    if (transport.trim().lowercase() !in OlcRtc.AllowedTransports) {
-        addIssue(ProxyServerValidationError.OlcRtcTransportInvalid, OlcRtc.AllowedTransports.joinToString(", "))
-    }
-}
-
-internal fun MutableList<ProxyServerValidationIssue>.validateOlcRtcEncryptionKey(key: String) {
-    if (!OlcRtcEncryptionKeyRegex.matches(key.trim())) {
-        addIssue(ProxyServerValidationError.OlcRtcEncryptionKeyInvalid)
-    }
-}
-

@@ -40,7 +40,7 @@
 
 SKIPI 是一款 Android 客户端，将灵活的网络连接能力与基于 Jetpack Compose 的直观界面相结合，并支持 Material You 动态主题。
 
-底层由 Xray-core、SKIPI Core、hev-socks5-tunnel 以及 AmneziaWG 和 olcRTC 引擎提供强力驱动。
+底层由 Xray-core、SKIPI Core、hev-socks5-tunnel 以及 AmneziaWG 引擎提供强力驱动。
 
 ---
 
@@ -58,7 +58,7 @@ SKIPI 是一款 Android 客户端，将灵活的网络连接能力与基于 Jetp
 
 ## 核心功能
 
-* 支持 VLESS、AmneziaWG、olcRTC、Hysteria 2、Trojan、VMess、Shadowsocks 和 WireGuard
+* 支持 VLESS、AmneziaWG、Hysteria 2、Trojan、VMess、Shadowsocks 和 WireGuard
 * 基于 Shadowrocket 规则 (.conf)、域名列表、GeoIP 与 GeoSite 的灵活分流路由，并配备可视化编辑器
 * 支持导入 v2rayNG、Clash、Clash Meta（包含 age 密钥解密）及 Base64 订阅
 * 通过 WorkManager 定时在后台更新订阅和地理规则数据库
@@ -74,7 +74,6 @@ SKIPI 是一款 Android 客户端，将灵活的网络连接能力与基于 Jetp
 | :--- | :--- |
 | VLESS | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
 | AmneziaWG | 带自定义报头及防 DPI 保护的 UDP |
-| olcRTC | WebRTC 传输 |
 | WireGuard | 标准 UDP 隧道 |
 | Hysteria 2 | UDP / QUIC |
 | VMess | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |

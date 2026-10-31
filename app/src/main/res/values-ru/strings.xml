@@ -557,7 +557,6 @@
     <string name="proxy_server_list_add_hysteria2">Добавить Hysteria2</string>
     <string name="proxy_server_list_add_wireguard">Добавить Wireguard</string>
     <string name="proxy_server_list_add_amnezia_wg">Добавить AmneziaWG</string>
-    <string name="proxy_server_list_add_olcrtc">Добавить OLCRTC</string>
     <string name="proxy_server_list_restart_service">Перезапустить службу</string>
     <string name="proxy_server_list_update_subscriptions">Обновить подписки</string>
     <string name="proxy_server_list_saved">Конфигурация {name} сохранена</string>
@@ -721,7 +720,6 @@
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">Неверная длина ключа Shadowsocks 2022. Длина после декодирования должна составлять {lengths} байт</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">Поток VLESS Vision поддерживает работу только в связке RAW + TLS/REALITY</string>
     <string name="proxy_validation_awg_jmin_max_invalid">Jmin не может быть больше Jmax</string>
-    <string name="proxy_validation_olcrtc_key_invalid">Ключ должен содержать ровно 64 шестнадцатеричных символа</string>
 
     <string name="routing_title">Правила маршрутизации</string>
     <string name="routing_domain_policy">Политика доменов</string>
@@ -1180,7 +1178,7 @@
     <string name="configs_dns_hosts_empty">Нет статических записей DNS Hosts</string>
     <string name="configs_dns_hosts_input">domain.com: 1.2.3.4</string>
     <string name="configs_dns_tun_dns">DNS адаптера TUN</string>
-    <string name="configs_dns_tun_dns_summary">Виртуальный IPv4 DNS-адрес Android VPN (например, 1.1.1.1). Его использует olcRTC; «Удалённый» и «Прямой DNS» ниже — настройки Xray (DoH/DoT) и в olcRTC не передаются.</string>
+    <string name="configs_dns_tun_dns_summary">Виртуальный IPv4 DNS-адрес Android VPN (например, 1.1.1.1). «Удалённый» и «Прямой DNS» ниже — настройки Xray (DoH/DoT).</string>
     <string name="configs_dns_protocol_doh">DoH</string>
     <string name="configs_dns_protocol_dot">DoT</string>
     <string name="configs_dns_protocol_dou">DoU (UDP)</string>
@@ -1403,31 +1401,6 @@
     <string name="proxy_editor_awg_h3">Заголовок Cookie рукопожатия (H3, uint32)</string>
     <string name="proxy_editor_awg_h4">Транспортный заголовок (H4, uint32)</string>
 
-    <!-- Редактор OLCRTC -->
-    <string name="proxy_editor_olcrtc_provider">Провайдер</string>
-    <string name="proxy_editor_olcrtc_transport">Транспорт</string>
-    <string name="proxy_editor_olcrtc_room_url">URL комнаты</string>
-    <string name="proxy_editor_olcrtc_encryption_key">Ключ шифрования (64 hex символа)</string>
-    <string name="proxy_editor_olcrtc_payload_optional">Payload транспорта (опционально)</string>
-    <string name="proxy_editor_olcrtc_socks_port">Предпочтительный порт локального SOCKS5</string>
-    <string name="proxy_editor_olcrtc_vp8_options">Параметры VP8</string>
-    <string name="proxy_editor_olcrtc_vp8_fps">Частота кадров (FPS)</string>
-    <string name="proxy_editor_olcrtc_vp8_batch">Размер пакета (батч)</string>
-    <string name="proxy_editor_olcrtc_sei_options">Параметры SEI</string>
-    <string name="proxy_editor_olcrtc_sei_fps">Частота кадров (FPS)</string>
-    <string name="proxy_editor_olcrtc_sei_batch">Размер пакета (батч)</string>
-    <string name="proxy_editor_olcrtc_sei_frag">Размер фрагмента (байт)</string>
-    <string name="proxy_editor_olcrtc_sei_ack_ms">Таймаут ACK (мс)</string>
-    <string name="proxy_editor_olcrtc_video_options">Параметры видеоканала</string>
-    <string name="proxy_editor_olcrtc_video_width">Ширина (пиксели)</string>
-    <string name="proxy_editor_olcrtc_video_height">Высота (пиксели)</string>
-    <string name="proxy_editor_olcrtc_video_fps">Частота кадров (FPS)</string>
-    <string name="proxy_editor_olcrtc_video_codec">Видеокодек</string>
-    <string name="proxy_editor_olcrtc_video_qr_size">Размер QR-кода</string>
-    <string name="proxy_editor_olcrtc_video_qr_recovery">Восстановление ошибок QR (low/medium/high)</string>
-    <string name="proxy_editor_olcrtc_video_tile_module">Размер модуля тайла</string>
-    <string name="proxy_editor_olcrtc_video_tile_rs">Избыточность Рида-Соломона (RS)</string>
-    <string name="proxy_editor_olcrtc_custom_payload">Дополнительный payload</string>
     <!-- Расширенный виджет на рабочем столе -->
     <string name="widget_compact_label">Переключатель туннеля</string>
     <string name="widget_control_label">Панель туннеля</string>

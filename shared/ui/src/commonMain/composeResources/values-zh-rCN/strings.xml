@@ -508,7 +508,6 @@
     <string name="proxy_server_list_add_hysteria2">添加歇斯底里2</string>
     <string name="proxy_server_list_add_wireguard">添加线卫</string>
     <string name="proxy_server_list_add_amnezia_wg">添加 AmneziaWG</string>
-    <string name="proxy_server_list_add_olcrtc">添加 OLCRTC</string>
     <string name="proxy_server_list_restart_service">重启服务</string>
     <string name="proxy_server_list_update_subscriptions">更新订阅</string>
     <string name="proxy_server_list_saved">{name}已保存</string>
@@ -674,7 +673,6 @@
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">Shadowsocks 2022 密钥长度无效。解码长度必须为{lengths}字节</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">VLESS Vision流程仅支持RAW + TLS/REALITY</string>
     <string name="proxy_validation_awg_jmin_max_invalid">Jmin 不能大于 Jmax</string>
-    <string name="proxy_validation_olcrtc_key_invalid">密钥必须正好是 64 个十六进制字符</string>
     <string name="routing_title">路由规则</string>
     <string name="routing_domain_policy">域名政策</string>
     <string name="routing_domain_strategy">领域策略</string>
@@ -1372,31 +1370,6 @@
     <string name="proxy_editor_awg_h3">Cookie 握手标头 (H3，uint32)</string>
     <string name="proxy_editor_awg_h4">传输标头 (H4，uint32)</string>
 
-    <!-- OLCRTC 编辑器 -->
-    <string name="proxy_editor_olcrtc_provider">提供商</string>
-    <string name="proxy_editor_olcrtc_transport">传输类型</string>
-    <string name="proxy_editor_olcrtc_room_url">会议室 URL</string>
-    <string name="proxy_editor_olcrtc_encryption_key">加密密钥 (64 位十六进制)</string>
-    <string name="proxy_editor_olcrtc_payload_optional">传输 Payload（可选）</string>
-    <string name="proxy_editor_olcrtc_socks_port">首选本地 SOCKS5 端口</string>
-    <string name="proxy_editor_olcrtc_vp8_options">VP8 参数</string>
-    <string name="proxy_editor_olcrtc_vp8_fps">帧率 (FPS)</string>
-    <string name="proxy_editor_olcrtc_vp8_batch">批处理大小 (包数)</string>
-    <string name="proxy_editor_olcrtc_sei_options">SEI 参数</string>
-    <string name="proxy_editor_olcrtc_sei_fps">帧率 (FPS)</string>
-    <string name="proxy_editor_olcrtc_sei_batch">批处理大小 (包数)</string>
-    <string name="proxy_editor_olcrtc_sei_frag">分片大小 (字节)</string>
-    <string name="proxy_editor_olcrtc_sei_ack_ms">ACK 超时 (毫秒)</string>
-    <string name="proxy_editor_olcrtc_video_options">视频通道参数</string>
-    <string name="proxy_editor_olcrtc_video_width">宽度 (像素)</string>
-    <string name="proxy_editor_olcrtc_video_height">高度 (像素)</string>
-    <string name="proxy_editor_olcrtc_video_fps">帧率 (FPS)</string>
-    <string name="proxy_editor_olcrtc_video_codec">视频编码</string>
-    <string name="proxy_editor_olcrtc_video_qr_size">二维码大小</string>
-    <string name="proxy_editor_olcrtc_video_qr_recovery">二维码纠错级别 (low/medium/high)</string>
-    <string name="proxy_editor_olcrtc_video_tile_module">Tile 模块大小</string>
-    <string name="proxy_editor_olcrtc_video_tile_rs">Tile Reed-Solomon 冗余</string>
-    <string name="proxy_editor_olcrtc_custom_payload">附加自定义 Payload</string>
     <!-- 扩展桌面小组件 -->
     <string name="widget_compact_label">隧道开关</string>
     <string name="widget_control_label">隧道控制面板</string>

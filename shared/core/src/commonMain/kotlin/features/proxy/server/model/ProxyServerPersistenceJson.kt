@@ -28,13 +28,19 @@ fun ProxyServer<*>.toPersistedProxyServer(): PersistedProxyServer {
         is Hysteria2 -> persisted(ProxyServerConstants.PROTOCOL_HYSTERIA2, this)
         is Wireguard -> persisted(ProxyServerConstants.PROTOCOL_WIREGUARD, this)
         is AmneziaWg -> persisted(ProxyServerConstants.PROTOCOL_AMNEZIA_WG, this)
-        is OlcRtc -> persisted(ProxyServerConstants.PROTOCOL_OLCRTC, this)
         is StrategyGroup -> persisted(ProxyServerConstants.PROTOCOL_STRATEGY_GROUP, this)
         is ChainProxy -> persisted(ProxyServerConstants.PROTOCOL_CHAIN_PROXY, this)
         is Custom -> persisted(ProxyServerConstants.PROTOCOL_CUSTOM, this)
         else -> error("Unsupported proxy server type")
     }
 }
+
+/** Protocols that used to exist; servers stored with one of them are dropped instead of failing a load. */
+val RemovedProxyProtocols: Set<String> = setOf("olcrtc")
+
+fun String.isRemovedPersistedProxyServer(): Boolean = runCatching {
+    ProxyServer.json.decodeFromString<PersistedProxyServer>(this).protocol.lowercase() in RemovedProxyProtocols
+}.getOrDefault(false)
 
 fun String.decodePersistedProxyServer(): ProxyServer<*> {
     val persistedServer = ProxyServer.json.decodeFromString<PersistedProxyServer>(this)
@@ -70,9 +76,6 @@ fun PersistedProxyServer.decodeProxyServer(): ProxyServer<*> {
         ProxyServerConstants.PROTOCOL_AMNEZIA_WG,
         ProxyServerConstants.PROTOCOL_AWG ->
             ProxyServer.json.decodeFromJsonElement<AmneziaWg>(payload)
-
-        ProxyServerConstants.PROTOCOL_OLCRTC ->
-            ProxyServer.json.decodeFromJsonElement<OlcRtc>(payload)
 
         ProxyServerConstants.PROTOCOL_STRATEGY_GROUP ->
             ProxyServer.json.decodeFromJsonElement<StrategyGroup>(payload)

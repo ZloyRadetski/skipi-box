@@ -11,7 +11,6 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -42,7 +41,6 @@ fun ProxyServer<*>.editableCopy(): ProxyServer<*> {
         is VLESS -> copy(parms = parms.copy())
         is Wireguard -> copy()
         is AmneziaWg -> copy()
-        is OlcRtc -> copy()
         is Hysteria2 -> copy()
         else -> unsupportedProxyServerEditor()
     }
@@ -78,7 +76,6 @@ fun LazyListScope.proxyServerEditorContent(
         is VLESS -> vlessProxyServer(proxyServer)
         is Wireguard -> wireguardProxyServer(proxyServer)
         is AmneziaWg -> amneziaWgProxyServer(proxyServer)
-        is OlcRtc -> olcRtcProxyServer(proxyServer)
         is Hysteria2 -> hysteria2ProxyServer(proxyServer)
         else -> proxyServer.unsupportedProxyServerEditor()
     }

@@ -10,7 +10,6 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -156,15 +155,6 @@ class ProxyServerDraftFactoryTest {
                 i3 = "",
                 i4 = "",
                 i5 = "",
-            ),
-            ProxyHomeServerKind.OlcRtc to OlcRtc(
-                remarks = "",
-                provider = "jitsi",
-                transport = "datachannel",
-                roomUrl = "",
-                encryptionKey = "",
-                payload = "",
-                localSocksPort = "10808",
             ),
             ProxyHomeServerKind.StrategyGroup to StrategyGroup(
                 remarks = "",

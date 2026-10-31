@@ -58,10 +58,6 @@ enum class ProxyServerValidationError {
     AmneziaWgJSizeOutOfRange,
     AmneziaWgSSizeOutOfRange,
     AmneziaWgHeaderInvalid,
-    // OLCRTC
-    OlcRtcProviderInvalid,
-    OlcRtcTransportInvalid,
-    OlcRtcEncryptionKeyInvalid,
 }
 
 fun proxyValidationIssue(

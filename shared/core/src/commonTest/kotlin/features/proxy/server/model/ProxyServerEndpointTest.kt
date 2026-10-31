@@ -19,18 +19,13 @@ class ProxyServerEndpointTest {
     }
 
     @Test
-    fun resolves_special_and_custom_proxy_endpoints() {
-        val olcRtc = OlcRtc(
-            provider = "telemost",
-            roomUrl = "https://telemost.yandex.ru/j/1234567890",
-        )
+    fun resolves_custom_proxy_endpoints() {
         val custom = Custom(
             configJson = """
                 {"outbounds":[{"protocol":"socks","settings":{"servers":[{"address":"custom.example","port":8443}]}}]}
             """.trimIndent(),
         )
 
-        assertEquals(ProxyServerEndpoint("telemost.yandex.ru", 443), olcRtc.connectionEndpointOrNull())
         assertEquals(ProxyServerEndpoint("custom.example", 8443), custom.connectionEndpointOrNull())
     }
 

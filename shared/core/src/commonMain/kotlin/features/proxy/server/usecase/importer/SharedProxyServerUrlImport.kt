@@ -72,17 +72,7 @@ fun importProxyServersFromUrls(
 }
 
 private fun String.embeddedProxyServerUrls(): Sequence<String> = ProxyServerUrlRegex.findAll(this)
-    .map { match ->
-        val raw = match.value.trimEnd(',', ';')
-        if (raw.startsWith("${ProxyServerConstants.PROTOCOL_OLCRTC}://", ignoreCase = true) &&
-            raw.endsWith('>') &&
-            raw.lastIndexOf('>') > raw.lastIndexOf('@')
-        ) {
-            raw.dropLast(1)
-        } else {
-            raw
-        }
-    }
+    .map { match -> match.value.trimEnd(',', ';') }
 
 private fun String.startsWithProxyServerScheme(): Boolean {
     val lower = lowercase()
@@ -105,9 +95,8 @@ private val ProxyServerUrlPrefixes = listOf(
     "${ProxyServerConstants.PROTOCOL_WIREGUARD}://",
     "${ProxyServerConstants.PROTOCOL_AMNEZIA_WG}://",
     "${ProxyServerConstants.PROTOCOL_AWG}://",
-    "${ProxyServerConstants.PROTOCOL_OLCRTC}://",
 )
 
 private val ProxyServerUrlRegex = Regex(
-    "(?i)\\b(?:olcrtc://[^\\s\"']+|\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|wireguard|amneziawg|awg)://[^\\s<>\"']+)",
+    "(?i)\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|wireguard|amneziawg|awg)://[^\\s<>\"']+",
 )

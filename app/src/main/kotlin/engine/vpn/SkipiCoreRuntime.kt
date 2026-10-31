@@ -18,16 +18,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 import platform.CoreTrafficSnapshot
 import platform.parseCoreTrafficSnapshot
 
-internal const val OlcRtcReadinessTimeoutMillis = 8_000L
-private const val OlcRtcReadinessPollIntervalMillis = 200L
-private const val OlcRtcSocksConnectTimeoutMillis = 300
+internal const val NativeBridgeReadinessTimeoutMillis = 8_000L
+private const val NativeBridgeReadinessPollIntervalMillis = 200L
+private const val NativeBridgeSocksConnectTimeoutMillis = 300
 
 internal object SkipiCoreRuntime {
     @Volatile
     private var coreController: CoreController? = null
-    @Volatile
-    var activeOlcRtcBridge: ActiveOlcRtcBridge? = null
-        private set
     @Volatile
     var activeAmneziaWgBridge: ActiveAmneziaWgBridge? = null
         private set
@@ -44,16 +41,10 @@ internal object SkipiCoreRuntime {
         }
         context.initializeAndroidXrayCoreEnvironment(config.dataDir)
         try {
-            if (!config.olcRtcConfigYaml.isNullOrBlank() && config.olcRtcSocksPort > 0) {
-                startOlcRtc(config.olcRtcConfigYaml, config.olcRtcSocksPort)
-                check(awaitOlcRtcReady(config.olcRtcSocksPort)) {
-                    "OLCRTC local SOCKS listener did not become ready within ${OlcRtcReadinessTimeoutMillis}ms"
-                }
-            }
             if (!config.amneziaWgConfigJson.isNullOrBlank() && config.amneziaWgSocksPort > 0) {
                 startAmneziaWg(config.amneziaWgConfigJson, config.amneziaWgSocksPort)
                 check(awaitAmneziaWgReady(config.amneziaWgSocksPort)) {
-                    "AmneziaWG local SOCKS listener did not become ready within ${OlcRtcReadinessTimeoutMillis}ms"
+                    "AmneziaWG local SOCKS listener did not become ready within ${NativeBridgeReadinessTimeoutMillis}ms"
                 }
             }
         } catch (error: Throwable) {
@@ -79,7 +70,6 @@ internal object SkipiCoreRuntime {
             )
         }
         coreController = controller
-        activeOlcRtcBridge = config.activeOlcRtcBridge
         activeAmneziaWgBridge = config.activeAmneziaWgBridge
     }
 
@@ -97,15 +87,11 @@ internal object SkipiCoreRuntime {
     fun setSocketProtector(protector: (Int) -> Boolean) {
         runCatching {
             val proxyInstance = createSocketProtector(protector)
-            val olcRtcConfigured = installSocketProtector("setOlcRtcSocketProtector", proxyInstance)
             amneziaWgSocketProtectorConfigured = installSocketProtector("setAmneziaWgSocketProtector", proxyInstance)
-            when {
-                olcRtcConfigured && amneziaWgSocketProtectorConfigured ->
-                    AppLog.info(LogTag, "Configured socket protectors for olcRTC and AmneziaWG")
-                olcRtcConfigured ->
-                    AppLog.warn(LogTag, "AmneziaWG socket-protector API is unavailable in the current SkipiCore build")
-                else ->
-                    AppLog.warn(LogTag, "olcRTC socket-protector API is unavailable in the current SkipiCore build")
+            if (amneziaWgSocketProtectorConfigured) {
+                AppLog.info(LogTag, "Configured the AmneziaWG socket protector")
+            } else {
+                AppLog.warn(LogTag, "AmneziaWG socket-protector API is unavailable in the current SkipiCore build")
             }
         }.onFailure { error ->
             amneziaWgSocketProtectorConfigured = false
@@ -135,41 +121,6 @@ internal object SkipiCoreRuntime {
         }.onFailure { error ->
             AppLog.warn(LogTag, "Failed to invoke $methodName", error)
         }.getOrDefault(false)
-    }
-
-    fun startOlcRtc(configYaml: String, socksPort: Int) {
-        val method = Skipicore::class.java.methods.firstOrNull { it.name == "startOlcRtc" }
-            ?: error("startOlcRtc is not available in the loaded SkipiCore library")
-        try {
-            if (method.parameterTypes.size == 2) {
-                val portArg: Any = if (method.parameterTypes[1] == Long::class.javaPrimitiveType || method.parameterTypes[1] == Long::class.javaObjectType) {
-                    socksPort.toLong()
-                } else {
-                    socksPort
-                }
-                method.invoke(null, configYaml, portArg)
-            } else {
-                method.invoke(null, configYaml)
-            }
-            AppLog.info(LogTag, "OLCRTC started on socks port $socksPort")
-        } catch (e: java.lang.reflect.InvocationTargetException) {
-            val cause = e.targetException ?: e
-            AppLog.error(LogTag, "Failed to start OLCRTC", cause)
-            throw cause
-        } catch (e: Throwable) {
-            AppLog.error(LogTag, "Failed to start OLCRTC", e)
-            throw e
-        }
-    }
-
-    fun stopOlcRtc() {
-        runCatching {
-            val method = Skipicore::class.java.methods.firstOrNull { it.name == "stopOlcRtc" }
-            method?.invoke(null)
-            AppLog.info(LogTag, "OLCRTC stopped")
-        }.onFailure { error ->
-            AppLog.warn(LogTag, "Failed to stop OLCRTC", error)
-        }
     }
 
     /** Starts the native AWG runner and its private local SOCKS listener. */
@@ -231,19 +182,12 @@ internal object SkipiCoreRuntime {
 
     private fun stopNativeBridges() {
         stopAmneziaWg()
-        stopOlcRtc()
         activeAmneziaWgBridge = null
-        activeOlcRtcBridge = null
     }
-
-    internal suspend fun awaitOlcRtcReady(
-        port: Int,
-        timeoutMs: Long = OlcRtcReadinessTimeoutMillis,
-    ): Boolean = awaitLocalSocksReady("olcRTC", port, timeoutMs)
 
     internal suspend fun awaitAmneziaWgReady(
         port: Int,
-        timeoutMs: Long = OlcRtcReadinessTimeoutMillis,
+        timeoutMs: Long = NativeBridgeReadinessTimeoutMillis,
     ): Boolean = awaitLocalSocksReady("AmneziaWG", port, timeoutMs)
 
     private suspend fun awaitLocalSocksReady(
@@ -252,13 +196,13 @@ internal object SkipiCoreRuntime {
         timeoutMs: Long,
     ): Boolean {
         AppLog.info(LogTag, "Waiting for $runtimeName local SOCKS 127.0.0.1:$port to accept connections (timeout ${timeoutMs}ms)")
-        val ready = awaitOlcRtcReadiness(timeoutMs) {
+        val ready = awaitNativeBridgeReadiness(timeoutMs) {
             withContext(Dispatchers.IO) {
                 try {
                     java.net.Socket().use { socket ->
                         socket.connect(
                             java.net.InetSocketAddress("127.0.0.1", port),
-                            OlcRtcSocksConnectTimeoutMillis,
+                            NativeBridgeSocksConnectTimeoutMillis,
                         )
                     }
                     true
@@ -323,16 +267,14 @@ internal object SkipiCoreRuntime {
 }
 
 /**
- * Waits for a local OLCRTC SOCKS listener with one bounded, cancellable deadline.
+ * Waits for a native bridge's local SOCKS listener with one bounded, cancellable deadline.
  *
- * The core also exposes a blocking `waitOlcRtcReady` JNI call. It is intentionally
- * not used here: it can outlive the VPN caller timeout and was previously followed
- * by a second 15-second socket loop. Xray only needs the local listener, so the
- * application owns a single cooperative readiness check instead.
+ * Xray only needs the local listener, so the application owns a single cooperative
+ * readiness check rather than a blocking call into the core that could outlive the VPN caller timeout.
  */
-internal suspend fun awaitOlcRtcReadiness(
+internal suspend fun awaitNativeBridgeReadiness(
     timeoutMs: Long,
-    pollIntervalMs: Long = OlcRtcReadinessPollIntervalMillis,
+    pollIntervalMs: Long = NativeBridgeReadinessPollIntervalMillis,
     isReady: suspend () -> Boolean,
 ): Boolean {
     require(timeoutMs > 0) { "timeoutMs must be positive" }

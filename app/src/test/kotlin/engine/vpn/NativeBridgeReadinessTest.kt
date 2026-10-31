@@ -15,13 +15,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class OlcRtcReadinessTest {
+class NativeBridgeReadinessTest {
 
     @Test
     fun readinessPoll_stopsImmediatelyWhenTheListenerAppears() = runTest {
         var attempts = 0
 
-        val ready = awaitOlcRtcReadiness(
+        val ready = awaitNativeBridgeReadiness(
             timeoutMs = 1_000L,
             pollIntervalMs = 100L,
         ) {
@@ -37,7 +37,7 @@ class OlcRtcReadinessTest {
     fun readinessPoll_usesOneBoundedDeadlineWhenTheListenerNeverAppears() = runTest {
         var attempts = 0
 
-        val ready = awaitOlcRtcReadiness(
+        val ready = awaitNativeBridgeReadiness(
             timeoutMs = 250L,
             pollIntervalMs = 100L,
         ) {
@@ -53,7 +53,7 @@ class OlcRtcReadinessTest {
     @Test
     fun readinessPoll_isCancelledWithoutWaitingForItsDeadline() = runTest {
         val polling = async {
-            awaitOlcRtcReadiness(
+            awaitNativeBridgeReadiness(
                 timeoutMs = 60_000L,
                 pollIntervalMs = 1_000L,
             ) { false }

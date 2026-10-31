@@ -7,7 +7,6 @@ import engine.network.NetworkCidrAddress
 import engine.xray.XrayOutboundPlan
 import engine.xray.XrayProxyOutboundServer
 import features.proxy.server.model.AmneziaWg
-import features.proxy.server.model.OlcRtc
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -17,11 +16,9 @@ import kotlin.test.assertTrue
 class NativeBridgePlanTest {
 
     @Test
-    fun nativeBridgesUseTunDnsAndOnlyRewriteTheirOwnOutbounds() {
-        val olc = olcRtc(key = "a".repeat(64))
+    fun nativeBridgeUsesTunDnsAndOnlyRewritesItsOwnOutbound() {
         val awg = amneziaWg()
         val plan = outboundPlan(
-            XrayProxyOutboundServer(tag = "olc", server = olc),
             XrayProxyOutboundServer(tag = "awg", server = awg),
         )
 
@@ -31,21 +28,13 @@ class NativeBridgePlanTest {
             reservedPorts = emptySet(),
         )
 
-        assertTrue(result.olcRtcYaml.orEmpty().contains("dns: 9.9.9.9:53"))
-        assertTrue(!result.olcRtcYaml.orEmpty().contains("dns: 8.8.8.8:53"))
-        assertTrue(result.olcRtcSocksPort in 1024..65535)
         assertTrue(result.amneziaWgSocksPort in 1024..65535)
-        assertTrue(result.olcRtcSocksPort != result.amneziaWgSocksPort)
-        assertNotNull(result.activeOlcRtcBridge)
         assertNotNull(result.activeAmneziaWgBridge)
         assertTrue(result.amneziaWgConfigJson.orEmpty().contains("\"s3\":60"))
         assertTrue(result.amneziaWgConfigJson.orEmpty().contains("\"dnsServers\":[\"9.9.9.9\"]"))
 
-        val olcOutbound = result.outboundPlan.proxyOutbounds.first { it.tag == "olc" }.customOutbound
         val awgOutbound = result.outboundPlan.proxyOutbounds.first { it.tag == "awg" }.customOutbound
-        assertNotNull(olcOutbound)
         assertNotNull(awgOutbound)
-        assertTrue(olcOutbound.toString().contains("skipi_rtc_"))
         assertTrue(awgOutbound.toString().contains("127.0.0.1"))
     }
 
@@ -83,19 +72,6 @@ class NativeBridgePlanTest {
 
         assertTrue(result.amneziaWgConfigJson.orEmpty().contains("relay.example:50125"))
         assertEquals("relay.example", result.activeAmneziaWgBridge?.server?.server)
-    }
-
-    @Test
-    fun differentOlcRtcRuntimesAreRejectedInsteadOfBeingSilentlyRewritten() {
-        val plan = outboundPlan(
-            XrayProxyOutboundServer(tag = "first", server = olcRtc(key = "a".repeat(64))),
-            XrayProxyOutboundServer(tag = "second", server = olcRtc(key = "b".repeat(64))),
-        )
-
-        val error = assertFailsWith<IllegalArgumentException> {
-            buildNativeBridgePlan(plan, tunOptions("1.1.1.1"), emptySet())
-        }
-        assertTrue(error.message.orEmpty().contains("multiple different olcRTC"))
     }
 
     @Test
@@ -153,14 +129,6 @@ class NativeBridgePlanTest {
         ipv4Address = NetworkCidrAddress("172.19.0.1", 30),
         ipv6Address = NetworkCidrAddress("fdfe:dcba:9876::1", 126),
         dnsServers = listOf(dns),
-    )
-
-    private fun olcRtc(key: String) = OlcRtc(
-        remarks = "olc",
-        provider = "jitsi",
-        transport = "datachannel",
-        roomUrl = "room",
-        encryptionKey = key,
     )
 
     private fun amneziaWg() = AmneziaWg(

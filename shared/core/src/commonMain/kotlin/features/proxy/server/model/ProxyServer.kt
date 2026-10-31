@@ -28,7 +28,6 @@ object ProxyServerConstants {
     const val PROTOCOL_WIREGUARD = "wireguard"
     const val PROTOCOL_AMNEZIA_WG = "amneziawg"
     const val PROTOCOL_AWG = "awg"
-    const val PROTOCOL_OLCRTC = "olcrtc"
     const val PROTOCOL_STRATEGY_GROUP = "strategy-group"
     const val PROTOCOL_CHAIN_PROXY = "chain-proxy"
     const val PROTOCOL_CUSTOM = "custom"
@@ -76,7 +75,6 @@ interface ProxyServer<T : ProxyServer<T>> {
                 ProxyServerConstants.PROTOCOL_WIREGUARD -> Wireguard().parse(url)
                 ProxyServerConstants.PROTOCOL_AMNEZIA_WG,
                 ProxyServerConstants.PROTOCOL_AWG -> AmneziaWg().parse(url)
-                ProxyServerConstants.PROTOCOL_OLCRTC -> OlcRtc().parse(url)
                 else -> {
                     unsupportedProxyServerUrl(url)
                 }
@@ -421,7 +419,6 @@ fun ProxyServer<*>.getTransportDisplay(): String? {
         is Hysteria2 -> "QUIC"
         is Wireguard -> "UDP"
         is AmneziaWg -> "UDP"
-        is OlcRtc -> "WebRTC"
         is HTTP -> "TCP"
         is Socks -> "TCP"
         is Custom -> customXrayConfigTransportDisplay(configJson)

@@ -567,7 +567,6 @@
     <string name="proxy_server_list_add_hysteria2">Add Hysteria2</string>
     <string name="proxy_server_list_add_wireguard">Add Wireguard</string>
     <string name="proxy_server_list_add_amnezia_wg">Add AmneziaWG</string>
-    <string name="proxy_server_list_add_olcrtc">Add OLCRTC</string>
     <string name="proxy_server_list_restart_service">Restart service</string>
     <string name="proxy_server_list_update_subscriptions">Update subscriptions</string>
     <string name="proxy_server_list_saved">{name} saved</string>
@@ -739,7 +738,6 @@
     <string name="proxy_validation_shadowsocks_2022_key_length_invalid">Invalid Shadowsocks 2022 key length. Decoded length must be {lengths} bytes</string>
     <string name="proxy_validation_vless_vision_flow_unsupported">VLESS Vision flow only supports RAW + TLS/REALITY</string>
     <string name="proxy_validation_awg_jmin_max_invalid">Jmin cannot be greater than Jmax</string>
-    <string name="proxy_validation_olcrtc_key_invalid">Key must be exactly 64 hexadecimal characters</string>
 
     <!-- Routing -->
     <string name="routing_title">Routing rules</string>
@@ -1190,7 +1188,7 @@
     <string name="configs_dns_hosts_empty">No static DNS hosts configured</string>
     <string name="configs_dns_hosts_input">domain.com: 1.2.3.4</string>
     <string name="configs_dns_tun_dns">TUN Adapter DNS</string>
-    <string name="configs_dns_tun_dns_summary">Virtual IPv4 DNS address assigned to Android TUN. olcRTC uses this resolver; Proxy and Direct DNS below are Xray DoH/DoT settings and are not passed to olcRTC.</string>
+    <string name="configs_dns_tun_dns_summary">Virtual IPv4 DNS address assigned to Android TUN. Proxy and Direct DNS below are Xray DoH/DoT settings.</string>
     <string name="configs_dns_protocol_doh">DoH</string>
     <string name="configs_dns_protocol_dot">DoT</string>
     <string name="configs_dns_protocol_dou">DoU (UDP)</string>
@@ -1413,31 +1411,6 @@
     <string name="proxy_editor_awg_h3">Cookie handshake header (H3, uint32)</string>
     <string name="proxy_editor_awg_h4">Transport header (H4, uint32)</string>
 
-    <!-- OLCRTC editor -->
-    <string name="proxy_editor_olcrtc_provider">Provider</string>
-    <string name="proxy_editor_olcrtc_transport">Transport</string>
-    <string name="proxy_editor_olcrtc_room_url">Room URL</string>
-    <string name="proxy_editor_olcrtc_encryption_key">Encryption Key (64 hex chars)</string>
-    <string name="proxy_editor_olcrtc_payload_optional">Transport Payload (optional)</string>
-    <string name="proxy_editor_olcrtc_socks_port">Preferred local SOCKS5 port</string>
-    <string name="proxy_editor_olcrtc_vp8_options">VP8 Parameters</string>
-    <string name="proxy_editor_olcrtc_vp8_fps">Frame rate (FPS)</string>
-    <string name="proxy_editor_olcrtc_vp8_batch">Batch size (packets)</string>
-    <string name="proxy_editor_olcrtc_sei_options">SEI Parameters</string>
-    <string name="proxy_editor_olcrtc_sei_fps">Frame rate (FPS)</string>
-    <string name="proxy_editor_olcrtc_sei_batch">Batch size (packets)</string>
-    <string name="proxy_editor_olcrtc_sei_frag">Fragment size (bytes)</string>
-    <string name="proxy_editor_olcrtc_sei_ack_ms">ACK timeout (ms)</string>
-    <string name="proxy_editor_olcrtc_video_options">Video Channel Parameters</string>
-    <string name="proxy_editor_olcrtc_video_width">Width (pixels)</string>
-    <string name="proxy_editor_olcrtc_video_height">Height (pixels)</string>
-    <string name="proxy_editor_olcrtc_video_fps">Frame rate (FPS)</string>
-    <string name="proxy_editor_olcrtc_video_codec">Video codec</string>
-    <string name="proxy_editor_olcrtc_video_qr_size">QR code size</string>
-    <string name="proxy_editor_olcrtc_video_qr_recovery">QR error recovery (low/medium/high)</string>
-    <string name="proxy_editor_olcrtc_video_tile_module">Tile module size</string>
-    <string name="proxy_editor_olcrtc_video_tile_rs">Tile Reed-Solomon redundancy</string>
-    <string name="proxy_editor_olcrtc_custom_payload">Additional custom payload</string>
     <!-- Expanded home screen widget -->
     <string name="widget_compact_label">Tunnel switch</string>
     <string name="widget_control_label">Tunnel control panel</string>

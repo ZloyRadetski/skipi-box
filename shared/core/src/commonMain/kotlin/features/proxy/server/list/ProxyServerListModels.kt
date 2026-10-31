@@ -19,7 +19,6 @@ enum class ProxyServerListAddAction {
     Hysteria2,
     Wireguard,
     AmneziaWg,
-    OlcRtc,
 }
 
 enum class ProxyServerListToolAction {

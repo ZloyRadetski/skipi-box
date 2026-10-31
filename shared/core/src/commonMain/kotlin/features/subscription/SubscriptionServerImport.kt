@@ -66,7 +66,6 @@ private val ProxySubscriptionSchemes = setOf(
     ProxyServerConstants.PROTOCOL_WIREGUARD,
     ProxyServerConstants.PROTOCOL_AMNEZIA_WG,
     ProxyServerConstants.PROTOCOL_AWG,
-    ProxyServerConstants.PROTOCOL_OLCRTC,
 )
 
 private const val SubscriptionByteOrderMark = '\uFEFF'

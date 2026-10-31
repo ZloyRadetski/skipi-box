@@ -9,7 +9,6 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
 import features.proxy.server.model.StrategyGroup
@@ -47,24 +46,6 @@ class ProxyServerListAddActionTest {
     }
 
     @Test
-    fun testCreateOlcRtcProxyServer() {
-        val server = createProxyServer(ProxyServerListAddAction.OlcRtc)
-        assertTrue(server is OlcRtc)
-        val olc = server as OlcRtc
-        assertEquals("jitsi", olc.provider)
-        assertEquals("datachannel", olc.transport)
-        assertEquals("10808", olc.localSocksPort)
-        assertEquals("OLCRTC", olc.getInfo().protocol)
-
-        val encoded = olc.encodePersistedProxyServer()
-        val decoded = encoded.decodePersistedProxyServer()
-        assertTrue(decoded is OlcRtc)
-        val decodedOlc = decoded as OlcRtc
-        assertEquals("jitsi", decodedOlc.provider)
-        assertEquals("datachannel", decodedOlc.transport)
-    }
-
-    @Test
     fun testAllManualActionsCreateExpectedProxyServers() {
         assertTrue(createProxyServer(ProxyServerListAddAction.Shadowsocks) is Shadowsocks)
         assertTrue(createProxyServer(ProxyServerListAddAction.ChainProxy) is ChainProxy)
@@ -77,7 +58,6 @@ class ProxyServerListAddActionTest {
         assertTrue(createProxyServer(ProxyServerListAddAction.Hysteria2) is Hysteria2)
         assertTrue(createProxyServer(ProxyServerListAddAction.Wireguard) is Wireguard)
         assertTrue(createProxyServer(ProxyServerListAddAction.AmneziaWg) is AmneziaWg)
-        assertTrue(createProxyServer(ProxyServerListAddAction.OlcRtc) is OlcRtc)
         assertTrue(createProxyServer(ProxyServerListAddAction.Custom) is Custom)
     }
 

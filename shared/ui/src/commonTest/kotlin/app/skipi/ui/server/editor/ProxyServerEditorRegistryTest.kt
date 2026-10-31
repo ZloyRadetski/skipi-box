@@ -8,7 +8,6 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
 import features.proxy.server.model.StrategyGroup
@@ -147,19 +146,5 @@ class ProxyServerEditorRegistryTest {
         assertNotSame(original, copy)
         copy.remarks = "Chain 2"
         assertEquals("Chain 1", original.remarks)
-    }
-
-    @Test
-    fun editableCopy_olcRtc() {
-        val original = OlcRtc().apply {
-            remarks = "OLC"
-            provider = "jitsi"
-            transport = "datachannel"
-        }
-
-        val copy = original.editableCopy() as OlcRtc
-        assertNotSame(original, copy)
-        copy.provider = "telemost"
-        assertEquals("jitsi", original.provider)
     }
 }

@@ -919,7 +919,6 @@ fun ProxyServerListPage(
                             ProxyHomeServerKind.Hysteria2 -> ProxyServerListAddAction.Hysteria2
                             ProxyHomeServerKind.Wireguard -> ProxyServerListAddAction.Wireguard
                             ProxyHomeServerKind.AmneziaWg -> ProxyServerListAddAction.AmneziaWg
-                            ProxyHomeServerKind.OlcRtc -> ProxyServerListAddAction.OlcRtc
                             ProxyHomeServerKind.StrategyGroup -> ProxyServerListAddAction.StrategyGroup
                             ProxyHomeServerKind.ChainProxy -> ProxyServerListAddAction.ChainProxy
                             ProxyHomeServerKind.Custom -> ProxyServerListAddAction.Custom

@@ -161,7 +161,6 @@ import app.skipi.ui.resources.proxy_server_list_add_chain_proxy
 import app.skipi.ui.resources.proxy_server_list_add_custom
 import app.skipi.ui.resources.proxy_server_list_add_hysteria2
 import app.skipi.ui.resources.proxy_server_list_add_http
-import app.skipi.ui.resources.proxy_server_list_add_olcrtc
 import app.skipi.ui.resources.proxy_server_list_add_shadowsocks
 import app.skipi.ui.resources.proxy_server_list_add_socks
 import app.skipi.ui.resources.proxy_server_list_add_strategy_group
@@ -1683,7 +1682,6 @@ private fun serverKindTitle(kind: ProxyHomeServerKind): String = stringResource(
         ProxyHomeServerKind.Hysteria2 -> Res.string.proxy_server_list_add_hysteria2
         ProxyHomeServerKind.Wireguard -> Res.string.proxy_server_list_add_wireguard
         ProxyHomeServerKind.AmneziaWg -> Res.string.proxy_server_list_add_amnezia_wg
-        ProxyHomeServerKind.OlcRtc -> Res.string.proxy_server_list_add_olcrtc
         ProxyHomeServerKind.StrategyGroup -> Res.string.proxy_server_list_add_strategy_group
         ProxyHomeServerKind.ChainProxy -> Res.string.proxy_server_list_add_chain_proxy
         ProxyHomeServerKind.Custom -> Res.string.proxy_server_list_add_custom

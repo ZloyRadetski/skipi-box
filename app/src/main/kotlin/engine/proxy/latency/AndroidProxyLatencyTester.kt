@@ -23,7 +23,6 @@ import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -34,12 +33,11 @@ import features.proxy.server.model.VLESS
 import features.proxy.server.model.VMess
 import features.proxy.server.model.Wireguard
 import features.proxy.server.model.connectionEndpointOrNull
-import engine.vpn.OlcRtcReadinessTimeoutMillis
+import engine.vpn.NativeBridgeReadinessTimeoutMillis
 import engine.vpn.SkipiCoreRuntime
 import engine.vpn.SkipiVpnService
 import engine.vpn.buildLoopbackSocksOutbound
 import engine.vpn.findAvailableLocalPort
-import engine.vpn.olcRtcRawDnsEndpoint
 import engine.vpn.toNativeRunnerConfigJson
 import engine.vpn.toTunOptions
 import engine.vpn.withNativeRunnerEndpointResolved
@@ -100,7 +98,6 @@ internal class AndroidProxyLatencyTester(
         appContext.initializeAndroidXrayCoreEnvironment(resourceFilePaths.dataDir)
         return resourceFilePaths.dataDir
     }
-    private val tempOlcRtcMutex = Mutex()
     private val tempAmneziaWgMutex = Mutex()
 
     suspend fun test(
@@ -351,7 +348,7 @@ internal class AndroidProxyLatencyTester(
     /**
      * One short TCP connect against a TCP-compatible balancer candidate.
      * This is intentionally never called for Hysteria, WireGuard, AmneziaWG,
-     * OLCRTC, or an opaque custom outbound.
+     * or an opaque custom outbound.
      */
     private suspend fun verifyTcpStartupCandidate(member: ProxyServerState): Long {
         val endpoint = member.server.connectionEndpointOrNull() ?: return FailedDelayMillis
@@ -485,20 +482,6 @@ internal class AndroidProxyLatencyTester(
         val timeoutMs = appState.subscriptionPingTimeoutMillis.resolvedPingTimeoutMillis().toLong()
         val pingUrl = appState.subscriptionPingUrl.resolvedPingUrl()
 
-        val olcServer = server.server as? OlcRtc
-        val activeBridge = SkipiCoreRuntime.activeOlcRtcBridge
-        val isBridgeActiveForServer = olcServer != null &&
-            activeBridge != null &&
-            SkipiCoreRuntime.isRunning() &&
-            olcServer.matchesRuntimeConfig(activeBridge.server)
-
-        if (olcServer != null && !isBridgeActiveForServer) {
-            if (SkipiCoreRuntime.isRunning()) {
-                return FailedDelayMillis
-            }
-            return measureStandaloneOlcRtcLatency(appState, server, olcServer, pingUrl, timeoutMs)
-        }
-
         val amneziaWgServer = server.server as? AmneziaWg
         val activeAmneziaWgBridge = SkipiCoreRuntime.activeAmneziaWgBridge
         val isAmneziaWgBridgeActiveForServer = amneziaWgServer != null &&
@@ -521,76 +504,6 @@ internal class AndroidProxyLatencyTester(
             dataDir = xrayDataDir(appState),
         )
         return executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
-    }
-
-    private suspend fun measureStandaloneOlcRtcLatency(
-        appState: AppState,
-        server: ProxyServerState,
-        olcServer: OlcRtc,
-        pingUrl: String,
-        timeoutMs: Long,
-    ): Long = tempOlcRtcMutex.withLock {
-        if (SkipiCoreRuntime.isRunning()) {
-            return FailedDelayMillis
-        }
-        val preferredPort = olcServer.localSocksPort.toIntOrNull()?.takeIf { it in 1024..65535 } ?: 10808
-        val tempPort = findAvailableLocalPort(preferredPort, emptySet())
-        val tempUser = "skipi_rtc_test_" + java.util.UUID.randomUUID().toString().replace("-", "").take(8)
-        val tempPass = java.util.UUID.randomUUID().toString().replace("-", "")
-        val tempYaml = olcServer.toOlcRtcYamlConfig(
-            socksPort = tempPort,
-            socksUser = tempUser,
-            socksPass = tempPass,
-            dnsServer = olcRtcRawDnsEndpoint(appState.toTunOptions()),
-        )
-
-        try {
-            SkipiCoreRuntime.startOlcRtc(tempYaml, tempPort)
-            check(SkipiCoreRuntime.awaitOlcRtcReady(tempPort)) {
-                "OLCRTC local SOCKS listener did not become ready within ${OlcRtcReadinessTimeoutMillis}ms"
-            }
-
-            val customOutbound = olcServer.toXrayOutboundWithPortAndAuth(
-                tag = XrayTags.PROXY,
-                port = tempPort,
-                user = tempUser,
-                pass = tempPass,
-            ).toJsonObject()
-
-            val speedTestState = appState.copy(
-                enableMux = false,
-                enableFakeDns = false,
-                enableDirectDnsForProxyServerDomains = true,
-            )
-            val basePlan = speedTestState.buildXrayOutboundPlan(server)
-            val updatedPlan = basePlan.copy(
-                proxyOutbounds = basePlan.proxyOutbounds.map { item ->
-                    val candidate = item.server as? OlcRtc
-                    if (candidate != null && candidate.matchesRuntimeConfig(olcServer)) {
-                        item.copy(customOutbound = customOutbound)
-                    } else {
-                        item
-                    }
-                },
-            )
-
-            val request = XrayConfigRequest(
-                appState = appState,
-                selectedServer = server,
-                inbounds = emptyList<JsonObject>(),
-                coreLogPaths = appContext.prepareXrayCoreLogPaths(),
-                dataDir = xrayDataDir(appState),
-                outboundPlan = updatedPlan,
-            )
-            executeXrayHttpPing(request, server.id, pingUrl, timeoutMs)
-        } catch (e: Throwable) {
-            AppLog.warn(LogTag, "Standalone olcRTC latency test failed: ${e.logSummary()}")
-            FailedDelayMillis
-        } finally {
-            if (!SkipiCoreRuntime.isRunning() && !SkipiVpnService.isRunning() && SkipiCoreRuntime.activeOlcRtcBridge == null) {
-                SkipiCoreRuntime.stopOlcRtc()
-            }
-        }
     }
 
     private suspend fun measureStandaloneAmneziaWgLatency(
@@ -619,7 +532,7 @@ internal class AndroidProxyLatencyTester(
                 requireSocketProtector = false,
             )
             check(SkipiCoreRuntime.awaitAmneziaWgReady(tempPort)) {
-                "AmneziaWG local SOCKS listener did not become ready within ${OlcRtcReadinessTimeoutMillis}ms"
+                "AmneziaWG local SOCKS listener did not become ready within ${NativeBridgeReadinessTimeoutMillis}ms"
             }
 
             val speedTestState = appState.copy(
@@ -725,13 +638,11 @@ internal fun ProxyServer<*>.supportsTcpStartupProbe(): Boolean {
         is Trojan -> parms.usesTcpStartupTransport()
         is Shadowsocks -> parms.usesTcpStartupTransport()
 
-        // Hysteria2, WireGuard, AmneziaWG and OLCRTC are UDP/QUIC/WebRTC
-        // transports. Custom JSON is opaque, so treating it as TCP would be
+        // Hysteria2, WireGuard and AmneziaWG are UDP/QUIC transports. Custom JSON is opaque, so treating it as TCP would be
         // just as unsafe.
         is Hysteria2,
         is Wireguard,
         is AmneziaWg,
-        is OlcRtc,
         is Custom,
         is StrategyGroup -> false
 

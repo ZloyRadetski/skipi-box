@@ -4,8 +4,6 @@ package app.skipi.desktop
 
 import app.skipi.app.model.RoutingConfigRecord
 import features.proxy.server.model.AmneziaWg
-import features.proxy.server.model.ChainProxy
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Socks
 import features.proxy.server.model.StrategyGroup
@@ -18,38 +16,12 @@ import platform.LocalProxyXrayConfigOptions
 
 class DesktopSelectedServerNativeBoundaryTest {
     @Test
-    fun selectedOlcRtcFailsWithoutADesktopNativeBridge() {
-        assertNativeBridgeUnavailable(
-            buildResult(
-                library = library(
-                    selectedId = 10,
-                    stored(10, olcRtc()),
-                ),
-            ),
-        )
-    }
-
-    @Test
     fun selectedAmneziaWgFailsWithoutADesktopNativeBridge() {
         assertNativeBridgeUnavailable(
             buildResult(
                 library = library(
                     selectedId = 10,
                     stored(10, amneziaWg()),
-                ),
-            ),
-        )
-    }
-
-    @Test
-    fun chainWithOlcRtcMemberFailsWithoutADesktopNativeBridge() {
-        assertNativeBridgeUnavailable(
-            buildResult(
-                library = library(
-                    selectedId = 90,
-                    stored(10, Socks(remarks = "Regular hop", server = "hop.example", port = "1080")),
-                    stored(20, olcRtc()),
-                    stored(90, ChainProxy(remarks = "Native chain", proxyServerIds = listOf(10, 20))),
                 ),
             ),
         )
@@ -106,14 +78,6 @@ class DesktopSelectedServerNativeBoundaryTest {
         id = id,
         serverJson = server.encodePersistedProxyServer(),
     )
-
-    private fun olcRtc() = OlcRtc(
-        remarks = "Native OLCRTC",
-        provider = "jitsi",
-        transport = "datachannel",
-        roomUrl = "https://meet.jit.si/skipi-test-room",
-        encryptionKey = "0123456789abcdef".repeat(4),
-    ).also { server -> assertTrue(server.validateFull().isEmpty()) }
 
     private fun amneziaWg() = AmneziaWg(
         remarks = "Native AmneziaWG",

@@ -40,7 +40,7 @@
 
 SKIPI - клиент для Android, объединяющий гибкую работу с сетью и понятный интерфейс на Jetpack Compose с поддержкой тем Material You.
 
-Под капотом трудятся Xray-core, SKIPI Core, hev-socks5-tunnel, а также движки AmneziaWG и olcRTC.
+Под капотом трудятся Xray-core, SKIPI Core, hev-socks5-tunnel, а также движок AmneziaWG.
 
 ---
 
@@ -58,7 +58,7 @@ SKIPI - клиент для Android, объединяющий гибкую ра�
 
 ## Возможности
 
-* Поддержка VLESS, AmneziaWG, olcRTC, Hysteria 2, Trojan, VMess, Shadowsocks и WireGuard
+* Поддержка VLESS, AmneziaWG, Hysteria 2, Trojan, VMess, Shadowsocks и WireGuard
 * Маршрутизация на основе правил Shadowrocket (.conf), списков доменов, GeoIP и GeoSite с визуальным редактором
 * Импорт подписок v2rayNG, Clash, Clash Meta с age-ключами и Base64
 * Фоновое обновление подписок и геобаз по расписанию через WorkManager
@@ -74,7 +74,6 @@ SKIPI - клиент для Android, объединяющий гибкую ра�
 | :--- | :--- |
 | VLESS | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
 | AmneziaWG | UDP с кастомными заголовками и защитой от DPI |
-| olcRTC | WebRTC транспорт |
 | WireGuard | Стандартный UDP туннель |
 | Hysteria 2 | UDP / QUIC |
 | VMess | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |

@@ -40,7 +40,7 @@
 
 برنامه SKIPI یک کلاینت اندروید است که عملکرد منعطف شبکه را با رابط کاربری روان و ساده بر پایه Jetpack Compose و پشتیبانی از تم‌های Material You ترکیب می‌کند.
 
-در بخش زیرساخت، از هسته‌های Xray-core، SKIPI Core، hev-socks5-tunnel و همچنین موتورهای AmneziaWG و olcRTC استفاده می‌شود.
+در بخش زیرساخت، از هسته‌های Xray-core، SKIPI Core، hev-socks5-tunnel و همچنین موتور AmneziaWG استفاده می‌شود.
 
 ---
 
@@ -58,7 +58,7 @@
 
 ## امکانات و قابلیت‌ها
 
-* پشتیبانی از پروتکل‌های VLESS، AmneziaWG، olcRTC، Hysteria 2، Trojan، VMess، Shadowsocks و WireGuard
+* پشتیبانی از پروتکل‌های VLESS، AmneziaWG، Hysteria 2، Trojan، VMess، Shadowsocks و WireGuard
 * مسیریابی بر پایه قوانین Shadowrocket (.conf)، فهرست دامنه‌ها، GeoIP و GeoSite همراه با ویرایشگر بصری
 * وارد کردن اشتراک‌های v2rayNG، Clash، Clash Meta (شامل رمزگشایی کلیدهای age) و Base64
 * به‌روزرسانی خودکار اشتراک‌ها و پایگاه‌های داده در پس‌زمینه بر اساس زمان‌بندی از طریق WorkManager
@@ -74,7 +74,6 @@
 | :--- | :--- |
 | VLESS | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
 | AmneziaWG | پروتکل UDP با هدرهای سفارشی و محافظت در برابر DPI |
-| olcRTC | انتقال بر بستر WebRTC |
 | WireGuard | تونل استاندارد UDP |
 | Hysteria 2 | UDP / QUIC |
 | VMess | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |

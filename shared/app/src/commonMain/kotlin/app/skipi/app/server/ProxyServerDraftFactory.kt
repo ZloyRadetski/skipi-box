@@ -10,7 +10,6 @@ import features.proxy.server.model.ChainProxy
 import features.proxy.server.model.Custom
 import features.proxy.server.model.HTTP
 import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.Shadowsocks
 import features.proxy.server.model.Socks
@@ -58,7 +57,6 @@ fun createProxyServerDraft(kind: ProxyHomeServerKind): ProxyServer<*> = when (ki
         address = "",
         mtu = "",
     )
-    ProxyHomeServerKind.OlcRtc -> OlcRtc()
     ProxyHomeServerKind.StrategyGroup -> StrategyGroup()
     ProxyHomeServerKind.ChainProxy -> ChainProxy()
     ProxyHomeServerKind.Custom -> Custom()

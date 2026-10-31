@@ -5,7 +5,6 @@ package engine.proxy.latency
 
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Hysteria2
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.V2RayParameters
 import features.proxy.server.model.VLESS
 import features.proxy.server.model.Wireguard
@@ -33,11 +32,10 @@ class TcpStartupProbeEligibilityTest {
     }
 
     @Test
-    fun udp_quic_and_webrtc_transports_are_never_validated_by_tcp() {
+    fun udp_and_quic_transports_are_never_validated_by_tcp() {
         assertFalse(Hysteria2(server = "hy2.example", port = "443").supportsTcpStartupProbe())
         assertFalse(Wireguard(server = "wg.example", port = "51820").supportsTcpStartupProbe())
         assertFalse(AmneziaWg(server = "awg.example", port = "51820").supportsTcpStartupProbe())
-        assertFalse(OlcRtc(roomUrl = "https://rtc.example/room").supportsTcpStartupProbe())
         assertFalse(
             VLESS(
                 server = "kcp.example",

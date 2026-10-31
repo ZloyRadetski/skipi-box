@@ -26,7 +26,6 @@ fun ProxyServer<*>.connectionEndpointOrNull(): ProxyServerEndpoint? {
         is VMess -> endpoint(server, port)
         is Wireguard -> endpoint(server, port)
         is AmneziaWg -> endpoint(server, port)
-        is OlcRtc -> signalingEndpoint()?.let { (host, port) -> ProxyServerEndpoint(host, port) }
         is Custom -> customXrayConfigProxyOutboundEndpoint(configJson)
             ?.let { endpoint -> ProxyServerEndpoint(endpoint.host, endpoint.port) }
         else -> null
@@ -44,7 +43,6 @@ fun ProxyServer<*>.serverHost(): String {
         is VMess -> server
         is Wireguard -> server
         is AmneziaWg -> server
-        is OlcRtc -> signalingEndpoint()?.first.orEmpty()
         else -> ""
     }
 }

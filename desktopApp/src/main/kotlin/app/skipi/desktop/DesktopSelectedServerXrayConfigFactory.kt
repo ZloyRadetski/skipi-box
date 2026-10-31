@@ -20,7 +20,6 @@ import engine.xray.validateXrayExternalDomainResources
 import features.routing.usecase.GeoDatParser
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
-import features.proxy.server.model.OlcRtc
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.stripLeadingCountryFlag
 import platform.LocalProxyXrayConfigFactory
@@ -114,9 +113,6 @@ object DesktopSelectedServerXrayConfigFactory {
                 outbound.server?.let { server ->
                     validateServer(server)
                     when (server) {
-                        is OlcRtc -> error(
-                            "Desktop has no OLCRTC native bridge for generated outbound '${outbound.tag}'",
-                        )
                         is AmneziaWg -> error(
                             "Desktop has no AmneziaWG native bridge for generated outbound '${outbound.tag}'",
                         )

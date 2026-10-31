@@ -187,7 +187,6 @@ enum class ProxyHomeServerKind {
     Hysteria2,
     Wireguard,
     AmneziaWg,
-    OlcRtc,
     StrategyGroup,
     ChainProxy,
     Custom,

@@ -46,6 +46,5 @@ internal fun ProxyServerListAddAction.toProxyHomeServerKind(): ProxyHomeServerKi
     ProxyServerListAddAction.Hysteria2 -> ProxyHomeServerKind.Hysteria2
     ProxyServerListAddAction.Wireguard -> ProxyHomeServerKind.Wireguard
     ProxyServerListAddAction.AmneziaWg -> ProxyHomeServerKind.AmneziaWg
-    ProxyServerListAddAction.OlcRtc -> ProxyHomeServerKind.OlcRtc
     ProxyServerListAddAction.Custom -> ProxyHomeServerKind.Custom
 }

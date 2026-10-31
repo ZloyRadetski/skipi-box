@@ -189,7 +189,6 @@ internal fun AppState.toProxyHomeInput(
             ProxyHomeServerKind.Hysteria2,
             ProxyHomeServerKind.Wireguard,
             ProxyHomeServerKind.AmneziaWg,
-            ProxyHomeServerKind.OlcRtc,
             ProxyHomeServerKind.StrategyGroup,
             ProxyHomeServerKind.ChainProxy,
             ProxyHomeServerKind.Custom,

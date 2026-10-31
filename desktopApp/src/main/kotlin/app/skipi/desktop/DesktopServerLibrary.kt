@@ -8,6 +8,7 @@ import app.skipi.app.model.ProxyServerRecord
 import app.skipi.app.proxy.deleteProxyServerRecords
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.decodePersistedProxyServer
+import features.proxy.server.model.isRemovedPersistedProxyServer
 import features.proxy.server.model.encodePersistedProxyServer
 import features.subscription.SubscriptionServerRecord
 import features.subscription.SubscriptionServerLibrary
@@ -247,7 +248,10 @@ object DesktopServerLibraries {
     }
 
     private fun DesktopServerLibrary.normalized(): DesktopServerLibrary {
+        // Servers of a removed protocol are dropped here, so loading and saving both clear them;
+        // their IDs stay below the high-water mark and are not reused.
         val distinctServers = servers.distinctBy(DesktopStoredProxyServer::id)
+            .filterNot { stored -> stored.serverJson.isRemovedPersistedProxyServer() }
         val selected = selectedServerId?.takeIf { selectedId -> distinctServers.any { it.id == selectedId } }
         return copy(
             selectedServerId = selected,

@@ -14,7 +14,6 @@ object ProtocolColorUtils {
     val DefaultShadowsocksLight = Color(0xFF7B1FA2) // Purple
     val DefaultWireguardLight = Color(0xFFC2185B)   // Pink / Crimson
     val DefaultAmneziaWgLight = Color(0xFFAD1457)   // Deep Rose
-    val DefaultOlcRtcLight = Color(0xFF00695C)      // Deep Teal
     val DefaultSocksLight = Color(0xFF455A64)       // Blue Grey
     val DefaultHttpLight = Color(0xFF37474F)        // Dark Blue Grey
     val DefaultStrategyLight = Color(0xFF2E7D32)    // Emerald Green
@@ -29,7 +28,6 @@ object ProtocolColorUtils {
     val DefaultShadowsocksDark = Color(0xFFBA68C8)
     val DefaultWireguardDark = Color(0xFFF06292)
     val DefaultAmneziaWgDark = Color(0xFFFF4081)
-    val DefaultOlcRtcDark = Color(0xFF4DB6AC)
     val DefaultSocksDark = Color(0xFF90A4AE)
     val DefaultHttpDark = Color(0xFFB0BEC5)
     val DefaultStrategyDark = Color(0xFF66BB6A)
@@ -70,10 +68,6 @@ object ProtocolColorUtils {
             normalized.contains("wireguard") || normalized.contains("wg") -> {
                 customColors["wireguard"]?.let { Color(it) }
                     ?: if (isDark) DefaultWireguardDark else DefaultWireguardLight
-            }
-            normalized.contains("olcrtc") -> {
-                customColors["olcrtc"]?.let { Color(it) }
-                    ?: if (isDark) DefaultOlcRtcDark else DefaultOlcRtcLight
             }
             normalized.contains("socks") -> {
                 customColors["socks"]?.let { Color(it) }
