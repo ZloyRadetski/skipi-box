@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=SKIPI
+Comment=Proxy client
+Exec=SKIPI %u
+Icon=skipi
+Terminal=false
+Categories=Network;
+StartupWMClass=SKIPI
+MimeType=x-scheme-handler/skipi;

@@ -13,7 +13,14 @@ import engine.xray.DefaultMuxXudpConcurrency
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.toAndroidValue
 import app.modes.SubscriptionPingModeHttp
+import app.skipi.app.settings.isValidTunIpv4Cidr
+import app.skipi.app.settings.isValidTunIpv6Cidr
+import app.skipi.app.settings.isValidTunMtu
+import app.skipi.app.settings.isValidTunTcpKeepAliveInterval
+import app.skipi.app.settings.isValidTunTcpUserTimeout
+import app.skipi.app.settings.isValidTunVpnDns
 import engine.network.NetworkDefaults
+import engine.vpn.VpnDefaults
 import features.subscription.SubscriptionExpiryReminder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -131,6 +138,19 @@ data class DesktopAppSettings(
     val fragmentLength: String = DefaultFragmentLength,
     val fragmentInterval: String = DefaultFragmentInterval,
 
+    /** Routes the system through a TUN interface instead of the system proxy; needs host support. */
+    val enableTunMode: Boolean = false,
+    val tunMtu: String = VpnDefaults.MTU.toString(),
+    val tunIpv4Cidr: String = VpnDefaults.IPV4_CIDR,
+    val tunIpv6Cidr: String = VpnDefaults.IPV6_CIDR,
+    val tunVpnDns: String = VpnDefaults.IPV4_DNS,
+    val tunTcpKeepAliveInterval: String = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL,
+    val tunTcpUserTimeout: String = VpnDefaults.TCP_USER_TIMEOUT,
+    val enableStrictFullTunnel: Boolean = false,
+    val autoConnectOnAppOpen: Boolean = false,
+    /** Starts the application hidden when the user logs in; the Desktop counterpart of Android's boot start. */
+    val launchOnLogin: Boolean = false,
+
     val languageTag: String? = null,
     val hapticsEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
@@ -228,5 +248,12 @@ internal fun DesktopAppSettings.normalized(
         logRetentionDays = logRetentionDays.takeIf { it in DesktopLogRetentionDays } ?: DefaultLogRetentionDays,
         sendDeviceHeaders = sendDeviceHeaders,
         installationUuid = installationUuid.trim(),
+        tunMtu = tunMtu.takeIf(::isValidTunMtu) ?: VpnDefaults.MTU.toString(),
+        tunIpv4Cidr = tunIpv4Cidr.takeIf(::isValidTunIpv4Cidr) ?: VpnDefaults.IPV4_CIDR,
+        tunIpv6Cidr = tunIpv6Cidr.takeIf(::isValidTunIpv6Cidr) ?: VpnDefaults.IPV6_CIDR,
+        tunVpnDns = tunVpnDns.takeIf(::isValidTunVpnDns) ?: VpnDefaults.IPV4_DNS,
+        tunTcpKeepAliveInterval = tunTcpKeepAliveInterval.takeIf(::isValidTunTcpKeepAliveInterval)
+            ?: VpnDefaults.TCP_KEEP_ALIVE_INTERVAL,
+        tunTcpUserTimeout = tunTcpUserTimeout.takeIf(::isValidTunTcpUserTimeout) ?: VpnDefaults.TCP_USER_TIMEOUT,
     )
 }

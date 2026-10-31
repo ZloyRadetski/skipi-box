@@ -20,3 +20,15 @@ class DesktopApplicationLocale(
         applyLocale(locale)
     }
 }
+
+/**
+ * The saved language must be in effect before the first screen and before any text is read
+ * outside composition (notifications); otherwise a restart falls back to the system language.
+ */
+internal fun applyDesktopStartupLanguage(
+    settings: DesktopAppSettings,
+    systemLocale: Locale = Locale.getDefault(),
+    applyLocale: (Locale) -> Unit = Locale::setDefault,
+) {
+    DesktopApplicationLocale(systemLocale, applyLocale).apply(settings.languageTag)
+}

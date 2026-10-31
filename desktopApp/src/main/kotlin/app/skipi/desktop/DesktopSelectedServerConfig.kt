@@ -28,6 +28,8 @@ internal fun buildDesktopSelectedServerConfig(
     subscriptionPingUrl: String,
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     routingDataDirectory: Path? = null,
+    /** Applies the strict full tunnel at start without rewriting stored routing; Custom configs cannot take it. */
+    strictFullTunnel: Boolean = false,
 ): Result<String>? {
     val selectedStored = serverLibrary.selectedServerId
         ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
@@ -35,6 +37,7 @@ internal fun buildDesktopSelectedServerConfig(
     val selectedServer = selectedServerResult?.getOrNull()
     if (selectedServer is Custom) {
         return checkNotNull(selectedServerResult).mapCatching {
+            check(!strictFullTunnel) { "Strict full-tunnel mode cannot safely rewrite a raw Xray configuration" }
             buildDesktopCustomXrayConfig(selectedServer, options)
         }
     }
@@ -55,7 +58,7 @@ internal fun buildDesktopSelectedServerConfig(
     return checkNotNull(selectedServerResult).mapCatching {
         DesktopSelectedServerXrayConfigFactory.build(
             serverLibrary = serverLibrary,
-            routing = routing,
+            routing = if (strictFullTunnel) routing.withStrictFullTunnelApplied() else routing,
             trafficConfigContentById = trafficConfigContentById,
             options = options,
             subscriptionPingUrl = subscriptionPingUrl,

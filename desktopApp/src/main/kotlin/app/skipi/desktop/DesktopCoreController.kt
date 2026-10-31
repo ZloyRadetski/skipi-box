@@ -117,6 +117,13 @@ internal class DesktopCoreController(
         DesktopLogger.error("CoreController", "Failed to stop in-process SKIPI Core", error)
     }
 
+    /** The loaded Core library for TUN calls, which work before any session exists. */
+    @Synchronized
+    fun nativeForTun(): Result<DesktopCoreFfmNative> = runCatching {
+        val core = loadNative(runtimeProvider().getOrThrow())
+        core as? DesktopCoreFfmNative ?: error("This SKIPI Core library has no TUN support")
+    }
+
     @Synchronized
     fun queryTrafficStats(): Result<String> = withActiveCore("query traffic statistics") { core, handle ->
         core.queryTrafficStats(handle)

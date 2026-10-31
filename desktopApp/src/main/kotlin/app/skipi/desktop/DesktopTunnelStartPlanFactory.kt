@@ -54,6 +54,7 @@ internal fun prepareDesktopTunnelStartPlan(
             latencyByServerId = capturedLatencyByServerId,
             routing = capturedRouting,
             routingDataDirectory = globalAssetsDirectory,
+            strictFullTunnel = settings.enableStrictFullTunnel,
         )?.getOrThrow()
             ?: error("Select a working server before connecting")
         return DesktopTunnelStartPlan(

@@ -57,6 +57,12 @@ internal data class DesktopRestorePreview(
 
 private const val AutoBalancerGroupId = -2
 
+/**
+ * Restore tunnel and global VPN defaults without touching servers, subscriptions or .conf files.
+ * The tunnel settings stored inside each configuration are not reset here.
+ */
+internal fun DesktopUserData.vpnReset(): DesktopUserData = copy(settings = settings.withVpnSettingsReset())
+
 /** Back to a first run: all user data cleared, while this installation's identity and onboarding stay. */
 internal fun DesktopUserData.factoryReset(): DesktopUserData = DesktopUserData(
     settings = DesktopAppSettings().copy(
@@ -329,6 +335,13 @@ private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBack
         showTunnelMemoryOnHome = showTunnelMemory,
         enableSubscriptionExpiryNotifications = enableSubscriptionExpiryNotifications,
         subscriptionExpiryReminders = subscriptionExpiryReminders,
+        enableStrictFullTunnel = enableStrictFullTunnel,
+        tunMtu = tunMtu,
+        tunVpnDns = tunVpnDns,
+        tunIpv4Cidr = tunIpv4Cidr,
+        tunIpv6Cidr = tunIpv6Cidr,
+        tunTcpKeepAliveInterval = tunTcpKeepAliveInterval,
+        tunTcpUserTimeout = tunTcpUserTimeout,
     )
 }
 
@@ -414,6 +427,15 @@ private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, dat
         showTunnelMemory = showTunnelMemoryOnHome,
         enableSubscriptionExpiryNotifications = enableSubscriptionExpiryNotifications,
         subscriptionExpiryReminders = subscriptionExpiryReminders,
+        // Whether TUN is switched on and whether the app starts at login are decisions of the
+        // machine being restored to, so they are neither exported nor restored.
+        enableStrictFullTunnel = enableStrictFullTunnel,
+        tunMtu = tunMtu,
+        tunVpnDns = tunVpnDns,
+        tunIpv4Cidr = tunIpv4Cidr,
+        tunIpv6Cidr = tunIpv6Cidr,
+        tunTcpKeepAliveInterval = tunTcpKeepAliveInterval,
+        tunTcpUserTimeout = tunTcpUserTimeout,
     ).normalized()
 }
 

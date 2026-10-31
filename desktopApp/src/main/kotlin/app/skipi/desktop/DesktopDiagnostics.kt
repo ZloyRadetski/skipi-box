@@ -58,7 +58,8 @@ internal fun discoverDesktopSystemDnsServers(): List<String> = runCatching {
 }.getOrDefault(emptyList())
 
 /** Settings entries Desktop shows; the diagnostic tools repeat the existing mobile ones. */
-internal fun desktopSettingsVisibleDestinations(): Set<SkipiSettingsDestination> = setOf(
+internal fun desktopSettingsVisibleDestinations(vpnPage: Boolean = false): Set<SkipiSettingsDestination> = setOfNotNull(
+    SkipiSettingsDestination.Vpn.takeIf { vpnPage },
     SkipiSettingsDestination.Appearance,
     SkipiSettingsDestination.General,
     SkipiSettingsDestination.LocalProxy,

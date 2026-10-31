@@ -12,6 +12,8 @@ data class DesktopCoreRuntime(
     val library: Path,
     val geoIp: Path,
     val geoSite: Path,
+    /** Present on Linux builds that ship the TUN mode. */
+    val hevLibrary: Path? = null,
 )
 
 /** Locates only a shared SKIPI Core library and its Xray geo resources. */
@@ -37,7 +39,8 @@ object DesktopCoreRuntimes {
         require(missing.isEmpty()) {
             "Incomplete SKIPI Core desktop runtime: ${missing.joinToString { it.fileName.toString() }}"
         }
-        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite)
+        val hev = runtimeDirectory.resolve("libhev-socks5-tunnel.so").takeIf(::isNonEmptyRegularFile)
+        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite, hev)
     }
 
     private fun candidateDirectories(): List<Path> = buildList {

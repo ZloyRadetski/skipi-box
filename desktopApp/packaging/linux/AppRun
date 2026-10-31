@@ -1,0 +1,4 @@
+#!/bin/sh
+# AppImage entry point: the packaged application directory sits next to this script.
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/SKIPI/bin/SKIPI" "$@"

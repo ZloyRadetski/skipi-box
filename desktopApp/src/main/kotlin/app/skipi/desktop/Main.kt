@@ -13,6 +13,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -81,8 +83,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.collect
 import features.config.SkipiDeepLink
 import app.skipi.app.home.ConnectionClock
 import org.jetbrains.compose.resources.getString
@@ -91,6 +91,8 @@ import app.skipi.ui.resources.notification_vpn_connect_failed
 import app.skipi.ui.resources.notification_vpn_disconnected
 import app.skipi.ui.resources.notification_vpn_connected
 import features.config.parseSkipiDeepLinkOrNull
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -103,13 +105,39 @@ import features.resources.ResourceFileDownloadCancelledException
 import app.skipi.app.config.toTrafficConfigState
 import java.time.Duration
 
+fun main(args: Array<String>) {
+    val launch = parseDesktopLaunchArgs(args.toList())
+    // A later start hands its links (or a request to show the window) to the running SKIPI and ends:
+    // that is what a keyboard shortcut running `SKIPI skipi://toggle` relies on.
+    val claim = runCatching {
+        DesktopInstanceChannel.claimOrForward(
+            DesktopInstanceChannel.defaultPath(),
+            launch.links.ifEmpty { listOf("skipi://open") },
+        )
+    }
+    if (claim.isSuccess && claim.getOrNull() == null) return
+    claim.exceptionOrNull()?.let { error ->
+        DesktopLogger.error("Instance", "Single-instance channel unavailable; links from other starts are ignored", error)
+    }
+    val instance = claim.getOrNull()
+    val incomingLinks = Channel<String>(Channel.UNLIMITED)
+    launch.links.forEach { link -> incomingLinks.trySend(link) }
+    instance?.listen { link -> incomingLinks.trySend(link) }
+    instance?.let { channel -> Runtime.getRuntime().addShutdownHook(Thread { channel.close() }) }
+    runDesktopApplication(hidden = launch.hidden, incomingLinks = incomingLinks)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
-fun main() = application {
+private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String>) = application {
     remember { features.logs.AppLog.install(DesktopAppLogSink) }
     val coreController = remember { DesktopCoreController() }
+    val desktopTunHost = remember(coreController) { DesktopTunHost.forCore(coreController) }
     val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
     var desktopSettings by remember {
-        mutableStateOf(DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() })
+        mutableStateOf(
+            DesktopSettingsLibraries.loadDefault().getOrElse { DesktopAppSettings() }
+                .also { loaded -> applyDesktopStartupLanguage(loaded) },
+        )
     }
     val tunnel = remember {
         DesktopTunnelSession(
@@ -118,8 +146,15 @@ fun main() = application {
             readUseSystemProxy = { desktopSettings.useSystemProxy },
         )
     }
+    val windowState = remember { WindowState(size = DpSize(1180.dp, 860.dp), isMinimized = hidden) }
+    val escapeHandler = remember { DesktopEscapeHandler() }
+    // The start of the connection lives here, above every screen: Home is rebuilt on each visit.
+    val connectionClock = remember { ConnectionClock() }
     Window(
-        state = WindowState(size = DpSize(1180.dp, 860.dp)),
+        state = windowState,
+        onKeyEvent = { event ->
+            isEscapeBack(event.key, event.type) && escapeHandler.onEscape()
+        },
         // Closing is handled from the composable below so it can serialize with an
         // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
         onCloseRequest = { tunnel.closeRequested = true },
@@ -146,10 +181,6 @@ fun main() = application {
                 val latencyDoneTemplate = stringResource(Res.string.proxy_server_list_latency_done)
                 val noSubscriptionUpdatesMessage = stringResource(Res.string.proxy_server_list_no_subscription_updates)
                 val subscriptionRefreshSuccessTemplate =
-    val windowState = remember { WindowState(size = DpSize(1180.dp, 860.dp), isMinimized = hidden) }
-    val escapeHandler = remember { DesktopEscapeHandler() }
-    // The start of the connection lives here, above every screen: Home is rebuilt on each visit.
-    val connectionClock = remember { ConnectionClock() }
                     stringResource(Res.string.proxy_server_list_subscription_update_result)
                 val subscriptionRefreshFailedTemplate =
                     stringResource(Res.string.proxy_server_list_subscription_update_result_with_failed)
@@ -715,6 +746,7 @@ fun main() = application {
                         readServers = { latestServerLibrary },
                         readConfigs = { latestConfigLibrary },
                         readLatency = { latestLatencyByServerId },
+                        tunHost = desktopTunHost,
                     ).also(tunnel::attach)
                 }
                 val selectedTunnelProfileId = configLibrary.selectedConfigId?.toString()
@@ -921,38 +953,6 @@ fun main() = application {
                         systemProxyEnabled = { desktopSettings.useSystemProxy },
                     )
                 }
-                    val automationPlan = desktopNetworkObservationPlan(desktopSettings)
-                    LaunchedEffect(
-                        automationPlan.shouldListen,
-                        desktopSettings.enableNetworkAutomation,
-                        desktopSettings.enableOnDemandVpn,
-                        desktopSettings.networkAutomationRules,
-                    ) {
-                        if (!automationPlan.shouldListen) return@LaunchedEffect
-                        runDesktopNetworkAutomation(
-                            plan = automationPlan,
-                            readSettings = { desktopSettings },
-                            readServers = { serverLibrary },
-                            tunnel = tunnel,
-                            proxyServerRepository = proxyServerRepository,
-                            toggleTunnel = desktopToggleTunnel,
-                        )
-                    }
-                    if (!desktopSettings.onboardingCompleted) {
-                        val onboardingLocale = remember { DesktopApplicationLocale(java.util.Locale.getDefault(), java.util.Locale::setDefault) }
-                        DesktopOnboardingScreen(
-                            settings = desktopSettings,
-                            serverCount = serverLibrary.servers.size,
-                            subscriptionCount = subscriptionLibrary.subscriptions.size,
-                            onSettingsChange = { next ->
-                                if (next.languageTag != desktopSettings.languageTag) onboardingLocale.apply(next.languageTag)
-                                desktopSettings = next
-                                subscriptionScope.launch(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(next) }
-                            },
-                            onImportText = { text, _ ->
-                                val trimmed = text.trim()
-                                if (trimmed.isNotEmpty()) {
-                }
                 LaunchedEffect(tunnel.coreState.isRunning) { connectionClock.update(tunnel.coreState.isRunning) }
                 // skipi:// links from the command line and from later starts (see main).
                 LaunchedEffect(desktopTunnelController) {
@@ -1024,6 +1024,38 @@ fun main() = application {
                             },
                         )
                     }
+                }
+                    val automationPlan = desktopNetworkObservationPlan(desktopSettings)
+                    LaunchedEffect(
+                        automationPlan.shouldListen,
+                        desktopSettings.enableNetworkAutomation,
+                        desktopSettings.enableOnDemandVpn,
+                        desktopSettings.networkAutomationRules,
+                    ) {
+                        if (!automationPlan.shouldListen) return@LaunchedEffect
+                        runDesktopNetworkAutomation(
+                            plan = automationPlan,
+                            readSettings = { desktopSettings },
+                            readServers = { serverLibrary },
+                            tunnel = tunnel,
+                            proxyServerRepository = proxyServerRepository,
+                            toggleTunnel = desktopToggleTunnel,
+                        )
+                    }
+                    if (!desktopSettings.onboardingCompleted) {
+                        val onboardingLocale = remember { DesktopApplicationLocale(java.util.Locale.getDefault(), java.util.Locale::setDefault) }
+                        DesktopOnboardingScreen(
+                            settings = desktopSettings,
+                            serverCount = serverLibrary.servers.size,
+                            subscriptionCount = subscriptionLibrary.subscriptions.size,
+                            onSettingsChange = { next ->
+                                if (next.languageTag != desktopSettings.languageTag) onboardingLocale.apply(next.languageTag)
+                                desktopSettings = next
+                                subscriptionScope.launch(Dispatchers.IO) { DesktopSettingsLibraries.saveDefault(next) }
+                            },
+                            onImportText = { text, _ ->
+                                val trimmed = text.trim()
+                                if (trimmed.isNotEmpty()) {
                                     val install = trimmed.toDesktopSubscriptionInstallClipboardUriOrNull()
                                     if (install != null) {
                                         desktopPrepareSubscription(install)
@@ -1042,6 +1074,7 @@ fun main() = application {
                     }
                     when (currentSection) {
                         SkipiMainDestination.Proxy -> DesktopProxyHome(
+                            connectionClock = connectionClock,
                             updateBanner = appUpdateState.bannerModel()?.let { banner ->
                                 {
                                     SkipiAppUpdateBanner(
@@ -1074,7 +1107,6 @@ fun main() = application {
                                 ),
                             tunnelMessage = tunnel.coreMessage,
                             serverMessage = serverLibraryMessage,
-                            connectionClock = connectionClock,
                             subscriptionMessage = subscriptionUi.message,
                             confirmDeletion = desktopSettings.confirmDeletion,
                             activeProfileName = activeProfileName,
@@ -1522,6 +1554,11 @@ fun main() = application {
                                     desktopSettings.useSystemProxy != updated.useSystemProxy ||
                                     desktopSettings.localProxyListenAddress != updated.localProxyListenAddress ||
                                     desktopSettings.coreLogLevel != updated.coreLogLevel ||
+                                    desktopSettings.enableTunMode != updated.enableTunMode ||
+                                    desktopSettings.enableStrictFullTunnel != updated.enableStrictFullTunnel ||
+                                    desktopSettings.tunMtu != updated.tunMtu ||
+                                    desktopSettings.tunIpv4Cidr != updated.tunIpv4Cidr ||
+                                    desktopSettings.tunIpv6Cidr != updated.tunIpv6Cidr ||
                                     desktopSettings.enableAccessLog != updated.enableAccessLog
                                 desktopSettings = updated
                                 if (restartRequired && tunnel.coreState.isRunning) {
@@ -1530,6 +1567,8 @@ fun main() = application {
                             },
                             contentPadding = contentPadding,
                             isTunnelRunning = tunnel.coreState.isRunning,
+                            tunHost = desktopTunHost,
+                            escapeHandler = escapeHandler,
                             onClearSystemProxy = {
                                 subscriptionScope.launch {
                                     withContext(Dispatchers.IO) { systemProxyManager.forceClear() }

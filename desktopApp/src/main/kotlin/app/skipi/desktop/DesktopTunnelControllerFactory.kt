@@ -17,6 +17,7 @@ internal fun createDesktopTunnelController(
     readServers: () -> DesktopServerLibrary,
     readConfigs: () -> DesktopConfigLibrary,
     readLatency: () -> Map<Int, DesktopServerLatencyResult>,
+    tunHost: DesktopTunHost,
 ): DesktopTunnelController {
     fun runningHttpProxyOptions(): Result<LocalProxyXrayConfigOptions> {
         val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
@@ -48,6 +49,7 @@ internal fun createDesktopTunnelController(
                     subscriptionPingUrl = settingsSnapshot.subscriptionPingUrl,
                     latencyByServerId = latencySnapshot,
                     routingDataDirectory = globalAssetsDirectory,
+                    strictFullTunnel = settingsSnapshot.enableStrictFullTunnel,
                 )?.getOrThrow()
                     ?: error("Select a working server before connecting")
             }
@@ -125,6 +127,33 @@ internal fun createDesktopTunnelController(
             }
         },
         systemProxySupported = systemProxyManager::isSupportedHost,
+        // No silent fallback: with TUN mode on, a machine that cannot run it fails the connect and says why.
+        tunMode = { readSettings().enableTunMode },
+        prepareTun = {
+            runCatching {
+                tunHost.unavailableReason()?.let { reason -> error(reason) }
+                val plan = readSettings().tunInterfacePlan(desktopEnableIpv6(readConfigs()))
+                tunHost.tunRuntime().prepare(plan).getOrThrow()
+            }
+        },
+        releaseTun = { runCatching { tunHost.tunRuntime().release().getOrThrow() } },
+        startTun = {
+            runCatching {
+                tunHost.unavailableReason()?.let { reason -> error(reason) }
+                val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
+                    ?: error("SKIPI Core is not running")
+                val request = desktopTunStartRequest(
+                    settings = readSettings(),
+                    options = options,
+                    logPath = DesktopLogger.logDirectory().resolve("tun2socks.log").toString(),
+                    enableIpv6 = desktopEnableIpv6(readConfigs()),
+                )
+                tunHost.tunRuntime().start(request).getOrThrow()
+            }
+        },
+        stopTun = { runCatching { tunHost.tunRuntime().stop().getOrThrow() } },
+        tunRunning = { tunHost.tunRuntime().isRunning() },
+        tunSupported = { tunHost.hostSupported },
     )
 
 }

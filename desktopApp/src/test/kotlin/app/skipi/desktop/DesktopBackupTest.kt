@@ -166,6 +166,49 @@ class DesktopBackupTest {
     }
 
     @Test
+    fun tunSettingsSurviveTheBackupButHostSwitchesDoNot() {
+        val original = userData().copy(
+            settings = userData().settings.copy(
+                enableTunMode = true,
+                launchOnLogin = true,
+                tunMtu = "1500",
+                tunIpv4Cidr = "10.20.30.1/24",
+                tunIpv6Cidr = "fd00::1/64",
+                tunVpnDns = "1.1.1.1",
+                tunTcpKeepAliveInterval = "30",
+                tunTcpUserTimeout = "20000",
+                enableStrictFullTunnel = true,
+            ),
+        )
+
+        val restored = roundTrip(original).userData.settings
+
+        assertEquals("1500", restored.tunMtu)
+        assertEquals("10.20.30.1/24", restored.tunIpv4Cidr)
+        assertEquals("fd00::1/64", restored.tunIpv6Cidr)
+        assertEquals("1.1.1.1", restored.tunVpnDns)
+        assertEquals("30", restored.tunTcpKeepAliveInterval)
+        assertEquals("20000", restored.tunTcpUserTimeout)
+        assertTrue(restored.enableStrictFullTunnel)
+        // Turning TUN on and registering an autostart entry are this machine's decisions.
+        assertFalse(restored.enableTunMode)
+        assertFalse(restored.launchOnLogin)
+    }
+
+    @Test
+    fun restoringLeavesThisMachinesTunSwitchesAsTheyAre() {
+        val current = DesktopUserData(
+            settings = DesktopAppSettings(enableTunMode = true, launchOnLogin = true, autoConnectOnAppOpen = true),
+        )
+
+        val restored = roundTrip(userData(), current).userData.settings
+
+        assertTrue(restored.enableTunMode)
+        assertTrue(restored.launchOnLogin)
+        assertTrue(restored.autoConnectOnAppOpen)
+    }
+
+    @Test
     fun restoreKeepsDeviceIdentityAndOnboardingOfTheCurrentInstall() {
         val current = DesktopUserData(
             settings = DesktopAppSettings(installationUuid = "this-device", onboardingCompleted = true),

@@ -7,6 +7,7 @@ import engine.xray.XrayLogConfigRequest
 import engine.xray.XraySniffingOptions
 import engine.xray.XrayFragmentOutboundOptions
 import engine.xray.XrayMuxOutboundOptions
+import engine.xray.xrayTcpSockopt
 import engine.xray.xrayDirectOutboundDomainStrategy
 import app.skipi.app.model.SubscriptionRecord
 import engine.network.toPortOrNull
@@ -67,6 +68,7 @@ internal fun DesktopAppSettings.toLocalProxyXrayConfigOptions(
     } else {
         null
     },
+    tcpSockopt = xrayTcpSockopt(tunTcpKeepAliveInterval, tunTcpUserTimeout),
 )
 
 /** Converts persisted Android-shaped settings into the Desktop HTTP fetch transport snapshot. */

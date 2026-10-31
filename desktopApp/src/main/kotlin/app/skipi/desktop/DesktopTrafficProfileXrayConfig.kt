@@ -196,6 +196,7 @@ object DesktopTrafficProfileXrayConfigFactory {
                                 enableIpv6 = ipv6Enabled,
                                 enableIpv6Prefer = ipv6Preferred,
                             ),
+                            tcpSockopt = options.tcpSockopt,
                         ),
                     )
                     add(buildSimpleOutbound(BlockTag, XrayProtocols.BLACKHOLE))

@@ -17,6 +17,36 @@ import platform.DefaultLocalHttpProxyListenAddress
 import platform.LocalProxyXrayConfigOptions
 
 class DesktopTrafficProfileXrayConfigTest {
+    private fun directSockopt(options: LocalProxyXrayConfigOptions): kotlinx.serialization.json.JsonObject? {
+        val server = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha")
+        val library = DesktopServerLibraries.select(DesktopServerLibraries.add(DesktopServerLibrary(), server), serverId = 1)
+        val config = DesktopTrafficProfileXrayConfigFactory.build(
+            profile = DesktopStoredConfig(id = 1, name = "P", content = "[Rule]\nFINAL,PROXY\n"),
+            serverLibrary = library,
+            options = options,
+        )
+        val direct = Json.parseToJsonElement(config).jsonObject.getValue("outbounds").jsonArray
+            .map { it.jsonObject }
+            .first { it["tag"]?.jsonPrimitive?.content == "direct" }
+        return direct["streamSettings"]?.jsonObject?.get("sockopt")?.jsonObject
+    }
+
+    @Test
+    fun theDirectOutboundCarriesTheTunnelKeepAliveSettingsLikeAndroid() {
+        val sockopt = directSockopt(
+            LocalProxyXrayConfigOptions(socksPort = 20_480, tcpSockopt = engine.xray.XrayTcpSockopt(30, 30, 20_000)),
+        )
+
+        assertEquals("30", sockopt?.getValue("tcpKeepAliveInterval")?.jsonPrimitive?.content)
+        assertEquals("30", sockopt?.getValue("tcpKeepAliveIdle")?.jsonPrimitive?.content)
+        assertEquals("20000", sockopt?.getValue("tcpUserTimeout")?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun withoutSockoptOptionsTheDirectOutboundIsUnchanged() {
+        assertEquals(null, directSockopt(LocalProxyXrayConfigOptions(socksPort = 20_480)))
+    }
+
     @Test
     fun compilesActiveProfileRulesDnsAndProxyGroupsIntoDesktopXrayJson() {
         val alpha = ProxyServer.parse(

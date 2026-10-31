@@ -36,6 +36,10 @@ import app.skipi.ui.resources.settings_reset_tunnel_confirm_title
 import app.skipi.ui.resources.settings_reset_tunnel_failed
 import app.skipi.ui.resources.settings_reset_tunnel_summary
 import app.skipi.ui.resources.settings_reset_vpn
+import app.skipi.ui.resources.settings_reset_vpn_completed
+import app.skipi.ui.resources.settings_reset_vpn_confirm
+import app.skipi.ui.resources.settings_reset_vpn_confirm_summary
+import app.skipi.ui.resources.settings_reset_vpn_confirm_title
 import app.skipi.ui.resources.settings_reset_vpn_summary
 import app.skipi.ui.resources.settings_restore_completed
 import app.skipi.ui.resources.settings_restore_failed
@@ -80,6 +84,7 @@ internal fun DesktopBackupResetSettings(
     var busy by remember { mutableStateOf(false) }
     var pendingRestore by remember { mutableStateOf<DesktopRestorePreview?>(null) }
     var confirmTunnelReset by remember { mutableStateOf(false) }
+    var confirmVpnReset by remember { mutableStateOf(false) }
     var confirmAppReset by remember { mutableStateOf(false) }
     val exportTitle = stringResource(Res.string.settings_backup_user_data)
     val restoreTitle = stringResource(Res.string.settings_restore_user_data)
@@ -135,9 +140,9 @@ internal fun DesktopBackupResetSettings(
             }
         },
         onResetTunnel = { if (!busy) confirmTunnelReset = true },
-        onResetVpn = {},
+        onResetVpn = { if (!busy) confirmVpnReset = true },
         onResetApp = { if (!busy) confirmAppReset = true },
-        showResetVpn = false,
+        showResetVpn = true,
         overlays = {
             SkipiSettingsRestoreConfirmDialog(
                 preview = pendingRestore?.toPreviewState(),
@@ -165,6 +170,22 @@ internal fun DesktopBackupResetSettings(
                         host.stopTunnel()
                             .onSuccess { onMessage(getString(Res.string.settings_reset_tunnel_completed)) }
                             .onFailure { onMessage("${getString(Res.string.settings_reset_tunnel_failed)}: ${it.message.orEmpty()}") }
+                    }
+                },
+            )
+            WarningConfirmDialog(
+                show = confirmVpnReset,
+                title = stringResource(Res.string.settings_reset_vpn_confirm_title),
+                summary = stringResource(Res.string.settings_reset_vpn_confirm_summary),
+                dismissText = stringResource(Res.string.common_cancel),
+                confirmText = stringResource(Res.string.settings_reset_vpn_confirm),
+                onDismissRequest = { confirmVpnReset = false },
+                onConfirm = {
+                    confirmVpnReset = false
+                    runExclusive {
+                        val result = host.stopTunnel().mapCatching { host.apply(host.currentUserData().vpnReset()).getOrThrow() }
+                        result.onSuccess { onMessage(getString(Res.string.settings_reset_vpn_completed)) }
+                            .onFailure { onMessage("${getString(Res.string.settings_reset_failed)}: ${it.message.orEmpty()}") }
                     }
                 },
             )

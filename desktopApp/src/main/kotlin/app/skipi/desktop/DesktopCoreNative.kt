@@ -128,6 +128,23 @@ internal class DesktopCoreFfmNative(
         FunctionDescriptor.of(ValueLayout.ADDRESS),
     )
 
+    // Looked up on first use so an older library without TUN support still loads.
+    private val tunProbeFunction by lazy {
+        downcall("SkipiCoreDesktopTunProbe", FunctionDescriptor.of(ValueLayout.ADDRESS))
+    }
+    private val tunPrepareFunction by lazy {
+        downcall("SkipiCoreDesktopTunPrepare", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS))
+    }
+    private val tunOpenFunction by lazy {
+        downcall("SkipiCoreDesktopTunOpen", FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS))
+    }
+    private val notifyFunction by lazy {
+        downcall("SkipiCoreDesktopNotify", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS))
+    }
+    private val tunCloseFunction by lazy {
+        downcall("SkipiCoreDesktopTunClose", FunctionDescriptor.of(ValueLayout.ADDRESS))
+    }
+
     private var closed = false
 
     override val apiVersion: String
@@ -203,6 +220,39 @@ internal class DesktopCoreFfmNative(
         errorResult("free memory") {
             invokePointer(forceFreeMemoryFunction)
         }
+    }
+
+    /** Null when a TUN session can be opened here, otherwise why it cannot. */
+    fun tunUnavailableReason(): String? = runCatching {
+        val result = invokePointer(tunProbeFunction)
+        if (result.address() == 0L) null else readOwnedString(result)
+    }.getOrElse { error -> error.message ?: "TUN is not supported by this SKIPI Core library" }
+
+    /** Binds Core's own outbound sockets to the physical interface, before Core starts. */
+    fun prepareTun(interfaceName: String) {
+        withUtf8(interfaceName) { name ->
+            errorResult("prepare the TUN interface") { invokePointer(tunPrepareFunction, name) }
+        }
+    }
+
+    /** Brings the TUN interface up and returns the attached tun descriptor. */
+    fun openTun(planJson: String): Int = withUtf8(planJson) { plan ->
+        checkOpen()
+        val fd = invoke(tunOpenFunction, plan) as? Long ?: error("SKIPI Core returned an invalid TUN result")
+        if (fd >= 0) fd.toInt() else throw failure("open the TUN interface")
+    }
+
+    /** Shows a desktop notification through the session's notification service. */
+    fun notify(summary: String, body: String) {
+        withUtf8(summary) { title ->
+            withUtf8(body) { text ->
+                errorResult("show a notification") { invokePointer(notifyFunction, title, text) }
+            }
+        }
+    }
+
+    fun closeTun() {
+        errorResult("close the TUN interface") { invokePointer(tunCloseFunction) }
     }
 
     override fun close() {

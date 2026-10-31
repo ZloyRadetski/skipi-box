@@ -66,6 +66,22 @@ val buildDesktopCore = tasks.register<BuildDesktopSkipiCoreTask>("buildDesktopCo
     onlyIf { !explicitDesktopCoreLibrary.isPresent }
 }
 
+val desktopHevSourceDirectory = rootProject.layout.projectDirectory.dir("hevtun/src/main/jni/hev-socks5-tunnel")
+
+// The Linux TUN mode loads hev-socks5-tunnel in-process next to Core; Windows will ship wintun instead.
+val buildDesktopHev = tasks.register<BuildDesktopHevTask>("buildDesktopHev") {
+    sourceDirectory.set(desktopHevSourceDirectory)
+    sources.from(
+        fileTree(desktopHevSourceDirectory) {
+            exclude(".git", "bin/**", "build/**", "third-part/*/bin/**", "third-part/*/build/**")
+        },
+    )
+    cCompiler.set(providers.gradleProperty("skipiCoreDesktopCc").orElse("gcc"))
+    workDirectory.set(layout.buildDirectory.dir("native/hev-socks5-tunnel-src"))
+    outputLibrary.set(layout.buildDirectory.file("native/hev-socks5-tunnel/libhev-socks5-tunnel.so"))
+    onlyIf { !isWindowsHost }
+}
+
 // Compose packages app resources from <root>/common and platform-specific
 // subdirectories. Keep the Core runtime in common so the same task layout can
 // stage both the Windows DLL and the Linux shared library.
@@ -79,6 +95,7 @@ val prepareDesktopCoreRuntime = tasks.register<PrepareDesktopCoreRuntimeTask>("p
             buildDesktopCore.flatMap { task -> task.outputLibrary }.map { file -> file.asFile.absolutePath },
         ),
     )
+    coreLibraryFile.set(layout.file(coreLibraryPath.map(::File)))
     coreLicensePath.set(rootProject.file("../skipi-core/LICENSE").absolutePath)
     outputLibraryName.set(desktopCoreLibraryName)
     xrayVersion.set(ProjectConfig.XRAY_CORE_VERSION)
@@ -137,11 +154,17 @@ compose.desktop {
 }
 
 tasks.matching { it.name == "prepareAppResources" }.configureEach {
-    dependsOn(buildDesktopCore, prepareDesktopCoreRuntime)
+    dependsOn(buildDesktopCore, prepareDesktopCoreRuntime, prepareDesktopHevRuntime)
 }
 
 prepareDesktopCoreRuntime.configure {
     dependsOn(buildDesktopCore)
+}
+
+val prepareDesktopHevRuntime = tasks.register<Copy>("prepareDesktopHevRuntime") {
+    from(buildDesktopHev.flatMap { task -> task.outputLibrary })
+    into(desktopCoreRuntime)
+    onlyIf { !isWindowsHost }
 }
 
 tasks.withType<Test>().configureEach {

@@ -55,8 +55,19 @@ class DesktopTunnelController(
     private val releaseSystemProxy: () -> Result<Unit> = { Result.success(Unit) },
     private val systemProxySupported: () -> Boolean = { false },
     private val startPlanForProfile: ((String) -> Result<DesktopTunnelStartPlan>)? = null,
+    /** Read once per connect: a TUN session replaces the system proxy and is stopped as it started. */
+    private val tunMode: () -> Boolean = { false },
+    /** Runs before Core starts in TUN mode, so Core never makes a connection that could loop into the tunnel. */
+    private val prepareTun: () -> Result<Unit> = { Result.success(Unit) },
+    /** Undoes [prepareTun] when Core or the tunnel could not be started. */
+    private val releaseTun: () -> Result<Unit> = { Result.success(Unit) },
+    private val startTun: () -> Result<Unit> = { Result.failure(IllegalStateException("TUN is not available")) },
+    private val stopTun: () -> Result<Unit> = { Result.success(Unit) },
+    private val tunRunning: () -> Boolean = { false },
+    private val tunSupported: () -> Boolean = { false },
 ) : TunnelController {
     private var latestSnapshot = TunnelSnapshot()
+    private var tunActive = false
 
     override suspend fun connect(request: TunnelConnectRequest): Result<Unit> = synchronized(this) {
         when (val decision = TunnelLifecyclePolicy.beginConnect(latestSnapshot, request.profileId)) {
@@ -71,7 +82,15 @@ class DesktopTunnelController(
             return@synchronized Result.failure(error)
         }
         var operationStage = TunnelOperationStage.PrepareConfiguration
+        val useTun = tunMode()
+        var tunPrepared = false
         val result = runCatching {
+            if (useTun) {
+                operationStage = TunnelOperationStage.Start
+                prepareTun().getOrThrow()
+                tunPrepared = true
+                operationStage = TunnelOperationStage.PrepareConfiguration
+            }
             var startPlan = if (request.configuration == null) {
                 startPlanForProfile?.invoke(request.profileId)?.getOrThrow()
             } else {
@@ -111,15 +130,22 @@ class DesktopTunnelController(
                 require(config.isNotBlank()) { "Tunnel configuration must not be blank" }
             }
             try {
-                operationStage = TunnelOperationStage.AcquireSystemProxy
-                awaitSystemProxyEndpoint().getOrThrow()
-                acquireSystemProxy().getOrThrow()
+                if (useTun) {
+                    operationStage = TunnelOperationStage.Start
+                    startTun().getOrThrow()
+                    tunActive = true
+                } else {
+                    operationStage = TunnelOperationStage.AcquireSystemProxy
+                    awaitSystemProxyEndpoint().getOrThrow()
+                    acquireSystemProxy().getOrThrow()
+                }
             } catch (error: Throwable) {
                 stopCore().exceptionOrNull()?.let(error::addSuppressed)
                 throw error
             }
             Unit
         }
+        if (result.isFailure && tunPrepared && !tunActive) releaseTun()
         val operationResult = result.mapFailure(operationStage)
         latestSnapshot = operationResult.fold(
             onSuccess = { TunnelLifecyclePolicy.connected(latestSnapshot) },
@@ -131,6 +157,10 @@ class DesktopTunnelController(
     override suspend fun disconnect(): Result<Unit> = synchronized(this) {
         latestSnapshot = TunnelLifecyclePolicy.beginDisconnect(latestSnapshot)
         val result = releaseSystemProxy().mapCatching {
+            if (tunActive) {
+                stopTun().getOrThrow()
+                tunActive = false
+            }
             if (coreState().isRunning) stopCore().getOrThrow()
             Unit
         }
@@ -157,6 +187,16 @@ class DesktopTunnelController(
                 latestSnapshot,
                 failure(stopped, TunnelOperationStage.ReadStatus),
             )
+        } else if (latestSnapshot.phase == TunnelPhase.Connected && tunActive && !tunRunning()) {
+            // hev died under a live Core: the interface is useless, so release it instead of leaving
+            // the system routed into a tunnel that carries nothing.
+            val stopped = IllegalStateException("The TUN tunnel stopped unexpectedly")
+            stopTun().exceptionOrNull()?.let(stopped::addSuppressed)
+            tunActive = false
+            latestSnapshot = TunnelLifecyclePolicy.connectFailed(
+                latestSnapshot,
+                failure(stopped, TunnelOperationStage.ReadStatus),
+            )
         } else if (latestSnapshot.phase == TunnelPhase.Connected) {
             // Counter reads are observational: a temporary stats error must not
             // tear down an otherwise healthy tunnel.
@@ -170,6 +210,7 @@ class DesktopTunnelController(
     override fun capabilities(): Set<TunnelCapability> = buildSet {
         add(TunnelCapability.PreparedConfiguration)
         if (systemProxySupported()) add(TunnelCapability.SystemProxy)
+        if (tunSupported()) add(TunnelCapability.Tun)
     }
 
     private fun failure(error: Throwable, stage: TunnelOperationStage): TunnelFailure =

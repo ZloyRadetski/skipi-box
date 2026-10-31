@@ -76,9 +76,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -156,9 +158,22 @@ import app.skipi.ui.settings.sanitizeLocalProxyPort
 import app.modes.SubscriptionPingModeHttp
 
 
-private enum class DesktopSettingsDestination {
-    Overview, General, Appearance, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
+internal enum class DesktopSettingsDestination {
+    Overview, General, Appearance, Vpn, LocalProxy, Subscriptions, SubscriptionPing, SubscriptionUserAgents,
     NetworkAutomation, BackupReset, SpeedTest, DnsLeakTest, IpInfo, UrlSchemes, Diagnostics, CoreLogs, AccessLogs, About,
+}
+
+/** The page a settings page returns to; null for the overview, which has nowhere to go back to. */
+internal fun desktopSettingsParent(destination: DesktopSettingsDestination): DesktopSettingsDestination? = when (destination) {
+    DesktopSettingsDestination.Overview -> null
+    DesktopSettingsDestination.SubscriptionPing,
+    DesktopSettingsDestination.SubscriptionUserAgents,
+    -> DesktopSettingsDestination.Subscriptions
+    DesktopSettingsDestination.UrlSchemes -> DesktopSettingsDestination.General
+    DesktopSettingsDestination.CoreLogs,
+    DesktopSettingsDestination.AccessLogs,
+    -> DesktopSettingsDestination.Diagnostics
+    else -> DesktopSettingsDestination.Overview
 }
 
 /** Desktop host for shared settings pages and operations owned by the desktop platform. */
@@ -172,6 +187,8 @@ internal fun DesktopSettingsScreen(
     automationServers: List<NetworkAutomationServerOption>,
     backupHost: DesktopBackupHost,
     isTunnelRunning: Boolean = false,
+    tunHost: DesktopTunHost? = null,
+    escapeHandler: DesktopEscapeHandler = DesktopEscapeHandler(),
     appUpdateState: AppUpdateState = AppUpdateState(),
     onCheckForAppUpdate: suspend () -> DesktopAppUpdateCheck = { DesktopAppUpdateCheck.Failed },
     onClearSystemProxy: (() -> Unit)? = null,
@@ -200,25 +217,51 @@ internal fun DesktopSettingsScreen(
 
     val noWifiMessage = org.jetbrains.compose.resources.stringResource(app.skipi.ui.resources.Res.string.network_automation_no_wifi_detected)
     val automationSavedMessage = "Правила сети сохранены."
+    val goBack: () -> Unit = {
+        desktopSettingsParent(destination)?.let { parent -> destination = parent }
+    }
+    DisposableEffect(destination, escapeHandler) {
+        escapeHandler.register(goBack.takeIf { destination != DesktopSettingsDestination.Overview })
+        onDispose { escapeHandler.register(null) }
+    }
     when (destination) {
         DesktopSettingsDestination.Overview -> DesktopSettingsOverview(
             settings = currentSettings,
             message = message,
             contentPadding = contentPadding,
             modifier = modifier,
+            vpnPage = tunHost != null,
             onNavigate = { destination = it },
         )
+        DesktopSettingsDestination.Vpn -> {
+            val tunUnavailableReason by produceState<String?>(initialValue = "…", tunHost) {
+                value = withContext(Dispatchers.IO) { tunUnavailableReasonFor(tunHost) }
+                value?.let { reason -> DesktopLogger.info("TunHost", "TUN mode unavailable: $reason") }
+            }
+            DesktopVpnSettings(
+                settings = currentSettings,
+                tunUnavailableReason = tunUnavailableReason,
+                onBack = goBack,
+                onPersist = ::persist,
+                onApplyLaunchOnLogin = { enabled ->
+                    resolveAutostartLauncher(ProcessHandle.current().info().command().orElse(null))
+                        .mapCatching { launcher -> DesktopAutostart().apply(enabled, launcher).getOrThrow() }
+                },
+                onOpenNetworkAutomation = { destination = DesktopSettingsDestination.NetworkAutomation },
+                contentPadding = contentPadding,
+            )
+        }
         DesktopSettingsDestination.Appearance -> DesktopAppearanceSettings(
             settings = currentSettings,
             message = message,
-            onBack = { destination = DesktopSettingsDestination.Overview },
+            onBack = goBack,
             onPersist = ::persist,
             contentPadding = contentPadding,
         )
         DesktopSettingsDestination.General -> DesktopGeneralSettings(
             settings = currentSettings,
             message = message,
-            onBack = { destination = DesktopSettingsDestination.Overview },
+            onBack = goBack,
             onOpenUrlSchemes = { destination = DesktopSettingsDestination.UrlSchemes },
             onOpenBackupReset = { destination = DesktopSettingsDestination.BackupReset },
             onPersist = ::persist,
@@ -227,7 +270,7 @@ internal fun DesktopSettingsScreen(
         DesktopSettingsDestination.LocalProxy -> DesktopLocalProxySettings(
             settings = currentSettings,
             message = message,
-            onBack = { destination = DesktopSettingsDestination.Overview },
+            onBack = goBack,
             onPersist = ::persist,
             onClearSystemProxy = onClearSystemProxy,
             contentPadding = contentPadding,
@@ -235,7 +278,7 @@ internal fun DesktopSettingsScreen(
         DesktopSettingsDestination.Subscriptions -> DesktopSubscriptionSettings(
             settings = currentSettings,
             message = message,
-            onBack = { destination = DesktopSettingsDestination.Overview },
+            onBack = goBack,
             onPersist = ::persist,
             onOpenPingSettings = { destination = DesktopSettingsDestination.SubscriptionPing },
             onOpenUserAgents = { destination = DesktopSettingsDestination.SubscriptionUserAgents },
@@ -243,13 +286,13 @@ internal fun DesktopSettingsScreen(
         )
         DesktopSettingsDestination.SubscriptionPing -> DesktopSubscriptionPingSettings(
             settings = currentSettings,
-            onBack = { destination = DesktopSettingsDestination.Subscriptions },
+            onBack = goBack,
             onPersist = ::persist,
             contentPadding = contentPadding,
         )
         DesktopSettingsDestination.SubscriptionUserAgents -> DesktopSubscriptionUserAgents(
             settings = currentSettings,
-            onBack = { destination = DesktopSettingsDestination.Subscriptions },
+            onBack = goBack,
             onPersist = ::persist,
             contentPadding = contentPadding,
         )
@@ -258,7 +301,7 @@ internal fun DesktopSettingsScreen(
             appVersionName = ProjectInfo.VERSION_NAME,
             appVersionCode = ProjectInfo.VERSION_CODE,
             padding = contentPadding,
-            onBack = { destination = DesktopSettingsDestination.Overview },
+            onBack = goBack,
             onMessage = { message = it },
         )
         DesktopSettingsDestination.NetworkAutomation -> SkipiNetworkAutomationScreen(
@@ -268,7 +311,7 @@ internal fun DesktopSettingsScreen(
             servers = automationServers,
             padding = contentPadding,
             isWideScreen = true,
-            onBack = { destination = DesktopSettingsDestination.Overview },
+            onBack = goBack,
             onNetworkAutomationChange = { enabled ->
                 persist(currentSettings.copy(enableNetworkAutomation = enabled), automationSavedMessage)
             },
@@ -348,7 +391,7 @@ internal fun DesktopSettingsScreen(
         DesktopSettingsDestination.UrlSchemes -> SkipiUrlSchemesScreen(
             padding = contentPadding,
             isWideScreen = true,
-            onBack = { destination = DesktopSettingsDestination.General },
+            onBack = goBack,
             onCopyCommand = { command ->
                 copyToClipboard(command).onSuccess { message = copiedMessage }
             },
@@ -357,7 +400,7 @@ internal fun DesktopSettingsScreen(
             settings = currentSettings,
             isTunnelRunning = isTunnelRunning,
             message = message,
-            onBack = { destination = DesktopSettingsDestination.Overview },
+            onBack = goBack,
             onPersist = ::persist,
             onMessage = { message = it },
             onPruneLogs = coreLogs::pruneOlderThanDays,
@@ -369,7 +412,7 @@ internal fun DesktopSettingsScreen(
             title = stringResource(Res.string.core_logs_title),
             repository = coreLogs.core,
             padding = contentPadding,
-            onBack = { destination = DesktopSettingsDestination.Diagnostics },
+            onBack = goBack,
             onClear = coreLogs::clearCore,
             onMessage = { message = it },
         )
@@ -377,7 +420,7 @@ internal fun DesktopSettingsScreen(
             title = stringResource(Res.string.access_logs_title),
             repository = coreLogs.access,
             padding = contentPadding,
-            onBack = { destination = DesktopSettingsDestination.Diagnostics },
+            onBack = goBack,
             onClear = coreLogs::clearAccess,
             onMessage = { message = it },
         )
@@ -387,7 +430,7 @@ internal fun DesktopSettingsScreen(
             onCheckForAppUpdate = onCheckForAppUpdate,
             onAutoCheckChange = { enabled -> persist(currentSettings.copy(autoCheckAppUpdates = enabled), "") },
             onReplayOnboarding = { persist(currentSettings.copy(onboardingCompleted = false), "") },
-            onBack = { destination = DesktopSettingsDestination.Overview },
+            onBack = goBack,
             onMessage = { message = it },
             message = message,
             contentPadding = contentPadding,
@@ -401,22 +444,24 @@ private fun DesktopSettingsOverview(
     message: String,
     contentPadding: PaddingValues,
     modifier: Modifier,
+    vpnPage: Boolean,
     onNavigate: (DesktopSettingsDestination) -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         SkipiSettingsHomeScreen(
         state = SkipiSettingsHomeState(
             versionLabel = "v${ProjectInfo.VERSION_NAME} (${ProjectInfo.VERSION_CODE})",
-            tunMtu = "—",
+            tunMtu = settings.tunMtu,
             localProxyPort = settings.localProxyPort.toString(),
             coreLogLevel = settings.coreLogLevel.uppercase(),
             categoryIconColor = Color(0xFF5C6DB0),
-            visibleDestinations = desktopSettingsVisibleDestinations(),
+            visibleDestinations = desktopSettingsVisibleDestinations(vpnPage = vpnPage),
         ),
         padding = contentPadding,
         onNavigate = { selected ->
             when (selected) {
                 SkipiSettingsDestination.Appearance -> onNavigate(DesktopSettingsDestination.Appearance)
+                SkipiSettingsDestination.Vpn -> onNavigate(DesktopSettingsDestination.Vpn)
                 SkipiSettingsDestination.General -> onNavigate(DesktopSettingsDestination.General)
                 SkipiSettingsDestination.LocalProxy -> onNavigate(DesktopSettingsDestination.LocalProxy)
                 SkipiSettingsDestination.Subscriptions -> onNavigate(DesktopSettingsDestination.Subscriptions)
