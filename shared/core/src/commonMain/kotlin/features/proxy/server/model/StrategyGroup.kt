@@ -45,6 +45,15 @@ fun String.toShadowrocketPolicyGroupType(): String = when (trim()) {
     else -> "select"
 }
 
+/**
+ * Strategies that may send consecutive connections of one site through different servers. A site
+ * that binds its session to the client IP can break when its connections exit from several servers.
+ */
+fun strategyGroupSpreadsConnections(strategy: String): Boolean = when (strategy.trim().lowercase()) {
+    "random", "roundrobin", "round-robin", "leastload", "least-load", "load-balance" -> true
+    else -> false
+}
+
 /** Converts either a Shadowrocket policy name or stored strategy to Xray's balancer strategy. */
 fun String.toXrayBalancerStrategy(): String = when (trim().lowercase()) {
     "load-balance", StrategyGroupConstants.TYPE_RANDOM -> StrategyGroupConstants.TYPE_RANDOM
@@ -71,8 +80,11 @@ data class StrategyGroup(
     /** Config-owned groups keep resolving their current named members after subscription refreshes. */
     var sourceTrafficConfigId: Int? = null,
     var sourcePolicyGroupName: String = "",
-    /** One minute is responsive enough for ordinary failover without a constant radio wakeup. */
-    var probeInterval: String = "1m",
+    /**
+     * Xray switches a balancer away from a dead member only after the next probe round, so a long
+     * interval leaves every new connection failing for that long. 15 s keeps the outage short.
+     */
+    var probeInterval: String = "15s",
     var probeUrl: String = "",
     /** An explicit opt-in for the expensive first-start parallel probe race. */
     var enableBurstProbe: Boolean = false,

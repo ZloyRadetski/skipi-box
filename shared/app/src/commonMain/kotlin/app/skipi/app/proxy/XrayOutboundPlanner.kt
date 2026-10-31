@@ -146,9 +146,7 @@ object XrayOutboundPlanner {
                     if (customProbeUrl != null && observatoryProbeUrl == null) {
                         observatoryProbeUrl = customProbeUrl
                     }
-                    if (customProbeInterval != null && observatoryProbeInterval == null) {
-                        observatoryProbeInterval = customProbeInterval
-                    }
+                    observatoryProbeInterval = shorterProbeInterval(observatoryProbeInterval, customProbeInterval)
                     if (customProbeTimeout != null && observatoryProbeTimeout == null) {
                         observatoryProbeTimeout = customProbeTimeout
                     }
@@ -289,9 +287,7 @@ object XrayOutboundPlanner {
             if (customProbeUrl != null && observatoryProbeUrl == null) {
                 observatoryProbeUrl = customProbeUrl
             }
-            if (customProbeInterval != null && observatoryProbeInterval == null) {
-                observatoryProbeInterval = customProbeInterval
-            }
+            observatoryProbeInterval = shorterProbeInterval(observatoryProbeInterval, customProbeInterval)
             if (customProbeTimeout != null && observatoryProbeTimeout == null) {
                 observatoryProbeTimeout = customProbeTimeout
             }
@@ -351,6 +347,28 @@ object XrayOutboundPlanner {
                 trafficConfigContentById = input.trafficConfigContentById,
                 stripLeadingFlag = input.stripLeadingFlag,
             ).mapNotNull { resolved -> input.servers.firstOrNull { it.id == resolved.id } }
+    }
+}
+
+/**
+ * One observatory serves every balancer, so it probes at the shortest interval any group asks for.
+ * A value that cannot be read ("soon") never replaces a valid one.
+ */
+private fun shorterProbeInterval(current: String?, candidate: String?): String? {
+    val candidateSeconds = candidate?.probeIntervalSeconds() ?: return current
+    val currentSeconds = current?.probeIntervalSeconds() ?: return candidate
+    return if (candidateSeconds < currentSeconds) candidate else current
+}
+
+private fun String.probeIntervalSeconds(): Long? {
+    val text = trim().lowercase()
+    val unit = text.lastOrNull() ?: return null
+    val amount = text.dropLast(1).toLongOrNull()?.takeIf { it > 0 } ?: return null
+    return when (unit) {
+        's' -> amount
+        'm' -> amount * 60
+        'h' -> amount * 3600
+        else -> null
     }
 }
 

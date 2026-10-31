@@ -167,7 +167,7 @@ class ProxyServerDraftFactoryTest {
                 showInAutoBalancerList = true,
                 sourceTrafficConfigId = null,
                 sourcePolicyGroupName = "",
-                probeInterval = "1m",
+                probeInterval = "15s",
                 probeUrl = "",
                 enableBurstProbe = false,
                 tolerance = "50ms",

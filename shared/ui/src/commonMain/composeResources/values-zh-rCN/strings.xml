@@ -619,6 +619,7 @@
     <string name="proxy_editor_strategy_group_probe_interval">探测间隔</string>
     <string name="proxy_editor_strategy_group_probe_timeout">探测超时</string>
     <string name="proxy_editor_strategy_group_probe_timeout_summary">如果服务器在此时间内未响应，则视为故障</string>
+    <string name="proxy_editor_strategy_group_spread_warning">每个新连接可能使用不同的服务器，因此将会话绑定到 IP 地址的网站可能无法正常使用。用于规则时建议选择最低延迟。</string>
     <string name="proxy_editor_strategy_group_tolerance">切换容差 (Tolerance)</string>
     <string name="proxy_editor_strategy_group_tolerance_summary">忽略小于此阈值的 ping 波动，以防止频繁切换</string>
     <string name="proxy_editor_strategy_group_probe_url">探测网址</string>

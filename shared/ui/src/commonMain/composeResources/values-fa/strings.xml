@@ -597,6 +597,7 @@
     <string name="proxy_editor_strategy_group_probe_interval">فاصله کاوشگر</string>
     <string name="proxy_editor_strategy_group_probe_timeout">مهلت زمانی کاوشگر</string>
     <string name="proxy_editor_strategy_group_probe_timeout_summary">اگر سرور در این مدت پاسخ ندهد، قطع در نظر گرفته می‌شود</string>
+    <string name="proxy_editor_strategy_group_spread_warning">هر اتصال جدید ممکن است از سرور دیگری عبور کند، بنابراین سایت‌هایی که نشست را به نشانی IP متصل می‌کنند ممکن است کار نکنند. برای قوانین، کمترین پینگ را ترجیح دهید.</string>
     <string name="proxy_editor_strategy_group_tolerance">آستانه تغییر (Tolerance)</string>
     <string name="proxy_editor_strategy_group_tolerance_summary">نادیده گرفتن نوسانات پینگ کمتر از این مقدار</string>
     <string name="proxy_editor_strategy_group_probe_url">URL کاوشگر</string>

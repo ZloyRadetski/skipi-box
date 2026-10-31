@@ -324,6 +324,69 @@ class XrayOutboundPlannerTest {
     }
 
     @Test
+    fun theShortestProbeIntervalOfAllGroupsDrivesTheSharedObservatory() {
+        val selected = node(1, "Selected", "selected.example")
+        val a = node(10, "A", "a.example")
+        val b = node(20, "B", "b.example")
+        fun group(id: Int, interval: String) = record(
+            id,
+            StrategyGroup(
+                remarks = "G$id",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10, 20),
+                probeInterval = interval,
+            ),
+        )
+
+        fun planWith(first: String, second: String) = XrayOutboundPlanner.plan(
+            input(
+                selected = selected,
+                servers = listOf(selected, group(100, first), group(200, second), a, b),
+                routeRules = listOf(RouteRule(outboundTag = "100"), RouteRule(outboundTag = "200")),
+            ),
+        ).observatoryProbeInterval
+
+        // One observatory serves every group: a slow group listed first must not slow a fast one down.
+        assertEquals("15s", planWith("1m", "15s"))
+        assertEquals("15s", planWith("15s", "1m"))
+        assertEquals("90s", planWith("2m", "90s"))
+        assertEquals("30s", planWith("1m", "30s"))
+        assertEquals("1m", planWith("1m", "2m"))
+    }
+
+    @Test
+    fun anUnreadableIntervalDoesNotReplaceAValidOne() {
+        val selected = node(1, "Selected", "selected.example")
+        val a = node(10, "A", "a.example")
+        val group = record(
+            100,
+            StrategyGroup(
+                remarks = "G",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10),
+                probeInterval = "soon",
+            ),
+        )
+        val other = record(
+            200,
+            StrategyGroup(
+                remarks = "H",
+                strategy = StrategyGroupConstants.TYPE_LEAST_PING,
+                proxyServerIds = listOf(10),
+                probeInterval = "20s",
+            ),
+        )
+        val plan = XrayOutboundPlanner.plan(
+            input(
+                selected = selected,
+                servers = listOf(selected, group, other, a),
+                routeRules = listOf(RouteRule(outboundTag = "100"), RouteRule(outboundTag = "200")),
+            ),
+        )
+        assertEquals("20s", plan.observatoryProbeInterval)
+    }
+
+    @Test
     fun disabledShadowrocketRouteStillPlansItsMatchingStrategyAlias() {
         val selected = node(1, "Selected", "selected.example")
         val first = node(10, "Node 10", "node10.example")
