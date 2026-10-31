@@ -10,6 +10,7 @@ import engine.xray.buildXrayDnsConfig
 import engine.xray.XraySniffingOptions
 import engine.xray.toJson
 import engine.xray.XrayFragmentOutboundOptions
+import engine.xray.XrayTcpSockopt
 import engine.xray.XrayMuxOutboundOptions
 import engine.xray.XrayOutboundPlan
 import engine.xray.XrayOutboundRenderingOptions
@@ -61,6 +62,8 @@ data class LocalProxyXrayConfigOptions(
     val mux: XrayMuxOutboundOptions? = null,
     /** Global Fragment overlay for generated proxy outbounds; null when disabled. */
     val fragment: XrayFragmentOutboundOptions? = null,
+    /** TCP keep-alive/user timeout of the direct outbound where the host renders it itself; null adds none. */
+    val tcpSockopt: XrayTcpSockopt? = null,
     /** Sniffing added to the SOCKS inbound by [LocalProxyXrayConfigFactory.buildFromPlan]; null adds none. */
     val sniffing: XraySniffingOptions? = null,
     /** Android's log section (level index, access log, file paths); null keeps a bare `loglevel`. */

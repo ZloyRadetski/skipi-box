@@ -119,4 +119,16 @@ class XrayOutboundSupportTest {
                 .getValue("packets").jsonPrimitive.content,
         )
     }
+
+    @Test
+    fun tcpSockoptComesFromTheTunnelKeepAliveAndUserTimeoutSettings() {
+        assertEquals(XrayTcpSockopt(30, 30, 20_000), xrayTcpSockopt("30", "20000"))
+    }
+
+    @Test
+    fun tcpSockoptCoercesOutOfRangeValuesAndFallsBackOnJunk() {
+        assertEquals(XrayTcpSockopt(300, 300, 120_000), xrayTcpSockopt("9999", "999999"))
+        assertEquals(XrayTcpSockopt(1, 1, 1_000), xrayTcpSockopt("0", "5"))
+        assertEquals(XrayTcpSockopt(60, 60, 10_000), xrayTcpSockopt("abc", ""))
+    }
 }

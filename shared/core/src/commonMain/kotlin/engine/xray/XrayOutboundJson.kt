@@ -75,12 +75,16 @@ fun buildFreedomOutbound(
     tcpSockopt = appState.xrayTcpSockopt(),
 )
 
-private fun AppState.xrayTcpSockopt(): XrayTcpSockopt {
-    val keepAlive = tunTcpKeepAliveInterval.toIntCoercedInOrDefault(
+private fun AppState.xrayTcpSockopt(): XrayTcpSockopt =
+    xrayTcpSockopt(tunTcpKeepAliveInterval, tunTcpUserTimeout)
+
+/** The direct outbound's TCP keep-alive and user timeout from the stored tunnel settings. */
+fun xrayTcpSockopt(tcpKeepAliveInterval: String, tcpUserTimeout: String): XrayTcpSockopt {
+    val keepAlive = tcpKeepAliveInterval.toIntCoercedInOrDefault(
         VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MIN..VpnDefaults.TCP_KEEP_ALIVE_INTERVAL_MAX,
         default = VpnDefaults.TCP_KEEP_ALIVE_INTERVAL.toInt(),
     )
-    val userTimeout = tunTcpUserTimeout.toIntCoercedInOrDefault(
+    val userTimeout = tcpUserTimeout.toIntCoercedInOrDefault(
         VpnDefaults.TCP_USER_TIMEOUT_MIN..VpnDefaults.TCP_USER_TIMEOUT_MAX,
         default = VpnDefaults.TCP_USER_TIMEOUT.toInt(),
     )

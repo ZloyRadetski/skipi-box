@@ -41,38 +41,24 @@ internal fun HevSocks5TunnelConfig.writeConfigFile() {
     }
 }
 
-private fun HevSocks5TunnelConfig.buildHevSocks5TunnelConfigYaml(): String {
-    return buildString {
-        appendLine("tunnel:")
-        tunnelName?.let { name ->
-            appendLine("  name: ${name.toYamlSingleQuotedString()}")
-        }
-        appendLine("  mtu: $mtu")
-        if (enableMultiQueue) {
-            appendLine("  multi-queue: true")
-        }
-        appendLine("  ipv4: ${ipv4Address.toYamlSingleQuotedString()}")
-        ipv6Address?.let { address ->
-            appendLine("  ipv6: ${address.toYamlSingleQuotedString()}")
-        }
-        appendLine("socks5:")
-        appendLine("  port: $socksPort")
-        appendLine("  address: ${socksAddress.toYamlSingleQuotedString()}")
-        appendLine("  udp: 'udp'")
-        if (socksUsername.isNotBlank()) {
-            appendLine("  username: ${socksUsername.toYamlSingleQuotedString()}")
-            appendLine("  password: ${socksPassword.toYamlSingleQuotedString()}")
-        }
-        if (enableTcpFastOpen) {
-            appendLine("  tcp-fastopen: true")
-        }
-        appendLine("misc:")
-        appendLine("  tcp-read-write-timeout: $tcpReadWriteTimeoutMillis")
-        appendLine("  udp-read-write-timeout: $udpReadWriteTimeoutMillis")
-        appendLine("  log-file: ${logPath.toYamlSingleQuotedString()}")
-        appendLine("  log-level: $logLevel")
-    }
-}
+private fun HevSocks5TunnelConfig.buildHevSocks5TunnelConfigYaml(): String = buildHevSocks5TunnelConfigYaml(
+    HevSocks5TunnelYamlSpec(
+        mtu = mtu,
+        ipv4Address = ipv4Address,
+        ipv6Address = ipv6Address,
+        socksAddress = socksAddress,
+        socksPort = socksPort,
+        logPath = logPath,
+        tunnelName = tunnelName,
+        socksUsername = socksUsername,
+        socksPassword = socksPassword,
+        enableMultiQueue = enableMultiQueue,
+        enableTcpFastOpen = enableTcpFastOpen,
+        tcpReadWriteTimeoutMillis = tcpReadWriteTimeoutMillis,
+        udpReadWriteTimeoutMillis = udpReadWriteTimeoutMillis,
+        logLevel = logLevel,
+    ),
+)
 
 internal fun hevSocks5TunnelSocksTargetAddress(localProxyOptions: LocalProxyOptions): String {
     return if (localProxyOptions.listenAddress == NetworkDefaults.IPV4_ANY_ADDRESS) {
@@ -86,6 +72,3 @@ internal fun XrayCoreLogPaths.hevSocks5TunnelLogFile(fileName: String): File {
     return File(logDirectoryPath(), fileName)
 }
 
-private fun String.toYamlSingleQuotedString(): String {
-    return "'${replace("'", "''")}'"
-}
