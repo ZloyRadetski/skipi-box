@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -1617,7 +1619,8 @@ private fun EmptyServerListCard(
     }
 }
 
-/** Paste, Add and a small QR button: the three ways to get the first server without the "+" menu. */
+/** Paste, Add and Scan QR: the three ways to get the first server without the "+" menu. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EmptyServerListActions(
     actions: ProxyHomeEmptyStateActions,
@@ -1625,10 +1628,10 @@ private fun EmptyServerListActions(
     serverKinds: Collection<ProxyHomeServerKind>,
     onAction: (ProxyHomeAction) -> Unit,
 ) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
     ) {
         if (actions.paste) {
             OutlinedButton(onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.Clipboard)) }) {
@@ -1668,9 +1671,10 @@ private fun EmptyServerListActions(
             }
         }
         if (actions.scanQr) {
-            val scanTitle = importSourceTitle(ProxyHomeImportSource.QrCode)
-            IconButton(onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.QrCode)) }) {
-                Icon(Icons.Outlined.QrCodeScanner, contentDescription = scanTitle, modifier = Modifier.size(22.dp))
+            OutlinedButton(onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.QrCode)) }) {
+                Icon(Icons.Outlined.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(SkipiTheme.spacing.small))
+                Text(importSourceTitle(ProxyHomeImportSource.QrCode))
             }
         }
     }
