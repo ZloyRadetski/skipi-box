@@ -76,8 +76,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyConnectionPhase
-import app.skipi.app.home.ConnectedLatencyStep
-import app.skipi.app.home.ConnectedLatencyTapPolicy
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeConnectionMode
@@ -91,7 +89,7 @@ import app.skipi.app.home.ProxyHomeServerTool
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyHomeUiState
-import app.skipi.app.home.connectedLatencyGroupAction
+import app.skipi.app.home.compactPingAction
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
 import app.skipi.ui.components.longPressReorderDragHandle
@@ -280,11 +278,14 @@ fun ProxyHomeScreenContent(
 
     val selectedServer = state.selectedServer
     val hasTestableVisibleServers = state.servers.any { it.canTest }
-    // The live connection is measured, so a server that cannot be pinged on its own still qualifies.
-    val connectionTestServer = selectedServer?.takeIf {
-        canUseHomeAction(state, ProxyHomeActionId.TestConnection)
+    // The compact ping button measures only the selected server: its live connection while the
+    // tunnel is up, otherwise the server on its own.
+    val compactPing = state.compactPingAction()
+    val compactPingEnabled = when (compactPing) {
+        is ProxyHomeAction.TestConnection -> canUseHomeAction(state, ProxyHomeActionId.TestConnection)
+        is ProxyHomeAction.TestServer -> canUseHomeAction(state, ProxyHomeActionId.TestServer)
+        else -> false
     }
-    val connectedLatencyTaps = remember { ConnectedLatencyTapPolicy() }
     val refreshSubscriptionTitle = stringResource(Res.string.home_action_refresh_subscription)
     val refreshingSubscriptionTitle = stringResource(Res.string.home_action_refreshing)
     val searchActionTitle = stringResource(Res.string.home_action_search)
@@ -708,28 +709,15 @@ fun ProxyHomeScreenContent(
                         canToggleTunnel = state.canToggleTunnel && canUseHomeAction(state, ProxyHomeActionId.ToggleTunnel, allowBusy = true),
                         canTestLatency = if (state.isTestingLatency) {
                             canUseHomeAction(state, ProxyHomeActionId.CancelLatencyTests, allowBusy = true)
-                        } else if (state.isRunning) {
-                            connectionTestServer != null
                         } else {
-                            hasTestableVisibleServers && canUseHomeAction(state, ProxyHomeActionId.TestVisibleServers)
+                            compactPingEnabled
                         },
                         showToggleAction = showFloatingPower,
                         showPingAction = showFloatingPower,
                         onToggleRunning = { send(ProxyHomeAction.ToggleTunnel) },
                         onTestLatency = {
                             if (state.isTestingLatency) send(ProxyHomeAction.CancelLatencyTests)
-                            else if (state.isRunning) {
-                                connectionTestServer?.let { server ->
-                                    val testConnection = ProxyHomeAction.TestConnection(server.id)
-                                    when (connectedLatencyTaps.nextStep()) {
-                                        ConnectedLatencyStep.TestConnection -> send(testConnection)
-                                        ConnectedLatencyStep.PingGroup ->
-                                            send(state.connectedLatencyGroupAction() ?: testConnection)
-                                    }
-                                }
-                            } else {
-                                send(ProxyHomeAction.TestAllVisibleServers)
-                            }
+                            else compactPing?.let(send)
                         },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
