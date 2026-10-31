@@ -398,6 +398,9 @@ class ProxyHomeStore(
         ),
     )
     private val transient = MutableStateFlow(ProxyHomeTransientState())
+
+    /** Last catalog projection; runtime-only updates (connect, status, IP) reuse it as is. */
+    private val catalogCache = MutableStateFlow<ProxyHomeCatalogProjection?>(null)
     private val mutableUiState = MutableStateFlow(
         createUiState(initialInput, presentation.value, transient.value),
     )
@@ -591,61 +594,14 @@ class ProxyHomeStore(
         val visibleQuery = local.searchQuery.trim()
         val isSearchActive = source.searchEnabled && visibleQuery.isNotEmpty()
 
-        val filteredServers = if (isSearchActive) {
-            source.servers.filter { server ->
-                (server.searchText ?: server.sortKey ?: server.title)
-                    .contains(visibleQuery, ignoreCase = true)
-            }
-        } else {
-            source.servers
-        }
-
-        val sortedServers = sortServers(filteredServers, source.sortMode)
-        val processedServers = sortedServers.map { server ->
-            val selected = server.id == selectedServerId
-            // The host already marks the selection, so most rows keep their instance instead of being copied.
-            if (server.selected == selected) server else server.copy(selected = selected)
-        }
-
-        val groupBuckets = HashMap<String, ArrayList<ProxyServerSummary>>(source.groups.size)
-        val serverIdToExplicitGroupIds = HashMap<String, MutableList<String>>()
-        val legacyGroupIdToGroupIds = HashMap<String, MutableList<String>>()
-
-        for (group in source.groups) {
-            groupBuckets[group.id] = ArrayList()
-            val serverIds = group.serverIds
-            if (serverIds != null) {
-                for (serverId in serverIds) {
-                    serverIdToExplicitGroupIds.getOrPut(serverId) { ArrayList() }.add(group.id)
-                }
-            } else {
-                legacyGroupIdToGroupIds.getOrPut(group.id) { ArrayList() }.add(group.id)
-            }
-        }
-
-        for (server in processedServers) {
-            val explicitGroups = serverIdToExplicitGroupIds[server.id]
-            if (explicitGroups != null) {
-                for (groupId in explicitGroups) {
-                    groupBuckets[groupId]?.add(server)
-                }
-            }
-            val legacyGroups = server.groupId?.let { legacyGroupIdToGroupIds[it] }
-            if (legacyGroups != null) {
-                for (groupId in legacyGroups) {
-                    groupBuckets[groupId]?.add(server)
-                }
-            }
-        }
-
-        val pages = source.groups.map { group ->
-            ProxyHomePageUiState(
-                group = group,
-                servers = groupBuckets[group.id] ?: emptyList(),
-                subscription = group.subscription,
-                subscriptionExpanded = group.id !in local.collapsedSubscriptionGroupIds,
-            )
-        }
+        val catalog = catalogProjection(
+            source = source,
+            query = if (isSearchActive) visibleQuery else "",
+            selectedServerId = selectedServerId,
+            collapsedGroupIds = local.collapsedSubscriptionGroupIds,
+        )
+        val processedServers = catalog.processedServers
+        val pages = catalog.pages
 
         val selectedPage = pages.firstOrNull { it.group.id == selectedGroupId }
         val projectionServers = selectedPage?.servers ?: if (source.groups.isEmpty()) {
@@ -709,6 +665,87 @@ class ProxyHomeStore(
             busyActions = operations.actionCounts.keys,
             rejectedAction = operations.rejectedAction,
         )
+    }
+
+    /**
+     * Search, sort, selection marking and bucketing depend only on the catalog and the local
+     * presentation, never on tunnel state, so a connect/disconnect keeps the previous result.
+     */
+    private fun catalogProjection(
+        source: ProxyHomeInput,
+        query: String,
+        selectedServerId: String?,
+        collapsedGroupIds: Set<String>,
+    ): ProxyHomeCatalogProjection {
+        catalogCache.value?.let { cached ->
+            if (cached.matches(source, query, selectedServerId, collapsedGroupIds)) return cached
+        }
+
+        val filteredServers = if (query.isNotEmpty()) {
+            source.servers.filter { server ->
+                (server.searchText ?: server.sortKey ?: server.title)
+                    .contains(query, ignoreCase = true)
+            }
+        } else {
+            source.servers
+        }
+
+        val sortedServers = sortServers(filteredServers, source.sortMode)
+        val processedServers = sortedServers.map { server ->
+            val selected = server.id == selectedServerId
+            // The host already marks the selection, so most rows keep their instance instead of being copied.
+            if (server.selected == selected) server else server.copy(selected = selected)
+        }
+
+        val groupBuckets = HashMap<String, ArrayList<ProxyServerSummary>>(source.groups.size)
+        val serverIdToExplicitGroupIds = HashMap<String, MutableList<String>>()
+        val legacyGroupIdToGroupIds = HashMap<String, MutableList<String>>()
+
+        for (group in source.groups) {
+            groupBuckets[group.id] = ArrayList()
+            val serverIds = group.serverIds
+            if (serverIds != null) {
+                for (serverId in serverIds) {
+                    serverIdToExplicitGroupIds.getOrPut(serverId) { ArrayList() }.add(group.id)
+                }
+            } else {
+                legacyGroupIdToGroupIds.getOrPut(group.id) { ArrayList() }.add(group.id)
+            }
+        }
+
+        for (server in processedServers) {
+            val explicitGroups = serverIdToExplicitGroupIds[server.id]
+            if (explicitGroups != null) {
+                for (groupId in explicitGroups) {
+                    groupBuckets[groupId]?.add(server)
+                }
+            }
+            val legacyGroups = server.groupId?.let { legacyGroupIdToGroupIds[it] }
+            if (legacyGroups != null) {
+                for (groupId in legacyGroups) {
+                    groupBuckets[groupId]?.add(server)
+                }
+            }
+        }
+
+        val pages = source.groups.map { group ->
+            ProxyHomePageUiState(
+                group = group,
+                servers = groupBuckets[group.id] ?: emptyList(),
+                subscription = group.subscription,
+                subscriptionExpanded = group.id !in collapsedGroupIds,
+            )
+        }
+        return ProxyHomeCatalogProjection(
+            servers = source.servers,
+            groups = source.groups,
+            sortMode = source.sortMode,
+            query = query,
+            selectedServerId = selectedServerId,
+            collapsedGroupIds = collapsedGroupIds,
+            processedServers = processedServers,
+            pages = pages,
+        ).also { catalogCache.value = it }
     }
 
     private fun sortServers(
@@ -884,4 +921,28 @@ private data class ProxyHomeTransientState(
         val nextCounts = if (count <= 1) actionCounts - id else actionCounts + (id to count - 1)
         return copy(actionCounts = nextCounts)
     }
+}
+
+/** Result of the catalog-dependent part of Home, kept while its inputs stay the same. */
+private class ProxyHomeCatalogProjection(
+    val servers: List<ProxyServerSummary>,
+    val groups: List<ProxyGroupSummary>,
+    val sortMode: ProxyHomeSortMode,
+    val query: String,
+    val selectedServerId: String?,
+    val collapsedGroupIds: Set<String>,
+    val processedServers: List<ProxyServerSummary>,
+    val pages: List<ProxyHomePageUiState>,
+) {
+    fun matches(
+        source: ProxyHomeInput,
+        query: String,
+        selectedServerId: String?,
+        collapsedGroupIds: Set<String>,
+    ): Boolean = sortMode == source.sortMode &&
+        this.query == query &&
+        this.selectedServerId == selectedServerId &&
+        this.collapsedGroupIds == collapsedGroupIds &&
+        (servers === source.servers || servers == source.servers) &&
+        (groups === source.groups || groups == source.groups)
 }
