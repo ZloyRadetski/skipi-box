@@ -6,9 +6,12 @@ package app.skipi.desktop
 import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyServerSummary
+import features.proxy.server.model.VLESS
+import features.proxy.server.model.encodePersistedProxyServer
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.measureTime
 
 class DesktopProxyHomeAvailableActionsTest {
     private val server = ProxyServerSummary(id = "1", title = "One", address = "a:1", protocol = "vless")
@@ -101,5 +104,54 @@ class DesktopProxyHomeAvailableActionsTest {
         assertFalse(ProxyHomeActionId.MoveGroup in one)
         val two = actions(subscriptions = listOf(subscription, DesktopStoredSubscription(id = 8, url = "")))
         assertTrue(ProxyHomeActionId.MoveGroup in two)
+    }
+
+    @Test
+    fun manySubscriptionsWithoutTestableServersStayFast() {
+        val subscriptionCount = 60
+        val perSubscription = 500
+        val subscriptions = (1..subscriptionCount).map { sub ->
+            DesktopStoredSubscription(id = sub, url = "https://sub$sub.example/list", name = "Sub $sub")
+        }
+        val stored = subscriptions.flatMap { sub ->
+            (1..perSubscription).map { index ->
+                DesktopStoredProxyServer(
+                    id = sub.id * 10_000 + index,
+                    subscriptionId = sub.id,
+                    serverJson = VLESS(
+                        remarks = "Node ${sub.id}/$index",
+                        id = "uuid-${sub.id}-$index",
+                        server = "node.example",
+                        port = "443",
+                    ).encodePersistedProxyServer(),
+                )
+            }
+        }
+        val catalog = DesktopProxyGroups.create(
+            DesktopServerLibrary(servers = stored),
+            DesktopSubscriptionLibrary(subscriptions = subscriptions),
+            DesktopProxyGroupOptions(activeTrafficConfigId = null, enableAllProxyGroup = false),
+        )
+        val servers = stored.map { s ->
+            ProxyServerSummary(id = s.id.toString(), title = "t", address = "a", protocol = "vless", canTest = false)
+        }
+        fun run() = desktopProxyHomeAvailableActions(
+            capabilityActions = emptySet(),
+            servers = servers,
+            hasStrategyGroup = false,
+            subscriptions = subscriptions,
+            groupCatalog = catalog,
+            canToggleTunnel = true,
+            hasCancelableLatencyTests = false,
+            pingingSubscriptionIds = emptySet(),
+            updatingSubscription = false,
+            sortMode = ProxyHomeSortMode.Default,
+        )
+
+        val result = run()
+        val elapsed = measureTime { run() }
+
+        assertFalse(ProxyHomeActionId.PingSubscription in result)
+        assertTrue(elapsed.inWholeMilliseconds < 300, "available actions took $elapsed for ${servers.size} servers")
     }
 }

@@ -90,11 +90,13 @@ internal fun desktopProxyHomeAvailableActions(
         add(ProxyHomeActionId.TestVisibleServers)
         add(ProxyHomeActionId.TestGroup)
     }
+    val canTestById = HashMap<String, Boolean>(servers.size)
+    for (server in servers) canTestById.putIfAbsent(server.id, server.canTest)
     val pingableSubscription = subscriptions.any { subscription ->
         subscription.url.isNotBlank() &&
             groupCatalog.group(DesktopProxyGroupIds.subscription(subscription.id))
                 ?.serverIds
-                ?.any { serverId -> servers.firstOrNull { it.id == serverId.toString() }?.canTest == true } == true
+                ?.any { serverId -> canTestById[serverId.toString()] == true } == true
     }
     if (pingableSubscription && pingingSubscriptionIds.isEmpty()) add(ProxyHomeActionId.PingSubscription)
     if (subscriptions.any { it.url.isNotBlank() } && !updatingSubscription) {

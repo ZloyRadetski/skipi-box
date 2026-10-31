@@ -37,11 +37,11 @@ internal fun projectDesktopProxyHomeProjection(
     refreshingSubscriptionIds: Set<Int>,
     pingingSubscriptionIds: Set<Int>,
 ): DesktopProxyHomeProjection {
+    val subscriptionById = HashMap<Int, DesktopStoredSubscription>(subscriptionLibrary.subscriptions.size)
+    for (candidate in subscriptionLibrary.subscriptions) subscriptionById.putIfAbsent(candidate.id, candidate)
     val groups = groupCatalog.groups.map { group ->
         val subscriptionId = group.id.removePrefix("subscription:").toIntOrNull()
-        val subscription = subscriptionId?.let { id ->
-            subscriptionLibrary.subscriptions.firstOrNull { it.id == id }
-        }
+        val subscription = subscriptionId?.let(subscriptionById::get)
         val isPersistedGroup = subscription != null
         val kind = when (group.kind) {
             DesktopProxyGroupKind.All -> ProxyHomeGroupKind.All
@@ -86,6 +86,14 @@ internal fun projectDesktopProxyHomeProjection(
         )
     }
     val visibleServerIds = groupCatalog.groups.flatMapTo(linkedSetOf()) { group -> group.serverIds }
+    // The first non-All group that lists a server, and the first node of an id, as a linear scan would find them.
+    val firstGroupByServerId = HashMap<Int, DesktopProxyGroup>(visibleServerIds.size)
+    for (candidate in groupCatalog.groups) {
+        if (candidate.kind == DesktopProxyGroupKind.All) continue
+        for (serverId in candidate.serverIds) firstGroupByServerId.putIfAbsent(serverId, candidate)
+    }
+    val nodeById = HashMap<Int, ProxyServerPresentationNode>(presentationNodes.size)
+    for (node in presentationNodes) nodeById.putIfAbsent(node.id, node)
     val servers = decodedServers.mapNotNull { (stored, server) ->
         val current = server ?: return@mapNotNull null
         if (stored.id !in visibleServerIds) return@mapNotNull null
@@ -97,10 +105,8 @@ internal fun projectDesktopProxyHomeProjection(
             serverId = stored.id,
             isStrategyGroup = current is StrategyGroup,
         )
-        val group = groupCatalog.groups.firstOrNull { candidate ->
-            candidate.kind != DesktopProxyGroupKind.All && stored.id in candidate.serverIds
-        }
-        val node = presentationNodes.firstOrNull { it.id == stored.id }
+        val group = firstGroupByServerId[stored.id]
+        val node = nodeById[stored.id]
         val address = node?.let { presentationFormatter.displayOf(it, presentationNodes).summary } ?: info.address
         val latencyResult = latencyByServerId[stored.id]
         ProxyServerSummary(
