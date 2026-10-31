@@ -150,6 +150,8 @@ data class DesktopAppSettings(
     val autoConnectOnAppOpen: Boolean = false,
     /** Starts the application hidden when the user logs in; the Desktop counterpart of Android's boot start. */
     val launchOnLogin: Boolean = false,
+    /** The close button takes the window away and keeps SKIPI running; this machine's choice, not backed up. */
+    val closeToBackground: Boolean = false,
 
     val languageTag: String? = null,
     val hapticsEnabled: Boolean = true,

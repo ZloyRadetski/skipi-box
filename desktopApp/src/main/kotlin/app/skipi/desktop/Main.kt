@@ -27,6 +27,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -152,30 +154,14 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
     val escapeHandler = remember { DesktopEscapeHandler() }
     // The start of the connection lives here, above every screen: Home is rebuilt on each visit.
     val connectionClock = remember { ConnectionClock() }
-    Window(
-        state = windowState,
-        onKeyEvent = { event ->
-            isEscapeBack(event.key, event.type) && escapeHandler.onEscape()
-        },
-        // Closing is handled from the composable below so it can serialize with an
-        // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
-        onCloseRequest = { tunnel.closeRequested = true },
-        title = "SKIPI",
-        icon = org.jetbrains.compose.resources.painterResource(Res.drawable.ic_skipi_logo),
-    ) {
-                val homeSortSaveMutex = remember { Mutex() }
-        var backgroundConnected by remember { mutableStateOf(false) }
-        CompositionLocalProvider(
-            LocalDesktopThemeMode provides desktopSettings.themeMode,
-            LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
-        ) {
-            DesktopAppTheme {
-                DesktopWindowChrome(
-                    background = app.skipi.ui.theme.SkipiTheme.colors.background,
-                    isDark = app.skipi.ui.theme.SkipiTheme.colors.isDark,
-                )
-                DesktopAppBackground(settings = desktopSettings, isConnected = backgroundConnected) {
-                Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent) {
+    val homeSortSaveMutex = remember { Mutex() }
+    var backgroundConnected by remember { mutableStateOf(false) }
+    // With the background choice the window, and the GPU and UI memory it holds, exists only while it is shown.
+    var windowShown by remember { mutableStateOf(desktopWindowShownAtStart(hidden, desktopSettings.closeToBackground)) }
+    var shownWindow by remember { mutableStateOf<java.awt.Window?>(null) }
+    // State and background work below outlive the window. Strings resolve through LocalDensity, which only a window
+    // provides; strings do not depend on it, so a plain one lets them resolve while no window exists.
+    CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 val subscriptionScope = rememberCoroutineScope()
                 val duplicatesDeletedTemplate = stringResource(Res.string.proxy_server_list_duplicates_deleted)
                 val noDuplicatesMessage = stringResource(Res.string.proxy_server_list_no_duplicates)
@@ -911,47 +897,6 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     }
                 }
 
-                Scaffold(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                    bottomBar = {
-                        if (desktopSettings.onboardingCompleted) DesktopBottomNavigation(
-                            sizeSetting = desktopSettings.bottomBarSize ?: 1,
-                            selected = currentSection,
-                            onSelect = { currentSection = it },
-                        )
-                    },
-                ) { contentPadding ->
-                    val desktopBackupHost = remember {
-                        object : DesktopBackupHost {
-                            override fun currentUserData() = DesktopUserData(
-                                settings = latestDesktopSettings,
-                                servers = latestServerLibrary,
-                                subscriptions = subscriptionLibrary,
-                                configs = latestConfigLibrary,
-                            )
-
-                            override suspend fun stopTunnel(): Result<Unit> = tunnel.stopForBackup()
-
-                            override suspend fun apply(userData: DesktopUserData): Result<Unit> {
-                                val saved = withContext(Dispatchers.IO) {
-                                    runCatching {
-                                        DesktopServerLibraries.saveDefault(userData.servers).getOrThrow()
-                                        DesktopSubscriptionLibraries.saveDefault(userData.subscriptions).getOrThrow()
-                                        DesktopConfigLibraries.saveDefault(userData.configs).getOrThrow()
-                                        DesktopSettingsLibraries.saveDefault(userData.settings).getOrThrow()
-                                    }
-                                }
-                                saved.onSuccess {
-                                    serverLibrary = userData.servers
-                                    subscriptionLibrary = userData.subscriptions
-                                    configLibrary = userData.configs
-                                    desktopSettings = userData.settings
-                                    desktopCoreLogs.pruneOlderThanDays(userData.settings.logRetentionDays)
-                                }
-                                return saved
-                            }
-                        }
-                    }
                 val desktopPrepareSubscription: suspend (DesktopSubscriptionInstallUri) -> Result<String> = { install ->
                                 try {
                                     val installed = desktopSubscriptionRefreshCoordinator.install(install)
@@ -1003,8 +948,9 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                         when (val link = parseSkipiDeepLinkOrNull(raw)) {
                             null -> DesktopLogger.info("Links", "Ignored unknown link $raw")
                             SkipiDeepLink.Open -> {
+                                windowShown = true
                                 windowState.isMinimized = false
-                                window.toFront()
+                                shownWindow?.toFront()
                             }
                             SkipiDeepLink.Close -> tunnel.closeRequested = true
                             SkipiDeepLink.Connect, SkipiDeepLink.Disconnect, SkipiDeepLink.Toggle -> {
@@ -1084,6 +1030,78 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             proxyServerRepository = proxyServerRepository,
                             toggleTunnel = desktopToggleTunnel,
                         )
+                    }
+    if (windowShown) Window(
+        state = windowState,
+        onKeyEvent = { event ->
+            isEscapeBack(event.key, event.type) && escapeHandler.onEscape()
+        },
+        // Closing is handled from the composable below so it can serialize with an
+        // in-flight connect/reconnect and keep Core alive if proxy restoration fails.
+        onCloseRequest = {
+            when (desktopWindowCloseAction(desktopSettings)) {
+                DesktopWindowCloseAction.ExitApplication -> tunnel.closeRequested = true
+                DesktopWindowCloseAction.HideToBackground -> windowShown = false
+            }
+        },
+        title = "SKIPI",
+        icon = org.jetbrains.compose.resources.painterResource(Res.drawable.ic_skipi_logo),
+    ) {
+        DisposableEffect(window) {
+            shownWindow = window
+            onDispose { shownWindow = null }
+        }
+        CompositionLocalProvider(
+            LocalDesktopThemeMode provides desktopSettings.themeMode,
+            LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
+        ) {
+            DesktopAppTheme {
+                DesktopWindowChrome(
+                    background = app.skipi.ui.theme.SkipiTheme.colors.background,
+                    isDark = app.skipi.ui.theme.SkipiTheme.colors.isDark,
+                )
+                DesktopAppBackground(settings = desktopSettings, isConnected = backgroundConnected) {
+                Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent) {
+                Scaffold(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    bottomBar = {
+                        if (desktopSettings.onboardingCompleted) DesktopBottomNavigation(
+                            sizeSetting = desktopSettings.bottomBarSize ?: 1,
+                            selected = currentSection,
+                            onSelect = { currentSection = it },
+                        )
+                    },
+                ) { contentPadding ->
+                    val desktopBackupHost = remember {
+                        object : DesktopBackupHost {
+                            override fun currentUserData() = DesktopUserData(
+                                settings = latestDesktopSettings,
+                                servers = latestServerLibrary,
+                                subscriptions = subscriptionLibrary,
+                                configs = latestConfigLibrary,
+                            )
+
+                            override suspend fun stopTunnel(): Result<Unit> = tunnel.stopForBackup()
+
+                            override suspend fun apply(userData: DesktopUserData): Result<Unit> {
+                                val saved = withContext(Dispatchers.IO) {
+                                    runCatching {
+                                        DesktopServerLibraries.saveDefault(userData.servers).getOrThrow()
+                                        DesktopSubscriptionLibraries.saveDefault(userData.subscriptions).getOrThrow()
+                                        DesktopConfigLibraries.saveDefault(userData.configs).getOrThrow()
+                                        DesktopSettingsLibraries.saveDefault(userData.settings).getOrThrow()
+                                    }
+                                }
+                                saved.onSuccess {
+                                    serverLibrary = userData.servers
+                                    subscriptionLibrary = userData.subscriptions
+                                    configLibrary = userData.configs
+                                    desktopSettings = userData.settings
+                                    desktopCoreLogs.pruneOlderThanDays(userData.settings.logRetentionDays)
+                                }
+                                return saved
+                            }
+                        }
                     }
                     if (!desktopSettings.onboardingCompleted) {
                         val onboardingLocale = remember { DesktopApplicationLocale(java.util.Locale.getDefault(), java.util.Locale::setDefault) }
@@ -1624,6 +1642,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
         }
     }
 }
+    }
 }
 
 @Composable

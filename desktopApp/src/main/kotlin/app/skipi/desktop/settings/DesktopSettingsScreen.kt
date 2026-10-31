@@ -540,6 +540,7 @@ private fun DesktopGeneralSettings(
         enableResourceFileNotifications = false,
         enableDeletionConfirmation = settings.confirmDeletion,
         enableBroadcastControl = false,
+        closeToBackground = settings.closeToBackground,
     )
     SkipiGeneralSettingsScreen(
         state = state,
@@ -554,6 +555,7 @@ private fun DesktopGeneralSettings(
                 languageTag = languageTag,
                 hapticsEnabled = updated.enableHaptics,
                 confirmDeletion = updated.enableDeletionConfirmation,
+                closeToBackground = updated.closeToBackground,
             )
             onPersist(next, "Общие настройки сохранены.")
             next.toGeneralSettingsState()
@@ -590,6 +592,7 @@ private fun DesktopAppSettings.toGeneralSettingsState() = GeneralSettingsState(
     enableResourceFileNotifications = false,
     enableDeletionConfirmation = confirmDeletion,
     enableBroadcastControl = false,
+    closeToBackground = closeToBackground,
 )
 
 @Composable

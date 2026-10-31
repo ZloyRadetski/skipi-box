@@ -32,8 +32,26 @@ class GeneralSettingsCapabilitiesTest {
                 GeneralSettingsControl.DeletionConfirmation,
                 GeneralSettingsControl.UrlSchemes,
                 GeneralSettingsControl.BackupAndReset,
+                GeneralSettingsControl.CloseToBackground,
             ),
             GeneralSettingsCapabilities.Desktop.visibleControls,
+        )
+    }
+
+    @Test
+    fun closingToTheBackgroundIsADesktopWindowChoiceAndOffByDefault() {
+        assertEquals(false, GeneralSettingsControl.CloseToBackground in GeneralSettingsCapabilities().visibleControls)
+        assertEquals(
+            false,
+            GeneralSettingsState(
+                languageMode = GeneralSettingsValues.LanguageSystem,
+                enableHaptics = true,
+                enableTrafficStatsNotification = false,
+                trafficStatsNotificationRefreshIntervalSeconds = GeneralSettingsValues.MinTrafficRefreshSeconds,
+                enableResourceFileNotifications = false,
+                enableDeletionConfirmation = true,
+                enableBroadcastControl = false,
+            ).closeToBackground,
         )
     }
 }

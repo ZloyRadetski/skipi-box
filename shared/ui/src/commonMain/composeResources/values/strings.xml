@@ -185,6 +185,8 @@
     <string name="connection_metric_ram_format">RAM %1$s</string>
     <string name="settings_deletion_confirmation">Deletion confirmation</string>
     <string name="settings_deletion_confirmation_summary">Require confirmation before deleting servers, routes, groups, or resources</string>
+    <string name="settings_close_to_background">Keep running when closed</string>
+    <string name="settings_close_to_background_summary">Closing the window frees its memory, the connection stays on. Start SKIPI again or open skipi://open to bring it back; skipi://close quits</string>
     <string name="settings_subscription_fetch_timeout">Subscription timeout</string>
     <string name="settings_subscription_fetch_timeout_summary">Maximum wait time for server response during subscription update</string>
     <string name="unit_seconds_short">s</string>

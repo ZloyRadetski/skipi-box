@@ -808,6 +808,8 @@
     <string name="common_update">Обновить</string>
     <string name="settings_deletion_confirmation">Подтверждение удаления</string>
     <string name="settings_deletion_confirmation_summary">Запрашивать подтверждение перед удалением серверов, правил, групп или ресурсов</string>
+    <string name="settings_close_to_background">Работать в фоне после закрытия</string>
+    <string name="settings_close_to_background_summary">Закрытие окна освобождает его память, подключение остаётся. Окно вернётся при повторном запуске SKIPI или по skipi://open; skipi://close завершает работу</string>
     <string name="settings_subscription_fetch_timeout">Таймаут ожидания подписки</string>
     <string name="settings_subscription_fetch_timeout_summary">Максимальное время ожидания ответа сервера при обновлении подписки</string>
     <string name="unit_seconds_short">сек</string>

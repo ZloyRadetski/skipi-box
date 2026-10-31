@@ -145,6 +145,8 @@
     <string name="connection_metric_ram_format">内存 %1$s</string>
     <string name="settings_deletion_confirmation">删除确认</string>
     <string name="settings_deletion_confirmation_summary">删除服务器、路由、组或资源之前需要确认</string>
+    <string name="settings_close_to_background">关闭后在后台运行</string>
+    <string name="settings_close_to_background_summary">关闭窗口会释放其内存，连接保持不变。再次启动 SKIPI 或打开 skipi://open 即可恢复；skipi://close 退出</string>
     <string name="settings_subscription_fetch_timeout">订阅超时</string>
     <string name="settings_subscription_fetch_timeout_summary">订阅更新期间服务器响应的最长等待时间</string>
     <string name="unit_seconds_short">s</string>

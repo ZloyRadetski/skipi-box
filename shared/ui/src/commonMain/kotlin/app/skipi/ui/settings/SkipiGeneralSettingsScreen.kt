@@ -67,6 +67,7 @@ data class GeneralSettingsState(
     val enableResourceFileNotifications: Boolean,
     val enableDeletionConfirmation: Boolean,
     val enableBroadcastControl: Boolean,
+    val closeToBackground: Boolean = false,
 )
 
 object GeneralSettingsValues {
@@ -91,6 +92,7 @@ enum class GeneralSettingsControl {
     UrlSchemes,
     BroadcastControl,
     BackupAndReset,
+    CloseToBackground,
 }
 
 /** Host operations that are available alongside the portable general settings. */
@@ -103,6 +105,8 @@ data class GeneralSettingsCapabilities(
     val urlSchemes: Boolean = true,
     val broadcastControl: Boolean = true,
     val backupAndReset: Boolean = true,
+    /** A window that can go away while the app keeps running; Android has no such window. */
+    val closeToBackground: Boolean = false,
 ) {
     val visibleControls: Set<GeneralSettingsControl>
         get() = buildSet {
@@ -114,6 +118,7 @@ data class GeneralSettingsCapabilities(
             if (urlSchemes) add(GeneralSettingsControl.UrlSchemes)
             if (broadcastControl) add(GeneralSettingsControl.BroadcastControl)
             if (backupAndReset) add(GeneralSettingsControl.BackupAndReset)
+            if (closeToBackground) add(GeneralSettingsControl.CloseToBackground)
         }
 
     companion object {
@@ -123,6 +128,7 @@ data class GeneralSettingsCapabilities(
             trafficStatsNotifications = false,
             resourceFileNotifications = false,
             broadcastControl = false,
+            closeToBackground = true,
         )
     }
 }
@@ -276,7 +282,8 @@ fun SkipiGeneralSettingsScreen(
 
                 if (
                     GeneralSettingsControl.UrlSchemes in visibleControls ||
-                    GeneralSettingsControl.BroadcastControl in visibleControls
+                    GeneralSettingsControl.BroadcastControl in visibleControls ||
+                    GeneralSettingsControl.CloseToBackground in visibleControls
                 ) {
                     item(key = "general_integration") {
                         SmallTitle(text = stringResource(Res.string.settings_category_integration))
@@ -295,6 +302,16 @@ fun SkipiGeneralSettingsScreen(
                                     checked = state.enableBroadcastControl,
                                     onCheckedChange = { enabled ->
                                         onSettingsChange { it.copy(enableBroadcastControl = enabled) }
+                                    },
+                                )
+                            }
+                            if (GeneralSettingsControl.CloseToBackground in visibleControls) {
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_close_to_background),
+                                    summary = stringResource(Res.string.settings_close_to_background_summary),
+                                    checked = state.closeToBackground,
+                                    onCheckedChange = { enabled ->
+                                        onSettingsChange { it.copy(closeToBackground = enabled) }
                                     },
                                 )
                             }

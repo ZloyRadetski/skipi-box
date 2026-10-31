@@ -145,6 +145,8 @@
     <string name="connection_metric_ram_format">رم %1$s</string>
     <string name="settings_deletion_confirmation">تایید حذف</string>
     <string name="settings_deletion_confirmation_summary">قبل از حذف سرورها، مسیرها، گروه‌ها یا منابع به تأیید نیاز دارید</string>
+    <string name="settings_close_to_background">اجرا در پس‌زمینه پس از بستن</string>
+    <string name="settings_close_to_background_summary">بستن پنجره حافظه آن را آزاد می‌کند و اتصال برقرار می‌ماند. با اجرای دوباره SKIPI یا skipi://open برمی‌گردد؛ skipi://close خارج می‌شود</string>
     <string name="settings_subscription_fetch_timeout">پایان زمان اشتراک</string>
     <string name="settings_subscription_fetch_timeout_summary">حداکثر زمان انتظار برای پاسخ سرور در طول به‌روزرسانی اشتراک</string>
     <string name="unit_seconds_short">س</string>
