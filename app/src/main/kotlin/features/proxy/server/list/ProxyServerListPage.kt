@@ -650,19 +650,14 @@ fun ProxyServerListPage(
     )
 
     // Selection-independent: a swipe or a keystroke must not rebuild the Home projection.
-    val homeGroupState = remember(
-        proxyListState,
-        allGroupName,
-        defaultGroupName,
-        autoBalancerGroupName,
-    ) {
-        proxyServerListHomeGroups(
-            state = proxyListState,
-            allGroupName = allGroupName,
-            defaultGroupName = defaultGroupName,
-            autoBalancerGroupName = autoBalancerGroupName,
-        )
-    }
+    // Starting the VPN changes runtime fields of the state several times; none of them may regroup the servers.
+    val homeCatalogCache = remember { ProxyHomeCatalogCache() }
+    val homeGroupState = homeCatalogCache.homeGroups(
+        state = proxyListState,
+        allGroupName = allGroupName,
+        defaultGroupName = defaultGroupName,
+        autoBalancerGroupName = autoBalancerGroupName,
+    )
     // Selection-dependent grouping is needed only when an action runs, so it is built on demand.
     fun groupStateForActions() = proxyServerListGroups(
         state = proxyListState,
@@ -740,13 +735,18 @@ fun ProxyServerListPage(
     }
     val directName = stringResource(R.string.routing_outbound_direct)
     val blockName = stringResource(R.string.routing_outbound_block)
-    val activeTunnelTitle = remember(appState, activeTunnelSample, directName, blockName) {
-        appState.activeTunnelTargetDisplayName(
-            runtime = activeTunnelSample?.runtime,
-            activeOutboundTag = activeTunnelSample?.outboundTag,
-            directName = directName,
-            blockName = blockName,
-        )
+    // Only shown while the tunnel runs, and resolving it applies the active profile to every server.
+    val activeTunnelTitle = remember(appState, activeTunnelSample, directName, blockName, proxyRunning) {
+        if (!proxyRunning) {
+            ""
+        } else {
+            appState.activeTunnelTargetDisplayName(
+                runtime = activeTunnelSample?.runtime,
+                activeOutboundTag = activeTunnelSample?.outboundTag,
+                directName = directName,
+                blockName = blockName,
+            )
+        }
     }
     val homeInput = remember(
         appState,
@@ -762,17 +762,24 @@ fun ProxyServerListPage(
         activeTunnelTitle,
         connectionTestingServerId,
     ) {
+        val refreshingIds = refreshingSubscriptionGroupIds + subscriptionRefreshBatchProgress.refreshingSubscriptionIds
         appState.toProxyHomeInput(
             groupState = homeGroupState,
             tunnelSnapshot = tunnelSnapshot,
             tunnelBusy = serviceOperationInProgress,
             isTestingLatency = proxyListState.proxyServers.any { it.isTestingLatency },
-            refreshingSubscriptionGroupIds = refreshingSubscriptionGroupIds +
-                subscriptionRefreshBatchProgress.refreshingSubscriptionIds,
+            refreshingSubscriptionGroupIds = refreshingIds,
             pingingSubscriptionGroupIds = pingingGroupIds,
             presentationFormatter = homeServerSummaryFormatter,
             runtimeOutboundMetric = runtimeOutboundMetric,
             tunnelIp = tunnelIp,
+            catalog = homeCatalogCache.catalog(
+                appState = appState,
+                groupState = homeGroupState,
+                refreshing = refreshingIds,
+                pinging = pingingGroupIds,
+                formatter = homeServerSummaryFormatter,
+            ),
         ).let { input ->
             if (proxyRunning) input.copy(selectedServerTitle = activeTunnelTitle) else input
         }.let { input ->

@@ -34,18 +34,21 @@ import features.proxy.server.model.getTransportDisplay
 import features.subscription.DefaultSubscriptionGroupId
 import platform.TunnelSnapshot
 
-/** Maps Android's persisted/runtime state into the platform-neutral Home input. */
-internal fun AppState.toProxyHomeInput(
+/**
+ * The part of the Home input that costs a pass over every server: row summaries and group
+ * memberships. It depends on the catalog and the selection, never on tunnel state.
+ */
+internal class ProxyHomeCatalog(
+    val servers: List<ProxyServerSummary>,
+    val groups: List<ProxyGroupSummary>,
+)
+
+internal fun AppState.toProxyHomeCatalog(
     groupState: ProxyServerListGroups,
-    tunnelSnapshot: TunnelSnapshot,
-    tunnelBusy: Boolean,
-    isTestingLatency: Boolean,
     refreshingSubscriptionGroupIds: Set<Int> = emptySet(),
     pingingSubscriptionGroupIds: Set<Int> = emptySet(),
     presentationFormatter: ProxyServerListItemTextFormatter? = null,
-    runtimeOutboundMetric: String? = null,
-    tunnelIp: ProxyHomeTunnelIp? = null,
-): ProxyHomeInput {
+): ProxyHomeCatalog {
     val selectedServerId = selectedProxyServerId
     // Shared Home owns presentation sorting. Keep canonical remarks in sortKey below so
     // flag-stripped display titles cannot change the platform's name-sort order.
@@ -86,6 +89,31 @@ internal fun AppState.toProxyHomeInput(
             kind = kind,
         )
     }
+    return ProxyHomeCatalog(servers = serverSummaries, groups = groups)
+}
+
+/** Maps Android's persisted/runtime state into the platform-neutral Home input. */
+internal fun AppState.toProxyHomeInput(
+    groupState: ProxyServerListGroups,
+    tunnelSnapshot: TunnelSnapshot,
+    tunnelBusy: Boolean,
+    isTestingLatency: Boolean,
+    refreshingSubscriptionGroupIds: Set<Int> = emptySet(),
+    pingingSubscriptionGroupIds: Set<Int> = emptySet(),
+    presentationFormatter: ProxyServerListItemTextFormatter? = null,
+    runtimeOutboundMetric: String? = null,
+    tunnelIp: ProxyHomeTunnelIp? = null,
+    catalog: ProxyHomeCatalog = toProxyHomeCatalog(
+        groupState = groupState,
+        refreshingSubscriptionGroupIds = refreshingSubscriptionGroupIds,
+        pingingSubscriptionGroupIds = pingingSubscriptionGroupIds,
+        presentationFormatter = presentationFormatter,
+    ),
+): ProxyHomeInput {
+    val selectedServerId = selectedProxyServerId
+    val visibleServers = groupState.visibleServers
+    val serverSummaries = catalog.servers
+    val groups = catalog.groups
     val selectedServer = proxyServers.firstOrNull { server -> server.id == selectedServerId }
     return ProxyHomeInputSnapshot(
         tunnelSnapshot = tunnelSnapshot,
