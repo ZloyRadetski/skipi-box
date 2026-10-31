@@ -5,13 +5,16 @@ package features.subscription
 
 import app.ProjectInfo
 
-val DefaultSubscriptionUserAgent = "SKIPI/${ProjectInfo.VERSION_NAME}/Android"
+val DefaultSubscriptionUserAgent = "SKIPI/${ProjectInfo.VERSION_NAME}/$SkipiUserAgentPlatform"
 const val ClashMetaSubscriptionUserAgent = "clash.meta"
 const val FlClashXSubscriptionUserAgent = "FlClash X/v0.4.2 Platform/android"
 
+private val SkipiUserAgentPlatforms = listOf("Android", "Desktop")
+
 fun isSkipiUserAgent(userAgent: String): Boolean {
     val trimmed = userAgent.trim()
-    return trimmed.isBlank() || (trimmed.startsWith("SKIPI/") && trimmed.endsWith("/Android"))
+    return trimmed.isBlank() ||
+        (trimmed.startsWith("SKIPI/", ignoreCase = true) && SkipiUserAgentPlatforms.any { trimmed.endsWith("/$it") })
 }
 
 fun normalizeSkipiUserAgent(userAgent: String): String {

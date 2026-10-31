@@ -144,7 +144,7 @@ class DesktopBackupTest {
         assertEquals("secret", s.localProxyPassword)
         assertEquals(45, s.subscriptionFetchTimeoutSeconds)
         assertEquals("http://ping.example/generate_204", s.subscriptionPingUrl)
-        assertEquals(listOf("agent/1"), s.subscriptionUserAgents)
+        assertEquals(listOf(features.subscription.DefaultSubscriptionUserAgent, "agent/1"), s.subscriptionUserAgents)
         assertFalse(s.sendDeviceHeaders)
         assertEquals("debug", s.coreLogLevel)
         assertTrue(s.enableAccessLog)

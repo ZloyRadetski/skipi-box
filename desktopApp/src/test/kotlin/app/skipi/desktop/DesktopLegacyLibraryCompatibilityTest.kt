@@ -27,7 +27,7 @@ class DesktopLegacyLibraryCompatibilityTest {
             assertEquals(23_457, loaded.localHttpProxyPort)
             assertEquals("0.0.0.0", loaded.localProxyListenAddress)
             assertEquals("info", loaded.coreLogLevel)
-            assertEquals("Legacy desktop agent", loaded.subscriptionUserAgent)
+            assertEquals(features.subscription.DefaultSubscriptionUserAgents, loaded.subscriptionUserAgents)
             assertEquals(45, loaded.subscriptionFetchTimeoutSeconds)
             assertEquals(DesktopThemeMode.Amoled, loaded.themeMode)
             assertTrue(loaded.compactHome)

@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
+
 import features.subscription.SubscriptionInstallSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,7 +21,7 @@ class DesktopSubscriptionClipboardInstallTest {
             DesktopSubscriptionInstallUri(
                 name = "SKIPI subscription",
                 url = "https://example.test/sub?token=a+b#remote",
-                userAgent = DefaultDesktopSubscriptionUserAgent,
+                userAgent = DefaultSubscriptionUserAgent,
                 source = SubscriptionInstallSource.RawHttp,
             ),
             install,

@@ -54,9 +54,10 @@ class DesktopNetworkAutomationTest {
     }
 
     @Test
-    fun settingsOverviewOffersNetworkAutomationButAndroidsDefaultDoesNot() {
-        assertTrue(SkipiSettingsDestination.NetworkAutomation in desktopSettingsVisibleDestinations())
-        // Android reaches the page from its VPN settings, so its home screen must not list it.
+    fun settingsOverviewHasNoNetworkAutomationSectionLikeAndroid() {
+        assertFalse(SkipiSettingsDestination.NetworkAutomation in desktopSettingsVisibleDestinations())
+        assertFalse(SkipiSettingsDestination.NetworkAutomation in desktopSettingsVisibleDestinations(vpnPage = true))
+        // Like Android, the page is reached from the VPN settings only.
         assertFalse(
             SkipiSettingsDestination.NetworkAutomation in
                 SkipiSettingsHomeState("v", "1500", "1080", null, androidx.compose.ui.graphics.Color.Unspecified)

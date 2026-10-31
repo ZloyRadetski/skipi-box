@@ -78,4 +78,4 @@ internal fun applyDesktopConfigEditorSave(
 }
 
 internal fun versionedDesktopProfileResourceUserAgent(versionName: String): String =
-    "Skipi/$versionName/Desktop"
+    "SKIPI/$versionName/Desktop"

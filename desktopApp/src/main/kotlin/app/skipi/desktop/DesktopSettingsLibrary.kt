@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgents
+import features.subscription.normalizeSkipiUserAgents
 import features.networkautomation.model.NetworkAutomationRule
 import engine.xray.DefaultFragmentInterval
 import engine.xray.DefaultFragmentLength
@@ -58,14 +60,12 @@ data class DesktopAppSettings(
     val localProxyUsername: String = "",
     val localProxyPassword: String = "",
     val coreLogLevel: String = "error",
-    val subscriptionUserAgent: String = DefaultDesktopSubscriptionUserAgent,
     val subscriptionFetchTimeoutSeconds: Int = 30,
     val subscriptionPingMode: Int = SubscriptionPingModeHttp,
     val subscriptionPingUrl: String = NetworkDefaults.CONNECTIVITY_CHECK_URL,
     val subscriptionPingTimeoutMillis: String = "5000",
     val subscriptionPingConcurrency: Int = 8,
-    /** Separate from the single Desktop fetch fallback in [subscriptionUserAgent]. */
-    val subscriptionUserAgents: List<String> = emptyList(),
+    val subscriptionUserAgents: List<String> = DefaultSubscriptionUserAgents,
     val enableSubscriptionExpiryNotifications: Boolean = false,
     val subscriptionExpiryReminders: List<SubscriptionExpiryReminder> = emptyList(),
     val themeMode: DesktopThemeMode = DesktopThemeMode.Dark,
@@ -242,7 +242,7 @@ internal fun DesktopAppSettings.normalized(
         useSystemProxy = effectiveSystemProxy,
         useWindowsSystemProxy = effectiveSystemProxy,
         coreLogLevel = coreLogLevel.trim().lowercase().takeIf { it in DesktopCoreLogLevels } ?: "error",
-        subscriptionUserAgent = subscriptionUserAgent.trim().ifBlank { DefaultDesktopSubscriptionUserAgent },
+        subscriptionUserAgents = normalizeSkipiUserAgents(subscriptionUserAgents.ifEmpty { DefaultSubscriptionUserAgents }),
         subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(10, 120),
         proxyServerListColumns = proxyServerListColumns.coerceIn(1, 3),
         logRetentionDays = logRetentionDays.takeIf { it in DesktopLogRetentionDays } ?: DefaultLogRetentionDays,

@@ -730,8 +730,6 @@ private fun DesktopSubscriptionSettings(
     contentPadding: PaddingValues,
 ) {
     var draft by remember(settings) { mutableStateOf(settings) }
-    var userAgent by remember { mutableStateOf(settings.subscriptionUserAgent) }
-    val hwid = remember(settings.installationUuid) { DesktopDeviceIdentity.computeHwid(settings.installationUuid) }
     LaunchedEffect(settings) { draft = settings }
 
     SkipiSubscriptionSettingsScreen(
@@ -776,25 +774,6 @@ private fun DesktopSubscriptionSettings(
             pingSettings = true,
         ),
         platformContent = {
-            SkipiSettingsGroup(title = "ЗАПАСНОЙ USER-AGENT И УСТРОЙСТВО") {
-                SkipiSettingsTextField(
-                    value = userAgent,
-                    onValueChange = { text ->
-                        userAgent = text
-                        onPersist(
-                            draft.copy(subscriptionUserAgent = text.trim().ifBlank { DefaultDesktopSubscriptionUserAgent }),
-                            "Параметры подписок сохранены.",
-                        )
-                    },
-                    label = "User-Agent, если у подписки не задан свой",
-                )
-                SkipiSettingsTextField(
-                    value = hwid,
-                    onValueChange = {},
-                    label = "Идентификатор устройства (HWID)",
-                    readOnly = true,
-                )
-            }
             SkipiSettingsStatusMessage(message)
         },
     )

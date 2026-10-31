@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
+
 import app.skipi.app.model.SubscriptionRecord
 import java.time.Duration
 import kotlin.test.Test
@@ -19,7 +21,6 @@ class DesktopSubscriptionRefreshOptionsAdapterTest {
             localProxyUsername = " proxy-user ",
             localProxyPassword = " proxy-secret ",
             subscriptionFetchTimeoutSeconds = 47,
-            subscriptionUserAgent = "  SKIPI Desktop fallback  ",
             sendDeviceHeaders = true,
             installationUuid = "install-uuid",
         )
@@ -42,7 +43,7 @@ class DesktopSubscriptionRefreshOptionsAdapterTest {
         )
         assertEquals(DesktopDeviceIdentity.deviceHeaders("install-uuid"), options.deviceHeaders)
         assertEquals(" age-key ", options.ageSecretKey)
-        assertEquals("SKIPI Desktop fallback", options.fallbackUserAgent)
+        assertEquals(DefaultSubscriptionUserAgent, options.fallbackUserAgent)
     }
 
     @Test
@@ -71,7 +72,6 @@ class DesktopSubscriptionRefreshOptionsAdapterTest {
             localProxyUsername = "stale-user",
             localProxyPassword = "stale-password",
             sendDeviceHeaders = false,
-            subscriptionUserAgent = "  ",
         )
 
         val options = settings.toSubscriptionRefreshFetchOptions(
@@ -87,7 +87,7 @@ class DesktopSubscriptionRefreshOptionsAdapterTest {
             options.proxy,
         )
         assertEquals(emptyMap(), options.deviceHeaders)
-        assertEquals(DefaultDesktopSubscriptionUserAgent, options.fallbackUserAgent)
+        assertEquals(DefaultSubscriptionUserAgent, options.fallbackUserAgent)
     }
 
     private fun subscription(

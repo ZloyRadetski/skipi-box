@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -852,7 +853,7 @@ internal fun DesktopProxyHome(
         group = editingSubscriptionGroup,
         nextGroupId = subscriptionCatalog.nextSubscriptionId,
         userAgentOptions = emptyList(),
-        defaultUserAgent = DefaultDesktopSubscriptionUserAgent,
+        defaultUserAgent = DefaultSubscriptionUserAgent,
         defaultExpiryReminders = DefaultSubscriptionExpiryReminders,
         confirmDeletion = confirmDeletion,
         isManualGroup = editingManualGroup,

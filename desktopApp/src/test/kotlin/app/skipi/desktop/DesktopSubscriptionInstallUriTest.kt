@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
+
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -43,7 +45,7 @@ class DesktopSubscriptionInstallUriTest {
         assertEquals(DesktopSubscriptionInstallSource.V2rayNg, v2rayNg?.source)
         assertEquals("V2Ray Group", v2rayNg?.name)
         assertEquals("https://example.com/v2", v2rayNg?.url)
-        assertEquals(DefaultDesktopSubscriptionUserAgent, v2rayNg?.userAgent)
+        assertEquals(DefaultSubscriptionUserAgent, v2rayNg?.userAgent)
 
         assertEquals(DesktopSubscriptionInstallSource.Clash, clash?.source)
         assertEquals("Clash Group", clash?.name)

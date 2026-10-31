@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.normalizeSkipiUserAgent
 import features.config.decodeSkipiConfigPayloadOrNull
 import features.proxy.server.usecase.ProxyServerProviderUrlFetcher
 import features.subscription.KageSubscriptionAgeCrypto
@@ -79,7 +81,7 @@ class DesktopSubscriptionFetcher(
 
     fun fetchAndImport(
         url: String,
-        userAgent: String = DefaultDesktopSubscriptionUserAgent,
+        userAgent: String = DefaultSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
         deviceHeaders: Map<String, String> = emptyMap(),
@@ -110,7 +112,7 @@ class DesktopSubscriptionFetcher(
 
     fun fetch(
         url: String,
-        userAgent: String = DefaultDesktopSubscriptionUserAgent,
+        userAgent: String = DefaultSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
         deviceHeaders: Map<String, String> = emptyMap(),
@@ -127,7 +129,7 @@ class DesktopSubscriptionFetcher(
     /** Fetches one direct subscription response with the shared Android request/decryption policy. */
     fun fetchResponse(
         url: String,
-        userAgent: String = DefaultDesktopSubscriptionUserAgent,
+        userAgent: String = DefaultSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
         deviceHeaders: Map<String, String> = emptyMap(),
@@ -149,7 +151,7 @@ class DesktopSubscriptionFetcher(
      */
     fun resolveEmbeddedConfig(
         metadata: SubscriptionMetadata,
-        userAgent: String = DefaultDesktopSubscriptionUserAgent,
+        userAgent: String = DefaultSubscriptionUserAgent,
         timeout: Duration = DefaultRequestTimeout,
         proxy: DesktopSubscriptionSocksProxy? = null,
         deviceHeaders: Map<String, String> = emptyMap(),
@@ -309,7 +311,7 @@ class DesktopSubscriptionFetcher(
             }
             val requestBuilder = HttpRequest.newBuilder(requestUri)
                 .timeout(timeout)
-                .header("User-Agent", userAgent.ifBlank { DefaultDesktopSubscriptionUserAgent })
+                .header("User-Agent", normalizeSkipiUserAgent(userAgent))
                 .header("Accept-Encoding", "gzip, deflate")
             deviceHeaders.forEach { (name, value) ->
                 if (name.isNotBlank() && value.isNotBlank() && !name.equals("User-Agent", ignoreCase = true)) {
@@ -390,7 +392,7 @@ class DesktopSubscriptionFetcher(
                     readTimeout = timeoutMillis
                     instanceFollowRedirects = false
                     requestMethod = "GET"
-                    setRequestProperty("User-Agent", userAgent.ifBlank { DefaultDesktopSubscriptionUserAgent })
+                    setRequestProperty("User-Agent", normalizeSkipiUserAgent(userAgent))
                     setRequestProperty("Connection", "close")
                     if (automaticResource) setRequestProperty("Accept-Encoding", "gzip, deflate")
                     deviceHeaders.forEach { (name, value) ->
@@ -735,7 +737,6 @@ data class DesktopResolvedEmbeddedConfig(
     val activate: Boolean,
 )
 
-const val DefaultDesktopSubscriptionUserAgent = "SKIPI Desktop"
 
 private val DefaultConnectTimeout: Duration = Duration.ofSeconds(10)
 private val DefaultRequestTimeout: Duration = Duration.ofSeconds(SubscriptionFetchPolicy.defaultTimeoutSeconds.toLong())

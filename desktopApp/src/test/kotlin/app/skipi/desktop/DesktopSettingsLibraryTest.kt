@@ -29,7 +29,6 @@ class DesktopSettingsLibraryTest {
                 useWindowsSystemProxy = false,
                 localProxyListenAddress = " 0.0.0.0 ",
                 coreLogLevel = " INFO ",
-                subscriptionUserAgent = " SKIPI test agent ",
                 subscriptionFetchTimeoutSeconds = 45,
                 proxyServerListSort = ProxyHomeSortMode.Latency.toAndroidValue(),
                 themeMode = DesktopThemeMode.Amoled,
@@ -45,7 +44,6 @@ class DesktopSettingsLibraryTest {
                 settings.copy(
                     localProxyListenAddress = "0.0.0.0",
                     coreLogLevel = "info",
-                    subscriptionUserAgent = "SKIPI test agent",
                 ),
                 loaded,
             )

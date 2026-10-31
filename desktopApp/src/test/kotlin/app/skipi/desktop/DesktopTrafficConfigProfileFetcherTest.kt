@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
+
 import features.config.TrafficConfigResourceSettings
 import features.config.TrafficConfigState
 import features.subscription.SubscriptionAgeCrypto
@@ -38,7 +40,6 @@ class DesktopTrafficConfigProfileFetcherTest {
             localProxyUsername = "stale-user",
             localProxyPassword = "stale-password",
             subscriptionFetchTimeoutSeconds = 18,
-            subscriptionUserAgent = "Global subscription agent",
             sendDeviceHeaders = false,
         )
         val runningOptions = LocalProxyXrayConfigOptions(
@@ -75,7 +76,6 @@ class DesktopTrafficConfigProfileFetcherTest {
         var currentSettings = DesktopAppSettings(
             localProxyPort = 11_111,
             subscriptionFetchTimeoutSeconds = 12,
-            subscriptionUserAgent = "Global agent one",
             sendDeviceHeaders = true,
             installationUuid = "installation-one",
         )
@@ -94,7 +94,6 @@ class DesktopTrafficConfigProfileFetcherTest {
         currentSettings = currentSettings.copy(
             localProxyPort = 12_222,
             subscriptionFetchTimeoutSeconds = 34,
-            subscriptionUserAgent = "Global agent two",
             installationUuid = "installation-two",
         )
         currentRuntime = LocalProxyXrayConfigOptions(
@@ -123,7 +122,7 @@ class DesktopTrafficConfigProfileFetcherTest {
     @Test
     fun profileUserAgentIsPassedAsStoredAndBlankUsesFetcherDefaultNotGlobalSetting() = runBlocking {
         val observations = mutableListOf<RecordedRequest>()
-        var settings = DesktopAppSettings(subscriptionUserAgent = "Global fallback one", sendDeviceHeaders = false)
+        var settings = DesktopAppSettings(sendDeviceHeaders = false)
         val versionedProfileFallback = versionedDesktopProfileResourceUserAgent(app.ProjectInfo.VERSION_NAME)
         val service = DesktopTrafficConfigProfileFetcher(
             fetcher = recordingFetcher(observations, RecordingAgeCrypto()),
@@ -132,12 +131,11 @@ class DesktopTrafficConfigProfileFetcherTest {
         )
 
         service.fetch(profile(userAgent = "  Profile-specific agent  "), profileUrl)
-        settings = settings.copy(subscriptionUserAgent = "Global fallback two")
         service.fetch(profile(userAgent = ""), profileUrl)
         service.fetch(profile(userAgent = versionedProfileFallback), profileUrl)
 
         assertEquals(
-            listOf("  Profile-specific agent  ", DefaultDesktopSubscriptionUserAgent, versionedProfileFallback),
+            listOf("  Profile-specific agent  ", DefaultSubscriptionUserAgent, versionedProfileFallback),
             observations.map { it.connection.requestHeaders["User-Agent"] },
         )
         assertTrue(observations.all { "X-Age-Public-Key" !in it.connection.requestHeaders })
@@ -181,7 +179,6 @@ class DesktopTrafficConfigProfileFetcherTest {
             localProxyUsername = "persisted-user",
             localProxyPassword = "persisted-password",
             subscriptionFetchTimeoutSeconds = 37,
-            subscriptionUserAgent = "Global fallback must not win",
             sendDeviceHeaders = true,
             installationUuid = "manual-refresh-test-installation",
         )
@@ -228,7 +225,6 @@ class DesktopTrafficConfigProfileFetcherTest {
         val settings = DesktopAppSettings(
             sendDeviceHeaders = false,
             installationUuid = "must-not-be-sent",
-            subscriptionUserAgent = "Global fallback",
         )
         val service = DesktopTrafficConfigProfileFetcher(
             fetcher = recordingFetcher(observations, ageCrypto),

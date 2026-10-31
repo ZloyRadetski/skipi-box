@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
+
 import app.skipi.app.model.SubscriptionCatalog
 import app.skipi.app.model.SubscriptionRecord
 import kotlin.test.Test
@@ -52,7 +54,7 @@ class DesktopSubscriptionInstallOperationsTest {
 
         val preparation = install.prepareIn(catalog)
 
-        assertEquals(DefaultDesktopSubscriptionUserAgent, install.userAgent)
+        assertEquals(DefaultSubscriptionUserAgent, install.userAgent)
         assertEquals(catalog, preparation.catalog)
         assertEquals(existing, preparation.subscription)
         assertEquals("Saved title", preparation.existingTitle)

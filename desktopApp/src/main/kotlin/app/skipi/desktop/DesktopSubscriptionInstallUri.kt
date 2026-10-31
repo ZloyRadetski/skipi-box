@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
 import features.config.SkipiDeepLink
 import features.config.parseSkipiDeepLinkOrNull
 import features.subscription.SubscriptionInstallSource
@@ -41,7 +42,7 @@ fun String.toDesktopSubscriptionInstallClipboardUriOrNull(): DesktopSubscription
     return DesktopSubscriptionInstallUri(
         name = "SKIPI subscription",
         url = subscriptionLink.url,
-        userAgent = DefaultDesktopSubscriptionUserAgent,
+        userAgent = DefaultSubscriptionUserAgent,
         source = SubscriptionInstallSource.RawHttp,
     )
 }
@@ -70,7 +71,7 @@ private val DesktopSubscriptionInstallUriParsingPolicy = SubscriptionInstallUriP
 private val SubscriptionInstallSource.desktopUserAgent: String
     get() = when (this) {
         SubscriptionInstallSource.RawHttp -> ""
-        SubscriptionInstallSource.V2rayNg -> DefaultDesktopSubscriptionUserAgent
+        SubscriptionInstallSource.V2rayNg -> DefaultSubscriptionUserAgent
 
         SubscriptionInstallSource.Clash,
         SubscriptionInstallSource.ClashMeta -> DesktopClashMetaSubscriptionUserAgent

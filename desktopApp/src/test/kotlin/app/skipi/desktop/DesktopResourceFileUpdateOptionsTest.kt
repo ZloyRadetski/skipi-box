@@ -22,7 +22,6 @@ class DesktopResourceFileUpdateOptionsTest {
             localProxyUsername = " raw fallback user ",
             localProxyPassword = " raw fallback password ",
             enableLocalProxyAuth = false,
-            subscriptionUserAgent = "global subscription fallback",
         )
         val profileUserAgent = " \tProfile resource agent \n"
 

@@ -16,7 +16,7 @@ class DesktopProfileResourceUserAgentTest {
     @Test
     fun desktopProfileUserAgentUsesTheDesktopLabelAndProvidedVersion() {
         assertEquals(
-            "Skipi/1.2.3/Desktop",
+            "SKIPI/1.2.3/Desktop",
             versionedDesktopProfileResourceUserAgent("1.2.3"),
         )
     }
@@ -105,7 +105,7 @@ class DesktopProfileResourceUserAgentTest {
         val saved = assertIs<DesktopConfigEditorSaveResult.Saved>(result).library.configs.single()
 
         assertEquals(
-            "Skipi/${ProjectInfo.VERSION_NAME}/Desktop",
+            "SKIPI/${ProjectInfo.VERSION_NAME}/Desktop",
             saved.toTrafficConfigState().resourceSettings.userAgent,
         )
     }

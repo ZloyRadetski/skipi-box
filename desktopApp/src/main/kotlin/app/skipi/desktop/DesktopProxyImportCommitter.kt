@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
+
 /**
  * Applies the non-server mutations from a previously reviewed [DesktopProxyImportPlan].
  *
@@ -15,7 +17,7 @@ object DesktopProxyImportCommitter {
         plan: DesktopProxyImportPlan,
         subscriptionLibrary: DesktopSubscriptionLibrary,
         configLibrary: DesktopConfigLibrary,
-        subscriptionUserAgent: String = DefaultDesktopSubscriptionUserAgent,
+        subscriptionUserAgent: String = DefaultSubscriptionUserAgent,
     ): DesktopProxyImportCommitResult {
         var nextSubscriptions = subscriptionLibrary
         var nextConfigs = configLibrary

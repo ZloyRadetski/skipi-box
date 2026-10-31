@@ -735,7 +735,6 @@ class DesktopApplicationRepositoriesTest {
             localHttpProxyPort = 10809,
             useSystemProxy = false,
             localProxyListenAddress = "0.0.0.0",
-            subscriptionUserAgent = "Desktop Agent",
             installationUuid = "stable-device-id",
             themeMode = DesktopThemeMode.Sakura,
             compactHome = true,
@@ -779,7 +778,6 @@ class DesktopApplicationRepositoriesTest {
         assertEquals(10809, updated.localHttpProxyPort)
         assertFalse(updated.useSystemProxy)
         assertEquals("0.0.0.0", updated.localProxyListenAddress)
-        assertEquals("Desktop Agent", updated.subscriptionUserAgent)
         assertEquals("stable-device-id", updated.installationUuid)
         assertFalse(updated.confirmDeletion)
         assertEquals(2, updated.routeDomainStrategy)

@@ -3,6 +3,8 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
+
 import com.sun.net.httpserver.HttpServer
 import features.subscription.SubscriptionAgeCrypto
 import features.subscription.SubscriptionEmbeddedConfig
@@ -32,7 +34,7 @@ class DesktopSubscriptionFetcherTest {
 
             val update = DesktopSubscriptionFetcher().fetchAndImport("http://127.0.0.1:${server.address.port}/sub")
 
-            assertEquals(DefaultDesktopSubscriptionUserAgent, receivedAgent)
+            assertEquals(DefaultSubscriptionUserAgent, receivedAgent)
             assertEquals("Desktop Provider", update.response.headers["profile-title"])
             assertEquals("Desktop Provider", update.metadata.profileTitle)
             assertEquals(1, update.importResult.servers.size)

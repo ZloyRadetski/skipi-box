@@ -77,7 +77,6 @@ internal class DesktopProxyImportRunner(
             plan = plan,
             subscriptionLibrary = readSubscriptions(),
             configLibrary = readConfigs(),
-            subscriptionUserAgent = settings.subscriptionUserAgent,
         )
         val savedSections = mutableListOf<String>()
         var importedServerSelectionChanged = false

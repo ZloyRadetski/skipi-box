@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.subscription.DefaultSubscriptionUserAgent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -1552,7 +1553,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 }
                                 result.updated
                             },
-                            fetchUserAgent = desktopSettings.subscriptionUserAgent,
+                            fetchUserAgent = DefaultSubscriptionUserAgent,
                             fetchTimeoutSeconds = desktopSettings.subscriptionFetchTimeoutSeconds,
                             fetchProfileDocument = desktopTrafficConfigManualProfileFetcher::fetch,
                             contentPadding = contentPadding,

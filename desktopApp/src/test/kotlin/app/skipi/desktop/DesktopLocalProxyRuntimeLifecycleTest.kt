@@ -127,7 +127,6 @@ class DesktopLocalProxyRuntimeLifecycleTest {
             localProxyUsername = "new-user",
             localProxyPassword = "new-secret",
             subscriptionFetchTimeoutSeconds = 47,
-            subscriptionUserAgent = "  SKIPI Desktop fallback  ",
             sendDeviceHeaders = true,
             installationUuid = "install-uuid",
         )
@@ -150,7 +149,7 @@ class DesktopLocalProxyRuntimeLifecycleTest {
         assertEquals(Duration.ofSeconds(47), options.timeout)
         assertEquals(DesktopDeviceIdentity.deviceHeaders("install-uuid"), options.deviceHeaders)
         assertEquals(" age-key ", options.ageSecretKey)
-        assertEquals("SKIPI Desktop fallback", options.fallbackUserAgent)
+        assertEquals(features.subscription.DefaultSubscriptionUserAgent, options.fallbackUserAgent)
     }
 
     @Test

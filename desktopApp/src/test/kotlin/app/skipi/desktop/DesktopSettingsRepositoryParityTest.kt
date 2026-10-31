@@ -84,7 +84,6 @@ class DesktopSettingsRepositoryParityTest {
             settings = DesktopAppSettings(
                 localProxyPort = 10808,
                 subscriptionFetchTimeoutSeconds = 45,
-                subscriptionUserAgent = "SKIPI/1.2/Desktop",
             ),
         )
 
@@ -104,7 +103,6 @@ class DesktopSettingsRepositoryParityTest {
         assertEquals("fa", fixture.repository.state.value.application.languageTag)
         assertEquals(10808, fixture.settings.localProxyPort)
         assertEquals(45, fixture.settings.subscriptionFetchTimeoutSeconds)
-        assertEquals("SKIPI/1.2/Desktop", fixture.settings.subscriptionUserAgent)
     }
 
     @Test
@@ -114,7 +112,6 @@ class DesktopSettingsRepositoryParityTest {
                 localProxyPort = 10808,
                 localProxyListenAddress = "127.0.0.1",
                 subscriptionFetchTimeoutSeconds = 30,
-                subscriptionUserAgent = "SKIPI Desktop",
                 sendDeviceHeaders = true,
             ),
         )

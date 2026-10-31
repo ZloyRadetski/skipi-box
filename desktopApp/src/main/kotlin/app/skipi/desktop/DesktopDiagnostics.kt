@@ -64,7 +64,6 @@ internal fun desktopSettingsVisibleDestinations(vpnPage: Boolean = false): Set<S
     SkipiSettingsDestination.Appearance,
     SkipiSettingsDestination.General,
     SkipiSettingsDestination.LocalProxy,
-    SkipiSettingsDestination.NetworkAutomation,
     SkipiSettingsDestination.Subscriptions,
     SkipiSettingsDestination.BackupReset,
     SkipiSettingsDestination.SpeedTest,
