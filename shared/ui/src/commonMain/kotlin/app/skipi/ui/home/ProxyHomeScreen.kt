@@ -192,6 +192,7 @@ import app.skipi.ui.server.display.CountryFlagUtils
 import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.server.display.ProtocolColorUtils
 import app.skipi.ui.theme.SkipiTheme
+import app.skipi.ui.theme.StatusColorDefaults
 import app.skipi.ui.theme.SkipiVisualProfile
 import app.skipi.ui.theme.SkipiWindowClass
 import features.subscription.formatSubscriptionUpdateTimestamp
@@ -1057,24 +1058,25 @@ private fun HomeConnectionPanel(
 
     val currentServer = state.selectedServer
     val currentServerLatencyMs = currentServer?.latencyMs
-    val latency = when {
-        currentServer?.latencyTesting == true -> SkipiProxyHeroLatency(
-            text = stringResource(Res.string.home_server_testing_latency),
-            color = SkipiTheme.colors.accent,
-            testing = true,
+    val latency = when (
+        heroLatencyDisplay(
+            latencyMs = currentServerLatencyMs,
+            testing = currentServer?.latencyTesting == true,
+            failed = currentServer?.latencyError == true,
         )
-        currentServerLatencyMs != null -> SkipiProxyHeroLatency(
-            text = stringResource(Res.string.home_latency_milliseconds, currentServerLatencyMs),
-            color = serverLatencyColor(currentServer, state.displayOptions),
+    ) {
+        HeroLatencyDisplay.Value -> SkipiProxyHeroLatency(
+            text = stringResource(Res.string.home_latency_milliseconds, checkNotNull(currentServerLatencyMs)),
+            color = serverLatencyColor(checkNotNull(currentServer), state.displayOptions),
             testing = false,
         )
-        currentServer?.latencyError == true -> SkipiProxyHeroLatency(
-            text = currentServer.latencyErrorText?.takeIf(String::isNotBlank)
+        HeroLatencyDisplay.Failure -> SkipiProxyHeroLatency(
+            text = checkNotNull(currentServer).latencyErrorText?.takeIf(String::isNotBlank)
                 ?: stringResource(Res.string.proxy_server_list_latency_failed),
-            color = serverLatencyColor(currentServer, state.displayOptions),
+            color = serverLatencyColor(checkNotNull(currentServer), state.displayOptions),
             testing = false,
         )
-        else -> null
+        HeroLatencyDisplay.Hidden -> null
     }
 
     val memoryText = if (state.displayOptions.showTunnelMemory) {
@@ -1533,13 +1535,12 @@ private fun serverLatencyColor(
     if (latencyMs == null && !server.latencyError) return SkipiTheme.colors.onSurfaceVariant
 
     val darkTheme = SkipiTheme.colorScheme.isDark
-    val failedColor = options.latencyErrorColor?.let { Color(it) } ?: SkipiTheme.colorScheme.error
+    val failedColor = options.latencyErrorColor?.let { Color(it) } ?: StatusColorDefaults.statusStopped(darkTheme)
     return when {
         server.latencyError || latencyMs == null || latencyMs >= 400L -> failedColor
-        latencyMs < 100L -> options.latencyFastColor?.let { Color(it) } ?: SkipiTheme.colorScheme.success
-        latencyMs < 200L -> options.latencyMediumColor?.let { Color(it) } ?: SkipiTheme.colorScheme.warning
-        else -> options.latencySlowColor?.let { Color(it) }
-            ?: if (darkTheme) Color(0xFFFF9B63) else Color(0xFFE06400)
+        latencyMs < 100L -> options.latencyFastColor?.let { Color(it) } ?: StatusColorDefaults.pingFast(darkTheme)
+        latencyMs < 200L -> options.latencyMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(darkTheme)
+        else -> options.latencySlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(darkTheme)
     }
 }
 

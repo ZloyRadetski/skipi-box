@@ -476,7 +476,7 @@ fun SkipiAppearanceSettingsScreen(
                                     SettingsColorItem(
                                         title = stringResource(Res.string.settings_color_status_stopped),
                                         summary = stringResource(Res.string.settings_color_status_stopped_summary),
-                                        color = appState.customStatusStoppedColor?.let { Color(it) } ?: MiuixTheme.colorScheme.error,
+                                        color = appState.customStatusStoppedColor?.let { Color(it) } ?: StatusColorDefaults.statusStopped(isDark),
                                         onClick = { activeAppearanceColorTarget = AppearanceColorTarget.STATUS_STOPPED },
                                     )
                                     SettingsColorItem(
@@ -758,7 +758,7 @@ fun SkipiAppearanceSettingsScreen(
                     AppearanceColorTarget.TEXT -> appState.customTextColor?.let { Color(it) } ?: SkipiTheme.colors.onSurface
                     AppearanceColorTarget.TEXT_SECONDARY -> appState.customTextSecondaryColor?.let { Color(it) } ?: SkipiTheme.colors.onSurfaceVariant
                     AppearanceColorTarget.STATUS_RUNNING -> appState.customStatusRunningColor?.let { Color(it) } ?: StatusColorDefaults.statusRunning(isDark)
-                    AppearanceColorTarget.STATUS_STOPPED -> appState.customStatusStoppedColor?.let { Color(it) } ?: MiuixTheme.colorScheme.error
+                    AppearanceColorTarget.STATUS_STOPPED -> appState.customStatusStoppedColor?.let { Color(it) } ?: StatusColorDefaults.statusStopped(isDark)
                     AppearanceColorTarget.PING_FAST -> appState.customPingFastColor?.let { Color(it) } ?: StatusColorDefaults.pingFast(isDark)
                     AppearanceColorTarget.PING_MEDIUM -> appState.customPingMediumColor?.let { Color(it) } ?: StatusColorDefaults.pingMedium(isDark)
                     AppearanceColorTarget.PING_SLOW -> appState.customPingSlowColor?.let { Color(it) } ?: StatusColorDefaults.pingSlow(isDark)

@@ -108,14 +108,11 @@ import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiMainPager
 import app.skipi.ui.navigation.SkipiMainPagerState
 import app.skipi.ui.navigation.SkipiNavigationItem
+import app.skipi.ui.navigation.navigationIcon
 import app.skipi.ui.navigation.rememberSkipiMainPagerState
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Layers
-import top.yukonga.miuix.kmp.icon.extended.MindMap
-import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import ui.AppTheme
 import app.skipi.ui.layout.pageWindowPadding
@@ -133,9 +130,9 @@ private object MainNavigation {
 
         return remember(languageMode, proxy, configs, settings) {
             listOf(
-                SkipiNavigationItem(SkipiMainDestination.Proxy, proxy, MiuixIcons.Layers),
-                SkipiNavigationItem(SkipiMainDestination.Configs, configs, MiuixIcons.MindMap),
-                SkipiNavigationItem(SkipiMainDestination.Settings, settings, MiuixIcons.Settings),
+                SkipiNavigationItem(SkipiMainDestination.Proxy, proxy, SkipiMainDestination.Proxy.navigationIcon),
+                SkipiNavigationItem(SkipiMainDestination.Configs, configs, SkipiMainDestination.Configs.navigationIcon),
+                SkipiNavigationItem(SkipiMainDestination.Settings, settings, SkipiMainDestination.Settings.navigationIcon),
             )
         }
     }
