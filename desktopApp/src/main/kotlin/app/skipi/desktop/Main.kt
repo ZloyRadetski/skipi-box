@@ -148,7 +148,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
             readUseSystemProxy = { desktopSettings.useSystemProxy },
         )
     }
-    val windowState = remember { WindowState(size = DpSize(1180.dp, 860.dp), isMinimized = hidden) }
+    val windowState = remember { WindowState(size = DpSize(DesktopInitialWindowWidth.dp, DesktopInitialWindowHeight.dp), isMinimized = hidden) }
     val escapeHandler = remember { DesktopEscapeHandler() }
     // The start of the connection lives here, above every screen: Home is rebuilt on each visit.
     val connectionClock = remember { ConnectionClock() }
@@ -170,6 +170,10 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
             LocalDesktopAppearanceSettings provides desktopSettings.toSharedAppearanceSettings(),
         ) {
             DesktopAppTheme {
+                DesktopWindowChrome(
+                    background = app.skipi.ui.theme.SkipiTheme.colors.background,
+                    isDark = app.skipi.ui.theme.SkipiTheme.colors.isDark,
+                )
                 DesktopAppBackground(settings = desktopSettings, isConnected = backgroundConnected) {
                 Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent) {
                 val subscriptionScope = rememberCoroutineScope()
