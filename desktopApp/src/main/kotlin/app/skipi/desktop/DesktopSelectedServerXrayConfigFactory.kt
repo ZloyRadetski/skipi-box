@@ -63,6 +63,7 @@ object DesktopSelectedServerXrayConfigFactory {
         latencyByServerId: Map<Int, DesktopServerLatencyResult>,
         routingDataDirectory: Path? = null,
         amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
+        tunVpnDns: String = VpnDefaults.IPV4_DNS,
     ): Result<DesktopGeneratedXrayConfig>? {
         val selectedId = serverLibrary.selectedServerId ?: return null
         val selectedStored = serverLibrary.servers.firstOrNull { stored -> stored.id == selectedId } ?: return null
@@ -124,7 +125,7 @@ object DesktopSelectedServerXrayConfigFactory {
             val plan = amneziaWgPlan?.let(rawPlan::withAmneziaWgBridge) ?: rawPlan
             val ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = hasResourceTag)
             val dnsPlan = planDesktopXrayDns(
-                inputs = DesktopDnsInputs(),
+                inputs = DesktopDnsInputs(tunDns = tunVpnDns),
                 startupProxyServerDomains = plan.proxyOutbounds.startupProxyServerDnsDomains(),
                 ruleValidator = ruleValidator,
             )

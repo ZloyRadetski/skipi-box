@@ -7,10 +7,6 @@ import app.AppState
 import engine.network.NetworkDefaults
 import engine.proxy.LocalProxyLoopbackAddress
 import engine.vpn.TunInterfacePlan
-import features.config.TrafficConfigDnsInputs
-import features.config.TrafficConfigReference
-import features.config.TrafficConfigRuntimePlanInput
-import features.config.TrafficConfigRuntimePlanner
 import engine.vpn.toTunInterfacePlan
 import app.skipi.ui.settings.VpnSettingsCapabilities
 import app.skipi.app.model.RoutingConfigRecord
@@ -22,40 +18,27 @@ internal fun DesktopAppSettings.tunInterfacePlan(enableIpv6: Boolean = false): T
     tunMtu = tunMtu,
     tunIpv4Cidr = tunIpv4Cidr,
     tunIpv6Cidr = tunIpv6Cidr,
-    tunVpnDns = tunVpnDns,
     enableIpv6 = enableIpv6,
 ).toTunInterfacePlan()
 
 /**
- * Whether the tunnel carries IPv6. Desktop has no global IPv6 setting; the only source is the
- * active profile's `ipv6`, the same value its generated Xray config is built with, so the interface
- * and the proxy core agree. Without a profile IPv6 stays off.
+ * The interface plan of a start: the MTU and addresses are the TUN settings'; whether the tunnel
+ * carries IPv6 is the active profile's `ipv6`, the same value its generated Xray config is built
+ * with, so the interface and the proxy core agree. Without a profile IPv6 stays off.
  */
-internal fun desktopEnableIpv6(configLibrary: DesktopConfigLibrary): Boolean {
-    val profile = configLibrary.activeProfile ?: return false
-    return TrafficConfigRuntimePlanner.plan(
-        TrafficConfigRuntimePlanInput(
-            rawConfig = profile.content,
-            configs = configLibrary.configs.map { config -> TrafficConfigReference(config.id, config.content) },
-            servers = emptyList(),
-            enableIpv6Fallback = false,
-            enableIpv6PreferFallback = false,
-            dnsInputs = TrafficConfigDnsInputs(),
-        ),
-    ).enableIpv6
-}
+internal fun desktopTunInterfacePlan(settings: DesktopAppSettings, configLibrary: DesktopConfigLibrary): TunInterfacePlan =
+    settings.tunInterfacePlan(enableIpv6 = configLibrary.activeProfileRuntime()?.plan?.enableIpv6 ?: false)
 
 /**
  * hev forwards the tunnel's traffic to the SOCKS inbound of the Core session that is running, with
  * the credentials that session was started with. A wildcard listen address is reached over loopback.
  */
 internal fun desktopTunStartRequest(
-    settings: DesktopAppSettings,
+    plan: TunInterfacePlan,
     options: LocalProxyXrayConfigOptions,
     logPath: String,
-    enableIpv6: Boolean = false,
 ): DesktopTunStartRequest = DesktopTunStartRequest(
-    plan = settings.tunInterfacePlan(enableIpv6),
+    plan = plan,
     socksAddress = if (options.listenAddress == NetworkDefaults.IPV4_ANY_ADDRESS) {
         LocalProxyLoopbackAddress
     } else {

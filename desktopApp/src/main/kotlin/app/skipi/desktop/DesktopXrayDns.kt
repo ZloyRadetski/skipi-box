@@ -19,6 +19,9 @@ internal data class DesktopDnsInputs(
     val directDnsDomains: List<String> = DefaultDirectDnsDomains,
     val dnsHosts: List<String> = emptyList(),
     val enableIpv6: Boolean = false,
+    val enableIpv6Prefer: Boolean = false,
+    /** Android's TUN DNS: the resolver the plan falls back to when no proxy DNS is configured. */
+    val tunDns: String = VpnDefaults.IPV4_DNS,
 )
 
 /**
@@ -42,7 +45,7 @@ internal fun planDesktopXrayDns(
         enableFakeDns = false,
         fakeDnsIpPool = XrayFakeDnsIpv4Pool,
         fakeDnsPoolSize = XrayFakeDnsIpv4OnlyPoolSize,
-        tunDns = VpnDefaults.IPV4_DNS,
+        tunDns = inputs.tunDns,
         fallbackDnsServer = VpnDefaults.IPV4_DNS,
     ),
 )

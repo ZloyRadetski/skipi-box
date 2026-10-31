@@ -71,6 +71,26 @@ internal fun DesktopAppSettings.toLocalProxyXrayConfigOptions(
     tcpSockopt = xrayTcpSockopt(tunTcpKeepAliveInterval, tunTcpUserTimeout),
 )
 
+/**
+ * Whether a running tunnel was built from values that [updated] changes: the listener, logging, the
+ * TUN interface, the Xray transport options and the global sniffing, Mux, Fragment and routing a
+ * start without a profile uses. Appearance and other settings the Core never sees do not count.
+ */
+internal fun desktopSettingsNeedReconnect(previous: DesktopAppSettings, updated: DesktopAppSettings): Boolean =
+    previous.coreRuntimeInputs() != updated.coreRuntimeInputs()
+
+private fun DesktopAppSettings.coreRuntimeInputs(): List<Any?> = listOf(
+    localProxyPort, localProxyPortRaw, localHttpProxyPort, useSystemProxy, localProxyListenAddress,
+    enableDynamicLocalProxyPort, enableLocalProxyAuth, localProxyUsername, localProxyPassword,
+    coreLogLevel, enableAccessLog, subscriptionPingUrl,
+    enableTunMode, enableStrictFullTunnel, tunMtu, tunIpv4Cidr, tunIpv6Cidr, tunVpnDns,
+    tunTcpKeepAliveInterval, tunTcpUserTimeout,
+    enableSniffing, enableSniffingRouteOnly,
+    enableMux, muxConcurrency, muxXudpConcurrency, muxXudpProxyUdp443,
+    enableFragment, fragmentPackets, fragmentLength, fragmentInterval,
+    routeDomainStrategy, defaultRouteOutboundTag, routeRules,
+)
+
 /** Converts persisted Android-shaped settings into the Desktop HTTP fetch transport snapshot. */
 internal fun DesktopAppSettings.toSubscriptionRefreshFetchOptions(
     subscription: SubscriptionRecord,

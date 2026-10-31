@@ -132,8 +132,7 @@ internal fun createDesktopTunnelController(
         prepareTun = {
             runCatching {
                 tunHost.unavailableReason()?.let { reason -> error(reason) }
-                val plan = readSettings().tunInterfacePlan(desktopEnableIpv6(readConfigs()))
-                tunHost.tunRuntime().prepare(plan).getOrThrow()
+                tunHost.tunRuntime().prepare(desktopTunInterfacePlan(readSettings(), readConfigs())).getOrThrow()
             }
         },
         releaseTun = { runCatching { tunHost.tunRuntime().release().getOrThrow() } },
@@ -143,10 +142,9 @@ internal fun createDesktopTunnelController(
                 val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
                     ?: error("SKIPI Core is not running")
                 val request = desktopTunStartRequest(
-                    settings = readSettings(),
+                    plan = desktopTunInterfacePlan(readSettings(), readConfigs()),
                     options = options,
                     logPath = DesktopLogger.logDirectory().resolve("tun2socks.log").toString(),
-                    enableIpv6 = desktopEnableIpv6(readConfigs()),
                 )
                 tunHost.tunRuntime().start(request).getOrThrow()
             }

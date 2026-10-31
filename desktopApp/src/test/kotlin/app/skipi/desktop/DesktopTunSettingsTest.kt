@@ -106,7 +106,7 @@ class DesktopTunSettingsTest {
     @Test
     fun theStartRequestPointsHevAtTheRunningSocksInbound() {
         val request = desktopTunStartRequest(
-            settings = DesktopAppSettings(),
+            plan = DesktopAppSettings().tunInterfacePlan(),
             options = LocalProxyXrayConfigOptions(
                 socksPort = 12345,
                 listenAddress = "0.0.0.0",
@@ -127,7 +127,7 @@ class DesktopTunSettingsTest {
     @Test
     fun aSpecificListenAddressIsKept() {
         val request = desktopTunStartRequest(
-            settings = DesktopAppSettings(),
+            plan = DesktopAppSettings().tunInterfacePlan(),
             options = LocalProxyXrayConfigOptions(socksPort = 1080, listenAddress = "192.168.1.5"),
             logPath = "",
         )
@@ -273,19 +273,59 @@ class DesktopTunSettingsTest {
             configs = listOf(DesktopStoredConfig(id = 1, name = "P", content = content)),
         )
 
-        assertTrue(desktopEnableIpv6(library("[General]\nipv6 = true\n[Rule]\nFINAL,PROXY\n")))
-        assertFalse(desktopEnableIpv6(library("[General]\nipv6 = false\n[Rule]\nFINAL,PROXY\n")))
-        assertFalse(desktopEnableIpv6(library("[Rule]\nFINAL,PROXY\n")))
-        assertFalse(desktopEnableIpv6(DesktopConfigLibrary()))
+        fun carriesIpv6(content: String?) = desktopTunInterfacePlan(
+            DesktopAppSettings(),
+            content?.let(::library) ?: DesktopConfigLibrary(),
+        ).addresses.any { ':' in it.address }
+
+        assertTrue(carriesIpv6("[General]\nipv6 = true\n[Rule]\nFINAL,PROXY\n"))
+        assertFalse(carriesIpv6("[General]\nipv6 = false\n[Rule]\nFINAL,PROXY\n"))
+        assertFalse(carriesIpv6("[Rule]\nFINAL,PROXY\n"))
+        assertFalse(carriesIpv6(null))
+    }
+
+    @Test
+    fun theMtuAndAddressesOfTheSettingsReachTheInterfaceAndHev() {
+        val settings = DesktopAppSettings(tunMtu = "1280", tunIpv4Cidr = "10.20.30.1/24")
+        val plan = desktopTunInterfacePlan(settings, DesktopConfigLibrary())
+        var openedPlan = ""
+        var hevYaml = ""
+        val device = object : DesktopTunDevice {
+            override fun prepare(interfaceName: String): Result<Unit> = Result.success(Unit)
+            override fun open(planJson: String): Result<Int> {
+                openedPlan = planJson
+                return Result.success(7)
+            }
+
+            override fun close(): Result<Unit> = Result.success(Unit)
+        }
+        val tunnel = object : DesktopHevTunnel {
+            override fun start(configYaml: String, tunFd: Int): Result<Unit> {
+                hevYaml = configYaml
+                return Result.success(Unit)
+            }
+
+            override fun stop(): Result<Unit> = Result.success(Unit)
+            override fun isRunning(): Boolean = true
+        }
+
+        DesktopTunRuntime(device, tunnel).start(
+            desktopTunStartRequest(plan, LocalProxyXrayConfigOptions(socksPort = 1080), logPath = ""),
+        ).getOrThrow()
+
+        assertEquals(1280, plan.mtu)
+        assertTrue("\"mtu\":1280" in openedPlan.replace(" ", ""), openedPlan)
+        assertTrue("10.20.30.1/24" in openedPlan, openedPlan)
+        assertTrue("mtu: 1280" in hevYaml, hevYaml)
+        assertTrue("10.20.30.1" in hevYaml, hevYaml)
     }
 
     @Test
     fun withIpv6TheTunnelGetsAnIpv6AddressAndTheHalfRoutes() {
         val request = desktopTunStartRequest(
-            settings = DesktopAppSettings(),
+            plan = DesktopAppSettings().tunInterfacePlan(enableIpv6 = true),
             options = LocalProxyXrayConfigOptions(socksPort = 1080),
             logPath = "",
-            enableIpv6 = true,
         )
 
         assertEquals(

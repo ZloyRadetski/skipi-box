@@ -139,6 +139,32 @@ class DesktopAmneziaWgConfigTest {
     }
 
     @Test
+    fun theRunnersDnsIsTheProfilesTunDnsWhenAProfileIsActiveAndTheGlobalOneOtherwise() {
+        fun profiles(content: String) = DesktopConfigLibrary(
+            selectedConfigId = 1,
+            configs = listOf(DesktopStoredConfig(id = 1, name = "P", content = content)),
+        )
+
+        fun dnsOf(configs: DesktopConfigLibrary) = assertNotNull(
+            buildDesktopSelectedServerConfigWithBridge(
+                serverLibrary = library(10, stored(10, awg())),
+                configLibrary = configs,
+                routing = RoutingConfigRecord(),
+                options = options,
+                trafficConfigContentById = emptyMap(),
+                subscriptionPingUrl = "",
+                latencyByServerId = emptyMap(),
+                tunVpnDns = "1.1.1.1",
+            ),
+        ).getOrThrow().amneziaWg!!.configJson
+
+        assertTrue("9.9.9.9" in dnsOf(profiles("[SKIPI]\ntun-dns = 9.9.9.9\n[Rule]\nFINAL,PROXY\n")))
+        // Android applies the profile's value even when the profile leaves it at the default.
+        assertTrue("8.8.8.8" in dnsOf(profiles("[Rule]\nFINAL,PROXY\n")))
+        assertTrue("1.1.1.1" in dnsOf(DesktopConfigLibrary()))
+    }
+
+    @Test
     fun theLegacyStringBuilderStillReturnsTheSameConfigJson() {
         val result = buildDesktopSelectedServerConfig(
             serverLibrary = library(10, stored(10, awg())),

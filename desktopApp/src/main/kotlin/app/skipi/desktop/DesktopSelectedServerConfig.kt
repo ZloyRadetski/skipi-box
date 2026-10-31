@@ -10,6 +10,8 @@ import engine.xray.XraySniffingOptions
 import engine.xray.XrayTags
 import engine.xray.buildFreedomOutbound
 import engine.xray.rewriteCustomXrayDnsConfig
+import engine.xray.xrayDirectOutboundDomainStrategy
+import engine.network.isIpv4Address
 import engine.xray.startupProxyServerHostDnsDomains
 import features.proxy.server.model.customXrayConfigProxyServerHosts
 import platform.withSniffing
@@ -67,17 +69,26 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     routingDataDirectory: Path? = null,
     strictFullTunnel: Boolean = false,
-    /** Raw resolvers of the runner's own netstack, as Android passes the TUN DNS. */
-    amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
+    /** The global TUN DNS; an active profile's own value replaces it, as on Android. */
+    tunVpnDns: String = VpnDefaults.IPV4_DNS,
 ): Result<DesktopGeneratedXrayConfig>? {
     val selectedStored = serverLibrary.selectedServerId
         ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
     val selectedServerResult = selectedStored?.decode()
     val selectedServer = selectedServerResult?.getOrNull()
+    val profileRuntime = configLibrary.activeProfileRuntime()
+    val effectiveTunDns = profileRuntime.tunVpnDnsOr(tunVpnDns)
     if (selectedServer is Custom) {
         return checkNotNull(selectedServerResult).mapCatching {
             check(!strictFullTunnel) { "Strict full-tunnel mode cannot safely rewrite a raw Xray configuration" }
-            DesktopGeneratedXrayConfig(buildDesktopCustomXrayConfig(selectedServer, options))
+            DesktopGeneratedXrayConfig(
+                buildDesktopCustomXrayConfig(
+                    server = selectedServer,
+                    options = options,
+                    dnsInputs = profileRuntime?.toDnsInputs() ?: DesktopDnsInputs(tunDns = effectiveTunDns),
+                    sniffing = profileRuntime?.sniffingOptions(),
+                ),
+            )
         }
     }
 
@@ -89,7 +100,7 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                 serverLibrary = serverLibrary,
                 options = options,
                 configs = configLibrary.configs,
-                amneziaWgDnsServers = amneziaWgDnsServers,
+                amneziaWgDnsServers = amneziaWgDnsServersFor(effectiveTunDns),
                 strictFullTunnel = strictFullTunnel,
             )
         }
@@ -105,11 +116,16 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
             subscriptionPingUrl = subscriptionPingUrl,
             latencyByServerId = latencyByServerId,
             routingDataDirectory = routingDataDirectory,
-            amneziaWgDnsServers = amneziaWgDnsServers,
+            amneziaWgDnsServers = amneziaWgDnsServersFor(effectiveTunDns),
+            tunVpnDns = effectiveTunDns,
         )?.getOrThrow()
             ?: error("Select a working server before connecting")
     }
 }
+
+/** Raw resolvers of the AmneziaWG runner's own netstack, as Android passes the TUN DNS. */
+internal fun amneziaWgDnsServersFor(tunVpnDns: String): List<String> =
+    listOf(tunVpnDns.trim().takeIf(::isIpv4Address) ?: VpnDefaults.IPV4_DNS)
 
 /** Ports the runner's SOCKS bridge must not take: the listeners Core opens for the application. */
 internal fun LocalProxyXrayConfigOptions.reservedLocalPorts(): Set<Int> = buildSet {
@@ -127,13 +143,17 @@ internal fun AmneziaWgBridgePlan.toDesktopBridge(): DesktopAmneziaWgBridge =
 internal fun buildDesktopCustomXrayConfig(
     server: Custom,
     options: LocalProxyXrayConfigOptions,
+    /** The DNS and IPv6 values of the start: the active profile's, or the application defaults. */
+    dnsInputs: DesktopDnsInputs = DesktopDnsInputs(),
+    /** The active profile's sniffing; the listener options' own apply without a profile. */
+    sniffing: XraySniffingOptions? = null,
 ): String {
     val customJson = parseCustomXrayConfigJsonObject(server.configJson)
     val inbounds = buildList {
         add(
             buildJsonObject {
                 LocalProxyXrayConfigFactory.buildSocksInbound(options)
-                    .withSniffing(options.sniffing ?: XraySniffingOptions())
+                    .withSniffing(sniffing ?: options.sniffing ?: XraySniffingOptions())
                     .forEach { (key, value) ->
                         put(key, value)
                     }
@@ -158,7 +178,7 @@ internal fun buildDesktopCustomXrayConfig(
     }
     val config = if (server.overrideInboundAndDns) {
         val dnsPlan = planDesktopXrayDns(
-            inputs = DesktopDnsInputs(),
+            inputs = dnsInputs,
             startupProxyServerDomains = customXrayConfigProxyServerHosts(server.configJson)
                 .startupProxyServerHostDnsDomains(),
             ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
@@ -170,7 +190,11 @@ internal fun buildDesktopCustomXrayConfig(
                 dnsPlan = dnsPlan,
                 enableLocalDns = false,
                 dnsHijackInboundTags = emptyList(),
-                directOutbound = buildFreedomOutbound(tag = XrayTags.DIRECT, domainStrategy = "UseIP"),
+                directOutbound = buildFreedomOutbound(
+                    tag = XrayTags.DIRECT,
+                    domainStrategy = xrayDirectOutboundDomainStrategy(dnsInputs.enableIpv6, dnsInputs.enableIpv6Prefer),
+                    tcpSockopt = options.tcpSockopt,
+                ),
             ),
         )
     } else {

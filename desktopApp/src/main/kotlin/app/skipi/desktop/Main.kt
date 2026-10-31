@@ -1589,20 +1589,10 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             automationServers = desktopNetworkAutomationServers(serverLibrary),
                             backupHost = desktopBackupHost,
                             onSettingsChange = { updated ->
-                                val restartRequired = desktopSettings.localProxyPort != updated.localProxyPort ||
-                                    desktopSettings.localHttpProxyPort != updated.localHttpProxyPort ||
-                                    desktopSettings.useSystemProxy != updated.useSystemProxy ||
-                                    desktopSettings.localProxyListenAddress != updated.localProxyListenAddress ||
-                                    desktopSettings.coreLogLevel != updated.coreLogLevel ||
-                                    desktopSettings.enableTunMode != updated.enableTunMode ||
-                                    desktopSettings.enableStrictFullTunnel != updated.enableStrictFullTunnel ||
-                                    desktopSettings.tunMtu != updated.tunMtu ||
-                                    desktopSettings.tunIpv4Cidr != updated.tunIpv4Cidr ||
-                                    desktopSettings.tunIpv6Cidr != updated.tunIpv6Cidr ||
-                                    desktopSettings.enableAccessLog != updated.enableAccessLog
+                                val restartRequired = desktopSettingsNeedReconnect(desktopSettings, updated)
                                 desktopSettings = updated
                                 if (restartRequired && tunnel.coreState.isRunning) {
-                                    tunnel.requestReconnect("Параметры локального прокси изменены.")
+                                    tunnel.requestReconnect("Настройки подключения изменены.")
                                 }
                             },
                             contentPadding = contentPadding,

@@ -8,9 +8,6 @@ import engine.xray.ProfileProxyTag
 import engine.xray.XrayTags
 import engine.xray.buildXrayDnsConfig
 import engine.xray.startupProxyServerHostDnsDomains
-import features.config.TrafficConfigDnsInputs
-import features.config.TrafficConfigRuntimePlanInput
-import features.config.TrafficConfigRuntimePlanner
 import features.proxy.server.model.serverHost
 import engine.xray.XraySniffingOptions
 import platform.withSniffing
@@ -21,8 +18,6 @@ import engine.xray.withXrayProxyOutboundTransport
 import engine.xray.xrayWireguardDomainStrategy
 import engine.xray.buildXrayFragmentOutbound
 import engine.xray.withXrayMuxAndFragmentOverlay
-import features.config.TrafficConfigState
-import features.config.withSkipiSettingsReadFromRawConfig
 import engine.xray.XrayProtocols
 import engine.vpn.VpnDefaults
 import engine.vpn.buildLoopbackSocksOutbound
@@ -125,39 +120,12 @@ object DesktopTrafficProfileXrayConfigFactory {
         val routingRules = plan.routingRules
         val balancers = plan.balancers
 
-        // Like Android's withActiveTrafficConfigApplied, the active profile replaces global Mux/Fragment.
-        val profileSettings = TrafficConfigState(id = profile.id, name = profile.name, rawConfig = profile.content)
-            .withSkipiSettingsReadFromRawConfig()
-            .androidSettings
-        // Same precedence as Android's withActiveTrafficConfigApplied: profile [SKIPI]/[General]/[Host]
-        // values replace the global defaults, then the shared DNS planner builds the section.
-        val runtimePlan = TrafficConfigRuntimePlanner.plan(
-            TrafficConfigRuntimePlanInput(
-                rawConfig = profile.content,
-                configs = configs.map { config -> TrafficConfigReference(config.id, config.content) },
-                servers = emptyList(),
-                enableIpv6Fallback = false,
-                enableIpv6PreferFallback = false,
-                dnsInputs = TrafficConfigDnsInputs(
-                    profileProxyDns = profileSettings.proxyDns,
-                    profileDirectDns = profileSettings.directDns,
-                    profileDirectDnsDomains = profileSettings.directDnsDomains,
-                    profileDnsHosts = profileSettings.dnsHosts,
-                    existingProxyDns = DesktopDnsInputs().proxyDns,
-                    existingDirectDns = DesktopDnsInputs().directDns,
-                    existingDirectDnsDomains = DesktopDnsInputs().directDnsDomains,
-                    existingDnsHosts = DesktopDnsInputs().dnsHosts,
-                ),
-            ),
-        )
+        // Like Android's withActiveTrafficConfigApplied, the active profile replaces the global values.
+        val profileRuntime = planDesktopProfileRuntime(profile, configs)
+        val profileSettings = profileRuntime.settings
+        val runtimePlan = profileRuntime.plan
         val dnsPlan = planDesktopXrayDns(
-            inputs = DesktopDnsInputs(
-                proxyDns = runtimePlan.proxyDns,
-                directDns = runtimePlan.directDns,
-                directDnsDomains = runtimePlan.directDnsDomains,
-                dnsHosts = runtimePlan.dnsHosts,
-                enableIpv6 = runtimePlan.enableIpv6,
-            ),
+            inputs = profileRuntime.toDnsInputs(),
             startupProxyServerDomains = plan.proxyServers.mapNotNull { it.serverHost() }.startupProxyServerHostDnsDomains(),
             ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = null),
         )
