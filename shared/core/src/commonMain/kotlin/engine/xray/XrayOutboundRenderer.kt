@@ -120,6 +120,10 @@ private fun buildProxyOutbound(
     return outbound
 }
 
+/** The transport overlay [renderXrayOutbounds] gives a proxy outbound, for hosts that hold rendered outbounds. */
+fun JsonObject.withXrayProxyOutboundTransport(transport: XrayOutboundTransportOptions): JsonObject =
+    applyProxyOutboundTransport(transport)
+
 private fun JsonObject.applyProxyOutboundTransport(transport: XrayOutboundTransportOptions): JsonObject {
     if (stringValue("protocol") == ProxyServerConstants.PROTOCOL_WIREGUARD) {
         val settings = objectValue("settings") ?: buildJsonObject {}

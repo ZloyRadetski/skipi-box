@@ -16,6 +16,9 @@ import engine.xray.XraySniffingOptions
 import platform.withSniffing
 import engine.xray.XrayFragmentOutboundOptions
 import engine.xray.XrayMuxOutboundOptions
+import engine.xray.XrayOutboundTransportOptions
+import engine.xray.withXrayProxyOutboundTransport
+import engine.xray.xrayWireguardDomainStrategy
 import engine.xray.buildXrayFragmentOutbound
 import engine.xray.withXrayMuxAndFragmentOverlay
 import features.config.TrafficConfigState
@@ -182,7 +185,17 @@ object DesktopTrafficProfileXrayConfigFactory {
         } else {
             null
         }
-        val overlaidProxyOutbounds = proxyOutbounds.withXrayMuxAndFragmentOverlay(muxOptions, fragmentOptions)
+        // Like Android, every proxy outbound carries the TCP keep-alive and the direct domain strategy.
+        val transportOptions = options.tcpSockopt?.let { sockopt ->
+            XrayOutboundTransportOptions(
+                directDomainStrategy = xrayDirectOutboundDomainStrategy(ipv6Enabled, ipv6Preferred),
+                wireguardDomainStrategy = xrayWireguardDomainStrategy(ipv6Enabled, ipv6Preferred),
+                tcpSockopt = sockopt,
+            )
+        }
+        val overlaidProxyOutbounds = proxyOutbounds
+            .map { outbound -> transportOptions?.let(outbound::withXrayProxyOutboundTransport) ?: outbound }
+            .withXrayMuxAndFragmentOverlay(muxOptions, fragmentOptions)
 
         // Upstream DNS queries must bypass the user's rules, as in Android's routing plan.
         val dnsUpstreamRules = buildList {

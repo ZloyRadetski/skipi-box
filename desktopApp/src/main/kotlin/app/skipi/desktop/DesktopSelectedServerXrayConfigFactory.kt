@@ -11,6 +11,9 @@ import app.skipi.app.proxy.ProxyServerRecord
 import app.skipi.app.proxy.XrayOutboundPlanner
 import app.skipi.app.proxy.XrayOutboundPlanningInput
 import engine.xray.XrayOutboundRenderingOptions
+import engine.xray.XrayOutboundTransportOptions
+import engine.xray.xrayDirectOutboundDomainStrategy
+import engine.xray.xrayWireguardDomainStrategy
 import engine.xray.XrayResourceRoutingRuleValidator
 import engine.xray.XrayRoutingRequest
 import engine.xray.XrayTags
@@ -151,7 +154,14 @@ object DesktopSelectedServerXrayConfigFactory {
                     enableLocalDns = false,
                     dnsPlan = dnsPlan,
                     dnsProxyOutboundTag = null,
-                    transport = null,
+                    // No profile, so no IPv6: the same strategy Android's defaults select.
+                    transport = options.tcpSockopt?.let { sockopt ->
+                        XrayOutboundTransportOptions(
+                            directDomainStrategy = xrayDirectOutboundDomainStrategy(enableIpv6 = false, enableIpv6Prefer = false),
+                            wireguardDomainStrategy = xrayWireguardDomainStrategy(enableIpv6 = false, enableIpv6Prefer = false),
+                            tcpSockopt = sockopt,
+                        )
+                    },
                     mux = null,
                     fragment = null,
                 ),
