@@ -40,21 +40,34 @@ internal fun resolveAutostartLauncher(
         ?.let { return@runCatching it }
     val launcher = command?.takeIf(String::isNotBlank) ?: error("The application launcher is unknown")
     val name = Path.of(launcher).fileName?.toString().orEmpty()
-    require(!name.equals("java", ignoreCase = true) && !name.equals("javaw.exe", ignoreCase = true)) {
+    val bareName = name.removeSuffix(".exe").removeSuffix(".EXE")
+    require(!bareName.equals("java", ignoreCase = true) && !bareName.equals("javaw", ignoreCase = true)) {
         "Start at login needs the packaged SKIPI launcher, not $name"
     }
     launcher
 }
 
+/** Start at login, registered with whatever the operating system uses for it. */
+internal interface DesktopAutostartControl {
+    fun isEnabled(): Boolean
+
+    fun apply(enabled: Boolean, launcher: String): Result<Unit>
+}
+
+/** Windows registers per-user autostart in the registry, everything else in the XDG autostart directory. */
+internal fun desktopAutostartFor(
+    windows: Boolean = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true),
+): DesktopAutostartControl = if (windows) DesktopWindowsAutostart() else DesktopAutostart()
+
 /** Registers or removes the login autostart entry under the user's XDG config directory. */
 internal class DesktopAutostart(
     private val configHome: Path = defaultConfigHome(),
-) {
+) : DesktopAutostartControl {
     private val entry: Path get() = configHome.resolve("autostart").resolve("skipi.desktop")
 
-    fun isEnabled(): Boolean = Files.isRegularFile(entry)
+    override fun isEnabled(): Boolean = Files.isRegularFile(entry)
 
-    fun apply(enabled: Boolean, launcher: String): Result<Unit> = runCatching {
+    override fun apply(enabled: Boolean, launcher: String): Result<Unit> = runCatching {
         if (!enabled) {
             Files.deleteIfExists(entry)
             return@runCatching

@@ -267,7 +267,7 @@ internal fun DesktopSettingsScreen(
                 onPersist = ::persist,
                 onApplyLaunchOnLogin = { enabled ->
                     resolveAutostartLauncher(ProcessHandle.current().info().command().orElse(null))
-                        .mapCatching { launcher -> DesktopAutostart().apply(enabled, launcher).getOrThrow() }
+                        .mapCatching { launcher -> desktopAutostartFor().apply(enabled, launcher).getOrThrow() }
                 },
                 onOpenNetworkAutomation = { destination = DesktopSettingsDestination.NetworkAutomation },
                 contentPadding = contentPadding,
