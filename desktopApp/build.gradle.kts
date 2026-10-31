@@ -143,6 +143,14 @@ compose.desktop {
         // glibc keeps freed native memory in per-thread arenas (C2 compiler, IO and render threads come and go),
         // which held hundreds of MB of RSS; trimming once a minute gives it back. glibc only, so not on Windows.
         if (!isWindowsHost) jvmArgs += "-XX:TrimNativeHeapInterval=60000"
+        // The UI and its services use ~40 MB of Java heap, but G1 is allowed a quarter of RAM and keeps whatever
+        // a burst made it commit. Cap it, run a GC when idle and give back what stays free (a 200 MB burst: 852 -> 13 MB).
+        jvmArgs += listOf(
+            "-Xmx512m",
+            "-XX:G1PeriodicGCInterval=60000",
+            "-XX:MinHeapFreeRatio=10",
+            "-XX:MaxHeapFreeRatio=30",
+        )
 
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)
