@@ -193,6 +193,8 @@ private data class ProxyServerValidationMessages(
                 valueOutOfRange.formatTemplate("min" to values.valueAt(1), "max" to values.valueAt(2))
             ProxyServerValidationError.AmneziaWgHeaderInvalid ->
                 valueOutOfRange.formatTemplate("min" to "0", "max" to values.valueAt(1))
+            ProxyServerValidationError.AmneziaWgChainInvalid ->
+                unsupportedValue.formatTemplate("value" to values.valueAt(0))
         }
     }
 

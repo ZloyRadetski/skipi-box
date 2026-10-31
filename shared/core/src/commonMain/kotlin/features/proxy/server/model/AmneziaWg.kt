@@ -248,6 +248,7 @@ data class AmneziaWg(
         validateMtu(mtu)
         validateOptionalJsonObject(finalMask, "FinalMask")
         validateAmneziaWgObfuscation(jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4)
+        validateAmneziaWgChains(listOf("I1" to i1, "I2" to i2, "I3" to i3, "I4" to i4, "I5" to i5))
     }
 
     override fun connectionFingerprint(): String {

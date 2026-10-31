@@ -563,6 +563,54 @@ internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgObfuscatio
     }
 }
 
+/**
+ * The native runner rejects a malformed I1..I5 obfuscation chain when it connects. Reporting it here
+ * keeps the editor and the import honest; the rules are the runner's own.
+ */
+internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgChains(chains: List<Pair<String, String>>) {
+    chains.forEach { (name, chain) ->
+        if (!chain.isValidAmneziaWgChain()) addIssue(ProxyServerValidationError.AmneziaWgChainInvalid, name)
+    }
+}
+
+private const val AwgChainMaxBytes = 4096
+private val AwgChainWhitespace = Regex("\\s+")
+
+private fun String.isValidAmneziaWgChain(): Boolean {
+    val spec = trim()
+    if (spec.isEmpty()) return true
+    if (spec.length > AwgChainMaxBytes) return false
+    var remaining = spec
+    var fixedBytes = 0
+    while (remaining.isNotEmpty()) {
+        if (!remaining.startsWith("<")) return false
+        val end = remaining.indexOf('>')
+        if (end < 0) return false
+        val parts = remaining.substring(1, end).trim().split(AwgChainWhitespace).filter(String::isNotEmpty)
+        if (parts.isEmpty() || parts.size > 2) return false
+        val argument = parts.getOrNull(1).orEmpty()
+        when (parts[0]) {
+            "b" -> {
+                val hex = argument.removePrefix("0x")
+                val isHex = hex.all { char -> char in '0'..'9' || char in 'a'..'f' || char in 'A'..'F' }
+                if (argument.isEmpty() || hex.isEmpty() || hex.length % 2 != 0 || !isHex) return false
+                fixedBytes += hex.length / 2
+            }
+            "r", "rc", "rd", "dz" -> {
+                if (argument.isEmpty() || !argument.all(Char::isDigit)) return false
+                val length = argument.toIntOrNull() ?: return false
+                if (length > AwgChainMaxBytes) return false
+                fixedBytes += length
+            }
+            "t", "d", "ds" -> if (argument.isNotEmpty()) return false
+            else -> return false
+        }
+        if (fixedBytes > AwgChainMaxBytes) return false
+        remaining = remaining.substring(end + 1)
+    }
+    return true
+}
+
 private fun String.isValidAmneziaWgHeaderRange(): Boolean {
     if (this != trim()) return false
     val separator = indexOf('-')

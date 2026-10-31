@@ -102,4 +102,60 @@ class AmneziaWgTest {
         val issues = invalid.validateFull()
         assertTrue(issues.any { it.error == ProxyServerValidationError.AmneziaWgJminMaxInvalid })
     }
+
+    private fun withChain(name: String, chain: String) = AmneziaWg(
+        remarks = "Chain",
+        server = "1.2.3.4",
+        port = "51820",
+        secretKey = "aGVsbG8gd29ybGQgdGhpcyBpcyBhIHZhbGlkIGtleSE=",
+        publicKey = "YW5vdGhlciB2YWxpZCBrZXkgZm9yIHRlc3Rpbmcgb2s=",
+    ).also { server ->
+        when (name) {
+            "I1" -> server.i1 = chain
+            "I2" -> server.i2 = chain
+            "I3" -> server.i3 = chain
+            "I4" -> server.i4 = chain
+            else -> server.i5 = chain
+        }
+    }
+
+    private fun chainIssues(name: String, chain: String) = withChain(name, chain).validateFull()
+        .filter { it.error == ProxyServerValidationError.AmneziaWgChainInvalid }
+
+    @Test
+    fun theNativeRunnersChainSyntaxIsAccepted() {
+        listOf(
+            "<b 0xdeadbeef><r 16><t>",
+            "<rc 8><rd 8><dz 4><d><ds>",
+            "<b 0xAB>",
+            " <r 10> ",
+            "",
+        ).forEach { chain ->
+            assertEquals(emptyList(), chainIssues("I1", chain), "chain '$chain' is valid")
+        }
+    }
+
+    @Test
+    fun aMalformedChainIsReportedWithTheNameOfTheField() {
+        listOf(
+            "abc",
+            "<b 0x00",
+            "<b 0xabc>",
+            "<b 0xzz>",
+            "<b>",
+            "<x>",
+            "<t 5>",
+            "<r>",
+            "<r 5000>",
+            "<r 4000><r 200>",
+            "<b 0x00> <r 4>",
+            "<a b c>",
+            "<>",
+        ).forEach { chain ->
+            val issues = chainIssues("I3", chain)
+            assertEquals(1, issues.size, "chain '$chain' must be rejected")
+            assertEquals(listOf("I3"), issues.single().values)
+        }
+        assertEquals(1, chainIssues("I5", "<r 1>" + "<t>".repeat(1500)).size, "a chain over 4096 characters is too large")
+    }
 }
