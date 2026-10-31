@@ -20,6 +20,7 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.formatCustomXrayConfigJson
 import features.proxy.server.model.parseCustomXrayConfigJsonObject
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import platform.LocalProxyXrayConfigFactory
@@ -147,9 +148,12 @@ internal fun buildDesktopCustomXrayConfig(
     dnsInputs: DesktopDnsInputs = DesktopDnsInputs(),
     /** The active profile's sniffing; the listener options' own apply without a profile. */
     sniffing: XraySniffingOptions? = null,
+    /** False for a latency probe, which must not listen: its ports would collide with a running tunnel's. */
+    listeners: Boolean = true,
+    log: JsonObject = options.buildLogJson(),
 ): String {
     val customJson = parseCustomXrayConfigJsonObject(server.configJson)
-    val inbounds = buildList {
+    val inbounds = if (!listeners) emptyList() else buildList {
         add(
             buildJsonObject {
                 LocalProxyXrayConfigFactory.buildSocksInbound(options)
@@ -201,7 +205,7 @@ internal fun buildDesktopCustomXrayConfig(
         customJson
     }
     val cleanConfig = buildJsonObject {
-        put("log", options.buildLogJson())
+        put("log", log)
         put("inbounds", JsonArray(inbounds))
         config.forEach { (key, value) ->
             if (key != "inbounds" && key != "log") {

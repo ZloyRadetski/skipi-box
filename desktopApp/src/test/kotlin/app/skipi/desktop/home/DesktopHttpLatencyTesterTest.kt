@@ -57,9 +57,57 @@ class DesktopHttpLatencyTesterTest {
         assertTrue(bridge.configJson.contains("dnsServers"))
     }
 
+    private val rawProfile = """
+        {
+          "log": {"loglevel": "debug"},
+          "inbounds": [{"tag": "in", "port": 10808, "listen": "127.0.0.1", "protocol": "socks"}],
+          "outbounds": [
+            {"tag": "proxy", "protocol": "vless", "settings": {"vnext": [{"address": "raw.example", "port": 443,
+              "users": [{"id": "8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6", "encryption": "none"}]}]}},
+            {"tag": "direct", "protocol": "freedom"}
+          ]
+        }
+    """.trimIndent()
+
+    @Test
+    fun aRawProfileIsProbedThroughItsOwnOutboundsLikeOnAndroid() {
+        for (override in listOf(true, false)) {
+            val probe = buildDesktopLatencyProbe(Custom(remarks = "raw", overrideInboundAndDns = override, configJson = rawProfile))
+
+            val root = Json.parseToJsonElement(probe.configJson).jsonObject
+            val protocols = root.getValue("outbounds").jsonArray.map { it.jsonObject.getValue("protocol").jsonPrimitive.content }
+            assertTrue("vless" in protocols, "the profile's own outbound must be measured (override=$override): $protocols")
+            // A probe must never listen: its port would collide with the running tunnel's inbound.
+            assertTrue(root["inbounds"]?.jsonArray.orEmpty().isEmpty(), "no inbound in a probe (override=$override)")
+            assertEquals("none", root.getValue("log").jsonObject.getValue("loglevel").jsonPrimitive.content)
+            assertNull(probe.amneziaWg)
+        }
+    }
+
+    @Test
+    fun aRawProfileTakesTheSamePathAsAnyOtherServerToTheCore() = runBlocking<Unit> {
+        var configSeen: String? = null
+        val tester = DesktopHttpLatencyTester(measure = { config, _, _ -> configSeen = config; Result.success(58L) })
+
+        val result = tester.test(Custom(remarks = "raw", configJson = rawProfile), "https://probe.example/204", timeoutMillis = 5_000)
+
+        assertEquals(DesktopServerLatencyResult.Success(58L), result)
+        assertTrue(configSeen.orEmpty().contains("raw.example"))
+    }
+
     @Test
     fun serversWithoutASingleOutboundCannotBeProbed() {
+        // No outbound at all: nothing to measure.
         assertFailsWith<IllegalArgumentException> { buildDesktopLatencyProbe(Custom(remarks = "raw", configJson = "{}")) }
+    }
+
+    @Test
+    fun aServerThatCannotBeProbedIsReportedWithTheReasonNotAsAnUnexplainedFailure() = runBlocking<Unit> {
+        val tester = DesktopHttpLatencyTester(measure = { _, _, _ -> error("must not be reached") })
+
+        val result = tester.test(Custom(remarks = "raw", configJson = "{}"), "https://probe.example/204", timeoutMillis = 5_000)
+
+        assertTrue((result as DesktopServerLatencyResult.Error).message.isNotBlank())
     }
 
     @Test

@@ -11,6 +11,7 @@ import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
 import features.proxy.server.model.isCompositeProxyServer
+import platform.LocalProxyXrayConfigOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,11 +40,23 @@ internal fun buildDesktopLatencyProbe(
     server: ProxyServer<*>,
     amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
 ): DesktopLatencyProbe {
-    require(server !is Custom && server !is StrategyGroup && !server.isCompositeProxyServer()) {
+    require(server !is StrategyGroup && !server.isCompositeProxyServer()) {
         "Only a server with a single outbound can be probed on its own"
     }
     val issues = server.validateFull()
     require(issues.isEmpty()) { "Server is invalid: ${issues.joinToString { issue -> issue.error.name }}" }
+
+    // A raw profile is measured through its own outbounds, as Android's speed-test config does.
+    if (server is Custom) {
+        return DesktopLatencyProbe(
+            configJson = buildDesktopCustomXrayConfig(
+                server = server,
+                options = LocalProxyXrayConfigOptions(),
+                listeners = false,
+                log = buildJsonObject { put("loglevel", "none") },
+            ),
+        )
+    }
 
     val amneziaWgPlan = (server as? AmneziaWg)?.let { awg ->
         planAmneziaWgBridge(servers = listOf(awg), dnsServers = amneziaWgDnsServers, reservedPorts = emptySet())
@@ -75,6 +88,7 @@ internal class DesktopHttpLatencyTester(
         val probe = try {
             buildDesktopLatencyProbe(server, amneziaWgDnsServers())
         } catch (error: IllegalArgumentException) {
+            DesktopLogger.warn("Ping", "HTTP ping skipped: ${error.message.orEmpty().ifBlank { "server cannot be probed" }}")
             return DesktopServerLatencyResult.Error(error.message.orEmpty().ifBlank { "Server cannot be probed" }, error)
         }
         val measurement = probes.async { measure(probe.configJson, url, probe.amneziaWg) }
