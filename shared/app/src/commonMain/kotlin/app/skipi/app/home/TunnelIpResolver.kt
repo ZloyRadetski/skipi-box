@@ -3,6 +3,7 @@
 
 package app.skipi.app.home
 
+import engine.network.isIpAddress
 import features.tools.ipinfo.IpInfoData
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -33,4 +34,37 @@ suspend fun resolveTunnelIp(
         }
     }
     return null
+}
+
+/**
+ * The address of the server a config leads to, ready for the IP tile: an IP address as it is, a
+ * domain resolved through [lookup]. Null when there is no address or it does not resolve.
+ */
+suspend fun resolveServerAddressIp(host: String?, lookup: suspend (String) -> String?): ProxyHomeTunnelIp? {
+    val address = host?.trim()?.removeSurrounding("[", "]")?.takeIf(String::isNotEmpty) ?: return null
+    if (isIpAddress(address)) return ProxyHomeTunnelIp(value = address)
+    val resolved = try {
+        lookup(address)
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        null
+    }
+    return resolved?.trim()?.takeIf(String::isNotEmpty)?.let { ProxyHomeTunnelIp(value = it) }
+}
+
+/**
+ * Feeds the IP tile: the server's own address first, so the tile is never a dash while the tunnel's
+ * public address is being asked for, then the public address once known. A failed public lookup
+ * leaves the server address in place.
+ */
+suspend fun resolveTunnelIpWithServerFallback(
+    serverHost: String?,
+    lookupHost: suspend (String) -> String?,
+    publish: (ProxyHomeTunnelIp?) -> Unit,
+    retryDelaysMs: List<Long> = DefaultTunnelIpRetryDelaysMs,
+    fetch: suspend () -> IpInfoData,
+) {
+    resolveServerAddressIp(serverHost, lookupHost)?.let(publish)
+    resolveTunnelIp(retryDelaysMs, fetch)?.let(publish)
 }

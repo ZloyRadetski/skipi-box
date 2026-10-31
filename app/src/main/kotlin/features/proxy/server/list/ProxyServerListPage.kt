@@ -94,7 +94,9 @@ import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeTunnelIp
 import app.skipi.app.home.resolveProxyHomeLatencyTimeoutMillis
 import app.skipi.app.home.resolveProxyHomeLatencyUrl
-import app.skipi.app.home.resolveTunnelIp
+import app.skipi.app.home.lookupHostAddress
+import app.skipi.app.home.resolveTunnelIpWithServerFallback
+import features.proxy.server.model.connectionEndpointOrNull
 import features.tools.AndroidDiagnostics
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.proxy.ProxyServerStopOutcome
@@ -731,7 +733,15 @@ fun ProxyServerListPage(
     ) {
         value = null
         if (!proxyRunning || !proxyListState.showTunnelIpOnHome) return@produceState
-        value = resolveTunnelIp { AndroidDiagnostics.fetchIpInfo(context) }
+        // The tile shows the config's server address (a domain resolved) until the public one is known.
+        val serverHost = appState.proxyServers.firstOrNull { it.id == appState.selectedProxyServerId }
+            ?.server?.connectionEndpointOrNull()?.host
+        resolveTunnelIpWithServerFallback(
+            serverHost = serverHost,
+            lookupHost = ::lookupHostAddress,
+            publish = { value = it },
+            fetch = { AndroidDiagnostics.fetchIpInfo(context) },
+        )
     }
     val directName = stringResource(R.string.routing_outbound_direct)
     val blockName = stringResource(R.string.routing_outbound_block)

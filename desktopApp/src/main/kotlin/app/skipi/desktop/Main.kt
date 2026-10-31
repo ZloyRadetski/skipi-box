@@ -20,7 +20,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import app.skipi.app.home.ProxyHomeTunnelIp
-import app.skipi.app.home.resolveTunnelIp
+import app.skipi.app.home.lookupHostAddress
+import app.skipi.app.home.resolveTunnelIpWithServerFallback
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -101,6 +102,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.connectionEndpointOrNull
 import features.proxy.server.model.stripLeadingCountryFlag
 import features.config.runtime.ActiveGeoResourceRefreshTrigger
 import features.config.TrafficConfigState
@@ -292,7 +294,15 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 ) {
                     value = null
                     if (!tunnel.coreState.isRunning || !desktopSettings.showTunnelIp) return@produceState
-                    value = resolveTunnelIp { desktopDiagnostics.fetchIpInfo() }
+                    // The tile shows the config's server address (a domain resolved) until the public one is known.
+                    val serverHost = serverLibrary.servers.firstOrNull { it.id == serverLibrary.selectedServerId }
+                        ?.decode()?.getOrNull()?.connectionEndpointOrNull()?.host
+                    resolveTunnelIpWithServerFallback(
+                        serverHost = serverHost,
+                        lookupHost = ::lookupHostAddress,
+                        publish = { value = it },
+                        fetch = { desktopDiagnostics.fetchIpInfo() },
+                    )
                 }
 
                 var appUpdateState by remember { mutableStateOf(AppUpdateState()) }
