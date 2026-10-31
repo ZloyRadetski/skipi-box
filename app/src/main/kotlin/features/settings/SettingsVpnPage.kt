@@ -29,7 +29,7 @@ import app.R
 import app.collectAppState
 import app.navigation.Route
 import app.skipi.ui.settings.SkipiVpnSettingsScreen
-import app.skipi.ui.settings.VpnSettingsLabels
+import app.skipi.ui.settings.rememberVpnSettingsLabels
 import app.skipi.ui.settings.VpnSettingsState
 import app.skipi.ui.settings.tunSettingsSummary
 import system.isIgnoringBatteryOptimizations
@@ -57,37 +57,7 @@ fun SettingsVpnPage(padding: PaddingValues) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val labels = VpnSettingsLabels(
-        screenTitle = stringResource(R.string.settings_category_vpn),
-        vpnSectionTitle = stringResource(R.string.settings_proxy_vpn_service),
-        tunTitle = stringResource(R.string.settings_tun),
-        hevTunTitle = stringResource(R.string.configs_hevtun),
-        hevTunSummary = stringResource(R.string.configs_hevtun_summary),
-        appendHttpTitle = stringResource(R.string.configs_append_http_proxy),
-        appendHttpSummary = stringResource(R.string.configs_append_http_proxy_summary),
-        strictFullTunnelTitle = stringResource(R.string.settings_strict_full_tunnel),
-        strictFullTunnelSummary = stringResource(R.string.settings_strict_full_tunnel_summary),
-        autoConnectSectionTitle = stringResource(R.string.settings_auto_connect_title),
-        autoConnectOnOpenTitle = stringResource(R.string.settings_auto_connect_on_app_open_title),
-        autoConnectOnOpenSummary = stringResource(R.string.settings_auto_connect_on_app_open_summary),
-        autoConnectOnBootTitle = stringResource(R.string.settings_auto_connect_on_boot_title),
-        autoConnectOnBootSummary = stringResource(R.string.settings_auto_connect_on_boot_summary),
-        killSwitchSectionTitle = stringResource(R.string.settings_kill_switch),
-        killSwitchTitle = stringResource(R.string.settings_kill_switch),
-        killSwitchSummary = stringResource(R.string.settings_kill_switch_summary),
-        systemVpnSettingsTitle = stringResource(R.string.settings_system_vpn_settings),
-        systemVpnSettingsSummary = stringResource(R.string.settings_system_vpn_settings_summary),
-        stabilitySectionTitle = stringResource(R.string.settings_stability_and_background),
-        batteryOptimizationTitle = stringResource(R.string.settings_battery_optimization),
-        batteryUnrestrictedSummary = stringResource(R.string.settings_battery_optimization_unrestricted),
-        batteryRestrictedSummary = stringResource(R.string.settings_battery_optimization_restricted),
-        wakeLockTitle = stringResource(R.string.settings_wake_lock),
-        wakeLockSummary = stringResource(R.string.settings_wake_lock_summary),
-        seamlessSwitchingTitle = stringResource(R.string.settings_seamless_network_switching),
-        seamlessSwitchingSummary = stringResource(R.string.settings_seamless_network_switching_summary),
-        networkAutomationTitle = stringResource(R.string.settings_network_automation_title),
-        networkAutomationSummary = stringResource(R.string.settings_network_automation_summary),
-    )
+    val labels = rememberVpnSettingsLabels()
     val state = VpnSettingsState(
         tunSummary = tunSettingsSummary(
             mtu = appState.tunMtu,

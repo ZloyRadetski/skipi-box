@@ -1449,4 +1449,13 @@
     <string name="settings_proxy_server_list_columns_single">1 колонка</string>
     <string name="settings_proxy_server_list_columns_double">2 колонки</string>
     <string name="settings_proxy_server_list_columns_triple">3 колонки</string>
+    <string name="settings_tun_mode_title">Режим TUN</string>
+    <string name="settings_tun_mode_summary">Направлять весь трафик компьютера через виртуальный сетевой интерфейс вместо системного прокси</string>
+    <string name="settings_tun_mode_unavailable">Режим TUN недоступен: %1$s</string>
+    <string name="settings_launch_on_login_title">При входе в систему</string>
+    <string name="settings_launch_on_login_summary">Запускать SKIPI в фоне, когда вы входите в систему</string>
+    <string name="notification_vpn_connected">VPN включён</string>
+    <string name="notification_vpn_disconnected">VPN выключен</string>
+    <string name="notification_vpn_connect_failed">Не удалось включить VPN</string>
+    <string name="notification_vpn_disconnect_failed">Не удалось выключить VPN</string>
 </resources>

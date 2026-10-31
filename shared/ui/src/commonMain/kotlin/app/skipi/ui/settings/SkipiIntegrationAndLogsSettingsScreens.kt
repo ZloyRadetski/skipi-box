@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import app.skipi.ui.components.BackNavigationIcon
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,11 +53,9 @@ internal fun SettingsBackTopBar(
     onBack: () -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
-    val back: @Composable () -> Unit = {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.common_back))
-        }
-    }
+    // The themed icon every other screen uses: a plain Material icon takes the default content colour,
+    // which is dark on the dark theme and left this arrow invisible.
+    val back: @Composable () -> Unit = { BackNavigationIcon(onClick = onBack) }
     SmallTopAppBar(
         title = title,
         scrollBehavior = scrollBehavior,

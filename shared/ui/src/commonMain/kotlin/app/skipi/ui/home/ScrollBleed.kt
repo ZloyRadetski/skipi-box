@@ -31,16 +31,27 @@ fun Modifier.scrollBleed(horizontal: Dp, top: Dp = Dp(0f), bottom: Dp = Dp(0f)):
         layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(-h, -t) }
     }
 
-/** Fades content out over the first [top] and last [bottom] of the box instead of cutting it off. */
-fun Modifier.verticalEdgeFade(top: Dp, bottom: Dp): Modifier =
+/**
+ * Fades content out over the first [top] and last [bottom] of the box instead of cutting it off.
+ * The first [topClear] of [top] is fully hidden before the fade begins, for a transparent bar that
+ * content scrolls under.
+ */
+fun Modifier.verticalEdgeFade(top: Dp, bottom: Dp, topClear: Dp = Dp(0f)): Modifier =
     graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
         .drawWithContent {
             drawContent()
             val topPx = top.toPx()
             val bottomPx = bottom.toPx()
             if (topPx > 0f) {
+                val clearFraction = (topClear.toPx() / topPx).coerceIn(0f, 1f)
                 drawRect(
-                    brush = Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black, startY = 0f, endY = topPx),
+                    brush = Brush.verticalGradient(
+                        0f to Color.Transparent,
+                        clearFraction to Color.Transparent,
+                        1f to Color.Black,
+                        startY = 0f,
+                        endY = topPx,
+                    ),
                     size = Size(size.width, topPx),
                     blendMode = BlendMode.DstIn,
                 )

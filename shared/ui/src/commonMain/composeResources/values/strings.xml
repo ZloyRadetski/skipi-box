@@ -1460,4 +1460,13 @@
     <string name="settings_proxy_server_list_columns_single">1 column</string>
     <string name="settings_proxy_server_list_columns_double">2 columns</string>
     <string name="settings_proxy_server_list_columns_triple">3 columns</string>
+    <string name="settings_tun_mode_title">TUN mode</string>
+    <string name="settings_tun_mode_summary">Send all traffic of this computer through a virtual network interface instead of the system proxy</string>
+    <string name="settings_tun_mode_unavailable">TUN mode is unavailable: %1$s</string>
+    <string name="settings_launch_on_login_title">At login</string>
+    <string name="settings_launch_on_login_summary">Start SKIPI in the background when you log in to the computer</string>
+    <string name="notification_vpn_connected">VPN is on</string>
+    <string name="notification_vpn_disconnected">VPN is off</string>
+    <string name="notification_vpn_connect_failed">Could not turn VPN on</string>
+    <string name="notification_vpn_disconnect_failed">Could not turn VPN off</string>
 </resources>

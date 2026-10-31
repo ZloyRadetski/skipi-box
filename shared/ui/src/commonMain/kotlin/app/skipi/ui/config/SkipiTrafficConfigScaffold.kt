@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.skipi.ui.home.verticalEdgeFade
 import app.skipi.ui.layout.AdaptiveTopAppBar
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.components.NavigationIcon
@@ -87,7 +88,16 @@ fun SkipiTrafficConfigFullScreenScaffold(
             end = basePadding.calculateEndPadding(layoutDirection) + 12.dp,
             bottom = basePadding.calculateBottomPadding() + 12.dp,
         )
-        Box(modifier = Modifier.fillMaxSize()) {
+        // The bar is transparent so the page background shows through; what scrolls under it is
+        // hidden instead of showing through the title, and fades in where the first item rests.
+        val barHeight = innerPadding.calculateTopPadding()
+        Box(
+            modifier = Modifier.fillMaxSize().verticalEdgeFade(
+                top = barHeight + topContentInset,
+                bottom = 0.dp,
+                topClear = barHeight,
+            ),
+        ) {
             content(contentPadding, listPadding, scrollBehavior)
         }
     }
