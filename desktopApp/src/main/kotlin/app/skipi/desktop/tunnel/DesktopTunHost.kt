@@ -16,34 +16,62 @@ internal class DesktopTunHost(
     private val coreProbe: () -> String?,
     private val device: () -> DesktopTunDevice,
     private val hev: (Path) -> DesktopHevTunnel,
+    private val isWindows: Boolean = false,
+    private val isElevated: () -> Boolean = ::isWindowsElevated,
 ) {
     private var tunRuntime: DesktopTunRuntime? = null
 
     /** Whether this operating system has a TUN implementation at all. */
-    val hostSupported: Boolean get() = isLinux
+    val hostSupported: Boolean get() = isLinux || isWindows
+
+    /**
+     * Windows creates the TUN adapter and its routes only for an administrator; the settings page
+     * offers a UAC relaunch instead of a dead switch.
+     */
+    fun needsElevation(): Boolean = isWindows && !isElevated()
 
     /** Null when TUN mode can be started on this machine right now. */
     fun unavailableReason(): String? {
-        if (!isLinux) return "TUN mode is available only on Linux so far"
+        if (!hostSupported) return "TUN mode is available only on Linux and Windows so far"
         val files = runtime().getOrElse { return it.message ?: "SKIPI Core runtime is unavailable" }
-        if (files.hevLibrary == null) return "libhev-socks5-tunnel.so is missing from the application"
+        if (isWindows) {
+            if (files.hevExecutable == null) return "hev-socks5-tunnel.exe is missing from the application"
+        } else if (files.hevLibrary == null) {
+            return "libhev-socks5-tunnel.so is missing from the application"
+        }
         return coreProbe()
     }
 
     @Synchronized
     fun tunRuntime(): DesktopTunRuntime {
         tunRuntime?.let { return it }
-        val hevLibrary = runtime().getOrThrow().hevLibrary
-            ?: error("libhev-socks5-tunnel.so is missing from the application")
-        return DesktopTunRuntime(device(), hev(hevLibrary)).also { tunRuntime = it }
+        val files = runtime().getOrThrow()
+        val hevPath = if (isWindows) {
+            files.hevExecutable ?: error("hev-socks5-tunnel.exe is missing from the application")
+        } else {
+            files.hevLibrary ?: error("libhev-socks5-tunnel.so is missing from the application")
+        }
+        return DesktopTunRuntime(device(), hev(hevPath)).also { tunRuntime = it }
     }
 
     companion object {
         fun forCore(
             coreController: DesktopCoreController,
             runtime: () -> Result<DesktopCoreRuntime> = DesktopCoreRuntimes::discover,
+        ): DesktopTunHost {
+            val osName = System.getProperty("os.name").orEmpty()
+            val windows = osName.contains("windows", ignoreCase = true)
+            return forCore(coreController, runtime, linux = osName.contains("linux", ignoreCase = true), windows = windows)
+        }
+
+        internal fun forCore(
+            coreController: DesktopCoreController,
+            runtime: () -> Result<DesktopCoreRuntime>,
+            linux: Boolean,
+            windows: Boolean,
         ): DesktopTunHost = DesktopTunHost(
-            isLinux = System.getProperty("os.name").orEmpty().contains("linux", ignoreCase = true),
+            isLinux = linux,
+            isWindows = windows,
             runtime = runtime,
             coreProbe = {
                 coreController.nativeForTun().fold(
@@ -52,9 +80,10 @@ internal class DesktopTunHost(
                 )
             },
             device = {
-                DesktopCoreTunDevice(coreController.nativeForTun().getOrThrow())
+                val core = coreController.nativeForTun().getOrThrow()
+                if (windows) DesktopWindowsTunDevice(core) else DesktopCoreTunDevice(core)
             },
-            hev = { library -> DesktopHevFfmTunnel(library) },
+            hev = { path -> if (windows) DesktopHevProcessTunnel(path) else DesktopHevFfmTunnel(path) },
         )
     }
 }

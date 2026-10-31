@@ -15,7 +15,11 @@ internal interface DesktopTunDevice {
     /** Binds Core's own sockets to the physical interface; must precede Core's start. */
     fun prepare(interfaceName: String): Result<Unit>
 
+    /** Returns the attached tun descriptor, or -1 when the tunnel process creates the interface itself. */
     fun open(planJson: String): Result<Int>
+
+    /** Finishes the setup once the tunnel runs on the interface (routes on Windows); a no-op elsewhere. */
+    fun attach(plan: TunInterfacePlan): Result<Unit> = Result.success(Unit)
 
     fun close(): Result<Unit>
 }
@@ -64,6 +68,12 @@ internal class DesktopTunRuntime(
         if (result.isFailure) {
             device.close()
             return result
+        }
+        val attached = device.attach(request.plan)
+        if (attached.isFailure) {
+            tunnel.stop()
+            device.close()
+            return attached
         }
         started = true
         return Result.success(Unit)

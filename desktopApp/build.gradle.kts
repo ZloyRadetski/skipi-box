@@ -154,7 +154,7 @@ compose.desktop {
 }
 
 tasks.matching { it.name == "prepareAppResources" }.configureEach {
-    dependsOn(buildDesktopCore, prepareDesktopCoreRuntime, prepareDesktopHevRuntime)
+    dependsOn(buildDesktopCore, prepareDesktopCoreRuntime, prepareDesktopHevRuntime, prepareDesktopHevWindowsRuntime)
 }
 
 prepareDesktopCoreRuntime.configure {
@@ -165,6 +165,15 @@ val prepareDesktopHevRuntime = tasks.register<Copy>("prepareDesktopHevRuntime") 
     from(buildDesktopHev.flatMap { task -> task.outputLibrary })
     into(desktopCoreRuntime)
     onlyIf { !isWindowsHost }
+}
+
+// Windows TUN: hev-socks5-tunnel runs as its own process next to the Wintun driver library.
+val prepareDesktopHevWindowsRuntime = tasks.register<PrepareDesktopHevWindowsRuntimeTask>("prepareDesktopHevWindowsRuntime") {
+    hevVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
+    expectedArchiveSha256.set("08c85eb47eea60fad4a2ace9f85577b05056be08118924f8305f2f03b7dd9994")
+    wintunLicense.set(desktopHevSourceDirectory.file("third-part/wintun/LICENSE.txt"))
+    outputDirectory.set(desktopCoreRuntime.map { root -> root.dir("hev") })
+    onlyIf { isWindowsHost }
 }
 
 tasks.withType<Test>().configureEach {

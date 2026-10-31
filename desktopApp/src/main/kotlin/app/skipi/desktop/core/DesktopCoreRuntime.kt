@@ -14,6 +14,8 @@ data class DesktopCoreRuntime(
     val geoSite: Path,
     /** Present on Linux builds that ship the TUN mode. */
     val hevLibrary: Path? = null,
+    /** Present on Windows builds that ship the TUN mode: hev-socks5-tunnel, run as its own process. */
+    val hevExecutable: Path? = null,
 )
 
 /** Locates only a shared SKIPI Core library and its Xray geo resources. */
@@ -40,7 +42,7 @@ object DesktopCoreRuntimes {
             "Incomplete SKIPI Core desktop runtime: ${missing.joinToString { it.fileName.toString() }}"
         }
         val hev = runtimeDirectory.resolve("libhev-socks5-tunnel.so").takeIf(::isNonEmptyRegularFile)
-        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite, hev)
+        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite, hev, windowsHevExecutable(runtimeDirectory))
     }
 
     private fun candidateDirectories(): List<Path> = buildList {
@@ -60,6 +62,15 @@ object DesktopCoreRuntimes {
             Path.of("/usr/share/skipi-core").let(::add)
         }
     }.distinct()
+
+    /** hev needs Wintun and the MSYS runtime in its own directory, so all three must be there. */
+    private fun windowsHevExecutable(runtimeDirectory: Path): Path? {
+        val directory = runtimeDirectory.resolve("hev")
+        val executable = directory.resolve("hev-socks5-tunnel.exe")
+        val complete = listOf(executable, directory.resolve("wintun.dll"), directory.resolve("msys-2.0.dll"))
+            .all(::isNonEmptyRegularFile)
+        return executable.takeIf { complete }
+    }
 
     private fun libraryFileName(): String = when {
         isWindows() -> "skipicore.dll"

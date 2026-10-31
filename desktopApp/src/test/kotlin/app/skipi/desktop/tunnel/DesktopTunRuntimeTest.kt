@@ -20,6 +20,8 @@ class DesktopTunRuntimeTest {
     private var tunnelStartResult: Result<Unit> = Result.success(Unit)
     private var tunnelStopResult: Result<Unit> = Result.success(Unit)
     private var deviceCloseResult: Result<Unit> = Result.success(Unit)
+    private var attachResult: Result<Unit> = Result.success(Unit)
+    private var attachedPlan: TunInterfacePlan? = null
 
     private var prepareResult: Result<Unit> = Result.success(Unit)
     private var preparedName: String? = null
@@ -34,6 +36,12 @@ class DesktopTunRuntimeTest {
             events += "open"
             openedPlan = planJson
             return deviceOpenResult
+        }
+
+        override fun attach(plan: TunInterfacePlan): Result<Unit> {
+            events += "attach"
+            attachedPlan = plan
+            return attachResult
         }
 
         override fun close(): Result<Unit> {
@@ -85,6 +93,29 @@ class DesktopTunRuntimeTest {
     }
 
     @Test
+    fun attachesTheDeviceToTheRunningTunnelBeforeReportingItStarted() {
+        val runtime = runtime()
+
+        runtime.start(request).getOrThrow()
+
+        assertEquals(listOf("open", "start", "attach"), events)
+        assertEquals(request.plan, attachedPlan)
+        assertTrue(runtime.isRunning())
+    }
+
+    @Test
+    fun aFailedAttachStopsHevAndClosesTheDevice() {
+        attachResult = Result.failure(IllegalStateException("routes failed"))
+        val runtime = runtime()
+
+        val result = runtime.start(request)
+
+        assertEquals("routes failed", result.exceptionOrNull()?.message)
+        assertEquals(listOf("open", "start", "attach", "stop", "close"), events)
+        assertFalse(runtime.isRunning())
+    }
+
+    @Test
     fun aFailedPrepareIsReported() {
         prepareResult = Result.failure(IllegalStateException("cannot bind"))
 
@@ -107,7 +138,7 @@ class DesktopTunRuntimeTest {
         val result = runtime().start(request)
 
         assertTrue(result.isSuccess)
-        assertEquals(listOf("open", "start"), events)
+        assertEquals(listOf("open", "start", "attach"), events)
         assertEquals(41, startedFd)
     }
 

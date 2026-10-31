@@ -37,6 +37,36 @@ class DesktopCoreRuntimeTest {
     }
 
     @Test
+    fun theWindowsHevRuntimeIsFoundOnlyWhenItsExecutableAndBothDllsArePresent() {
+        val directory = Files.createTempDirectory("skipi-core-runtime-hev-")
+        try {
+            listOf("skipicore.dll", "libskipicore.so", "geoip.dat", "geosite.dat").forEach { name ->
+                Files.writeString(directory.resolve(name), name)
+            }
+            assertEquals(null, DesktopCoreRuntimes.fromDirectory(directory).getOrThrow().hevExecutable)
+
+            val hev = Files.createDirectories(directory.resolve("hev"))
+            Files.writeString(hev.resolve("hev-socks5-tunnel.exe"), "exe")
+            Files.writeString(hev.resolve("msys-2.0.dll"), "msys")
+            assertEquals(
+                null,
+                DesktopCoreRuntimes.fromDirectory(directory).getOrThrow().hevExecutable,
+                "Wintun is required next to the executable",
+            )
+
+            Files.writeString(hev.resolve("wintun.dll"), "wintun")
+            assertEquals(
+                hev.resolve("hev-socks5-tunnel.exe").toAbsolutePath().normalize(),
+                DesktopCoreRuntimes.fromDirectory(directory).getOrThrow().hevExecutable,
+            )
+        } finally {
+            Files.walk(directory).use { paths ->
+                paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+            }
+        }
+    }
+
+    @Test
     fun controllerStartsAndStopsOneInProcessCoreSession() {
         val native = FakeDesktopCoreNative()
         val runtime = fakeRuntime()
