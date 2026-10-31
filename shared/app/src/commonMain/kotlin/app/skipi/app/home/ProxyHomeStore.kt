@@ -3,6 +3,7 @@
 
 package app.skipi.app.home
 
+import kotlin.time.TimeMark
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,8 @@ data class ProxyHomeDisplayOptions(
  */
 data class ProxyHomeInput(
     val tunnelSnapshot: TunnelSnapshot = TunnelSnapshot(),
+    /** When the current connection began, from the host's [ConnectionClock]; null when unknown. */
+    val connectedSince: TimeMark? = null,
     val selectedServerId: String? = null,
     val selectedServerTitle: String = "",
     val activeProfileName: String? = null,
@@ -253,6 +256,7 @@ data class ProxyHomePageUiState(
 /** UI state is derived from the authoritative host input plus local presentation state. */
 data class ProxyHomeUiState(
     val tunnelSnapshot: TunnelSnapshot,
+    val connectedSince: TimeMark? = null,
     val selectedServerId: String?,
     /** Selected server projected from the full input, even when search/group filters hide it. */
     val selectedServer: ProxyServerSummary?,
@@ -669,6 +673,7 @@ class ProxyHomeStore(
 
         return ProxyHomeUiState(
             tunnelSnapshot = source.tunnelSnapshot,
+            connectedSince = source.connectedSince,
             selectedServerId = selectedServerId,
             selectedServer = selectedServer?.copy(selected = true),
             selectedServerTitle = title,

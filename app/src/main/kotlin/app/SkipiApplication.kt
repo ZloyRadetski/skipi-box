@@ -58,6 +58,8 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
     internal val appUpdateDownloadCoordinator: features.updater.runtime.AppUpdateDownloadCoordinator by lazy {
         features.updater.runtime.AppUpdateDownloadCoordinator(applicationContext, stateStore)
     }
+    /** When the VPN connection began; process-wide because Home is rebuilt on every visit. */
+    internal val connectionClock = app.skipi.app.home.ConnectionClock()
     internal val networkAutomationMonitor: features.networkautomation.engine.NetworkAutomationMonitor by lazy {
         features.networkautomation.engine.NetworkAutomationMonitor(applicationContext, stateStore, appScope)
     }
@@ -87,6 +89,12 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
         appUpdateDownloadCoordinator.restorePendingDownload()
         networkAutomationMonitor.start()
         proxyWidgetRuntime.start()
+        appScope.launch {
+            stateStore.state
+                .map { state -> state.proxyRunning }
+                .distinctUntilChanged()
+                .collect { running -> connectionClock.update(running) }
+        }
         appScope.launch {
             stateStore.state
                 .map { state ->

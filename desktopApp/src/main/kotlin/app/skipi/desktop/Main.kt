@@ -83,6 +83,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.collect
+import features.config.SkipiDeepLink
+import app.skipi.app.home.ConnectionClock
+import org.jetbrains.compose.resources.getString
+import app.skipi.ui.resources.notification_vpn_disconnect_failed
+import app.skipi.ui.resources.notification_vpn_connect_failed
+import app.skipi.ui.resources.notification_vpn_disconnected
+import app.skipi.ui.resources.notification_vpn_connected
+import features.config.parseSkipiDeepLinkOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -138,6 +146,10 @@ fun main() = application {
                 val latencyDoneTemplate = stringResource(Res.string.proxy_server_list_latency_done)
                 val noSubscriptionUpdatesMessage = stringResource(Res.string.proxy_server_list_no_subscription_updates)
                 val subscriptionRefreshSuccessTemplate =
+    val windowState = remember { WindowState(size = DpSize(1180.dp, 860.dp), isMinimized = hidden) }
+    val escapeHandler = remember { DesktopEscapeHandler() }
+    // The start of the connection lives here, above every screen: Home is rebuilt on each visit.
+    val connectionClock = remember { ConnectionClock() }
                     stringResource(Res.string.proxy_server_list_subscription_update_result)
                 val subscriptionRefreshFailedTemplate =
                     stringResource(Res.string.proxy_server_list_subscription_update_result_with_failed)
@@ -940,6 +952,78 @@ fun main() = application {
                             onImportText = { text, _ ->
                                 val trimmed = text.trim()
                                 if (trimmed.isNotEmpty()) {
+                }
+                LaunchedEffect(tunnel.coreState.isRunning) { connectionClock.update(tunnel.coreState.isRunning) }
+                // skipi:// links from the command line and from later starts (see main).
+                LaunchedEffect(desktopTunnelController) {
+                    for (raw in incomingLinks) {
+                        when (val link = parseSkipiDeepLinkOrNull(raw)) {
+                            null -> DesktopLogger.info("Links", "Ignored unknown link $raw")
+                            SkipiDeepLink.Open -> {
+                                windowState.isMinimized = false
+                                window.toFront()
+                            }
+                            SkipiDeepLink.Close -> tunnel.closeRequested = true
+                            SkipiDeepLink.Connect, SkipiDeepLink.Disconnect, SkipiDeepLink.Toggle -> {
+                                val command = desktopTunnelCommandFor(link, running = tunnel.desiredRunning)
+                                DesktopLogger.info("Links", "$raw -> $command")
+                                if (command != DesktopTunnelCommand.None) {
+                                    desktopToggleTunnel()
+                                    delay(100)
+                                    while (tunnel.operationInProgress) delay(100)
+                                }
+                                // The window is usually hidden when a shortcut sends a link, so say what happened.
+                                val outcome = desktopLinkOutcome(command, runningAfter = tunnel.coreState.isRunning)
+                                val status = getString(
+                                    when (outcome) {
+                                        DesktopLinkOutcome.Connected -> Res.string.notification_vpn_connected
+                                        DesktopLinkOutcome.Disconnected -> Res.string.notification_vpn_disconnected
+                                        DesktopLinkOutcome.ConnectFailed -> Res.string.notification_vpn_connect_failed
+                                        DesktopLinkOutcome.DisconnectFailed -> Res.string.notification_vpn_disconnect_failed
+                                    },
+                                )
+                                val failed = outcome == DesktopLinkOutcome.ConnectFailed || outcome == DesktopLinkOutcome.DisconnectFailed
+                                val text = desktopLinkNotificationText(status, if (failed) tunnel.coreMessage else "")
+                                withContext(Dispatchers.IO) {
+                                    coreController.nativeForTun()
+                                        .mapCatching { native -> native.notify(text.title, text.body) }
+                                        .onFailure { error -> DesktopLogger.info("Links", "No notification shown: ${error.message}") }
+                                }
+                            }
+                            else -> DesktopLogger.info("Links", "$raw is not handled on Desktop yet")
+                        }
+                    }
+                }
+                var autoConnectHandled by remember { mutableStateOf(false) }
+                LaunchedEffect(desktopTunnelController) {
+                    if (autoConnectHandled) return@LaunchedEffect
+                    autoConnectHandled = true
+                    val hasSelection = configLibrary.selectedConfigId != null || serverLibrary.selectedServerId != null
+                    if (shouldAutoConnectOnOpen(desktopSettings, hasSelection, tunnel.coreState.isRunning)) {
+                        autoConnectWithRetry(
+                            connect = {
+                                // A manual connect in progress is the user's; do not flip it back.
+                                if (!tunnel.desiredRunning && !tunnel.coreState.isRunning) {
+                                    desktopToggleTunnel()
+                                    delay(100)
+                                    while (tunnel.operationInProgress) delay(100)
+                                }
+                            },
+                            isRunning = { tunnel.coreState.isRunning },
+                            intentVersion = { tunnel.intentVersion },
+                            shouldStop = { tunnel.closeRequested || tunnel.desiredRunning },
+                            onAttemptFailed = { attempt, waitMillis ->
+                                DesktopLogger.info(
+                                    "AutoConnect",
+                                    if (waitMillis > 0) {
+                                        "Attempt $attempt failed (${tunnel.coreMessage}); retrying in ${waitMillis / 1000}s"
+                                    } else {
+                                        "Attempt $attempt failed (${tunnel.coreMessage}); giving up"
+                                    },
+                                )
+                            },
+                        )
+                    }
                                     val install = trimmed.toDesktopSubscriptionInstallClipboardUriOrNull()
                                     if (install != null) {
                                         desktopPrepareSubscription(install)
@@ -990,6 +1074,7 @@ fun main() = application {
                                 ),
                             tunnelMessage = tunnel.coreMessage,
                             serverMessage = serverLibraryMessage,
+                            connectionClock = connectionClock,
                             subscriptionMessage = subscriptionUi.message,
                             confirmDeletion = desktopSettings.confirmDeletion,
                             activeProfileName = activeProfileName,

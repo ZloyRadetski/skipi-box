@@ -194,6 +194,7 @@ import app.skipi.ui.server.display.ProtocolColorUtils
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.theme.SkipiWindowClass
 import features.subscription.formatSubscriptionUpdateTimestamp
+import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -981,16 +982,23 @@ internal fun formatSessionDuration(totalSeconds: Long): String {
 }
 
 /**
+ * Seconds of the current session. The host's start of the connection wins; only a host that cannot
+ * say when the connection began makes this screen count from when it appeared.
+ */
+internal fun sessionDurationSeconds(connectedSince: TimeMark?, screenAppeared: TimeMark): Long =
+    (connectedSince ?: screenAppeared).elapsedNow().inWholeSeconds
+
+/**
  * The ticking state is returned unread: the panel must not read it, so the one-second tick
  * recomposes only the text that shows it instead of the whole connection panel.
  */
 @Composable
-private fun rememberSessionDuration(connected: Boolean): State<String>? {
+private fun rememberSessionDuration(connected: Boolean, connectedSince: TimeMark?): State<String>? {
     if (!connected) return null
-    return produceState(initialValue = formatSessionDuration(0), connected) {
-        val mark = TimeSource.Monotonic.markNow()
+    return produceState(initialValue = formatSessionDuration(sessionDurationSeconds(connectedSince, TimeSource.Monotonic.markNow())), connected, connectedSince) {
+        val screenAppeared = TimeSource.Monotonic.markNow()
         while (true) {
-            value = formatSessionDuration(mark.elapsedNow().inWholeSeconds)
+            value = formatSessionDuration(sessionDurationSeconds(connectedSince, screenAppeared))
             delay(1000)
         }
     }
@@ -1043,7 +1051,7 @@ private fun HomeConnectionPanel(
         }
     }
 
-    val sessionDuration = rememberSessionDuration(state.connectionPhase == ProxyConnectionPhase.Connected)
+    val sessionDuration = rememberSessionDuration(state.connectionPhase == ProxyConnectionPhase.Connected, state.connectedSince)
 
     val currentServer = state.selectedServer
     val currentServerLatencyMs = currentServer?.latencyMs

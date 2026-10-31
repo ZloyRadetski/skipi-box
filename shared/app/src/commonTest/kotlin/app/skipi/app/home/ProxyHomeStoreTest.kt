@@ -897,6 +897,27 @@ class ProxyHomeStoreTest {
         assertEquals(beta.copy(selected = true), pageServers[1])
     }
 
+    @Test
+    fun theHostsConnectionStartIsPassedToTheHomeState() {
+        val mark = kotlin.time.TestTimeSource().markNow()
+
+        val store = createStore(input = ProxyHomeInput(connectedSince = mark))
+
+        assertEquals(mark, store.uiState.value.connectedSince)
+    }
+
+    @Test
+    fun aChangedConnectionStartReachesTheHomeStateWithoutRecreatingTheStore() {
+        val source = kotlin.time.TestTimeSource()
+        val store = createStore()
+        assertEquals(null, store.uiState.value.connectedSince)
+
+        val mark = source.markNow()
+        store.updateInput(ProxyHomeInput(connectedSince = mark))
+
+        assertEquals(mark, store.uiState.value.connectedSince)
+    }
+
     private fun createStore(
         input: ProxyHomeInput = ProxyHomeInput(),
         effects: RecordingEffectHandler = RecordingEffectHandler(),

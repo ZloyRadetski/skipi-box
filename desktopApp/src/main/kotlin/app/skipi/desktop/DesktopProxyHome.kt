@@ -23,6 +23,7 @@ import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeEffect
 import app.skipi.app.home.ProxyHomeEffectHandler
 import app.skipi.app.home.ProxyHomeImportSource
+import app.skipi.app.home.ConnectionClock
 import app.skipi.app.home.ProxyHomeInput
 import app.skipi.app.home.ProxyHomePresentation
 import app.skipi.app.home.ProxyHomeQrPayload
@@ -119,6 +120,8 @@ internal fun DesktopProxyHome(
     refreshingSubscriptionIds: Set<Int> = emptySet(),
     running: Boolean,
     connecting: Boolean = false,
+    /** Process-wide, so the session time survives leaving and returning to Home. */
+    connectionClock: ConnectionClock = ConnectionClock(),
     tunnelIp: ProxyHomeTunnelIp? = null,
     runtimeOutboundMetric: String? = null,
     canToggleTunnel: Boolean,
@@ -330,6 +333,7 @@ internal fun DesktopProxyHome(
 
     val homeInput = ProxyHomeInput(
         tunnelSnapshot = desktopProxyHomeTunnelSnapshot(running = running, connecting = connecting),
+        connectedSince = connectionClock.update(running),
         selectedServerId = serverLibrary.selectedServerId?.toString(),
         selectedServerTitle = selectedTitle,
         activeProfileName = activeProfileName,

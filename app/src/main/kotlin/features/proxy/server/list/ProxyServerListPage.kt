@@ -681,6 +681,7 @@ fun ProxyServerListPage(
         } while (true)
     }
     val tunnelSnapshot = measuredTunnelSnapshot
+    val connectionClock = remember(context) { (context.applicationContext as app.SkipiApplication).connectionClock }
     val memoryLifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val tunnelMemoryKb by produceState(
         initialValue = 0L,
@@ -759,7 +760,7 @@ fun ProxyServerListPage(
             tunnelIp = tunnelIp,
         ).let { input ->
             if (proxyRunning) input.copy(selectedServerTitle = activeTunnelTitle) else input
-        }
+        }.copy(connectedSince = connectionClock.update(proxyRunning))
     }
     val latestHomeInput = rememberUpdatedState(homeInput)
     val homeStoreReference = remember { mutableStateOf<ProxyHomeStore?>(null) }

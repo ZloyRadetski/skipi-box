@@ -20,3 +20,25 @@ class SessionDurationFormatTest {
         assertEquals("100:00:00", formatSessionDuration(360_000))
     }
 }
+
+class SessionDurationSecondsTest {
+    private val time = kotlin.time.TestTimeSource()
+
+    @Test
+    fun theConnectionsOwnStartIsUsedWhenTheHostProvidesIt() {
+        val connectedSince = time.markNow()
+        time += kotlin.time.Duration.parse("90s")
+        // The screen was opened just now: its own fallback mark must not matter.
+        val screenOpened = time.markNow()
+
+        assertEquals(90L, sessionDurationSeconds(connectedSince, screenOpened))
+    }
+
+    @Test
+    fun withoutAHostStartTheScreenCountsFromWhenItAppeared() {
+        val screenOpened = time.markNow()
+        time += kotlin.time.Duration.parse("7s")
+
+        assertEquals(7L, sessionDurationSeconds(null, screenOpened))
+    }
+}
