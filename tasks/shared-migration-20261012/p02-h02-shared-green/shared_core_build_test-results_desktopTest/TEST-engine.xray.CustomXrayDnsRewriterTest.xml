@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="CustomXrayDnsRewriterTest[desktop]" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-12T19:51:52.831Z" hostname="MAZAFAKA-PC" time="0.019">
-  <properties/>
-  <testcase name="replacesFixedDnsPartsWhileKeepingTheCustomProxyAndRules[desktop]" classname="engine.xray.CustomXrayDnsRewriterTest" time="0.018"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.desktop.DesktopProxyHomeInitialGroupTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-12T20:30:43.501Z" hostname="MAZAFAKA-PC" time="0.129">
-  <properties/>
-  <testcase name="absentOrUndecodableSelectedServerFallsBackToManual" classname="app.skipi.desktop.DesktopProxyHomeInitialGroupTest" time="0.108"/>
-  <testcase name="initialGroupSeedFollowsPersistedSelectedServerInsteadOfEarlierSubscription" classname="app.skipi.desktop.DesktopProxyHomeInitialGroupTest" time="0.015"/>
-  <testcase name="hostAliasesCoverManualAutoAndUnknownSubscriptionIdsWithoutNormalization" classname="app.skipi.desktop.DesktopProxyHomeInitialGroupTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

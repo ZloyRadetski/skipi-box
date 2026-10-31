@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ProxyServerPayloadImportPipelineTest[desktop]" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-12T19:51:53.143Z" hostname="MAZAFAKA-PC" time="0.006">
-  <properties/>
-  <testcase name="triesDecodedBase64PayloadBeforeTheOriginalFilePayload[desktop]" classname="features.proxy.server.usecase.importer.ProxyServerPayloadImportPipelineTest" time="0.002"/>
-  <testcase name="providerPayloadCarriesChildContextAndHonorsDepthLimit[desktop]" classname="features.proxy.server.usecase.importer.ProxyServerPayloadImportPipelineTest" time="0.002"/>
-  <testcase name="keepsParserAndPayloadOrderUntilOneRecognizesInput[desktop]" classname="features.proxy.server.usecase.importer.ProxyServerPayloadImportPipelineTest" time="0.002"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

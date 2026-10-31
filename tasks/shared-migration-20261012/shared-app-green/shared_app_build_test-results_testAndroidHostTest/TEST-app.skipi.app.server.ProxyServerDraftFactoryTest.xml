@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="app.skipi.app.server.ProxyServerDraftFactoryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-12T13:23:44.774Z" hostname="MAZAFAKA-PC" time="0.007">
-  <properties/>
-  <testcase name="createProxyServerEditorDraftUsesAndroidGroupForEveryServerKind" classname="app.skipi.app.server.ProxyServerDraftFactoryTest" time="0.006"/>
-  <testcase name="eachCallReturnsAnIndependentMutableDraft" classname="app.skipi.app.server.ProxyServerDraftFactoryTest" time="0.0"/>
-  <testcase name="createProxyServerDraftMatchesAndroidManualActionDefaults" classname="app.skipi.app.server.ProxyServerDraftFactoryTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

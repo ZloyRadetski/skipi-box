@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="features.config.RoscomRoutingJsonTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-12T19:51:55.231Z" hostname="MAZAFAKA-PC" time="0.002">
-  <properties/>
-  <testcase name="rejectsNonRoutingJson" classname="features.config.RoscomRoutingJsonTest" time="0.001"/>
-  <testcase name="detectsAndConvertsPortableRoutingJson" classname="features.config.RoscomRoutingJsonTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

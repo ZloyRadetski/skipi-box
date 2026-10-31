@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="SubscriptionExpiryReminderTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-12T19:51:53.322Z" hostname="MAZAFAKA-PC" time="0.003">
-  <properties/>
-  <testcase name="calculatesSecondsAndRoundTripsStorageFormat[desktop]" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.001"/>
-  <testcase name="validatesPersistedCustomReminderListsForBothPlatforms[desktop]" classname="features.subscription.SubscriptionExpiryReminderTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

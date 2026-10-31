@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="TrafficProfileXrayPlannerTest[desktop]" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-12T19:51:52.852Z" hostname="MAZAFAKA-PC" time="0.041">
-  <properties/>
-  <testcase name="resolvesLocalProxyGroupsAndCompilesTheirRoutingTargets[desktop]" classname="engine.xray.TrafficProfileXrayPlannerTest" time="0.035"/>
-  <testcase name="rejectsUnknownPoliciesAndDesktopUnsupportedRules[desktop]" classname="engine.xray.TrafficProfileXrayPlannerTest" time="0.006"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
