@@ -44,6 +44,7 @@
     <string name="common_cancel">取消</string>
     <string name="common_save">保存</string>
     <string name="common_add">添加</string>
+    <string name="common_paste">粘贴</string>
     <string name="common_share">分享</string>
     <string name="common_edit">编辑</string>
     <string name="common_edit_all">编辑全部</string>

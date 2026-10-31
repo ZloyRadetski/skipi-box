@@ -35,12 +35,15 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -120,6 +123,9 @@ import app.skipi.ui.resources.home_connection_disconnect
 import app.skipi.ui.resources.home_connection_disconnected
 import app.skipi.ui.resources.home_connection_preparing
 import app.skipi.ui.resources.home_connection_tap_to_connect
+import app.skipi.ui.resources.common_add
+import app.skipi.ui.resources.common_paste
+import app.skipi.ui.resources.home_action_add_subscription
 import app.skipi.ui.resources.home_empty_hint
 import app.skipi.ui.resources.home_empty_search
 import app.skipi.ui.resources.home_empty_servers
@@ -928,8 +934,23 @@ private fun PageServerGrid(
             if (pageServers.isEmpty()) {
                 item(key = "empty-server-list", span = { GridItemSpan(maxLineSpan) }, contentType = "empty") {
                     Box(Modifier.padding(bottom = SkipiTheme.spacing.small)) {
+                        val hasSearch = state.searchQuery.isNotBlank()
                         EmptyServerListCard(
-                            hasSearch = state.searchQuery.isNotBlank(),
+                            hasSearch = hasSearch,
+                            actions = proxyHomeEmptyStateActions(
+                                hasAnyServers = state.pages.any { it.servers.isNotEmpty() } || state.servers.isNotEmpty(),
+                                hasSearch = hasSearch,
+                                canAddSubscription = canUseHomeAction(state, ProxyHomeActionId.AddSubscription),
+                                canImport = canUseHomeAction(state, ProxyHomeActionId.ImportServers),
+                                importSources = state.availableImportSources,
+                                canAddServer = canUseHomeAction(state, ProxyHomeActionId.AddServer) &&
+                                    state.availableServerKinds.isNotEmpty(),
+                            ),
+                            canAddSubscription = canUseHomeAction(state, ProxyHomeActionId.AddSubscription),
+                            serverKinds = state.availableServerKinds.takeIf {
+                                canUseHomeAction(state, ProxyHomeActionId.AddServer)
+                            }.orEmpty(),
+                            onAction = onAction,
                         )
                     }
                 }
@@ -1553,6 +1574,10 @@ private fun serverLatencyColor(
 @Composable
 private fun EmptyServerListCard(
     hasSearch: Boolean,
+    actions: ProxyHomeEmptyStateActions,
+    canAddSubscription: Boolean,
+    serverKinds: Collection<ProxyHomeServerKind>,
+    onAction: (ProxyHomeAction) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1579,6 +1604,73 @@ private fun EmptyServerListCard(
                     color = SkipiTheme.colors.onSurfaceVariant,
                     style = SkipiTheme.typography.bodyMedium,
                 )
+            }
+            if (actions.any) {
+                EmptyServerListActions(
+                    actions = actions,
+                    canAddSubscription = canAddSubscription,
+                    serverKinds = serverKinds,
+                    onAction = onAction,
+                )
+            }
+        }
+    }
+}
+
+/** Paste, Add and a small QR button: the three ways to get the first server without the "+" menu. */
+@Composable
+private fun EmptyServerListActions(
+    actions: ProxyHomeEmptyStateActions,
+    canAddSubscription: Boolean,
+    serverKinds: Collection<ProxyHomeServerKind>,
+    onAction: (ProxyHomeAction) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (actions.paste) {
+            OutlinedButton(onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.Clipboard)) }) {
+                Icon(Icons.Outlined.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(SkipiTheme.spacing.small))
+                Text(stringResource(Res.string.common_paste))
+            }
+        }
+        if (actions.add) {
+            var menuExpanded by remember { mutableStateOf(false) }
+            Box {
+                OutlinedButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(SkipiTheme.spacing.small))
+                    Text(stringResource(Res.string.common_add))
+                }
+                SkipiHomeDropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    if (canAddSubscription) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.home_action_add_subscription)) },
+                            onClick = {
+                                menuExpanded = false
+                                onAction(ProxyHomeAction.AddSubscription)
+                            },
+                        )
+                    }
+                    serverKinds.forEach { kind ->
+                        DropdownMenuItem(
+                            text = { Text(serverKindTitle(kind)) },
+                            onClick = {
+                                menuExpanded = false
+                                onAction(ProxyHomeAction.AddServer(kind))
+                            },
+                        )
+                    }
+                }
+            }
+        }
+        if (actions.scanQr) {
+            val scanTitle = importSourceTitle(ProxyHomeImportSource.QrCode)
+            IconButton(onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.QrCode)) }) {
+                Icon(Icons.Outlined.QrCodeScanner, contentDescription = scanTitle, modifier = Modifier.size(22.dp))
             }
         }
     }
@@ -1740,6 +1832,42 @@ internal fun proxyHomeAddMenuIds(
     }
     if (canAddServer) add("add-server")
 }
+
+/** Buttons of the first-run Home: shown only while there is no server at all. */
+internal data class ProxyHomeEmptyStateActions(
+    val paste: Boolean,
+    val add: Boolean,
+    val scanQr: Boolean,
+) {
+    val any: Boolean get() = paste || add || scanQr
+}
+
+internal fun proxyHomeEmptyStateActions(
+    hasAnyServers: Boolean,
+    hasSearch: Boolean,
+    canAddSubscription: Boolean,
+    canImport: Boolean,
+    importSources: Set<ProxyHomeImportSource>,
+    canAddServer: Boolean,
+): ProxyHomeEmptyStateActions {
+    if (hasAnyServers || hasSearch) return ProxyHomeEmptyStateActions(paste = false, add = false, scanQr = false)
+    return ProxyHomeEmptyStateActions(
+        paste = canImport && ProxyHomeImportSource.Clipboard in importSources,
+        add = canAddSubscription || canAddServer,
+        scanQr = canImport && ProxyHomeImportSource.QrCode in importSources,
+    )
+}
+
+/** Entries behind the first-run "Add" button: the "+" menu without its import entries. */
+internal fun proxyHomeEmptyStateAddMenuIds(
+    canAddSubscription: Boolean,
+    canAddServer: Boolean,
+): List<String> = proxyHomeAddMenuIds(
+    canAddSubscription = canAddSubscription,
+    canImport = false,
+    importSources = emptySet(),
+    canAddServer = canAddServer,
+)
 
 /**
  * The group a settled pager page should select, or null when the pager must not override the selection:

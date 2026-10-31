@@ -44,6 +44,7 @@
     <string name="common_cancel">لغو</string>
     <string name="common_save">ذخیره</string>
     <string name="common_add">افزودن</string>
+    <string name="common_paste">جای‌گذاری</string>
     <string name="common_share">اشتراک‌گذاری</string>
     <string name="common_edit">ویرایش</string>
     <string name="common_edit_all">همه را ویرایش کنید</string>

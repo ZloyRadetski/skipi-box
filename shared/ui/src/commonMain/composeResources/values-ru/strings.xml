@@ -45,6 +45,7 @@
 <string name="common_cancel">Отмена</string>
     <string name="common_save">Сохранить</string>
     <string name="common_add">Добавить</string>
+    <string name="common_paste">Вставить</string>
     <string name="common_share">Поделиться</string>
     <string name="common_edit">Редактировать</string>
     <string name="common_edit_all">Редактировать все</string>

@@ -46,6 +46,7 @@
     <string name="common_cancel">Cancel</string>
     <string name="common_save">Save</string>
     <string name="common_add">Add</string>
+    <string name="common_paste">Paste</string>
     <string name="common_share">Share</string>
     <string name="common_edit">Edit</string>
     <string name="common_edit_all">Edit all</string>
