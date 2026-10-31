@@ -7,6 +7,7 @@ import app.AppState
 import app.ProxyServerLatencyTesting
 import app.ProxyServerState
 import app.skipi.app.home.ProxyHomeLatencyRunner
+import app.skipi.app.home.ProxyHomeLatencyUpdateWindowMillis
 import app.skipi.app.home.ProxyServerSelectionRuntimeAction
 import app.skipi.app.home.decideProxyServerSelectionRuntimeAction
 import kotlinx.coroutines.CoroutineScope
@@ -131,7 +132,7 @@ internal fun runProxyServerLatencyTest(
 
     val job = scope.launch {
         // One state write per window instead of one per finished probe (each rewrites the whole list).
-        val resultBatcher = LatencyResultBatcher<Int, String>(this, intervalMillis = LatencyUpdateWindowMillis) { batch ->
+        val resultBatcher = LatencyResultBatcher<Int, String>(this, intervalMillis = ProxyHomeLatencyUpdateWindowMillis) { batch ->
             stateStore.update(persist = false) { state ->
                 state.copy(
                     proxyServers = state.proxyServers.map { server ->
@@ -217,8 +218,6 @@ internal fun runProxyServerLatencyTest(
     ProxyServerLatencyTracker.register(job)
     return job
 }
-
-private const val LatencyUpdateWindowMillis = 150L
 
 private fun ProxyServerLatencyTestResult.toLatencyText(failedMessage: String): String {
     return if (elapsedMillis >= 0) "$elapsedMillis ms" else failedMessage

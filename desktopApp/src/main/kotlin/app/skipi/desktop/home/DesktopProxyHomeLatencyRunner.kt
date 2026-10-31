@@ -3,12 +3,16 @@
 
 package app.skipi.desktop
 
+import app.skipi.app.home.LatencyResultBatcher
 import app.skipi.app.home.ProxyHomeLatencyRunner
+import app.skipi.app.home.ProxyHomeLatencyUpdateWindowMillis
 import features.proxy.server.model.ProxyServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import app.skipi.ui.text.formatTemplate
 
 internal fun interface DesktopProxyHomeTcpTester {
@@ -48,6 +52,17 @@ internal class DesktopProxyHomeLatencyRunner(
         publishTestingServerIds(readTestingServerIds() + testedIds)
         val publicationLock = Any()
         val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            // Like Android: answers are applied in short windows so a big subscription is not re-projected
+            // once per answer, and a card leaves "testing" with its own result, not when the whole run ends.
+            val batcher = LatencyResultBatcher<Int, DesktopServerLatencyResult>(
+                scope = this,
+                intervalMillis = ProxyHomeLatencyUpdateWindowMillis,
+            ) { batch ->
+                synchronized(publicationLock) {
+                    publishLatencyByServerId(readLatencyByServerId() + batch)
+                    publishTestingServerIds(readTestingServerIds() - batch.keys)
+                }
+            }
             try {
                 ProxyHomeLatencyRunner<Pair<Int, ProxyServer<*>>, DesktopServerLatencyResult>(
                     concurrency = subscriptionPingConcurrency,
@@ -58,15 +73,18 @@ internal class DesktopProxyHomeLatencyRunner(
                             cause = error,
                         )
                     },
-                    onResult = { (serverId, _), result ->
-                        synchronized(publicationLock) {
-                            publishLatencyByServerId(readLatencyByServerId() + (serverId to result))
-                        }
-                    },
+                    // A cancelled probe still reports its failure.
+                    onResult = { (serverId, _), result -> withContext(NonCancellable) { batcher.add(serverId, result) } },
                 ).execute(eligible)
+                batcher.flush()
                 publishMessage(latencyDoneTemplate.formatTemplate("count" to eligible.size))
             } finally {
-                publishTestingServerIds(readTestingServerIds() - testedIds)
+                withContext(NonCancellable) { batcher.flush() }
+                // Only a cancelled run still has markers to clear.
+                synchronized(publicationLock) {
+                    val current = readTestingServerIds()
+                    if (current.any { it in testedIds }) publishTestingServerIds(current - testedIds)
+                }
                 onFinished()
             }
         }

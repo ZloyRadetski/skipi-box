@@ -53,6 +53,14 @@ internal interface DesktopCoreNative : AutoCloseable {
     }
 
     /**
+     * Connects to host:port from inside Core and returns the time in milliseconds. Core dials like
+     * its own outbound sockets, so with a tunnel up the connect bypasses it, as a latency probe must.
+     */
+    fun measureTcpDelay(host: String, port: Int, timeoutMillis: Int): Long {
+        error("This SKIPI Core library cannot measure a TCP connect")
+    }
+
+    /**
      * Starts the AmneziaWG runner and its private loopback SOCKS listener. Call it before [start]
      * so Xray can connect to the listener; a library without the runner reports that clearly.
      */
@@ -152,6 +160,12 @@ internal class DesktopCoreFfmNative(
         downcall(
             "SkipiCoreDesktopMeasureOutboundDelay",
             FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+        )
+    }
+    private val measureTcpDelayFunction by lazy {
+        downcall(
+            "SkipiCoreDesktopMeasureTcpDelay",
+            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
         )
     }
     private val startAmneziaWgFunction by lazy {
@@ -265,6 +279,14 @@ internal class DesktopCoreFfmNative(
                     ?: error("SKIPI Core returned an invalid outbound delay result")
                 if (delay >= 0) delay else throw failure("measure the outbound delay")
             }
+        }
+
+    override fun measureTcpDelay(host: String, port: Int, timeoutMillis: Int): Long =
+        withUtf8(host) { target ->
+            checkOpen()
+            val delay = invoke(measureTcpDelayFunction, target, port, timeoutMillis) as? Long
+                ?: error("SKIPI Core returned an invalid TCP delay result")
+            if (delay >= 0) delay else throw failure("measure the TCP connect")
         }
 
     override fun startAmneziaWg(configJson: String, socksPort: Int) {

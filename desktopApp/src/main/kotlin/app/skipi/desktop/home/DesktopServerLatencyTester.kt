@@ -46,6 +46,23 @@ fun interface DesktopMonotonicClock {
     fun nowNanos(): Long
 }
 
+/**
+ * Connects from inside SKIPI Core instead of the JVM. Core's sockets are kept off a running tunnel,
+ * which would otherwise accept any JVM connection itself and report a latency of zero.
+ */
+internal class DesktopCoreTcpConnector(
+    private val measure: (host: String, port: Int, timeoutMillis: Int) -> Result<Long>,
+) : DesktopTcpConnector {
+    override fun connect(host: String, port: Int, timeoutMillis: Int) {
+        val failure = measure(host, port, timeoutMillis).exceptionOrNull() ?: return
+        val message = failure.message.orEmpty()
+        if ("timeout" in message || "deadline exceeded" in message) {
+            throw SocketTimeoutException(message)
+        }
+        throw IOException(message.ifBlank { failure.javaClass.simpleName }, failure)
+    }
+}
+
 private object SocketDesktopTcpConnector : DesktopTcpConnector {
     override fun connect(host: String, port: Int, timeoutMillis: Int) {
         Socket().use { socket ->

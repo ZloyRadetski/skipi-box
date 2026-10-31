@@ -39,6 +39,28 @@ class DesktopCoreOutboundProbeTest {
     }
 
     @Test
+    fun measuresATcpConnectInCoreWithoutASessionSoItCanBypassTheTunnel() {
+        val native = ProbeNative(tcpDelay = 23L)
+        val controller = controller(native)
+
+        val delay = controller.measureTcpDelay("server.example", 443, 5_000).getOrThrow()
+
+        assertEquals(23L, delay)
+        assertEquals(listOf("tcp:server.example:443@5000"), native.events)
+        assertEquals(false, controller.state().isRunning)
+    }
+
+    @Test
+    fun aTcpConnectStillWorksWhileTheTunnelRuns() {
+        val native = ProbeNative(tcpDelay = 4L)
+        val controller = controller(native)
+        controller.start("{}").getOrThrow()
+
+        assertEquals(4L, controller.measureTcpDelay("server.example", 443, 5_000).getOrThrow())
+        assertEquals(true, controller.state().isRunning)
+    }
+
+    @Test
     fun aMeasurementFailureIsReportedAsAFailureNotAsADelay() {
         val controller = controller(ProbeNative(failMeasure = true))
 
@@ -84,6 +106,7 @@ class DesktopCoreOutboundProbeTest {
     private class ProbeNative(
         private val delay: Long = 1L,
         private val failMeasure: Boolean = false,
+        private val tcpDelay: Long = 1L,
     ) : DesktopCoreNative {
         override val apiVersion: String = DesktopCoreApiVersion
         override val coreVersion: String = "probe-test"
@@ -104,6 +127,10 @@ class DesktopCoreOutboundProbeTest {
             events += "measure:$configJson@$targetUrl"
             if (failMeasure) error("the probe failed")
             return delay
+        }
+        override fun measureTcpDelay(host: String, port: Int, timeoutMillis: Int): Long {
+            events += "tcp:$host:$port@$timeoutMillis"
+            return tcpDelay
         }
         override fun startAmneziaWg(configJson: String, socksPort: Int) { events += "awg-start:$socksPort" }
         override fun stopAmneziaWg() { events += "awg-stop" }

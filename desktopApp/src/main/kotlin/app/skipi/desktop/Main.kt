@@ -218,7 +218,9 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     proxyServerRepository.refresh(serverLibrary)
                 }
                 var serverLibraryMessage by remember { mutableStateOf("") }
-                val latencyTester = remember { DesktopServerLatencyTester() }
+                val latencyTester = remember(coreController) {
+                    DesktopServerLatencyTester(connector = DesktopCoreTcpConnector(coreController::measureTcpDelay))
+                }
                 // HTTP ping mode measures a server over its real transport; TCP mode connects to its port.
                 val httpLatencyTester = remember(coreController) {
                     DesktopHttpLatencyTester(

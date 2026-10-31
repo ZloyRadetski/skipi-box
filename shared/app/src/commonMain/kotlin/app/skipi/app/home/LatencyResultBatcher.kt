@@ -9,6 +9,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+/** How long a run gathers finished probes before one state update, on every host. */
+const val ProxyHomeLatencyUpdateWindowMillis = 150L
+
 /**
  * Collapses a burst of probe results into one state update per [intervalMillis]. A mass latency
  * test otherwise rewrites the whole server list (and re-projects Home) once per finished probe.

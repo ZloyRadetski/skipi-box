@@ -40,7 +40,7 @@ class DesktopProxyHomeLatencyRunnerTest {
     }
 
     @Test
-    fun resultsAndSummaryPublishBeforeTestingStateClearsAndHomeRunCompletes() = runBlocking {
+    fun aServersResultAndItsMarkerPublishBeforeTheRunSummaryAndHomeRunCompletes() = runBlocking {
         val events = mutableListOf<String>()
         val allowProbeToFinish = CompletableDeferred<DesktopServerLatencyResult>()
         val probeStarted = CompletableDeferred<Unit>()
@@ -84,8 +84,8 @@ class DesktopProxyHomeLatencyRunnerTest {
                 "testing:[7]",
                 "probe:7",
                 "results:[7, 11]",
-                "message:done:1",
                 "testing:[]",
+                "message:done:1",
                 "home-finished",
             ),
             events,
@@ -183,7 +183,9 @@ class DesktopProxyHomeLatencyRunnerTest {
 
         assertEquals(DesktopServerLatencyResult.Success(8), latencyById[8])
         assertFalse(7 in latencyById)
-        assertEquals(setOf(7, 8), testingIds)
+        // Like Android, a card leaves "testing" the moment its own answer arrives, not when the whole run ends.
+        withTimeout(5_000) { while (8 in testingIds) kotlinx.coroutines.delay(10) }
+        assertEquals(setOf(7), testingIds)
 
         slowProbeResult.complete(DesktopServerLatencyResult.Success(7))
         withTimeout(5_000) { slowResultPublished.await() }
@@ -241,6 +243,34 @@ class DesktopProxyHomeLatencyRunnerTest {
         assertEquals(DesktopServerLatencyResult.Success(3), latencyById[11])
         assertTrue(latencyById[8] is DesktopServerLatencyResult.Error)
         assertEquals(setOf(11), testingIds)
+    }
+
+    @Test
+    fun aBurstOfAnswersIsPublishedInWindowsAndNothingIsLost() = runBlocking {
+        var testingIds = emptySet<Int>()
+        var latencyById = emptyMap<Int, DesktopServerLatencyResult>()
+        var publications = 0
+        val runner = DesktopProxyHomeLatencyRunner(
+            scope = this,
+            subscriptionPingConcurrency = 64,
+            tcpTester = DesktopProxyHomeTcpTester { serverId, _ -> DesktopServerLatencyResult.Success(serverId.toLong()) },
+            jobOwner = DesktopProxyHomeLatencyJobOwner(),
+            readTestingServerIds = { testingIds },
+            publishTestingServerIds = { testingIds = it },
+            readLatencyByServerId = { latencyById },
+            publishLatencyByServerId = { latencyById = it; publications += 1 },
+            latencyDoneTemplate = "done:{count}",
+            noTestableServersMessage = "no-testable",
+            publishMessage = {},
+        )
+
+        withTimeout(10_000) { runner.start((1..200).map(::target)).join() }
+
+        assertEquals(200, latencyById.size)
+        assertEquals(DesktopServerLatencyResult.Success(150L), latencyById[150])
+        assertTrue(testingIds.isEmpty())
+        // The list is re-projected on every publication; one per answer would stall a large subscription.
+        assertTrue(publications <= 5, "200 instant answers were published in $publications updates")
     }
 
     @Test
