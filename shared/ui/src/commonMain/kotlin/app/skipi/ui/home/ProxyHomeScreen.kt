@@ -246,7 +246,13 @@ fun ProxyHomeScreenContent(
     val isWide = proxyHomeLayoutMode(windowClass) == ProxyHomeLayoutMode.WideListAndDetails
     val isCompact = windowClass == SkipiWindowClass.Compact
     val columns = proxyHomeResolveColumns(state.displayOptions.requestedColumns)
-    val send: (ProxyHomeAction) -> Unit = { action -> dispatchHomeIntent(state, action, onAction) }
+    // One instance for the whole screen: a lambda capturing `state` is new on every emission and
+    // would recompose every visible server row (each latency result, each tunnel status change).
+    val sendState by rememberUpdatedState(state)
+    val sendOnAction by rememberUpdatedState(onAction)
+    val send: (ProxyHomeAction) -> Unit = remember {
+        { action -> dispatchHomeIntent(sendState, action, sendOnAction) }
+    }
     val scope = rememberCoroutineScope()
     val canRefreshAllSubscriptions = canUseHomeAction(
         state,
