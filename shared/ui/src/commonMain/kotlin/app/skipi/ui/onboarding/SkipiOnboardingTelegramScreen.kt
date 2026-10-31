@@ -129,8 +129,8 @@ fun SkipiOnboardingTelegramScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .background(if (colors.isDark) Color(0xFF18191E) else Color.White)
-                .border(1.dp, if (colors.isDark) Color(0xFF282932) else Color(0xFFE5E7EB), cardShape)
+                .background(colors.surface)
+                .border(1.dp, colors.outline.copy(alpha = 0.25f), cardShape)
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {

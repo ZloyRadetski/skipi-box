@@ -141,8 +141,8 @@ fun SkipiOnboardingScreen(
     val colors = SkipiTheme.colors
     val currentPage = pagerState.currentPage
     val isLastPage = currentPage == pageCount - 1
-    val headerChipBg = if (colors.isDark) Color(0xFF1C1D24) else Color.White
-    val headerChipBorder = if (colors.isDark) Color(0xFF2C2D38) else Color(0xFFE5E7EB)
+    val headerChipBg = colors.surface
+    val headerChipBorder = colors.outline.copy(alpha = 0.25f)
 
     Box(
         modifier = modifier
@@ -237,7 +237,7 @@ fun SkipiOnboardingScreen(
                             label = "onboarding_dot_width_$index",
                         )
                         val color by animateColorAsState(
-                            targetValue = if (selected) colors.accent else if (colors.isDark) Color(0xFF2C2D38) else Color(0xFFD1D5DB),
+                            targetValue = if (selected) colors.accent else colors.outline.copy(alpha = 0.4f),
                             label = "onboarding_dot_color_$index",
                         )
                         Box(Modifier.size(width, 8.dp).clip(CircleShape).background(color))
@@ -624,8 +624,8 @@ private fun SurfaceCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(if (colors.isDark) Color(0xFF18191E) else Color.White)
-            .border(1.dp, if (colors.isDark) Color(0xFF282932) else Color(0xFFE5E7EB), shape)
+            .background(colors.surface)
+            .border(1.dp, colors.outline.copy(alpha = 0.25f), shape)
             .padding(16.dp),
         content = content,
     )
@@ -634,13 +634,13 @@ private fun SurfaceCard(content: @Composable ColumnScope.() -> Unit) {
 @Composable
 private fun ChoiceChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val colors = SkipiTheme.colors
-    val background by animateColorAsState(if (selected) colors.accent else if (colors.isDark) Color(0xFF22232B) else Color(0xFFF3F4F6), label = "choice_bg_$label")
+    val background by animateColorAsState(if (selected) colors.accent else colors.surfaceVariant, label = "choice_bg_$label")
     val textColor by animateColorAsState(if (selected) colors.onAccent else colors.onSurface, label = "choice_text_$label")
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(background)
-            .border(1.dp, if (selected) Color.Transparent else if (colors.isDark) Color(0xFF30313C) else Color(0xFFE5E7EB), RoundedCornerShape(12.dp))
+            .border(1.dp, if (selected) Color.Transparent else colors.outline.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center,
