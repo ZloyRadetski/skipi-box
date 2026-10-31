@@ -43,6 +43,9 @@ internal class DesktopCoreController(
     @Volatile private var diagnostic: String = ""
     @Volatile private var amneziaWgActive = false
 
+    // The AmneziaWG runner is one per process: the tunnel and a latency probe take turns under this lock.
+    private val amneziaWgLock = Any()
+
     fun state(): DesktopCoreState = synchronized(stateLock) {
         val handle = activeHandle ?: return@synchronized inactiveState()
         val core = native ?: return@synchronized resetAfterUnexpectedStop(
@@ -81,8 +84,10 @@ internal class DesktopCoreController(
         core.initializeAssets(assetsDirectory?.toString() ?: runtime.directory.toString())
         // The runner has to listen before Xray starts, and must not outlive a failed start.
         if (amneziaWg != null) {
-            core.startAmneziaWg(amneziaWg.configJson, amneziaWg.socksPort)
-            amneziaWgActive = true
+            synchronized(amneziaWgLock) {
+                core.startAmneziaWg(amneziaWg.configJson, amneziaWg.socksPort)
+                amneziaWgActive = true
+            }
         }
         val handle = try {
             core.createController()
@@ -169,6 +174,30 @@ internal class DesktopCoreController(
         core.measureDelay(handle, targetUrl)
     }
 
+    /**
+     * Measures one outbound in an isolated Core instance, with no session needed. A probe of an
+     * AmneziaWG server borrows the runner for the measurement only, and is refused while the
+     * tunnel owns it. The measurement itself holds no controller lock, so Stop stays responsive.
+     */
+    fun measureOutboundDelay(
+        configJson: String,
+        targetUrl: String,
+        amneziaWg: DesktopAmneziaWgBridge? = null,
+    ): Result<Long> = runCatching {
+        require(configJson.isNotBlank()) { "SKIPI Core probe configuration must not be blank" }
+        val core = synchronized(this) { loadNative(runtimeProvider().getOrThrow()) }
+        if (amneziaWg == null) return@runCatching core.measureOutboundDelay(configJson, targetUrl)
+        synchronized(amneziaWgLock) {
+            check(!amneziaWgActive) { "AmneziaWG is in use by the running tunnel" }
+            core.startAmneziaWg(amneziaWg.configJson, amneziaWg.socksPort)
+            try {
+                core.measureOutboundDelay(configJson, targetUrl)
+            } finally {
+                runCatching { core.stopAmneziaWg() }
+            }
+        }
+    }
+
     @Synchronized
     fun readMemoryStats(): Result<String> = runCatching {
         checkNotNull(native) { "SKIPI Core has not been loaded" }.readMemoryStats()
@@ -236,10 +265,10 @@ internal class DesktopCoreController(
     }
 
     /** Stops the AmneziaWG runner if this controller started it; returns the failure, if any. */
-    private fun releaseAmneziaWg(core: DesktopCoreNative): Throwable? {
-        if (!amneziaWgActive) return null
+    private fun releaseAmneziaWg(core: DesktopCoreNative): Throwable? = synchronized(amneziaWgLock) {
+        if (!amneziaWgActive) return@synchronized null
         amneziaWgActive = false
-        return runCatching { core.stopAmneziaWg() }.exceptionOrNull()
+        runCatching { core.stopAmneziaWg() }.exceptionOrNull()
     }
 
     private fun inactiveState(): DesktopCoreState = DesktopCoreState(

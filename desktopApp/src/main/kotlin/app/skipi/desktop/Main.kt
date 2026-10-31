@@ -228,6 +228,12 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 }
                 var serverLibraryMessage by remember { mutableStateOf("") }
                 val latencyTester = remember { DesktopServerLatencyTester() }
+                // HTTP ping mode measures a server over its real transport; TCP mode connects to its port.
+                val httpLatencyTester = remember(coreController) {
+                    DesktopHttpLatencyTester(
+                        measure = { config, url, amneziaWg -> coreController.measureOutboundDelay(config, url, amneziaWg) },
+                    )
+                }
                 var latencyByServerId by remember { mutableStateOf<Map<Int, DesktopServerLatencyResult>>(emptyMap()) }
                 var testingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 var connectionTestingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -810,15 +816,22 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             desktopSettings.subscriptionPingTimeoutMillis,
                         ).toLong(),
                     )
+                    // One run uses the mode and URL captured when it starts.
+                    val httpPingMode = desktopSettings.subscriptionPingMode == app.modes.SubscriptionPingModeHttp
+                    val httpPingUrl = resolveProxyHomeLatencyUrl(desktopSettings.subscriptionPingUrl)
                     val runner = DesktopProxyHomeLatencyRunner(
                         scope = subscriptionScope,
                         subscriptionPingConcurrency = desktopSettings.subscriptionPingConcurrency,
                         tcpTester = DesktopProxyHomeTcpTester { _, server ->
                             val endpoint = server.desktopTcpEndpointOrNull()
-                            if (endpoint == null) {
-                                DesktopServerLatencyResult.Error("No direct server endpoint")
-                            } else {
-                                withContext(Dispatchers.IO) {
+                            when {
+                                endpoint == null -> DesktopServerLatencyResult.Error("No direct server endpoint")
+                                httpPingMode -> httpLatencyTester.test(
+                                    server = server,
+                                    url = httpPingUrl,
+                                    timeoutMillis = latencyTimeout.toMillis().toInt(),
+                                )
+                                else -> withContext(Dispatchers.IO) {
                                     latencyTester.measure(
                                         host = endpoint.host,
                                         port = endpoint.port,

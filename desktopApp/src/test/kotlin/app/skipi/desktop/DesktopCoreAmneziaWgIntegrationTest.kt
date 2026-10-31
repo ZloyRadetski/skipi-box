@@ -111,6 +111,58 @@ class DesktopCoreAmneziaWgIntegrationTest {
         }
     }
 
+    @Test
+    fun anOutboundIsMeasuredInAnIsolatedCoreInstanceWithoutASession() {
+        val runtimeDirectory = System.getenv(IntegrationRuntimeDirectoryEnv)
+            ?.takeIf(String::isNotBlank)
+            ?: return
+        val runtime = DesktopCoreRuntimes.fromDirectory(Path.of(runtimeDirectory)).getOrThrow()
+        val http = com.sun.net.httpserver.HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
+            createContext("/") { exchange -> exchange.sendResponseHeaders(204, -1); exchange.close() }
+            start()
+        }
+        val controller = DesktopCoreController(runtimeProvider = { Result.success(runtime) })
+        try {
+            val delay = controller.measureOutboundDelay(
+                configJson = """{"log":{"loglevel":"none"},"outbounds":[{"tag":"probe","protocol":"freedom"}]}""",
+                targetUrl = "http://127.0.0.1:${http.address.port}/",
+            ).getOrThrow()
+
+            assertTrue(delay >= 0)
+            assertFalse(controller.state().isRunning, "a probe must not leave a session behind")
+        } finally {
+            http.stop(0)
+            controller.close()
+        }
+    }
+
+    @Test
+    fun anAmneziaWgProbeStartsAndReleasesTheRunnerAroundTheMeasurement() {
+        val runtimeDirectory = System.getenv(IntegrationRuntimeDirectoryEnv)
+            ?.takeIf(String::isNotBlank)
+            ?: return
+        val runtime = DesktopCoreRuntimes.fromDirectory(Path.of(runtimeDirectory)).getOrThrow()
+        val server = AmneziaWg(
+            remarks = "Probe AWG",
+            server = "127.0.0.1",
+            port = "59999",
+            secretKey = "aGVsbG8gd29ybGQgdGhpcyBpcyBhIHZhbGlkIGtleSE=",
+            publicKey = "YW5vdGhlciB2YWxpZCBrZXkgZm9yIHRlc3Rpbmcgb2s=",
+        )
+        val probe = buildDesktopLatencyProbe(server)
+        val bridge = assertNotNull(probe.amneziaWg)
+        val controller = DesktopCoreController(runtimeProvider = { Result.success(runtime) })
+        try {
+            // The peer never answers, so there is no delay to report; the runner must still be released.
+            val result = controller.measureOutboundDelay(probe.configJson, "http://127.0.0.1:9/", bridge)
+
+            assertTrue(result.isFailure)
+            assertFalse(listens(bridge.socksPort), "The probe must release the runner")
+        } finally {
+            controller.close()
+        }
+    }
+
     private companion object {
         const val IntegrationRuntimeDirectoryEnv = "SKIPI_CORE_INTEGRATION_DIR"
     }

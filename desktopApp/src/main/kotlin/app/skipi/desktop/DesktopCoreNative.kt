@@ -45,6 +45,14 @@ internal interface DesktopCoreNative : AutoCloseable {
     fun forceFreeMemory()
 
     /**
+     * Measures one outbound over its real transport through an isolated Core instance. It needs no
+     * session, so it works whether or not the tunnel is running.
+     */
+    fun measureOutboundDelay(configJson: String, targetUrl: String): Long {
+        error("This SKIPI Core library cannot measure an outbound on its own")
+    }
+
+    /**
      * Starts the AmneziaWG runner and its private loopback SOCKS listener. Call it before [start]
      * so Xray can connect to the listener; a library without the runner reports that clearly.
      */
@@ -140,6 +148,12 @@ internal class DesktopCoreFfmNative(
     )
 
     // Looked up on first use so an older library without these exports still loads.
+    private val measureOutboundDelayFunction by lazy {
+        downcall(
+            "SkipiCoreDesktopMeasureOutboundDelay",
+            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+        )
+    }
     private val startAmneziaWgFunction by lazy {
         downcall(
             "SkipiCoreDesktopStartAmneziaWg",
@@ -242,6 +256,16 @@ internal class DesktopCoreFfmNative(
             invokePointer(forceFreeMemoryFunction)
         }
     }
+
+    override fun measureOutboundDelay(configJson: String, targetUrl: String): Long =
+        withUtf8(configJson) { config ->
+            withUtf8(targetUrl) { target ->
+                checkOpen()
+                val delay = invoke(measureOutboundDelayFunction, config, target) as? Long
+                    ?: error("SKIPI Core returned an invalid outbound delay result")
+                if (delay >= 0) delay else throw failure("measure the outbound delay")
+            }
+        }
 
     override fun startAmneziaWg(configJson: String, socksPort: Int) {
         withUtf8(configJson) { config ->
