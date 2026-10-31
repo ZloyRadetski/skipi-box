@@ -18,6 +18,9 @@ import engine.xray.buildXrayBalancers
 import engine.xray.planXrayRouting
 import engine.xray.validateXrayExternalDomainResources
 import features.routing.usecase.GeoDatParser
+import engine.vpn.VpnDefaults
+import engine.vpn.planAmneziaWgBridge
+import engine.vpn.withAmneziaWgBridge
 import features.proxy.server.model.AmneziaWg
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
@@ -37,13 +40,35 @@ object DesktopSelectedServerXrayConfigFactory {
         subscriptionPingUrl: String,
         latencyByServerId: Map<Int, DesktopServerLatencyResult>,
         routingDataDirectory: Path? = null,
-    ): Result<String>? {
+    ): Result<String>? = buildGenerated(
+        serverLibrary = serverLibrary,
+        routing = routing,
+        trafficConfigContentById = trafficConfigContentById,
+        options = options,
+        subscriptionPingUrl = subscriptionPingUrl,
+        latencyByServerId = latencyByServerId,
+        routingDataDirectory = routingDataDirectory,
+    )?.map { generated -> generated.json }
+
+    /** Builds the configuration and the AmneziaWG runner it needs started before Core, if any. */
+    internal fun buildGenerated(
+        serverLibrary: DesktopServerLibrary,
+        routing: RoutingConfigRecord,
+        trafficConfigContentById: Map<Int, String>,
+        options: LocalProxyXrayConfigOptions,
+        subscriptionPingUrl: String,
+        latencyByServerId: Map<Int, DesktopServerLatencyResult>,
+        routingDataDirectory: Path? = null,
+        amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
+    ): Result<DesktopGeneratedXrayConfig>? {
         val selectedId = serverLibrary.selectedServerId ?: return null
         val selectedStored = serverLibrary.servers.firstOrNull { stored -> stored.id == selectedId } ?: return null
         return selectedStored.decode().mapCatching { selectedServer ->
             LocalProxyXrayConfigFactory.validateOptions(options)
             validateServer(selectedServer)
-            if (selectedServer is Custom) return@mapCatching buildDesktopCustomXrayConfig(selectedServer, options)
+            if (selectedServer is Custom) {
+                return@mapCatching DesktopGeneratedXrayConfig(buildDesktopCustomXrayConfig(selectedServer, options))
+            }
             routingDataDirectory?.let { dataDirectory ->
                 validateXrayExternalDomainResources(routing.rules) { fileName ->
                     val file = dataDirectory.resolve(fileName).toFile()
@@ -73,7 +98,7 @@ object DesktopSelectedServerXrayConfigFactory {
                 )
             }
             val selectedRecord = records.first { record -> record.id == selectedId }
-            val plan = XrayOutboundPlanner.plan(
+            val rawPlan = XrayOutboundPlanner.plan(
                 XrayOutboundPlanningInput(
                     selectedServer = selectedRecord,
                     servers = records,
@@ -87,6 +112,13 @@ object DesktopSelectedServerXrayConfigFactory {
                     stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
                 ),
             )
+            // AmneziaWG runs in Core's native runner; Xray reaches it through a loopback SOCKS outbound.
+            val amneziaWgPlan = planAmneziaWgBridge(
+                servers = rawPlan.proxyOutbounds.mapNotNull { it.server as? AmneziaWg },
+                dnsServers = amneziaWgDnsServers,
+                reservedPorts = options.reservedLocalPorts(),
+            )
+            val plan = amneziaWgPlan?.let(rawPlan::withAmneziaWgBridge) ?: rawPlan
             val ruleValidator = XrayResourceRoutingRuleValidator(hasResourceTag = hasResourceTag)
             val dnsPlan = planDesktopXrayDns(
                 inputs = DesktopDnsInputs(),
@@ -109,19 +141,9 @@ object DesktopSelectedServerXrayConfigFactory {
                 ),
                 ruleValidator = ruleValidator,
             )
-            plan.proxyOutbounds.forEach { outbound ->
-                outbound.server?.let { server ->
-                    validateServer(server)
-                    when (server) {
-                        is AmneziaWg -> error(
-                            "Desktop has no AmneziaWG native bridge for generated outbound '${outbound.tag}'",
-                        )
-                        else -> Unit
-                    }
-                }
-            }
+            plan.proxyOutbounds.forEach { outbound -> outbound.server?.let(::validateServer) }
 
-            LocalProxyXrayConfigFactory.buildFromPlan(
+            val json = LocalProxyXrayConfigFactory.buildFromPlan(
                 plan = plan,
                 options = options,
                 renderingOptions = XrayOutboundRenderingOptions(
@@ -135,6 +157,7 @@ object DesktopSelectedServerXrayConfigFactory {
                 ),
                 routingPlan = routingPlan,
             )
+            DesktopGeneratedXrayConfig(json = json, amneziaWg = amneziaWgPlan?.toDesktopBridge())
         }
     }
 

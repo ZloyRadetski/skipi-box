@@ -21,6 +21,8 @@ import java.nio.file.Path
 data class DesktopCoreStartRequest(
     val configuration: String,
     val assetsDirectory: Path? = null,
+    /** The AmneziaWG runner the configuration reaches through a loopback SOCKS outbound, started before Core. */
+    val amneziaWg: DesktopAmneziaWgBridge? = null,
 )
 
 /** Immutable profile-start snapshot whose rebuild excludes failed dynamic listener ports. */
@@ -30,6 +32,7 @@ data class DesktopTunnelStartPlan(
     val localProxyPort: Int,
     val rebuild: (Set<Int>) -> DesktopTunnelStartPlan,
     val assetsDirectory: Path? = null,
+    val amneziaWg: DesktopAmneziaWgBridge? = null,
 )
 
 /**
@@ -108,6 +111,7 @@ class DesktopTunnelController(
                     DesktopCoreStartRequest(
                         configuration = config,
                         assetsDirectory = startPlan?.assetsDirectory,
+                        amneziaWg = startPlan?.amneziaWg,
                     ),
                 )
                 completedAttempts += 1

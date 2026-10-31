@@ -76,7 +76,7 @@ internal fun createDesktopTunnelController(
             coreLogs.clear()
             coreLogs.startTailers(readSettings())
             localProxyRuntime.onCoreStarted(
-                coreController.start(request.configuration, request.assetsDirectory),
+                coreController.start(request.configuration, request.assetsDirectory, request.amneziaWg),
             )
         },
         stopCore = {

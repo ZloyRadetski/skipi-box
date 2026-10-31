@@ -5,6 +5,8 @@ package app.skipi.desktop
 
 import app.ProjectInfo
 import app.skipi.app.config.toTrafficConfigState
+import engine.network.isIpv4Address
+import engine.vpn.VpnDefaults
 import java.nio.file.Path
 
 /** Captures one selected-profile resource directory and rebuildable Core configuration. */
@@ -45,7 +47,7 @@ internal fun prepareDesktopTunnelStartPlan(
             excludedPorts = excludedPorts,
             allocatePort = allocatePort,
         )
-        val configuration = buildDesktopSelectedServerConfig(
+        val generated = buildDesktopSelectedServerConfigWithBridge(
             serverLibrary = serverLibrary,
             configLibrary = capturedConfigLibrary,
             options = options,
@@ -55,14 +57,17 @@ internal fun prepareDesktopTunnelStartPlan(
             routing = capturedRouting,
             routingDataDirectory = globalAssetsDirectory,
             strictFullTunnel = settings.enableStrictFullTunnel,
+            // Like Android's TUN DNS: the raw resolver the AmneziaWG runner's own netstack uses.
+            amneziaWgDnsServers = listOf(settings.tunVpnDns.trim().takeIf(::isIpv4Address) ?: VpnDefaults.IPV4_DNS),
         )?.getOrThrow()
             ?: error("Select a working server before connecting")
         return DesktopTunnelStartPlan(
-            configuration = configuration,
+            configuration = generated.json,
             dynamicPortEnabled = settings.enableDynamicLocalProxyPort,
             localProxyPort = options.socksPort,
             rebuild = ::buildPlan,
             assetsDirectory = assetsDirectory,
+            amneziaWg = generated.amneziaWg,
         )
     }
 

@@ -43,6 +43,17 @@ internal interface DesktopCoreNative : AutoCloseable {
     fun readMemoryStats(): String
 
     fun forceFreeMemory()
+
+    /**
+     * Starts the AmneziaWG runner and its private loopback SOCKS listener. Call it before [start]
+     * so Xray can connect to the listener; a library without the runner reports that clearly.
+     */
+    fun startAmneziaWg(configJson: String, socksPort: Int) {
+        error("This SKIPI Core library has no AmneziaWG support")
+    }
+
+    /** Stops the AmneziaWG runner; stopping a stopped runner is not an error. */
+    fun stopAmneziaWg() = Unit
 }
 
 /**
@@ -128,7 +139,17 @@ internal class DesktopCoreFfmNative(
         FunctionDescriptor.of(ValueLayout.ADDRESS),
     )
 
-    // Looked up on first use so an older library without TUN support still loads.
+    // Looked up on first use so an older library without these exports still loads.
+    private val startAmneziaWgFunction by lazy {
+        downcall(
+            "SkipiCoreDesktopStartAmneziaWg",
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
+        )
+    }
+    private val stopAmneziaWgFunction by lazy {
+        downcall("SkipiCoreDesktopStopAmneziaWg", FunctionDescriptor.of(ValueLayout.ADDRESS))
+    }
+
     private val tunProbeFunction by lazy {
         downcall("SkipiCoreDesktopTunProbe", FunctionDescriptor.of(ValueLayout.ADDRESS))
     }
@@ -220,6 +241,16 @@ internal class DesktopCoreFfmNative(
         errorResult("free memory") {
             invokePointer(forceFreeMemoryFunction)
         }
+    }
+
+    override fun startAmneziaWg(configJson: String, socksPort: Int) {
+        withUtf8(configJson) { config ->
+            errorResult("start AmneziaWG") { invokePointer(startAmneziaWgFunction, config, socksPort) }
+        }
+    }
+
+    override fun stopAmneziaWg() {
+        errorResult("stop AmneziaWG") { invokePointer(stopAmneziaWgFunction) }
     }
 
     /** Null when a TUN session can be opened here, otherwise why it cannot. */

@@ -21,7 +21,12 @@ import engine.xray.withXrayMuxAndFragmentOverlay
 import features.config.TrafficConfigState
 import features.config.withSkipiSettingsReadFromRawConfig
 import engine.xray.XrayProtocols
+import engine.vpn.VpnDefaults
+import engine.vpn.buildLoopbackSocksOutbound
+import engine.vpn.planAmneziaWgBridge
 import engine.xray.TrafficProfileServerRecord
+import features.proxy.server.model.AmneziaWg
+import kotlinx.serialization.json.jsonPrimitive
 import engine.xray.TrafficProfileXrayCapabilities
 import engine.xray.TrafficProfileXrayPlanner
 import engine.xray.buildXrayBalancers
@@ -56,7 +61,16 @@ object DesktopTrafficProfileXrayConfigFactory {
         serverLibrary: DesktopServerLibrary,
         options: LocalProxyXrayConfigOptions,
         configs: List<DesktopStoredConfig> = emptyList(),
-    ): String {
+    ): String = buildGenerated(profile, serverLibrary, options, configs).json
+
+    /** Builds the configuration and the AmneziaWG runner it needs started before Core, if any. */
+    internal fun buildGenerated(
+        profile: DesktopStoredConfig,
+        serverLibrary: DesktopServerLibrary,
+        options: LocalProxyXrayConfigOptions,
+        configs: List<DesktopStoredConfig> = emptyList(),
+        amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
+    ): DesktopGeneratedXrayConfig {
         require(options.socksPort in 1..65_535) { "Local SOCKS port must be in 1..65535" }
         if (options.enableHttpProxy) {
             require(options.httpProxyPort in 1..65_535) { "Local HTTP proxy port must be in 1..65535" }
@@ -80,7 +94,28 @@ object DesktopTrafficProfileXrayConfigFactory {
             configs = configs.map { config -> TrafficConfigReference(config.id, config.content) },
         )
         val analysis = plan.analysis
-        val proxyOutbounds = plan.proxyOutbounds
+        // AmneziaWG runs in Core's native runner; Xray reaches it through a loopback SOCKS outbound.
+        val amneziaWgPlan = planAmneziaWgBridge(
+            servers = plan.proxyServers.filterIsInstance<AmneziaWg>(),
+            dnsServers = amneziaWgDnsServers,
+            reservedPorts = options.reservedLocalPorts(),
+        )
+        val proxyOutbounds = if (amneziaWgPlan == null) {
+            plan.proxyOutbounds
+        } else {
+            // proxyServers is filled together with proxyOutbounds, one entry each.
+            plan.proxyOutbounds.mapIndexed { index, outbound ->
+                val server = plan.proxyServers[index]
+                if (server is AmneziaWg && server.matchesRuntimeConfig(amneziaWgPlan.server)) {
+                    buildLoopbackSocksOutbound(
+                        tag = outbound.getValue("tag").jsonPrimitive.content,
+                        port = amneziaWgPlan.socksPort,
+                    )
+                } else {
+                    outbound
+                }
+            }
+        }
         val routingRules = plan.routingRules
         val balancers = plan.balancers
 
@@ -222,7 +257,10 @@ object DesktopTrafficProfileXrayConfigFactory {
                 fallbackProbeInterval = DefaultProbeInterval,
             )?.let { observatory -> put("observatory", observatory) }
         }
-        return DesktopProfileXrayJson.encodeToString(config) + "\n"
+        return DesktopGeneratedXrayConfig(
+            json = DesktopProfileXrayJson.encodeToString(config) + "\n",
+            amneziaWg = amneziaWgPlan?.toDesktopBridge(),
+        )
     }
 }
 

@@ -22,7 +22,15 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
+import engine.vpn.AmneziaWgBridgePlan
+import engine.vpn.VpnDefaults
 import java.nio.file.Path
+
+/** A generated Core configuration and the AmneziaWG runner it needs started first, if any. */
+internal data class DesktopGeneratedXrayConfig(
+    val json: String,
+    val amneziaWg: DesktopAmneziaWgBridge? = null,
+)
 
 /** Desktop entry point shared by preview, runtime start plans, and FullJson export. */
 internal fun buildDesktopSelectedServerConfig(
@@ -36,7 +44,32 @@ internal fun buildDesktopSelectedServerConfig(
     routingDataDirectory: Path? = null,
     /** Applies the strict full tunnel at start without rewriting stored routing; Custom configs cannot take it. */
     strictFullTunnel: Boolean = false,
-): Result<String>? {
+): Result<String>? = buildDesktopSelectedServerConfigWithBridge(
+    serverLibrary = serverLibrary,
+    configLibrary = configLibrary,
+    routing = routing,
+    options = options,
+    trafficConfigContentById = trafficConfigContentById,
+    subscriptionPingUrl = subscriptionPingUrl,
+    latencyByServerId = latencyByServerId,
+    routingDataDirectory = routingDataDirectory,
+    strictFullTunnel = strictFullTunnel,
+)?.map { generated -> generated.json }
+
+/** Like [buildDesktopSelectedServerConfig], keeping the AmneziaWG runner the configuration depends on. */
+internal fun buildDesktopSelectedServerConfigWithBridge(
+    serverLibrary: DesktopServerLibrary,
+    configLibrary: DesktopConfigLibrary,
+    routing: RoutingConfigRecord,
+    options: LocalProxyXrayConfigOptions,
+    trafficConfigContentById: Map<Int, String>,
+    subscriptionPingUrl: String,
+    latencyByServerId: Map<Int, DesktopServerLatencyResult>,
+    routingDataDirectory: Path? = null,
+    strictFullTunnel: Boolean = false,
+    /** Raw resolvers of the runner's own netstack, as Android passes the TUN DNS. */
+    amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
+): Result<DesktopGeneratedXrayConfig>? {
     val selectedStored = serverLibrary.selectedServerId
         ?.let { selectedId -> serverLibrary.servers.firstOrNull { it.id == selectedId } }
     val selectedServerResult = selectedStored?.decode()
@@ -44,25 +77,26 @@ internal fun buildDesktopSelectedServerConfig(
     if (selectedServer is Custom) {
         return checkNotNull(selectedServerResult).mapCatching {
             check(!strictFullTunnel) { "Strict full-tunnel mode cannot safely rewrite a raw Xray configuration" }
-            buildDesktopCustomXrayConfig(selectedServer, options)
+            DesktopGeneratedXrayConfig(buildDesktopCustomXrayConfig(selectedServer, options))
         }
     }
 
     val activeProfile = configLibrary.activeProfile
     if (activeProfile != null) {
         return runCatching {
-            DesktopTrafficProfileXrayConfigFactory.build(
+            DesktopTrafficProfileXrayConfigFactory.buildGenerated(
                 profile = activeProfile,
                 serverLibrary = serverLibrary,
                 options = options,
                 configs = configLibrary.configs,
+                amneziaWgDnsServers = amneziaWgDnsServers,
             )
         }
     }
 
     if (selectedStored == null) return null
     return checkNotNull(selectedServerResult).mapCatching {
-        DesktopSelectedServerXrayConfigFactory.build(
+        DesktopSelectedServerXrayConfigFactory.buildGenerated(
             serverLibrary = serverLibrary,
             routing = if (strictFullTunnel) routing.withStrictFullTunnelApplied() else routing,
             trafficConfigContentById = trafficConfigContentById,
@@ -70,10 +104,20 @@ internal fun buildDesktopSelectedServerConfig(
             subscriptionPingUrl = subscriptionPingUrl,
             latencyByServerId = latencyByServerId,
             routingDataDirectory = routingDataDirectory,
+            amneziaWgDnsServers = amneziaWgDnsServers,
         )?.getOrThrow()
             ?: error("Select a working server before connecting")
     }
 }
+
+/** Ports the runner's SOCKS bridge must not take: the listeners Core opens for the application. */
+internal fun LocalProxyXrayConfigOptions.reservedLocalPorts(): Set<Int> = buildSet {
+    add(socksPort)
+    if (enableHttpProxy) add(httpProxyPort)
+}
+
+internal fun AmneziaWgBridgePlan.toDesktopBridge(): DesktopAmneziaWgBridge =
+    DesktopAmneziaWgBridge(configJson = configJson, socksPort = socksPort)
 
 /**
  * Raw Custom entries: the local listener always belongs to Desktop, logging to the application, and

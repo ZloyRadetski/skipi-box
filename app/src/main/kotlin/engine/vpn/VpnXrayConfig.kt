@@ -26,10 +26,6 @@ import engine.xray.XrayTags
 import engine.xray.buildXrayOutboundPlan
 import engine.xray.prepareXrayCoreLogPaths
 import engine.xray.validateXrayExternalRoutingResources
-import engine.network.findAvailableTcpPort
-import engine.network.isIpv4Address
-import engine.network.isPort
-import engine.network.isTcpPortAvailable
 import features.resources.runtime.prepareXrayResourceFilePaths
 import features.resources.runtime.XrayResourceFileScope
 import features.proxy.server.model.AmneziaWg
@@ -186,140 +182,23 @@ internal fun buildNativeBridgePlan(
     reservedPorts: Set<Int>,
     resolveAmneziaWgEndpoint: (AmneziaWg) -> AmneziaWg = AmneziaWg::withNativeRunnerEndpointResolved,
 ): NativeBridgePlanResult {
-    val amneziaWgServer = rawOutboundPlan.proxyOutbounds
-        .mapNotNull { it.server as? AmneziaWg }
-        .singleAmneziaWgRuntimeOrNull()
-
-    var updatedPlan = rawOutboundPlan
-    val usedPorts = reservedPorts.toMutableSet()
-
-    var amneziaWgConfigJson: String? = null
-    var amneziaWgSocksPort = 0
-    var activeAmneziaWgBridge: ActiveAmneziaWgBridge? = null
-    if (amneziaWgServer != null) {
-        require(amneziaWgServer.finalMask.isBlank()) {
-            "AmneziaWG FinalMask is not supported by the native AmneziaWG runtime"
-        }
-        val port = findAvailableLocalPort(preferredPort = 10809, reservedPorts = usedPorts)
-        usedPorts += port
-        val bridge = ActiveAmneziaWgBridge(socksPort = port, server = amneziaWgServer)
-        val nativeAmneziaWgServer = resolveAmneziaWgEndpoint(amneziaWgServer)
-
-        // Pass precisely this AWG outbound to skipi-core. Its generic JSON
-        // rewriter would also rewrite ordinary WireGuard outbounds, which is
-        // unsafe in mixed profiles.
-        amneziaWgConfigJson = nativeAmneziaWgServer.toNativeRunnerConfigJson(
-            tag = "skipi_awg_runtime",
-            dnsServers = tunOptions.dnsServers,
-        )
-        updatedPlan = updatedPlan.copy(
-            proxyOutbounds = updatedPlan.proxyOutbounds.map { item ->
-                val awg = item.server as? AmneziaWg
-                if (awg != null && awg.matchesRuntimeConfig(amneziaWgServer)) {
-                    item.copy(customOutbound = buildLoopbackSocksOutbound(tag = item.tag, port = port))
-                } else {
-                    item
-                }
-            },
-        )
-        amneziaWgSocksPort = port
-        activeAmneziaWgBridge = bridge
-    }
-
-    return NativeBridgePlanResult(
-        outboundPlan = updatedPlan,
-        amneziaWgConfigJson = amneziaWgConfigJson,
-        amneziaWgSocksPort = amneziaWgSocksPort,
-        activeAmneziaWgBridge = activeAmneziaWgBridge,
+    val bridge = planAmneziaWgBridge(
+        servers = rawOutboundPlan.proxyOutbounds.mapNotNull { it.server as? AmneziaWg },
+        dnsServers = tunOptions.dnsServers,
+        reservedPorts = reservedPorts,
+        resolveEndpoint = resolveAmneziaWgEndpoint,
+    ) ?: return NativeBridgePlanResult(
+        outboundPlan = rawOutboundPlan,
+        amneziaWgConfigJson = null,
+        amneziaWgSocksPort = 0,
+        activeAmneziaWgBridge = null,
     )
-}
-
-/**
- * The native AmneziaWG runner uses its own netstack, so its resolver must be
- * supplied separately from the Xray outbound. Keep this runtime-only field out
- * of the Xray configuration: Xray's WireGuard outbound does not understand it.
- */
-internal fun AmneziaWg.toNativeRunnerConfigJson(
-    tag: String,
-    dnsServers: List<String>,
-): String {
-    requireNativeRunnerCompatibility()
-    val outbound = toXrayOutbound(tag).toJsonObject()
-    val settings = outbound["settings"] as? JsonObject
-        ?: error("AmneziaWG outbound has no settings")
-    return buildJsonObject {
-        outbound.forEach { (key, value) ->
-            if (key != "settings") put(key, value)
-        }
-        put(
-            "settings",
-            buildJsonObject {
-                settings.forEach { (key, value) -> put(key, value) }
-                put("dnsServers", buildJsonArray {
-                    dnsServers.forEach { server -> add(server) }
-                })
-            },
-        )
-    }.toString()
-}
-
-/**
- * The native AmneziaWG implementation cannot safely recover from every
- * malformed obfuscation setting: some values make its Go runtime abort the
- * whole Android process. Profiles can predate validation or arrive from an
- * import, so this boundary must be strict even when the editor showed a
- * warning earlier.
- */
-private fun AmneziaWg.requireNativeRunnerCompatibility() {
-    require(finalMask.isBlank()) {
-        "AmneziaWG FinalMask is not supported by the native AmneziaWG runtime"
-    }
-    val issues = validateFull()
-    require(issues.isEmpty()) {
-        "AmneziaWG configuration is invalid for the native runtime: " +
-            issues.joinToString { issue -> issue.error.name }
-    }
-}
-
-private fun List<AmneziaWg>.singleAmneziaWgRuntimeOrNull(): AmneziaWg? {
-    val distinct = fold(mutableListOf<AmneziaWg>()) { runtimes, server ->
-        if (runtimes.none { it.matchesRuntimeConfig(server) }) runtimes += server
-        runtimes
-    }
-    require(distinct.size <= 1) {
-        "The selected route contains multiple different AmneziaWG tunnels; only one native AmneziaWG runtime can run at a time"
-    }
-    return distinct.singleOrNull()
-}
-
-/** Builds a private loopback SOCKS outbound for a native bridge. */
-internal fun buildLoopbackSocksOutbound(
-    tag: String,
-    port: Int,
-    user: String = "",
-    pass: String = "",
-): JsonObject {
-    return buildJsonObject {
-        put("tag", tag)
-        put("protocol", "socks")
-        put("settings", buildJsonObject {
-            put("servers", buildJsonArray {
-                add(buildJsonObject {
-                    put("address", "127.0.0.1")
-                    put("port", port)
-                    if (user.isNotBlank() || pass.isNotBlank()) {
-                        put("users", buildJsonArray {
-                            add(buildJsonObject {
-                                put("user", user)
-                                put("pass", pass)
-                                put("level", 0)
-                            })
-                        })
-                    }
-                })
-            })
-        })
-    }
+    return NativeBridgePlanResult(
+        outboundPlan = rawOutboundPlan.withAmneziaWgBridge(bridge),
+        amneziaWgConfigJson = bridge.configJson,
+        amneziaWgSocksPort = bridge.socksPort,
+        activeAmneziaWgBridge = ActiveAmneziaWgBridge(socksPort = bridge.socksPort, server = bridge.server),
+    )
 }
 
 internal fun buildVpnXrayInbounds(
@@ -376,20 +255,4 @@ internal fun buildVpnHevSocks5TunnelConfig(
         tcpReadWriteTimeoutMillis = tcpReadWriteTimeoutMillis.takeIf { it > 0 }
             ?: DefaultHevSocks5TunnelTcpReadWriteTimeoutMillis,
     )
-}
-
-internal fun findAvailableLocalPort(preferredPort: Int, reservedPorts: Set<Int>): Int {
-    if (preferredPort.isPort() && preferredPort !in reservedPorts && isTcpPortAvailable("127.0.0.1", preferredPort)) {
-        return preferredPort
-    }
-    val discovered = findAvailableTcpPort("127.0.0.1", reservedPorts)
-    if (discovered != null && discovered.isPort()) {
-        return discovered
-    }
-    for (port in 10809..65535) {
-        if (port !in reservedPorts && isTcpPortAvailable("127.0.0.1", port)) {
-            return port
-        }
-    }
-    throw IllegalStateException("No free local TCP port is available for the native proxy bridge")
 }

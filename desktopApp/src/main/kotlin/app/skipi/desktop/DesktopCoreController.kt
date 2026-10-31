@@ -16,6 +16,12 @@ data class DesktopCoreState(
     val lastError: String = "",
 )
 
+/** What the AmneziaWG runner needs before Core starts: its runtime config and loopback SOCKS port. */
+data class DesktopAmneziaWgBridge(
+    val configJson: String,
+    val socksPort: Int,
+)
+
 /**
  * Owns the one SKIPI Core session running inside the Desktop JVM process.
  *
@@ -35,6 +41,7 @@ internal class DesktopCoreController(
     @Volatile private var activeHandle: Long? = null
     @Volatile private var activeCoreVersion: String? = null
     @Volatile private var diagnostic: String = ""
+    @Volatile private var amneziaWgActive = false
 
     fun state(): DesktopCoreState = synchronized(stateLock) {
         val handle = activeHandle ?: return@synchronized inactiveState()
@@ -58,7 +65,11 @@ internal class DesktopCoreController(
     }
 
     @Synchronized
-    fun start(configJson: String, assetsDirectory: Path? = null): Result<DesktopCoreState> = runCatching {
+    fun start(
+        configJson: String,
+        assetsDirectory: Path? = null,
+        amneziaWg: DesktopAmneziaWgBridge? = null,
+    ): Result<DesktopCoreState> = runCatching {
         require(configJson.isNotBlank()) { "SKIPI Core configuration must not be blank" }
         check(activeHandle == null) { "SKIPI Core is already running" }
 
@@ -68,12 +79,23 @@ internal class DesktopCoreController(
             "Unsupported SKIPI Core desktop ABI ${core.apiVersion}; expected $DesktopCoreApiVersion"
         }
         core.initializeAssets(assetsDirectory?.toString() ?: runtime.directory.toString())
-        val handle = core.createController()
+        // The runner has to listen before Xray starts, and must not outlive a failed start.
+        if (amneziaWg != null) {
+            core.startAmneziaWg(amneziaWg.configJson, amneziaWg.socksPort)
+            amneziaWgActive = true
+        }
+        val handle = try {
+            core.createController()
+        } catch (error: Throwable) {
+            releaseAmneziaWg(core)?.let(error::addSuppressed)
+            throw error
+        }
         try {
             core.start(handle, configJson)
         } catch (error: Throwable) {
             runCatching { core.destroyController(handle) }
                 .onFailure(error::addSuppressed)
+            releaseAmneziaWg(core)?.let(error::addSuppressed)
             throw error
         }
 
@@ -104,6 +126,10 @@ internal class DesktopCoreController(
         var failure: Throwable? = null
         runCatching { core.stop(handle) }.onFailure { failure = it }
         runCatching { core.destroyController(handle) }.onFailure { error ->
+            val previousFailure = failure
+            if (previousFailure == null) failure = error else previousFailure.addSuppressed(error)
+        }
+        releaseAmneziaWg(core)?.let { error ->
             val previousFailure = failure
             if (previousFailure == null) failure = error else previousFailure.addSuppressed(error)
         }
@@ -201,8 +227,19 @@ internal class DesktopCoreController(
                     val detail = nativeDiagnostic("release stopped Core session", destroyError)
                     diagnostic = listOf(diagnostic, detail).filter(String::isNotBlank).joinToString("; ")
                 }
+            releaseAmneziaWg(core)?.let { releaseError ->
+                val detail = nativeDiagnostic("stop AmneziaWG", releaseError)
+                diagnostic = listOf(diagnostic, detail).filter(String::isNotBlank).joinToString("; ")
+            }
         }
         return inactiveState()
+    }
+
+    /** Stops the AmneziaWG runner if this controller started it; returns the failure, if any. */
+    private fun releaseAmneziaWg(core: DesktopCoreNative): Throwable? {
+        if (!amneziaWgActive) return null
+        amneziaWgActive = false
+        return runCatching { core.stopAmneziaWg() }.exceptionOrNull()
     }
 
     private fun inactiveState(): DesktopCoreState = DesktopCoreState(
