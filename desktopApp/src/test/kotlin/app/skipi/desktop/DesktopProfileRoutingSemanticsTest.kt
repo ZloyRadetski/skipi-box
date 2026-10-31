@@ -110,7 +110,50 @@ class DesktopProfileRoutingSemanticsTest {
         assertEquals("AsIs", desktopDnsAndStrategy(DNS_PROFILE).second)
     }
 
+    @Test
+    fun strictFullTunnelSwitchesOffEveryDirectRuleOfTheProfileAndSendsAFinalDirectToTheProxy() {
+        val alpha = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha")
+        val library = DesktopServerLibraries.select(DesktopServerLibraries.add(DesktopServerLibrary(), alpha), serverId = 1)
+        fun projection(strict: Boolean) = routingProjection(
+            Json.parseToJsonElement(
+                DesktopTrafficProfileXrayConfigFactory.buildGenerated(
+                    profile = DesktopStoredConfig(id = 7, name = "P", content = STRICT_PROFILE),
+                    serverLibrary = library,
+                    options = LocalProxyXrayConfigOptions(socksPort = 20_480),
+                    strictFullTunnel = strict,
+                ).json,
+            ).jsonObject,
+        )
+
+        assertEquals(
+            listOf(
+                "inboundTag=[dns-direct] -> direct",
+                "inboundTag=[dns-proxy] -> vless:alpha.example",
+                "domain=[domain:example.com] -> direct",
+                "domain=[keyword:ads] -> block",
+                "network=tcp,udp -> direct",
+            ),
+            projection(strict = false),
+        )
+        assertEquals(
+            listOf(
+                "inboundTag=[dns-direct] -> direct",
+                "inboundTag=[dns-proxy] -> vless:alpha.example",
+                "domain=[keyword:ads] -> block",
+                "network=tcp,udp -> vless:alpha.example",
+            ),
+            projection(strict = true),
+        )
+    }
+
     private companion object {
+        val STRICT_PROFILE = """
+            [Rule]
+            DOMAIN-SUFFIX,example.com,DIRECT
+            DOMAIN-KEYWORD,ads,REJECT
+            FINAL,DIRECT
+        """.trimIndent() + "\n"
+
         val DNS_PROFILE = """
             [General]
             dns-server = 1.1.1.1,https://dns.example/dns-query

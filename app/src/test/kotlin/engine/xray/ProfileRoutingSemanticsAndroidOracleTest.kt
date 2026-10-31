@@ -37,10 +37,11 @@ class ProfileRoutingSemanticsAndroidOracleTest {
         server = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@beta.example:443#Beta"),
     )
 
-    private fun androidRoutingProjection(profile: String): List<String> {
+    private fun androidRoutingProjection(profile: String, strictFullTunnel: Boolean = false): List<String> {
         val state = AppState(
             proxyServers = listOf(alpha, beta),
             selectedProxyServerId = alpha.id,
+            enableStrictFullTunnel = strictFullTunnel,
             trafficConfigs = listOf(TrafficConfigState(id = 7, name = "P", rawConfig = profile)),
             activeTrafficConfigId = 7,
         ).withActiveTrafficConfigApplied()
@@ -137,7 +138,41 @@ class ProfileRoutingSemanticsAndroidOracleTest {
         assertEquals("AsIs", androidDnsAndStrategy(DNS_PROFILE).second)
     }
 
+    @Test
+    fun strictFullTunnelSwitchesOffEveryDirectRuleOfTheProfileAndSendsAFinalDirectToTheProxy() {
+        val plain = androidRoutingProjection(STRICT_PROFILE).filterNot { it.startsWith("inboundTag=[vpn-tun-in]") }
+        val strict = androidRoutingProjection(STRICT_PROFILE, strictFullTunnel = true)
+            .filterNot { it.startsWith("inboundTag=[vpn-tun-in]") }
+
+        assertEquals(
+            listOf(
+                "inboundTag=[dns-direct] -> direct",
+                "inboundTag=[dns-proxy] -> vless:alpha.example",
+                "domain=[domain:example.com] -> direct",
+                "domain=[keyword:ads] -> block",
+                "network=tcp,udp -> direct",
+            ),
+            plain,
+        )
+        assertEquals(
+            listOf(
+                "inboundTag=[dns-direct] -> direct",
+                "inboundTag=[dns-proxy] -> vless:alpha.example",
+                "domain=[keyword:ads] -> block",
+                "network=tcp,udp -> vless:alpha.example",
+            ),
+            strict,
+        )
+    }
+
     companion object {
+        val STRICT_PROFILE = """
+            [Rule]
+            DOMAIN-SUFFIX,example.com,DIRECT
+            DOMAIN-KEYWORD,ads,REJECT
+            FINAL,DIRECT
+        """.trimIndent() + "\n"
+
         val DNS_PROFILE = """
             [General]
             dns-server = 1.1.1.1,https://dns.example/dns-query

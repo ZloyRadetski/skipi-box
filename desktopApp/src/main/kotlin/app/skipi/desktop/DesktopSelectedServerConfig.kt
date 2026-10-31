@@ -90,6 +90,7 @@ internal fun buildDesktopSelectedServerConfigWithBridge(
                 options = options,
                 configs = configLibrary.configs,
                 amneziaWgDnsServers = amneziaWgDnsServers,
+                strictFullTunnel = strictFullTunnel,
             )
         }
     }

@@ -61,7 +61,8 @@ object DesktopTrafficProfileXrayConfigFactory {
         serverLibrary: DesktopServerLibrary,
         options: LocalProxyXrayConfigOptions,
         configs: List<DesktopStoredConfig> = emptyList(),
-    ): String = buildGenerated(profile, serverLibrary, options, configs).json
+        strictFullTunnel: Boolean = false,
+    ): String = buildGenerated(profile, serverLibrary, options, configs, strictFullTunnel = strictFullTunnel).json
 
     /** Builds the configuration and the AmneziaWG runner it needs started before Core, if any. */
     internal fun buildGenerated(
@@ -70,6 +71,7 @@ object DesktopTrafficProfileXrayConfigFactory {
         options: LocalProxyXrayConfigOptions,
         configs: List<DesktopStoredConfig> = emptyList(),
         amneziaWgDnsServers: List<String> = listOf(VpnDefaults.IPV4_DNS),
+        strictFullTunnel: Boolean = false,
     ): DesktopGeneratedXrayConfig {
         require(options.socksPort in 1..65_535) { "Local SOCKS port must be in 1..65535" }
         if (options.enableHttpProxy) {
@@ -92,6 +94,7 @@ object DesktopTrafficProfileXrayConfigFactory {
             selectedServerId = serverLibrary.selectedServerId,
             capabilities = DesktopTrafficProfileXrayCapabilities,
             configs = configs.map { config -> TrafficConfigReference(config.id, config.content) },
+            strictFullTunnel = strictFullTunnel,
         )
         val analysis = plan.analysis
         // AmneziaWG runs in Core's native runner; Xray reaches it through a loopback SOCKS outbound.

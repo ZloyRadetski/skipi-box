@@ -17,6 +17,7 @@ import features.proxy.server.model.stripLeadingCountryFlag
 import features.proxy.server.model.toXrayBalancerStrategy
 import features.routing.model.RouteRule
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -56,6 +57,8 @@ object TrafficProfileXrayPlanner {
         selectedServerId: Int?,
         capabilities: TrafficProfileXrayCapabilities = TrafficProfileXrayCapabilities(),
         configs: List<TrafficConfigReference> = emptyList(),
+        /** Android's strict full tunnel: Direct rules are switched off and a Direct FINAL goes to the proxy. */
+        strictFullTunnel: Boolean = false,
     ): TrafficProfileXrayPlan {
         val analysis = profileContent.analyzeShadowrocketConfig()
         analysis.diagnostics.firstOrNull { it.severity.name == "Error" }?.let { diagnostic ->
@@ -207,11 +210,17 @@ object TrafficProfileXrayPlanner {
         val routingRules = buildList {
             analysis.rules.filterNot(ShadowrocketRule::isFinal)
                 .mapNotNull { rule -> rule.toTrafficProfileXrayRule({ policy -> policyTarget(policy) }, capabilities) }
+                .filterNot { rule -> strictFullTunnel && rule.isDirectRule() }
                 .forEach(::add)
             val finalTarget = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
                 ?.let { rule -> policyTarget(rule.policy) }
                 ?: XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
-            add(finalTarget.toFinalTrafficProfileRule())
+            val effectiveFinalTarget = if (strictFullTunnel && finalTarget.isDirect()) {
+                XrayRouteTarget(ProfileProxyTag, XrayRouteTargetKind.Outbound)
+            } else {
+                finalTarget
+            }
+            add(effectiveFinalTarget.toFinalTrafficProfileRule())
         }
 
         return TrafficProfileXrayPlan(
@@ -227,6 +236,12 @@ object TrafficProfileXrayPlanner {
         )
     }
 }
+
+private fun JsonObject.isDirectRule(): Boolean =
+    (this["outboundTag"] as? JsonPrimitive)?.content?.trim().equals(DirectTag, ignoreCase = true)
+
+private fun XrayRouteTarget.isDirect(): Boolean =
+    kind == XrayRouteTargetKind.Outbound && tag.trim().equals(DirectTag, ignoreCase = true)
 
 private fun ProxyServer<*>.isTrafficProfileUsable(): Boolean =
     this !is Custom && this !is StrategyGroup && !isCompositeProxyServer()
