@@ -246,7 +246,11 @@ internal fun DesktopProxyServerEditorHost(
         )
         statusMessage?.takeIf(String::isNotBlank)?.let { message ->
             Surface(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+                // Above the floating bottom bar the host reserves in the content padding, not behind it.
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = contentPadding.calculateBottomPadding())
+                    .padding(16.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(10.dp),
                 tonalElevation = 4.dp,

@@ -61,6 +61,7 @@ import app.skipi.ui.resources.proxy_server_list_chain_proxy_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary
 import app.skipi.ui.resources.proxy_server_list_strategy_group_summary_with_filter
 import app.skipi.ui.resources.proxy_server_qr_generate_failed
+import app.skipi.ui.resources.proxy_server_list_strategy_group_no_members
 import app.skipi.ui.resources.proxy_server_list_delete_all
 import app.skipi.ui.resources.proxy_server_list_delete_duplicates
 import app.skipi.ui.resources.proxy_server_list_delete_invalid
@@ -286,6 +287,7 @@ internal fun DesktopProxyHome(
         )
     }
 
+    val groupWithoutMembersText = stringResource(Res.string.proxy_server_list_strategy_group_no_members)
     val homeProjection = remember(
         groupCatalog,
         decodedServers,
@@ -298,6 +300,7 @@ internal fun DesktopProxyHome(
         presentationNodes,
         refreshingSubscriptionIds,
         pingingSubscriptionIds,
+        groupWithoutMembersText,
     ) {
         projectDesktopProxyHomeProjection(
             groupCatalog = groupCatalog,
@@ -310,6 +313,7 @@ internal fun DesktopProxyHome(
             presentationNodes = presentationNodes,
             refreshingSubscriptionIds = refreshingSubscriptionIds,
             pingingSubscriptionIds = pingingSubscriptionIds,
+            groupWithoutMembersText = groupWithoutMembersText,
         )
     }
     val proxyGroups = homeProjection.groups
@@ -458,7 +462,7 @@ internal fun DesktopProxyHome(
             getAllTargets = {
                 currentDecodedServers.mapNotNull { (stored, server) ->
                     server
-                        ?.takeIf { it.desktopTcpEndpointOrNull() != null }
+                        ?.takeIf { it.canBePingedOnDesktop() }
                         ?.let { stored.id to it }
                 }
             },
@@ -1179,7 +1183,7 @@ internal class DesktopProxyHomeEffectContext(
         serverIds.distinct().mapNotNull { id ->
             val serverId = id.toIntOrNull() ?: return@mapNotNull null
             val server = decodedServers.firstOrNull { it.first.id == serverId }?.second
-            server?.takeIf { it.desktopTcpEndpointOrNull() != null }?.let { serverId to it }
+            server?.takeIf { it.canBePingedOnDesktop() }?.let { serverId to it }
         }
 
     private fun copyServer(serverId: Int, format: ProxyHomeCopyFormat): Result<Unit> {

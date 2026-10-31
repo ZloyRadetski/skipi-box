@@ -85,6 +85,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import app.skipi.app.proxy.ProxyServerRecord
+import app.skipi.app.proxy.resolveStrategyGroupMembers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
@@ -825,7 +827,27 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     val runner = DesktopProxyHomeLatencyRunner(
                         scope = subscriptionScope,
                         subscriptionPingConcurrency = desktopSettings.subscriptionPingConcurrency,
-                        tcpTester = DesktopProxyHomeTcpTester { _, server ->
+                        // A strategy group is measured through its members, as on Android.
+                        tcpTester = DesktopStrategyGroupAwareTester(
+                            members = { group ->
+                                val records = serverLibrary.servers.mapNotNull { stored ->
+                                    stored.decode().getOrNull()?.let { decoded ->
+                                        ProxyServerRecord(
+                                            id = stored.id,
+                                            groupId = stored.subscriptionId ?: DesktopProxyGroupIds.DefaultManualSubscriptionId,
+                                            server = decoded,
+                                        )
+                                    }
+                                }
+                                resolveStrategyGroupMembers(
+                                    strategyGroup = group,
+                                    servers = records,
+                                    trafficConfigContentById = trafficConfigContentById,
+                                    stripLeadingFlag = { value -> value.stripLeadingCountryFlag() },
+                                ).map { record -> record.server }
+                            },
+                            concurrency = desktopSettings.subscriptionPingConcurrency,
+                        ) { server ->
                             val endpoint = server.desktopTcpEndpointOrNull()
                             when {
                                 endpoint == null -> DesktopServerLatencyResult.Error("No direct server endpoint")

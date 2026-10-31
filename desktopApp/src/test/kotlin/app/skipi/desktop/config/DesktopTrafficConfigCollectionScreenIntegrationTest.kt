@@ -210,6 +210,11 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertEquals(screen.initialLibrary, screen.persistedLibrary())
             assertEquals(proxyServers, screen.proxyServers)
 
+            // A group that names no servers, subscription or filter would have no members: it is not saved.
+            clickContentDescriptionAction(screen.scene, saveLabel)
+            assertEquals(0, screen.applyRequests().size, "A group without any source of members must not be saved")
+
+            setEditableTextByCurrentValue(screen.scene, currentValue = "", newValue = "Helsinki")
             clickContentDescriptionAction(screen.scene, saveLabel)
 
             val request = screen.applyRequests().single()
@@ -218,7 +223,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertEquals(DefaultAutoBalancerGroupId, request.returnGroupId)
             assertFalse(request.deleted)
             assertEquals(
-                StrategyGroup(remarks = newName, probeUrl = NetworkDefaults.CONNECTIVITY_CHECK_URL),
+                StrategyGroup(remarks = newName, filter = "Helsinki", probeUrl = NetworkDefaults.CONNECTIVITY_CHECK_URL),
                 request.server,
                 "The shared editor fills a blank probe URL from its common connectivity default on first composition",
             )
@@ -339,7 +344,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
         val duplicateLabel = getString(Res.string.configs_duplicate)
         val saveLabel = getString(Res.string.common_save)
         val copyNamePattern = getString(Res.string.configs_copy_name)
-        val originalGroup = StrategyGroup()
+        val originalGroup = StrategyGroup(filter = "Helsinki")
         val originalSnapshot = originalGroup.copy(proxyServerIds = originalGroup.proxyServerIds.toList())
         val rowName = originalGroup.getInfo().protocol
         val localizedCopyName = String.format(Locale.getDefault(), copyNamePattern, rowName)
@@ -391,6 +396,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
         val originalGroup = StrategyGroup(
             remarks = originalName,
             strategy = StrategyGroupConstants.TYPE_ROUND_ROBIN,
+            filter = "Helsinki",
             probeUrl = "https://failure.example.test/check",
         )
         val originalSnapshot = originalGroup.copy(proxyServerIds = originalGroup.proxyServerIds.toList())

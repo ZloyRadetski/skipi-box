@@ -577,6 +577,7 @@
     <string name="proxy_server_list_select_first">Сначала выберите прокси-сервер</string>
     <string name="proxy_server_list_latency_result">{name} пинг: {latency}</string>
     <string name="proxy_server_list_latency_failed">Тайм-аут</string>
+    <string name="proxy_server_list_strategy_group_no_members">Нет серверов в группе</string>
     <string name="proxy_server_list_import_result">Успешно импортировано серверов: {serverCount}</string>
     <string name="proxy_server_config_invalid">Некорректный файл конфигурации</string>
     <string name="proxy_server_list_duplicates_deleted">Удалено дубликатов серверов: {count}</string>

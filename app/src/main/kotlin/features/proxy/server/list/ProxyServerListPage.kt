@@ -375,6 +375,7 @@ fun ProxyServerListPage(
             noTestableServersMessage = latencyMessages.noTestableServers,
             latencyResultTemplate = latencyMessages.latencyResultTemplate,
             latencyFailedMessage = latencyMessages.latencyFailed,
+            groupWithoutMembersMessage = latencyMessages.groupWithoutMembers,
             onFinished = {
                 if (activeGlobalLatencyRunId == runId) {
                     activeGlobalLatencyJob = null
@@ -490,6 +491,7 @@ fun ProxyServerListPage(
             noTestableServersMessage = latestMessages.value.noTestableServers,
             latencyResultTemplate = latestMessages.value.latencyResultTemplate,
             latencyFailedMessage = latestMessages.value.latencyFailed,
+            groupWithoutMembersMessage = latestMessages.value.groupWithoutMembers,
             onFinished = {
                 if (activeGroupLatencyRunIds[groupId] == runId) {
                     activeGroupLatencyJobs.remove(groupId)

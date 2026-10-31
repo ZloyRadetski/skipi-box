@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,23 +74,7 @@ internal fun SubscriptionSummaryCardContent(
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(
-                onClick = onToggleExpanded,
-                modifier = Modifier.semantics {
-                    contentDescription = if (isExpanded) {
-                        labels.detailsExpandedDescription
-                    } else {
-                        labels.detailsCollapsedDescription
-                    }
-                },
-            ) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                    contentDescription = null,
-                    tint = colors.text,
-                )
-            }
-            Spacer(Modifier.width(4.dp))
+            // The whole title row folds the subscription; a separate chevron cost a phone a third of the title.
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),

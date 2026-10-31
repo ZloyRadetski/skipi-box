@@ -64,7 +64,7 @@ class ProxyServerEditorControllerTest {
 
     @Test
     fun strategyGroupDraftCanSaveAndOnlyPersistedChangesRequireDiscardConfirmation() {
-        val original = StrategyGroup(remarks = "Primary route")
+        val original = StrategyGroup(remarks = "Primary route", proxyServerIds = listOf(4))
 
         assertEquals(ProxyServerEditorSaveDecision.Save, ProxyServerEditorController.requestSave(original))
         assertFalse(ProxyServerEditorController.hasChanges(original, original.copy()))
@@ -95,5 +95,22 @@ class ProxyServerEditorControllerTest {
         )
         assertFalse(rejected.fullValidation)
         assertEquals(ProxyServerValidationError.ChainProxyMemberCountInvalid, rejected.issue.error)
+    }
+
+    @Test
+    fun anAutoBalancerCannotBeSavedWithoutAnySourceOfMembers() {
+        // An empty group has no members on any platform: its ping fails at once and nothing connects.
+        val empty = StrategyGroup(remarks = "Auto", strategy = "leastPing")
+        val rejected = assertIs<ProxyServerEditorSaveDecision.Reject>(ProxyServerEditorController.requestSave(empty))
+        assertEquals(ProxyServerValidationError.StrategyGroupMembersRequired, rejected.issue.error)
+
+        for (withSource in listOf(
+            empty.copy(proxyServerIds = listOf(3)),
+            empty.copy(subscriptionGroupId = 7),
+            empty.copy(filter = "Helsinki"),
+            empty.copy(sourceTrafficConfigId = 2, sourcePolicyGroupName = "Auto"),
+        )) {
+            assertEquals(ProxyServerEditorSaveDecision.Save, ProxyServerEditorController.requestSave(withSource), "$withSource")
+        }
     }
 }

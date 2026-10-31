@@ -521,6 +521,7 @@
     <string name="proxy_server_list_select_first">ابتدا یک سرور پراکسی انتخاب کنید</string>
     <string name="proxy_server_list_latency_result">تأخیر{name}{latency}</string>
     <string name="proxy_server_list_latency_failed">شکست خورد</string>
+    <string name="proxy_server_list_strategy_group_no_members">سروری در گروه نیست</string>
     <string name="proxy_server_list_import_result">سرورهای پروکسی{serverCount}وارد شده است</string>
     <string name="proxy_server_config_invalid">پیکربندی نامعتبر است</string>
     <string name="proxy_server_list_duplicates_deleted">سرورهای پروکسی تکراری{count}حذف شد</string>

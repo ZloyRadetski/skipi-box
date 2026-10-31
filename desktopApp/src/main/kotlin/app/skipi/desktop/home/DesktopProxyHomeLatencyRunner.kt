@@ -7,6 +7,7 @@ import app.skipi.app.home.LatencyResultBatcher
 import app.skipi.app.home.ProxyHomeLatencyRunner
 import app.skipi.app.home.ProxyHomeLatencyUpdateWindowMillis
 import features.proxy.server.model.ProxyServer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -41,7 +42,7 @@ internal class DesktopProxyHomeLatencyRunner(
         val eligible = targets
             .distinctBy { (serverId, _) -> serverId }
             .filter { (serverId, server) ->
-                serverId !in testingServerIds && server.desktopTcpEndpointOrNull() != null
+                serverId !in testingServerIds && server.canBePingedOnDesktop()
             }
         if (eligible.isEmpty()) {
             publishMessage(noTestableServersMessage)
@@ -64,17 +65,23 @@ internal class DesktopProxyHomeLatencyRunner(
                 }
             }
             try {
-                ProxyHomeLatencyRunner<Pair<Int, ProxyServer<*>>, DesktopServerLatencyResult>(
+                ProxyHomeLatencyRunner<Pair<Int, ProxyServer<*>>, DesktopServerLatencyResult?>(
                     concurrency = subscriptionPingConcurrency,
                     probe = { (serverId, server) -> tcpTester.test(serverId, server) },
+                    // A cancelled probe has no answer: like Android, its server keeps the previous value.
                     onProbeFailure = { error ->
-                        DesktopServerLatencyResult.Error(
-                            message = error.message.orEmpty().ifBlank { error.javaClass.simpleName },
-                            cause = error,
-                        )
+                        if (error is CancellationException) {
+                            null
+                        } else {
+                            DesktopServerLatencyResult.Error(
+                                message = error.message.orEmpty().ifBlank { error.javaClass.simpleName },
+                                cause = error,
+                            )
+                        }
                     },
-                    // A cancelled probe still reports its failure.
-                    onResult = { (serverId, _), result -> withContext(NonCancellable) { batcher.add(serverId, result) } },
+                    onResult = { (serverId, _), result ->
+                        if (result != null) withContext(NonCancellable) { batcher.add(serverId, result) }
+                    },
                 ).execute(eligible)
                 batcher.flush()
                 publishMessage(latencyDoneTemplate.formatTemplate("count" to eligible.size))

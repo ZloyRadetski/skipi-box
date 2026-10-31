@@ -594,6 +594,7 @@
     <string name="proxy_server_list_select_first">Select a proxy server first</string>
     <string name="proxy_server_list_latency_result">{name} latency {latency}</string>
     <string name="proxy_server_list_latency_failed">Failed</string>
+    <string name="proxy_server_list_strategy_group_no_members">No servers in group</string>
     <string name="proxy_server_list_import_result">Imported {serverCount} proxy servers</string>
     <string name="proxy_server_config_invalid">Invalid config</string>
     <string name="proxy_server_list_duplicates_deleted">Deleted {count} duplicate proxy servers</string>

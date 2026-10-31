@@ -118,9 +118,17 @@ data class StrategyGroup(
     override fun validateFull(): List<ProxyServerValidationIssue> = buildList {
         validateRemarks(remarks)
         validateAllowed(strategy, "strategy group type", StrategyGroupConstants.TYPES)
+        if (!hasMemberSource()) addIssue(ProxyServerValidationError.StrategyGroupMembersRequired)
     }
 
     override fun connectionFingerprint(): String {
         return "strategy|$remarks|$strategy|$subscriptionGroupId|$proxyServerIds|$selectedMemberId|$displayMode|$tolerance"
     }
 }
+
+/**
+ * Whether the group says where its members come from: chosen servers, a subscription, a name filter or a
+ * profile's policy group. Without any of them it has no members on any platform.
+ */
+fun StrategyGroup.hasMemberSource(): Boolean =
+    proxyServerIds.isNotEmpty() || subscriptionGroupId != null || filter.isNotBlank() || sourceTrafficConfigId != null

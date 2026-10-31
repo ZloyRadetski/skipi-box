@@ -72,6 +72,7 @@ fun rememberProxyServerValidationMessageResolver(): (ProxyServerValidationIssue)
         pathMustStartWithSlash = stringResource(Res.string.proxy_validation_path_must_start_with_slash),
         unsupportedAlpn = stringResource(Res.string.proxy_validation_unsupported_alpn),
         chainProxyMemberCountInvalid = stringResource(Res.string.proxy_validation_chain_proxy_member_count_invalid),
+        strategyGroupMembersRequired = stringResource(Res.string.proxy_validation_strategy_group_members_required),
         hysteriaObfsTypeRequired = stringResource(Res.string.proxy_validation_hysteria_obfs_type_required),
         hysteriaObfsUnsupported = stringResource(Res.string.proxy_validation_hysteria_obfs_unsupported),
         portHoppingIntervalNumberRequired =
@@ -127,6 +128,7 @@ private data class ProxyServerValidationMessages(
     val pathMustStartWithSlash: String,
     val unsupportedAlpn: String,
     val chainProxyMemberCountInvalid: String,
+    val strategyGroupMembersRequired: String,
     val hysteriaObfsTypeRequired: String,
     val hysteriaObfsUnsupported: String,
     val portHoppingIntervalNumberRequired: String,
@@ -177,6 +179,7 @@ private data class ProxyServerValidationMessages(
             ProxyServerValidationError.PathMustStartWithSlash -> pathMustStartWithSlash
             ProxyServerValidationError.UnsupportedAlpn -> unsupportedAlpn.formatTemplate("value" to values.valueAt(0))
             ProxyServerValidationError.ChainProxyMemberCountInvalid -> chainProxyMemberCountInvalid
+            ProxyServerValidationError.StrategyGroupMembersRequired -> strategyGroupMembersRequired
             ProxyServerValidationError.HysteriaObfsTypeRequired -> hysteriaObfsTypeRequired
             ProxyServerValidationError.HysteriaObfsUnsupported -> hysteriaObfsUnsupported
             ProxyServerValidationError.PortHoppingIntervalNumberRequired -> portHoppingIntervalNumberRequired

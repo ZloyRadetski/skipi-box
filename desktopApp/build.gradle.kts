@@ -189,4 +189,10 @@ val prepareDesktopHevWindowsRuntime = tasks.register<PrepareDesktopHevWindowsRun
 
 tasks.withType<Test>().configureEach {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
+    // The app's default paths (logs, settings, libraries) hang off the home directory; a test run gets
+    // its own so it never writes into the user's ~/SKIPI (or %APPDATA%\SKIPI).
+    val testHome = layout.buildDirectory.dir("test-home").get().asFile
+    doFirst { testHome.mkdirs() }
+    systemProperty("user.home", testHome.absolutePath)
+    environment("APPDATA", testHome.absolutePath)
 }

@@ -36,6 +36,7 @@ internal fun projectDesktopProxyHomeProjection(
     presentationNodes: List<ProxyServerPresentationNode>,
     refreshingSubscriptionIds: Set<Int>,
     pingingSubscriptionIds: Set<Int>,
+    groupWithoutMembersText: String = "",
 ): DesktopProxyHomeProjection {
     val subscriptionById = HashMap<Int, DesktopStoredSubscription>(subscriptionLibrary.subscriptions.size)
     for (candidate in subscriptionLibrary.subscriptions) subscriptionById.putIfAbsent(candidate.id, candidate)
@@ -120,7 +121,8 @@ internal fun projectDesktopProxyHomeProjection(
             latencyMs = (latencyResult as? DesktopServerLatencyResult.Success)?.milliseconds,
             latencyTesting = stored.id in testingServerIds,
             latencyError = latencyResult is DesktopServerLatencyResult.Error || latencyResult is DesktopServerLatencyResult.Timeout,
-            canTest = current.desktopTcpEndpointOrNull() != null,
+            latencyErrorText = desktopLatencyErrorText(current, latencyResult, groupWithoutMembersText),
+            canTest = current.canBePingedOnDesktop(),
             availableCopyFormats = buildSet {
                 add(ProxyHomeCopyFormat.FullJson)
                 if (current is UrlProxyServer<*>) {

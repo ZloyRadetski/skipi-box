@@ -153,8 +153,12 @@ internal class SkipiPullToRefreshController(
             this@SkipiPullToRefreshController.onPostScroll(available, source)
 
         override suspend fun onPreFling(available: Velocity): Velocity {
+            // The release of a pull belongs to the pull: passed on, Android's stretch overscroll
+            // took it and pulled the content a second time after the spring had returned it.
+            val pulling = mutableRefreshState == SkipiPullRefreshState.Pulling ||
+                mutableRefreshState == SkipiPullRefreshState.ThresholdReached
             settleOnFling()
-            return Velocity.Zero
+            return if (pulling) available else Velocity.Zero
         }
 
         override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {

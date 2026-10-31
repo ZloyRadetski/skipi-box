@@ -96,7 +96,7 @@ class DesktopProxyHomeLatencyRunnerTest {
     }
 
     @Test
-    fun cancellingAProbePublishesMappedFailureBeforeTestingStateClears() = runBlocking {
+    fun cancellingAProbePublishesNothingForItAndClearsItsMarker() = runBlocking {
         val events = mutableListOf<String>()
         val probeStarted = CompletableDeferred<Unit>()
         var testingIds = emptySet<Int>()
@@ -132,11 +132,12 @@ class DesktopProxyHomeLatencyRunnerTest {
         assertTrue(owner.hasActiveJobs)
         job.cancelAndJoin()
 
+        // A cancelled probe has no answer: like Android, nothing is published for it.
         assertEquals(
-            listOf("testing:[7]", "probe:7", "probe-cleanup", "results", "testing:[]", "home-finished"),
+            listOf("testing:[7]", "probe:7", "probe-cleanup", "testing:[]", "home-finished"),
             events,
         )
-        assertTrue(latencyById[7] is DesktopServerLatencyResult.Error)
+        assertFalse(7 in latencyById)
         assertFalse(owner.hasActiveJobs)
         assertTrue(testingIds.isEmpty())
     }
@@ -200,7 +201,10 @@ class DesktopProxyHomeLatencyRunnerTest {
         val completedProbeStarted = CompletableDeferred<Unit>()
         val unfinishedProbeStarted = CompletableDeferred<Unit>()
         var testingIds = setOf(11)
-        var latencyById: Map<Int, DesktopServerLatencyResult> = mapOf(11 to DesktopServerLatencyResult.Success(3))
+        var latencyById: Map<Int, DesktopServerLatencyResult> = mapOf(
+            11 to DesktopServerLatencyResult.Success(3),
+            8 to DesktopServerLatencyResult.Success(99),
+        )
         val runner = DesktopProxyHomeLatencyRunner(
             scope = this,
             subscriptionPingConcurrency = 8,
@@ -241,8 +245,36 @@ class DesktopProxyHomeLatencyRunnerTest {
 
         assertEquals(DesktopServerLatencyResult.Success(7), latencyById[7])
         assertEquals(DesktopServerLatencyResult.Success(3), latencyById[11])
-        assertTrue(latencyById[8] is DesktopServerLatencyResult.Error)
+        // The probe that was cut short keeps the value of the previous check instead of a made-up timeout.
+        assertEquals(DesktopServerLatencyResult.Success(99), latencyById[8])
         assertEquals(setOf(11), testingIds)
+    }
+
+    @Test
+    fun aStrategyGroupIsPingedInsteadOfBeingSkippedAsUntestable() = runBlocking {
+        val probed = mutableListOf<Int>()
+        val messages = mutableListOf<String>()
+        var latencyById = emptyMap<Int, DesktopServerLatencyResult>()
+        var testingIds = emptySet<Int>()
+        val runner = DesktopProxyHomeLatencyRunner(
+            scope = this,
+            subscriptionPingConcurrency = 4,
+            tcpTester = DesktopProxyHomeTcpTester { serverId, _ -> probed += serverId; DesktopServerLatencyResult.Success(40) },
+            jobOwner = DesktopProxyHomeLatencyJobOwner(),
+            readTestingServerIds = { testingIds },
+            publishTestingServerIds = { testingIds = it },
+            readLatencyByServerId = { latencyById },
+            publishLatencyByServerId = { latencyById = it },
+            latencyDoneTemplate = "done:{count}",
+            noTestableServersMessage = "no-testable",
+            publishMessage = { messages += it },
+        )
+
+        withTimeout(5_000) { runner.start(listOf(30 to features.proxy.server.model.StrategyGroup(remarks = "Balancer"))).join() }
+
+        assertEquals(listOf(30), probed)
+        assertEquals(DesktopServerLatencyResult.Success(40), latencyById[30])
+        assertEquals(listOf("done:1"), messages)
     }
 
     @Test

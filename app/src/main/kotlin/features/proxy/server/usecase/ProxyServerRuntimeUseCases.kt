@@ -7,6 +7,9 @@ import app.AppState
 import app.ProxyServerLatencyTesting
 import app.ProxyServerState
 import app.skipi.app.home.ProxyHomeLatencyRunner
+import features.proxy.server.model.hasMemberSource
+import features.proxy.server.model.StrategyGroup
+import features.proxy.server.model.ProxyServer
 import app.skipi.app.home.ProxyHomeLatencyUpdateWindowMillis
 import app.skipi.app.home.ProxyServerSelectionRuntimeAction
 import app.skipi.app.home.decideProxyServerSelectionRuntimeAction
@@ -117,6 +120,7 @@ internal fun runProxyServerLatencyTest(
     noTestableServersMessage: String,
     latencyResultTemplate: String,
     latencyFailedMessage: String,
+    groupWithoutMembersMessage: String = latencyFailedMessage,
     onFinished: (() -> Unit)? = null,
 ): Job {
     if (targetServers.isEmpty()) {
@@ -173,7 +177,7 @@ internal fun runProxyServerLatencyTest(
                 },
                 onProbeFailure = { ProxyServerLatencyTestResult.Failed },
                 onResult = { server, result ->
-                    val latency = result.toLatencyText(latencyFailedMessage)
+                    val latency = proxyServerLatencyText(server.server, result, latencyFailedMessage, groupWithoutMembersMessage)
                     resultBatcher.add(server.id, latency)
                     if (showSingleResult) {
                         val serverName = server.server.getInfo().remarks.ifBlank { server.server.getInfo().protocol }
@@ -219,6 +223,14 @@ internal fun runProxyServerLatencyTest(
     return job
 }
 
-private fun ProxyServerLatencyTestResult.toLatencyText(failedMessage: String): String {
-    return if (elapsedMillis >= 0) "$elapsedMillis ms" else failedMessage
+/** A failed strategy group with no source of members says so instead of looking like a timeout. */
+internal fun proxyServerLatencyText(
+    server: ProxyServer<*>,
+    result: ProxyServerLatencyTestResult,
+    failedMessage: String,
+    groupWithoutMembersMessage: String,
+): String = when {
+    result.elapsedMillis >= 0 -> "${result.elapsedMillis} ms"
+    server is StrategyGroup && !server.hasMemberSource() -> groupWithoutMembersMessage
+    else -> failedMessage
 }

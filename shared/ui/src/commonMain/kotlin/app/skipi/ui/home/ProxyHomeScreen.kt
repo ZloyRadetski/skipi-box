@@ -245,7 +245,7 @@ fun ProxyHomeScreenContent(
     val windowClass = SkipiTheme.windowClass
     val isWide = proxyHomeLayoutMode(windowClass) == ProxyHomeLayoutMode.WideListAndDetails
     val isCompact = windowClass == SkipiWindowClass.Compact
-    val columns = proxyHomeResolveColumns(windowClass, state.displayOptions.requestedColumns)
+    val columns = proxyHomeResolveColumns(state.displayOptions.requestedColumns)
     val send: (ProxyHomeAction) -> Unit = { action -> dispatchHomeIntent(state, action, onAction) }
     val scope = rememberCoroutineScope()
     val canRefreshAllSubscriptions = canUseHomeAction(

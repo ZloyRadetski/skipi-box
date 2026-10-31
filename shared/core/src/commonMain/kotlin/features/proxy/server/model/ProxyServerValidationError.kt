@@ -45,6 +45,7 @@ enum class ProxyServerValidationError {
     PathMustStartWithSlash,
     UnsupportedAlpn,
     ChainProxyMemberCountInvalid,
+    StrategyGroupMembersRequired,
     HysteriaObfsTypeRequired,
     HysteriaObfsUnsupported,
     PortHoppingIntervalNumberRequired,

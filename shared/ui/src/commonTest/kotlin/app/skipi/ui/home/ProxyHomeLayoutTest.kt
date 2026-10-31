@@ -41,16 +41,14 @@ class ProxyHomeLayoutTest {
     }
 
     @Test
-    fun compactLayoutForcesOneColumnWhileMediumAndExpandedHonorRequestedColumns() {
-        assertEquals(1, proxyHomeResolveColumns(SkipiWindowClass.Compact, 1))
-        assertEquals(1, proxyHomeResolveColumns(SkipiWindowClass.Compact, 2))
-        assertEquals(1, proxyHomeResolveColumns(SkipiWindowClass.Compact, 3))
-        assertEquals(1, proxyHomeResolveColumns(SkipiWindowClass.Medium, 1))
-        assertEquals(2, proxyHomeResolveColumns(SkipiWindowClass.Medium, 2))
-        assertEquals(3, proxyHomeResolveColumns(SkipiWindowClass.Medium, 3))
-        assertEquals(1, proxyHomeResolveColumns(SkipiWindowClass.Expanded, 1))
-        assertEquals(2, proxyHomeResolveColumns(SkipiWindowClass.Expanded, 2))
-        assertEquals(3, proxyHomeResolveColumns(SkipiWindowClass.Expanded, 3))
+    fun theColumnsSettingIsHonouredOnEveryWindowLikeOnAndroid() {
+        // Android always laid the list out in the chosen number of columns, phones included;
+        // forcing one column on compact windows made the setting do nothing on a phone.
+        assertEquals(1, proxyHomeResolveColumns(1))
+        assertEquals(2, proxyHomeResolveColumns(2))
+        assertEquals(3, proxyHomeResolveColumns(3))
+        assertEquals(1, proxyHomeResolveColumns(0))
+        assertEquals(3, proxyHomeResolveColumns(7))
     }
 
     @Test

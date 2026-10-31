@@ -56,18 +56,8 @@ internal fun proxyHomeSwipeGroupOffset(
     }
 }
 
-/** Resolves grid column count: 1 on compact phones; 1..3 on medium or expanded windows. */
-internal fun proxyHomeResolveColumns(
-    windowClass: SkipiWindowClass,
-    requestedColumns: Int,
-): Int {
-    val count = requestedColumns.coerceIn(1, 3)
-    return when (windowClass) {
-        SkipiWindowClass.Compact -> 1
-        SkipiWindowClass.Medium,
-        SkipiWindowClass.Expanded -> count
-    }
-}
+/** Resolves the grid column count: the chosen 1..3 on every window, as Android always laid the list out. */
+internal fun proxyHomeResolveColumns(requestedColumns: Int): Int = requestedColumns.coerceIn(1, 3)
 
 /** Separates a floating parent bar's overlap from Home's viewport and scrollable content. */
 internal data class ProxyHomeBottomInsetTreatment(

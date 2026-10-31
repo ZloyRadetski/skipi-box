@@ -541,6 +541,7 @@
     <string name="proxy_server_list_select_first">首先选择代理服务器</string>
     <string name="proxy_server_list_latency_result">{name}延迟{latency}</string>
     <string name="proxy_server_list_latency_failed">失败的</string>
+    <string name="proxy_server_list_strategy_group_no_members">组内没有服务器</string>
     <string name="proxy_server_list_import_result">导入的{serverCount}代理服务器</string>
     <string name="proxy_server_config_invalid">无效的配置</string>
     <string name="proxy_server_list_duplicates_deleted">删除了{count}重复的代理服务器</string>
