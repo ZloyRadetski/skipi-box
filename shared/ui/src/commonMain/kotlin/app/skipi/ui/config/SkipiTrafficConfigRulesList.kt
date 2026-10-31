@@ -107,7 +107,7 @@ fun SkipiTrafficConfigRulesList(
                 text = stringResource(Res.string.configs_rules_order),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
             )
         }
         item(key = "add") {

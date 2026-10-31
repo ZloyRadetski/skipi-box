@@ -56,7 +56,7 @@ fun SkipiTrafficConfigProxyGroups(
                 text = summary,
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
             )
         }
         item(key = "add") {
@@ -72,7 +72,7 @@ fun SkipiTrafficConfigProxyGroups(
                     text = emptyLabel,
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }
         }

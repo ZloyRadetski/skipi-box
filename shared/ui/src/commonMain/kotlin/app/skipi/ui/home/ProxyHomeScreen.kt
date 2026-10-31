@@ -17,10 +17,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -79,6 +79,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyConnectionPhase
 import app.skipi.app.home.ProxyHomeAction
@@ -1599,12 +1601,16 @@ private fun EmptyServerListCard(
                 color = SkipiTheme.colors.onSurface,
                 style = SkipiTheme.typography.titleMedium,
                 fontWeight = themedFontWeight(FontWeight.Bold),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
             if (!hasSearch) {
                 Text(
                     text = stringResource(Res.string.home_empty_hint),
                     color = SkipiTheme.colors.onSurfaceVariant,
                     style = SkipiTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             if (actions.any) {
@@ -1619,8 +1625,10 @@ private fun EmptyServerListCard(
     }
 }
 
-/** Paste, Add and Scan QR: the three ways to get the first server without the "+" menu. */
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * Paste, Add and Scan QR on one line: three equal-width buttons, icon above the label, so the long
+ * "Scan QR code" label wraps inside its button instead of pushing a button onto a second row.
+ */
 @Composable
 private fun EmptyServerListActions(
     actions: ProxyHomeEmptyStateActions,
@@ -1628,26 +1636,27 @@ private fun EmptyServerListActions(
     serverKinds: Collection<ProxyHomeServerKind>,
     onAction: (ProxyHomeAction) -> Unit,
 ) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
+    Row(
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
+        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
     ) {
         if (actions.paste) {
-            OutlinedButton(onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.Clipboard)) }) {
-                Icon(Icons.Outlined.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(SkipiTheme.spacing.small))
-                Text(stringResource(Res.string.common_paste))
-            }
+            EmptyStateActionButton(
+                icon = Icons.Outlined.ContentPaste,
+                label = stringResource(Res.string.common_paste),
+                onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.Clipboard)) },
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
         }
         if (actions.add) {
             var menuExpanded by remember { mutableStateOf(false) }
-            Box {
-                OutlinedButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(SkipiTheme.spacing.small))
-                    Text(stringResource(Res.string.common_add))
-                }
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                EmptyStateActionButton(
+                    icon = Icons.Outlined.Add,
+                    label = stringResource(Res.string.common_add),
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.fillMaxSize(),
+                )
                 SkipiHomeDropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                     if (canAddSubscription) {
                         DropdownMenuItem(
@@ -1671,11 +1680,39 @@ private fun EmptyServerListActions(
             }
         }
         if (actions.scanQr) {
-            OutlinedButton(onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.QrCode)) }) {
-                Icon(Icons.Outlined.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(SkipiTheme.spacing.small))
-                Text(importSourceTitle(ProxyHomeImportSource.QrCode))
-            }
+            EmptyStateActionButton(
+                icon = Icons.Outlined.QrCodeScanner,
+                label = importSourceTitle(ProxyHomeImportSource.QrCode),
+                onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.QrCode)) },
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyStateActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 10.dp),
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
+            Text(
+                text = label,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                style = SkipiTheme.typography.bodySmall,
+            )
         }
     }
 }
