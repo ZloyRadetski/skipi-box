@@ -140,6 +140,9 @@ compose.desktop {
     application {
         mainClass = "app.skipi.desktop.MainKt"
         jvmArgs += "--enable-native-access=ALL-UNNAMED"
+        // glibc keeps freed native memory in per-thread arenas (C2 compiler, IO and render threads come and go),
+        // which held hundreds of MB of RSS; trimming once a minute gives it back. glibc only, so not on Windows.
+        if (!isWindowsHost) jvmArgs += "-XX:TrimNativeHeapInterval=60000"
 
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)

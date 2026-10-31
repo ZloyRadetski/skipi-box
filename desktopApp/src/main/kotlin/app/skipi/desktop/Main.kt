@@ -278,12 +278,12 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     )
                 }
                 val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
-                // The core lives in this process, so its footprint is the process's resident memory.
+                // The core's own heap, not the whole process: the JVM and the UI share it.
                 val tunnelMemoryKb by produceState(0L, tunnel.coreState.isRunning, desktopSettings.showTunnelMemory) {
                     value = 0L
                     if (!tunnel.coreState.isRunning || !desktopSettings.showTunnelMemory) return@produceState
                     while (true) {
-                        value = withContext(Dispatchers.IO) { currentProcessResidentKb() } ?: 0L
+                        value = withContext(Dispatchers.IO) { readDesktopTunnelMemoryKb(coreController::readMemoryStats) }
                         delay(3_000)
                     }
                 }
