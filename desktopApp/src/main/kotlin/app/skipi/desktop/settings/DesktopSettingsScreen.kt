@@ -192,6 +192,7 @@ internal fun DesktopSettingsScreen(
     appUpdateState: AppUpdateState = AppUpdateState(),
     onCheckForAppUpdate: suspend () -> DesktopAppUpdateCheck = { DesktopAppUpdateCheck.Failed },
     onClearSystemProxy: (() -> Unit)? = null,
+    onExitApplication: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var destination by remember { mutableStateOf(DesktopSettingsDestination.Overview) }
@@ -241,6 +242,27 @@ internal fun DesktopSettingsScreen(
             DesktopVpnSettings(
                 settings = currentSettings,
                 tunUnavailableReason = tunUnavailableReason,
+                tunNeedsElevation = tunHost?.needsElevation() == true,
+                onRequestTunElevation = {
+                    // The elevated instance starts with TUN on; a declined UAC prompt puts the setting back.
+                    persist(currentSettings.copy(enableTunMode = true), "Параметры VPN сохранены.")
+                    scope.launch {
+                        val launcher = ProcessHandle.current().info().command().orElse(null)
+                        val arguments = ProcessHandle.current().info().arguments().orElse(emptyArray()).toList()
+                        val result = withContext(Dispatchers.IO) {
+                            if (launcher == null) {
+                                Result.failure(IllegalStateException("The application launcher is unknown"))
+                            } else {
+                                relaunchElevated(launcher, arguments)
+                            }
+                        }
+                        result.onSuccess { onExitApplication() }
+                            .onFailure { error ->
+                                persist(currentSettings.copy(enableTunMode = false), "")
+                                message = "Не удалось получить права администратора: ${error.message.orEmpty()}"
+                            }
+                    }
+                },
                 onBack = goBack,
                 onPersist = ::persist,
                 onApplyLaunchOnLogin = { enabled ->

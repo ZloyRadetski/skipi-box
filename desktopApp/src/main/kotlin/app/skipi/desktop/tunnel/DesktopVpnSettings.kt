@@ -39,10 +39,24 @@ private fun DesktopAppSettings.toTunDraft() =
  * Desktop host of the shared "VPN service and TUN" page. [tunUnavailableReason] is null when this
  * machine can run TUN mode; otherwise the mode switch stays off and says why.
  */
+/** What turning the TUN switch does: save the setting, or first restart the app with administrator rights. */
+internal enum class TunSwitchChange { Save, RequestElevation }
+
+internal fun tunSwitchChange(enabled: Boolean, needsElevation: Boolean): TunSwitchChange =
+    if (enabled && needsElevation) TunSwitchChange.RequestElevation else TunSwitchChange.Save
+
+/** A missing elevation is something the switch can fix, so it is not a dead switch. */
+internal fun tunSwitchEnabled(available: Boolean, enabled: Boolean, needsElevation: Boolean): Boolean =
+    available || enabled || needsElevation
+
+internal fun tunSwitchChecked(available: Boolean, enabled: Boolean): Boolean = enabled && available
+
 @Composable
 internal fun DesktopVpnSettings(
     settings: DesktopAppSettings,
     tunUnavailableReason: String?,
+    tunNeedsElevation: Boolean = false,
+    onRequestTunElevation: () -> Unit = {},
     onBack: () -> Unit,
     onPersist: (DesktopAppSettings, String) -> Unit,
     onApplyLaunchOnLogin: (Boolean) -> Result<Unit>,
@@ -61,6 +75,8 @@ internal fun DesktopVpnSettings(
     }
     val tunModeSummary = if (tunAvailable) {
         stringResource(Res.string.settings_tun_mode_summary)
+    } else if (tunNeedsElevation) {
+        "Нужны права администратора: включение перезапустит SKIPI с запросом UAC."
     } else {
         stringResource(Res.string.settings_tun_mode_unavailable, tunUnavailableReason.orEmpty())
     }
@@ -118,9 +134,14 @@ internal fun DesktopVpnSettings(
                 sectionTitle = tunModeTitle,
                 title = tunModeTitle,
                 summary = tunModeSummary,
-                checked = settings.enableTunMode && tunAvailable,
-                enabled = tunAvailable || settings.enableTunMode,
-                onCheckedChange = { enabled -> onPersist(settings.copy(enableTunMode = enabled), saved) },
+                checked = tunSwitchChecked(tunAvailable, settings.enableTunMode),
+                enabled = tunSwitchEnabled(tunAvailable, settings.enableTunMode, tunNeedsElevation),
+                onCheckedChange = { enabled ->
+                    when (tunSwitchChange(enabled, tunNeedsElevation)) {
+                        TunSwitchChange.RequestElevation -> onRequestTunElevation()
+                        TunSwitchChange.Save -> onPersist(settings.copy(enableTunMode = enabled), saved)
+                    }
+                },
             )
         },
     )

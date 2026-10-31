@@ -1600,6 +1600,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             isTunnelRunning = tunnel.coreState.isRunning,
                             tunHost = desktopTunHost,
                             escapeHandler = escapeHandler,
+                            onExitApplication = { tunnel.closeRequested = true },
                             onClearSystemProxy = {
                                 subscriptionScope.launch {
                                     withContext(Dispatchers.IO) { systemProxyManager.forceClear() }
