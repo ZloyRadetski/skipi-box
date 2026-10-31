@@ -102,6 +102,16 @@ internal object AndroidDiagnostics {
         return IpInfoRunner(environment.httpClient, environment.hasTunnel).fetch()
     }
 
+    /**
+     * Delay of the live connection: one HTTP round trip over the running tunnel. Null on failure, and
+     * without a tunnel, because the direct path is not the connection.
+     */
+    suspend fun measureConnectionLatency(context: Context, url: String, timeoutMillis: Long): Long? {
+        val environment = AndroidDiagnosticsEnvironment.current(context.applicationContext)
+        if (!environment.hasTunnel) return null
+        return environment.httpClient.measureMillis(url, timeoutMillis)
+    }
+
     /** Stops running tests; used when a tunnel operation invalidates their measurements. */
     fun stopAll() {
         speedTestController?.stop()

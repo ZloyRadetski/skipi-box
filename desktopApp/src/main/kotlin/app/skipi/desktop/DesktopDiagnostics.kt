@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import app.skipi.app.tools.DiagnosticsHttpClient
+import app.skipi.app.tools.DiagnosticsLatencyProbe
 import app.skipi.app.tools.DiagnosticsRoute
 import app.skipi.app.tools.DnsLeakTestController
 import app.skipi.app.tools.DnsLeakTestRunner
@@ -81,6 +82,7 @@ internal fun desktopSettingsVisibleDestinations(vpnPage: Boolean = false): Set<S
 internal class DesktopDiagnostics(
     private val activeOptions: () -> LocalProxyXrayConfigOptions?,
     private val httpClientFor: (DiagnosticsRoute) -> DiagnosticsHttpClient = { route -> JvmDiagnosticsHttpClient(route) },
+    private val latencyProbeFor: (DiagnosticsRoute) -> DiagnosticsLatencyProbe = { route -> JvmDiagnosticsHttpClient(route) },
     private val dnsResolverFor: (DiagnosticsRoute) -> DnsTxtResolver = { route -> JvmDnsTxtResolver(route) },
     private val speedConnectionsFor: (DiagnosticsRoute) -> SpeedTestConnectionFactory = ::desktopSpeedTestConnections,
     private val systemDnsServers: () -> List<String> = ::discoverDesktopSystemDnsServers,
@@ -110,6 +112,16 @@ internal class DesktopDiagnostics(
     suspend fun fetchIpInfo(): IpInfoData {
         val route = desktopDiagnosticsRoute(activeOptions())
         return IpInfoRunner(httpClientFor(route), isVpnTunnel = route is DiagnosticsRoute.Socks).fetch()
+    }
+
+    /**
+     * Delay of the live connection: one HTTP round trip over the running tunnel's local proxy. Null
+     * on failure, and without a tunnel, because the direct path is not the connection.
+     */
+    suspend fun measureConnectionLatency(url: String, timeoutMillis: Long): Long? {
+        val route = desktopDiagnosticsRoute(activeOptions())
+        if (route !is DiagnosticsRoute.Socks) return null
+        return latencyProbeFor(route).measureMillis(url, timeoutMillis)
     }
 
     /** Running measurements stop whenever the tunnel changes underneath them. */

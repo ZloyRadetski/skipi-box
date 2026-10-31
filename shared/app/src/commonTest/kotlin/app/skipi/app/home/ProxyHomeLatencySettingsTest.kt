@@ -15,4 +15,12 @@ class ProxyHomeLatencySettingsTest {
         assertEquals(5_000, resolveProxyHomeLatencyTimeoutMillis("invalid"))
         assertEquals(5_000, resolveProxyHomeLatencyTimeoutMillis(" "))
     }
+
+    @Test
+    fun persistedPingUrlKeepsHttpAddressesAndFallsBackToTheConnectivityCheck() {
+        assertEquals("https://example.com/ping", resolveProxyHomeLatencyUrl(" https://example.com/ping "))
+        assertEquals("http://example.com/", resolveProxyHomeLatencyUrl("http://example.com/"))
+        assertEquals("https://www.gstatic.com/generate_204", resolveProxyHomeLatencyUrl("ftp://example.com"))
+        assertEquals("https://www.gstatic.com/generate_204", resolveProxyHomeLatencyUrl(" "))
+    }
 }

@@ -13,6 +13,12 @@ fun interface DiagnosticsHttpClient {
     suspend fun getText(url: String, accept: String): String?
 }
 
+/** Times one HTTP round trip over the host-chosen route: the delay of the live connection. */
+fun interface DiagnosticsLatencyProbe {
+    /** Milliseconds until the first answer of a 2xx/3xx response, or null on any failure or timeout. */
+    suspend fun measureMillis(url: String, timeoutMillis: Long): Long?
+}
+
 /** Sends one TXT query to [server] port 53 and returns the character strings of the first answer. */
 fun interface DnsTxtResolver {
     suspend fun queryTxt(server: String, domain: String): List<String>?

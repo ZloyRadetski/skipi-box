@@ -37,7 +37,7 @@ import kotlin.test.assertEquals
 
 class DesktopProxyHomeLatencyFabTest {
     @Test
-    fun connectedFloatingLatencyActionTestsTheSelectedServerEvenWhenSearchAndGroupHideIt() {
+    fun connectedFloatingLatencyActionTestsTheConnectionOfTheSelectedServerEvenWhenSearchAndGroupHideIt() {
         val effects = clickConnectedLatencyFab(
             selectedServerId = "selected",
             prepareStore = { store ->
@@ -46,7 +46,7 @@ class DesktopProxyHomeLatencyFabTest {
             },
         )
 
-        assertEquals(listOf(ProxyHomeEffect.TestServer("selected")), effects)
+        assertEquals(listOf(ProxyHomeEffect.TestConnection("selected")), effects)
     }
 
     @Test
@@ -57,17 +57,62 @@ class DesktopProxyHomeLatencyFabTest {
     }
 
     @Test
-    fun connectedFloatingLatencyActionDoesNothingWhenSelectedServerCannotBeTested() {
+    fun connectedFloatingLatencyActionMeasuresTheConnectionEvenWhenTheServerCannotBePingedOnItsOwn() {
         val effects = clickConnectedLatencyFab(
             selectedServerId = "selected",
             selectedServerCanTest = false,
-            prepareStore = { store ->
-                store.dispatch(ProxyHomeAction.SelectGroup("visible-group"))
-                store.dispatch(ProxyHomeAction.SetSearchQuery("Visible"))
-            },
         )
 
-        assertEquals(emptyList(), effects)
+        assertEquals(listOf(ProxyHomeEffect.TestConnection("selected")), effects)
+    }
+
+    @Test
+    fun repeatingTheFloatingLatencyActionQuicklyTestsTheWholeGroupOfTheSelectedServer() {
+        val effects = renderAndClick(
+            input = connectedInput(selectedServerId = "selected"),
+            position = Offset(258f, 790f),
+            clicks = 2,
+        )
+
+        assertEquals(
+            listOf(ProxyHomeEffect.TestConnection("selected"), ProxyHomeEffect.TestGroup("selected-group")),
+            effects,
+        )
+    }
+
+    @Test
+    fun repeatingTheFloatingLatencyActionQuicklyPingsTheWholeSubscriptionOfTheSelectedServer() {
+        val effects = renderAndClick(
+            input = connectedSubscriptionInput().copy(
+                displayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = true),
+                availableActions = setOf(ProxyHomeActionId.TestConnection, ProxyHomeActionId.PingSubscription),
+            ),
+            position = Offset(258f, 790f),
+            clicks = 2,
+        )
+
+        assertEquals(
+            listOf(ProxyHomeEffect.TestConnection("selected"), ProxyHomeEffect.PingSubscription("subscription:7")),
+            effects,
+        )
+    }
+
+    @Test
+    fun theThirdQuickTapStartsOverWithTheConnection() {
+        val effects = renderAndClick(
+            input = connectedInput(selectedServerId = "selected"),
+            position = Offset(258f, 790f),
+            clicks = 3,
+        )
+
+        assertEquals(
+            listOf(
+                ProxyHomeEffect.TestConnection("selected"),
+                ProxyHomeEffect.TestGroup("selected-group"),
+                ProxyHomeEffect.TestConnection("selected"),
+            ),
+            effects,
+        )
     }
 
     @Test
@@ -77,7 +122,7 @@ class DesktopProxyHomeLatencyFabTest {
             prepareStore = { store -> store.dispatch(ProxyHomeAction.SetSearchQuery("No matches")) },
         )
 
-        assertEquals(listOf(ProxyHomeEffect.TestServer("selected")), effects)
+        assertEquals(listOf(ProxyHomeEffect.TestConnection("selected")), effects)
     }
 
     @Test
@@ -116,7 +161,7 @@ class DesktopProxyHomeLatencyFabTest {
     }
 
     @Test
-    fun classicConnectionWithFloatingPowerButtonShowsToolbarAndTestsSelectedServer() {
+    fun classicConnectionWithFloatingPowerButtonShowsToolbarAndTestsTheConnection() {
         val effects = renderAndClick(
             input = connectedInput(
                 selectedServerId = "selected",
@@ -126,7 +171,7 @@ class DesktopProxyHomeLatencyFabTest {
             screenshotName = "classic-floating-on.png",
         )
 
-        assertEquals(listOf(ProxyHomeEffect.TestServer("selected")), effects)
+        assertEquals(listOf(ProxyHomeEffect.TestConnection("selected")), effects)
     }
 
     @Test
@@ -143,7 +188,7 @@ class DesktopProxyHomeLatencyFabTest {
             screenshotName = "compact-floating-off.png",
         )
 
-        assertEquals(listOf(ProxyHomeEffect.TestServer("selected")), effects)
+        assertEquals(listOf(ProxyHomeEffect.TestConnection("selected")), effects)
     }
 
     @Test
@@ -175,6 +220,7 @@ class DesktopProxyHomeLatencyFabTest {
         input: ProxyHomeInput,
         position: Offset,
         screenshotName: String? = null,
+        clicks: Int = 1,
         prepareStore: (ProxyHomeStore) -> Unit = {},
     ): List<ProxyHomeEffect> {
         val effects = mutableListOf<ProxyHomeEffect>()
@@ -217,18 +263,20 @@ class DesktopProxyHomeLatencyFabTest {
                 position = position,
                 buttons = PointerButtons(),
             )
-            scene.sendPointerEvent(
-                eventType = PointerEventType.Press,
-                position = position,
-                buttons = PointerButtons(isPrimaryPressed = true),
-                button = PointerButton.Primary,
-            )
-            scene.sendPointerEvent(
-                eventType = PointerEventType.Release,
-                position = position,
-                buttons = PointerButtons(),
-                button = PointerButton.Primary,
-            )
+            repeat(clicks) {
+                scene.sendPointerEvent(
+                    eventType = PointerEventType.Press,
+                    position = position,
+                    buttons = PointerButtons(isPrimaryPressed = true),
+                    button = PointerButton.Primary,
+                )
+                scene.sendPointerEvent(
+                    eventType = PointerEventType.Release,
+                    position = position,
+                    buttons = PointerButtons(),
+                    button = PointerButton.Primary,
+                )
+            }
             scene.render().close()
             return effects.toList()
         } finally {
@@ -299,7 +347,9 @@ class DesktopProxyHomeLatencyFabTest {
         displayOptions = displayOptions,
         availableActions = setOf(
             ProxyHomeActionId.TestServer,
+            ProxyHomeActionId.TestConnection,
             ProxyHomeActionId.TestVisibleServers,
+            ProxyHomeActionId.TestGroup,
             ProxyHomeActionId.CancelLatencyTests,
         ) + if (canToggleTunnel) setOf(ProxyHomeActionId.ToggleTunnel) else emptySet(),
     )

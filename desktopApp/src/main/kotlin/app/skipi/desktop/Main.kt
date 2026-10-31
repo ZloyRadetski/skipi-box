@@ -37,6 +37,7 @@ import app.skipi.app.server.applyProxyServerEditResult
 import app.skipi.app.server.toProxyServerCopyTarget
 import app.skipi.app.home.toAndroidValue
 import app.skipi.app.home.resolveProxyHomeLatencyTimeoutMillis
+import app.skipi.app.home.resolveProxyHomeLatencyUrl
 import app.skipi.app.proxy.deleteProxyServerRecords
 import app.skipi.app.proxy.ProxyServerStopOutcome
 import app.skipi.app.store.SharedApplicationAction
@@ -229,6 +230,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 val latencyTester = remember { DesktopServerLatencyTester() }
                 var latencyByServerId by remember { mutableStateOf<Map<Int, DesktopServerLatencyResult>>(emptyMap()) }
                 var testingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+                var connectionTestingServerIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 var pingingSubscriptionIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
                 val desktopHomeLatencyJobOwner = remember { DesktopProxyHomeLatencyJobOwner() }
                 val resourceFileFeedback = remember { MutableStateFlow("") }
@@ -246,6 +248,24 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     )
                 }
                 DisposableEffect(desktopDiagnostics) { onDispose { desktopDiagnostics.close() } }
+                val settingsForConnectionProbe by rememberUpdatedState(desktopSettings)
+                val connectionLatencyTest = remember(desktopDiagnostics, subscriptionScope) {
+                    DesktopConnectionLatencyTest(
+                        scope = subscriptionScope,
+                        measure = {
+                            desktopDiagnostics.measureConnectionLatency(
+                                url = resolveProxyHomeLatencyUrl(settingsForConnectionProbe.subscriptionPingUrl),
+                                timeoutMillis = resolveProxyHomeLatencyTimeoutMillis(
+                                    settingsForConnectionProbe.subscriptionPingTimeoutMillis,
+                                ).toLong(),
+                            )
+                        },
+                        readTestingServerIds = { connectionTestingServerIds },
+                        publishTestingServerIds = { connectionTestingServerIds = it },
+                        readLatencyByServerId = { latencyByServerId },
+                        publishLatencyByServerId = { latencyByServerId = it },
+                    )
+                }
                 val desktopProfileResourceFiles = remember { DesktopProfileResourceFiles() }
                 // The core lives in this process, so its footprint is the process's resident memory.
                 val tunnelMemoryKb by produceState(0L, tunnel.coreState.isRunning, desktopSettings.showTunnelMemory) {
@@ -765,7 +785,10 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 }
 
                 // A measurement started before a tunnel change would report the wrong path.
-                LaunchedEffect(tunnel.coreState.isRunning) { desktopDiagnostics.stopAll() }
+                LaunchedEffect(tunnel.coreState.isRunning) {
+                    desktopDiagnostics.stopAll()
+                    connectionLatencyTest.cancel()
+                }
 
                 LaunchedEffect(tunnel.closeRequested) {
                     if (tunnel.closeRequested) tunnel.shutDown(::exitApplication)
@@ -776,6 +799,8 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     subscriptionId: Int? = null,
                     onFinished: () -> Unit = {},
                 ): Job {
+                    // A bulk run measures the selected server too; the connection probe must not overwrite it later.
+                    connectionLatencyTest.cancel()
                     if (subscriptionId != null && pingingSubscriptionIds.isNotEmpty()) {
                         return subscriptionScope.launch(start = CoroutineStart.UNDISPATCHED) { }
                     }
@@ -1115,6 +1140,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                             exportFullJson = exportProxyServerFullJson,
                             latencyByServerId = latencyByServerId,
                             testingServerIds = testingServerIds,
+                            connectionTestingServerIds = connectionTestingServerIds,
                             pingingSubscriptionIds = pingingSubscriptionIds,
                             onServerLinkChange = { serverLink = it },
                             onSubscriptionUrlChange = { url ->
@@ -1256,6 +1282,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                                 startDesktopHomeLatencyTest(targets, subscriptionId)
                             },
                             onCancelLatencyTests = { desktopHomeLatencyJobOwner.cancel() },
+                            onTestConnection = { serverId -> connectionLatencyTest.start(serverId) },
                             onRestartService = restartService@{
                                 if (tunnel.closeRequested || tunnel.operationInProgress || tunnel.systemProxyRecoveryInProgress) {
                                     return@restartService

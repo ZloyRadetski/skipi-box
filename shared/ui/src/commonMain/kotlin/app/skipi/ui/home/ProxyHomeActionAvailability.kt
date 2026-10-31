@@ -26,6 +26,7 @@ internal fun ProxyHomeAction.requiredActionId(): ProxyHomeActionId? = when (this
     ProxyHomeAction.ToggleTunnel -> ProxyHomeActionId.ToggleTunnel
     is ProxyHomeAction.SelectServer -> ProxyHomeActionId.SelectServer
     is ProxyHomeAction.TestServer -> ProxyHomeActionId.TestServer
+    is ProxyHomeAction.TestConnection -> ProxyHomeActionId.TestConnection
     is ProxyHomeAction.TestVisibleServers,
     ProxyHomeAction.TestAllVisibleServers -> ProxyHomeActionId.TestVisibleServers
     is ProxyHomeAction.TestGroup -> ProxyHomeActionId.TestGroup

@@ -54,6 +54,7 @@ internal fun desktopProxyHomeAvailableActions(
     groupCatalog: DesktopProxyGroupCatalog,
     canToggleTunnel: Boolean,
     hasCancelableLatencyTests: Boolean,
+    canTestConnection: Boolean = false,
     pingingSubscriptionIds: Set<Int>,
     updatingSubscription: Boolean,
     sortMode: ProxyHomeSortMode,
@@ -79,6 +80,7 @@ internal fun desktopProxyHomeAvailableActions(
         add(ProxyHomeActionId.ShowServerQr)
     }
     if (hasCancelableLatencyTests) add(ProxyHomeActionId.CancelLatencyTests)
+    if (canTestConnection) add(ProxyHomeActionId.TestConnection)
     if (hasStrategyGroup) {
         add(ProxyHomeActionId.OpenStrategyMemberPicker)
         add(ProxyHomeActionId.SelectStrategyMember)

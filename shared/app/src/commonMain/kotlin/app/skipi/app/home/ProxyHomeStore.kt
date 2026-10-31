@@ -219,6 +219,7 @@ enum class ProxyHomeActionId {
     ToggleTunnel,
     SelectServer,
     TestServer,
+    TestConnection,
     TestVisibleServers,
     TestGroup,
     CancelLatencyTests,
@@ -311,6 +312,8 @@ sealed interface ProxyHomeAction {
     data object ToggleTunnel : ProxyHomeAction
     data class SelectServer(val serverId: String) : ProxyHomeAction
     data class TestServer(val serverId: String) : ProxyHomeAction
+    /** Measures the delay of the live connection (through the running tunnel), not of a server's config. */
+    data class TestConnection(val serverId: String) : ProxyHomeAction
     data class TestVisibleServers(val serverIds: List<String>) : ProxyHomeAction
     /** Compatibility intent; the store resolves it against its current filtered server list. */
     data object TestAllVisibleServers : ProxyHomeAction
@@ -345,6 +348,7 @@ sealed interface ProxyHomeEffect {
     data object ToggleTunnel : ProxyHomeEffect
     data class SelectServer(val serverId: String) : ProxyHomeEffect
     data class TestServer(val serverId: String) : ProxyHomeEffect
+    data class TestConnection(val serverId: String) : ProxyHomeEffect
     data class TestVisibleServers(val serverIds: List<String>) : ProxyHomeEffect
     data class TestGroup(val groupId: String) : ProxyHomeEffect
     data object CancelLatencyTests : ProxyHomeEffect
@@ -784,6 +788,7 @@ class ProxyHomeStore(
         ProxyHomeAction.ToggleTunnel -> ProxyHomeActionId.ToggleTunnel
         is ProxyHomeAction.SelectServer -> ProxyHomeActionId.SelectServer
         is ProxyHomeAction.TestServer -> ProxyHomeActionId.TestServer
+        is ProxyHomeAction.TestConnection -> ProxyHomeActionId.TestConnection
         is ProxyHomeAction.TestVisibleServers, ProxyHomeAction.TestAllVisibleServers -> ProxyHomeActionId.TestVisibleServers
         is ProxyHomeAction.TestGroup -> ProxyHomeActionId.TestGroup
         ProxyHomeAction.CancelLatencyTests -> ProxyHomeActionId.CancelLatencyTests
@@ -835,6 +840,7 @@ class ProxyHomeStore(
         ProxyHomeAction.ToggleTunnel -> ProxyHomeEffect.ToggleTunnel
         is ProxyHomeAction.SelectServer -> ProxyHomeEffect.SelectServer(serverId)
         is ProxyHomeAction.TestServer -> ProxyHomeEffect.TestServer(serverId)
+        is ProxyHomeAction.TestConnection -> ProxyHomeEffect.TestConnection(serverId)
         is ProxyHomeAction.TestVisibleServers -> ProxyHomeEffect.TestVisibleServers(serverIds.distinct())
         ProxyHomeAction.TestAllVisibleServers -> ProxyHomeEffect.TestVisibleServers(state.servers.map { it.id })
         is ProxyHomeAction.TestGroup -> ProxyHomeEffect.TestGroup(groupId)

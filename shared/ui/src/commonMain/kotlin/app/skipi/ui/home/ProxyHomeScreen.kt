@@ -76,6 +76,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyConnectionPhase
+import app.skipi.app.home.ConnectedLatencyStep
+import app.skipi.app.home.ConnectedLatencyTapPolicy
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeConnectionMode
@@ -89,6 +91,7 @@ import app.skipi.app.home.ProxyHomeServerTool
 import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeStore
 import app.skipi.app.home.ProxyHomeUiState
+import app.skipi.app.home.connectedLatencyGroupAction
 import app.skipi.app.home.ProxyServerSummary
 import app.skipi.app.home.ProxySubscriptionSummary
 import app.skipi.ui.components.longPressReorderDragHandle
@@ -192,6 +195,7 @@ import app.skipi.ui.server.display.CountryFlagUtils
 import app.skipi.ui.text.themedFontWeight
 import app.skipi.ui.server.display.ProtocolColorUtils
 import app.skipi.ui.theme.SkipiTheme
+import app.skipi.ui.theme.SkipiVisualProfile
 import app.skipi.ui.theme.SkipiWindowClass
 import features.subscription.formatSubscriptionUpdateTimestamp
 import kotlin.time.TimeMark
@@ -263,7 +267,11 @@ fun ProxyHomeScreenContent(
         isRefreshing = refreshingAllSubscriptions,
         onRefresh = { send(ProxyHomeAction.RefreshAllSubscriptions) },
     )
-    val pullRefreshController = rememberedPullRefreshController.takeIf { canRefreshAllSubscriptions }
+    // Pulling the list down is a touch gesture; on Desktop a wheel or touchpad swipe up at the top
+    // would only drag the list, so subscriptions refresh there through the toolbar action.
+    val pullRefreshController = rememberedPullRefreshController.takeIf {
+        canRefreshAllSubscriptions && SkipiTheme.visualProfile !is SkipiVisualProfile.Desktop
+    }
 
     val maxWidth = when (windowClass) {
         SkipiWindowClass.Compact -> Modifier.fillMaxWidth()
@@ -273,9 +281,11 @@ fun ProxyHomeScreenContent(
 
     val selectedServer = state.selectedServer
     val hasTestableVisibleServers = state.servers.any { it.canTest }
-    val testableSelectedServer = selectedServer?.takeIf { server ->
-        server.canTest && canUseHomeAction(state, ProxyHomeActionId.TestServer)
+    // The live connection is measured, so a server that cannot be pinged on its own still qualifies.
+    val connectionTestServer = selectedServer?.takeIf {
+        canUseHomeAction(state, ProxyHomeActionId.TestConnection)
     }
+    val connectedLatencyTaps = remember { ConnectedLatencyTapPolicy() }
     val refreshSubscriptionTitle = stringResource(Res.string.home_action_refresh_subscription)
     val refreshingSubscriptionTitle = stringResource(Res.string.home_action_refreshing)
     val searchActionTitle = stringResource(Res.string.home_action_search)
@@ -700,7 +710,7 @@ fun ProxyHomeScreenContent(
                         canTestLatency = if (state.isTestingLatency) {
                             canUseHomeAction(state, ProxyHomeActionId.CancelLatencyTests, allowBusy = true)
                         } else if (state.isRunning) {
-                            testableSelectedServer != null
+                            connectionTestServer != null
                         } else {
                             hasTestableVisibleServers && canUseHomeAction(state, ProxyHomeActionId.TestVisibleServers)
                         },
@@ -710,8 +720,13 @@ fun ProxyHomeScreenContent(
                         onTestLatency = {
                             if (state.isTestingLatency) send(ProxyHomeAction.CancelLatencyTests)
                             else if (state.isRunning) {
-                                testableSelectedServer?.let { server ->
-                                    send(ProxyHomeAction.TestServer(server.id))
+                                connectionTestServer?.let { server ->
+                                    val testConnection = ProxyHomeAction.TestConnection(server.id)
+                                    when (connectedLatencyTaps.nextStep()) {
+                                        ConnectedLatencyStep.TestConnection -> send(testConnection)
+                                        ConnectedLatencyStep.PingGroup ->
+                                            send(state.connectedLatencyGroupAction() ?: testConnection)
+                                    }
                                 }
                             } else {
                                 send(ProxyHomeAction.TestAllVisibleServers)

@@ -136,6 +136,8 @@ internal fun DesktopProxyHome(
     onSelectStrategyMember: (Int, Int) -> Unit,
     latencyByServerId: Map<Int, DesktopServerLatencyResult>,
     testingServerIds: Set<Int>,
+    /** Servers whose live connection is being measured; shown as testing without becoming a bulk test. */
+    connectionTestingServerIds: Set<Int> = emptySet(),
     pingingSubscriptionIds: Set<Int>,
     onServerLinkChange: (String) -> Unit,
     onSubscriptionUrlChange: (String) -> Unit,
@@ -153,6 +155,7 @@ internal fun DesktopProxyHome(
     onRestartService: (() -> Unit)? = null,
     onDeleteAllServers: ((Set<Int>) -> Unit)? = null,
     onCancelLatencyTests: (() -> Unit)? = null,
+    onTestConnection: ((Int) -> Unit)? = null,
     onPrepareSubscription: suspend (DesktopSubscriptionInstallUri) -> Result<String>,
     onImport: suspend (DesktopProxyImportInput) -> Result<String>,
     updateBanner: (@Composable () -> Unit)? = null,
@@ -289,6 +292,7 @@ internal fun DesktopProxyHome(
         serverLibrary.selectedServerId,
         latencyByServerId,
         testingServerIds,
+        connectionTestingServerIds,
         presentationFormatter,
         presentationNodes,
         refreshingSubscriptionIds,
@@ -300,7 +304,7 @@ internal fun DesktopProxyHome(
             subscriptionLibrary = subscriptionLibrary,
             selectedServerId = serverLibrary.selectedServerId,
             latencyByServerId = latencyByServerId,
-            testingServerIds = testingServerIds,
+            testingServerIds = testingServerIds + connectionTestingServerIds,
             presentationFormatter = presentationFormatter,
             presentationNodes = presentationNodes,
             refreshingSubscriptionIds = refreshingSubscriptionIds,
@@ -326,6 +330,7 @@ internal fun DesktopProxyHome(
         groupCatalog = groupCatalog,
         canToggleTunnel = canToggleTunnel,
         hasCancelableLatencyTests = testingServerIds.isNotEmpty() && onCancelLatencyTests != null,
+        canTestConnection = running && onTestConnection != null,
         pingingSubscriptionIds = pingingSubscriptionIds,
         updatingSubscription = updatingSubscription,
         sortMode = sortMode,
@@ -492,6 +497,7 @@ internal fun DesktopProxyHome(
         onRestartService = onRestartService,
         onDeleteAllServers = onDeleteAllServers,
         onCancelLatencyTests = { homeLatencyCoordinator.cancel() },
+        onTestConnection = onTestConnection,
         onConfirmToolDeletion = { tool -> pendingToolDeletion = tool },
         onSetSubscriptionEnabled = { id, enabled ->
             scope.launch {
@@ -974,6 +980,7 @@ internal class DesktopProxyHomeEffectContext(
     val onRestartService: (() -> Unit)? = null,
     val onDeleteAllServers: ((Set<Int>) -> Unit)? = null,
     val onCancelLatencyTests: (() -> Unit)? = null,
+    val onTestConnection: ((Int) -> Unit)? = null,
     val onConfirmToolDeletion: ((ProxyHomeServerTool) -> Unit)? = null,
     val onSetSubscriptionEnabled: (Int, Boolean) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     val onCreateServerDraft: (ProxyHomeServerKind) -> Unit = {},
@@ -1001,6 +1008,10 @@ internal class DesktopProxyHomeEffectContext(
             if (id == selectedServerId) Result.success(Unit) else invoke { onSelectServer(id) }
         } ?: unsupported("Некорректный идентификатор сервера.")
         is ProxyHomeEffect.TestServer -> testVisibleServers(listOf(effect.serverId))
+        is ProxyHomeEffect.TestConnection -> effect.serverId.toIntOrNull()?.let { id ->
+            onTestConnection?.let { test -> invoke { test(id) } }
+                ?: unsupported("Проверка текущего соединения недоступна.")
+        } ?: unsupported("Некорректный идентификатор сервера.")
         is ProxyHomeEffect.TestVisibleServers -> testVisibleServers(effect.serverIds)
         is ProxyHomeEffect.TestGroup -> onTestGroup?.let { callback ->
             runCatching { callback(effect.groupId) }.getOrElse { Result.failure(it) }

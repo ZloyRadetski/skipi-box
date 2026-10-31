@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import app.skipi.app.tools.DiagnosticsHttpClient
+import app.skipi.app.tools.DiagnosticsLatencyProbe
 import app.skipi.app.tools.DiagnosticsRoute
 import app.skipi.ui.settings.SkipiSettingsDestination
 import features.tools.ipinfo.IpInfoState
@@ -122,6 +123,43 @@ class DesktopDiagnosticsTest {
 
             val success = assertIs<IpInfoState.Success>(state)
             assertEquals(false, success.data.isVpnTunnel)
+        } finally {
+            diagnostics.close()
+        }
+    }
+
+    @Test
+    fun connectionLatencyIsMeasuredOverTheRunningTunnelsLocalProxy() = runBlocking {
+        val calls = mutableListOf<Triple<DiagnosticsRoute, String, Long>>()
+        val diagnostics = DesktopDiagnostics(
+            activeOptions = { LocalProxyXrayConfigOptions(socksPort = 1080) },
+            latencyProbeFor = { route ->
+                DiagnosticsLatencyProbe { url, timeout -> calls += Triple(route, url, timeout); 73L }
+            },
+            systemDnsServers = { emptyList() },
+        )
+        try {
+            val millis = diagnostics.measureConnectionLatency("https://probe.example/204", 4_000)
+
+            assertEquals(73L, millis)
+            assertEquals(
+                listOf(Triple<DiagnosticsRoute, String, Long>(desktopDiagnosticsRoute(LocalProxyXrayConfigOptions(socksPort = 1080)), "https://probe.example/204", 4_000L)),
+                calls,
+            )
+        } finally {
+            diagnostics.close()
+        }
+    }
+
+    @Test
+    fun withoutATunnelTheDirectPathIsNeverPassedOffAsTheConnection() = runBlocking {
+        val diagnostics = DesktopDiagnostics(
+            activeOptions = { null },
+            latencyProbeFor = { DiagnosticsLatencyProbe { _, _ -> error("The direct path must not be measured") } },
+            systemDnsServers = { emptyList() },
+        )
+        try {
+            assertEquals(null, diagnostics.measureConnectionLatency("https://probe.example/204", 4_000))
         } finally {
             diagnostics.close()
         }

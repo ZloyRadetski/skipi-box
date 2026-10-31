@@ -15,7 +15,7 @@ class JvmDiagnosticsHttpClient(
     private val binding: DiagnosticsNetworkBinding = DiagnosticsNetworkBinding.None,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val onFailure: (url: String, error: Throwable) -> Unit = { _, _ -> },
-) : DiagnosticsHttpClient {
+) : DiagnosticsHttpClient, DiagnosticsLatencyProbe {
     override suspend fun getText(url: String, accept: String): String? = withContext(ioDispatcher) {
         runCatching {
             route.withSocksAuthenticator {
@@ -32,6 +32,29 @@ class JvmDiagnosticsHttpClient(
                     } else {
                         connection.inputStream.bufferedReader().use { it.readText() }
                     }
+                } finally {
+                    connection.disconnect()
+                }
+            }
+        }.getOrElse { error ->
+            onFailure(url, error)
+            null
+        }
+    }
+
+    override suspend fun measureMillis(url: String, timeoutMillis: Long): Long? = withContext(ioDispatcher) {
+        runCatching {
+            route.withSocksAuthenticator {
+                val connection = open(url)
+                try {
+                    connection.connectTimeout = timeoutMillis.toInt()
+                    connection.readTimeout = timeoutMillis.toInt()
+                    connection.instanceFollowRedirects = false
+                    connection.setRequestProperty("User-Agent", RequestUserAgent)
+                    val startedAt = System.nanoTime()
+                    val code = connection.responseCode
+                    val elapsed = (System.nanoTime() - startedAt) / 1_000_000
+                    if (code in 200..399) elapsed else null
                 } finally {
                     connection.disconnect()
                 }

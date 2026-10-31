@@ -92,6 +92,8 @@ import app.skipi.ui.home.SkipiProxyHomeScaffold
 import app.skipi.ui.home.SkipiProxyHomeScaffoldState
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeTunnelIp
+import app.skipi.app.home.resolveProxyHomeLatencyTimeoutMillis
+import app.skipi.app.home.resolveProxyHomeLatencyUrl
 import app.skipi.app.home.resolveTunnelIp
 import features.tools.AndroidDiagnostics
 import app.skipi.app.home.ProxyHomeAction
@@ -225,7 +227,19 @@ fun ProxyServerListPage(
             activeGlobalLatencyJob?.isActive == true ||
             activeGroupLatencyJobs.values.any { it.isActive }
 
+    // The live-connection probe is its own single run: it never counts as a bulk test, so a quick
+    // second tap on the ping button can start the group run while it is still going.
+    var connectionTestingServerId by remember { mutableStateOf<Int?>(null) }
+    var connectionLatencyJob by remember { mutableStateOf<Job?>(null) }
+    fun cancelConnectionLatencyTest() {
+        connectionLatencyJob?.cancel()
+        connectionLatencyJob = null
+        connectionTestingServerId = null
+    }
+
     fun allocateLatencyRunId(): Long {
+        // A bulk run measures the selected server too; the probe must not overwrite its result later.
+        cancelConnectionLatencyTest()
         latencyRunCounter += 1L
         return latencyRunCounter
     }
@@ -746,6 +760,7 @@ fun ProxyServerListPage(
         runtimeOutboundMetric,
         tunnelIp,
         activeTunnelTitle,
+        connectionTestingServerId,
     ) {
         appState.toProxyHomeInput(
             groupState = homeGroupState,
@@ -760,6 +775,17 @@ fun ProxyServerListPage(
             tunnelIp = tunnelIp,
         ).let { input ->
             if (proxyRunning) input.copy(selectedServerTitle = activeTunnelTitle) else input
+        }.let { input ->
+            val probedId = connectionTestingServerId?.toString()
+            if (probedId == null) {
+                input
+            } else {
+                input.copy(
+                    servers = input.servers.map { server ->
+                        if (server.id == probedId) server.copy(latencyTesting = true) else server
+                    },
+                )
+            }
         }.copy(connectedSince = connectionClock.update(proxyRunning))
     }
     val latestHomeInput = rememberUpdatedState(homeInput)
@@ -815,6 +841,40 @@ fun ProxyServerListPage(
                         }
                     }
                     is ProxyHomeEffect.TestServer -> latencyCoordinator.testVisibleServers(listOf(effect.serverId))
+                    is ProxyHomeEffect.TestConnection -> {
+                        val serverId = effect.serverId.toIntOrNull()
+                            ?: return@ProxyHomeEffectHandler Result.failure(IllegalArgumentException("Invalid server ID."))
+                        cancelConnectionLatencyTest()
+                        connectionTestingServerId = serverId
+                        val failedText = latestMessages.value.latencyFailed
+                        val probe = services.appScope.launch {
+                            val settings = stateStore.state.value
+                            val millis = try {
+                                AndroidDiagnostics.measureConnectionLatency(
+                                    context = context,
+                                    url = resolveProxyHomeLatencyUrl(settings.subscriptionPingUrl),
+                                    timeoutMillis = resolveProxyHomeLatencyTimeoutMillis(
+                                        settings.subscriptionPingTimeoutMillis,
+                                    ).toLong(),
+                                )
+                            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                null
+                            }
+                            val text = millis?.let { "$it ms" } ?: failedText
+                            stateStore.update(persist = false) { state ->
+                                state.copy(
+                                    proxyServers = state.proxyServers.map { server ->
+                                        if (server.id == serverId) server.copy(latency = text) else server
+                                    },
+                                )
+                            }
+                            if (connectionTestingServerId == serverId) connectionTestingServerId = null
+                        }
+                        connectionLatencyJob = probe
+                        Result.success(Unit)
+                    }
                     is ProxyHomeEffect.TestVisibleServers -> latencyCoordinator.testVisibleServers(effect.serverIds)
                     is ProxyHomeEffect.TestGroup -> latencyCoordinator.testGroup(effect.groupId)
                     ProxyHomeEffect.CancelLatencyTests -> latencyCoordinator.cancel()
