@@ -73,7 +73,60 @@ class DesktopProfileRoutingSemanticsTest {
         )
     }
 
+    private fun desktopDnsAndStrategy(profile: String): Pair<kotlinx.serialization.json.JsonObject, String> {
+        val alpha = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha")
+        val beta = ProxyServer.parse("vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@beta.example:443#Beta")
+        val library = DesktopServerLibraries.select(
+            DesktopServerLibraries.add(DesktopServerLibraries.add(DesktopServerLibrary(), alpha), beta),
+            serverId = 1,
+        )
+        val config = DesktopTrafficProfileXrayConfigFactory.build(
+            profile = DesktopStoredConfig(id = 7, name = "P", content = profile),
+            serverLibrary = library,
+            options = LocalProxyXrayConfigOptions(socksPort = 20_480),
+        )
+        val root = Json.parseToJsonElement(config).jsonObject
+        return root.getValue("dns").jsonObject to root.getValue("routing").jsonObject.getValue("domainStrategy").jsonPrimitive.content
+    }
+
+    @Test
+    fun profileDnsSectionAndHostsComeFromTheProfile() {
+        val (dns, _) = desktopDnsAndStrategy(DNS_PROFILE)
+
+        assertEquals("UseIP", dns.getValue("queryStrategy").jsonPrimitive.content)
+        assertEquals(
+            listOf("203.0.113.9", "203.0.113.10"),
+            dns.getValue("hosts").jsonObject.getValue("profile.example").jsonArray.map { it.jsonPrimitive.content },
+        )
+        assertEquals(
+            listOf("1.1.1.1", "https://dns.example/dns-query"),
+            dns.getValue("servers").jsonArray.filterIsInstance<JsonPrimitive>().map { it.content },
+        )
+    }
+
+    @Test
+    fun explicitRouteDomainStrategyIsUsedAndIpv6AloneDoesNotChangeIt() {
+        assertEquals("IPOnDemand", desktopDnsAndStrategy(DNS_PROFILE + "\n[SKIPI]\nroute-domain-strategy = IPOnDemand\n").second)
+        assertEquals("AsIs", desktopDnsAndStrategy(DNS_PROFILE).second)
+    }
+
     private companion object {
+        val DNS_PROFILE = """
+            [General]
+            dns-server = 1.1.1.1,https://dns.example/dns-query
+            ipv6 = true
+
+            [Host]
+            profile.example = 203.0.113.9, 203.0.113.10
+
+            [Proxy Group]
+            Fast = url-test, Alpha, Beta, url=https://example.com/ping, interval=60
+
+            [Rule]
+            DOMAIN,profile.example,Fast
+            FINAL,PROXY
+        """.trimIndent() + "\n"
+
         val SPECIAL = """
             [Rule]
             GEOIP,CN,DIRECT

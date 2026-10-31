@@ -29,9 +29,9 @@ import engine.xray.buildFreedomOutbound
 import engine.xray.buildXrayObservatory
 import engine.xray.buildSimpleOutbound
 import engine.xray.toSupportedXrayDnsServers
+import engine.xray.toXrayRoutingDomainStrategy
 import engine.xray.xrayDirectOutboundDomainStrategy
 import features.config.TrafficConfigReference
-import features.config.shadowrocketSectionValue
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.add
@@ -122,10 +122,8 @@ object DesktopTrafficProfileXrayConfigFactory {
         )
         val ipv6Enabled = runtimePlan.enableIpv6
         val ipv6Preferred = runtimePlan.enableIpv6Prefer
-        val routeDomainStrategy = profile.content
-            .shadowrocketSectionValue("SKIPI", "route-domain-strategy")
-            .toDesktopRouteDomainStrategyOrNull()
-            ?: if (ipv6Enabled) "IPIfNonMatch" else "AsIs"
+        // Android applies the stored profile setting as is; IPv6 alone does not pick a strategy.
+        val routeDomainStrategy = profileSettings.routeDomainStrategy.toXrayRoutingDomainStrategy()
 
         val muxOptions = if (profileSettings.enableMux) {
             XrayMuxOutboundOptions(
@@ -248,13 +246,6 @@ private fun String?.toConfigBooleanOrDefault(defaultValue: Boolean): Boolean = w
     "true", "yes", "1" -> true
     "false", "no", "0" -> false
     else -> defaultValue
-}
-
-private fun String?.toDesktopRouteDomainStrategyOrNull(): String? = when (this?.trim()?.lowercase()) {
-    "asis", "as-is", "0" -> "AsIs"
-    "ipifnonmatch", "ip-if-non-match", "1" -> "IPIfNonMatch"
-    "ipondemand", "ip-on-demand", "2" -> "IPOnDemand"
-    else -> null
 }
 
 private const val SocksInboundTag = "skipi-socks"

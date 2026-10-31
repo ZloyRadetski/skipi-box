@@ -7,6 +7,7 @@ import app.AppState
 import app.ProxyServerState
 import app.withActiveTrafficConfigApplied
 import features.config.TrafficConfigState
+import features.config.withSkipiSettingsReadFromRawConfig
 import features.proxy.server.model.ProxyServer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -92,7 +93,67 @@ class ProfileRoutingSemanticsAndroidOracleTest {
         )
     }
 
+    private fun androidDnsAndStrategy(profile: String): Pair<kotlinx.serialization.json.JsonObject, String> {
+        val state = AppState(
+            proxyServers = listOf(alpha, beta),
+            selectedProxyServerId = alpha.id,
+            trafficConfigs = listOf(
+                // Android stores a profile with its [SKIPI] settings already read into androidSettings.
+                TrafficConfigState(id = 7, name = "P", rawConfig = profile).withSkipiSettingsReadFromRawConfig(),
+            ),
+            activeTrafficConfigId = 7,
+        ).withActiveTrafficConfigApplied()
+        val built = XrayConfigFactory.buildXrayConfigResult(
+            XrayConfigRequest(
+                appState = state,
+                selectedServer = alpha,
+                inbounds = emptyList(),
+                coreLogPaths = XrayCoreLogPaths(accessLogPath = "/tmp/access.log", errorLogPath = "/tmp/error.log"),
+                collectTrafficStats = false,
+            ),
+        )
+        val root = Json.parseToJsonElement(built.json).jsonObject
+        return root.getValue("dns").jsonObject to root.getValue("routing").jsonObject.getValue("domainStrategy").jsonPrimitive.content
+    }
+
+    @Test
+    fun profileDnsSectionAndHostsComeFromTheProfile() {
+        val (dns, _) = androidDnsAndStrategy(DNS_PROFILE)
+
+        assertEquals("UseIP", dns.getValue("queryStrategy").jsonPrimitive.content)
+        assertEquals(
+            listOf("203.0.113.9", "203.0.113.10"),
+            dns.getValue("hosts").jsonObject.getValue("profile.example").jsonArray.map { it.jsonPrimitive.content },
+        )
+        assertEquals(
+            listOf("1.1.1.1", "https://dns.example/dns-query"),
+            dns.getValue("servers").jsonArray.filterIsInstance<JsonPrimitive>().map { it.content },
+        )
+    }
+
+    @Test
+    fun explicitRouteDomainStrategyIsUsedAndIpv6AloneDoesNotChangeIt() {
+        assertEquals("IPOnDemand", androidDnsAndStrategy(DNS_PROFILE + "\n[SKIPI]\nroute-domain-strategy = IPOnDemand\n").second)
+        assertEquals("AsIs", androidDnsAndStrategy(DNS_PROFILE).second)
+    }
+
     companion object {
+        val DNS_PROFILE = """
+            [General]
+            dns-server = 1.1.1.1,https://dns.example/dns-query
+            ipv6 = true
+
+            [Host]
+            profile.example = 203.0.113.9, 203.0.113.10
+
+            [Proxy Group]
+            Fast = url-test, Alpha, Beta, url=https://example.com/ping, interval=60
+
+            [Rule]
+            DOMAIN,profile.example,Fast
+            FINAL,PROXY
+        """.trimIndent() + "\n"
+
 
         val SPECIAL = """
             [Rule]
