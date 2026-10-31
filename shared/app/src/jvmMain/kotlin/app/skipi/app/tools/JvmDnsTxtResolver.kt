@@ -99,21 +99,40 @@ class JvmDnsTxtResolver(
 
                     val buffer = ByteArray(RawDnsWire.MaxResponseBytes)
                     val packet = DatagramPacket(buffer, buffer.size)
-                    udp.receive(packet)
-                    val length = packet.length
-                    if (length < 10 || (buffer[2].toInt() and 0xFF) != 0) return@use null
-                    val dnsOffset = when (buffer[3].toInt() and 0xFF) {
-                        0x01 -> 10
-                        0x03 -> 7 + (buffer[4].toInt() and 0xFF)
-                        0x04 -> 22
-                        else -> return@use null
+                    // Fresh UDP sockets can receive datagrams nobody asked for (seen on loopback, even
+                    // from the relay's own port), so the answer is the first datagram that is a SOCKS5
+                    // UDP reply carrying our transaction id, not simply the first datagram.
+                    val deadline = System.nanoTime() + timeoutMillis * 1_000_000L
+                    var answer: List<String>? = null
+                    while (true) {
+                        val remainingMillis = (deadline - System.nanoTime()) / 1_000_000L
+                        if (remainingMillis <= 0) break
+                        udp.soTimeout = remainingMillis.toInt()
+                        packet.length = buffer.size
+                        udp.receive(packet)
+                        val dnsOffset = socksUdpDnsOffset(buffer, packet.length, transactionId) ?: continue
+                        val dnsData = buffer.copyOfRange(dnsOffset, packet.length)
+                        answer = RawDnsWire.parseTxtRecords(dnsData, dnsData.size, transactionId)
+                        break
                     }
-                    if (dnsOffset >= length) return@use null
-                    val dnsData = buffer.copyOfRange(dnsOffset, length)
-                    RawDnsWire.parseTxtRecords(dnsData, dnsData.size, transactionId)
+                    answer
                 }
             }
         }.getOrNull()
+
+    /** Offset of the DNS payload when [buffer] is a SOCKS5 UDP reply to [transactionId], else null. */
+    private fun socksUdpDnsOffset(buffer: ByteArray, length: Int, transactionId: Int): Int? {
+        if (length < 10 || buffer[0].toInt() != 0 || buffer[1].toInt() != 0 || buffer[2].toInt() != 0) return null
+        val dnsOffset = when (buffer[3].toInt() and 0xFF) {
+            0x01 -> 10
+            0x03 -> 7 + (buffer[4].toInt() and 0xFF)
+            0x04 -> 22
+            else -> return null
+        }
+        if (dnsOffset + 2 > length) return null
+        val id = ((buffer[dnsOffset].toInt() and 0xFF) shl 8) or (buffer[dnsOffset + 1].toInt() and 0xFF)
+        return dnsOffset.takeIf { id == transactionId }
+    }
 
     private fun queryViaSocksTcp(server: String, domain: String, socks: DiagnosticsRoute.Socks): List<String>? =
         runCatching {

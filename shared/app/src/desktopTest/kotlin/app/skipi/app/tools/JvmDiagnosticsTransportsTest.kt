@@ -102,7 +102,12 @@ class JvmDiagnosticsTransportsTest {
     }
 
     /** Minimal SOCKS5 server with UDP ASSOCIATE; answers every DNS query with fixed TXT strings. */
-    private class FakeSocks5Dns(val requireAuth: Boolean, val txt: List<String>) : AutoCloseable {
+    private class FakeSocks5Dns(
+        val requireAuth: Boolean,
+        val txt: List<String>,
+        /** Sends a zero-filled datagram from a foreign port to the client before the real answer. */
+        val junkFirst: Boolean = false,
+    ) : AutoCloseable {
         private val tcp = ServerSocket(0, 0, InetAddress.getLoopbackAddress())
         private val udp = DatagramSocket(0, InetAddress.getLoopbackAddress())
         val port get() = tcp.localPort
@@ -112,22 +117,33 @@ class JvmDiagnosticsTransportsTest {
             thread(isDaemon = true) {
                 runCatching {
                     val packet = DatagramPacket(ByteArray(2048), 2048)
-                    udp.receive(packet)
+                    // A real relay ignores anything that is not a SOCKS5 UDP request (RSV 0, FRAG 0,
+                    // IPv4); stray datagrams reach fresh loopback sockets on some machines.
+                    do {
+                        packet.length = packet.data.size
+                        udp.receive(packet)
+                    } while (!packet.isSocksUdpRequest())
                     val data = packet.data
                     val query = data.copyOfRange(10, packet.length)
                     val response = dnsResponse(query)
                     val header = byteArrayOf(0, 0, 0, 1, 8, 8, 8, 8, 0, 53)
                     val out = header + response
+                    if (junkFirst) {
+                        DatagramSocket(0, InetAddress.getLoopbackAddress()).use { stranger ->
+                            val junk = ByteArray(64)
+                            stranger.send(DatagramPacket(junk, junk.size, packet.address, packet.port))
+                        }
+                    }
                     udp.send(DatagramPacket(out, out.size, packet.address, packet.port))
-                }
+                }.onFailure { System.err.println("fake udp: $it") }
             }
             thread(isDaemon = true) {
                 runCatching {
                     tcp.accept().use { socket ->
                         val input = socket.getInputStream()
                         val out = socket.getOutputStream()
-                        input.readExactly(2) // version, method count
-                        val methods = input.readExactly(input.available().coerceAtLeast(1))
+                        val greeting = input.readExactly(2) // version, method count
+                        val methods = input.readExactly(greeting[1].toInt() and 0xFF)
                         if (requireAuth) {
                             check(methods.contains(0x02))
                             out.write(byteArrayOf(0x05, 0x02))
@@ -145,9 +161,12 @@ class JvmDiagnosticsTransportsTest {
                         out.flush()
                         Thread.sleep(1_500)
                     }
-                }
+                }.onFailure { System.err.println("fake tcp: $it") }
             }
         }
+
+        private fun DatagramPacket.isSocksUdpRequest(): Boolean =
+            length >= 22 && data[0].toInt() == 0 && data[1].toInt() == 0 && data[2].toInt() == 0 && data[3].toInt() == 1
 
         private fun dnsResponse(query: ByteArray): ByteArray {
             val out = ByteArrayOutputStream()
@@ -188,6 +207,17 @@ class JvmDiagnosticsTransportsTest {
         val records = resolver.queryTxt("8.8.8.8", "o-o.myaddr.l.google.com")
 
         assertEquals(listOf("203.0.113.9", "edns0-client-subnet 198.51.100.0/24"), records)
+    }
+
+    @Test
+    fun dnsResolverIgnoresDatagramsThatDoNotComeFromTheRelay() = runBlocking {
+        val socks = FakeSocks5Dns(requireAuth = false, txt = listOf("203.0.113.9"), junkFirst = true)
+        closeables += socks
+        val resolver = JvmDnsTxtResolver(DiagnosticsRoute.Socks("127.0.0.1", socks.port), timeoutMillis = 2_000)
+
+        val records = resolver.queryTxt("8.8.8.8", "o-o.myaddr.l.google.com")
+
+        assertEquals(listOf("203.0.113.9"), records)
     }
 
     @Test
