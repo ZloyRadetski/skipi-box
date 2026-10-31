@@ -54,7 +54,8 @@ fun parseWireguardConf(text: String): WireguardConfParseResult {
             val eqIdx = line.indexOf('=')
             if (eqIdx <= 0) return@forEach
             val key = line.substring(0, eqIdx).trim().lowercase()
-            val value = line.substring(eqIdx + 1).trim()
+            // awg-quick / wg-quick drop everything after '#' on a value line.
+            val value = line.substring(eqIdx + 1).substringBefore('#').trim()
             when (currentSection) {
                 "interface" -> interfaceProps[key] = value
                 "peer" -> peerProps[key] = value

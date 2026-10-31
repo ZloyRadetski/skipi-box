@@ -129,10 +129,12 @@ data class AmneziaWg(
     override fun parse(url: Url): AmneziaWg {
         this.remarks = url.proxyUrlRemarks()
         this.server = url.proxyUrlHost()
-        this.port = url.port.toString()
+        this.port = url.specifiedPort.takeIf { it > 0 }?.toString() ?: "51820"
         this.secretKey = url.userInfoOrNull() ?: ""
-        this.publicKey = url.parameters["publickey"] ?: ""
-        this.preSharedKey = url.parameters["presharedkey"] ?: ""
+        // A Base64 key never contains a space, so a '+' that the query decoder turned into
+        // one (links with an unescaped key) is restored.
+        this.publicKey = url.parameters["publickey"]?.replace(' ', '+') ?: ""
+        this.preSharedKey = url.parameters["presharedkey"]?.replace(' ', '+') ?: ""
         this.reserved = url.parameters["reserved"] ?: "0,0,0"
         this.address = url.parameters["address"] ?: "10.8.0.2/32"
         this.mtu = url.parameters["mtu"] ?: "1420"
