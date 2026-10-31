@@ -13,6 +13,12 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1624,8 +1630,8 @@ private fun EmptyServerListCard(
 }
 
 /**
- * Paste, Add and Scan QR on one line, each a normal-height button. The long "Scan QR code" label
- * gets a wider share so all three fit side by side.
+ * Add, Paste and a square Scan-QR button on one line: tonal, borderless buttons. Add carries the
+ * accent, Paste is neutral, and the QR button is icon-only so the two labelled buttons never wrap.
  */
 @Composable
 private fun EmptyServerListActions(
@@ -1634,24 +1640,21 @@ private fun EmptyServerListActions(
     serverKinds: Collection<ProxyHomeServerKind>,
     onAction: (ProxyHomeAction) -> Unit,
 ) {
+    val colors = SkipiTheme.colors
+    val neutralContainer = colors.onSurface.copy(alpha = 0.08f)
+    val neutralContent = colors.onSurfaceVariant
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.small),
     ) {
-        if (actions.paste) {
-            EmptyStateActionButton(
-                icon = Icons.Outlined.ContentPaste,
-                label = stringResource(Res.string.common_paste),
-                onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.Clipboard)) },
-                modifier = Modifier.weight(1f),
-            )
-        }
         if (actions.add) {
             var menuExpanded by remember { mutableStateOf(false) }
             Box(modifier = Modifier.weight(1f)) {
                 EmptyStateActionButton(
                     icon = Icons.Outlined.Add,
                     label = stringResource(Res.string.common_add),
+                    containerColor = colors.accent.copy(alpha = 0.18f),
+                    contentColor = colors.accent,
                     onClick = { menuExpanded = true },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -1677,37 +1680,68 @@ private fun EmptyServerListActions(
                 }
             }
         }
+        if (actions.paste) {
+            EmptyStateActionButton(
+                icon = Icons.Outlined.ContentPaste,
+                label = stringResource(Res.string.common_paste),
+                containerColor = neutralContainer,
+                contentColor = neutralContent,
+                onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.Clipboard)) },
+                modifier = Modifier.weight(1f),
+            )
+        }
         if (actions.scanQr) {
             EmptyStateActionButton(
                 icon = Icons.Outlined.QrCodeScanner,
-                label = importSourceTitle(ProxyHomeImportSource.QrCode),
+                label = null,
+                contentDescription = importSourceTitle(ProxyHomeImportSource.QrCode),
+                containerColor = neutralContainer,
+                contentColor = neutralContent,
                 onClick = { onAction(ProxyHomeAction.ImportServers(ProxyHomeImportSource.QrCode)) },
-                modifier = Modifier.weight(1.5f),
+                modifier = Modifier.width(EmptyStateButtonHeight),
             )
         }
     }
 }
 
+private val EmptyStateButtonHeight = 52.dp
+
 @Composable
 private fun EmptyStateActionButton(
     icon: ImageVector,
-    label: String,
+    label: String?,
+    containerColor: Color,
+    contentColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        modifier = modifier
+            .height(EmptyStateButtonHeight)
+            .clip(shape)
+            .background(containerColor)
+            .semantics {
+                role = Role.Button
+                if (contentDescription != null) this.contentDescription = contentDescription
+            }
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.size(4.dp))
-        Text(
-            text = label,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            style = SkipiTheme.typography.bodySmall,
-        )
+        Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(20.dp))
+        if (label != null) {
+            Spacer(Modifier.size(6.dp))
+            Text(
+                text = label,
+                color = contentColor,
+                maxLines = 1,
+                style = SkipiTheme.typography.bodyMedium,
+                fontWeight = themedFontWeight(FontWeight.Medium),
+            )
+        }
     }
 }
 
