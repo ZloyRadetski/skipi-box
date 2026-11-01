@@ -1,10 +1,28 @@
 name: Build Release APKs
 
+# Runs only on request: by hand from the Actions tab, or when a v* tag is pushed (build only).
+# A push to a branch never builds anything.
+#
+# What a manual run publishes is chosen with "publish":
+#   none        build the APKs and keep them as workflow artifacts only
+#   prerelease  also create a GitHub pre-release; the app update check ignores pre-releases
+#               (it reads /releases/latest), so no user is notified
+#   release     also create a full release marked latest; EVERY user is notified.
+#               Allowed only from main and only for a strict x.y.z version.
 on:
   workflow_dispatch:
     inputs:
+      publish:
+        description: "What to publish: none (artifacts only), prerelease (not offered to users) or release (offered to ALL users)"
+        required: true
+        default: prerelease
+        type: choice
+        options:
+          - none
+          - prerelease
+          - release
       version_name:
-        description: "Override output file version name, for example 1.0.1"
+        description: "Version to build and tag, for example 1.0.1 (a pre-release may use 1.0.1-rc.1). Empty uses buildSrc BuildConfig.kt"
         required: false
         type: string
       send_to_telegram:
@@ -13,8 +31,6 @@ on:
         default: true
         type: boolean
   push:
-    branches:
-      - "**"
     tags:
       - "v*"
 
@@ -41,6 +57,7 @@ jobs:
       RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       SEND_TO_TELEGRAM: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.send_to_telegram == 'true' }}
       REQUESTED_VERSION_NAME: ${{ github.event.inputs.version_name }}
+      PUBLISH_MODE: ${{ github.event.inputs.publish || 'none' }}
 
     steps:
       - name: Checkout
@@ -54,28 +71,53 @@ jobs:
         run: |
           set -euo pipefail
 
-          version_name="$(sed -n 's/^[[:space:]]*const val VERSION_NAME = "\([^"]*\)".*/\1/p' buildSrc/src/main/kotlin/BuildConfig.kt | head -n 1)"
-          if [ -z "$version_name" ]; then
+          config_version="$(sed -n 's/^[[:space:]]*const val VERSION_NAME = "\([^"]*\)".*/\1/p' buildSrc/src/main/kotlin/BuildConfig.kt | head -n 1)"
+          if [ -z "$config_version" ]; then
             echo "::error::Unable to read ProjectConfig.VERSION_NAME from buildSrc/src/main/kotlin/BuildConfig.kt."
             exit 1
           fi
 
-          is_release=false
-          if [[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            is_release=true
-            echo "Detected formal release version: $version_name"
-          else
-            echo "::notice::ProjectConfig.VERSION_NAME is '$version_name', not strict x.y.z. GitHub Release creation will be skipped."
-          fi
+          version_name="${REQUESTED_VERSION_NAME:-$config_version}"
+          mode="${PUBLISH_MODE:-none}"
+          release_regex='^[0-9]+\.[0-9]+\.[0-9]+$'
+          prerelease_regex='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'
 
           create_github_release=false
-          if [ "$is_release" = "true" ] && { [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ "$GITHUB_REF" = "refs/heads/main" ]; }; then
-            create_github_release=true
-          fi
+          is_prerelease=false
+          case "$mode" in
+            none)
+              echo "::notice::publish=none: building artifacts only, nothing is published."
+              ;;
+            prerelease)
+              if ! [[ "$version_name" =~ $prerelease_regex ]]; then
+                echo "::error::A pre-release needs a version like 1.2.3 or 1.2.3-rc.1, got '$version_name'."
+                exit 1
+              fi
+              create_github_release=true
+              is_prerelease=true
+              echo "::notice::publish=prerelease: a GitHub pre-release v$version_name will be created. Users are not notified."
+              ;;
+            release)
+              if ! [[ "$version_name" =~ $release_regex ]]; then
+                echo "::error::A full release needs a strict x.y.z version, got '$version_name'. Use publish=prerelease for anything else."
+                exit 1
+              fi
+              if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+                echo "::error::A full release notifies every user and can only be published from main, but this run is on $GITHUB_REF."
+                exit 1
+              fi
+              create_github_release=true
+              echo "::warning::publish=release: v$version_name becomes the latest release and EVERY user will be notified."
+              ;;
+            *)
+              echo "::error::Unknown publish mode '$mode'."
+              exit 1
+              ;;
+          esac
 
           echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
           echo "tag_name=v$version_name" >> "$GITHUB_OUTPUT"
-          echo "is_release=$is_release" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$is_prerelease" >> "$GITHUB_OUTPUT"
           echo "create_github_release=$create_github_release" >> "$GITHUB_OUTPUT"
 
       - name: Make Gradle wrapper executable
@@ -393,20 +435,28 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ steps.version.outputs.tag_name }}
+          IS_PRERELEASE: ${{ steps.version.outputs.is_prerelease }}
         run: |
           set -euo pipefail
 
-          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" github-release-artifacts/*.apk --clobber
-            gh release edit "$TAG_NAME" \
-              --title "SKIPI $TAG_NAME" \
-              --notes-file release-notes.md \
-              --latest
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            kind_flags=(--prerelease --latest=false)
+            title="SKIPI $TAG_NAME (pre-release)"
           else
-            gh release create "$TAG_NAME" github-release-artifacts/*.apk \
-              --title "SKIPI $TAG_NAME" \
-              --notes-file release-notes.md \
-              --latest
+            kind_flags=(--prerelease=false --latest)
+            title="SKIPI $TAG_NAME"
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            already_prerelease="$(gh release view "$TAG_NAME" --json isPrerelease --jq .isPrerelease)"
+            if [ "$IS_PRERELEASE" = "true" ] && [ "$already_prerelease" = "false" ]; then
+              echo "::error::$TAG_NAME is already a published release; refusing to turn it back into a pre-release."
+              exit 1
+            fi
+            gh release upload "$TAG_NAME" github-release-artifacts/*.apk --clobber
+            gh release edit "$TAG_NAME"               --title "$title"               --notes-file release-notes.md               "${kind_flags[@]}"
+          else
+            gh release create "$TAG_NAME" github-release-artifacts/*.apk               --title "$title"               --notes-file release-notes.md               "${kind_flags[@]}"
           fi
 
       - name: Upload release APKs to Telegram
