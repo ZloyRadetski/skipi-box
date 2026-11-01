@@ -58,7 +58,7 @@ Desktop запускает SKIPI Core **внутри JVM-процесса** че
 | ОС | Артефакты релиза | Gradle |
 |---|---|---|
 | Windows x64 | `SKIPI-windows-x64.msi`, `SKIPI-windows-x64-portable.zip` | `:desktopApp:packageMsi` |
-| Linux x64 | `SKIPI-linux-x64.AppImage`, `.deb`, `.rpm`, `-portable.tar.gz` | `:desktopApp:packageDeb`, `:desktopApp:packageRpm`; AppImage: `packaging/linux/build-appimage.sh` |
+| Linux x64 | `SKIPI-linux-x64.AppImage`, `.deb`, `.rpm`, `-portable.tar.gz` | `:desktopApp:packageDeb`, `:desktopApp:packageRpm -PskipiPackageRpm=true` (the license option is only valid for the rpm); AppImage: `packaging/linux/build-appimage.sh` |
 | macOS arm64 | `SKIPI-macos-arm64.dmg` | `:desktopApp:packageDmg` |
 
 - MSI ставится на всю машину (TUN требует прав администратора); `upgradeUuid` в `build.gradle.kts` неизменен, чтобы новая версия обновляла установленную. Для сборки нужен WiX 5 с расширениями `WixToolset.Util.wixext` и `WixToolset.UI.wixext` (`dotnet tool install --global wix --version 5.0.2`).

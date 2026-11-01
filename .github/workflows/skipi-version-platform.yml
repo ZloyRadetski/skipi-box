@@ -703,7 +703,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends rpm
 
       - name: Build the portable image, the deb and the rpm
-        run: ./gradlew --no-daemon :desktopApp:createDistributable :desktopApp:packageDeb :desktopApp:packageRpm "-PskipiCoreDesktopLibrary=$SKIPI_CORE_LIB"
+        run: |
+          ./gradlew --no-daemon :desktopApp:createDistributable :desktopApp:packageDeb "-PskipiCoreDesktopLibrary=$SKIPI_CORE_LIB"
+          ./gradlew --no-daemon :desktopApp:packageRpm -PskipiPackageRpm=true "-PskipiCoreDesktopLibrary=$SKIPI_CORE_LIB"
 
       # jpackage reports its reason only in its own log files, not in the Gradle output.
       - name: Show the jpackage logs

@@ -211,7 +211,11 @@ compose.desktop {
                 menuGroup = "Network"
                 appCategory = "Network"
                 debMaintainer = "Radetski <extendamailduck@duck.com>"
-                rpmLicenseType = "GPL-3.0-only"
+                // jpackage rejects --linux-rpm-license-type for a deb, so the license is only passed to the rpm
+                // build (-PskipiPackageRpm=true); Compose adds the option to every Linux package type otherwise.
+                if (providers.gradleProperty("skipiPackageRpm").orNull == "true") {
+                    rpmLicenseType = "GPL-3.0-only"
+                }
             }
             macOS {
                 bundleID = "app.skipi.desktop"
