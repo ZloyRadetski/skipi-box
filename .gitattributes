@@ -1,0 +1,3 @@
+# Packaging scripts run on Linux runners: keep LF endings.
+*.sh text eol=lf
+desktopApp/packaging/linux/AppRun text eol=lf

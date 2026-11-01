@@ -53,6 +53,20 @@ Desktop запускает SKIPI Core **внутри JVM-процесса** че
 - `-PskipiCoreDesktopCxx=<path-or-binary>`
 - `-PskipiCoreDesktopGo=<path-or-binary>`
 
+## Установщики
+
+| ОС | Артефакты релиза | Gradle |
+|---|---|---|
+| Windows x64 | `SKIPI-windows-x64.msi`, `SKIPI-windows-x64-portable.zip` | `:desktopApp:packageMsi` |
+| Linux x64 | `SKIPI-linux-x64.AppImage`, `.deb`, `.rpm`, `-portable.tar.gz` | `:desktopApp:packageDeb`, `:desktopApp:packageRpm`; AppImage: `packaging/linux/build-appimage.sh` |
+| macOS arm64 | `SKIPI-macos-arm64.dmg` | `:desktopApp:packageDmg` |
+
+- MSI ставится на всю машину (TUN требует прав администратора); `upgradeUuid` в `build.gradle.kts` неизменен, чтобы новая версия обновляла установленную. Для сборки нужен WiX 5 с расширениями `WixToolset.Util.wixext` и `WixToolset.UI.wixext` (`dotnet tool install --global wix --version 5.0.2`).
+- deb/rpm собирает jpackage (для rpm нужен `rpmbuild`). Образ ставится в `/opt/skipi`.
+- AppImage собирается из образа `createDistributable` скриптом и закреплённым `appimagetool` (см. CI).
+- `packaging/verify-listing.sh <linux|windows>` проверяет список файлов пакета (Core, hev, geo, запускатор); тесты: `bash desktopApp/packaging/tests/verify-listing-test.sh`.
+- Установщики не подписаны (Windows SmartScreen и macOS Gatekeeper покажут предупреждение).
+
 ## Проверка настоящего нативного запуска
 
 ```powershell

@@ -582,11 +582,24 @@ jobs:
           # The build copies the Core's GPL license from the sibling checkout, so it must exist.
           git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
 
-      - name: Build the portable application image
-        shell: bash
-        run: ./gradlew.bat --no-daemon :desktopApp:createDistributable "-PskipiCoreDesktopLibrary=$SKIPI_CORE_DLL"
+      # jpackage builds the MSI with WiX. The runner image does not carry a version jpackage accepts,
+      # so the pinned WiX 5 and the two extensions jpackage asks for are installed as dotnet tools.
+      - name: Install WiX
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet tool install --global wix --version 5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+          wix extension add -g WixToolset.Util.wixext/5.0.2
+          wix extension add -g WixToolset.UI.wixext/5.0.2
+          wix --version
 
-      - name: Check the image and zip it
+      - name: Build the portable application image and the MSI installer
+        shell: bash
+        run: ./gradlew.bat --no-daemon :desktopApp:createDistributable :desktopApp:packageMsi "-PskipiCoreDesktopLibrary=$SKIPI_CORE_DLL"
+
+      - name: Check the image and the installer and collect them
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -595,25 +608,42 @@ jobs:
             if (-not (Test-Path (Join-Path $image $required))) { throw "The portable image is missing $required" }
           }
           Compress-Archive -Path $image -DestinationPath SKIPI-windows-x64-portable.zip -CompressionLevel Optimal
-          $hash = (Get-FileHash SKIPI-windows-x64-portable.zip -Algorithm SHA256).Hash.ToLower()
-          "SKIPI-windows-x64-portable.zip sha256 $hash" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+          $built = Get-ChildItem 'desktopApp/build/compose/binaries/main/msi' -Filter *.msi | Select-Object -First 1
+          if (-not $built) { throw 'No .msi was produced.' }
+          Copy-Item $built.FullName SKIPI-windows-x64.msi
+
+          # Administrative install into a scratch directory unpacks the MSI without touching the runner.
+          $extracted = Join-Path $env:RUNNER_TEMP 'msi-extract'
+          $install = Start-Process msiexec -ArgumentList '/a', (Resolve-Path SKIPI-windows-x64.msi).Path, '/qn', "TARGETDIR=$extracted" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "msiexec failed to unpack the installer: $($install.ExitCode)" }
+          Get-ChildItem $extracted -Recurse -File | ForEach-Object { $_.FullName.Substring($extracted.Length + 1) } | Out-File msi-listing.txt -Encoding ascii
+          bash desktopApp/packaging/verify-listing.sh windows < msi-listing.txt
+          if ($LASTEXITCODE -ne 0) { throw 'The MSI is missing files the application needs.' }
+
+          foreach ($file in 'SKIPI-windows-x64.msi', 'SKIPI-windows-x64-portable.zip') {
+            $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
+            "$file sha256 $hash (not signed)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          }
 
       - name: Upload GitHub artifact
         uses: actions/upload-artifact@v7
         with:
-          name: SKIPI_${{ env.VERSION_NAME }}-windows-x64-portable
-          path: SKIPI-windows-x64-portable.zip
+          name: SKIPI_${{ env.VERSION_NAME }}-windows-x64
+          path: |
+            SKIPI-windows-x64.msi
+            SKIPI-windows-x64-portable.zip
           if-no-files-found: error
 
-      - name: Attach the archive to the GitHub Release
+      - name: Attach the installer and the archive to the GitHub Release
         if: env.CREATE_GITHUB_RELEASE == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          gh release upload "$TAG_NAME" SKIPI-windows-x64-portable.zip --clobber
+          gh release upload "$TAG_NAME" SKIPI-windows-x64.msi SKIPI-windows-x64-portable.zip --clobber
 
   desktop-linux:
-    name: Build Linux Desktop (portable)
+    name: Build Linux Desktop (AppImage, deb, rpm)
     needs: release
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -667,10 +697,28 @@ jobs:
           # The build copies the Core's GPL license from the sibling checkout, so it must exist.
           git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
 
-      - name: Build the portable application image
-        run: ./gradlew --no-daemon :desktopApp:createDistributable "-PskipiCoreDesktopLibrary=$SKIPI_CORE_LIB"
+      # jpackage needs rpmbuild for the rpm; dpkg for the deb is already on the runner.
+      - name: Install the rpm tooling
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends rpm
 
-      - name: Check the image and pack it
+      - name: Build the portable image, the deb and the rpm
+        run: ./gradlew --no-daemon :desktopApp:createDistributable :desktopApp:packageDeb :desktopApp:packageRpm "-PskipiCoreDesktopLibrary=$SKIPI_CORE_LIB"
+
+      # The AppImage is built from the application image by our script. appimagetool is a pinned release
+      # whose checksum is verified before it is run.
+      - name: Fetch appimagetool
+        run: |
+          set -euo pipefail
+          version=1.9.1
+          sha256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+          curl -fsSL --retry 3 -o appimagetool "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-x86_64.AppImage"
+          echo "${sha256}  appimagetool" | sha256sum -c -
+          chmod +x appimagetool
+          echo "APPIMAGETOOL=$PWD/appimagetool" >> "$GITHUB_ENV"
+          # The runner has no FUSE: let the tool unpack itself and run from there.
+          echo "APPIMAGE_EXTRACT_AND_RUN=1" >> "$GITHUB_ENV"
+
+      - name: Check the packages and collect them
         shell: bash
         run: |
           set -euo pipefail
@@ -686,22 +734,47 @@ jobs:
           test -x "$image/bin/SKIPI" || { echo "::error::The launcher $image/bin/SKIPI is not executable."; exit 1; }
 
           tar -C "$(dirname "$image")" -czf SKIPI-linux-x64-portable.tar.gz SKIPI
-          sum="$(sha256sum SKIPI-linux-x64-portable.tar.gz | cut -d' ' -f1)"
-          echo "SKIPI-linux-x64-portable.tar.gz sha256 $sum" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # AppImage
+          desktopApp/packaging/linux/build-appimage.sh "$image" SKIPI-linux-x64.AppImage
+          ./SKIPI-linux-x64.AppImage --appimage-extract >/dev/null
+          (cd squashfs-root && find . -type f) | desktopApp/packaging/verify-listing.sh linux
+          rm -rf squashfs-root
+
+          # deb
+          deb="$(find desktopApp/build/compose/binaries/main/deb -name '*.deb' -type f -print -quit)"
+          test -n "$deb" || { echo "::error::No .deb was produced."; exit 1; }
+          cp "$deb" SKIPI-linux-x64.deb
+          dpkg-deb --contents SKIPI-linux-x64.deb | awk '{print $NF}' | desktopApp/packaging/verify-listing.sh linux
+          dpkg-deb --info SKIPI-linux-x64.deb
+
+          # rpm
+          rpmfile="$(find desktopApp/build/compose/binaries/main/rpm -name '*.rpm' -type f -print -quit)"
+          test -n "$rpmfile" || { echo "::error::No .rpm was produced."; exit 1; }
+          cp "$rpmfile" SKIPI-linux-x64.rpm
+          rpm -qlp SKIPI-linux-x64.rpm | desktopApp/packaging/verify-listing.sh linux
+
+          for file in SKIPI-linux-x64.AppImage SKIPI-linux-x64.deb SKIPI-linux-x64.rpm SKIPI-linux-x64-portable.tar.gz; do
+            echo "$file sha256 $(sha256sum "$file" | cut -d' ' -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Upload GitHub artifact
         uses: actions/upload-artifact@v7
         with:
-          name: SKIPI_${{ env.VERSION_NAME }}-linux-x64-portable
-          path: SKIPI-linux-x64-portable.tar.gz
+          name: SKIPI_${{ env.VERSION_NAME }}-linux-x64
+          path: |
+            SKIPI-linux-x64.AppImage
+            SKIPI-linux-x64.deb
+            SKIPI-linux-x64.rpm
+            SKIPI-linux-x64-portable.tar.gz
           if-no-files-found: error
 
-      - name: Attach the archive to the GitHub Release
+      - name: Attach the packages to the GitHub Release
         if: env.CREATE_GITHUB_RELEASE == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          gh release upload "$TAG_NAME" SKIPI-linux-x64-portable.tar.gz --clobber
+          gh release upload "$TAG_NAME" SKIPI-linux-x64.AppImage SKIPI-linux-x64.deb SKIPI-linux-x64.rpm SKIPI-linux-x64-portable.tar.gz --clobber
 
   desktop-macos:
     name: Build macOS Desktop (Apple Silicon)

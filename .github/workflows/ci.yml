@@ -206,6 +206,9 @@ jobs:
           -x :hevtun:buildHevTun -x :updateResourceFileAssets
           -PskipiAndroidTestJavaHome='${{ steps.test-jdk.outputs.path }}'
 
+      - name: Run desktop packaging checks
+        run: bash desktopApp/packaging/tests/verify-listing-test.sh
+
       - name: Run Desktop Home, JSON, and adapter tests
         run: >-
           ./gradlew --build-cache :desktopApp:test

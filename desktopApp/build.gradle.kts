@@ -181,11 +181,38 @@ compose.desktop {
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)
             modules("java.net.http")
-            targetFormats(if (isMacHost) TargetFormat.Dmg else TargetFormat.Msi)
+            // Installers: MSI on Windows, deb and rpm on Linux (the AppImage is made from the app image by
+            // packaging/linux/build-appimage.sh), dmg on macOS. The portable images come from createDistributable.
+            targetFormats(
+                *when {
+                    isMacHost -> arrayOf(TargetFormat.Dmg)
+                    isLinuxHost -> arrayOf(TargetFormat.Deb, TargetFormat.Rpm)
+                    else -> arrayOf(TargetFormat.Msi)
+                },
+            )
             packageName = ProjectConfig.PROJECT_NAME
             packageVersion = ProjectConfig.VERSION_NAME
             description = "SKIPI desktop proxy client"
             vendor = "Radetski"
+            windows {
+                iconFile.set(project.file("packaging/icons/skipi.ico"))
+                menu = true
+                menuGroup = ProjectConfig.PROJECT_NAME
+                shortcut = true
+                dirChooser = true
+                // TUN needs administrator rights, so SKIPI is installed for the whole machine.
+                perUserInstall = false
+                // Fixed forever: it is what lets a new MSI upgrade the installed one instead of installing beside it.
+                upgradeUuid = "251111c2-8358-4a5a-b610-e328755aef03"
+            }
+            linux {
+                iconFile.set(project.file("packaging/icons/skipi.png"))
+                shortcut = true
+                menuGroup = "Network"
+                appCategory = "Network"
+                debMaintainer = "Radetski <extendamailduck@duck.com>"
+                rpmLicenseType = "GPL-3.0-only"
+            }
             macOS {
                 bundleID = "app.skipi.desktop"
                 dockName = ProjectConfig.PROJECT_NAME
