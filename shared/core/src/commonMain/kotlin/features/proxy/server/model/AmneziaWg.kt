@@ -65,6 +65,9 @@ data class AmneziaWg(
     var keepaliveTimeout: String = "",
     var maxHandshakeAttempts: String = "",
     var persistentKeepalive: String = "",
+    // AmneziaWG 3.1. Empty (not set), `on`/`off`, `true`/`false` or `1`/`0`.
+    var randomTrailers: String = "",
+    var disableCookies: String = "",
 ) : UrlProxyServer<AmneziaWg> {
 
     override fun getInfo(): ProxyServerInfo {
@@ -134,6 +137,8 @@ data class AmneziaWg(
                 putAwgRange("rejectAfterTime", rejectAfterTime)
                 putAwgRange("keepaliveTimeout", keepaliveTimeout)
                 putAwgRange("maxHandshakeAttempts", maxHandshakeAttempts)
+                putAwgFlag("randomTrailers", randomTrailers)
+                putAwgFlag("disableCookies", disableCookies)
             },
             streamSettings = finalMask.toXrayJsonObjectOrNull("FinalMask")?.let { parsedFinalMask ->
                 buildJsonObject {
@@ -180,6 +185,8 @@ data class AmneziaWg(
         this.keepaliveTimeout = url.parameters["keepalivetimeout"] ?: ""
         this.maxHandshakeAttempts = url.parameters["maxhandshakeattempts"] ?: ""
         this.persistentKeepalive = url.parameters["persistentkeepalive"] ?: ""
+        this.randomTrailers = url.parameters["randomtrailers"] ?: ""
+        this.disableCookies = url.parameters["disablecookies"] ?: ""
         return this
     }
 
@@ -229,6 +236,8 @@ data class AmneziaWg(
                 "keepalivetimeout" to keepaliveTimeout,
                 "maxhandshakeattempts" to maxHandshakeAttempts,
                 "persistentkeepalive" to persistentKeepalive,
+                "randomtrailers" to randomTrailers,
+                "disablecookies" to disableCookies,
             ).forEach { (name, value) -> if (value.isNotBlank()) parameters.append(name, value) }
 
             fragment = this@AmneziaWg.remarks
@@ -274,6 +283,8 @@ data class AmneziaWg(
             keepaliveTimeout = other.keepaliveTimeout
             maxHandshakeAttempts = other.maxHandshakeAttempts
             persistentKeepalive = other.persistentKeepalive
+            randomTrailers = other.randomTrailers
+            disableCookies = other.disableCookies
         }
     }
 
@@ -303,6 +314,7 @@ data class AmneziaWg(
                 }
             }
         }
+        validateAmneziaWgFlags(listOf("RandomTrailers" to randomTrailers, "DisableCookies" to disableCookies))
         validateAmneziaWgRanges(
             listOf(
                 "ContentPaddingAddition" to contentPaddingAddition,
@@ -317,7 +329,7 @@ data class AmneziaWg(
     }
 
     override fun connectionFingerprint(): String {
-        return "amneziawg|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address|$mtu|$reserved|$jc|$jmin|$jmax|$s1|$s2|$s3|$s4|$h1|$h2|$h3|$h4|$i1|$i2|$i3|$i4|$i5|$finalMask|$headerProtectionKey|$contentPaddingAddition|$rekeyAfterTime|$rekeyTimeout|$rejectAfterTime|$keepaliveTimeout|$maxHandshakeAttempts|$persistentKeepalive"
+        return "amneziawg|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address|$mtu|$reserved|$jc|$jmin|$jmax|$s1|$s2|$s3|$s4|$h1|$h2|$h3|$h4|$i1|$i2|$i3|$i4|$i5|$finalMask|$headerProtectionKey|$contentPaddingAddition|$rekeyAfterTime|$rekeyTimeout|$rejectAfterTime|$keepaliveTimeout|$maxHandshakeAttempts|$persistentKeepalive|$randomTrailers|$disableCookies"
     }
 
     /**
@@ -340,6 +352,17 @@ data class AmneziaWg(
 }
 
 private const val AwgHeaderProtectionMinPadding = 12
+
+/** The AmneziaWG 3.1 boolean spellings the native tools accept: `on`/`off` in any letter case, `true`/`false`, `1`/`0`. */
+internal fun String.awgFlagOrNull(): Boolean? = when (trim().lowercase()) {
+    "on", "true", "1" -> true
+    "off", "false", "0" -> false
+    else -> null
+}
+
+private fun kotlinx.serialization.json.JsonObjectBuilder.putAwgFlag(name: String, value: String) {
+    value.awgFlagOrNull()?.let { put(name, it) }
+}
 
 /**
  * An AmneziaWG 3.0 `N` / `N-M` value: a JSON number for a single value and a string for a range

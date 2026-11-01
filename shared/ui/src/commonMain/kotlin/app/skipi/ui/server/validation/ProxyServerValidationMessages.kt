@@ -200,6 +200,8 @@ private data class ProxyServerValidationMessages(
                 unsupportedValue.formatTemplate("value" to values.valueAt(0))
             ProxyServerValidationError.AmneziaWgHeaderProtectionPaddingTooSmall ->
                 valueOutOfRange.formatTemplate("min" to values.valueAt(1), "max" to values.valueAt(2))
+            ProxyServerValidationError.AmneziaWgBooleanInvalid ->
+                unsupportedValue.formatTemplate("value" to values.valueAt(0))
             ProxyServerValidationError.AmneziaWgRangeInvalid ->
                 valueOutOfRange.formatTemplate("min" to "0", "max" to values.valueAt(1))
         }

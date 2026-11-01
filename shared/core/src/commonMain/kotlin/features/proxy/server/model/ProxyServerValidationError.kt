@@ -61,6 +61,7 @@ enum class ProxyServerValidationError {
     AmneziaWgHeaderInvalid,
     AmneziaWgChainInvalid,
     AmneziaWgRangeInvalid,
+    AmneziaWgBooleanInvalid,
     AmneziaWgHeaderProtectionPaddingTooSmall,
 }
 

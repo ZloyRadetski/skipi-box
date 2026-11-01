@@ -428,6 +428,28 @@ fun LazyListScope.amneziaWgProxyServer(awgEdit: AmneziaWg) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
+            label = "RandomTrailers",
+            state = rememberTextFieldState(initialText = awgEdit.randomTrailers),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.randomTrailers = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "DisableCookies",
+            state = rememberTextFieldState(initialText = awgEdit.disableCookies),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.disableCookies = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
             label = stringResource(Res.string.proxy_editor_final_mask),
             state = rememberTextFieldState(initialText = awgEdit.finalMask),
             lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 5, maxHeightInLines = 20),

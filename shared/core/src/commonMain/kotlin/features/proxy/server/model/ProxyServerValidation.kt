@@ -575,6 +575,13 @@ internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgChains(cha
 
 private const val AwgRangeMax = 65535
 
+/** AmneziaWG 3.1 flags: empty or one of `on`/`off`/`true`/`false`/`1`/`0` (any letter case). */
+internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgFlags(flags: List<Pair<String, String>>) {
+    flags.forEach { (name, value) ->
+        if (value.isNotBlank() && value.awgFlagOrNull() == null) addIssue(ProxyServerValidationError.AmneziaWgBooleanInvalid, name)
+    }
+}
+
 /** AmneziaWG 3.0 timing / padding / keepalive values: empty, `N` or `N-M`, 0..65535, N <= M. */
 internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgRanges(ranges: List<Pair<String, String>>) {
     ranges.forEach { (name, value) ->

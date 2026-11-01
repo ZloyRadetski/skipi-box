@@ -97,6 +97,9 @@ fun parseWireguardConf(text: String): WireguardConfParseResult {
         val rejectAfterTime = interfaceProps["rejectaftertime"]
         val keepaliveTimeout = interfaceProps["keepalivetimeout"]
         val maxHandshakeAttempts = interfaceProps["maxhandshakeattempts"]
+        // AmneziaWG 3.1 additions.
+        val randomTrailers = interfaceProps["randomtrailers"]
+        val disableCookies = interfaceProps["disablecookies"]
         // `off` is wg-quick's spelling of "no keepalive".
         val persistentKeepalive = peerProps["persistentkeepalive"]
             ?.takeUnless { it.equals("off", ignoreCase = true) }.orEmpty()
@@ -104,7 +107,7 @@ fun parseWireguardConf(text: String): WireguardConfParseResult {
         val isAmneziaWg = listOf(
             jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4, i1, i2, i3, i4, i5,
             headerProtectionKey, contentPaddingAddition, rekeyAfterTime, rekeyTimeout,
-            rejectAfterTime, keepaliveTimeout, maxHandshakeAttempts,
+            rejectAfterTime, keepaliveTimeout, maxHandshakeAttempts, randomTrailers, disableCookies,
         ).any { !it.isNullOrBlank() }
 
         val remarks = foundFirstComment.ifBlank {
@@ -145,6 +148,8 @@ fun parseWireguardConf(text: String): WireguardConfParseResult {
                 keepaliveTimeout = keepaliveTimeout.orEmpty(),
                 maxHandshakeAttempts = maxHandshakeAttempts.orEmpty(),
                 persistentKeepalive = persistentKeepalive,
+                randomTrailers = randomTrailers.orEmpty(),
+                disableCookies = disableCookies.orEmpty(),
             )
         } else {
             Wireguard(
