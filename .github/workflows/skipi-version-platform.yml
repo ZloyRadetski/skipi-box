@@ -139,18 +139,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Cache Android SDK platforms, build-tools & NDK
-        uses: actions/cache@v4
-        id: cache-android-sdk
-        with:
-          path: |
-            ${{ env.ANDROID_HOME }}/platforms
-            ${{ env.ANDROID_HOME }}/build-tools
-            ${{ env.ANDROID_HOME }}/ndk
-          key: android-sdk-tools-${{ runner.os }}-target37-ndk
-
+      # The SDK packages are installed on every run on purpose: caching the whole platforms, build-tools
+      # and NDK directories meant packing several GB (the runner ships many versions) and made the
+      # post-job cache step run for a long time.
       - name: Install Android SDK packages
-        if: steps.cache-android-sdk.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
