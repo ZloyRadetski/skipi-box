@@ -95,6 +95,8 @@ internal fun macTunSupervisorScript(spec: MacTunSupervisorSpec): String {
         appendLine("  exit 1")
         appendLine("}")
         appendLine("trap 'cleanup; rm -f \"\$STOP\"; exit 0' TERM INT HUP")
+        // jpackage can drop the executable bit of a bundled helper; root restores it instead of failing.
+        appendLine("[ -x ${shellQuote(spec.hevExecutable)} ] || chmod 755 ${shellQuote(spec.hevExecutable)} || fail \"Could not make the tunnel executable\"")
         appendLine("${shellQuote(spec.hevExecutable)} ${shellQuote(spec.hevConfig)} </dev/null >/dev/null 2>&1 &")
         appendLine("HEV_PID=\$!")
         appendLine("i=0")

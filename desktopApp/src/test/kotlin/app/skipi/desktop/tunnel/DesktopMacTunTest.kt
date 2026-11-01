@@ -85,6 +85,20 @@ class DesktopMacTunTest {
     }
 
     @Test
+    fun theSupervisorMakesHevExecutableBeforeStartingItBecausePackagingMayDropTheBit() {
+        // A disk image built by jpackage can lose the executable bit of a bundled helper; root can
+        // always restore it, so the privileged side repairs it instead of failing with "Permission denied".
+        val script = macTunSupervisorScript(spec())
+        val hev = "'/Applications/SKIPI.app/Contents/Resources/hev/hev-socks5-tunnel'"
+
+        val repair = script.indexOf("[ -x $hev ] || chmod 755 $hev")
+        val start = script.indexOf("$hev '/Users/test/SKIPI/run/tun-hev.yaml'")
+        assertTrue(repair >= 0, script)
+        assertTrue(start > repair, "the repair must come before hev is started")
+        assertTrue("|| fail" in script.substring(repair, start), "a failed repair is reported, not ignored")
+    }
+
+    @Test
     fun aFailureAfterStartRemovesWhatWasInstalled() {
         val script = macTunSupervisorScript(spec())
         val fail = script.substringAfter("fail()").substringBefore("\n}")
