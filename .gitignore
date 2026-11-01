@@ -30,3 +30,6 @@ gradle_out.txt
 skipi-*.txt
 desktopApp/bin/
 owenclave-dev/
+
+# Build and test-report artifacts; never commit them (an archive here once blocked a push over the 100 MB limit)
+outputs/
