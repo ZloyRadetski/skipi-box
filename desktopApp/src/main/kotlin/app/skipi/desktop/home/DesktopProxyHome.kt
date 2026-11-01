@@ -7,7 +7,6 @@ import features.subscription.DefaultSubscriptionUserAgent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.unit.dp
 import app.skipi.app.home.ProxyHomeTunnelIp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -614,7 +613,7 @@ internal fun DesktopProxyHome(
                 contentPadding = contentPadding,
                 // The floating bar overlays the list (as on Android) instead of cutting it off.
                 floatingNavigationBottomInset = contentPadding.calculateBottomPadding(),
-                topContentPadding = 40.dp,
+                topContentPadding = DesktopProxyHomeTopContentPadding,
                 containerColor = androidx.compose.ui.graphics.Color.Transparent,
             )
         }
