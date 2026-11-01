@@ -317,8 +317,17 @@ fun SkipiProxyHeroClassicCard(
                 ) {
                     Column {
                         Spacer(Modifier.height(14.dp))
+                        // One raised panel for the live facts, like the tiles of the wide layout.
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(colors.raisedSurface)
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
                         if (state.sessionDuration != null) Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -364,8 +373,17 @@ fun SkipiProxyHeroClassicCard(
                             }
                         }
                         ipTile?.let { tile ->
+                            if (state.sessionDuration != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(vertical = 8.dp)
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(colors.mutedText.copy(alpha = 0.18f)),
+                                )
+                            }
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
@@ -373,20 +391,21 @@ fun SkipiProxyHeroClassicCard(
                                     SkipiProxyServerFlagBadge(
                                         flag = tile.flag,
                                         containerColor = Color.Transparent,
-                                        size = 16.dp,
+                                        size = 18.dp,
                                         shapeRadius = 4.dp,
                                     )
-                                    Spacer(Modifier.width(6.dp))
+                                    Spacer(Modifier.width(8.dp))
                                 }
                                 Text(
                                     text = tile.value,
-                                    fontSize = 13.sp,
-                                    fontWeight = typography.body,
-                                    color = colors.mutedText,
+                                    fontSize = 14.sp,
+                                    fontWeight = typography.emphasis,
+                                    color = colors.text,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
+                        }
                         }
                     }
                 }
