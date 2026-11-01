@@ -309,14 +309,15 @@ fun SkipiProxyHeroClassicCard(
             }
 
             if (compact) {
+                val ipTile = skipiHeroIpTile(state.phase, state.ip, state.showIp, state.maskIp)
                 AnimatedVisibility(
-                    visible = connected && state.sessionDuration != null,
+                    visible = connected && (state.sessionDuration != null || ipTile != null),
                     enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
                     exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
                 ) {
                     Column {
                         Spacer(Modifier.height(14.dp))
-                        Row(
+                        if (state.sessionDuration != null) Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
@@ -359,6 +360,31 @@ fun SkipiProxyHeroClassicCard(
                                     fontSize = 13.sp,
                                     fontWeight = typography.body,
                                     color = colors.mutedText,
+                                )
+                            }
+                        }
+                        ipTile?.let { tile ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (tile.flag != null) {
+                                    SkipiProxyServerFlagBadge(
+                                        flag = tile.flag,
+                                        containerColor = Color.Transparent,
+                                        size = 16.dp,
+                                        shapeRadius = 4.dp,
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                }
+                                Text(
+                                    text = tile.value,
+                                    fontSize = 13.sp,
+                                    fontWeight = typography.body,
+                                    color = colors.mutedText,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }

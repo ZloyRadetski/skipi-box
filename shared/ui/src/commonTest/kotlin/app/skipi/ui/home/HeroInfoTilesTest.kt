@@ -96,4 +96,53 @@ class HeroInfoTilesTest {
         )
         assertEquals(listOf(SkipiHeroTileKind.Time, SkipiHeroTileKind.Ping), tiles.map { it.kind })
     }
+
+    // ---- the IP line of the compact (phone) card, which has no tile grid ----
+
+    @Test
+    fun theCompactCardShowsTheAddressAndFlagWhileConnected() {
+        val tile = skipiHeroIpTile(
+            phase = SkipiConnectionHeroPhase.Connected,
+            ip = SkipiHeroIp(value = "203.0.113.7", flag = "🇳🇱"),
+            showIp = true,
+            maskIp = false,
+        )
+        assertEquals(SkipiHeroTileKind.Ip, tile?.kind)
+        assertEquals("203.0.113.7", tile?.value)
+        assertEquals("🇳🇱", tile?.flag)
+    }
+
+    @Test
+    fun theCompactCardHonoursTheShowAndMaskSettings() {
+        val ip = SkipiHeroIp(value = "203.0.113.7", flag = null)
+        assertNull(skipiHeroIpTile(SkipiConnectionHeroPhase.Connected, ip, showIp = false, maskIp = false))
+        assertEquals(
+            "203.0.•••.•••",
+            skipiHeroIpTile(SkipiConnectionHeroPhase.Connected, ip, showIp = true, maskIp = true)?.value,
+        )
+    }
+
+    @Test
+    fun theCompactCardShowsAPlaceholderUntilTheAddressIsKnownAndNothingWhenNotConnected() {
+        assertEquals(
+            "—",
+            skipiHeroIpTile(SkipiConnectionHeroPhase.Connected, ip = null, showIp = true, maskIp = false)?.value,
+        )
+        for (phase in listOf(SkipiConnectionHeroPhase.Disconnected, SkipiConnectionHeroPhase.Connecting)) {
+            assertNull(
+                skipiHeroIpTile(phase, SkipiHeroIp("203.0.113.7", null), showIp = true, maskIp = false),
+                "no IP line in $phase",
+            )
+        }
+    }
+
+    @Test
+    fun theCompactIpLineIsTheSameTheWideGridShows() {
+        val ip = SkipiHeroIp(value = "2001:db8::1", flag = "🇩🇪")
+        val fromGrid = skipiHeroInfoTiles(
+            phase = SkipiConnectionHeroPhase.Connected, sessionDurationText = null, latency = null, memoryText = null,
+            ip = ip, showIp = true, maskIp = true,
+        ).single()
+        assertEquals(fromGrid, skipiHeroIpTile(SkipiConnectionHeroPhase.Connected, ip, showIp = true, maskIp = true))
+    }
 }

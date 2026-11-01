@@ -73,6 +73,26 @@ fun skipiHeroInfoTiles(
     }
 }
 
+/**
+ * The IP tile alone, for the compact (phone) connection card, which has room for a line but not for the tile
+ * grid. It follows the same rules as the grid: only while connected, only when [showIp] is on, masked when
+ * [maskIp] is on, and a placeholder until the address is known.
+ */
+fun skipiHeroIpTile(
+    phase: SkipiConnectionHeroPhase,
+    ip: SkipiHeroIp?,
+    showIp: Boolean,
+    maskIp: Boolean = false,
+): SkipiHeroTile? = skipiHeroInfoTiles(
+    phase = phase,
+    sessionDurationText = null,
+    latency = null,
+    memoryText = null,
+    ip = ip,
+    showIp = showIp,
+    maskIp = maskIp,
+).firstOrNull { tile -> tile.kind == SkipiHeroTileKind.Ip }
+
 /** Hides the host part of an address: `203.0.113.7` becomes `203.0.•••.•••`, IPv6 keeps two groups. */
 fun maskIpAddress(address: String): String {
     if (address == UnknownValue) return address
