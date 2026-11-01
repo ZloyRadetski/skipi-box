@@ -53,7 +53,9 @@ interface DesktopSystemProxyManager {
 
 internal fun isDesktopSystemProxySupported(
     osName: String = System.getProperty("os.name"),
-): Boolean = osName.startsWith("Windows", ignoreCase = true) || osName.startsWith("Linux", ignoreCase = true)
+): Boolean = osName.startsWith("Windows", ignoreCase = true) ||
+    osName.startsWith("Linux", ignoreCase = true) ||
+    osName.startsWith("Mac", ignoreCase = true)
 
 object DesktopSystemProxyManagers {
     fun create(
@@ -61,6 +63,7 @@ object DesktopSystemProxyManagers {
     ): DesktopSystemProxyManager = when {
         osName.startsWith("Windows", ignoreCase = true) -> DesktopWindowsSystemProxyLeaseManager()
         osName.startsWith("Linux", ignoreCase = true) -> DesktopLinuxSystemProxyLeaseManager()
+        osName.startsWith("Mac", ignoreCase = true) -> DesktopMacSystemProxyLeaseManager()
         else -> NoOpDesktopSystemProxyManager
     }
 }
