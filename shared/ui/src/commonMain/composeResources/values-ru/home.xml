@@ -6,8 +6,8 @@
     <string name="home_action_refreshing">Обновление…</string>
     <string name="home_action_search">Поиск</string>
     <string name="home_action_hide_search">Скрыть поиск</string>
-    <string name="home_move_up">Переместить вверх</string>
-    <string name="home_move_down">Переместить вниз</string>
+    <string name="home_move_up">↑</string>
+    <string name="home_move_down">↓</string>
     <string name="home_add_group">Добавить группу прокси</string>
     <string name="home_edit_group">Редактировать группу прокси</string>
     <string name="home_delete_group">Удалить группу прокси</string>

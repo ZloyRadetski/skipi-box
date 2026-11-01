@@ -6,8 +6,8 @@
     <string name="home_action_refreshing">در حال به‌روزرسانی…</string>
     <string name="home_action_search">جستجو</string>
     <string name="home_action_hide_search">پنهان کردن جستجو</string>
-    <string name="home_move_up">انتقال به بالا</string>
-    <string name="home_move_down">انتقال به پایین</string>
+    <string name="home_move_up">↑</string>
+    <string name="home_move_down">↓</string>
     <string name="home_add_group">افزودن گروه پروکسی</string>
     <string name="home_runtime_outbound_metric">حافظه: %1$s</string>
     <string name="home_show_qr_code">نمایش کد QR</string>

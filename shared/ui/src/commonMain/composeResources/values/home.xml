@@ -6,8 +6,8 @@
     <string name="home_action_refreshing">Refreshing…</string>
     <string name="home_action_search">Search</string>
     <string name="home_action_hide_search">Hide search</string>
-    <string name="home_move_up">Move up</string>
-    <string name="home_move_down">Move down</string>
+    <string name="home_move_up">↑</string>
+    <string name="home_move_down">↓</string>
     <string name="home_add_group">Add proxy group</string>
     <string name="home_edit_group">Edit proxy group</string>
     <string name="home_delete_group">Delete proxy group</string>
