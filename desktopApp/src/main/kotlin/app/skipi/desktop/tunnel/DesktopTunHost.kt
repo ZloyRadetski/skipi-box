@@ -18,11 +18,12 @@ internal class DesktopTunHost(
     private val hev: (Path) -> DesktopHevTunnel,
     private val isWindows: Boolean = false,
     private val isElevated: () -> Boolean = ::isWindowsElevated,
+    private val isMac: Boolean = false,
 ) {
     private var tunRuntime: DesktopTunRuntime? = null
 
     /** Whether this operating system has a TUN implementation at all. */
-    val hostSupported: Boolean get() = isLinux || isWindows
+    val hostSupported: Boolean get() = isLinux || isWindows || isMac
 
     /**
      * Windows creates the TUN adapter and its routes only for an administrator; the settings page
@@ -32,10 +33,12 @@ internal class DesktopTunHost(
 
     /** Null when TUN mode can be started on this machine right now. */
     fun unavailableReason(): String? {
-        if (!hostSupported) return "TUN mode is available only on Linux and Windows so far"
+        if (!hostSupported) return "TUN mode is available only on Linux, Windows and macOS so far"
         val files = runtime().getOrElse { return it.message ?: "SKIPI Core runtime is unavailable" }
         if (isWindows) {
             if (files.hevExecutable == null) return "hev-socks5-tunnel.exe is missing from the application"
+        } else if (isMac) {
+            if (files.hevExecutable == null) return "hev-socks5-tunnel is missing from the application"
         } else if (files.hevLibrary == null) {
             return "libhev-socks5-tunnel.so is missing from the application"
         }
@@ -48,6 +51,8 @@ internal class DesktopTunHost(
         val files = runtime().getOrThrow()
         val hevPath = if (isWindows) {
             files.hevExecutable ?: error("hev-socks5-tunnel.exe is missing from the application")
+        } else if (isMac) {
+            files.hevExecutable ?: error("hev-socks5-tunnel is missing from the application")
         } else {
             files.hevLibrary ?: error("libhev-socks5-tunnel.so is missing from the application")
         }
@@ -61,7 +66,13 @@ internal class DesktopTunHost(
         ): DesktopTunHost {
             val osName = System.getProperty("os.name").orEmpty()
             val windows = osName.contains("windows", ignoreCase = true)
-            return forCore(coreController, runtime, linux = osName.contains("linux", ignoreCase = true), windows = windows)
+            return forCore(
+                coreController,
+                runtime,
+                linux = osName.contains("linux", ignoreCase = true),
+                windows = windows,
+                mac = osName.contains("mac", ignoreCase = true),
+            )
         }
 
         internal fun forCore(
@@ -69,9 +80,12 @@ internal class DesktopTunHost(
             runtime: () -> Result<DesktopCoreRuntime>,
             linux: Boolean,
             windows: Boolean,
+            mac: Boolean = false,
+            macPlan: MacTunPlanHolder = MacTunPlanHolder(),
         ): DesktopTunHost = DesktopTunHost(
             isLinux = linux,
             isWindows = windows,
+            isMac = mac,
             runtime = runtime,
             coreProbe = {
                 coreController.nativeForTun().fold(
@@ -81,9 +95,23 @@ internal class DesktopTunHost(
             },
             device = {
                 val core = coreController.nativeForTun().getOrThrow()
-                if (windows) DesktopWindowsTunDevice(core) else DesktopCoreTunDevice(core)
+                when {
+                    windows -> DesktopWindowsTunDevice(core)
+                    mac -> DesktopMacTunDevice(core, macPlan)
+                    else -> DesktopCoreTunDevice(core)
+                }
             },
-            hev = { path -> if (windows) DesktopHevProcessTunnel(path) else DesktopHevFfmTunnel(path) },
+            hev = { path ->
+                when {
+                    windows -> DesktopHevProcessTunnel(path)
+                    mac -> DesktopMacHevTunnel(
+                        hevExecutable = path,
+                        directory = macTunRunDirectory(),
+                        planJson = { checkNotNull(macPlan.planJson) { "The TUN interface plan is not ready" } },
+                    )
+                    else -> DesktopHevFfmTunnel(path)
+                }
+            },
         )
     }
 }

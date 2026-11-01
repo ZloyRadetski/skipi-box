@@ -104,12 +104,13 @@ private fun runCommand(vararg command: String): String? = runCatching {
     text
 }.getOrNull()
 
-/** Current Wi-Fi name via the OS tools (Windows `netsh`, Linux `nmcli`); null when unavailable. */
+/** Current Wi-Fi name via the OS tools (Windows `netsh`, Linux `nmcli`, macOS `networksetup`); null when unavailable. */
 internal fun readDesktopWifiSsid(): String? {
     val os = System.getProperty("os.name").orEmpty().lowercase()
     return when {
         "win" in os -> runCommand("netsh", "wlan", "show", "interfaces")?.let(::parseNetshWlanSsid)
         "linux" in os -> runCommand("nmcli", "-t", "-f", "active,ssid", "dev", "wifi")?.let(::parseNmcliActiveSsid)
+        "mac" in os -> runCommand("/usr/sbin/networksetup", "-getairportnetwork", "en0")?.let(::parseMacWifiSsid)
         else -> null
     }
 }
@@ -156,3 +157,8 @@ internal fun evaluateDesktopNetworkAutomation(
     )
     return DesktopNetworkAutomationStep(networkId, action)
 }
+
+/** `networksetup -getairportnetwork`: "Current Wi-Fi Network: <name>", or a sentence when not associated. */
+internal fun parseMacWifiSsid(output: String): String? =
+    output.lineSequence().map(String::trim).firstOrNull { it.startsWith("Current Wi-Fi Network:") }
+        ?.substringAfter(':')?.trim()?.takeIf(String::isNotEmpty)

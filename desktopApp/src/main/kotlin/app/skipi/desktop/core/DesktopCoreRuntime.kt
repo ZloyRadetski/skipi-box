@@ -14,7 +14,7 @@ data class DesktopCoreRuntime(
     val geoSite: Path,
     /** Present on Linux builds that ship the TUN mode. */
     val hevLibrary: Path? = null,
-    /** Present on Windows builds that ship the TUN mode: hev-socks5-tunnel, run as its own process. */
+    /** Present on Windows and macOS builds that ship the TUN mode: hev-socks5-tunnel, run as its own process. */
     val hevExecutable: Path? = null,
 )
 
@@ -32,9 +32,12 @@ object DesktopCoreRuntimes {
         }
     }
 
-    fun fromDirectory(directory: Path): Result<DesktopCoreRuntime> = runCatching {
+    fun fromDirectory(
+        directory: Path,
+        osName: String = System.getProperty("os.name").orEmpty(),
+    ): Result<DesktopCoreRuntime> = runCatching {
         val runtimeDirectory = directory.toAbsolutePath().normalize()
-        val library = runtimeDirectory.resolve(libraryFileName())
+        val library = runtimeDirectory.resolve(libraryFileName(osName))
         val geoIp = runtimeDirectory.resolve("geoip.dat")
         val geoSite = runtimeDirectory.resolve("geosite.dat")
         val missing = listOf(library, geoIp, geoSite).filterNot(::isNonEmptyRegularFile)
@@ -42,7 +45,12 @@ object DesktopCoreRuntimes {
             "Incomplete SKIPI Core desktop runtime: ${missing.joinToString { it.fileName.toString() }}"
         }
         val hev = runtimeDirectory.resolve("libhev-socks5-tunnel.so").takeIf(::isNonEmptyRegularFile)
-        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite, hev, windowsHevExecutable(runtimeDirectory))
+        val hevExecutable = if (osName.contains("mac", ignoreCase = true)) {
+            macHevExecutable(runtimeDirectory)
+        } else {
+            windowsHevExecutable(runtimeDirectory)
+        }
+        DesktopCoreRuntime(runtimeDirectory, library, geoIp, geoSite, hev, hevExecutable)
     }
 
     private fun candidateDirectories(): List<Path> = buildList {
@@ -72,10 +80,15 @@ object DesktopCoreRuntimes {
         return executable.takeIf { complete }
     }
 
-    private fun libraryFileName(): String = when {
-        isWindows() -> "skipicore.dll"
-        isLinux() -> "libskipicore.so"
-        else -> error("SKIPI Core desktop runtime is currently available only on Windows and Linux")
+    /** macOS runs hev as a root process of its own, so the bare executable is enough. */
+    private fun macHevExecutable(runtimeDirectory: Path): Path? =
+        runtimeDirectory.resolve("hev").resolve("hev-socks5-tunnel").takeIf(::isNonEmptyRegularFile)
+
+    private fun libraryFileName(osName: String = System.getProperty("os.name").orEmpty()): String = when {
+        osName.contains("windows", ignoreCase = true) -> "skipicore.dll"
+        osName.contains("linux", ignoreCase = true) -> "libskipicore.so"
+        osName.contains("mac", ignoreCase = true) -> "libskipicore.dylib"
+        else -> error("SKIPI Core desktop runtime is currently available only on Windows, Linux and macOS")
     }
 
     private fun isWindows(): Boolean =

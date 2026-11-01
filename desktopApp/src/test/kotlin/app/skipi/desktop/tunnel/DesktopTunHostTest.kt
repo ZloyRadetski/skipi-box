@@ -41,6 +41,26 @@ class DesktopTunHostTest {
         isElevated = { elevated },
     )
 
+    private fun macRuntime(hev: Boolean = true) = DesktopCoreRuntime(
+        directory = directory,
+        library = directory.resolve("libskipicore.dylib"),
+        geoIp = directory.resolve("geoip.dat"),
+        geoSite = directory.resolve("geosite.dat"),
+        hevExecutable = directory.resolve("hev").resolve("hev-socks5-tunnel").takeIf { hev },
+    )
+
+    private fun macHost(
+        runtime: Result<DesktopCoreRuntime> = Result.success(macRuntime()),
+        probe: () -> String? = { null },
+    ) = DesktopTunHost(
+        isLinux = false,
+        isMac = true,
+        runtime = { runtime },
+        coreProbe = probe,
+        device = { error("not used") },
+        hev = { error("not used") },
+    )
+
     private fun host(
         linux: Boolean = true,
         runtime: Result<DesktopCoreRuntime> = Result.success(runtime()),
@@ -132,5 +152,31 @@ class DesktopTunHostTest {
         assertTrue(windowsHost(elevated = false).needsElevation())
         assertEquals(false, windowsHost(elevated = true).needsElevation())
         assertEquals(false, host().needsElevation())
+    }
+
+    @Test
+    fun macIsSupportedAndAvailableWithTheHevExecutable() {
+        val host = macHost()
+
+        assertTrue(host.hostSupported)
+        assertNull(host.unavailableReason())
+    }
+
+    @Test
+    fun macAsksForAdministratorRightsWhenTheTunnelStartsNotUpFront() {
+        // The password prompt belongs to the moment TUN is switched on; the app itself is never elevated.
+        assertEquals(false, macHost().needsElevation())
+    }
+
+    @Test
+    fun macWithoutTheHevExecutableReportsIt() {
+        val reason = macHost(runtime = Result.success(macRuntime(hev = false))).unavailableReason()
+
+        assertTrue("hev-socks5-tunnel" in reason.orEmpty(), reason)
+    }
+
+    @Test
+    fun macPassesTheCoreProbeReasonThrough() {
+        assertEquals("not allowed", macHost(probe = { "not allowed" }).unavailableReason())
     }
 }

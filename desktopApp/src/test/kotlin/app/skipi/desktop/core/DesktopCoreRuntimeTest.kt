@@ -222,4 +222,41 @@ class DesktopCoreRuntimeTest {
             closed = true
         }
     }
+
+    @Test
+    fun theMacRuntimeUsesTheDylibAndAHevExecutableWithoutAnExtension() {
+        val directory = Files.createTempDirectory("skipi-core-runtime-mac-")
+        try {
+            listOf("libskipicore.dylib", "geoip.dat", "geosite.dat").forEach { name ->
+                Files.writeString(directory.resolve(name), name)
+            }
+            val without = DesktopCoreRuntimes.fromDirectory(directory, osName = "Mac OS X").getOrThrow()
+            assertEquals(directory.toAbsolutePath().normalize().resolve("libskipicore.dylib"), without.library)
+            assertEquals(null, without.hevExecutable)
+
+            val hev = Files.createDirectories(directory.resolve("hev"))
+            Files.writeString(hev.resolve("hev-socks5-tunnel"), "hev")
+            val with = DesktopCoreRuntimes.fromDirectory(directory, osName = "Mac OS X").getOrThrow()
+            assertEquals(directory.toAbsolutePath().normalize().resolve("hev").resolve("hev-socks5-tunnel"), with.hevExecutable)
+        } finally {
+            Files.walk(directory).use { paths ->
+                paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+            }
+        }
+    }
+
+    @Test
+    fun aMacDirectoryWithoutTheDylibIsIncomplete() {
+        val directory = Files.createTempDirectory("skipi-core-runtime-mac-missing-")
+        try {
+            listOf("libskipicore.so", "skipicore.dll", "geoip.dat", "geosite.dat").forEach { name ->
+                Files.writeString(directory.resolve(name), name)
+            }
+            assertTrue(DesktopCoreRuntimes.fromDirectory(directory, osName = "Mac OS X").isFailure)
+        } finally {
+            Files.walk(directory).use { paths ->
+                paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+            }
+        }
+    }
 }

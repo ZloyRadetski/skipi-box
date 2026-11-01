@@ -26,8 +26,18 @@ internal fun DesktopAppSettings.tunInterfacePlan(enableIpv6: Boolean = false): T
  * carries IPv6 is the active profile's `ipv6`, the same value its generated Xray config is built
  * with, so the interface and the proxy core agree. Without a profile IPv6 stays off.
  */
-internal fun desktopTunInterfacePlan(settings: DesktopAppSettings, configLibrary: DesktopConfigLibrary): TunInterfacePlan =
-    settings.tunInterfacePlan(enableIpv6 = configLibrary.activeProfileRuntime()?.plan?.enableIpv6 ?: false)
+internal fun desktopTunInterfacePlan(
+    settings: DesktopAppSettings,
+    configLibrary: DesktopConfigLibrary,
+    macInterfaces: (() -> List<String>)? = macInterfaceListerOrNull(),
+): TunInterfacePlan {
+    val plan = settings.tunInterfacePlan(enableIpv6 = configLibrary.activeProfileRuntime()?.plan?.enableIpv6 ?: false)
+    // macOS names its tunnel interfaces utunN and hev opens one of them, so the name is a free number.
+    return if (macInterfaces == null) plan else plan.copy(name = pickMacTunInterfaceName(macInterfaces()))
+}
+
+private fun macInterfaceListerOrNull(): (() -> List<String>)? =
+    if (System.getProperty("os.name").orEmpty().contains("mac", ignoreCase = true)) ::macInterfaceNames else null
 
 /**
  * hev forwards the tunnel's traffic to the SOCKS inbound of the Core session that is running, with

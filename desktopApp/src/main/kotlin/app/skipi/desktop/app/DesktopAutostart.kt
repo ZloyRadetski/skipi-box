@@ -54,10 +54,65 @@ internal interface DesktopAutostartControl {
     fun apply(enabled: Boolean, launcher: String): Result<Unit>
 }
 
-/** Windows registers per-user autostart in the registry, everything else in the XDG autostart directory. */
+/**
+ * Windows registers per-user autostart in the registry, macOS in a LaunchAgent, everything else in
+ * the XDG autostart directory.
+ */
 internal fun desktopAutostartFor(
     windows: Boolean = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true),
-): DesktopAutostartControl = if (windows) DesktopWindowsAutostart() else DesktopAutostart()
+    mac: Boolean = System.getProperty("os.name").orEmpty().contains("mac", ignoreCase = true),
+): DesktopAutostartControl = when {
+    windows -> DesktopWindowsAutostart()
+    mac -> DesktopMacAutostart()
+    else -> DesktopAutostart()
+}
+
+private const val MacAgentLabel = "app.skipi.desktop"
+
+private fun String.escapeXml(): String = replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+/** The launchd job that starts the application hidden when the user logs in. */
+internal fun macAutostartPlist(launcher: String): String = buildString {
+    appendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+    appendLine("<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">")
+    appendLine("<plist version=\"1.0\">")
+    appendLine("<dict>")
+    appendLine("  <key>Label</key>")
+    appendLine("  <string>$MacAgentLabel</string>")
+    appendLine("  <key>ProgramArguments</key>")
+    appendLine("  <array>")
+    appendLine("    <string>${launcher.escapeXml()}</string>")
+    appendLine("    <string>--hidden</string>")
+    appendLine("  </array>")
+    appendLine("  <key>RunAtLoad</key>")
+    appendLine("  <true/>")
+    appendLine("</dict>")
+    appendLine("</plist>")
+}
+
+/** Registers or removes the LaunchAgent in the user's `~/Library/LaunchAgents`. */
+internal class DesktopMacAutostart(
+    private val launchAgents: Path = Path.of(System.getProperty("user.home"), "Library", "LaunchAgents"),
+) : DesktopAutostartControl {
+    private val entry: Path get() = launchAgents.resolve("$MacAgentLabel.plist")
+
+    override fun isEnabled(): Boolean = Files.isRegularFile(entry)
+
+    override fun apply(enabled: Boolean, launcher: String): Result<Unit> = runCatching {
+        if (!enabled) {
+            Files.deleteIfExists(entry)
+            return@runCatching
+        }
+        Files.createDirectories(launchAgents)
+        val temporary = entry.resolveSibling("$MacAgentLabel.plist.tmp")
+        Files.writeString(temporary, macAutostartPlist(launcher))
+        try {
+            Files.move(temporary, entry, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } catch (_: AtomicMoveNotSupportedException) {
+            Files.move(temporary, entry, StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+}
 
 /** Registers or removes the login autostart entry under the user's XDG config directory. */
 internal class DesktopAutostart(

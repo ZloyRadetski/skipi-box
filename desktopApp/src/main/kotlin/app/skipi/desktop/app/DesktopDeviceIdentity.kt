@@ -43,6 +43,15 @@ object DesktopDeviceIdentity {
                     ?.takeIf(String::isNotEmpty)
                     ?.let { return it }
             }
+        } else if (osName.contains("mac")) {
+            runCatching {
+                val process = ProcessBuilder("/usr/sbin/ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+                    .redirectErrorStream(true)
+                    .start()
+                val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                process.waitFor()
+                parseMacPlatformUuid(output)
+            }.getOrNull()?.let { return it }
         } else if (osName.contains("windows")) {
             runCatching {
                 val process = ProcessBuilder("reg", "query", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid")
@@ -107,3 +116,7 @@ object DesktopDeviceIdentity {
         )
     }
 }
+
+/** The `IOPlatformUUID` of `ioreg -rd1 -c IOPlatformExpertDevice`: stable per Mac, survives reinstalls. */
+internal fun parseMacPlatformUuid(output: String): String? =
+    Regex("\"IOPlatformUUID\"\\s*=\\s*\"([^\"]+)\"").find(output)?.groupValues?.get(1)?.trim()?.takeIf(String::isNotEmpty)
