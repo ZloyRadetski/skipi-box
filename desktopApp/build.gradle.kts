@@ -219,7 +219,7 @@ val prepareDesktopHevMacRuntime = tasks.register<Copy>("prepareDesktopHevMacRunt
 // Windows TUN: hev-socks5-tunnel runs as its own process next to the Wintun driver library.
 val prepareDesktopHevWindowsRuntime = tasks.register<PrepareDesktopHevWindowsRuntimeTask>("prepareDesktopHevWindowsRuntime") {
     hevVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
-    expectedArchiveSha256.set("08c85eb47eea60fad4a2ace9f85577b05056be08118924f8305f2f03b7dd9994")
+    expectedArchiveSha256.set("a9209ad121a3f636f814b0bb899b6464d3ec201eabbb3a82f2aa486e32879ba7")
     wintunLicense.set(desktopHevSourceDirectory.file("third-part/wintun/LICENSE.txt"))
     outputDirectory.set(desktopCoreRuntime.map { root -> root.dir("hev") })
     onlyIf { isWindowsHost }
