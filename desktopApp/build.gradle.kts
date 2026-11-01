@@ -7,7 +7,13 @@ import java.io.File
 
 val skipiCoreSourceDirectory = rootProject.file("../skipi-core")
 val isWindowsHost = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
-val desktopCoreLibraryName = if (isWindowsHost) "skipicore.dll" else "libskipicore.so"
+val isMacHost = System.getProperty("os.name").orEmpty().contains("mac", ignoreCase = true)
+val isLinuxHost = System.getProperty("os.name").orEmpty().contains("linux", ignoreCase = true)
+val desktopCoreLibraryName = when {
+    isWindowsHost -> "skipicore.dll"
+    isMacHost -> "libskipicore.dylib"
+    else -> "libskipicore.so"
+}
 
 fun findDefaultDesktopCompiler(binaryName: String): String {
     val isWindows = System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
@@ -79,7 +85,22 @@ val buildDesktopHev = tasks.register<BuildDesktopHevTask>("buildDesktopHev") {
     cCompiler.set(providers.gradleProperty("skipiCoreDesktopCc").orElse("gcc"))
     workDirectory.set(layout.buildDirectory.dir("native/hev-socks5-tunnel-src"))
     outputLibrary.set(layout.buildDirectory.file("native/hev-socks5-tunnel/libhev-socks5-tunnel.so"))
-    onlyIf { !isWindowsHost }
+    onlyIf { !isWindowsHost && !isMacHost }
+}
+
+// macOS TUN: hev-socks5-tunnel runs as a root process of its own, started by the app after the user
+// has granted administrator rights; it creates the utun interface itself.
+val buildDesktopHevMac = tasks.register<BuildDesktopHevMacTask>("buildDesktopHevMac") {
+    sourceDirectory.set(desktopHevSourceDirectory)
+    sources.from(
+        fileTree(desktopHevSourceDirectory) {
+            exclude(".git", "bin/**", "build/**", "third-part/*/bin/**", "third-part/*/build/**")
+        },
+    )
+    cCompiler.set(providers.gradleProperty("skipiCoreDesktopCc").orElse("cc"))
+    workDirectory.set(layout.buildDirectory.dir("native/hev-socks5-tunnel-mac-src"))
+    outputExecutable.set(layout.buildDirectory.file("native/hev-socks5-tunnel-mac/hev-socks5-tunnel"))
+    onlyIf { isMacHost }
 }
 
 // Compose packages app resources from <root>/common and platform-specific
@@ -142,7 +163,7 @@ compose.desktop {
         jvmArgs += "--enable-native-access=ALL-UNNAMED"
         // glibc keeps freed native memory in per-thread arenas (C2 compiler, IO and render threads come and go),
         // which held hundreds of MB of RSS; trimming once a minute gives it back. glibc only, so not on Windows.
-        if (!isWindowsHost) jvmArgs += "-XX:TrimNativeHeapInterval=60000"
+        if (isLinuxHost) jvmArgs += "-XX:TrimNativeHeapInterval=60000"
         // The UI and its services use ~40 MB of Java heap, but G1 is allowed a quarter of RAM and keeps whatever
         // a burst made it commit. Cap it, run a GC when idle and give back what stays free (a 200 MB burst: 852 -> 13 MB).
         jvmArgs += listOf(
@@ -155,17 +176,27 @@ compose.desktop {
         nativeDistributions {
             appResourcesRootDir.set(desktopCoreResourcesRoot)
             modules("java.net.http")
-            targetFormats(TargetFormat.Msi)
+            targetFormats(if (isMacHost) TargetFormat.Dmg else TargetFormat.Msi)
             packageName = ProjectConfig.PROJECT_NAME
             packageVersion = ProjectConfig.VERSION_NAME
             description = "SKIPI desktop proxy client"
             vendor = "Radetski"
+            macOS {
+                bundleID = "app.skipi.desktop"
+                dockName = ProjectConfig.PROJECT_NAME
+            }
         }
     }
 }
 
 tasks.matching { it.name == "prepareAppResources" }.configureEach {
-    dependsOn(buildDesktopCore, prepareDesktopCoreRuntime, prepareDesktopHevRuntime, prepareDesktopHevWindowsRuntime)
+    dependsOn(
+        buildDesktopCore,
+        prepareDesktopCoreRuntime,
+        prepareDesktopHevRuntime,
+        prepareDesktopHevWindowsRuntime,
+        prepareDesktopHevMacRuntime,
+    )
 }
 
 prepareDesktopCoreRuntime.configure {
@@ -175,7 +206,14 @@ prepareDesktopCoreRuntime.configure {
 val prepareDesktopHevRuntime = tasks.register<Copy>("prepareDesktopHevRuntime") {
     from(buildDesktopHev.flatMap { task -> task.outputLibrary })
     into(desktopCoreRuntime)
-    onlyIf { !isWindowsHost }
+    onlyIf { !isWindowsHost && !isMacHost }
+}
+
+val prepareDesktopHevMacRuntime = tasks.register<Copy>("prepareDesktopHevMacRuntime") {
+    from(buildDesktopHevMac.flatMap { task -> task.outputExecutable })
+    into(desktopCoreRuntime.map { root -> root.dir("hev") })
+    filePermissions { unix("rwxr-xr-x") }
+    onlyIf { isMacHost }
 }
 
 // Windows TUN: hev-socks5-tunnel runs as its own process next to the Wintun driver library.

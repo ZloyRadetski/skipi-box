@@ -91,9 +91,6 @@ object DesktopCoreRuntimes {
         else -> error("SKIPI Core desktop runtime is currently available only on Windows, Linux and macOS")
     }
 
-    private fun isWindows(): Boolean =
-        System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
-
     private fun isLinux(): Boolean =
         System.getProperty("os.name").orEmpty().contains("linux", ignoreCase = true)
 
