@@ -91,7 +91,8 @@ class DesktopProxyHomeLatencyFabTest {
     fun connectedSubscriptionHeaderLatencyActionStillTestsItsWholeSubscription() {
         val effects = renderAndClick(
             input = connectedSubscriptionInput(),
-            position = Offset(334f, 293f),
+            // Below the connection card, whose live-facts panel (time and tunnel IP) is 49px taller than before.
+            position = Offset(334f, 342f),
             screenshotName = "subscription-card-before-click.png",
         )
 
