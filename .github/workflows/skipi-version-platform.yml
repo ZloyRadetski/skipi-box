@@ -618,7 +618,8 @@ jobs:
           $install = Start-Process msiexec -ArgumentList '/a', (Resolve-Path SKIPI-windows-x64.msi).Path, '/qn', "TARGETDIR=$extracted" -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "msiexec failed to unpack the installer: $($install.ExitCode)" }
           Get-ChildItem $extracted -Recurse -File | ForEach-Object { $_.FullName.Substring($extracted.Length + 1) } | Out-File msi-listing.txt -Encoding ascii
-          bash desktopApp/packaging/verify-listing.sh windows < msi-listing.txt
+          # PowerShell reserves "<", so the listing is piped in.
+          Get-Content msi-listing.txt | bash desktopApp/packaging/verify-listing.sh windows
           if ($LASTEXITCODE -ne 0) { throw 'The MSI is missing files the application needs.' }
 
           foreach ($file in 'SKIPI-windows-x64.msi', 'SKIPI-windows-x64-portable.zip') {
@@ -703,6 +704,12 @@ jobs:
 
       - name: Build the portable image, the deb and the rpm
         run: ./gradlew --no-daemon :desktopApp:createDistributable :desktopApp:packageDeb :desktopApp:packageRpm "-PskipiCoreDesktopLibrary=$SKIPI_CORE_LIB"
+
+      # jpackage reports its reason only in its own log files, not in the Gradle output.
+      - name: Show the jpackage logs
+        if: failure()
+        run: |
+          for f in desktopApp/build/compose/logs/*/*; do echo "::group::$f"; cat "$f"; echo "::endgroup::"; done || true
 
       # The AppImage is built from the application image by our script. appimagetool is a pinned release
       # whose checksum is verified before it is run.
