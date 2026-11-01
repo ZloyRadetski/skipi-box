@@ -120,7 +120,7 @@ val prepareDesktopCoreRuntime = tasks.register<PrepareDesktopCoreRuntimeTask>("p
     coreLicensePath.set(rootProject.file("../skipi-core/LICENSE").absolutePath)
     outputLibraryName.set(desktopCoreLibraryName)
     xrayVersion.set(ProjectConfig.XRAY_CORE_VERSION)
-    expectedGeoArchiveSha256.set("fce33e81cccf50e7aab572b175519a50b5e0f9d2f5c8d1ed73012ea5c9ad4d58")
+    expectedGeoArchiveSha256.set("2e04a9995a6f2ad1b28c0bb25c708ecb2695e43a1c9c7889c4b6ac2b48cf7a6a")
     outputDirectory.set(desktopCoreRuntime)
 }
 
