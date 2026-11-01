@@ -220,6 +220,7 @@ compose.desktop {
                 }
             }
             macOS {
+                iconFile.set(project.file("packaging/icons/skipi.icns"))
                 bundleID = "app.skipi.desktop"
                 dockName = ProjectConfig.PROJECT_NAME
                 packageVersion = macPackageVersion
