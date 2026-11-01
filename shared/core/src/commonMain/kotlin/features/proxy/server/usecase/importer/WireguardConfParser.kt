@@ -89,8 +89,23 @@ fun parseWireguardConf(text: String): WireguardConfParseResult {
         val i4 = interfaceProps["i4"]
         val i5 = interfaceProps["i5"]
 
-        val isAmneziaWg = listOf(jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4, i1, i2, i3, i4, i5)
-            .any { !it.isNullOrBlank() }
+        // AmneziaWG 3.0 additions: [Interface] keys and a ranged [Peer] PersistentKeepalive.
+        val headerProtectionKey = interfaceProps["headerprotectionkey"]
+        val contentPaddingAddition = interfaceProps["contentpaddingaddition"]
+        val rekeyAfterTime = interfaceProps["rekeyaftertime"]
+        val rekeyTimeout = interfaceProps["rekeytimeout"]
+        val rejectAfterTime = interfaceProps["rejectaftertime"]
+        val keepaliveTimeout = interfaceProps["keepalivetimeout"]
+        val maxHandshakeAttempts = interfaceProps["maxhandshakeattempts"]
+        // `off` is wg-quick's spelling of "no keepalive".
+        val persistentKeepalive = peerProps["persistentkeepalive"]
+            ?.takeUnless { it.equals("off", ignoreCase = true) }.orEmpty()
+
+        val isAmneziaWg = listOf(
+            jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4, i1, i2, i3, i4, i5,
+            headerProtectionKey, contentPaddingAddition, rekeyAfterTime, rekeyTimeout,
+            rejectAfterTime, keepaliveTimeout, maxHandshakeAttempts,
+        ).any { !it.isNullOrBlank() }
 
         val remarks = foundFirstComment.ifBlank {
             if (isAmneziaWg) "Amnezia WG ($server:$port)" else "WireGuard ($server:$port)"
@@ -122,6 +137,14 @@ fun parseWireguardConf(text: String): WireguardConfParseResult {
                 i3 = i3.orEmpty(),
                 i4 = i4.orEmpty(),
                 i5 = i5.orEmpty(),
+                headerProtectionKey = headerProtectionKey.orEmpty(),
+                contentPaddingAddition = contentPaddingAddition.orEmpty(),
+                rekeyAfterTime = rekeyAfterTime.orEmpty(),
+                rekeyTimeout = rekeyTimeout.orEmpty(),
+                rejectAfterTime = rejectAfterTime.orEmpty(),
+                keepaliveTimeout = keepaliveTimeout.orEmpty(),
+                maxHandshakeAttempts = maxHandshakeAttempts.orEmpty(),
+                persistentKeepalive = persistentKeepalive,
             )
         } else {
             Wireguard(

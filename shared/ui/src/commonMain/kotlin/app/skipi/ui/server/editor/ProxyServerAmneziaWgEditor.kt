@@ -340,6 +340,94 @@ fun LazyListScope.amneziaWgProxyServer(awgEdit: AmneziaWg) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
         TextField(
+            label = "HeaderProtectionKey",
+            state = rememberTextFieldState(initialText = awgEdit.headerProtectionKey),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.headerProtectionKey = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "ContentPaddingAddition",
+            state = rememberTextFieldState(initialText = awgEdit.contentPaddingAddition),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.contentPaddingAddition = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "RekeyAfterTime",
+            state = rememberTextFieldState(initialText = awgEdit.rekeyAfterTime),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.rekeyAfterTime = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "RekeyTimeout",
+            state = rememberTextFieldState(initialText = awgEdit.rekeyTimeout),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.rekeyTimeout = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "RejectAfterTime",
+            state = rememberTextFieldState(initialText = awgEdit.rejectAfterTime),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.rejectAfterTime = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "KeepaliveTimeout",
+            state = rememberTextFieldState(initialText = awgEdit.keepaliveTimeout),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.keepaliveTimeout = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "MaxHandshakeAttempts",
+            state = rememberTextFieldState(initialText = awgEdit.maxHandshakeAttempts),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.maxHandshakeAttempts = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
+            label = "PersistentKeepalive",
+            state = rememberTextFieldState(initialText = awgEdit.persistentKeepalive),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation {
+                awgEdit.persistentKeepalive = asCharSequence().toString()
+            },
+            modifier = Modifier.padding(bottom = 12.dp),
+            onKeyboardAction = { focusManager.clearFocus() },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        TextField(
             label = stringResource(Res.string.proxy_editor_final_mask),
             state = rememberTextFieldState(initialText = awgEdit.finalMask),
             lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 5, maxHeightInLines = 20),

@@ -573,6 +573,23 @@ internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgChains(cha
     }
 }
 
+private const val AwgRangeMax = 65535
+
+/** AmneziaWG 3.0 timing / padding / keepalive values: empty, `N` or `N-M`, 0..65535, N <= M. */
+internal fun MutableList<ProxyServerValidationIssue>.validateAmneziaWgRanges(ranges: List<Pair<String, String>>) {
+    ranges.forEach { (name, value) ->
+        if (!value.isValidAmneziaWgU16Range()) addIssue(ProxyServerValidationError.AmneziaWgRangeInvalid, name, AwgRangeMax)
+    }
+}
+
+private fun String.isValidAmneziaWgU16Range(): Boolean {
+    if (isEmpty()) return true
+    val parts = split('-')
+    if (parts.size > 2 || parts.any { it.isEmpty() || !it.all(Char::isDigit) }) return false
+    val bounds = parts.map { it.toIntOrNull() ?: return false }
+    return bounds.all { it in 0..AwgRangeMax } && bounds.first() <= bounds.last()
+}
+
 private const val AwgChainMaxBytes = 4096
 private val AwgChainWhitespace = Regex("\\s+")
 

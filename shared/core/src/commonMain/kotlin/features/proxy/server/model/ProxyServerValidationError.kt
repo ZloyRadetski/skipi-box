@@ -60,6 +60,7 @@ enum class ProxyServerValidationError {
     AmneziaWgSSizeOutOfRange,
     AmneziaWgHeaderInvalid,
     AmneziaWgChainInvalid,
+    AmneziaWgRangeInvalid,
 }
 
 fun proxyValidationIssue(

@@ -56,6 +56,15 @@ data class AmneziaWg(
     var i3: String = "",
     var i4: String = "",
     var i5: String = "",
+    // AmneziaWG 3.0. Every value is empty (not set), `N` or an inclusive range `N-M`, 0..65535.
+    var headerProtectionKey: String = "",
+    var contentPaddingAddition: String = "",
+    var rekeyAfterTime: String = "",
+    var rekeyTimeout: String = "",
+    var rejectAfterTime: String = "",
+    var keepaliveTimeout: String = "",
+    var maxHandshakeAttempts: String = "",
+    var persistentKeepalive: String = "",
 ) : UrlProxyServer<AmneziaWg> {
 
     override fun getInfo(): ProxyServerInfo {
@@ -80,6 +89,7 @@ data class AmneziaWg(
                             put("endpoint", toWireguardEndpoint())
                             put("publicKey", publicKey)
                             putIfNotBlank("preSharedKey", preSharedKey)
+                            putAwgRange("keepAlive", persistentKeepalive)
                         },
                     )
                 }
@@ -117,6 +127,13 @@ data class AmneziaWg(
                 listOf("i1" to i1, "i2" to i2, "i3" to i3, "i4" to i4, "i5" to i5).forEach { (name, value) ->
                     value.trim().takeIf(String::isNotEmpty)?.let { put(name, it) }
                 }
+                putIfNotBlank("headerProtectionKey", headerProtectionKey.trim())
+                putAwgRange("contentPaddingAddition", contentPaddingAddition)
+                putAwgRange("rekeyAfterTime", rekeyAfterTime)
+                putAwgRange("rekeyTimeout", rekeyTimeout)
+                putAwgRange("rejectAfterTime", rejectAfterTime)
+                putAwgRange("keepaliveTimeout", keepaliveTimeout)
+                putAwgRange("maxHandshakeAttempts", maxHandshakeAttempts)
             },
             streamSettings = finalMask.toXrayJsonObjectOrNull("FinalMask")?.let { parsedFinalMask ->
                 buildJsonObject {
@@ -155,6 +172,14 @@ data class AmneziaWg(
         this.i3 = url.parameters["i3"] ?: ""
         this.i4 = url.parameters["i4"] ?: ""
         this.i5 = url.parameters["i5"] ?: ""
+        this.headerProtectionKey = url.parameters["headerprotectionkey"]?.replace(' ', '+') ?: ""
+        this.contentPaddingAddition = url.parameters["contentpaddingaddition"] ?: ""
+        this.rekeyAfterTime = url.parameters["rekeyaftertime"] ?: ""
+        this.rekeyTimeout = url.parameters["rekeytimeout"] ?: ""
+        this.rejectAfterTime = url.parameters["rejectaftertime"] ?: ""
+        this.keepaliveTimeout = url.parameters["keepalivetimeout"] ?: ""
+        this.maxHandshakeAttempts = url.parameters["maxhandshakeattempts"] ?: ""
+        this.persistentKeepalive = url.parameters["persistentkeepalive"] ?: ""
         return this
     }
 
@@ -195,6 +220,16 @@ data class AmneziaWg(
             if (this@AmneziaWg.i3.isNotBlank()) parameters.append("i3", this@AmneziaWg.i3)
             if (this@AmneziaWg.i4.isNotBlank()) parameters.append("i4", this@AmneziaWg.i4)
             if (this@AmneziaWg.i5.isNotBlank()) parameters.append("i5", this@AmneziaWg.i5)
+            listOf(
+                "headerprotectionkey" to headerProtectionKey,
+                "contentpaddingaddition" to contentPaddingAddition,
+                "rekeyaftertime" to rekeyAfterTime,
+                "rekeytimeout" to rekeyTimeout,
+                "rejectaftertime" to rejectAfterTime,
+                "keepalivetimeout" to keepaliveTimeout,
+                "maxhandshakeattempts" to maxHandshakeAttempts,
+                "persistentkeepalive" to persistentKeepalive,
+            ).forEach { (name, value) -> if (value.isNotBlank()) parameters.append(name, value) }
 
             fragment = this@AmneziaWg.remarks
         }.buildString()
@@ -231,6 +266,14 @@ data class AmneziaWg(
             i3 = other.i3
             i4 = other.i4
             i5 = other.i5
+            headerProtectionKey = other.headerProtectionKey
+            contentPaddingAddition = other.contentPaddingAddition
+            rekeyAfterTime = other.rekeyAfterTime
+            rekeyTimeout = other.rekeyTimeout
+            rejectAfterTime = other.rejectAfterTime
+            keepaliveTimeout = other.keepaliveTimeout
+            maxHandshakeAttempts = other.maxHandshakeAttempts
+            persistentKeepalive = other.persistentKeepalive
         }
     }
 
@@ -251,10 +294,22 @@ data class AmneziaWg(
         validateOptionalJsonObject(finalMask, "FinalMask")
         validateAmneziaWgObfuscation(jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4)
         validateAmneziaWgChains(listOf("I1" to i1, "I2" to i2, "I3" to i3, "I4" to i4, "I5" to i5))
+        validateWireguardKey(headerProtectionKey, "HeaderProtectionKey", required = false)
+        validateAmneziaWgRanges(
+            listOf(
+                "ContentPaddingAddition" to contentPaddingAddition,
+                "RekeyAfterTime" to rekeyAfterTime,
+                "RekeyTimeout" to rekeyTimeout,
+                "RejectAfterTime" to rejectAfterTime,
+                "KeepaliveTimeout" to keepaliveTimeout,
+                "MaxHandshakeAttempts" to maxHandshakeAttempts,
+                "PersistentKeepalive" to persistentKeepalive.takeUnless { it.equals("off", ignoreCase = true) }.orEmpty(),
+            ),
+        )
     }
 
     override fun connectionFingerprint(): String {
-        return "amneziawg|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address|$mtu|$reserved|$jc|$jmin|$jmax|$s1|$s2|$s3|$s4|$h1|$h2|$h3|$h4|$i1|$i2|$i3|$i4|$i5|$finalMask"
+        return "amneziawg|${server.trim().lowercase()}:${port.trim()}|$publicKey|$secretKey|$preSharedKey|$address|$mtu|$reserved|$jc|$jmin|$jmax|$s1|$s2|$s3|$s4|$h1|$h2|$h3|$h4|$i1|$i2|$i3|$i4|$i5|$finalMask|$headerProtectionKey|$contentPaddingAddition|$rekeyAfterTime|$rekeyTimeout|$rejectAfterTime|$keepaliveTimeout|$maxHandshakeAttempts|$persistentKeepalive"
     }
 
     /**
@@ -274,4 +329,15 @@ data class AmneziaWg(
         }
         return "$host:$port"
     }
+}
+
+/**
+ * An AmneziaWG 3.0 `N` / `N-M` value: a JSON number for a single value and a string for a range
+ * (the native runner reads both); empty, `0` and `off` mean "not set".
+ */
+private fun kotlinx.serialization.json.JsonObjectBuilder.putAwgRange(name: String, value: String) {
+    val text = value.trim()
+    if (text.isEmpty() || text == "0" || text.equals("off", ignoreCase = true)) return
+    val number = text.toIntOrNull()
+    if (number != null) put(name, number) else put(name, text)
 }
