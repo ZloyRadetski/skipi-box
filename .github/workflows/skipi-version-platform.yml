@@ -587,6 +587,9 @@ jobs:
           echo "SKIPI Core $core_version: checksum $actual"
           echo "SKIPI_CORE_DLL=$(cygpath -m "$PWD/core-lib/skipicore.dll")" >> "$GITHUB_ENV"
 
+          # The build copies the Core's GPL license from the sibling checkout, so it must exist.
+          git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
+
       - name: Build the portable application image
         shell: bash
         run: ./gradlew.bat --no-daemon :desktopApp:createDistributable "-PskipiCoreDesktopLibrary=$SKIPI_CORE_DLL"
@@ -616,3 +619,183 @@ jobs:
         run: |
           set -euo pipefail
           gh release upload "$TAG_NAME" SKIPI-windows-x64-portable.zip --clobber
+
+  desktop-linux:
+    name: Build Linux Desktop (portable)
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION_NAME: ${{ needs.release.outputs.version_name }}
+      TAG_NAME: ${{ needs.release.outputs.tag_name }}
+      CREATE_GITHUB_RELEASE: ${{ needs.release.outputs.create_github_release }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "26"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Download the released SKIPI Core library
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          core_version="$(sed -n 's/^[[:space:]]*const val SKIPI_CORE_VERSION = "\([^"]*\)".*/\1/p' buildSrc/src/main/kotlin/BuildConfig.kt | head -n 1)"
+          if [ -z "$core_version" ]; then
+            echo "::error::Unable to read ProjectConfig.SKIPI_CORE_VERSION from buildSrc/src/main/kotlin/BuildConfig.kt."
+            exit 1
+          fi
+
+          base="https://github.com/ZloyRadetski/skipi-core/releases/download/${core_version}"
+          mkdir -p core-lib
+          curl -fsSL --retry 3 -o core-lib/libskipicore.so "$base/libskipicore.so"
+          curl -fsSL --retry 3 -o core-lib/sha256sums-desktop.txt "$base/sha256sums-desktop.txt"
+
+          expected="$(grep -E '[[:space:]]\*?libskipicore\.so$' core-lib/sha256sums-desktop.txt | cut -d' ' -f1)"
+          actual="$(sha256sum core-lib/libskipicore.so | cut -d' ' -f1)"
+          if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+            echo "::error::libskipicore.so of $core_version does not match its published checksum (expected '$expected', got '$actual')."
+            exit 1
+          fi
+          echo "SKIPI Core $core_version: checksum $actual"
+          echo "SKIPI_CORE_LIB=$PWD/core-lib/libskipicore.so" >> "$GITHUB_ENV"
+
+          # The build copies the Core's GPL license from the sibling checkout, so it must exist.
+          git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
+
+      - name: Build the portable application image
+        run: ./gradlew --no-daemon :desktopApp:createDistributable "-PskipiCoreDesktopLibrary=$SKIPI_CORE_LIB"
+
+      - name: Check the image and pack it
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image="desktopApp/build/compose/binaries/main/app/SKIPI"
+          test -d "$image" || { echo "::error::The application image $image was not produced."; exit 1; }
+          for required in libskipicore.so libhev-socks5-tunnel.so geoip.dat geosite.dat; do
+            if [ -z "$(find "$image" -name "$required" -type f -print -quit)" ]; then
+              echo "::error::The portable image is missing $required."
+              exit 1
+            fi
+          done
+          test -x "$image/bin/SKIPI" || { echo "::error::The launcher $image/bin/SKIPI is not executable."; exit 1; }
+
+          tar -C "$(dirname "$image")" -czf SKIPI-linux-x64-portable.tar.gz SKIPI
+          sum="$(sha256sum SKIPI-linux-x64-portable.tar.gz | cut -d' ' -f1)"
+          echo "SKIPI-linux-x64-portable.tar.gz sha256 $sum" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload GitHub artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: SKIPI_${{ env.VERSION_NAME }}-linux-x64-portable
+          path: SKIPI-linux-x64-portable.tar.gz
+          if-no-files-found: error
+
+      - name: Attach the archive to the GitHub Release
+        if: env.CREATE_GITHUB_RELEASE == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG_NAME" SKIPI-linux-x64-portable.tar.gz --clobber
+
+  desktop-macos:
+    name: Build macOS Desktop (Apple Silicon)
+    needs: release
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION_NAME: ${{ needs.release.outputs.version_name }}
+      TAG_NAME: ${{ needs.release.outputs.tag_name }}
+      CREATE_GITHUB_RELEASE: ${{ needs.release.outputs.create_github_release }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "26"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          check-latest: true
+
+      # No macOS library is published with the Core releases, so the build compiles it from the
+      # Core sources of the pinned version, which must sit next to this project.
+      - name: Check out SKIPI Core of the pinned version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          core_version="$(sed -n 's/^[[:space:]]*const val SKIPI_CORE_VERSION = "\([^"]*\)".*/\1/p' buildSrc/src/main/kotlin/BuildConfig.kt | head -n 1)"
+          if [ -z "$core_version" ]; then
+            echo "::error::Unable to read ProjectConfig.SKIPI_CORE_VERSION from buildSrc/src/main/kotlin/BuildConfig.kt."
+            exit 1
+          fi
+          echo "Building SKIPI Core $core_version from source"
+          git clone --depth 1 --branch "$core_version" https://github.com/ZloyRadetski/skipi-core.git ../skipi-core
+
+      - name: Build the disk image
+        run: ./gradlew --no-daemon :desktopApp:packageDmg
+
+      - name: Check the application and collect the disk image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          app="desktopApp/build/compose/binaries/main/app/SKIPI.app"
+          test -d "$app" || { echo "::error::The application bundle $app was not produced."; exit 1; }
+          for required in libskipicore.dylib geoip.dat geosite.dat hev-socks5-tunnel; do
+            if [ -z "$(find "$app" -name "$required" -type f -print -quit)" ]; then
+              echo "::error::The macOS application is missing $required."
+              exit 1
+            fi
+          done
+          hev="$(find "$app" -name hev-socks5-tunnel -type f -print -quit)"
+          test -x "$hev" || { echo "::error::$hev is not executable."; exit 1; }
+          lipo -info "$(find "$app" -name libskipicore.dylib -type f -print -quit)"
+          lipo -info "$hev"
+
+          dmg="$(find desktopApp/build/compose/binaries/main/dmg -name '*.dmg' -type f -print -quit)"
+          test -n "$dmg" || { echo "::error::No .dmg was produced."; exit 1; }
+          cp "$dmg" SKIPI-macos-arm64.dmg
+          sum="$(shasum -a 256 SKIPI-macos-arm64.dmg | cut -d' ' -f1)"
+          echo "SKIPI-macos-arm64.dmg sha256 $sum (not signed or notarized)" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload GitHub artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: SKIPI_${{ env.VERSION_NAME }}-macos-arm64
+          path: SKIPI-macos-arm64.dmg
+          if-no-files-found: error
+
+      - name: Attach the disk image to the GitHub Release
+        if: env.CREATE_GITHUB_RELEASE == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG_NAME" SKIPI-macos-arm64.dmg --clobber

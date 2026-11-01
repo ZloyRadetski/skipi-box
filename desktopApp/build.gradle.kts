@@ -157,6 +157,11 @@ tasks.named<org.gradle.language.jvm.tasks.ProcessResources>("processResources") 
     }
 }
 
+// jpackage rejects a macOS bundle version whose first number is 0, so 0.5.0 is bundled as 1.5.0.
+val macPackageVersion = ProjectConfig.VERSION_NAME.split(".").let { parts ->
+    if (parts.size == 3 && parts[0] == "0") "1.${parts[1]}.${parts[2]}" else ProjectConfig.VERSION_NAME
+}
+
 compose.desktop {
     application {
         mainClass = "app.skipi.desktop.MainKt"
@@ -184,6 +189,7 @@ compose.desktop {
             macOS {
                 bundleID = "app.skipi.desktop"
                 dockName = ProjectConfig.PROJECT_NAME
+                packageVersion = macPackageVersion
             }
         }
     }
