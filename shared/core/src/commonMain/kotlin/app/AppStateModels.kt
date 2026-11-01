@@ -21,6 +21,8 @@ data class SubscriptionGroupState(
     val userAgent: String,
     val updateInterval: String,
     val hwid: String = "",
+    /** "" follows the global device-headers setting, "on"/"off" override it for this subscription. */
+    val deviceHeaders: String = "",
     val ageSecretKey: String = "",
     val updateViaProxy: Boolean = false,
     val autoOverrideRules: Boolean = true,

@@ -75,7 +75,7 @@ class DesktopBackupTest {
         subscriptions = SubscriptionProviderLibrary(
             subscriptions = listOf(
                 StoredSubscription(id = 1, url = "https://one.example/sub", name = "One", userAgent = "ua1", updateViaProxy = true),
-                StoredSubscription(id = 7, url = "https://seven.example/sub", name = "Seven", enabled = false, hwid = "h7"),
+                StoredSubscription(id = 7, url = "https://seven.example/sub", name = "Seven", enabled = false, hwid = "h7", deviceHeaders = "on"),
             ),
         ),
         configs = ConfigProfileLibrary(
@@ -90,6 +90,13 @@ class DesktopBackupTest {
     private fun roundTrip(data: DesktopUserData, current: DesktopUserData = DesktopUserData()): DesktopRestorePreview {
         val json = encodeAppBackup(data.toAppBackupFile(createdAtMillis = 1L, appVersionName = "0.4.1", appVersionCode = 180))
         return decodeAppBackup(json).toDesktopRestorePreview(current)
+    }
+
+    @Test
+    fun theSubscriptionDeviceHeadersChoiceSurvivesBackupAndRestore() {
+        val restored = roundTrip(userData()).userData.subscriptions.subscriptions
+        assertEquals("on", restored.single { it.url == "https://seven.example/sub" }.deviceHeaders)
+        assertEquals("", restored.single { it.url == "https://one.example/sub" }.deviceHeaders)
     }
 
     @Test

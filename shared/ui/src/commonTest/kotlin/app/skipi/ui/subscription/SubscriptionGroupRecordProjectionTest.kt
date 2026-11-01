@@ -59,6 +59,7 @@ class SubscriptionGroupRecordProjectionTest {
         assertEquals("SKIPI/1/Desktop", ui.userAgent)
         assertEquals("24", ui.updateInterval)
         assertEquals("persisted-hwid", ui.hwid)
+        assertEquals("on", ui.deviceHeaders)
         assertEquals("age-key", ui.ageSecretKey)
         assertEquals(true, ui.updateViaProxy)
         assertEquals(false, ui.autoOverrideRules)
@@ -97,6 +98,7 @@ class SubscriptionGroupRecordProjectionTest {
             userAgent = "custom agent",
             updateInterval = "48",
             hwid = "new-hwid",
+            deviceHeaders = "off",
             ageSecretKey = "new-age-key",
             updateViaProxy = false,
             autoOverrideRules = true,
@@ -115,6 +117,7 @@ class SubscriptionGroupRecordProjectionTest {
         assertEquals("custom agent", savedDraft.userAgent)
         assertEquals("48", savedDraft.updateInterval)
         assertEquals("new-hwid", savedDraft.hwid)
+        assertEquals("off", savedDraft.deviceHeaders)
         assertEquals("new-age-key", savedDraft.ageSecretKey)
         assertEquals(false, savedDraft.updateViaProxy)
         assertEquals(true, savedDraft.autoOverrideRules)
@@ -159,6 +162,7 @@ class SubscriptionGroupRecordProjectionTest {
         userAgent = "SKIPI/1/Desktop",
         updateInterval = "24",
         hwid = "persisted-hwid",
+        deviceHeaders = "on",
         ageSecretKey = "age-key",
         updateViaProxy = true,
         autoOverrideRules = false,

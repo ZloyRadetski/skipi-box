@@ -3,6 +3,8 @@
 
 package features.subscription.usecase
 
+import features.subscription.resolveSubscriptionDeviceHeaders
+
 import app.AppState
 import app.SubscriptionGroupState
 import app.skipi.app.subscription.LoadedSubscriptionRefresh
@@ -277,7 +279,7 @@ internal fun AppState.toSubscriptionFetchOptions(group: SubscriptionGroupState):
     return AndroidSubscriptionFetchOptions(
         useRunningProxy = group.updateViaProxy && proxyRunning,
         ageSecretKey = group.ageSecretKey,
-        sendDeviceHeaders = enableSubscriptionDeviceHeaders,
+        sendDeviceHeaders = resolveSubscriptionDeviceHeaders(group.deviceHeaders, enableSubscriptionDeviceHeaders),
         timeoutSeconds = subscriptionFetchTimeoutSeconds,
     )
 }

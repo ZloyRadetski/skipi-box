@@ -17,7 +17,7 @@ internal const val SkipiDatabaseName = "skipi.db"
         RouteRuleEntity::class,
         ProxyAppListSelectedAppEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 internal abstract class SkipiAppDatabase : RoomDatabase() {
@@ -90,5 +90,12 @@ internal val Migration6To7 = object : Migration(6, 7) {
               AND enabled = 1
             """.trimIndent(),
         )
+    }
+}
+
+/** Per-subscription choice about sending device headers (HWID); empty follows the global setting. */
+internal val Migration7To8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE subscription_groups ADD COLUMN deviceHeaders TEXT NOT NULL DEFAULT ''")
     }
 }

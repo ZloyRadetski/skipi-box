@@ -797,6 +797,11 @@
     <string name="subscription_user_agent_value">User-Agent: {userAgent}</string>
     <string name="subscription_auto_update_interval">Интервал автообновления (в часах)</string>
     <string name="subscription_update_via_proxy">Обновлять через прокси</string>
+    <string name="subscription_device_headers">Отправлять HWID</string>
+    <string name="subscription_device_headers_summary">Отправлять X-HWID и остальные заголовки устройства при обновлении этой подписки. Выбор здесь главнее глобальной настройки.</string>
+    <string name="subscription_device_headers_default">Как в настройках</string>
+    <string name="subscription_device_headers_enabled">Включено</string>
+    <string name="subscription_device_headers_disabled">Выключено</string>
     <string name="subscription_update_via_proxy_summary">Задействовать локальное ядро прокси для отправки запросов обновления подписок</string>
     <string name="subscription_auto_override_rules">Автоматическое переопределение правил</string>
     <string name="subscription_auto_override_rules_summary">Применять правила маршрутизации SKIPI ко всем конфигурациям в подписке</string>

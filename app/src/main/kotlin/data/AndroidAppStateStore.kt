@@ -209,6 +209,7 @@ class AndroidAppStateStore private constructor(
                 Migration4To5,
                 Migration5To6,
                 Migration6To7,
+                Migration7To8,
             )
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()

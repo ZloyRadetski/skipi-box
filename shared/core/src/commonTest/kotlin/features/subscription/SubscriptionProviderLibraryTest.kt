@@ -22,6 +22,7 @@ class SubscriptionProviderLibraryTest {
             updateInterval = "6",
             ageSecretKey = "AGE-SECRET",
             updateViaProxy = true,
+            deviceHeaders = "on",
         )
 
         val result = SubscriptionProviderLibraries.addOrReplace(
@@ -41,6 +42,18 @@ class SubscriptionProviderLibraryTest {
         assertEquals("6", result.updateInterval)
         assertEquals("AGE-SECRET", result.ageSecretKey)
         assertTrue(result.updateViaProxy)
+        assertEquals("on", result.deviceHeaders)
+    }
+
+    @Test
+    fun providerEditCarriesTheDeviceHeadersChoice() {
+        val stored = StoredSubscription(id = 1, url = "https://example.com/one", deviceHeaders = "off")
+        val library = SubscriptionProviderLibrary(listOf(stored))
+        val edit = stored.toProviderEdit()
+        assertEquals("off", edit.deviceHeaders)
+
+        val updated = SubscriptionProviderLibraries.updateProvider(library, 1, edit.copy(deviceHeaders = "on"))
+        assertEquals("on", updated.subscriptions.single().deviceHeaders)
     }
 
     @Test

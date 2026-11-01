@@ -754,6 +754,11 @@
     <string name="subscription_user_agent_value">用户代理：{userAgent}</string>
     <string name="subscription_auto_update_interval">自动更新间隔（小时）</string>
     <string name="subscription_update_via_proxy">通过代理更新</string>
+    <string name="subscription_device_headers">发送 HWID</string>
+    <string name="subscription_device_headers_summary">更新此订阅时发送 X-HWID 和其他设备标头。此处的选择优先于全局设置。</string>
+    <string name="subscription_device_headers_default">跟随全局设置</string>
+    <string name="subscription_device_headers_enabled">开启</string>
+    <string name="subscription_device_headers_disabled">关闭</string>
     <string name="subscription_update_via_proxy_summary">使用本地代理进行订阅请求</string>
     <string name="subscription_auto_override_rules">自动覆盖规则</string>
     <string name="subscription_auto_override_rules_summary">将 SKIPI 路由规则应用于订阅中的所有配置</string>

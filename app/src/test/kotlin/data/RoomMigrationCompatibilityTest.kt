@@ -33,12 +33,13 @@ class RoomMigrationCompatibilityTest {
         Migration4To5,
         Migration5To6,
         Migration6To7,
+        Migration7To8,
     )
 
     @Test
-    fun version1DatabaseOpensAtVersion7AndKeepsHomeData() {
+    fun version1DatabaseOpensAtVersion8AndKeepsHomeData() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val name = "migration-v1-to-v7.db"
+        val name = "migration-v1-to-v8.db"
         context.deleteDatabase(name)
 
         context.openOrCreateDatabase(name, Context.MODE_PRIVATE, null).use { legacyDb ->
@@ -67,12 +68,13 @@ class RoomMigrationCompatibilityTest {
             .build()
         try {
             val migrated = database.openHelper.writableDatabase
-            assertEquals(7, migrated.version)
+            assertEquals(8, migrated.version)
             assertPreservedHomeData(migrated)
 
             migrated.query(
                 "SELECT hwid, ageSecretKey, profileTitle, announce, trafficTotalBytes, autoOverrideRules, " +
-                    "notifyOnExpiry, customExpiryReminders, supportUrl, supportEmail, profileWebPageUrl, announceUrl " +
+                    "notifyOnExpiry, customExpiryReminders, supportUrl, supportEmail, profileWebPageUrl, announceUrl, " +
+                    "deviceHeaders " +
                     "FROM subscription_groups WHERE id = 42",
             ).use { cursor ->
                 assertTrue(cursor.moveToFirst())
@@ -88,6 +90,7 @@ class RoomMigrationCompatibilityTest {
                 assertEquals("", cursor.getString(9))
                 assertEquals("", cursor.getString(10))
                 assertEquals("", cursor.getString(11))
+                assertEquals("", cursor.getString(12))
             }
         } finally {
             database.close()
@@ -96,22 +99,23 @@ class RoomMigrationCompatibilityTest {
     }
 
     @Test
-    fun exportedVersions4Through6MigrateTo7AndKeepHomeData() {
+    fun exportedVersions4Through7MigrateTo8AndKeepHomeData() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        for (fromVersion in 4..6) {
-            val name = context.getDatabasePath("migration-v${fromVersion}-to-v7.db").absolutePath
+        for (fromVersion in 4..7) {
+            val name = context.getDatabasePath("migration-v${fromVersion}-to-v8.db").absolutePath
             val legacy = migrationHelper.createDatabase(name, fromVersion)
             try {
                 insertHomeData(legacy)
-                insertStockAndCustomRules { sql -> legacy.execSQL(sql) }
+                // The stock UDP:443 row is gone from any v7 database; only earlier versions can still hold it.
+                insertStockAndCustomRules(includeStockRule = fromVersion < 7) { sql -> legacy.execSQL(sql) }
             } finally {
                 legacy.close()
             }
 
             val suffix = migrations.filter { migration -> migration.startVersion >= fromVersion }.toTypedArray()
-            val migrated = migrationHelper.runMigrationsAndValidate(name, 7, true, *suffix)
+            val migrated = migrationHelper.runMigrationsAndValidate(name, 8, true, *suffix)
             try {
-                assertEquals("Unexpected database version after migration from v$fromVersion", 7, migrated.version)
+                assertEquals("Unexpected database version after migration from v$fromVersion", 8, migrated.version)
                 assertPreservedHomeData(migrated)
             } finally {
                 migrated.close()
@@ -134,12 +138,14 @@ class RoomMigrationCompatibilityTest {
         )
     }
 
-    private fun insertStockAndCustomRules(execSql: (String) -> Unit) {
-        execSql(
-            """INSERT INTO routing_rules
-                (id, position, remarks, outboundTag, domainJson, ipJson, processJson, port, protocol, network, enabled)
-                VALUES (2, 1, 'block_udp_443', 'block', '[]', '[]', '[]', '443', '', 'udp', 1)""".trimIndent(),
-        )
+    private fun insertStockAndCustomRules(includeStockRule: Boolean = true, execSql: (String) -> Unit) {
+        if (includeStockRule) {
+            execSql(
+                """INSERT INTO routing_rules
+                    (id, position, remarks, outboundTag, domainJson, ipJson, processJson, port, protocol, network, enabled)
+                    VALUES (2, 1, 'block_udp_443', 'block', '[]', '[]', '[]', '443', '', 'udp', 1)""".trimIndent(),
+            )
+        }
         // Same meaning, different id: the migration is meant to remove only the shipped stock row.
         execSql(
             """INSERT INTO routing_rules

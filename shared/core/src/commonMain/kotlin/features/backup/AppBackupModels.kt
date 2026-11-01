@@ -320,6 +320,7 @@ data class AppBackupSubscriptionGroup(
     val userAgent: String = "",
     val updateInterval: String = "",
     val hwid: String = "",
+    val deviceHeaders: String = "",
     val ageSecretKey: String = "",
     val updateViaProxy: Boolean = false,
     val autoOverrideRules: Boolean = true,

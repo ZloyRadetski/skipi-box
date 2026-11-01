@@ -4,6 +4,7 @@
 package app.skipi.desktop
 
 import features.subscription.DefaultSubscriptionUserAgent
+import features.subscription.resolveSubscriptionDeviceHeaders
 import engine.xray.XrayLogConfigRequest
 import engine.xray.XraySniffingOptions
 import engine.xray.XrayFragmentOutboundOptions
@@ -112,7 +113,11 @@ internal fun DesktopAppSettings.toSubscriptionRefreshFetchOptions(
     return DesktopSubscriptionRefreshFetchOptions(
         timeout = Duration.ofSeconds(subscriptionFetchTimeoutSeconds.toLong()),
         proxy = proxy,
-        deviceHeaders = if (sendDeviceHeaders) DesktopDeviceIdentity.deviceHeaders(installationUuid) else emptyMap(),
+        deviceHeaders = if (resolveSubscriptionDeviceHeaders(subscription.deviceHeaders, sendDeviceHeaders)) {
+            DesktopDeviceIdentity.deviceHeaders(installationUuid)
+        } else {
+            emptyMap()
+        },
         ageSecretKey = subscription.ageSecretKey,
         fallbackUserAgent = DefaultSubscriptionUserAgent,
     )

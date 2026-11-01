@@ -819,6 +819,11 @@
     <string name="subscription_user_agent_value">User-Agent: {userAgent}</string>
     <string name="subscription_auto_update_interval">Auto update interval (hours)</string>
     <string name="subscription_update_via_proxy">Update via proxy</string>
+    <string name="subscription_device_headers">Send HWID</string>
+    <string name="subscription_device_headers_summary">Send X-HWID and the other device headers when updating this subscription. A choice here overrides the global setting.</string>
+    <string name="subscription_device_headers_default">Use the global setting</string>
+    <string name="subscription_device_headers_enabled">On</string>
+    <string name="subscription_device_headers_disabled">Off</string>
     <string name="subscription_update_via_proxy_summary">Use the local proxy for subscription requests</string>
     <string name="subscription_auto_override_rules">Automatic rule override</string>
     <string name="subscription_auto_override_rules_summary">Apply SKIPI routing rules to all configurations in the subscription</string>

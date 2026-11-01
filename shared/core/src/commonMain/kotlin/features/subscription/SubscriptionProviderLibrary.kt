@@ -36,6 +36,7 @@ data class StoredSubscription(
     val enabled: Boolean = true,
     val updateInterval: String = "",
     val hwid: String = "",
+    val deviceHeaders: String = "",
     val ageSecretKey: String = "",
     val updateViaProxy: Boolean = false,
     val autoOverrideRules: Boolean = true,
@@ -62,6 +63,7 @@ data class SubscriptionProviderEdit(
     val autoOverrideRules: Boolean,
     val notifyOnExpiry: Boolean,
     val customExpiryReminders: List<SubscriptionExpiryReminder>?,
+    val deviceHeaders: String = "",
 )
 
 fun StoredSubscription.toProviderEdit(): SubscriptionProviderEdit = SubscriptionProviderEdit(
@@ -75,6 +77,7 @@ fun StoredSubscription.toProviderEdit(): SubscriptionProviderEdit = Subscription
     autoOverrideRules = autoOverrideRules,
     notifyOnExpiry = notifyOnExpiry,
     customExpiryReminders = customExpiryReminders,
+    deviceHeaders = deviceHeaders,
 )
 
 /** Pure transformations for stored providers. Scheduling and reconciliation policy use shared subscription APIs. */
@@ -104,6 +107,7 @@ object SubscriptionProviderLibraries {
             enabled = existing?.enabled ?: true,
             updateInterval = existing?.updateInterval.orEmpty(),
             hwid = existing?.hwid.orEmpty(),
+            deviceHeaders = existing?.deviceHeaders.orEmpty(),
             ageSecretKey = existing?.ageSecretKey.orEmpty(),
             updateViaProxy = existing?.updateViaProxy ?: false,
             autoOverrideRules = existing?.autoOverrideRules ?: true,
@@ -178,6 +182,7 @@ object SubscriptionProviderLibraries {
             autoOverrideRules = edit.autoOverrideRules,
             notifyOnExpiry = edit.notifyOnExpiry,
             customExpiryReminders = normalizedReminders,
+            deviceHeaders = SubscriptionDeviceHeadersMode.fromSerialized(edit.deviceHeaders).serialized,
         )
         return library.copy(subscriptions = library.subscriptions.map { stored ->
             if (stored.id == subscriptionId) updated else stored

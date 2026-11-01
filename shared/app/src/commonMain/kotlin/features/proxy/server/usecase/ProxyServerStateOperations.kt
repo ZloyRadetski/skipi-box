@@ -187,6 +187,7 @@ fun AppState.withUpdatedSubscriptionServersBatch(
                     userAgent = group.userAgent,
                     updateInterval = group.updateInterval,
                     hwid = group.hwid,
+                    deviceHeaders = group.deviceHeaders,
                     ageSecretKey = group.ageSecretKey,
                     updateViaProxy = group.updateViaProxy,
                     autoOverrideRules = group.autoOverrideRules,

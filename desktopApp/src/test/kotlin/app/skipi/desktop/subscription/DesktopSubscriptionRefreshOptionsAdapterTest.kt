@@ -90,9 +90,36 @@ class DesktopSubscriptionRefreshOptionsAdapterTest {
         assertEquals(DefaultSubscriptionUserAgent, options.fallbackUserAgent)
     }
 
+    @Test
+    fun aSubscriptionOverridesTheGlobalDeviceHeadersSettingInBothDirections() {
+        val globalOff = DesktopAppSettings(sendDeviceHeaders = false, installationUuid = "install-uuid")
+        val globalOn = DesktopAppSettings(sendDeviceHeaders = true, installationUuid = "install-uuid")
+        val headers = DesktopDeviceIdentity.deviceHeaders("install-uuid")
+
+        assertEquals(
+            headers,
+            globalOff.toSubscriptionRefreshFetchOptions(subscription(updateViaProxy = false, deviceHeaders = "on"), proxyRunning = false)
+                .deviceHeaders,
+        )
+        assertEquals(
+            emptyMap(),
+            globalOn.toSubscriptionRefreshFetchOptions(subscription(updateViaProxy = false, deviceHeaders = "off"), proxyRunning = false)
+                .deviceHeaders,
+        )
+        assertEquals(
+            headers,
+            globalOn.toSubscriptionRefreshFetchOptions(subscription(updateViaProxy = false), proxyRunning = false).deviceHeaders,
+        )
+        assertEquals(
+            emptyMap(),
+            globalOff.toSubscriptionRefreshFetchOptions(subscription(updateViaProxy = false), proxyRunning = false).deviceHeaders,
+        )
+    }
+
     private fun subscription(
         updateViaProxy: Boolean,
         ageSecretKey: String = "",
+        deviceHeaders: String = "",
     ) = SubscriptionRecord(
         id = 4,
         title = "Subscription",
@@ -100,6 +127,7 @@ class DesktopSubscriptionRefreshOptionsAdapterTest {
         userAgent = "",
         updateInterval = "1d",
         hwid = "install-uuid",
+        deviceHeaders = deviceHeaders,
         ageSecretKey = ageSecretKey,
         updateViaProxy = updateViaProxy,
         autoOverrideRules = false,

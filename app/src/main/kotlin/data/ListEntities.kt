@@ -46,6 +46,7 @@ internal data class SubscriptionGroupEntity(
     @ColumnInfo(defaultValue = "-1") val trafficExpireAtSeconds: Long,
     @ColumnInfo(defaultValue = "1") val notifyOnExpiry: Boolean = true,
     @ColumnInfo(defaultValue = "''") val customExpiryReminders: String = "",
+    @ColumnInfo(defaultValue = "''") val deviceHeaders: String = "",
 ) {
     fun toState(): SubscriptionGroupState {
         return SubscriptionGroupState(
@@ -55,6 +56,7 @@ internal data class SubscriptionGroupEntity(
             userAgent = normalizeSkipiUserAgent(userAgent),
             updateInterval = updateInterval,
             hwid = hwid,
+            deviceHeaders = deviceHeaders,
             ageSecretKey = ageSecretKey,
             updateViaProxy = updateViaProxy,
             autoOverrideRules = autoOverrideRules,
@@ -88,6 +90,7 @@ internal data class SubscriptionGroupEntity(
                 userAgent = group.userAgent,
                 updateInterval = group.updateInterval,
                 hwid = group.hwid,
+                deviceHeaders = group.deviceHeaders,
                 ageSecretKey = group.ageSecretKey,
                 updateViaProxy = group.updateViaProxy,
                 autoOverrideRules = group.autoOverrideRules,

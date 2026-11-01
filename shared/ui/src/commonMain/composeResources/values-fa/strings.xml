@@ -732,6 +732,11 @@
     <string name="subscription_user_agent_value">عامل کاربر:{userAgent}</string>
     <string name="subscription_auto_update_interval">فاصله به روز رسانی خودکار (ساعت)</string>
     <string name="subscription_update_via_proxy">به روز رسانی از طریق پروکسی</string>
+    <string name="subscription_device_headers">ارسال HWID</string>
+    <string name="subscription_device_headers_summary">هنگام به‌روزرسانی این اشتراک، X-HWID و سایر هدرهای دستگاه ارسال شود. انتخاب اینجا بر تنظیم سراسری اولویت دارد.</string>
+    <string name="subscription_device_headers_default">طبق تنظیمات سراسری</string>
+    <string name="subscription_device_headers_enabled">روشن</string>
+    <string name="subscription_device_headers_disabled">خاموش</string>
     <string name="subscription_update_via_proxy_summary">از پروکسی محلی برای درخواست های اشتراک استفاده کنید</string>
     <string name="subscription_auto_override_rules">لغو خودکار قوانین</string>
     <string name="subscription_auto_override_rules_summary">قوانین مسیریابی SKIPI را برای همه پیکربندی‌های موجود در اشتراک اعمال کنید</string>

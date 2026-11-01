@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import features.subscription.SubscriptionDeviceHeadersMode
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -132,6 +133,9 @@ fun SubscriptionGroupEditorDialog(
     var updateViaProxy by remember(show, group?.id) {
         mutableStateOf(group?.updateViaProxy ?: false)
     }
+    var deviceHeadersChoice by remember(show, group?.id) {
+        mutableStateOf(SubscriptionDeviceHeadersMode.fromSerialized(group?.deviceHeaders))
+    }
     var autoOverrideRules by remember(show, group?.id) {
         mutableStateOf(group?.autoOverrideRules ?: true)
     }
@@ -179,6 +183,7 @@ fun SubscriptionGroupEditorDialog(
             name = if (group.builtIn) group.name else name.trim().ifBlank { unnamedGroupName },
             url = savedUrl,
             hwid = "",
+            deviceHeaders = deviceHeadersChoice.serialized,
             ageSecretKey = ageSecretKey.trim(),
             userAgent = savedUserAgent,
             updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
@@ -191,6 +196,7 @@ fun SubscriptionGroupEditorDialog(
                 name = name.trim().ifBlank { unnamedGroupName },
                 url = savedUrl,
                 hwid = "",
+                deviceHeaders = deviceHeadersChoice.serialized,
                 ageSecretKey = ageSecretKey.trim(),
                 userAgent = savedUserAgent,
                 updateInterval = interval.trim().takeIf { savedUrl.isNotBlank() }.orEmpty(),
@@ -292,6 +298,17 @@ fun SubscriptionGroupEditorDialog(
                                         .ifBlank { defaultUserAgent }
                                     userAgentIndex = customUserAgentIndex
                                     showCustomUserAgentDialog = false
+                                },
+                            )
+                            WindowSpinnerPreference(
+                                title = stringResource(Res.string.subscription_device_headers),
+                                summary = stringResource(Res.string.subscription_device_headers_summary),
+                                items = SubscriptionDeviceHeadersMode.entries.map { mode ->
+                                    DropdownItem(text = deviceHeadersModeTitle(mode))
+                                },
+                                selectedIndex = SubscriptionDeviceHeadersMode.entries.indexOf(deviceHeadersChoice),
+                                onSelectedIndexChange = { index ->
+                                    deviceHeadersChoice = SubscriptionDeviceHeadersMode.entries[index]
                                 },
                             )
                             SwitchPreference(
@@ -613,3 +630,12 @@ fun SubscriptionGroupCard(
         }
     }
 }
+
+@Composable
+private fun deviceHeadersModeTitle(mode: SubscriptionDeviceHeadersMode): String = stringResource(
+    when (mode) {
+        SubscriptionDeviceHeadersMode.Default -> Res.string.subscription_device_headers_default
+        SubscriptionDeviceHeadersMode.Enabled -> Res.string.subscription_device_headers_enabled
+        SubscriptionDeviceHeadersMode.Disabled -> Res.string.subscription_device_headers_disabled
+    },
+)
