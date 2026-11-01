@@ -9,446 +9,99 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.skipi.ui.resources.*
 import features.proxy.server.model.AmneziaWg
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextField
+import kotlin.reflect.KMutableProperty1
 
+/** A field label: a localized string resource, or a literal for the protocol's own technical names. */
+internal sealed interface AmneziaWgFieldLabel {
+    data class Resource(val resource: StringResource) : AmneziaWgFieldLabel
+    data class Literal(val text: String) : AmneziaWgFieldLabel
+}
+
+/** One text field of the AmneziaWG editor; [key] is also its stable list item key. */
+internal class AmneziaWgEditorField(
+    val key: String,
+    val label: AmneziaWgFieldLabel,
+    private val property: KMutableProperty1<AmneziaWg, String>,
+    val digitsOnly: Boolean = false,
+) {
+    fun read(server: AmneziaWg): String = property.get(server)
+    fun write(server: AmneziaWg, value: String) = property.set(server, value)
+}
+
+/** Connection fields, in the order the editor draws them. */
+internal val amneziaWgPropertyFields: List<AmneziaWgEditorField> = listOf(
+    AmneziaWgEditorField("remarks", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_remarks), AmneziaWg::remarks),
+    AmneziaWgEditorField("server", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_server), AmneziaWg::server),
+    AmneziaWgEditorField("port", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_port), AmneziaWg::port, digitsOnly = true),
+    AmneziaWgEditorField("secretKey", AmneziaWgFieldLabel.Literal("SecretKey"), AmneziaWg::secretKey),
+    AmneziaWgEditorField("publicKey", AmneziaWgFieldLabel.Literal("PublicKey"), AmneziaWg::publicKey),
+    AmneziaWgEditorField("preSharedKey", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_preshared_key_optional), AmneziaWg::preSharedKey),
+    AmneziaWgEditorField("reserved", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_reserved_optional), AmneziaWg::reserved),
+    AmneziaWgEditorField("address", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_local_address_optional), AmneziaWg::address),
+    AmneziaWgEditorField("mtu", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_mtu_optional), AmneziaWg::mtu, digitsOnly = true),
+)
+
+/** Obfuscation, AmneziaWG 3.0 and 3.1 fields, in the order the editor draws them. */
+internal val amneziaWgObfuscationFields: List<AmneziaWgEditorField> = listOf(
+    AmneziaWgEditorField("jc", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_jc), AmneziaWg::jc, digitsOnly = true),
+    AmneziaWgEditorField("jmin", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_jmin), AmneziaWg::jmin, digitsOnly = true),
+    AmneziaWgEditorField("jmax", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_jmax), AmneziaWg::jmax, digitsOnly = true),
+    AmneziaWgEditorField("s1", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_s1), AmneziaWg::s1, digitsOnly = true),
+    AmneziaWgEditorField("s2", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_s2), AmneziaWg::s2, digitsOnly = true),
+    AmneziaWgEditorField("s3", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_s3), AmneziaWg::s3, digitsOnly = true),
+    AmneziaWgEditorField("s4", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_s4), AmneziaWg::s4, digitsOnly = true),
+    AmneziaWgEditorField("h1", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_h1), AmneziaWg::h1),
+    AmneziaWgEditorField("h2", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_h2), AmneziaWg::h2),
+    AmneziaWgEditorField("h3", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_h3), AmneziaWg::h3),
+    AmneziaWgEditorField("h4", AmneziaWgFieldLabel.Resource(Res.string.proxy_editor_awg_h4), AmneziaWg::h4),
+    AmneziaWgEditorField("i1", AmneziaWgFieldLabel.Literal("I1"), AmneziaWg::i1),
+    AmneziaWgEditorField("i2", AmneziaWgFieldLabel.Literal("I2"), AmneziaWg::i2),
+    AmneziaWgEditorField("i3", AmneziaWgFieldLabel.Literal("I3"), AmneziaWg::i3),
+    AmneziaWgEditorField("i4", AmneziaWgFieldLabel.Literal("I4"), AmneziaWg::i4),
+    AmneziaWgEditorField("i5", AmneziaWgFieldLabel.Literal("I5"), AmneziaWg::i5),
+    AmneziaWgEditorField("headerProtectionKey", AmneziaWgFieldLabel.Literal("HeaderProtectionKey"), AmneziaWg::headerProtectionKey),
+    AmneziaWgEditorField("contentPaddingAddition", AmneziaWgFieldLabel.Literal("ContentPaddingAddition"), AmneziaWg::contentPaddingAddition),
+    AmneziaWgEditorField("rekeyAfterTime", AmneziaWgFieldLabel.Literal("RekeyAfterTime"), AmneziaWg::rekeyAfterTime),
+    AmneziaWgEditorField("rekeyTimeout", AmneziaWgFieldLabel.Literal("RekeyTimeout"), AmneziaWg::rekeyTimeout),
+    AmneziaWgEditorField("rejectAfterTime", AmneziaWgFieldLabel.Literal("RejectAfterTime"), AmneziaWg::rejectAfterTime),
+    AmneziaWgEditorField("keepaliveTimeout", AmneziaWgFieldLabel.Literal("KeepaliveTimeout"), AmneziaWg::keepaliveTimeout),
+    AmneziaWgEditorField("maxHandshakeAttempts", AmneziaWgFieldLabel.Literal("MaxHandshakeAttempts"), AmneziaWg::maxHandshakeAttempts),
+    AmneziaWgEditorField("persistentKeepalive", AmneziaWgFieldLabel.Literal("PersistentKeepalive"), AmneziaWg::persistentKeepalive),
+    AmneziaWgEditorField("randomTrailers", AmneziaWgFieldLabel.Literal("RandomTrailers"), AmneziaWg::randomTrailers),
+    AmneziaWgEditorField("disableCookies", AmneziaWgFieldLabel.Literal("DisableCookies"), AmneziaWg::disableCookies),
+)
+
+/**
+ * Every field is its own list item. The editor has about forty fields, and one item per section made the lazy
+ * list compose and measure all of them at once, which stuttered while scrolling and when the keyboard opened.
+ * A field that scrolls away is disposed and drawn again from the profile, which always holds the latest text.
+ */
 fun LazyListScope.amneziaWgProxyServer(awgEdit: AmneziaWg) {
     item(key = "properties") {
-        val focusManager = LocalFocusManager.current
         SmallTitle(text = stringResource(Res.string.proxy_editor_properties))
-        TextField(
-            label = stringResource(Res.string.proxy_editor_remarks),
-            state = rememberTextFieldState(initialText = awgEdit.remarks),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.remarks = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_server),
-            state = rememberTextFieldState(initialText = awgEdit.server),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.server = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_port),
-            state = rememberTextFieldState(initialText = awgEdit.port),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.port = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "SecretKey",
-            state = rememberTextFieldState(initialText = awgEdit.secretKey),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.secretKey = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "PublicKey",
-            state = rememberTextFieldState(initialText = awgEdit.publicKey),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.publicKey = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_preshared_key_optional),
-            state = rememberTextFieldState(initialText = awgEdit.preSharedKey),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.preSharedKey = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_reserved_optional),
-            state = rememberTextFieldState(initialText = awgEdit.reserved),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.reserved = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_local_address_optional),
-            state = rememberTextFieldState(initialText = awgEdit.address),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.address = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_mtu_optional),
-            state = rememberTextFieldState(initialText = awgEdit.mtu),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.mtu = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
     }
-
+    amneziaWgPropertyFields.forEach { field ->
+        item(key = field.key) { AmneziaWgTextField(awgEdit, field) }
+    }
     item(key = "obfuscation") {
-        val focusManager = LocalFocusManager.current
         SmallTitle(text = stringResource(Res.string.proxy_editor_amnezia_obfuscation))
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_jc),
-            state = rememberTextFieldState(initialText = awgEdit.jc),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.jc = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_jmin),
-            state = rememberTextFieldState(initialText = awgEdit.jmin),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.jmin = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_jmax),
-            state = rememberTextFieldState(initialText = awgEdit.jmax),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.jmax = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_s1),
-            state = rememberTextFieldState(initialText = awgEdit.s1),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.s1 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_s2),
-            state = rememberTextFieldState(initialText = awgEdit.s2),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.s2 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_s3),
-            state = rememberTextFieldState(initialText = awgEdit.s3),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.s3 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_s4),
-            state = rememberTextFieldState(initialText = awgEdit.s4),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                if (!asCharSequence().isDigitsOnly()) {
-                    revertAllChanges()
-                    return@InputTransformation
-                }
-                awgEdit.s4 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_h1),
-            state = rememberTextFieldState(initialText = awgEdit.h1),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.h1 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_h2),
-            state = rememberTextFieldState(initialText = awgEdit.h2),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.h2 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_h3),
-            state = rememberTextFieldState(initialText = awgEdit.h3),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.h3 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = stringResource(Res.string.proxy_editor_awg_h4),
-            state = rememberTextFieldState(initialText = awgEdit.h4),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.h4 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "I1",
-            state = rememberTextFieldState(initialText = awgEdit.i1),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.i1 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "I2",
-            state = rememberTextFieldState(initialText = awgEdit.i2),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.i2 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "I3",
-            state = rememberTextFieldState(initialText = awgEdit.i3),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.i3 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "I4",
-            state = rememberTextFieldState(initialText = awgEdit.i4),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.i4 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "I5",
-            state = rememberTextFieldState(initialText = awgEdit.i5),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.i5 = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "HeaderProtectionKey",
-            state = rememberTextFieldState(initialText = awgEdit.headerProtectionKey),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.headerProtectionKey = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "ContentPaddingAddition",
-            state = rememberTextFieldState(initialText = awgEdit.contentPaddingAddition),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.contentPaddingAddition = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "RekeyAfterTime",
-            state = rememberTextFieldState(initialText = awgEdit.rekeyAfterTime),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.rekeyAfterTime = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "RekeyTimeout",
-            state = rememberTextFieldState(initialText = awgEdit.rekeyTimeout),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.rekeyTimeout = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "RejectAfterTime",
-            state = rememberTextFieldState(initialText = awgEdit.rejectAfterTime),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.rejectAfterTime = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "KeepaliveTimeout",
-            state = rememberTextFieldState(initialText = awgEdit.keepaliveTimeout),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.keepaliveTimeout = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "MaxHandshakeAttempts",
-            state = rememberTextFieldState(initialText = awgEdit.maxHandshakeAttempts),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.maxHandshakeAttempts = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "PersistentKeepalive",
-            state = rememberTextFieldState(initialText = awgEdit.persistentKeepalive),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.persistentKeepalive = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "RandomTrailers",
-            state = rememberTextFieldState(initialText = awgEdit.randomTrailers),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.randomTrailers = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
-        TextField(
-            label = "DisableCookies",
-            state = rememberTextFieldState(initialText = awgEdit.disableCookies),
-            lineLimits = TextFieldLineLimits.SingleLine,
-            inputTransformation = InputTransformation {
-                awgEdit.disableCookies = asCharSequence().toString()
-            },
-            modifier = Modifier.padding(bottom = 12.dp),
-            onKeyboardAction = { focusManager.clearFocus() },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        )
+    }
+    amneziaWgObfuscationFields.forEach { field ->
+        item(key = field.key) { AmneziaWgTextField(awgEdit, field) }
+    }
+    item(key = "finalMask") {
+        val focusManager = LocalFocusManager.current
         TextField(
             label = stringResource(Res.string.proxy_editor_final_mask),
             state = rememberTextFieldState(initialText = awgEdit.finalMask),
@@ -461,4 +114,28 @@ fun LazyListScope.amneziaWgProxyServer(awgEdit: AmneziaWg) {
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
     }
+}
+
+@Composable
+private fun AmneziaWgTextField(awgEdit: AmneziaWg, field: AmneziaWgEditorField) {
+    val focusManager = LocalFocusManager.current
+    val label = when (val label = field.label) {
+        is AmneziaWgFieldLabel.Resource -> stringResource(label.resource)
+        is AmneziaWgFieldLabel.Literal -> label.text
+    }
+    TextField(
+        label = label,
+        state = rememberTextFieldState(initialText = field.read(awgEdit)),
+        lineLimits = TextFieldLineLimits.SingleLine,
+        inputTransformation = InputTransformation {
+            if (field.digitsOnly && !asCharSequence().isDigitsOnly()) {
+                revertAllChanges()
+                return@InputTransformation
+            }
+            field.write(awgEdit, asCharSequence().toString())
+        },
+        modifier = Modifier.padding(bottom = 12.dp),
+        onKeyboardAction = { focusManager.clearFocus() },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+    )
 }
