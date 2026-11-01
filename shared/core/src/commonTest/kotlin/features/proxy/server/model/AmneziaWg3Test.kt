@@ -190,6 +190,7 @@ class AmneziaWg3Test {
     fun validVersion3ValuesAreAccepted() {
         val result = issues {
             headerProtectionKey = headerKey
+            s1 = "12"; s2 = "12"; s3 = "12"; s4 = "12"
             contentPaddingAddition = "0-65535"
             rekeyAfterTime = "120"
             rekeyTimeout = "5-10"
@@ -223,6 +224,24 @@ class AmneziaWg3Test {
     }
 
     @Test
+    fun aHeaderProtectionKeyNeedsEveryPaddingOfAtLeast12() {
+        // The native runner refuses the key unless S1..S4 each leave room for its 12-byte nonce.
+        val ok = issues { headerProtectionKey = headerKey; s1 = "12"; s2 = "12"; s3 = "12"; s4 = "12" }
+        assertEquals(emptyList(), ok)
+        listOf("S1", "S2", "S3", "S4").forEach { name ->
+            val found = issues {
+                headerProtectionKey = headerKey
+                s1 = "20"; s2 = "20"; s3 = "20"; s4 = "20"
+                when (name) { "S1" -> s1 = "11"; "S2" -> s2 = ""; "S3" -> s3 = "0"; else -> s4 = "5" }
+            }.filter { it.error == ProxyServerValidationError.AmneziaWgHeaderProtectionPaddingTooSmall }
+            assertEquals(1, found.size, name)
+            assertEquals(name, found.single().values.first())
+        }
+        // Without the key small or empty paddings stay valid.
+        assertEquals(emptyList(), issues { s1 = "1"; s3 = ""; s4 = "" })
+    }
+
+    @Test
     fun aMalformedHeaderProtectionKeyIsRejected() {
         val found = issues { headerProtectionKey = "not-a-key" }
         assertTrue(found.isNotEmpty())
@@ -242,6 +261,10 @@ class AmneziaWg3Test {
             [Interface]
             PrivateKey = $key
             Address = 10.8.0.2/32
+            S1 = 15
+            S2 = 30
+            S3 = 20
+            S4 = 25
             HeaderProtectionKey = $headerKey
             ContentPaddingAddition = 16-64
             RekeyAfterTime = 120

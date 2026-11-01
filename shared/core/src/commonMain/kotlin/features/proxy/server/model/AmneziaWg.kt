@@ -295,6 +295,14 @@ data class AmneziaWg(
         validateAmneziaWgObfuscation(jc, jmin, jmax, s1, s2, s3, s4, h1, h2, h3, h4)
         validateAmneziaWgChains(listOf("I1" to i1, "I2" to i2, "I3" to i3, "I4" to i4, "I5" to i5))
         validateWireguardKey(headerProtectionKey, "HeaderProtectionKey", required = false)
+        if (headerProtectionKey.isNotBlank()) {
+            // The runner encrypts headers with a 12-byte nonce carried in S1..S4, so each must be >= 12.
+            listOf("S1" to s1, "S2" to s2, "S3" to s3, "S4" to s4).forEach { (name, value) ->
+                if ((value.toIntOrNull() ?: 0) < AwgHeaderProtectionMinPadding) {
+                    addIssue(ProxyServerValidationError.AmneziaWgHeaderProtectionPaddingTooSmall, name, AwgHeaderProtectionMinPadding, 1280)
+                }
+            }
+        }
         validateAmneziaWgRanges(
             listOf(
                 "ContentPaddingAddition" to contentPaddingAddition,
@@ -330,6 +338,8 @@ data class AmneziaWg(
         return "$host:$port"
     }
 }
+
+private const val AwgHeaderProtectionMinPadding = 12
 
 /**
  * An AmneziaWG 3.0 `N` / `N-M` value: a JSON number for a single value and a string for a range
