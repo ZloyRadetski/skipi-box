@@ -44,7 +44,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import app.skipi.ui.components.AppOverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -107,7 +107,7 @@ fun SkipiRoutingPolicyCard(
     onSelectedIndexChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    OverlayDropdownPreference(
+    AppOverlayDropdownPreference(
         title = stringResource(Res.string.routing_domain_strategy),
         items = options,
         selectedIndex = selectedIndex.coerceIn(options.indices),

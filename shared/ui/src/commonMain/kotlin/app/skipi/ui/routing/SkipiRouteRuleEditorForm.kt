@@ -4,6 +4,7 @@
 package app.skipi.ui.routing
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,19 +12,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import app.skipi.ui.components.AppOverlayDropdownPreference
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.common_save
@@ -81,7 +80,6 @@ fun SkipiRouteRuleEditorForm(
     var outbound by rememberSaveable(identity) {
         mutableStateOf(initialRule?.outboundTag?.takeIf(String::isNotBlank) ?: DefaultRouteOutboundTag)
     }
-    var outboundMenu by remember { mutableStateOf(false) }
 
     val domainsValid = splitLines(domains).all(::validDomain)
     val ipsValid = splitLines(ips).all(::validIp)
@@ -101,19 +99,14 @@ fun SkipiRouteRuleEditorForm(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        Column {
-            TextButton(onClick = { outboundMenu = true }, modifier = Modifier.fillMaxWidth()) {
-                Text("${stringResource(Res.string.routing_outbound_tag_label)}: ${outboundOptions.firstOrNull { it.tag == outbound }?.label ?: outbound}", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            }
-            DropdownMenu(expanded = outboundMenu, onDismissRequest = { outboundMenu = false }) {
-                outboundOptions.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option.label) },
-                        onClick = { outbound = option.tag; outboundMenu = false },
-                    )
-                }
-            }
-        }
+        val outboundChoice = RouteRuleOutboundChoice(outboundOptions, outbound)
+        AppOverlayDropdownPreference(
+            title = stringResource(Res.string.routing_outbound_tag_label),
+            items = outboundChoice.labels,
+            selectedIndex = outboundChoice.selectedIndex,
+            onSelectedIndexChange = { index -> outboundChoice.tagAt(index)?.let { outbound = it } },
+            insideMargin = PaddingValues(0.dp, 8.dp),
+        )
         RuleListField(stringResource(Res.string.routing_domain_label), domains, { domains = it }, domainsValid, stringResource(Res.string.routing_domain_invalid))
         if (onRequestGeoSitePicker != null) TextButton(onClick = {
             onRequestGeoSitePicker { selected -> domains = (splitLines(domains) + selected).distinct().joinToString("\n") }
