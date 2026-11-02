@@ -196,6 +196,9 @@
     <string name="connection_status_disconnected">Отключено</string>
     <string name="connection_status_secured">Идет защищенное соединение</string>
     <string name="connection_status_tap_to_connect">Нажмите для подключения</string>
+    <string name="tray_connect">Подключить</string>
+    <string name="tray_disconnect">Отключить</string>
+    <string name="tray_exit">Выход</string>
     <string name="connection_metric_session">Сессия</string>
     <string name="connection_metric_latency">Задержка</string>
     <string name="connection_metric_tunnel_memory">Память туннеля</string>

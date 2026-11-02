@@ -140,6 +140,9 @@
     <string name="connection_status_disconnected">قطع شده است</string>
     <string name="connection_status_secured">اتصال امن فعال است</string>
     <string name="connection_status_tap_to_connect">برای اتصال ضربه بزنید</string>
+    <string name="tray_connect">اتصال</string>
+    <string name="tray_disconnect">قطع اتصال</string>
+    <string name="tray_exit">خروج</string>
     <string name="connection_metric_session">نشست</string>
     <string name="connection_metric_latency">تأخیر</string>
     <string name="connection_metric_tunnel_memory">حافظه تونل</string>

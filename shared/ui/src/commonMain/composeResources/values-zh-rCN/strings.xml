@@ -140,6 +140,9 @@
     <string name="connection_status_disconnected">已断开连接</string>
     <string name="connection_status_secured">安全连接处于活动状态</string>
     <string name="connection_status_tap_to_connect">点击即可连接</string>
+    <string name="tray_connect">连接</string>
+    <string name="tray_disconnect">断开连接</string>
+    <string name="tray_exit">退出</string>
     <string name="connection_metric_session">会话</string>
     <string name="connection_metric_latency">延迟</string>
     <string name="connection_metric_tunnel_memory">隧道内存</string>

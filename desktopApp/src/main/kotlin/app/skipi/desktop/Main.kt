@@ -59,6 +59,11 @@ import app.skipi.ui.navigation.navigationBarSizeForSetting
 import app.skipi.ui.navigation.SkipiExpressiveNavigationColors
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.connection_status_connected
+import app.skipi.ui.resources.connection_status_disconnected
+import app.skipi.ui.resources.tray_connect
+import app.skipi.ui.resources.tray_disconnect
+import app.skipi.ui.resources.tray_exit
 import app.skipi.ui.resources.home_memory_kilobytes
 import app.skipi.ui.resources.home_memory_megabytes
 import app.skipi.ui.resources.ic_skipi_logo
@@ -980,6 +985,34 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     )
                 }
                 LaunchedEffect(tunnel.coreState.isRunning) { connectionClock.update(tunnel.coreState.isRunning) }
+                val trayConnectText = stringResource(Res.string.tray_connect)
+                val trayDisconnectText = stringResource(Res.string.tray_disconnect)
+                val trayExitText = stringResource(Res.string.tray_exit)
+                val trayStatusText = stringResource(
+                    if (tunnel.coreState.isRunning) Res.string.connection_status_connected else Res.string.connection_status_disconnected,
+                )
+                DesktopTrayIcon(
+                    connected = tunnel.coreState.isRunning,
+                    tooltip = "SKIPI — $trayStatusText",
+                    toggleLabel = when (desktopTrayToggle(tunnel.coreState.isRunning)) {
+                        DesktopTrayToggle.Connect -> trayConnectText
+                        DesktopTrayToggle.Disconnect -> trayDisconnectText
+                    },
+                    exitLabel = trayExitText,
+                    onToggleWindow = {
+                        when (desktopTrayWindowStep(windowShown, windowState.isMinimized, desktopSettings)) {
+                            DesktopTrayWindowStep.Show -> {
+                                windowShown = true
+                                windowState.isMinimized = false
+                                shownWindow?.toFront()
+                            }
+                            DesktopTrayWindowStep.HideToBackground -> windowShown = false
+                            DesktopTrayWindowStep.Minimize -> windowState.isMinimized = true
+                        }
+                    },
+                    onToggleTunnel = desktopToggleTunnel,
+                    onExit = { tunnel.closeRequested = true },
+                )
                 // skipi:// links from the command line and from later starts (see main).
                 LaunchedEffect(desktopTunnelController) {
                     for (raw in incomingLinks) {

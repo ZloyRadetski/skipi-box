@@ -180,6 +180,9 @@
     <string name="connection_status_disconnected">Disconnected</string>
     <string name="connection_status_secured">Secure connection active</string>
     <string name="connection_status_tap_to_connect">Tap to connect</string>
+    <string name="tray_connect">Connect</string>
+    <string name="tray_disconnect">Disconnect</string>
+    <string name="tray_exit">Exit</string>
     <string name="connection_metric_session">Session</string>
     <string name="connection_metric_latency">Latency</string>
     <string name="connection_metric_tunnel_memory">Tunnel memory</string>
