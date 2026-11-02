@@ -3,10 +3,15 @@
 
 package features.proxy.server.usecase.importer
 
+import features.proxy.server.model.ProxyServer
 import features.proxy.server.usecase.EmptyProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerImportContext
 import features.proxy.server.usecase.ProxyServerImportResult
 import features.proxy.server.usecase.ProxyServerPayloadParser
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /** Creates the shared format route while leaving YAML syntax decoding to the host adapter. */
 fun standardProxyServerPayloadParsers(
@@ -56,6 +61,28 @@ fun parseProxyUrlProxyServerPayload(
     context: ProxyServerImportContext,
     onFailure: (ProxyServerImportContext, ProxyServerUrlImportFailure) -> Unit,
 ): ProxyServerImportResult {
-    val result = importProxyServersFromUrls(text) { failure -> onFailure(context, failure) }
+    // A JSON subscription (an array of links) escapes characters inside its strings, e.g. `&` as
+    // `\u0026` or `/` as `\/`. The links are read from the decoded strings so those escapes do not
+    // end up inside the link; anything that is not usable JSON is scanned as plain text.
+    val decoded = text.jsonStringValuesOrNull()?.joinToString("\n")
+    val result = decoded
+        ?.let { importProxyServersFromUrls(it) { failure -> onFailure(context, failure) } }
+        ?.takeIf { it.urlCount > 0 }
+        ?: importProxyServersFromUrls(text) { failure -> onFailure(context, failure) }
     return ProxyServerImportResult(urlCount = result.urlCount, servers = result.servers)
+}
+
+private fun String.jsonStringValuesOrNull(): List<String>? {
+    val candidate = trimStart('\uFEFF', ' ', '\t', '\r', '\n')
+    if (!candidate.startsWith('[') && !candidate.startsWith('{')) return null
+    val root = runCatching { ProxyServer.json.parseToJsonElement(candidate) }.getOrNull() ?: return null
+    return buildList { root.collectStrings(this) }
+}
+
+private fun JsonElement.collectStrings(into: MutableList<String>) {
+    when (this) {
+        is JsonPrimitive -> if (isString) into += content
+        is JsonArray -> forEach { it.collectStrings(into) }
+        is JsonObject -> values.forEach { it.collectStrings(into) }
+    }
 }
