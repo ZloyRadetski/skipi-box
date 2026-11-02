@@ -7,40 +7,26 @@
 </p>
 
 <p align="center">
-  <strong>Fast and convenient proxy client for Android</strong>
+  A cross-platform client for Android, Windows, Linux and macOS
 </p>
 
 <p align="center">
-  <a href="https://github.com/ZloyRadetski/skipi-box"><img src="https://img.shields.io/badge/Platform-Android_8.0+-3DDC84.svg?style=flat-square&logo=android&logoColor=white" alt="Platform"></a>
-  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.0+-7F52FF.svg?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin"></a>
-  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4.svg?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose"></a>
+  <a href="https://github.com/ZloyRadetski/skipi-box"><img src="https://img.shields.io/badge/Platform-Android%20%7C%20Windows%20%7C%20Linux%20%7C%20macOS-3DDC84.svg?style=flat-square" alt="Platform"></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.4-7F52FF.svg?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin"></a>
+  <a href="https://www.jetbrains.com/compose-multiplatform/"><img src="https://img.shields.io/badge/Compose-Multiplatform-4285F4.svg?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Compose Multiplatform"></a>
   <a href="https://t.me/skipi_public"><img src="https://img.shields.io/badge/Telegram-@skipi__public-2CA5E0.svg?style=flat-square&logo=telegram&logoColor=white" alt="Telegram Channel"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg?style=flat-square" alt="License"></a>
 </p>
 
 ---
 
-## Telegram Channel & Chat
+## About
 
-Project channel: **[@skipi_public](https://t.me/skipi_public)**
+SKIPI is a cross-platform client for working with proxies and tunnels. The same application, with shared logic and a shared interface, runs on Android 7.0 and later and on desktop Windows, Linux and macOS. The interface is written with Compose Multiplatform in the Miuix style.
 
-* Latest builds and releases
-* Config discussions and routing help
-* Development news
+The networking is done by Xray-core, the project's own SKIPI Core, hev-socks5-tunnel and the AmneziaWG engine.
 
-<p align="center">
-  <a href="https://t.me/skipi_public">
-    <img src="https://img.shields.io/badge/Join%20Telegram-@skipi__public-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Join Telegram" height="42" />
-  </a>
-</p>
-
----
-
-## About The Project
-
-SKIPI is an Android client that combines flexible networking capabilities with an intuitive Jetpack Compose interface supporting Material You themes.
-
-Under the hood, it is powered by Xray-core, SKIPI Core, hev-socks5-tunnel, as well as the AmneziaWG engine.
+The macOS builds are made for Apple Silicon processors and are not yet signed or notarized.
 
 ---
 
@@ -58,29 +44,31 @@ Under the hood, it is powered by Xray-core, SKIPI Core, hev-socks5-tunnel, as we
 
 ## Features
 
-* Support for VLESS, AmneziaWG, Hysteria 2, Trojan, VMess, Shadowsocks, and WireGuard
-* Shadowrocket rule-based routing (.conf), domain lists, GeoIP, and GeoSite with a visual rule editor
-* Subscription import from v2rayNG, Clash, Clash Meta (with age-key decryption), and Base64
-* Scheduled background updates for subscriptions and Geo databases via WorkManager
-* Node latency testing, load balancing, and proxy chains
-* Per-app proxying
-* Customization for themes, accent colors, and app icon selection
+The client supports VLESS, VMess, Trojan, Shadowsocks, Hysteria 2, WireGuard and AmneziaWG, as well as SOCKS5, HTTP and arbitrary Xray configurations written in JSON. Servers can be combined into chains and into groups with a selection strategy, for example automatic balancing by latency.
+
+Routing is described by rules in the Shadowrocket (.conf) format, by domain lists, GeoIP and GeoSite, and a visual editor is available for the rules. Subscriptions are imported in the v2rayNG, Clash and Clash Meta formats (including age-key encryption) and in Base64, and both subscriptions and Geo databases are refreshed on a schedule.
+
+On Android, only selected applications can be sent through the proxy. On desktop systems the traffic goes either through the system proxy or through a TUN interface, and a tray icon lets the user connect, disconnect and quit.
+
+Other features include server latency tests, a speed test, a DNS leak check, detection of the external IP address, automatic switching on by network, and backup and restore of user data. The appearance can be customized with themes, accent colors and, on Android, the app icon. Application updates can be taken from the stable channel or from the nightly channel, where pre-releases are published.
 
 ---
 
-## Supported Protocols
+## Protocols
 
-| Protocol | Transport & Security |
-| :--- | :--- |
-| VLESS | Reality, XTLS Vision, TLS, gRPC, WebSocket, TCP, HTTP/2, mKCP |
-| AmneziaWG | UDP with custom headers and anti-DPI protection |
-| WireGuard | Standard UDP tunnel |
-| Hysteria 2 | UDP / QUIC |
-| VMess | TLS, WebSocket, gRPC, TCP, HTTP/2, mKCP |
-| Trojan | TLS, gRPC, WebSocket, TCP |
-| Shadowsocks | AEAD, SS-2022 (blake3) |
-| SOCKS5 / HTTP | TCP / Auth |
-| Custom JSON | Custom Xray configurations |
+VLESS is available with Reality, XTLS Vision and TLS, over TCP, WebSocket, gRPC, HTTP/2 and mKCP. VMess works over the same transports. Trojan supports TLS over TCP, WebSocket and gRPC. Shadowsocks supports AEAD ciphers and SS-2022 with blake3. Hysteria 2 uses UDP and QUIC. WireGuard works as an ordinary UDP tunnel, while AmneziaWG adds configurable headers and junk packets to it as a protection against DPI. SOCKS5 and HTTP are used as ordinary proxies, with or without authentication.
+
+---
+
+## Telegram channel and chat
+
+Fresh builds, development news, discussion of configs and help with routing are gathered in the project channel [@skipi_public](https://t.me/skipi_public).
+
+<p align="center">
+  <a href="https://t.me/skipi_public">
+    <img src="https://img.shields.io/badge/Join%20Telegram-@skipi__public-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Join Telegram" height="42" />
+  </a>
+</p>
 
 ---
 
