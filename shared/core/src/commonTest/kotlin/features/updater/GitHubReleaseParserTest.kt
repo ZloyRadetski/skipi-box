@@ -112,3 +112,99 @@ class GitHubReleaseAvailabilityTest {
         assertNull(GitHubReleaseParser.parseAvailability("""{"tag_name": "v9.0.0", "assets": []}""", current))
     }
 }
+
+class GitHubNightlyChannelTest {
+    private val current = CurrentAppVersion(name = "0.5.0", code = 578)
+    private val apk = """[{"name": "SKIPI-universal.apk", "browser_download_url": "https://example.invalid/u.apk", "size": 10}]"""
+
+    private fun release(
+        tag: String,
+        code: Int?,
+        prerelease: Boolean = true,
+        draft: Boolean = false,
+        assets: String = apk,
+    ) = """{"tag_name": "$tag", "name": "R $tag", "draft": $draft, "prerelease": $prerelease,
+            "body": "${code?.let { "Version code: $it" }.orEmpty()}", "html_url": "https://example.invalid/$tag",
+            "published_at": "2026-10-01T00:00:00Z", "assets": $assets}"""
+
+    private fun list(vararg releases: String) = releases.joinToString(prefix = "[", postfix = "]", separator = ",")
+
+    @Test
+    fun nightlyOffersTheNewestPrereleaseThatStableNeverSees() {
+        val body = list(release("v0.5.1-rc.2", 590), release("v0.5.1-rc.1", 585), release("v0.5.0", 578, prerelease = false))
+
+        val update = GitHubReleaseParser.parse(body, current, emptyList(), AppUpdateChannel.Nightly)
+
+        assertEquals("0.5.1-rc.2", update?.versionName)
+        assertEquals(590, update?.versionCode)
+        assertEquals("https://example.invalid/u.apk", update?.downloadUrl)
+    }
+
+    @Test
+    fun theNewestReleaseWinsEvenWhenGitHubListsItLater() {
+        val body = list(release("v0.5.1-rc.1", 585), release("v0.5.1-rc.3", 600), release("v0.5.1-rc.2", 590))
+
+        assertEquals(
+            "0.5.1-rc.3",
+            GitHubReleaseParser.parse(body, current, emptyList(), AppUpdateChannel.Nightly)?.versionName,
+        )
+    }
+
+    @Test
+    fun aStableReleaseCanBeNewerThanThePrereleasesBeforeIt() {
+        val body = list(release("v0.5.1", 620, prerelease = false), release("v0.5.1-rc.3", 600))
+
+        assertEquals(
+            "0.5.1",
+            GitHubReleaseParser.parse(body, current, emptyList(), AppUpdateChannel.Nightly)?.versionName,
+        )
+    }
+
+    @Test
+    fun draftsAndReleasesWithoutAnApkAreSkipped() {
+        val body = list(
+            release("v0.6.0-rc.1", 700, draft = true),
+            release("v0.5.9-rc.1", 650, assets = "[]"),
+            release("v0.5.1-rc.1", 585),
+        )
+
+        assertEquals(
+            "0.5.1-rc.1",
+            GitHubReleaseParser.parse(body, current, emptyList(), AppUpdateChannel.Nightly)?.versionName,
+        )
+    }
+
+    @Test
+    fun nothingNewerOrAnUnusableBodyYieldsNoUpdate() {
+        assertNull(GitHubReleaseParser.parse(list(release("v0.5.0", 578, prerelease = false)), current, emptyList(), AppUpdateChannel.Nightly))
+        assertNull(GitHubReleaseParser.parse("[]", current, emptyList(), AppUpdateChannel.Nightly))
+        assertNull(GitHubReleaseParser.parse("not json", current, emptyList(), AppUpdateChannel.Nightly))
+        assertNull(GitHubReleaseParser.parse(release("v0.6.0", 700), current, emptyList(), AppUpdateChannel.Nightly))
+    }
+
+    @Test
+    fun aPrereleaseWithoutACodeIsNotNewerThanTheSameStableVersion() {
+        val body = list(release("v0.5.0-rc.6", null))
+
+        assertNull(GitHubReleaseParser.parse(body, current, emptyList(), AppUpdateChannel.Nightly))
+    }
+
+    @Test
+    fun stableKeepsReadingASingleLatestRelease() {
+        val update = GitHubReleaseParser.parse(release("v0.6.0", 700, prerelease = false), current, emptyList(), AppUpdateChannel.Stable)
+
+        assertEquals("0.6.0", update?.versionName)
+        assertNull(GitHubReleaseParser.parse(list(release("v0.6.0", 700)), current, emptyList(), AppUpdateChannel.Stable))
+    }
+
+    @Test
+    fun availabilityOnDesktopFollowsTheSameChannelRules() {
+        val body = list(release("v0.5.1-rc.2", 590, assets = "[]"), release("v0.5.1-rc.1", 585, assets = "[]"))
+
+        val update = GitHubReleaseParser.parseAvailability(body, current, AppUpdateChannel.Nightly)
+
+        assertEquals("0.5.1-rc.2", update?.versionName)
+        assertEquals("https://example.invalid/v0.5.1-rc.2", update?.downloadUrl)
+        assertNull(GitHubReleaseParser.parseAvailability(body, current, AppUpdateChannel.Stable))
+    }
+}

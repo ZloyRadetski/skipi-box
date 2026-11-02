@@ -143,4 +143,23 @@ class AppReleaseVersionsTest {
             ),
         )
     }
+
+    @Test
+    fun prereleaseNamesSortBeforeTheirReleaseAndByTheirOwnNumber() {
+        assertFalse(AppReleaseVersions.isVersionNewer("0.5.0", 578, "0.5.0-rc.6", null))
+        assertTrue(AppReleaseVersions.isVersionNewer("0.5.0-rc.5", 570, "0.5.0-rc.6", null))
+        assertTrue(AppReleaseVersions.isVersionNewer("0.5.0-rc.6", 578, "0.5.0", null))
+        assertTrue(AppReleaseVersions.isVersionNewer("0.5.0", 578, "0.5.1-rc.1", null))
+        assertFalse(AppReleaseVersions.isVersionNewer("0.5.0-rc.10", 570, "0.5.0-rc.9", null))
+    }
+
+    @Test
+    fun compareVersionsTrustsDifferingCodesThenFallsBackToNamesAndPrereleases() {
+        assertTrue(AppReleaseVersions.compareVersions("0.5.1", 10, "0.5.0", 9) > 0)
+        assertTrue(AppReleaseVersions.compareVersions("0.5.1", 1, "0.5.0", 9) < 0)
+        assertTrue(AppReleaseVersions.compareVersions("0.5.0", null, "0.5.0-rc.6", null) > 0)
+        assertTrue(AppReleaseVersions.compareVersions("0.5.0-rc.7", null, "0.5.0-rc.6", 9) > 0)
+        assertTrue(AppReleaseVersions.compareVersions("0.5.0-rc.6", 2, "0.5.0-rc.6", null) > 0)
+        assertEquals(0, AppReleaseVersions.compareVersions("v0.5.0", 3, "0.5.0", 3))
+    }
 }

@@ -6,6 +6,7 @@ package features.updater
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -16,11 +17,16 @@ import kotlinx.serialization.json.longOrNull
 object GitHubReleaseParser {
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** Null when the body is not a release, has no usable APK, or is not newer than [current]. */
-    fun parse(body: String, current: CurrentAppVersion, supportedAbis: List<String>): AppUpdateInfo? {
-        val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return null
-        return parse(root, current, supportedAbis)
-    }
+    /**
+     * Null when the body is not a release (a list of releases for [AppUpdateChannel.Nightly]), has no
+     * usable APK, or is not newer than [current]. The nightly list offers its newest usable release.
+     */
+    fun parse(
+        body: String,
+        current: CurrentAppVersion,
+        supportedAbis: List<String>,
+        channel: AppUpdateChannel = AppUpdateChannel.Stable,
+    ): AppUpdateInfo? = parseChannel(body, channel) { root -> parse(root, current, supportedAbis) }
 
     fun parse(root: JsonObject, current: CurrentAppVersion, supportedAbis: List<String>): AppUpdateInfo? {
         val tagName = root.string("tag_name").trim()
@@ -70,8 +76,13 @@ object GitHubReleaseParser {
      * offered through its public page. Null for malformed bodies, releases without a page, or
      * releases that are not newer than [current].
      */
-    fun parseAvailability(body: String, current: CurrentAppVersion): AppUpdateInfo? {
-        val root = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return null
+    fun parseAvailability(
+        body: String,
+        current: CurrentAppVersion,
+        channel: AppUpdateChannel = AppUpdateChannel.Stable,
+    ): AppUpdateInfo? = parseChannel(body, channel) { root -> parseAvailability(root, current) }
+
+    private fun parseAvailability(root: JsonObject, current: CurrentAppVersion): AppUpdateInfo? {
         val tagName = root.string("tag_name").trim()
         val remoteVersionName = tagName.removePrefix("v").trim()
         val pageUrl = root.string("html_url").takeIf(String::isNotBlank) ?: return null
@@ -95,6 +106,25 @@ object GitHubReleaseParser {
             apkSizeBytes = 0L,
             publishedAt = root.string("published_at"),
         )
+    }
+
+    /** [Stable] reads one release object; [Nightly] reads a release list and keeps the newest usable offer. */
+    private inline fun parseChannel(
+        body: String,
+        channel: AppUpdateChannel,
+        parseRelease: (JsonObject) -> AppUpdateInfo?,
+    ): AppUpdateInfo? {
+        val element = runCatching { json.parseToJsonElement(body) }.getOrNull() ?: return null
+        return when (channel) {
+            AppUpdateChannel.Stable -> (element as? JsonObject)?.let(parseRelease)
+            AppUpdateChannel.Nightly -> (element as? JsonArray)
+                ?.mapNotNull { it as? JsonObject }
+                ?.filterNot { it["draft"]?.jsonPrimitive?.booleanOrNull == true }
+                ?.mapNotNull(parseRelease)
+                ?.maxWithOrNull { a, b ->
+                    AppReleaseVersions.compareVersions(a.versionName, a.versionCode, b.versionName, b.versionCode)
+                }
+        }
     }
 
     private fun selectBestApkAsset(assets: JsonArray, supportedAbis: List<String>): JsonObject? {
