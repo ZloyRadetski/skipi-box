@@ -33,7 +33,6 @@ The macOS builds are made for Apple Silicon processors and are not yet signed or
 ## Screenshots
 
 <p align="center">
-  <img src="design/screenshots/main_compact_view.jpg" width="19%" alt="Compact View" />
   <img src="design/screenshots/main_classic_view.jpg" width="19%" alt="Classic View" />
   <img src="design/screenshots/full_app_customization.jpg" width="19%" alt="Theme Customization" />
   <img src="design/screenshots/routing_rules.jpg" width="19%" alt="Routing Rules" />

@@ -37,7 +37,6 @@ SKIPI یک کلاینت چندسکویی برای کار با پروکسی و ت
 </div>
 
 <p align="center">
-  <img src="design/screenshots/main_compact_view.jpg" width="19%" alt="نمای فشرده" />
   <img src="design/screenshots/main_classic_view.jpg" width="19%" alt="نمای کلاسیک" />
   <img src="design/screenshots/full_app_customization.jpg" width="19%" alt="سفارشی‌سازی تم" />
   <img src="design/screenshots/routing_rules.jpg" width="19%" alt="قوانین مسیریابی" />

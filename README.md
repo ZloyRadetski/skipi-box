@@ -33,7 +33,6 @@ SKIPI является кроссплатформенным клиентом д�
 ## Скриншоты
 
 <p align="center">
-  <img src="design/screenshots/main_compact_view.jpg" width="19%" alt="Компактный вид" />
   <img src="design/screenshots/main_classic_view.jpg" width="19%" alt="Классический вид" />
   <img src="design/screenshots/full_app_customization.jpg" width="19%" alt="Кастомизация тем" />
   <img src="design/screenshots/routing_rules.jpg" width="19%" alt="Правила роутинга" />

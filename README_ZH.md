@@ -33,7 +33,6 @@ macOS 版本面向 Apple Silicon 处理器构建，目前尚未签名和公证�
 ## 截图
 
 <p align="center">
-  <img src="design/screenshots/main_compact_view.jpg" width="19%" alt="紧凑视图" />
   <img src="design/screenshots/main_classic_view.jpg" width="19%" alt="经典视图" />
   <img src="design/screenshots/full_app_customization.jpg" width="19%" alt="主题自定义" />
   <img src="design/screenshots/routing_rules.jpg" width="19%" alt="路由规则" />
