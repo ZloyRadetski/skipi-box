@@ -213,12 +213,15 @@ private fun SkipiProxyHomeHeaderMenu(
         mutableStateOf(emptyList<SkipiProxyHomeHeaderAction>())
     }
 
+    val levelWidths = remember(actions) { MenuLevelWidths() }
+
     SkipiHomeDropdownMenu(
         expanded = expanded,
         onDismissRequest = {
             navigationStack = emptyList()
             onDismissRequest()
         },
+        modifier = animatedMenuWidth(levelWidths, navigationStack.lastOrNull()?.id.orEmpty()),
     ) {
         AnimatedContent(
             targetState = navigationStack,
@@ -238,7 +241,7 @@ private fun SkipiProxyHomeHeaderMenu(
             },
             label = "home_header_menu_navigation",
         ) { menuStack ->
-            Column {
+            Column(Modifier.reportMenuLevelWidth(levelWidths, menuStack.lastOrNull()?.id.orEmpty())) {
                 if (menuStack.isNotEmpty()) {
                     DropdownMenuItem(
                         text = {
