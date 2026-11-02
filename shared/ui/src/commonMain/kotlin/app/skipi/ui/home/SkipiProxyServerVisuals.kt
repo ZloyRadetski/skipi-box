@@ -4,6 +4,14 @@
 package app.skipi.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
+import app.skipi.ui.theme.SkipiTheme
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -43,7 +51,9 @@ fun SkipiProxyServerFlagBadge(
             .background(containerColor),
         contentAlignment = Alignment.Center,
     ) {
-        if (flagBitmap != null) {
+        if (flag == StrategyFlagMarker) {
+            SkipiProxyBalancerIcon(color = SkipiTheme.colors.onSurface.copy(alpha = 0.85f), modifier = Modifier.size(size * 0.58f))
+        } else if (flagBitmap != null) {
             SkipiCountryFlagImage(flagBitmap, Modifier.fillMaxSize())
         } else if (flag != null) {
             Text(
@@ -59,10 +69,69 @@ fun SkipiProxyServerFlagBadge(
                 modifier = Modifier.size(size * 0.62f),
             )
         } else {
-            Text(
-                text = "⚡",
-                fontSize = (size.value * 0.58f).sp,
-                lineHeight = (size.value * 0.58f).sp,
+            SkipiProxyServerIcon(color = SkipiTheme.colors.onSurface.copy(alpha = 0.75f), modifier = Modifier.size(size * 0.56f))
+        }
+    }
+}
+
+/** The flag value the presentation layer uses to mark a strategy (balancer) group, which has no country. */
+internal const val StrategyFlagMarker = "⚡"
+
+/** Drawn balancer icon: two routes crossing, traffic shuffled between them. Replaces the lightning emoji. */
+@Composable
+fun SkipiProxyBalancerIcon(
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val stroke = Stroke(width = w * 0.09f, cap = StrokeCap.Round)
+        fun route(startY: Float, endY: Float) {
+            val path = Path().apply {
+                moveTo(w * 0.08f, h * startY)
+                cubicTo(w * 0.5f, h * startY, w * 0.5f, h * endY, w * 0.78f, h * endY)
+            }
+            drawPath(path, color, style = stroke)
+            val head = Path().apply {
+                moveTo(w * 0.94f, h * endY)
+                lineTo(w * 0.76f, h * (endY - 0.14f))
+                lineTo(w * 0.76f, h * (endY + 0.14f))
+                close()
+            }
+            drawPath(head, color)
+        }
+        route(startY = 0.3f, endY = 0.7f)
+        route(startY = 0.7f, endY = 0.3f)
+    }
+}
+
+/** Drawn server icon for a manually added server that has no country flag. */
+@Composable
+fun SkipiProxyServerIcon(
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val stroke = Stroke(width = w * 0.08f)
+        val radius = CornerRadius(w * 0.12f, w * 0.12f)
+        listOf(0.1f to 0.45f, 0.55f to 0.9f).forEach { (top, bottom) ->
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(w * 0.08f, h * top),
+                size = Size(w * 0.84f, h * (bottom - top)),
+                cornerRadius = radius,
+                style = stroke,
+            )
+            drawCircle(color, radius = w * 0.05f, center = Offset(w * 0.25f, h * (top + bottom) / 2f))
+            drawLine(
+                color = color,
+                start = Offset(w * 0.45f, h * (top + bottom) / 2f),
+                end = Offset(w * 0.75f, h * (top + bottom) / 2f),
+                strokeWidth = w * 0.08f,
+                cap = StrokeCap.Round,
             )
         }
     }

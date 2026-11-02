@@ -23,6 +23,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -52,6 +54,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -110,6 +119,7 @@ data class SkipiProxyHeroTypography(
  * Detailed primary connection card. Tunnel sampling and localized strings are
  * supplied by a host; the visual state machine and animations are shared.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SkipiProxyHeroClassicCard(
     state: SkipiProxyHeroState,
@@ -123,316 +133,161 @@ fun SkipiProxyHeroClassicCard(
 ) {
     val connected = state.phase == SkipiConnectionHeroPhase.Connected
     val connecting = state.phase == SkipiConnectionHeroPhase.Connecting
-    val metrics = SkipiTheme.homeMetrics
-    val heroShape = SkipiTheme.shapes.large
-    val cardPadding = if (compact) SkipiTheme.spacing.medium else SkipiTheme.spacing.large
-    val outerButtonSize = metrics.heroButtonOuter
-    val buttonSize = metrics.heroButton
-    val spinnerSize = metrics.heroButtonOuter
-    val buttonIconSize = metrics.heroIcon
-    val cardBorder by animateColorAsState(
-        targetValue = when {
-            connected -> colors.accent.copy(alpha = 0.35f)
-            connecting -> colors.accent.copy(alpha = 0.45f)
-            else -> colors.border
-        },
-        animationSpec = tween(350),
-        label = "skipiProxyHeroClassicBorder",
-    )
-    val buttonBackground by animateColorAsState(
-        targetValue = when {
-            connected -> colors.accent
-            connecting -> colors.accent.copy(alpha = 0.22f)
-            else -> colors.raisedSurface
-        },
-        animationSpec = tween(300),
-        label = "skipiProxyHeroClassicButtonBackground",
-    )
-    val buttonBorder by animateColorAsState(
-        targetValue = when {
-            connected -> colors.accent.copy(alpha = 0.45f)
-            connecting -> colors.accent
-            else -> colors.border.copy(alpha = 1.5f).coerceAlpha()
-        },
-        animationSpec = tween(300),
-        label = "skipiProxyHeroClassicButtonBorder",
-    )
+    val outerSize = if (compact) 188.dp else 232.dp
+    val buttonSize = outerSize * 0.76f
     val accentIsBright = remember(colors.accent) { colors.accent.luminance() > 0.65f }
-    val powerTint by animateColorAsState(
+    val buttonBackground by animateColorAsState(
+        targetValue = if (connected) colors.accent else colors.raisedSurface,
+        animationSpec = tween(300),
+        label = "skipiProxyHeroButtonBackground",
+    )
+    val iconTint by animateColorAsState(
         targetValue = when {
             connected -> if (accentIsBright) Color(0xFF1B1B1F) else Color.White
             connecting -> colors.accent
+            state.toggleEnabled -> colors.text
             else -> colors.mutedText.copy(alpha = 0.5f)
         },
         animationSpec = tween(300),
-        label = "skipiProxyHeroClassicPowerTint",
+        label = "skipiProxyHeroIconTint",
     )
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.88f else 1f,
+        targetValue = if (pressed) 0.94f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMediumLow,
         ),
-        label = "skipiProxyHeroClassicPressScale",
-    )
-    val stateScale by animateFloatAsState(
-        targetValue = when {
-            connected -> 1f
-            connecting -> 0.98f
-            else -> 0.96f
-        },
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "skipiProxyHeroClassicStateScale",
-    )
-    val breathScale by rememberSkipiProxyHeroPulse(
-        enabled = connected,
-        initialValue = 1f,
-        targetValue = 1.035f,
-        durationMillis = 1600,
+        label = "skipiProxyHeroPressScale",
     )
 
-    Card(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(heroShape)
-            .border(1.dp, cardBorder, heroShape),
-        colors = CardDefaults.defaultColors(color = colors.surface),
-        insideMargin = PaddingValues(horizontal = cardPadding, vertical = cardPadding),
+            .padding(vertical = if (compact) 8.dp else 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+        Box(modifier = Modifier.size(outerSize), contentAlignment = Alignment.Center) {
+            if (connected) SkipiProxyHeroPowerButtonWaves(accent = colors.accent, size = buttonSize)
+            if (connecting) SkipiProxyHeroConnectingSpinner(accent = colors.accent, size = outerSize)
+            Box(
+                modifier = Modifier
+                    .size(buttonSize)
+                    .graphicsLayer {
+                        scaleX = pressScale
+                        scaleY = pressScale
+                    }
+                    .clip(CircleShape)
+                    .background(buttonBackground)
+                    .semantics {
+                        contentDescription = if (connected) disconnectContentDescription else connectContentDescription
+                        role = Role.Button
+                    }
+                    .clickable(
+                        enabled = state.toggleEnabled,
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onToggle,
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(modifier = Modifier.size(outerButtonSize), contentAlignment = Alignment.Center) {
-                    if (connected) SkipiProxyHeroPowerButtonWaves(accent = colors.accent, size = buttonSize)
-                    if (connecting) SkipiProxyHeroConnectingSpinner(accent = colors.accent, size = spinnerSize)
-                    Box(
-                        modifier = Modifier
-                            .size(buttonSize)
-                            .graphicsLayer {
-                                // Read while drawing: the breathing pulse must not recompose the card every frame.
-                                val scale = stateScale * breathScale * pressScale
-                                scaleX = scale
-                                scaleY = scale
-                            }
-                            .clip(CircleShape)
-                            .background(buttonBackground)
-                            .border(
-                                width = if (connected) 3.dp else 2.dp,
-                                color = buttonBorder,
-                                shape = CircleShape,
-                            )
-                            .semantics {
-                                contentDescription = if (connected) {
-                                    disconnectContentDescription
-                                } else {
-                                    connectContentDescription
-                                }
-                                role = Role.Button
-                            }
-                            .clickable(
-                                enabled = state.toggleEnabled,
-                                interactionSource = interactionSource,
-                                indication = null,
-                                onClick = onToggle,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        SkipiProxyHeroPowerIcon(
-                            color = powerTint,
-                            modifier = Modifier.size(buttonIconSize),
-                        )
-                    }
-                }
-                Spacer(Modifier.width(if (compact) 12.dp else 16.dp))
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    AnimatedContent(
-                        targetState = state.title,
-                        transitionSpec = {
-                            (fadeIn(animationSpec = tween(260)) +
-                                slideInVertically(animationSpec = tween(260)) { height -> height / 3 })
-                                .togetherWith(
-                                    fadeOut(animationSpec = tween(160)) +
-                                        slideOutVertically(animationSpec = tween(160)) { height -> -height / 3 },
-                                )
-                        },
-                        label = "skipiProxyHeroClassicTitle",
-                    ) { title ->
-                        Text(
-                            text = title,
-                            fontSize = if (compact) SkipiTheme.typography.titleLarge.fontSize else SkipiTheme.typography.headlineSmall.fontSize,
-                            fontWeight = typography.title,
-                            color = colors.text,
-                        )
-                    }
-                    Spacer(Modifier.height(SkipiTheme.spacing.extraSmall))
-                    AnimatedContent(
-                        targetState = state.subtitle,
-                        transitionSpec = {
-                            (fadeIn(animationSpec = tween(260)) + expandVertically(animationSpec = tween(260)))
-                                .togetherWith(fadeOut(animationSpec = tween(160)) + shrinkVertically(animationSpec = tween(160)))
-                        },
-                        label = "skipiProxyHeroClassicSubtitle",
-                    ) { subtitle ->
-                        Text(
-                            text = subtitle,
-                            fontSize = SkipiTheme.typography.bodyMedium.fontSize,
-                            fontWeight = typography.body,
-                            color = colors.mutedText,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = SkipiTheme.typography.bodyMedium.lineHeight,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    state.profileText?.let { profileText ->
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = profileText,
-                            fontSize = SkipiTheme.typography.bodySmall.fontSize,
-                            fontWeight = typography.body,
-                            color = colors.mutedText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
+                SkipiProxyHeroPowerIcon(color = iconTint, modifier = Modifier.size(buttonSize * 0.42f))
             }
-
-            if (compact) {
-                val ipTile = skipiHeroIpTile(state.phase, state.ip, state.showIp, state.maskIp)
-                AnimatedVisibility(
-                    visible = connected && (state.sessionDuration != null || ipTile != null),
-                    enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
-                    exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
+        }
+        Spacer(Modifier.height(if (compact) 12.dp else 16.dp))
+        // The badge is part of the first line of the name, so a long name wraps under it naturally.
+        val nameSize = if (state.subtitle.length > 22) 18.sp else if (compact) 20.sp else 24.sp
+        val badgeSize = nameSize * 1.25f
+        val badgeContainer = if (state.flag == null || state.flag == StrategyFlagMarker) {
+            colors.text.copy(alpha = 0.07f)
+        } else {
+            Color.Transparent
+        }
+        val nameText = remember(state.subtitle) {
+            buildAnnotatedString {
+                appendInlineContent("badge", "□")
+                append("  ")
+                append(state.subtitle)
+            }
+        }
+        Text(
+            text = nameText,
+            inlineContent = mapOf(
+                "badge" to InlineTextContent(
+                    Placeholder(badgeSize, badgeSize, PlaceholderVerticalAlign.Center),
                 ) {
-                    Column {
-                        Spacer(Modifier.height(14.dp))
-                        // One raised panel for the live facts, like the tiles of the wide layout.
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(colors.raisedSurface)
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                        if (state.sessionDuration != null) Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Box(
-                                modifier = Modifier.size(8.dp).clip(CircleShape).background(colors.accent),
+                    SkipiProxyServerFlagBadge(
+                        flag = state.flag,
+                        containerColor = badgeContainer,
+                        size = with(LocalDensity.current) { badgeSize.toDp() },
+                        shapeRadius = 6.dp,
+                    )
+                },
+            ),
+            fontSize = nameSize,
+            lineHeight = nameSize * 1.3f,
+            fontWeight = typography.title,
+            color = colors.text,
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        )
+        state.profileText?.let { profileText ->
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = profileText,
+                fontSize = 13.sp,
+                fontWeight = typography.body,
+                color = colors.mutedText,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        val tiles = skipiHeroInfoTiles(
+            phase = state.phase,
+            sessionDurationText = state.sessionDuration?.let { "" },
+            latency = state.latency,
+            memoryText = state.memoryText,
+            ip = state.ip,
+            showIp = state.showIp,
+            maskIp = state.maskIp,
+        )
+        AnimatedVisibility(
+            visible = tiles.isNotEmpty(),
+            enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
+        ) {
+            // One quiet line of live facts instead of a grid of tiles.
+            FlowRow(
+                modifier = Modifier.padding(top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                tiles.forEach { tile ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (tile.flag != null) {
+                            SkipiProxyServerFlagBadge(
+                                flag = tile.flag,
+                                containerColor = Color.Transparent,
+                                size = 16.dp,
+                                shapeRadius = 3.dp,
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = state.sessionDuration?.value.orEmpty(),
-                                fontSize = 13.sp,
-                                fontWeight = typography.body,
-                                color = colors.mutedText,
-                            )
-                            state.latency?.let { latency ->
-                                SkipiProxyHeroMetricSeparator(colors.mutedText)
-                                if (latency.testing) {
-                                    SkipiProxyHeroAnimatedHourglassIcon(
-                                        color = latency.color,
-                                        size = 13.dp,
-                                    )
-                                } else {
-                                    SkipiProxyHeroSignalBarsIcon(
-                                        color = latency.color,
-                                        modifier = Modifier.size(12.dp),
-                                    )
-                                }
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = latency.text,
-                                    fontSize = 13.sp,
-                                    fontWeight = typography.body,
-                                    color = latency.color,
-                                )
-                            }
-                            state.memoryText?.let { memoryText ->
-                                SkipiProxyHeroMetricSeparator(colors.mutedText)
-                                Text(
-                                    text = stringResource(Res.string.home_runtime_outbound_metric, memoryText),
-                                    fontSize = 13.sp,
-                                    fontWeight = typography.body,
-                                    color = colors.mutedText,
-                                )
-                            }
                         }
-                        ipTile?.let { tile ->
-                            if (state.sessionDuration != null) {
-                                Box(
-                                    modifier = Modifier
-                                        .padding(vertical = 8.dp)
-                                        .fillMaxWidth()
-                                        .height(1.dp)
-                                        .background(colors.mutedText.copy(alpha = 0.18f)),
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                if (tile.flag != null) {
-                                    SkipiProxyServerFlagBadge(
-                                        flag = tile.flag,
-                                        containerColor = Color.Transparent,
-                                        size = 18.dp,
-                                        shapeRadius = 4.dp,
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                }
-                                Text(
-                                    text = tile.value,
-                                    fontSize = 14.sp,
-                                    fontWeight = typography.emphasis,
-                                    color = colors.text,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
-                        }
-                    }
-                }
-            } else {
-                val tiles = skipiHeroInfoTiles(
-                    phase = state.phase,
-                    sessionDurationText = state.sessionDuration?.let { "" },
-                    latency = state.latency,
-                    memoryText = state.memoryText,
-                    ip = state.ip,
-                    showIp = state.showIp,
-                    maskIp = state.maskIp,
-                )
-                AnimatedVisibility(
-                    visible = tiles.isNotEmpty(),
-                    enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
-                    exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200)),
-                ) {
-                    Column {
-                        Spacer(Modifier.height(14.dp))
-                        SkipiHeroInfoTileGrid(
-                            tiles = tiles,
-                            surface = colors.raisedSurface.copy(alpha = 0.6f),
-                            labelColor = colors.mutedText,
-                            valueColor = colors.text,
-                            fontWeight = typography.emphasis,
-                            timeValue = state.sessionDuration,
+                        Text(
+                            text = if (tile.kind == SkipiHeroTileKind.Time) {
+                                state.sessionDuration?.value.orEmpty()
+                            } else {
+                                tile.value
+                            },
+                            fontSize = 13.sp,
+                            fontWeight = typography.body,
+                            color = tile.color ?: colors.mutedText,
+                            maxLines = 1,
                         )
                     }
                 }
@@ -740,7 +595,13 @@ private fun SkipiProxyHeroBadge(
             modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.07f)),
             contentAlignment = Alignment.Center,
         ) {
-            Text(flag ?: "⚡", fontSize = 20.sp)
+            if (flag == StrategyFlagMarker) {
+                SkipiProxyBalancerIcon(color = SkipiTheme.colors.onSurface.copy(alpha = 0.85f), modifier = Modifier.size(22.dp))
+            } else if (flag == null) {
+                SkipiProxyServerIcon(color = SkipiTheme.colors.onSurface.copy(alpha = 0.75f), modifier = Modifier.size(22.dp))
+            } else {
+                Text(flag, fontSize = 20.sp)
+            }
         }
     }
 }

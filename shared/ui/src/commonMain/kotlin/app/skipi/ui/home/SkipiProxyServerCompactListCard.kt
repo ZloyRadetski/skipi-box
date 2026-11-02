@@ -4,6 +4,8 @@
 package app.skipi.ui.home
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -100,11 +102,6 @@ fun SkipiProxyServerCompactListCard(
             .zIndex(if (state.isDragging) 1f else 0f)
             .then(dragVisualModifier)
             .clip(selectedShape)
-            .border(
-                width = if (state.selected) 1.dp else 0.dp,
-                color = if (state.selected) colors.selectedBorder else Color.Transparent,
-                shape = selectedShape,
-            )
             .then(dragModifier),
     ) {
         Card(
@@ -198,6 +195,15 @@ fun SkipiProxyServerCompactListCard(
                             }
                         }
                     }
+                }
+                if (state.selected) {
+                    Spacer(Modifier.width(SkipiTheme.spacing.small))
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(colors.selectedBorder),
+                    )
                 }
             }
         }

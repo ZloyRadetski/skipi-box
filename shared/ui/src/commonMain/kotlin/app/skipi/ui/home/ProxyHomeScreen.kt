@@ -13,6 +13,9 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
@@ -523,16 +526,28 @@ fun ProxyHomeScreenContent(
             Spacer(Modifier.height(SkipiTheme.spacing.small))
 
             if (isWide) {
-                HomeConnectionPanel(
-                    state = state,
-                    compact = false,
-                    onToggle = { send(ProxyHomeAction.ToggleTunnel) },
-                )
-                Spacer(Modifier.height(SkipiTheme.spacing.medium))
                 Row(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.medium),
+                    horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.large),
                 ) {
+                    Column(
+                        modifier = Modifier
+                            .width(300.dp)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        HomeConnectionPanel(
+                            state = state,
+                            compact = false,
+                            onToggle = { send(ProxyHomeAction.ToggleTunnel) },
+                        )
+                        Spacer(Modifier.height(SkipiTheme.spacing.medium))
+                        SelectedServerDetailsPane(
+                            state = state,
+                            server = selectedServer,
+                            onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
+                        )
+                    }
                     val wideSelectedPage = state.pages.firstOrNull { it.group.id == state.selectedGroupId }
                         ?: state.pages.firstOrNull()
                         ?: ProxyHomePageUiState(
@@ -546,7 +561,7 @@ fun ProxyHomeScreenContent(
                             subscription = state.subscription,
                             subscriptionExpanded = true,
                         )
-                    Box(modifier = Modifier.weight(1.1f).fillMaxSize()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                         PageServerGrid(
                             page = wideSelectedPage,
                             state = state,
@@ -570,12 +585,6 @@ fun ProxyHomeScreenContent(
                             onAction = send,
                         )
                     }
-                    SelectedServerDetailsPane(
-                        state = state,
-                        server = selectedServer,
-                        onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
-                        modifier = Modifier.weight(0.9f).fillMaxSize(),
-                    )
                 }
             } else {
                 if (pinConnection) {
@@ -782,7 +791,7 @@ private fun PageServerGrid(
     val subscription = page.subscription
     val subscriptionGroup = page.group.kind == ProxyHomeGroupKind.Subscription
     val providerSurface = SkipiTheme.colors.surface
-    val providerBorder = SkipiTheme.colors.onSurface.copy(alpha = 0.14f)
+    val providerBorder = Color.Transparent
     val providerDivider = SkipiTheme.colors.onSurface.copy(alpha = 0.08f)
     val gridState = rememberLazyGridState()
     val rowContext = remember(
@@ -1246,9 +1255,9 @@ private fun HomeGroupSelector(
         groups = groupItems,
         selectedGroupId = state.selectedGroupId,
         colors = SkipiProxyGroupPickerColors(
-            surface = SkipiTheme.colors.surface,
+            surface = SkipiTheme.colors.surfaceVariant,
             raisedSurface = SkipiTheme.colors.surfaceVariant,
-            border = SkipiTheme.colors.onSurface.copy(alpha = 0.10f),
+            border = Color.Transparent,
             accent = SkipiTheme.colors.accent,
             text = SkipiTheme.colors.onSurface,
             mutedText = SkipiTheme.colors.onSurfaceVariant,
@@ -1361,69 +1370,63 @@ private fun SelectedServerDetailsPane(
     onTest: (ProxyServerSummary) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier,
-        shape = SkipiTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = SkipiTheme.colors.surface),
-        border = BorderStroke(1.dp, SkipiTheme.colors.surfaceVariant),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(SkipiTheme.spacing.large),
-            verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.medium),
+    if (server == null) return
+    val latencyMs = server.latencyMs
+    val latency = when {
+        server.latencyTesting -> stringResource(Res.string.home_server_testing_latency)
+        latencyMs != null -> stringResource(Res.string.home_latency_milliseconds, latencyMs)
+        server.latencyError -> server.latencyErrorText?.takeIf(String::isNotBlank)
+            ?: stringResource(Res.string.proxy_server_list_latency_failed)
+        else -> "\u2014"
+    }
+    Column(modifier = modifier.fillMaxWidth()) {
+        FlatDetailRow(stringResource(Res.string.home_server_address), server.address)
+        FlatDetailRow(stringResource(Res.string.home_server_protocol), server.protocol)
+        server.transport?.takeIf(String::isNotBlank)?.let { transport ->
+            FlatDetailRow(stringResource(Res.string.home_server_transport), transport)
+        }
+        FlatDetailRow(stringResource(Res.string.home_server_latency), latency)
+        Spacer(Modifier.height(SkipiTheme.spacing.small))
+        val canTest = server.canTest && !server.latencyTesting && canUseHomeAction(state, ProxyHomeActionId.TestServer)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(SkipiTheme.colors.surfaceVariant)
+                .clickable(enabled = canTest) { onTest(server) }
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = stringResource(Res.string.home_server_detail_title),
-                color = SkipiTheme.colors.onSurface,
-                style = SkipiTheme.typography.titleLarge,
-                fontWeight = themedFontWeight(FontWeight.Bold),
+                text = stringResource(Res.string.home_server_test_latency),
+                color = if (canTest) SkipiTheme.colors.onSurface else SkipiTheme.colors.onSurfaceVariant,
+                style = SkipiTheme.typography.labelLarge,
+                fontWeight = themedFontWeight(FontWeight.SemiBold),
             )
-            if (server == null) {
-                Text(
-                    text = stringResource(Res.string.home_server_detail_hint),
-                    color = SkipiTheme.colors.onSurfaceVariant,
-                    style = SkipiTheme.typography.bodyMedium,
-                )
-            } else {
-                Text(
-                    text = server.title,
-                    color = SkipiTheme.colors.onSurface,
-                    style = SkipiTheme.typography.headlineSmall,
-                    fontWeight = themedFontWeight(FontWeight.SemiBold),
-                )
-                ServerDetailValue(
-                    label = stringResource(Res.string.home_server_address),
-                    value = server.address,
-                )
-                ServerDetailValue(
-                    label = stringResource(Res.string.home_server_protocol),
-                    value = server.protocol,
-                )
-                server.transport?.takeIf(String::isNotBlank)?.let { transport ->
-                    ServerDetailValue(
-                        label = stringResource(Res.string.home_server_transport),
-                        value = transport,
-                    )
-                }
-                val latencyMs = server.latencyMs
-                val latency = when {
-                    server.latencyTesting -> stringResource(Res.string.home_server_testing_latency)
-                    latencyMs != null -> stringResource(Res.string.home_latency_milliseconds, latencyMs)
-                    server.latencyError -> server.latencyErrorText?.takeIf(String::isNotBlank)
-                        ?: stringResource(Res.string.proxy_server_list_latency_failed)
-                    else -> "—"
-                }
-                ServerDetailValue(
-                    label = stringResource(Res.string.home_server_latency),
-                    value = latency,
-                )
-                OutlinedButton(
-                    onClick = { onTest(server) },
-                    enabled = server.canTest && !server.latencyTesting && canUseHomeAction(state, ProxyHomeActionId.TestServer),
-                ) {
-                    Text(stringResource(Res.string.home_server_test_latency))
-                }
-            }
         }
+    }
+}
+
+@Composable
+private fun FlatDetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.medium),
+    ) {
+        Text(
+            text = label,
+            color = SkipiTheme.colors.onSurfaceVariant,
+            style = SkipiTheme.typography.bodySmall,
+            modifier = Modifier.widthIn(min = 76.dp),
+        )
+        Text(
+            text = value,
+            color = SkipiTheme.colors.onSurface,
+            style = SkipiTheme.typography.bodySmall,
+            fontWeight = themedFontWeight(FontWeight.Medium),
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -1527,8 +1530,8 @@ private fun ServerListItem(
             ),
             colors = SkipiProxyServerCompactListCardColors(
                 surface = SkipiTheme.colors.surface,
-                selectedSurface = SkipiTheme.colorScheme.primaryContainer,
-                selectedBorder = SkipiTheme.colorScheme.outline,
+                selectedSurface = SkipiTheme.colors.surfaceVariant,
+                selectedBorder = SkipiTheme.colors.accent,
             ),
             titleFontWeight = themedFontWeight(FontWeight.SemiBold),
             latencyFontWeight = themedFontWeight(FontWeight.Medium),
