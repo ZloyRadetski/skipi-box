@@ -3,6 +3,9 @@
 
 package app.skipi.ui.components
 
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -131,22 +134,31 @@ fun WarningConfirmDialog(
                             content = details,
                         )
                     }
-                    if (warningDialogStacksButtons(dismissText, confirmText)) {
-                        // A half-width button would wrap a long label onto several lines.
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            TextButton(text = confirmText, onClick = onConfirm, modifier = Modifier.fillMaxWidth())
-                            TextButton(text = dismissText, onClick = onDismissRequest, modifier = Modifier.fillMaxWidth())
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                        val textMeasurer = rememberTextMeasurer()
+                        val density = LocalDensity.current
+                        val buttonStyle = MiuixTheme.textStyles.button
+                        val widestLabel = with(density) {
+                            listOf(dismissText, confirmText).maxOf { label ->
+                                textMeasurer.measure(label, buttonStyle, maxLines = 1, softWrap = false).size.width.toDp()
+                            }
                         }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            TextButton(text = dismissText, onClick = onDismissRequest, modifier = Modifier.weight(1f))
-                            TextButton(text = confirmText, onClick = onConfirm, modifier = Modifier.weight(1f))
+                        if (warningDialogStacksButtons(widestLabel, maxWidth)) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                TextButton(text = confirmText, onClick = onConfirm, modifier = Modifier.fillMaxWidth())
+                                TextButton(text = dismissText, onClick = onDismissRequest, modifier = Modifier.fillMaxWidth())
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(ButtonRowGap),
+                            ) {
+                                TextButton(text = dismissText, onClick = onDismissRequest, modifier = Modifier.weight(1f))
+                                TextButton(text = confirmText, onClick = onConfirm, modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
@@ -155,8 +167,14 @@ fun WarningConfirmDialog(
     }
 }
 
-private const val MaxSideBySideLabelLength = 14
+private val ButtonRowGap = 12.dp
 
-/** Two buttons share a row only when both labels comfortably fit in half of a phone-width dialog. */
-internal fun warningDialogStacksButtons(dismissText: String, confirmText: String): Boolean =
-    maxOf(dismissText.length, confirmText.length) > MaxSideBySideLabelLength
+/** TextButton's default horizontal inside margin, on each side of the label. */
+private val ButtonHorizontalPadding = 16.dp
+
+/**
+ * Two buttons share a row only when the widest label, with the button's own horizontal padding,
+ * fits in half the row; otherwise a half-width button would wrap its label onto several lines.
+ */
+internal fun warningDialogStacksButtons(widestLabel: Dp, rowWidth: Dp): Boolean =
+    widestLabel + ButtonHorizontalPadding * 2 > (rowWidth - ButtonRowGap) / 2
