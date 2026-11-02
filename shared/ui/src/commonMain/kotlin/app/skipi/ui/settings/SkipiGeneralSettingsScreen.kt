@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -194,8 +196,8 @@ fun SkipiGeneralSettingsScreen(
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = contentPadding,
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
+                contentPadding = contentPadding.withTopBarGap(),
             ) {
                 if (
                     GeneralSettingsControl.Language in visibleControls ||

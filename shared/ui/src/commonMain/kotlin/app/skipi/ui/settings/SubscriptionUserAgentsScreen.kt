@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -83,8 +85,8 @@ fun SubscriptionUserAgentsScreen(
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = contentPadding,
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
+                contentPadding = contentPadding.withTopBarGap(),
             ) {
                 item(key = "subscription_user_agents_title") {
                     SmallTitle(text = stringResource(Res.string.settings_user_agents))

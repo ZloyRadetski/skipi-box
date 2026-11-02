@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -144,8 +146,8 @@ fun SkipiAboutScreen(
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = contentPadding,
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
+                contentPadding = contentPadding.withTopBarGap(),
             ) {
                 item(key = "about_header") {
                     androidx.compose.foundation.layout.Column(

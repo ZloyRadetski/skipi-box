@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import app.skipi.ui.resources.common_hide
 import app.skipi.ui.resources.common_show
 import app.skipi.ui.resources.settings_local_proxy
@@ -171,8 +173,8 @@ fun SkipiLocalProxySettingsScreen(
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = contentPadding,
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
+                contentPadding = contentPadding.withTopBarGap(),
             ) {
                 item(key = "local_proxy_network_title") { SmallTitle(text = labels.networkSectionTitle) }
                 item(key = "local_proxy_network_card") {

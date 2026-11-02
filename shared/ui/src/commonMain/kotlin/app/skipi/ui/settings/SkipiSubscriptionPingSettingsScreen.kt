@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.background
 import app.skipi.ui.text.themedFontWeight
 import androidx.compose.foundation.clickable
@@ -127,8 +129,9 @@ fun SkipiSubscriptionPingSettingsScreen(
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
+                    .fadeUnderTopBar(contentPadding.calculateTopPadding())
                     .pageScrollModifiers(scrollBehavior),
-                contentPadding = pageListPadding(contentPadding),
+                contentPadding = pageListPadding(contentPadding).withTopBarGap(),
             ) {
                 // Section: Ping Mode (HTTP vs TCP)
                 item(key = "section_mode_title") {

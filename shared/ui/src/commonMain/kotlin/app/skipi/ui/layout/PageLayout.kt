@@ -24,11 +24,35 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import app.skipi.ui.home.verticalEdgeFade
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+
+/** Gap between a transparent top bar and the first item at rest; scrolled items fade in across it. */
+val TopBarFadeGap: Dp = 8.dp
+
+/**
+ * Scrolling content under a transparent top bar of [barHeight]: what scrolls under the bar is hidden
+ * instead of showing through its title, and fades in across [gap] below it. Pair it with
+ * [withTopBarGap] on the list's content padding, so the first item rests where it is fully visible.
+ */
+fun Modifier.fadeUnderTopBar(barHeight: Dp, gap: Dp = TopBarFadeGap): Modifier =
+    verticalEdgeFade(top = barHeight + gap, bottom = 0.dp, topClear = barHeight)
+
+/** The list padding for [fadeUnderTopBar]: this padding, whose top is the bar's height, plus the gap. */
+@Composable
+fun PaddingValues.withTopBarGap(gap: Dp = TopBarFadeGap): PaddingValues {
+    val layoutDirection = LocalLayoutDirection.current
+    return PaddingValues(
+        start = calculateStartPadding(layoutDirection),
+        top = calculateTopPadding() + gap,
+        end = calculateEndPadding(layoutDirection),
+        bottom = calculateBottomPadding(),
+    )
+}
 
 fun Modifier.pageScrollModifiers(
     topAppBarScrollBehavior: ScrollBehavior,

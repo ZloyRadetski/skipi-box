@@ -3,6 +3,7 @@
 
 package app.skipi.ui.server.editor
 
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -167,7 +168,7 @@ fun SkipiProxyServerEditorScreen(
             customEditor(serverEdit, contentPadding)
         } else {
             Box(Modifier.fillMaxSize()) {
-                LazyColumn(state = listState, modifier = Modifier.pageScrollModifiers(scrollBehavior), contentPadding = editorPadding) {
+                LazyColumn(state = listState, modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).pageScrollModifiers(scrollBehavior), contentPadding = editorPadding) {
                     proxyServerEditorContent(serverEdit, options)
                 }
                 VerticalScrollBar(

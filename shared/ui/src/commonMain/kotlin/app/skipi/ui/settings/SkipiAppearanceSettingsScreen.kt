@@ -5,6 +5,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.animation.AnimatedVisibility
 import app.skipi.ui.components.AppOverlayDropdownPreference
 import app.skipi.ui.components.AppSlider
@@ -235,11 +237,12 @@ fun SkipiAppearanceSettingsScreen(
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
+                    .fadeUnderTopBar(innerListPadding.calculateTopPadding())
                     .fillMaxSize()
                     .overScrollVertical()
                     .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection)
                     .fillMaxHeight(),
-                contentPadding = innerListPadding,
+                contentPadding = innerListPadding.withTopBarGap(),
             ) {
                 item(key = "appearance_theme") {
                     SmallTitle(text = stringResource(Res.string.settings_theme))

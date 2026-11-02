@@ -3,6 +3,8 @@
 
 package app.skipi.ui.subscription
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -89,9 +91,9 @@ fun <DeletionPayload> SubscriptionGroupListScreen(
         SubscriptionGroupListContent(
             groups = groups,
             updatingGroupIds = presentation.updatingGroupIds,
-            contentPadding = pageListPadding(contentPadding),
+            contentPadding = pageListPadding(contentPadding).withTopBarGap(),
             modifier = Modifier.fillMaxSize(),
-            scrollModifier = Modifier.pageScrollModifiers(scrollBehavior),
+            scrollModifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).pageScrollModifiers(scrollBehavior),
             trackPadding = contentPadding,
             onToggle = onToggle,
             onUpdate = { group -> startUpdate(group.id) },

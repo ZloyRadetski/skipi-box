@@ -3,6 +3,9 @@
 
 package app.skipi.ui.diagnostics
 
+import app.skipi.ui.layout.TopBarFadeGap
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -143,12 +146,15 @@ private fun DiagnosticsPageScaffold(
         val direction = LocalLayoutDirection.current
         // Match the app-wide horizontal content margin shared by every tool page.
         val listPadding = PaddingValues(
-            top = base.calculateTopPadding(),
+            top = base.calculateTopPadding() + TopBarFadeGap,
             bottom = base.calculateBottomPadding(),
             start = base.calculateStartPadding(direction) + 16.dp,
             end = base.calculateEndPadding(direction) + 16.dp,
         )
-        content(listPadding, scrollBehavior)
+        // What scrolls under the transparent bar is hidden instead of showing through its title.
+        Box(Modifier.fillMaxSize().fadeUnderTopBar(contentPadding.calculateTopPadding())) {
+            content(listPadding, scrollBehavior)
+        }
     }
 }
 

@@ -5,6 +5,8 @@
 
 package features.about
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import app.LocalIsWideScreen
 import app.LocalNavigator
 import androidx.compose.foundation.layout.Box
@@ -84,10 +86,10 @@ fun LicensePage(
         Box {
             LazyColumn(
                 state = lazyListState,
-                modifier = Modifier.pageScrollModifiers(
-                    topAppBarScrollBehavior,
-                ),
-                contentPadding = contentPadding,
+                modifier = Modifier
+                    .fadeUnderTopBar(contentPadding.calculateTopPadding())
+                    .pageScrollModifiers(topAppBarScrollBehavior),
+                contentPadding = contentPadding.withTopBarGap(),
             ) {
                 libraries?.let { libs ->
                     items(libs, key = { it.uniqueId }) { library ->

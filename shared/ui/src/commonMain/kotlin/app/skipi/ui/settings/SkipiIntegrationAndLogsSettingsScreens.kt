@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -136,8 +138,8 @@ fun SkipiIntegrationSettingsScreen(
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = contentPadding,
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
+                contentPadding = contentPadding.withTopBarGap(),
             ) {
                 item(key = "integration_settings") {
                     SmallTitle(text = labels.sectionTitle)
@@ -240,8 +242,8 @@ fun SkipiLogsSettingsScreen(
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = contentPadding,
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
+                contentPadding = contentPadding.withTopBarGap(),
             ) {
                 if (capabilities.logLevel || capabilities.retention || capabilities.accessLog) item(key = "log_options") {
                     SmallTitle(text = labels.optionsSectionTitle)

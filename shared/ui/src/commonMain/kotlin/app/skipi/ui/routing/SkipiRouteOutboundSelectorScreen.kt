@@ -5,6 +5,8 @@
 
 package app.skipi.ui.routing
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -83,8 +85,8 @@ fun SkipiRouteOutboundSelectorScreen(
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.pageScrollModifiers(scrollBehavior),
-                contentPadding = pageListPadding(contentPadding),
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).pageScrollModifiers(scrollBehavior),
+                contentPadding = pageListPadding(contentPadding).withTopBarGap(),
             ) {
                 groups.forEach { group ->
                     val expanded = selectorState.isExpanded(

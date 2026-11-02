@@ -5,6 +5,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.background
 import app.skipi.ui.text.themedFontWeight
 import androidx.compose.foundation.clickable
@@ -93,9 +95,10 @@ fun SkipiUrlSchemesScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier
+                    .fadeUnderTopBar(contentPadding.calculateTopPadding())
                     .fillMaxSize()
                     .pageScrollModifiers(scrollBehavior),
-                contentPadding = pageListPadding(contentPadding),
+                contentPadding = pageListPadding(contentPadding).withTopBarGap(),
             ) {
                 // 1. Note Banner
                 item(key = "url_schemes_note") {

@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -148,8 +150,8 @@ fun SkipiSettingsHomeScreen(
         )
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = contentPadding,
+            modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
+            contentPadding = contentPadding.withTopBarGap(),
         ) {
             if (SkipiSettingsDestination.Appearance in visible) item(key = "section_appearance") {
                 SettingsSectionTitle(stringResource(Res.string.settings_header_appearance))

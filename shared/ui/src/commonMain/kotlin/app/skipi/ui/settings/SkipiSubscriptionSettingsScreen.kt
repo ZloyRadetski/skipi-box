@@ -3,6 +3,8 @@
 
 package app.skipi.ui.settings
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import app.skipi.ui.resources.common_cancel
 import app.skipi.ui.resources.settings_category_subscriptions
 import app.skipi.ui.resources.settings_deletion_confirmation
@@ -147,8 +149,8 @@ fun SkipiSubscriptionSettingsScreen(
         Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = contentPadding,
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize(),
+                contentPadding = contentPadding.withTopBarGap(),
             ) {
                 item(key = "subscriptions_general") {
                     SmallTitle(text = labels.generalSectionTitle)

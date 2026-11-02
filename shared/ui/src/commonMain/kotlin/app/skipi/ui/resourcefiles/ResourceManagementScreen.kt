@@ -5,6 +5,8 @@
 
 package app.skipi.ui.resourcefiles
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.ui.graphics.Color
 import app.skipi.ui.components.BackNavigationIcon
 import app.skipi.ui.components.DeleteConfirmationDialog
@@ -337,12 +339,13 @@ fun ResourceManagementScreen(
 
         Box(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+,
         ) {
             LazyColumn(
                 state = lazyListState,
-                modifier = Modifier.pageScrollModifiers(topAppBarScrollBehavior),
-                contentPadding = listPadding,
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).pageScrollModifiers(topAppBarScrollBehavior),
+                contentPadding = listPadding.withTopBarGap(),
             ) {
                 item(key = "resource_files_title") {
                     SmallTitle(text = stringResource(Res.string.settings_resource_files_files))

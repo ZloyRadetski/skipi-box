@@ -3,6 +3,8 @@
 
 package app.skipi.ui.networkautomation
 
+import app.skipi.ui.layout.withTopBarGap
+import app.skipi.ui.layout.fadeUnderTopBar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -144,8 +146,8 @@ fun SkipiNetworkAutomationScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 state = lazyListState,
-                modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
-                contentPadding = pageListPadding(contentPadding),
+                modifier = Modifier.fadeUnderTopBar(contentPadding.calculateTopPadding()).fillMaxSize().pageScrollModifiers(scrollBehavior),
+                contentPadding = pageListPadding(contentPadding).withTopBarGap(),
             ) {
                 item(key = "automation_controls") {
                     SmallTitle(text = stringResource(Res.string.settings_network_automation_title))
