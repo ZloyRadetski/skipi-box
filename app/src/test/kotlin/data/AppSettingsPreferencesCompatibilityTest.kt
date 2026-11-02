@@ -11,6 +11,7 @@ import app.modes.ConnectionDisplayModeCompact
 import app.modes.ProxyServerListLayoutDouble
 import app.modes.ProxyServerListLayoutMultiple
 import features.config.TrafficConfigState
+import features.updater.AppUpdateChannel
 import features.subscription.DefaultSubscriptionUserAgent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -195,6 +196,26 @@ class AppSettingsPreferencesCompatibilityTest {
         assertTrue(restoredThreeColumns.showServerSearch)
         assertTrue(restoredThreeColumns.enableAllProxyGroup)
         assertTrue(restoredThreeColumns.showTunnelMemoryOnHome)
+    }
+
+    @Test
+    fun updateChannelDefaultsToStableAndSurvivesSaveAndLoad() {
+        val preferences = InMemorySharedPreferences()
+        val store = AppSettingsPreferences(TestContext(preferences))
+
+        assertEquals(AppUpdateChannel.Stable, store.load().appUpdateChannel)
+
+        store.save(AppState(appUpdateChannel = AppUpdateChannel.Nightly))
+
+        assertEquals("nightly", preferences.getString("app_update_channel", null))
+        assertEquals(AppUpdateChannel.Nightly, store.load().appUpdateChannel)
+    }
+
+    @Test
+    fun anUnknownStoredUpdateChannelFallsBackToStable() {
+        val preferences = InMemorySharedPreferences().apply { seedString("app_update_channel", "weekly") }
+
+        assertEquals(AppUpdateChannel.Stable, AppSettingsPreferences(TestContext(preferences)).load().appUpdateChannel)
     }
 }
 

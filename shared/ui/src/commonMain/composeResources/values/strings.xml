@@ -1143,6 +1143,11 @@
     <string name="settings_auto_install_night_title">Auto-download on Wi-Fi</string>
     <string name="settings_auto_install_night_summary">Download updates on unmetered Wi-Fi while charging. Android will always ask before installation.</string>
     <string name="settings_check_updates_now_action">Check for updates now</string>
+    <string name="settings_update_channel_title">Update channel</string>
+    <string name="settings_update_channel_stable">Stable</string>
+    <string name="settings_update_channel_nightly">Nightly</string>
+    <string name="settings_update_channel_stable_summary">Stable releases only</string>
+    <string name="settings_update_channel_nightly_summary">Stable and nightly pre-releases</string>
     <string name="app_update_checking">Checking for updates…</string>
     <string name="app_update_already_latest">You are using the latest version of SKIPI</string>
     <string name="app_update_check_failed">Could not check for updates. Your current update notice was kept.</string>

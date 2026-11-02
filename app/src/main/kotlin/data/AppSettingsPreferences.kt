@@ -13,6 +13,7 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.edit
 import app.AppState
+import features.updater.AppUpdateChannel
 import features.updater.AppUpdateDownloadStatus
 import features.updater.AppUpdateInfo
 import features.config.TrafficConfigState
@@ -412,6 +413,7 @@ internal class AppSettingsPreferences(
             serviceControl = preferences.getServiceControl(defaults.serviceControl),
             proxyAppListMode = preferences.getInt(KeyProxyAppListMode, defaults.proxyAppListMode),
             autoCheckAppUpdates = preferences.getBoolean(KeyAutoCheckAppUpdates, defaults.autoCheckAppUpdates),
+            appUpdateChannel = AppUpdateChannel.fromId(preferences.getString(KeyAppUpdateChannel, null)),
             autoInstallAppUpdatesAtNight = preferences.getBoolean(KeyAutoInstallAppUpdatesAtNight, defaults.autoInstallAppUpdatesAtNight),
             availableAppUpdate = preferences.getAppUpdateInfo(defaults.availableAppUpdate),
             dismissedUpdateVersion = preferences.getString(KeyDismissedUpdateVersion, defaults.dismissedUpdateVersion) ?: defaults.dismissedUpdateVersion,
@@ -573,6 +575,7 @@ internal class AppSettingsPreferences(
             .putServiceControl(state.serviceControl)
             .putInt(KeyProxyAppListMode, state.proxyAppListMode)
             .putBoolean(KeyAutoCheckAppUpdates, state.autoCheckAppUpdates)
+            .putString(KeyAppUpdateChannel, state.appUpdateChannel.id)
             .putBoolean(KeyAutoInstallAppUpdatesAtNight, state.autoInstallAppUpdatesAtNight)
             .putString(
                 KeyAvailableAppUpdate,
@@ -984,6 +987,7 @@ private const val KeyServiceControlWifiDisconnectStopSsids = "service_control_wi
 private const val KeyServiceControlWifiDisconnectStopBssids = "service_control_wifi_disconnect_stop_bssids"
 private const val KeyProxyAppListMode = "proxy_app_list_mode"
 private const val KeyAutoCheckAppUpdates = "auto_check_app_updates"
+private const val KeyAppUpdateChannel = "app_update_channel"
 private const val KeyAutoInstallAppUpdatesAtNight = "auto_install_app_updates_at_night"
 private const val KeyAvailableAppUpdate = "available_app_update"
 private const val KeyAppUpdateDownloadStatus = "app_update_download_status"

@@ -310,7 +310,7 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                 var appUpdateState by remember { mutableStateOf(AppUpdateState()) }
                 val appUpdateChecker = remember { DesktopAppUpdateChecker() }
                 suspend fun checkForAppUpdate(): DesktopAppUpdateCheck {
-                    val outcome = appUpdateChecker.check()
+                    val outcome = appUpdateChecker.check(desktopSettings.appUpdateChannel)
                     when (outcome) {
                         is DesktopAppUpdateCheck.Available ->
                             appUpdateState = appUpdateState.applyCheckedRelease(outcome.update).state
@@ -319,7 +319,11 @@ private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String
                     }
                     return outcome
                 }
-                LaunchedEffect(desktopSettings.autoCheckAppUpdates) {
+                // An offer found on another channel is not valid on this one (a pre-release after leaving Nightly).
+                LaunchedEffect(desktopSettings.appUpdateChannel) {
+                    appUpdateState = AppUpdateState()
+                }
+                LaunchedEffect(desktopSettings.autoCheckAppUpdates, desktopSettings.appUpdateChannel) {
                     if (desktopSettings.autoCheckAppUpdates) checkForAppUpdate()
                 }
 

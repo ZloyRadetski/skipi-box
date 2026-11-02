@@ -102,6 +102,7 @@ import app.skipi.ui.settings.AboutRuntimeInfo
 import app.skipi.ui.settings.AboutSettingsCapabilities
 import app.skipi.ui.settings.AboutSettingsLabels
 import app.skipi.ui.updater.SkipiAppUpdatesSettingsCard
+import features.updater.AppUpdateChannel
 import features.updater.AppUpdateState
 import app.skipi.ui.settings.AppearanceSettingsCapabilities
 import app.skipi.ui.settings.GeneralSettingsCapabilities
@@ -451,6 +452,7 @@ internal fun DesktopSettingsScreen(
             appUpdateState = appUpdateState,
             onCheckForAppUpdate = onCheckForAppUpdate,
             onAutoCheckChange = { enabled -> persist(currentSettings.copy(autoCheckAppUpdates = enabled), "") },
+            onUpdateChannelChange = { channel -> persist(currentSettings.copy(appUpdateChannelId = channel.id), "") },
             onReplayOnboarding = { persist(currentSettings.copy(onboardingCompleted = false), "") },
             onBack = goBack,
             onMessage = { message = it },
@@ -1020,6 +1022,7 @@ private fun DesktopAboutSettings(
     appUpdateState: AppUpdateState,
     onCheckForAppUpdate: suspend () -> DesktopAppUpdateCheck,
     onAutoCheckChange: (Boolean) -> Unit,
+    onUpdateChannelChange: (AppUpdateChannel) -> Unit,
     onBack: () -> Unit,
     onReplayOnboarding: () -> Unit,
     onMessage: (String) -> Unit,
@@ -1058,6 +1061,11 @@ private fun DesktopAboutSettings(
                 onAutoCheckChange = onAutoCheckChange,
                 nightInstallEnabled = null,
                 onNightInstallChange = {},
+                channel = settings.appUpdateChannel,
+                onChannelChange = { channel ->
+                    result = null
+                    onUpdateChannelChange(channel)
+                },
                 checkSummary = when {
                     checking -> checkingText
                     known0 != null -> "$availableText v${known0.versionName}"

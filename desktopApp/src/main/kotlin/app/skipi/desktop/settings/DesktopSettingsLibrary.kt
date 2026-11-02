@@ -24,6 +24,7 @@ import app.skipi.app.settings.isValidTunVpnDns
 import engine.network.NetworkDefaults
 import engine.vpn.VpnDefaults
 import features.subscription.SubscriptionExpiryReminder
+import features.updater.AppUpdateChannel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -157,7 +158,11 @@ data class DesktopAppSettings(
     val hapticsEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
     val autoCheckAppUpdates: Boolean = true,
-)
+    /** [AppUpdateChannel.id]; kept as text so a value this build does not know still loads (as Stable). */
+    val appUpdateChannelId: String = AppUpdateChannel.Stable.id,
+) {
+    val appUpdateChannel: AppUpdateChannel get() = AppUpdateChannel.fromId(appUpdateChannelId)
+}
 
 object DesktopSettingsLibraries {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }

@@ -12,6 +12,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import features.updater.AppUpdateChannel
 import java.util.concurrent.TimeUnit
 
 private const val AppUpdatePeriodicWorkName = "app-update-checker-periodic"
@@ -23,7 +24,7 @@ internal class AppUpdateScheduleGateway(
     context: Context,
 ) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
-    private val checkStore = AppUpdateCheckStore(context)
+    private val appContext = context.applicationContext
 
     fun schedulePeriodicCheck(enabled: Boolean) {
         if (!enabled) {
@@ -50,7 +51,8 @@ internal class AppUpdateScheduleGateway(
     }
 
     /** Queues an initial automatic check only when the persisted 24-hour TTL has expired. */
-    fun enqueueAutomaticCheckIfDue() {
+    fun enqueueAutomaticCheckIfDue(channel: AppUpdateChannel) {
+        val checkStore = AppUpdateCheckStore(appContext, channel)
         if (!checkStore.isDue() || !checkStore.isAutomaticAttemptDue()) return
         val request = OneTimeWorkRequestBuilder<AppUpdateWorker>()
             .setConstraints(checkConstraints())

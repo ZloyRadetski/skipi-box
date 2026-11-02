@@ -72,6 +72,18 @@ object GitHubReleaseParser {
     }
 
     /**
+     * Whether [body] has the shape GitHub answers with for [channel]: a release for [AppUpdateChannel.Stable],
+     * a list for [AppUpdateChannel.Nightly]. A host reports anything else as a failed check rather than "up to date".
+     */
+    fun isReleaseBody(body: String, channel: AppUpdateChannel): Boolean {
+        val element = runCatching { json.parseToJsonElement(body) }.getOrNull() ?: return false
+        return when (channel) {
+            AppUpdateChannel.Stable -> (element as? JsonObject)?.string("tag_name")?.isNotBlank() == true
+            AppUpdateChannel.Nightly -> element is JsonArray
+        }
+    }
+
+    /**
      * Availability-only variant for hosts that cannot install an APK (Desktop): a newer release is
      * offered through its public page. Null for malformed bodies, releases without a page, or
      * releases that are not newer than [current].

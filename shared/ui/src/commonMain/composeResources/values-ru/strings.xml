@@ -1132,6 +1132,11 @@
     <string name="settings_auto_install_night_title">Автоскачивание по Wi-Fi</string>
     <string name="settings_auto_install_night_summary">Скачивать обновления по безлимитному Wi-Fi во время зарядки. Перед установкой Android всегда запросит подтверждение.</string>
     <string name="settings_check_updates_now_action">Проверить обновления сейчас</string>
+    <string name="settings_update_channel_title">Канал обновлений</string>
+    <string name="settings_update_channel_stable">Стабильный</string>
+    <string name="settings_update_channel_nightly">Nightly</string>
+    <string name="settings_update_channel_stable_summary">Только стабильные релизы</string>
+    <string name="settings_update_channel_nightly_summary">Стабильные релизы и nightly пре-релизы</string>
     <string name="app_update_checking">Проверка наличия обновлений…</string>
     <string name="app_update_already_latest">У вас установлена последняя версия SKIPI</string>
     <string name="app_update_check_failed">Не удалось проверить обновления. Текущее уведомление об обновлении сохранено.</string>

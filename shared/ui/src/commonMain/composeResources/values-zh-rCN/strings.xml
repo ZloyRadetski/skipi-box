@@ -1071,6 +1071,11 @@
     <string name="settings_auto_install_night_title">通过 Wi-Fi 自动下载</string>
     <string name="settings_auto_install_night_summary">在充电且使用非计费 Wi-Fi 时下载更新。安装前 Android 始终会请求确认。</string>
     <string name="settings_check_updates_now_action">立即检查更新</string>
+    <string name="settings_update_channel_title">更新渠道</string>
+    <string name="settings_update_channel_stable">稳定版</string>
+    <string name="settings_update_channel_nightly">Nightly</string>
+    <string name="settings_update_channel_stable_summary">仅稳定版</string>
+    <string name="settings_update_channel_nightly_summary">稳定版和 nightly 预发布版</string>
     <string name="app_update_checking">正在检查更新…</string>
     <string name="app_update_already_latest">您正在使用最新版本的 SKIPI</string>
 

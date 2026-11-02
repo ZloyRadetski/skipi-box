@@ -218,6 +218,8 @@ data class AppState(
     val autoCheckAppUpdates: Boolean = true,
     /** Legacy key name retained for preference compatibility; it now means auto-download on Wi-Fi while charging. */
     val autoInstallAppUpdatesAtNight: Boolean = true,
+    /** Which GitHub releases the update check follows; changing it goes through [withAppUpdateChannel]. */
+    val appUpdateChannel: features.updater.AppUpdateChannel = features.updater.AppUpdateChannel.Stable,
     val availableAppUpdate: features.updater.AppUpdateInfo? = null,
     val dismissedUpdateVersion: String = "",
     val appUpdateDownloadStatus: features.updater.AppUpdateDownloadStatus = features.updater.AppUpdateDownloadStatus.IDLE,

@@ -24,15 +24,14 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 private const val LogTag = "GitHubReleaseChecker"
-private const val GitHubApiUrl = "https://api.github.com/repos/ZloyRadetski/skipi-box/releases/latest"
 
 internal class GitHubReleaseChecker(
     private val context: Context? = null,
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     /** Backward-compatible one-off check used by the explicit user action. */
-    suspend fun checkLatestRelease(): AppUpdateInfo? {
-        return (checkLatestReleaseResult() as? GitHubReleaseCheckResult.Success)?.update
+    suspend fun checkLatestRelease(channel: AppUpdateChannel = AppUpdateChannel.Stable): AppUpdateInfo? {
+        return (checkLatestReleaseResult(channel) as? GitHubReleaseCheckResult.Success)?.update
     }
 
     /**
@@ -41,11 +40,12 @@ internal class GitHubReleaseChecker(
      * network failure never clears a previously discovered update.
      */
     suspend fun checkLatestReleaseResult(
+        channel: AppUpdateChannel = AppUpdateChannel.Stable,
         ifNoneMatch: String? = null,
     ): GitHubReleaseCheckResult = withContext(Dispatchers.IO) {
         runCatching {
             TunnelNetworks.withLocalProxyAuthenticator {
-                val url = URL(GitHubApiUrl)
+                val url = URL(channel.releasesUrl)
                 // The app is excluded from its own VPN, so bind to the tunnel
                 // explicitly when it is up; otherwise check via the direct path.
                 val connection = TunnelNetworks.openHttpConnection(context, url).apply {
@@ -65,9 +65,11 @@ internal class GitHubReleaseChecker(
                             val responseText = connection.inputStream.bufferedReader().use(BufferedReader::readText)
                             // A malformed body throws and is reported as a failed check, so a
                             // previously discovered update is never cleared by a corrupt response.
-                            val releaseJson = json.parseToJsonElement(responseText).jsonObject
+                            check(GitHubReleaseParser.isReleaseBody(responseText, channel)) {
+                                "Unexpected ${channel.id} release response"
+                            }
                             GitHubReleaseCheckResult.Success(
-                                update = parseRelease(releaseJson),
+                                update = parseRelease(responseText, channel),
                                 eTag = connection.getHeaderField("ETag"),
                             )
                         }
@@ -88,10 +90,11 @@ internal class GitHubReleaseChecker(
         }.getOrElse { GitHubReleaseCheckResult.Failed }
     }
 
-    private fun parseRelease(root: JsonObject): AppUpdateInfo? = GitHubReleaseParser.parse(
-        root = root,
+    private fun parseRelease(body: String, channel: AppUpdateChannel): AppUpdateInfo? = GitHubReleaseParser.parse(
+        body = body,
         current = CurrentAppVersion(name = ProjectInfo.VERSION_NAME, code = ProjectInfo.VERSION_CODE),
         supportedAbis = Build.SUPPORTED_ABIS.toList(),
+        channel = channel,
     )
 }
 

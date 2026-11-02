@@ -165,16 +165,16 @@ class SkipiApplication : Application(), SingletonImageLoader.Factory {
         }
         appScope.launch {
             stateStore.state
-                .map { it.autoCheckAppUpdates }
+                .map { it.autoCheckAppUpdates to it.appUpdateChannel }
                 .distinctUntilChanged()
-                .collect { autoCheck ->
+                .collect { (autoCheck, channel) ->
                     appUpdateScheduleGateway.schedulePeriodicCheck(autoCheck)
                     if (autoCheck) {
                         // Application may be created by a tile, receiver or
                         // widget. Queue at most one TTL-gated WorkManager job;
                         // never perform a network request on every process
                         // start.
-                        appUpdateScheduleGateway.enqueueAutomaticCheckIfDue()
+                        appUpdateScheduleGateway.enqueueAutomaticCheckIfDue(channel)
                     }
                 }
         }

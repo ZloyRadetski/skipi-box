@@ -13,7 +13,15 @@ import app.skipi.ui.resources.settings_auto_check_updates_title
 import app.skipi.ui.resources.settings_auto_install_night_summary
 import app.skipi.ui.resources.settings_auto_install_night_title
 import app.skipi.ui.resources.settings_check_updates_now_action
+import app.skipi.ui.components.AppOverlayDropdownPreference
+import app.skipi.ui.resources.settings_update_channel_nightly
+import app.skipi.ui.resources.settings_update_channel_nightly_summary
+import app.skipi.ui.resources.settings_update_channel_stable
+import app.skipi.ui.resources.settings_update_channel_stable_summary
+import app.skipi.ui.resources.settings_update_channel_title
 import app.skipi.ui.settings.SkipiSettingsSectionCard
+import features.updater.AppUpdateChannel
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -28,6 +36,8 @@ fun SkipiAppUpdatesSettingsCard(
     onAutoCheckChange: (Boolean) -> Unit,
     nightInstallEnabled: Boolean?,
     onNightInstallChange: (Boolean) -> Unit,
+    channel: AppUpdateChannel,
+    onChannelChange: (AppUpdateChannel) -> Unit,
     checkSummary: String?,
     onCheckNow: () -> Unit,
     modifier: Modifier = Modifier,
@@ -47,10 +57,27 @@ fun SkipiAppUpdatesSettingsCard(
                 onCheckedChange = onNightInstallChange,
             )
         }
+        AppOverlayDropdownPreference(
+            title = stringResource(Res.string.settings_update_channel_title),
+            summary = stringResource(channel.summaryRes()),
+            items = AppUpdateChannel.entries.map { stringResource(it.labelRes()) },
+            selectedIndex = AppUpdateChannel.entries.indexOf(channel),
+            onSelectedIndexChange = { index -> AppUpdateChannel.entries.getOrNull(index)?.let(onChannelChange) },
+        )
         ArrowPreference(
             title = stringResource(Res.string.settings_check_updates_now_action),
             summary = checkSummary,
             onClick = onCheckNow,
         )
     }
+}
+
+private fun AppUpdateChannel.labelRes(): StringResource = when (this) {
+    AppUpdateChannel.Stable -> Res.string.settings_update_channel_stable
+    AppUpdateChannel.Nightly -> Res.string.settings_update_channel_nightly
+}
+
+private fun AppUpdateChannel.summaryRes(): StringResource = when (this) {
+    AppUpdateChannel.Stable -> Res.string.settings_update_channel_stable_summary
+    AppUpdateChannel.Nightly -> Res.string.settings_update_channel_nightly_summary
 }

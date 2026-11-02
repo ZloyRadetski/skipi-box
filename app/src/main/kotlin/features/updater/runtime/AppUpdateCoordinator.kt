@@ -13,6 +13,7 @@ import androidx.work.workDataOf
 import app.AppState
 import app.skipi.app.store.AppStateStore
 import data.AndroidAppStateStore
+import features.updater.AppUpdateChannel
 import features.updater.AppUpdateDownloadStatus
 import features.updater.AppUpdateRestoreAction
 import features.updater.AppUpdateInfo
@@ -40,19 +41,30 @@ internal class AppUpdateCheckCoordinator(
     private val stateStore: AppStateStore,
 ) {
     private val appContext = context.applicationContext
-    private val checkStore = AppUpdateCheckStore(appContext)
     private val checkMutex = Mutex()
 
+    /**
+     * Moves the update check to [channel]. The offer found on the old channel is dropped and the new
+     * channel starts without a cached ETag or TTL, so the next check asks GitHub right away.
+     */
+    suspend fun changeChannel(channel: AppUpdateChannel) = checkMutex.withLock {
+        if (stateStore.currentState.appUpdateChannel == channel) return@withLock
+        stateStore.update { state -> state.withAppUpdateChannel(channel) }
+        AppUpdateCheckStore(appContext, channel).invalidate()
+    }
+
     suspend fun checkLatestRelease(): AppUpdateCheckOutcome = checkMutex.withLock {
+        val channel = stateStore.currentState.appUpdateChannel
+        val checkStore = AppUpdateCheckStore(appContext, channel)
         val checker = GitHubReleaseChecker(appContext)
-        val conditionalResult = checker.checkLatestReleaseResult(checkStore.eTag())
+        val conditionalResult = checker.checkLatestReleaseResult(channel, checkStore.eTag())
         // Older app versions persisted the ETag but not the discovered update.
         // A 304 in that state must not hide the update forever after process death.
         val result = if (
             conditionalResult == GitHubReleaseCheckResult.NotModified &&
             stateStore.currentState.availableAppUpdate == null
         ) {
-            checker.checkLatestReleaseResult()
+            checker.checkLatestReleaseResult(channel)
         } else {
             conditionalResult
         }

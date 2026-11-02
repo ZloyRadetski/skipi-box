@@ -3,6 +3,7 @@
 
 package app.skipi.desktop
 
+import features.updater.AppUpdateChannel
 import features.updater.CurrentAppVersion
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -29,5 +30,37 @@ class DesktopAppUpdateCheckerTest {
     fun transportOrParseFailuresAreFailuresNotUpToDate() = runBlocking {
         assertEquals(DesktopAppUpdateCheck.Failed, DesktopAppUpdateChecker(current) { error("offline") }.check())
         assertEquals(DesktopAppUpdateCheck.Failed, DesktopAppUpdateChecker(current) { "<html>" }.check())
+    }
+
+    @Test
+    fun nightlyAsksForTheReleaseListAndOffersTheNewestPrerelease() = runBlocking {
+        val asked = mutableListOf<AppUpdateChannel>()
+        val list = "[" + body("v0.5.1-rc.1", 585) + "," + body("v0.5.1-rc.2", 590) + "]"
+        val checker = DesktopAppUpdateChecker(current) { channel -> asked += channel; list }
+
+        val result = checker.check(AppUpdateChannel.Nightly)
+
+        assertEquals(listOf(AppUpdateChannel.Nightly), asked)
+        assertEquals("0.5.1-rc.2", assertIs<DesktopAppUpdateCheck.Available>(result).update.versionName)
+    }
+
+    @Test
+    fun nightlyWithNothingNewerIsUpToDateAndAnEmptyListIsToo() = runBlocking {
+        val current = CurrentAppVersion(name = "0.5.1-rc.2", code = 590)
+        val list = "[" + body("v0.5.1-rc.2", 590) + "]"
+        assertEquals(DesktopAppUpdateCheck.UpToDate, DesktopAppUpdateChecker(current) { list }.check(AppUpdateChannel.Nightly))
+        assertEquals(DesktopAppUpdateCheck.UpToDate, DesktopAppUpdateChecker(current) { "[]" }.check(AppUpdateChannel.Nightly))
+    }
+
+    @Test
+    fun aBodyOfTheWrongShapeForTheChannelIsAFailure() = runBlocking {
+        assertEquals(
+            DesktopAppUpdateCheck.Failed,
+            DesktopAppUpdateChecker(current) { body("v0.6.0", 600) }.check(AppUpdateChannel.Nightly),
+        )
+        assertEquals(
+            DesktopAppUpdateCheck.Failed,
+            DesktopAppUpdateChecker(current) { "[" + body("v0.6.0", 600) + "]" }.check(AppUpdateChannel.Stable),
+        )
     }
 }

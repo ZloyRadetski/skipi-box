@@ -4,16 +4,26 @@
 package features.updater.runtime
 
 import android.content.Context
+import features.updater.AppUpdateChannel
 import features.updater.isAppUpdateAutomaticAttemptDue
 import features.updater.isAppUpdateCheckDue
 import androidx.core.content.edit
 
-/** Small persistent cache used only by automatic release checks. */
-internal class AppUpdateCheckStore(context: Context) {
+/**
+ * Small persistent cache used only by automatic release checks. Each channel keeps its own ETag
+ * and TTL, so a 304 or a recent check on one channel never hides a release of another.
+ */
+internal class AppUpdateCheckStore(context: Context, channel: AppUpdateChannel = AppUpdateChannel.Stable) {
     private val preferences = context.applicationContext.getSharedPreferences(
-        PreferencesName,
+        // Stable keeps the original file, so installs from before channels carry their cache over.
+        if (channel == AppUpdateChannel.Stable) PreferencesName else "${PreferencesName}_${channel.id}",
         Context.MODE_PRIVATE,
     )
+
+    /** Forgets the ETag and the TTL so the next check is due and asks GitHub in full. */
+    fun invalidate() {
+        preferences.edit { clear() }
+    }
 
     fun isDue(nowMillis: Long = System.currentTimeMillis()): Boolean {
         return isAppUpdateCheckDue(

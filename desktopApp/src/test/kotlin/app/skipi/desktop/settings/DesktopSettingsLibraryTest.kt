@@ -16,6 +16,7 @@ import kotlin.test.assertTrue
 import platform.DefaultLocalHttpProxyPort
 import platform.DefaultLocalSocksPort
 import features.routing.model.RouteRule
+import features.updater.AppUpdateChannel
 
 class DesktopSettingsLibraryTest {
     @Test
@@ -247,6 +248,27 @@ class DesktopSettingsLibraryTest {
                 assertEquals(columns, loaded.proxyServerListColumns)
                 assertEquals(settings, loaded)
             }
+        } finally {
+            deleteTree(directory)
+        }
+    }
+
+    @Test
+    fun updateChannelRoundTripsAndOlderOrUnknownValuesMeanStable() {
+        val directory = Files.createTempDirectory("skipi-settings-channel-")
+        try {
+            val path = directory.resolve("settings.json")
+            assertEquals(AppUpdateChannel.Stable, DesktopAppSettings().appUpdateChannel)
+
+            val settings = DesktopAppSettings(appUpdateChannelId = AppUpdateChannel.Nightly.id)
+            DesktopSettingsLibraries.save(path, settings).getOrThrow()
+            assertEquals(AppUpdateChannel.Nightly, DesktopSettingsLibraries.load(path).getOrThrow().appUpdateChannel)
+
+            Files.writeString(path, """{"localProxyPort":10808}""")
+            assertEquals(AppUpdateChannel.Stable, DesktopSettingsLibraries.load(path).getOrThrow().appUpdateChannel)
+
+            Files.writeString(path, """{"appUpdateChannelId":"weekly"}""")
+            assertEquals(AppUpdateChannel.Stable, DesktopSettingsLibraries.load(path).getOrThrow().appUpdateChannel)
         } finally {
             deleteTree(directory)
         }

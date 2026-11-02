@@ -27,7 +27,7 @@ internal class AppUpdateWorker(
             return Result.success()
         }
 
-        val checkStore = AppUpdateCheckStore(applicationContext)
+        val checkStore = AppUpdateCheckStore(applicationContext, appState.appUpdateChannel)
         if (!forceCheck && !checkStore.isDue()) {
             AppLog.debug(LogTag, "App update check is still within its TTL. Skipping worker.")
             return Result.success()

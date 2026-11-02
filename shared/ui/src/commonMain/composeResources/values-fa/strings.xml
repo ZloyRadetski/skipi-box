@@ -1049,6 +1049,11 @@
     <string name="settings_auto_install_night_title">دانلود خودکار با Wi-Fi</string>
     <string name="settings_auto_install_night_summary">به‌روزرسانی‌ها را با Wi-Fi بدون‌هزینه هنگام شارژ دانلود می‌کند. Android همیشه پیش از نصب تأیید می‌خواهد.</string>
     <string name="settings_check_updates_now_action">بررسی اکنون</string>
+    <string name="settings_update_channel_title">کانال به‌روزرسانی</string>
+    <string name="settings_update_channel_stable">پایدار</string>
+    <string name="settings_update_channel_nightly">Nightly</string>
+    <string name="settings_update_channel_stable_summary">فقط نسخه‌های پایدار</string>
+    <string name="settings_update_channel_nightly_summary">نسخه‌های پایدار و پیش‌انتشارهای nightly</string>
     <string name="app_update_checking">در حال بررسی به‌روزرسانی…</string>
     <string name="app_update_already_latest">شما از آخرین نسخه SKIPI استفاده می‌کنید</string>
     <string name="about_replay_onboarding">راهنمای خوش‌آمدگویی</string>

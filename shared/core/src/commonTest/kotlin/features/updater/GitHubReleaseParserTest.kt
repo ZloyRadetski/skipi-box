@@ -5,7 +5,9 @@ package features.updater
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class GitHubReleaseParserTest {
     private val current = CurrentAppVersion(name = "0.4.1", code = 180)
@@ -187,6 +189,18 @@ class GitHubNightlyChannelTest {
         val body = list(release("v0.5.0-rc.6", null))
 
         assertNull(GitHubReleaseParser.parse(body, current, emptyList(), AppUpdateChannel.Nightly))
+    }
+
+    @Test
+    fun aReleaseBodyHasTheShapeOfItsChannel() {
+        val one = release("v0.6.0", 700, prerelease = false)
+        assertTrue(GitHubReleaseParser.isReleaseBody(one, AppUpdateChannel.Stable))
+        assertTrue(GitHubReleaseParser.isReleaseBody(list(one), AppUpdateChannel.Nightly))
+        assertTrue(GitHubReleaseParser.isReleaseBody("[]", AppUpdateChannel.Nightly))
+        assertFalse(GitHubReleaseParser.isReleaseBody(list(one), AppUpdateChannel.Stable))
+        assertFalse(GitHubReleaseParser.isReleaseBody(one, AppUpdateChannel.Nightly))
+        assertFalse(GitHubReleaseParser.isReleaseBody("""{"message": "rate limited"}""", AppUpdateChannel.Stable))
+        assertFalse(GitHubReleaseParser.isReleaseBody("<html>", AppUpdateChannel.Nightly))
     }
 
     @Test
