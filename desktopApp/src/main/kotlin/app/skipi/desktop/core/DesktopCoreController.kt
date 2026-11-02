@@ -67,6 +67,15 @@ internal class DesktopCoreController(
         }
     }
 
+    /**
+     * Loads the native library ahead of the first [start], so the 36 MB load is not part of the first
+     * Connect. A failure is only reported: [start] tries again and reports its own error.
+     */
+    @Synchronized
+    fun preload(): Result<Unit> = runCatching {
+        if (activeHandle == null) check(loadNative(runtimeProvider().getOrThrow()).apiVersion.isNotBlank())
+    }
+
     @Synchronized
     fun start(
         configJson: String,

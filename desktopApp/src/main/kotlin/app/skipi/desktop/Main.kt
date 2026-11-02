@@ -144,6 +144,14 @@ fun main(args: Array<String>) {
 private fun runDesktopApplication(hidden: Boolean, incomingLinks: Channel<String>) = application {
     remember { features.logs.AppLog.install(DesktopAppLogSink) }
     val coreController = remember { DesktopCoreController() }
+    // Load the Core library while the window opens instead of during the first Connect.
+    LaunchedEffect(coreController) {
+        withContext(Dispatchers.IO) {
+            coreController.preload().onFailure { error ->
+                DesktopLogger.info("CoreController", "Core preload skipped: ${error.message}")
+            }
+        }
+    }
     val desktopTunHost = remember(coreController) { DesktopTunHost.forCore(coreController) }
     val systemProxyManager = remember { DesktopSystemProxyManagers.create() }
     var desktopSettings by remember {

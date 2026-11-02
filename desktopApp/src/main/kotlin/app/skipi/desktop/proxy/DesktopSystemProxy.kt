@@ -61,7 +61,14 @@ object DesktopSystemProxyManagers {
     fun create(
         osName: String = System.getProperty("os.name"),
     ): DesktopSystemProxyManager = when {
-        osName.startsWith("Windows", ignoreCase = true) -> DesktopWindowsSystemProxyLeaseManager()
+        osName.startsWith("Windows", ignoreCase = true) -> DesktopWindowsSystemProxyLeaseManager(
+            // In-process Win32 calls: the reg.exe and PowerShell processes they replace cost ~0.9 s of every connect.
+            registry = NativeDesktopWindowsRegistry(),
+            refresher = FallbackWinInetSettingsRefresher(
+                NativeWinInetSettingsRefresher(),
+                PowerShellWinInetSettingsRefresher(ProcessDesktopWindowsCommandRunner),
+            ),
+        )
         osName.startsWith("Linux", ignoreCase = true) -> DesktopLinuxSystemProxyLeaseManager()
         osName.startsWith("Mac", ignoreCase = true) -> DesktopMacSystemProxyLeaseManager()
         else -> NoOpDesktopSystemProxyManager
