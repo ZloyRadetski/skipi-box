@@ -175,6 +175,12 @@
     <string name="settings_bottom_bar_size_small">Small</string>
     <string name="settings_bottom_bar_size_medium">Medium</string>
     <string name="settings_bottom_bar_size_large">Large</string>
+    <string name="settings_classic_button_size">Connection button size</string>
+    <string name="settings_classic_button_size_summary">Size of the power button in the classic view</string>
+    <string name="settings_classic_button_size_small">Small</string>
+    <string name="settings_classic_button_size_medium">Medium</string>
+    <string name="settings_classic_button_size_large">Large</string>
+    <string name="settings_classic_button_size_giant">Giant</string>
     <string name="connection_status_connected">Connected</string>
     <string name="connection_status_connecting">Connecting…</string>
     <string name="connection_status_disconnected">Disconnected</string>

@@ -9,6 +9,15 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,7 +50,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.home_action_search
 import app.skipi.ui.text.themedFontWeight
+import org.jetbrains.compose.resources.stringResource
 import app.skipi.ui.theme.SkipiTheme
 
 data class SkipiProxyGroupPickerItem(
@@ -85,6 +97,7 @@ fun SkipiProxyGroupPicker(
     val selectedGroup = groups.firstOrNull { group -> group.id == selectedGroupId } ?: groups.first()
     var expanded by remember { mutableStateOf(false) }
     var contextGroupId by remember { mutableStateOf<String?>(null) }
+    var query by remember { mutableStateOf("") }
 
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
@@ -94,34 +107,13 @@ fun SkipiProxyGroupPicker(
         ),
         label = "skipiProxyGroupPickerChevron",
     )
-    val cardScale by animateFloatAsState(
-        targetValue = if (expanded) 0.985f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium,
-        ),
-        label = "skipiProxyGroupPickerScale",
-    )
-    val cardBorder by animateColorAsState(
-        targetValue = if (expanded) colors.accent.copy(alpha = 0.5f) else colors.border,
-        animationSpec = tween(durationMillis = 200),
-        label = "skipiProxyGroupPickerBorder",
-    )
-    val cardSurface by animateColorAsState(
-        targetValue = if (expanded) colors.raisedSurface.copy(alpha = 0.5f) else colors.surface,
-        animationSpec = tween(durationMillis = 200),
-        label = "skipiProxyGroupPickerSurface",
-    )
     val interactionSource = remember { MutableInteractionSource() }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        Card(
+        // A section title for the list below, not a card: the picker is secondary to the connection and the servers.
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    scaleX = cardScale
-                    scaleY = cardScale
-                }
+                .clip(RoundedCornerShape(10.dp))
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = null,
@@ -136,53 +128,61 @@ fun SkipiProxyGroupPicker(
                             contextGroupId = selectedGroup.id
                         }
                     },
-                ),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = cardSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, cardBorder),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(
-                    horizontal = 16.dp,
-                    vertical = 12.dp,
-                ),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = selectedGroup.title,
-                        style = SkipiTheme.typography.titleSmall,
-                        fontSize = 15.sp,
-                        fontWeight = themedFontWeight(FontWeight.SemiBold),
-                        color = colors.text,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = selectedGroup.subtitle,
-                        style = SkipiTheme.typography.bodySmall,
-                        fontSize = 12.sp,
-                        color = colors.mutedText,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Outlined.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = chevronRotation },
-                    tint = if (expanded) colors.accent else colors.mutedText,
                 )
-            }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = selectedGroup.title,
+                style = SkipiTheme.typography.titleSmall,
+                fontSize = 15.sp,
+                fontWeight = themedFontWeight(FontWeight.SemiBold),
+                color = colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = selectedGroup.subtitle,
+                style = SkipiTheme.typography.bodySmall,
+                fontSize = 13.sp,
+                color = colors.mutedText,
+                maxLines = 1,
+            )
+            Spacer(Modifier.width(2.dp))
+            Icon(
+                imageVector = Icons.Outlined.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = chevronRotation },
+                tint = if (expanded) colors.accent else colors.mutedText,
+            )
         }
         SkipiHomeDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
+            onDismissRequest = {
+                expanded = false
+                query = ""
+            },
             surface = colors.raisedSurface,
             text = colors.text,
             outline = colors.border,
         ) {
-            groups.forEach { group ->
+            if (groups.size > SearchThreshold) {
+                GroupSearchField(
+                    query = query,
+                    onQueryChange = { query = it },
+                    textColor = colors.text,
+                    hintColor = colors.mutedText,
+                    accent = colors.accent,
+                )
+            }
+            val visibleGroups = if (query.isBlank()) {
+                groups
+            } else {
+                groups.filter { group -> group.title.contains(query.trim(), ignoreCase = true) }
+            }
+            visibleGroups.forEach { group ->
                 val isSelected = group.id == selectedGroup.id
                 DropdownMenuItem(
                     modifier = Modifier.semantics {
@@ -220,6 +220,7 @@ fun SkipiProxyGroupPicker(
                     colors = skipiHomeDropdownItemColors(colors.text, colors.mutedText),
                     onClick = {
                         expanded = false
+                        query = ""
                         onGroupSelected(group.id)
                     },
                 )
@@ -246,6 +247,38 @@ fun SkipiProxyGroupPicker(
                     )
                 }
             }
+        }
+    }
+}
+
+/** More groups than this and the popup gets a search field; a handful fit on screen without one. */
+private const val SearchThreshold = 6
+
+@Composable
+private fun GroupSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    textColor: Color,
+    hintColor: Color,
+    accent: Color,
+) {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focusRequester.requestFocus() } }
+    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).widthIn(min = 200.dp)) {
+        BasicTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            singleLine = true,
+            textStyle = SkipiTheme.typography.bodyMedium.copy(color = textColor),
+            cursorBrush = SolidColor(accent),
+            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+        )
+        if (query.isEmpty()) {
+            Text(
+                text = stringResource(Res.string.home_action_search),
+                color = hintColor,
+                style = SkipiTheme.typography.bodyMedium,
+            )
         }
     }
 }

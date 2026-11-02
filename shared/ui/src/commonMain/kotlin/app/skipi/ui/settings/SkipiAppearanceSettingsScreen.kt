@@ -164,6 +164,13 @@ fun SkipiAppearanceSettingsScreen(
         stringResource(Res.string.settings_bottom_bar_size_large),
     )
 
+    val classicButtonSizeOptions = listOf(
+        stringResource(Res.string.settings_classic_button_size_small),
+        stringResource(Res.string.settings_classic_button_size_medium),
+        stringResource(Res.string.settings_classic_button_size_large),
+        stringResource(Res.string.settings_classic_button_size_giant),
+    )
+
     val connectionDisplayModeOptions = listOf(
         stringResource(Res.string.settings_connection_display_mode_compact),
         stringResource(Res.string.settings_connection_display_mode_classic),
@@ -640,14 +647,25 @@ fun SkipiAppearanceSettingsScreen(
                             enter = fadeIn() + expandVertically(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {
-                            SwitchPreference(
-                                title = stringResource(Res.string.settings_classic_show_floating_power_button),
-                                summary = stringResource(Res.string.settings_classic_show_floating_power_button_summary),
-                                checked = appState.classicShowFloatingPowerButton,
-                                onCheckedChange = { enabled ->
-                                    updateAppState { it.copy(classicShowFloatingPowerButton = enabled) }
-                                },
-                            )
+                            Column {
+                                AppOverlayDropdownPreference(
+                                    title = stringResource(Res.string.settings_classic_button_size),
+                                    summary = stringResource(Res.string.settings_classic_button_size_summary),
+                                    items = classicButtonSizeOptions,
+                                    selectedIndex = appState.classicButtonSize.coerceIn(0, classicButtonSizeOptions.lastIndex),
+                                    onSelectedIndexChange = { size ->
+                                        updateAppState { it.copy(classicButtonSize = size) }
+                                    },
+                                )
+                                SwitchPreference(
+                                    title = stringResource(Res.string.settings_classic_show_floating_power_button),
+                                    summary = stringResource(Res.string.settings_classic_show_floating_power_button_summary),
+                                    checked = appState.classicShowFloatingPowerButton,
+                                    onCheckedChange = { enabled ->
+                                        updateAppState { it.copy(classicShowFloatingPowerButton = enabled) }
+                                    },
+                                )
+                            }
                         }
                         SwitchPreference(
                             title = stringResource(Res.string.settings_pin_connection_panel),
@@ -701,12 +719,6 @@ fun SkipiAppearanceSettingsScreen(
                                 },
                             )
                         }
-                        SwitchPreference(
-                            title = stringResource(Res.string.settings_show_server_search),
-                            summary = stringResource(Res.string.settings_show_server_search_summary),
-                            checked = appState.showServerSearch,
-                            onCheckedChange = { enabled -> updateAppState { it.copy(showServerSearch = enabled) } },
-                        )
                         SwitchPreference(
                             title = stringResource(Res.string.settings_enable_all_proxy_group),
                             summary = stringResource(Res.string.settings_enable_all_proxy_group_summary),

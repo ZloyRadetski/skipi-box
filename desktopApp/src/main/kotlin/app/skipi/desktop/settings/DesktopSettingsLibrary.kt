@@ -117,6 +117,7 @@ data class DesktopAppSettings(
     val backgroundStyle: Int? = null,
     val backgroundPhotoDimPercent: Int? = null,
     val bottomBarSize: Int? = null,
+    val classicButtonSize: Int? = null,
     val connectionDisplayMode: Int? = null,
     /** Persisted routing fields exposed through the shared repository; UI/runtime wiring remains separate. */
     val routeDomainStrategy: Int = 0,

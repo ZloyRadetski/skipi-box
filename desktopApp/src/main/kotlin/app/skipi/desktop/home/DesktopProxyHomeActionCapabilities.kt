@@ -11,6 +11,7 @@ import app.skipi.app.home.ProxyHomeSortMode
 import app.skipi.app.home.ProxyHomeDisplayOptions
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeConnectionMode
+import app.skipi.app.home.proxyHomeButtonSizeFromSetting
 import app.skipi.app.home.ProxyHomeServerTool
 
 /** Capabilities backed by concrete Desktop callbacks and current subscription rows. */
@@ -119,6 +120,7 @@ internal fun DesktopAppSettings.toProxyHomeDisplayOptions() = ProxyHomeDisplayOp
     connectionMode = if (compactHome) ProxyHomeConnectionMode.Compact else ProxyHomeConnectionMode.Classic,
     pinConnectionPanel = pinConnectionPanelOnHome,
     classicFloatingPowerButton = classicShowFloatingPowerButton,
+    classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize ?: 2),
     requestedColumns = proxyServerListColumns,
     showAllGroup = enableAllProxyGroup,
     showTunnelMemory = showTunnelMemory,

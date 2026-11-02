@@ -26,6 +26,7 @@ import features.settings.servicecontrol.ServiceControlWifiRule
 import app.modes.ColorModeThemeDark
 import app.modes.ColorModeThemeLight
 import app.modes.ColorModeThemeSystem
+import app.modes.normalizeClassicButtonSize
 import app.modes.normalizeColorMode
 import app.modes.normalizeFontFamilyMode
 import app.modes.normalizeFontSizeMode
@@ -371,6 +372,9 @@ internal class AppSettingsPreferences(
                 KeyBottomBarSize,
                 defaults.bottomBarSize,
             ),
+            classicButtonSize = normalizeClassicButtonSize(
+                preferences.getInt(KeyClassicButtonSize, defaults.classicButtonSize),
+            ),
             enableHaptics = preferences.getBoolean(
                 KeyEnableHaptics,
                 defaults.enableHaptics,
@@ -558,6 +562,7 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyPinConnectionPanelOnHome, state.pinConnectionPanelOnHome)
             .putBoolean(KeyEnableSubscriptionSwipe, state.enableSubscriptionSwipe)
             .putInt(KeyBottomBarSize, state.bottomBarSize)
+            .putInt(KeyClassicButtonSize, state.classicButtonSize)
             .putBoolean(KeyHasCompletedOnboarding, state.hasCompletedOnboarding)
             .putBoolean(KeyClassicShowFloatingPowerButton, state.classicShowFloatingPowerButton)
             .putBoolean(KeyShowTunnelMemoryOnHome, state.showTunnelMemoryOnHome)
@@ -954,6 +959,7 @@ private const val KeyEnableSubscriptionSwipe = "enable_subscription_swipe"
 private const val KeyBackgroundStyle = "background_style"
 private const val KeyBackgroundPhotoDimPercent = "background_photo_dim_percent"
 private const val KeyBottomBarSize = "bottom_bar_size"
+private const val KeyClassicButtonSize = "classic_button_size"
 private const val KeyEnableHaptics = "enable_haptics"
 private const val KeyClassicShowFloatingPowerButton = "classic_show_floating_power_button"
 private const val KeyShowTunnelMemoryOnHome = "show_tunnel_memory_on_home"

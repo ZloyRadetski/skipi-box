@@ -89,6 +89,7 @@ fun AppState.toPersistedSettings() = app.skipi.app.model.PersistedSettings(
         backgroundStyle = backgroundStyle,
         backgroundPhotoDimPercent = backgroundPhotoDimPercent,
         bottomBarSize = bottomBarSize,
+        classicButtonSize = classicButtonSize,
     ),
     proxy = ProxySelectionSettings(selectedServerId = selectedProxyServerId),
     home = HomeDisplaySettings(
@@ -206,6 +207,7 @@ fun AppState.applyPersistedSettings(settings: app.skipi.app.model.PersistedSetti
         backgroundStyle = settings.appearance.backgroundStyle ?: backgroundStyle,
         backgroundPhotoDimPercent = settings.appearance.backgroundPhotoDimPercent ?: backgroundPhotoDimPercent,
         bottomBarSize = settings.appearance.bottomBarSize ?: bottomBarSize,
+        classicButtonSize = settings.appearance.classicButtonSize ?: classicButtonSize,
         selectedProxyServerId = settings.proxy.selectedServerId ?: selectedProxyServerId,
         enableHaptics = settings.application.hapticsEnabled,
         hasCompletedOnboarding = settings.application.onboardingCompleted,

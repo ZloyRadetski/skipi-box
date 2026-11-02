@@ -7,6 +7,7 @@ import app.modes.AppIconDefault
 import app.skipi.app.settings.generateRandomProxyCredential
 import app.modes.BackgroundStyleClassic
 import app.modes.BottomBarSizeLarge
+import app.modes.ClassicButtonSizeLarge
 import app.modes.ColorModeSystem
 import app.modes.FontFamilyModeUnbounded
 import app.modes.FontSizeModeSmall
@@ -98,6 +99,8 @@ data class AppState(
     val backgroundStyle: Int = BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = BottomBarSizeLarge,
+    /** Size of the connection button in the classic Home view; see [ClassicButtonSizeLarge]. */
+    val classicButtonSize: Int = ClassicButtonSizeLarge,
     val enableHaptics: Boolean = true,
     val hasCompletedOnboarding: Boolean = false,
 

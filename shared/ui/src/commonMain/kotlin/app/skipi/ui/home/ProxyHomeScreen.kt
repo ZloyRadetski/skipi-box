@@ -532,7 +532,8 @@ fun ProxyHomeScreenContent(
                 ) {
                     Column(
                         modifier = Modifier
-                            .width(300.dp)
+                            // Wide enough for the button at any chosen size.
+                            .width(maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false)))
                             .fillMaxHeight()
                             .verticalScroll(rememberScrollState()),
                     ) {
@@ -1185,6 +1186,7 @@ private fun HomeConnectionPanel(
             compact = compact,
             onToggle = onToggle,
             modifier = modifier,
+            buttonSize = state.displayOptions.classicButtonSize,
             connectContentDescription = stringResource(Res.string.home_connection_connect),
             disconnectContentDescription = stringResource(Res.string.home_connection_disconnect),
         )

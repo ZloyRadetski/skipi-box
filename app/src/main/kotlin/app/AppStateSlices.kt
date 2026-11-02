@@ -51,6 +51,7 @@ data class AppChromeState(
     val backgroundStyle: Int = app.modes.BackgroundStyleClassic,
     val backgroundPhotoDimPercent: Int = 45,
     val bottomBarSize: Int = app.modes.BottomBarSizeLarge,
+    val classicButtonSize: Int = app.modes.ClassicButtonSizeLarge,
     val enableHaptics: Boolean = true,
 )
 
@@ -149,6 +150,7 @@ private fun AppState.toAppChromeState(): AppChromeState {
         backgroundStyle = backgroundStyle,
         backgroundPhotoDimPercent = backgroundPhotoDimPercent,
         bottomBarSize = bottomBarSize,
+        classicButtonSize = classicButtonSize,
         enableHaptics = enableHaptics,
     )
 }

@@ -698,6 +698,7 @@ class DesktopApplicationRepositoriesTest {
                     fontFamilyMode = 4,
                     fontSizeMode = 115,
                     fontWeightMode = 5,
+                    classicButtonSize = 3,
                 ),
                 home = current.home.copy(
                     connectionDisplayMode = 0,
@@ -718,6 +719,7 @@ class DesktopApplicationRepositoriesTest {
         assertEquals(4, settings.fontFamilyMode)
         assertEquals(115, settings.fontSizeMode)
         assertEquals(5, settings.fontWeightMode)
+        assertEquals(3, settings.classicButtonSize)
         assertEquals(0, settings.connectionDisplayMode)
         assertTrue(settings.pinConnectionPanelOnHome)
         assertFalse(settings.enableSubscriptionSwipe)
@@ -748,6 +750,7 @@ class DesktopApplicationRepositoriesTest {
             customColorsEnabled = true,
             customAccentColor = 0xFF123456,
             connectionDisplayMode = 0,
+            classicButtonSize = 0,
             routeDomainStrategy = 2,
             defaultRouteOutboundTag = "direct",
         )
@@ -768,9 +771,11 @@ class DesktopApplicationRepositoriesTest {
 
         assertEquals(8, shared.colorMode)
         assertEquals(0, shared.connectionDisplayMode)
+        assertEquals(0, shared.classicButtonSize)
         assertEquals(3, shared.proxyServerListLayout)
         assertFalse(shared.enableMaterialYou)
 
+        assertEquals(3, original.withAppearanceState(shared.copy(classicButtonSize = 3)).classicButtonSize)
         val updated = original.withAppearanceState(shared.copy(showServerSearch = false))
         assertEquals(DesktopThemeMode.Sakura, updated.themeMode)
         assertFalse(updated.showServerSearch)

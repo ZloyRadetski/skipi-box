@@ -92,7 +92,7 @@ class DesktopProxyHomeLatencyFabTest {
         val effects = renderAndClick(
             input = connectedSubscriptionInput(),
             // The subscription header's ping action, below the centered connection control and its live-facts line.
-            position = Offset(334f, 411f),
+            position = Offset(334f, 463f),
             screenshotName = "subscription-card-before-click.png",
         )
 
@@ -162,7 +162,7 @@ class DesktopProxyHomeLatencyFabTest {
                 displayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = false),
                 canToggleTunnel = true,
             ),
-            position = Offset(195f, 196f),
+            position = Offset(195f, 228f),
         )
 
         assertEquals(listOf(ProxyHomeEffect.ToggleTunnel), effects)

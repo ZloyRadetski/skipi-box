@@ -9,6 +9,7 @@ data class AppearanceSettingsState(
     val backgroundPhotoDimPercent: Int = 45,
     val backgroundStyle: Int = 0,
     val bottomBarSize: Int = 1,
+    val classicButtonSize: Int = 2,
     val classicShowFloatingPowerButton: Boolean = true,
     val colorMode: Int = 0,
     val connectionDisplayMode: Int = 1,
@@ -95,6 +96,10 @@ object AppearanceSettingValues {
     const val BackgroundStyleConnection = 2
     const val BackgroundStyleAurora = 3
 
+    const val ClassicButtonSizeSmall = 0
+    const val ClassicButtonSizeMedium = 1
+    const val ClassicButtonSizeLarge = 2
+    const val ClassicButtonSizeGiant = 3
     const val ConnectionDisplayModeCompact = 0
     const val ConnectionDisplayModeClassic = 1
 

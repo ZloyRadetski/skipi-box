@@ -23,6 +23,18 @@ class UiModesTest {
     }
 
     @Test
+    fun testNormalizeClassicButtonSize() {
+        assertEquals(ClassicButtonSizeSmall, normalizeClassicButtonSize(ClassicButtonSizeSmall))
+        assertEquals(ClassicButtonSizeMedium, normalizeClassicButtonSize(ClassicButtonSizeMedium))
+        assertEquals(ClassicButtonSizeLarge, normalizeClassicButtonSize(ClassicButtonSizeLarge))
+        assertEquals(ClassicButtonSizeGiant, normalizeClassicButtonSize(ClassicButtonSizeGiant))
+
+        // Unknown values fall back to the size the connection button had before the setting existed.
+        assertEquals(ClassicButtonSizeLarge, normalizeClassicButtonSize(-1))
+        assertEquals(ClassicButtonSizeLarge, normalizeClassicButtonSize(99))
+    }
+
+    @Test
     fun testNormalizeBackgroundStyle() {
         assertEquals(BackgroundStyleClassic, normalizeBackgroundStyle(BackgroundStyleClassic))
         assertEquals(BackgroundStylePhoto, normalizeBackgroundStyle(BackgroundStylePhoto))

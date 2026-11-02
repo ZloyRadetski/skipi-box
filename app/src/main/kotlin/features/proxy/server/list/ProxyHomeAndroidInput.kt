@@ -10,6 +10,7 @@ import app.ProxyServerLatencyTesting
 import app.modes.ConnectionDisplayModeCompact
 import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeConnectionMode
+import app.skipi.app.home.proxyHomeButtonSizeFromSetting
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeTunnelIp
 import app.skipi.app.home.ProxyHomeDisplayOptions
@@ -132,7 +133,8 @@ internal fun AppState.toProxyHomeInput(
         hasSubscriptions = subscriptionGroups.any { group -> group.url.isNotBlank() },
         isTestingLatency = isTestingLatency,
         sortMode = proxyHomeSortModeFromAndroidValue(proxyServerListSort),
-        searchEnabled = showServerSearch,
+        // Server search is always available; the stored flag is kept only for backups.
+        searchEnabled = true,
         subscriptionSwipeEnabled = enableSubscriptionSwipe,
         displayOptions = ProxyHomeDisplayOptions(
             connectionMode = if (connectionDisplayMode == ConnectionDisplayModeCompact) {
@@ -142,6 +144,7 @@ internal fun AppState.toProxyHomeInput(
             },
             pinConnectionPanel = pinConnectionPanelOnHome,
             classicFloatingPowerButton = classicShowFloatingPowerButton,
+            classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize),
             requestedColumns = proxyServerListLayout.resolvedProxyServerListColumns(),
             showAllGroup = enableAllProxyGroup,
             showTunnelMemory = showTunnelMemoryOnHome,

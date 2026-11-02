@@ -190,6 +190,12 @@
     <string name="settings_bottom_bar_size_summary">Настройка высоты, иконок и текста нижней панели навигации</string>
     <string name="settings_bottom_bar_size_small">Маленький</string>
     <string name="settings_bottom_bar_size_medium">Средний</string>
+    <string name="settings_classic_button_size">Размер кнопки подключения</string>
+    <string name="settings_classic_button_size_summary">Размер кнопки питания в классическом виде</string>
+    <string name="settings_classic_button_size_small">Маленький</string>
+    <string name="settings_classic_button_size_medium">Средний</string>
+    <string name="settings_classic_button_size_large">Большой</string>
+    <string name="settings_classic_button_size_giant">Гигантский</string>
     <string name="settings_bottom_bar_size_large">Большой</string>
     <string name="connection_status_connected">Подключено</string>
     <string name="connection_status_connecting">Подключение…</string>

@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.skipi.app.home.ProxyHomeButtonSize
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -128,13 +129,22 @@ fun SkipiProxyHeroClassicCard(
     compact: Boolean = false,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    buttonSize: ProxyHomeButtonSize = ProxyHomeButtonSize.Large,
     connectContentDescription: String = stringResource(Res.string.connection_status_tap_to_connect),
     disconnectContentDescription: String = stringResource(Res.string.proxy_traffic_stats_notification_disconnect),
 ) {
     val connected = state.phase == SkipiConnectionHeroPhase.Connected
     val connecting = state.phase == SkipiConnectionHeroPhase.Connecting
-    val outerSize = if (compact) 188.dp else 232.dp
-    val buttonSize = outerSize * 0.76f
+    val outerSize = skipiClassicButtonOuterSize(buttonSize, compact)
+    // The ring is the outer edge of the whole control, so there is no empty margin above or below it.
+    val buttonSize = outerSize / 1.2f
+    // A thin ring with a clear gap around the button; it takes the accent while the tunnel is up.
+    val ringSize = outerSize
+    val ringColor by animateColorAsState(
+        targetValue = if (connected) colors.accent.copy(alpha = 0.5f) else colors.text.copy(alpha = 0.16f),
+        animationSpec = tween(300),
+        label = "skipiProxyHeroRing",
+    )
     val accentIsBright = remember(colors.accent) { colors.accent.luminance() > 0.65f }
     val buttonBackground by animateColorAsState(
         targetValue = if (connected) colors.accent else colors.raisedSurface,
@@ -165,12 +175,16 @@ fun SkipiProxyHeroClassicCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = if (compact) 8.dp else 16.dp),
+            .padding(top = 0.dp, bottom = if (compact) 8.dp else 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(modifier = Modifier.size(outerSize), contentAlignment = Alignment.Center) {
             if (connected) SkipiProxyHeroPowerButtonWaves(accent = colors.accent, size = buttonSize)
-            if (connecting) SkipiProxyHeroConnectingSpinner(accent = colors.accent, size = outerSize)
+            if (connecting) {
+                SkipiProxyHeroConnectingSpinner(accent = colors.accent, size = ringSize)
+            } else {
+                Box(Modifier.size(ringSize).border(1.5.dp, ringColor, CircleShape))
+            }
             Box(
                 modifier = Modifier
                     .size(buttonSize)

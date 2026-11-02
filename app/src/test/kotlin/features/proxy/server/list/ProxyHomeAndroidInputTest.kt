@@ -13,6 +13,7 @@ import app.modes.ProxyServerListSortDefault
 import app.modes.ProxyServerListSortLatency
 import app.modes.ProxyServerListSortName
 import app.skipi.app.home.ProxyHomeActionId
+import app.skipi.app.home.ProxyHomeButtonSize
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.ProxyHomeCopyFormat
 import app.skipi.app.home.ProxyHomeGroupKind
@@ -630,6 +631,7 @@ class ProxyHomeAndroidInputTest {
             showTunnelMemoryOnHome = true,
             showServerSearch = false,
             enableSubscriptionSwipe = false,
+            classicButtonSize = app.modes.ClassicButtonSizeGiant,
         )
         val groups = proxyServerListGroups(
             state = state.toProxyServerListState(),
@@ -651,9 +653,11 @@ class ProxyHomeAndroidInputTest {
         assertTrue(input.displayOptions.pinConnectionPanel)
         assertTrue(input.displayOptions.classicFloatingPowerButton)
         assertEquals(3, input.displayOptions.requestedColumns)
+        assertEquals(ProxyHomeButtonSize.Giant, input.displayOptions.classicButtonSize)
         assertTrue(input.displayOptions.showAllGroup)
         assertTrue(input.displayOptions.showTunnelMemory)
-        assertFalse(input.searchEnabled)
+        // Server search is no longer a setting: the stored flag never hides it.
+        assertTrue(input.searchEnabled)
         assertFalse(input.subscriptionSwipeEnabled)
 
         val allGroupSummary = input.groups.first { it.id == AllProxyGroupId.toString() }
