@@ -95,13 +95,11 @@ fun rememberSkipiTrafficConfigRuleEditorState(
 @Composable
 fun SkipiTrafficConfigRulesEditorScreen(
     title: String,
-    saveLabel: String,
     padding: PaddingValues,
     isWideScreen: Boolean,
     profile: TrafficConfigState,
     controller: TrafficConfigEditorController,
     onBack: () -> Unit,
-    onSave: () -> Unit,
     onAdd: () -> Unit,
     onEdit: (ShadowrocketRule) -> Unit,
     onHapticFeedback: (HapticFeedbackType) -> Unit,
@@ -145,9 +143,7 @@ fun SkipiTrafficConfigRulesEditorScreen(
         title = title,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = saveLabel,
         onBack = onBack,
-        onSave = onSave,
         actions = {
             actions?.invoke()
             IconButton(onClick = { showInfoBottomSheet = true }) {
@@ -192,7 +188,6 @@ fun SkipiTrafficConfigRulesEditorScreen(
 @Composable
 fun SkipiTrafficConfigRuleEditorScreen(
     title: String,
-    saveLabel: String,
     padding: PaddingValues,
     isWideScreen: Boolean,
     profileId: Int,
@@ -239,7 +234,6 @@ fun SkipiTrafficConfigRuleEditorScreen(
         title = title,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = saveLabel,
         onBack = saveAndBack,
         actions = actions,
     ) { _, listPadding, scrollBehavior ->

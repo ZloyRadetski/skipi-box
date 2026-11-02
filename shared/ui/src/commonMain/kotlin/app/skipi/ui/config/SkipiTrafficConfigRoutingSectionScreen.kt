@@ -42,9 +42,7 @@ fun SkipiTrafficConfigRoutingSectionScreen(
         title = stringResource(Res.string.configs_rules_title),
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(Res.string.common_save),
         onBack = onBack,
-        onSave = onBack,
     ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),

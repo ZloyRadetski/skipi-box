@@ -109,10 +109,15 @@ internal fun DesktopProxyServerEditorHost(
         )
     }
 
+    // Leaving saves the draft. A draft that cannot be saved says why and offers to discard it, so the
+    // editor never traps the user.
     fun saveDraft() {
         if (serverEdit is StrategyGroup) serverEdit.proxyServerIds = strategyGroupMemberIds
         when (val decision = ProxyServerEditorController.requestSave(serverEdit)) {
-            is ProxyServerEditorSaveDecision.Reject -> onMessage(validationMessageOf(decision.issue))
+            is ProxyServerEditorSaveDecision.Reject -> {
+                onMessage(validationMessageOf(decision.issue))
+                editorUiState.requestDiscardConfirmation()
+            }
             is ProxyServerEditorSaveDecision.ConfirmFullValidation -> editorUiState.showFullValidationWarning(decision.issues)
             ProxyServerEditorSaveDecision.Save -> {
                 onSave(editResult.copy(server = serverEdit))
@@ -173,8 +178,6 @@ internal fun DesktopProxyServerEditorHost(
             isWideScreen = true,
             selectedSummary = { count -> stringResource(Res.string.proxy_editor_strategy_group_selected_servers_summary, count) },
             emptyGroupMessage = noServersMessage,
-            saveLabel = stringResource(Res.string.common_save),
-            onBack = { selectingMembers = false },
             onSave = { ids ->
                 strategyGroupMemberIds = ProxyServerEditorController.normalizeStrategyGroupMemberIds(ids)
                 serverEdit.proxyServerIds = strategyGroupMemberIds
@@ -200,20 +203,25 @@ internal fun DesktopProxyServerEditorHost(
             title = serverEdit.editorTitle(),
             isWideScreen = true,
             options = editorOptions,
-            hasChanges = { ProxyServerEditorController.hasChanges(original, serverEdit) },
             messages = editorMessages,
             fullValidationMessages = editorUiState.pendingSaveIssues.map(validationMessageOf),
             showDiscardConfirmation = editorUiState.showDiscardConfirmation,
             showFullValidationWarning = editorUiState.showFullValidationWarning,
-            onRequestBack = onDismiss,
-            onRequestDiscardConfirmation = editorUiState::requestDiscardConfirmation,
+            onRequestBack = {
+                if (strategyGroupMemberIds != (original as? StrategyGroup)?.proxyServerIds.orEmpty() ||
+                    ProxyServerEditorController.hasChanges(original, serverEdit)
+                ) {
+                    saveDraft()
+                } else {
+                    onDismiss()
+                }
+            },
             onConfirmDiscard = {
                 editorUiState.dismissDiscardConfirmation()
                 onDismiss()
             },
             onDismissDiscard = editorUiState::dismissDiscardConfirmation,
             onCopy = ::copyDraft,
-            onSave = ::saveDraft,
             onDismissFullValidation = editorUiState::dismissFullValidationWarning,
             onContinueFullValidation = ::continueSaveAfterWarning,
             onDelete = if (serverEdit is StrategyGroup) ::requestDelete else null,

@@ -92,7 +92,6 @@ fun SkipiTrafficConfigRawEditor(
             title = if (state.configId == null) labels.newConfigTitle else labels.editConfigTitle,
             padding = padding,
             isWideScreen = isWideScreen,
-            saveLabel = labels.save,
             onBack = onBack,
             actions = {
                 TextButton(text = labels.save, enabled = state.canSave, onClick = onSave)

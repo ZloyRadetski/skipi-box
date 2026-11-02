@@ -81,7 +81,6 @@ class DesktopTrafficConfigProxyGroupsScreenIntegrationTest {
         val routingTitle = getString(Res.string.configs_rules_title)
         val groupsTitle = getString(Res.string.configs_proxy_groups_title)
         val deleteLabel = getString(Res.string.common_delete)
-        val saveLabel = getString(Res.string.common_save)
         val initialCatalog = catalogProxyServers()
         withDesktopScreen(
             targetContent = """[General]
@@ -103,7 +102,7 @@ vendor-option = keep-me
             assertNotNull(awaitText(screen.scene, "Remove this group"))
 
             clickContentDescription(screen.scene, deleteLabel)
-            clickContentDescription(screen.scene, saveLabel)
+            clickTopBarBack(screen.scene)
 
             val saved = screen.persistedLibrary().configs.single { it.id == screen.targetId }
             assertEquals(
@@ -130,7 +129,6 @@ vendor-option = keep-me
         val routingTitle = getString(Res.string.configs_rules_title)
         val groupsTitle = getString(Res.string.configs_proxy_groups_title)
         val addLabel = getString(Res.string.configs_proxy_groups_add)
-        val saveLabel = getString(Res.string.common_save)
         val initialCatalog = catalogProxyServers()
         val newGroupName = "Desktop profile group"
         withDesktopScreen(
@@ -149,9 +147,9 @@ vendor-option = keep-me
             setFirstEditableText(screen.scene, newGroupName)
             assertEquals(newGroupName, awaitEditableText(screen.scene, newGroupName))
 
-            clickContentDescription(screen.scene, saveLabel) // Save the strategy editor's result into this profile.
+            clickTopBarBack(screen.scene) // Save the strategy editor's result into this profile.
             assertNotNull(awaitText(screen.scene, newGroupName), "Saving the strategy editor should return to the profile group list")
-            clickContentDescription(screen.scene, saveLabel) // Save the group-list section and return to Basics.
+            clickTopBarBack(screen.scene) // Save the group-list section and return to Basics.
 
             val saved = screen.persistedLibrary().configs.single { it.id == screen.targetId }
             val group = saved.content.analyzeShadowrocketConfig().proxyGroups.single()
@@ -177,7 +175,6 @@ vendor-option = keep-me
         val routingTitle = getString(Res.string.configs_rules_title)
         val groupsTitle = getString(Res.string.configs_proxy_groups_title)
         val memberPickerLabel = getString(Res.string.proxy_editor_strategy_group_select_servers)
-        val saveLabel = getString(Res.string.common_save)
         val initialCatalog = catalogProxyServers(
             proxyServer(37, OldMemberName),
             proxyServer(38, NewMemberName),
@@ -204,10 +201,7 @@ vendor-option = keep-me
 
             clickClickableText(screen.scene, memberPickerLabel)
             assertNotNull(awaitText(screen.scene, OldMemberName))
-            val canceledMemberRow = awaitText(screen.scene, NewMemberName)
-            assertNotNull(canceledMemberRow)
-            click(screen.scene, canceledMemberRow) // A tentative selection must be discarded by the selector's Back.
-            clickTopBarBack(screen.scene) // Android's member-picker Back returns without changing its selected IDs.
+            clickTopBarBack(screen.scene) // Back saves the selection; nothing was changed, so the members stay as they were.
             assertEquals(renamedGroup, awaitEditableText(screen.scene, renamedGroup), "The parent editor draft must survive member-picker Back")
 
             clickClickableText(screen.scene, memberPickerLabel)
@@ -222,16 +216,16 @@ vendor-option = keep-me
                 screen.persistedLibrary(),
                 "Changing member picks should remain a draft until the strategy editor itself is saved",
             )
-            clickContentDescription(screen.scene, saveLabel) // Confirm the new ordered member list.
+            clickTopBarBack(screen.scene) // Confirm the new ordered member list.
             assertEquals(renamedGroup, awaitEditableText(screen.scene, renamedGroup))
             assertEquals(
                 screen.initialLibrary,
                 screen.persistedLibrary(),
                 "Confirming the nested member picker should still leave the profile document untouched",
             )
-            clickContentDescription(screen.scene, saveLabel) // Return the edited group result to the profile list.
+            clickTopBarBack(screen.scene) // Return the edited group result to the profile list.
             assertNotNull(awaitText(screen.scene, groupsTitle))
-            clickContentDescription(screen.scene, saveLabel) // Save the profile-group list.
+            clickTopBarBack(screen.scene) // Save the profile-group list.
 
             val saved = screen.persistedLibrary().configs.single { it.id == screen.targetId }
             val group = saved.content.analyzeShadowrocketConfig().proxyGroups.single()
@@ -412,7 +406,6 @@ Metadata group = select, $memberName, skipi-display=active_config
         val deleteLabel = getString(Res.string.common_delete)
         val cancelLabel = getString(Res.string.common_cancel)
         val confirmationTitle = getString(Res.string.deletion_confirmation_delete_proxy_server)
-        val saveLabel = getString(Res.string.common_save)
         val initialCatalog = catalogProxyServers(proxyServer(5, OldMemberName))
         withDesktopScreen(
             targetContent = """[General]
@@ -450,7 +443,7 @@ Keep in profile = select, $OldMemberName, skipi-display=never
             assertNotNull(awaitText(screen.scene, confirmationTitle))
             clickDialogTextAction(screen.scene, confirmationTitle, deleteLabel)
             assertNotNull(awaitText(screen.scene, "Keep in profile"), "Confirm should return to the profile-group list")
-            clickContentDescriptionAction(screen.scene, saveLabel)
+            clickTopBarBack(screen.scene)
 
             val savedTarget = screen.persistedLibrary().configs.single { config -> config.id == screen.targetId }
             assertEquals(

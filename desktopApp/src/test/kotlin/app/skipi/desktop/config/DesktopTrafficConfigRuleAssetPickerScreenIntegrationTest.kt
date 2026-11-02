@@ -78,7 +78,6 @@ class DesktopTrafficConfigRuleAssetPickerScreenIntegrationTest {
         val pickerSearchHint = getString(Res.string.routing_suggestions_search_hint)
         val ruleSetPickerLabel = getString(Res.string.routing_suggestions_title)
         val closeLabel = getString(Res.string.common_close)
-        val saveLabel = getString(Res.string.common_save)
 
         withTemporaryRoot { root ->
             val targetCustomFile = customFile(id = 9, name = "TargetCustom.dat")
@@ -228,7 +227,7 @@ FINAL,PROXY
                     pickerOnlyLabels = listOf(pickerSearchHint, closeLabel),
                 )
                 clickTopBarBack(scene, rulesTitle)
-                clickContentDescription(scene, saveLabel)
+                clickTopBarBack(scene, rulesTitle) // Return from the Rules list to Basics.
 
                 val savedTarget = persistedLibrary.configs.single { it.id == target.id }
                 assertEquals(

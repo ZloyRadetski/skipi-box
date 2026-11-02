@@ -79,18 +79,16 @@ fun SkipiProxyServerEditorScreen(
     title: String,
     isWideScreen: Boolean,
     options: ProxyServerEditorOptions,
-    hasChanges: () -> Boolean,
     messages: ProxyServerEditorDialogText,
     fullValidationMessages: List<String>,
     showDiscardConfirmation: Boolean,
     showFullValidationWarning: Boolean,
+    /** Leaving saves the draft (or asks what to do with it), so there is no separate save action. */
     onRequestBack: () -> Unit,
-    onRequestDiscardConfirmation: () -> Unit,
     onConfirmDiscard: () -> Unit,
     onDismissDiscard: () -> Unit,
     onCopy: (() -> Unit)?,
     onDelete: (() -> Unit)? = null,
-    onSave: () -> Unit,
     onDismissFullValidation: () -> Unit,
     onContinueFullValidation: () -> Unit,
     customEditor: @Composable (Custom, PaddingValues) -> Unit,
@@ -106,9 +104,7 @@ fun SkipiProxyServerEditorScreen(
                 isWideScreen = isWideScreen,
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    BackNavigationIcon(onClick = {
-                        if (hasChanges()) onRequestDiscardConfirmation() else onRequestBack()
-                    })
+                    BackNavigationIcon(onClick = onRequestBack)
                 },
                 actions = {
                     if (serverEdit is StrategyGroup) {
@@ -149,7 +145,6 @@ fun SkipiProxyServerEditorScreen(
                     } else if (onCopy != null) {
                         NavigationIcon(onClick = onCopy, imageVector = MiuixIcons.Copy)
                     }
-                    NavigationIcon(onClick = onSave, imageVector = MiuixIcons.Ok, contentDescription = stringResource(Res.string.common_save))
                 },
             )
         },

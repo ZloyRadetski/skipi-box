@@ -79,7 +79,6 @@ class RouteOutboundSelectorRenderTest {
                                 updatedLabel = "Updated yesterday",
                             ),
                         ),
-                        onBack = {},
                         onConfirm = {},
                     )
                 }

@@ -116,27 +116,6 @@ class DesktopTrafficConfigProfileFormsScreenIntegrationTest {
     }
 
     @Test
-    fun eachDetailSaveActionPersistsItsPublicWidgetEditAndReturnsToBasics() = runBlocking {
-        val labels = labels()
-        for (form in detailForms(labels)) {
-            val fixture = fixture()
-            withScreen(fixture, width = 1100, height = 800) { screen ->
-                openVisualEditor(screen, fixture.target.name, labels)
-                openSection(screen.scene, form.sectionTitle, 1100, 800)
-                clickSwitchForLabel(screen.scene, form.controlLabel, 1100, 800)
-
-                clickContentDescription(screen.scene, labels.save, 1100, 800)
-
-                assertOnlyTargetChanged(screen, fixture) { profile -> assertFormResult(profile, form, fixture.target.name) }
-                assertNotNull(
-                    awaitVisibleClickableText(screen.scene, labels.generalTitle, 1100, 800),
-                    "${form.key} Save should return to Basics",
-                )
-            }
-        }
-    }
-
-    @Test
     fun eachDetailToolbarBackPersistsItsPublicWidgetEditAndReturnsToBasics() = runBlocking {
         val labels = labels()
         for (form in detailForms(labels)) {
@@ -316,12 +295,6 @@ class DesktopTrafficConfigProfileFormsScreenIntegrationTest {
             )
             assertFullyVisible(control, width, height, "${form.key} switch")
             assertVisibleTopBarBack(screen.scene, width, height)
-            assertFullyVisible(
-                requireNotNull(awaitVisibleContentDescription(screen.scene, labels.save, width, height)),
-                width,
-                height,
-                "${form.key} toolbar Save",
-            )
             assertTrue(hasVerticalScroll(screen.scene), "${form.key} should expose its scrollable form")
 
             if (form.key == "dns") {

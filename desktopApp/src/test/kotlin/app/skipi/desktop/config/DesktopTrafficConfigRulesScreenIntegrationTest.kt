@@ -65,7 +65,6 @@ class DesktopTrafficConfigRulesScreenIntegrationTest {
         val uiEditLabel = getString(Res.string.configs_ui_edit)
         val rulesTitle = getString(Res.string.configs_rules_title)
         val deleteLabel = getString(Res.string.common_delete)
-        val saveLabel = getString(Res.string.common_save)
         withTemporaryRoot { root ->
             val resourceFiles = DesktopProfileResourceFiles(File(root, "resources"))
             val target = profile(
@@ -182,7 +181,7 @@ FINAL,PROXY
                 clickClickableText(scene, rulesTitle)
 
                 clickContentDescription(scene, deleteLabel)
-                clickContentDescription(scene, saveLabel)
+                clickTopBarBack(scene)
 
                 val savedTarget = persistedLibrary.configs.single { it.id == target.id }
                 assertEquals(
@@ -208,7 +207,7 @@ FINAL,PROXY
     }
 
     @Test
-    fun newRuleKeepsTypedValueWhenOutboundPickerIsCanceledAndConfirmsRejectPolicy() = runBlocking {
+    fun newRuleKeepsTypedValueAndLeavingTheOutboundPickerAppliesItsChoice() = runBlocking {
         val uiEditLabel = getString(Res.string.configs_ui_edit)
         val rulesTitle = getString(Res.string.configs_rules_title)
         val addRuleLabel = getString(Res.string.configs_rules_add)
@@ -217,7 +216,6 @@ FINAL,PROXY
         val directLabel = getString(Res.string.routing_outbound_direct)
         val rejectOptionLabel = getString(Res.string.routing_outbound_block)
         val deleteLabel = getString(Res.string.common_delete)
-        val saveLabel = getString(Res.string.common_save)
         withTemporaryRoot { root ->
             val resourceFiles = DesktopProfileResourceFiles(File(root, "resources"))
             val target = profile(
@@ -314,20 +312,20 @@ vendor-option = keep-me
                 clickText(scene, policyLabel)
                 assertTrue(awaitText(scene, systemTargetsLabel) != null, "Policy selection should use the shared outbound-selector groups")
                 clickText(scene, directLabel)
-                clickTopBarBack(scene) // The selector's Back discards its pending choice.
+                clickTopBarBack(scene) // The selector's Back confirms its pending choice.
                 assertEquals(typedValue, awaitEditableText(scene, typedValue))
-                assertTrue(awaitText(scene, "PROXY") != null, "Canceling the picker must keep the original policy")
+                assertTrue(awaitText(scene, "DIRECT") != null, "Leaving the picker must apply the chosen policy")
 
                 clickText(scene, policyLabel)
                 assertTrue(awaitText(scene, systemTargetsLabel) != null, "Policy selection should use the shared outbound-selector groups")
                 clickText(scene, rejectOptionLabel)
-                clickContentDescription(scene, saveLabel) // Confirm the selector's REJECT tag.
+                clickTopBarBack(scene) // Confirm the selector's REJECT tag.
                 assertEquals(typedValue, awaitEditableText(scene, typedValue))
                 assertTrue(awaitText(scene, "REJECT") != null, "Confirming the picker should update only the policy")
 
                 clickTopBarBack(scene) // The rule form's Back saves the draft, following Android behavior.
                 assertNotNull(awaitText(scene, rulesTitle), "Returning from the rule form should show the Rules list")
-                clickContentDescription(scene, saveLabel) // Return from the Rules list to Basics.
+                clickTopBarBack(scene) // Return from the Rules list to Basics.
 
                 val savedTarget = persistedLibrary.configs.single { it.id == target.id }
                 assertEquals(
@@ -353,7 +351,6 @@ vendor-option = keep-me
         val addRuleLabel = getString(Res.string.configs_rules_add)
         val policyLabel = getString(Res.string.configs_rules_policy)
         val manualServersLabel = getString(Res.string.subscription_default_group)
-        val saveLabel = getString(Res.string.common_save)
         val ruleValue = "catalog-route.example"
         withTemporaryRoot { root ->
             val resourceFiles = DesktopProfileResourceFiles(File(root, "resources"))
@@ -456,7 +453,7 @@ vendor-option = keep-me
                     "The shared policy selector should show the named VLESS server supplied by Desktop's catalog",
                 )
                 click(scene, serverRow)
-                clickContentDescription(scene, saveLabel)
+                clickTopBarBack(scene)
                 assertTrue(
                     awaitText(scene, CatalogOutboundServerName) != null,
                     "Confirming the server should use its remarks as the Shadowrocket policy tag",
@@ -464,7 +461,7 @@ vendor-option = keep-me
 
                 clickTopBarBack(scene) // The rule form's Back saves the draft, following Android behavior.
                 assertNotNull(awaitText(scene, rulesTitle), "Returning from the rule form should show the Rules list")
-                clickContentDescription(scene, saveLabel) // Return from the Rules list to Basics.
+                clickTopBarBack(scene) // Return from the Rules list to Basics.
 
                 val savedTarget = persistedLibrary.configs.single { it.id == target.id }
                 assertEquals(

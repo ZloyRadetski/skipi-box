@@ -55,7 +55,6 @@ fun SkipiTrafficConfigRuleEditorPage(
 
     SkipiTrafficConfigRuleEditorScreen(
         title = stringResource(if (initialRule == null) Res.string.configs_rules_add else Res.string.configs_rules_edit),
-        saveLabel = stringResource(Res.string.common_save),
         padding = padding,
         isWideScreen = isWideScreen,
         profileId = profileId,

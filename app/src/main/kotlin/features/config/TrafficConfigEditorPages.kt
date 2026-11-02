@@ -150,7 +150,6 @@ fun TrafficConfigEditorPage(
         controller = editor,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(R.string.common_save),
         onBack = onBack,
         platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
     )
@@ -275,11 +274,9 @@ private fun TrafficConfigGeneralSectionPage(padding: PaddingValues, trafficConfi
         title = stringResource(R.string.configs_general_title),
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(R.string.common_save),
         profile = config,
         controller = editor,
         onBack = onBack,
-        onSave = onBack,
         platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
     )
 }
@@ -297,11 +294,9 @@ private fun TrafficConfigDnsSectionPage(padding: PaddingValues, trafficConfigId:
         title = stringResource(R.string.configs_dns_title),
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(R.string.common_save),
         profile = config,
         controller = editor,
         onBack = onBack,
-        onSave = onBack,
         platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
     )
 }
@@ -320,11 +315,9 @@ private fun TrafficConfigTunnelSectionPage(padding: PaddingValues, trafficConfig
         title = stringResource(R.string.configs_android_title),
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(R.string.common_save),
         profile = config,
         controller = editor,
         onBack = onBack,
-        onSave = onBack,
         platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
     )
 }
@@ -343,11 +336,9 @@ private fun TrafficConfigNetworkSectionPage(padding: PaddingValues, trafficConfi
         title = stringResource(R.string.configs_network_title),
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(R.string.common_save),
         profile = config,
         controller = editor,
         onBack = onBack,
-        onSave = onBack,
         platformBackHandler = { back -> TrafficConfigEditorBackHandler(back) },
     )
 }
@@ -380,7 +371,6 @@ internal fun TrafficConfigFullScreenScaffold(
     padding: PaddingValues,
     isWideScreen: Boolean,
     onBack: () -> Unit,
-    onSave: (() -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
     topContentInset: androidx.compose.ui.unit.Dp = 8.dp,
     content: @Composable androidx.compose.foundation.layout.BoxScope.(contentPadding: PaddingValues, listPadding: PaddingValues, scrollBehavior: top.yukonga.miuix.kmp.basic.ScrollBehavior) -> Unit,
@@ -393,9 +383,7 @@ internal fun TrafficConfigFullScreenScaffold(
         title = title,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(R.string.common_save),
         onBack = onBack,
-        onSave = onSave,
         actions = actions,
         topContentInset = topContentInset,
         content = content,

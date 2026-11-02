@@ -3,6 +3,9 @@
 
 package features.routing
 
+import androidx.navigationevent.compose.rememberNavigationEventState
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.NavigationEventInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -109,9 +112,14 @@ fun RouteOutboundSelectorPage(
         isWideScreen = isWideScreen,
         subscriptionDetailsByGroupId = subscriptionDetailsByGroupId,
         fallbackPainter = painterResource(R.drawable.ic_globe),
-        onBack = navigator::pop,
         onConfirm = { targetTag ->
             navigator.setResult(resultKey, RouteOutboundSelectionResult(targetTag))
+        },
+        platformBackHandler = { back ->
+            NavigationBackHandler(
+                state = rememberNavigationEventState(NavigationEventInfo.None),
+                onBackCompleted = back,
+            )
         },
     )
 }

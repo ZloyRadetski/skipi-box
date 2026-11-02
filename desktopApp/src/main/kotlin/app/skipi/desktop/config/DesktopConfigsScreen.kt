@@ -551,7 +551,6 @@ internal fun DesktopConfigsScreen(
                     controller = editorController,
                     padding = contentPadding,
                     isWideScreen = true,
-                    saveLabel = stringResource(Res.string.common_save),
                     onBack = {
                         visualEditor = null
                     },
@@ -653,13 +652,9 @@ internal fun DesktopConfigsScreen(
                     title = stringResource(Res.string.configs_general_title),
                     padding = contentPadding,
                     isWideScreen = true,
-                    saveLabel = stringResource(Res.string.common_save),
                     profile = profile,
                     controller = editorController,
                     onBack = {
-                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
-                    },
-                    onSave = {
                         visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
                     },
                     statusContent = editorSaveError?.let { error ->
@@ -670,13 +665,9 @@ internal fun DesktopConfigsScreen(
                     title = stringResource(Res.string.configs_dns_title),
                     padding = contentPadding,
                     isWideScreen = true,
-                    saveLabel = stringResource(Res.string.common_save),
                     profile = profile,
                     controller = editorController,
                     onBack = {
-                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
-                    },
-                    onSave = {
                         visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
                     },
                     statusContent = editorSaveError?.let { error ->
@@ -687,13 +678,9 @@ internal fun DesktopConfigsScreen(
                     title = stringResource(Res.string.configs_android_title),
                     padding = contentPadding,
                     isWideScreen = true,
-                    saveLabel = stringResource(Res.string.common_save),
                     profile = profile,
                     controller = editorController,
                     onBack = {
-                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
-                    },
-                    onSave = {
                         visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
                     },
                     statusContent = editorSaveError?.let { error ->
@@ -704,13 +691,9 @@ internal fun DesktopConfigsScreen(
                     title = stringResource(Res.string.configs_network_title),
                     padding = contentPadding,
                     isWideScreen = true,
-                    saveLabel = stringResource(Res.string.common_save),
                     profile = profile,
                     controller = editorController,
                     onBack = {
-                        visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
-                    },
-                    onSave = {
                         visualEditor = session.copy(section = DesktopVisualEditorSection.Basics)
                     },
                     statusContent = editorSaveError?.let { error ->

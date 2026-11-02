@@ -50,9 +50,7 @@ fun SkipiTrafficConfigBasicsEditorScreen(
     controller: TrafficConfigEditorController,
     padding: PaddingValues,
     isWideScreen: Boolean,
-    saveLabel: String,
     onBack: () -> Unit,
-    onSave: (() -> Unit)? = null,
     platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
     statusContent: (@Composable () -> Unit)? = null,
 ) {
@@ -73,21 +71,13 @@ fun SkipiTrafficConfigBasicsEditorScreen(
         controller.saveBasicsThenNavigate(profile, draft, onBack)
         Unit
     }
-    val saveAndNavigate: (() -> Unit)? = onSave?.let { navigate ->
-        {
-            controller.saveBasicsThenNavigate(profile, draft, navigate)
-            Unit
-        }
-    }
     platformBackHandler(saveAndBack)
     val listState = rememberLazyListState()
     SkipiTrafficConfigFullScreenScaffold(
         title = title,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = saveLabel,
         onBack = saveAndBack,
-        onSave = saveAndNavigate,
     ) { contentPadding, listPadding, scrollBehavior ->
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
@@ -146,11 +136,9 @@ fun SkipiTrafficConfigGeneralEditorScreen(
     title: String,
     padding: PaddingValues,
     isWideScreen: Boolean,
-    saveLabel: String,
     profile: TrafficConfigState,
     controller: TrafficConfigEditorController,
     onBack: () -> Unit,
-    onSave: () -> Unit,
     platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
     statusContent: (@Composable () -> Unit)? = null,
 ) {
@@ -167,18 +155,12 @@ fun SkipiTrafficConfigGeneralEditorScreen(
         controller.saveGeneralThenNavigate(profile.id, ipv6, preferIpv6, onBack)
         Unit
     }
-    val saveAndNavigate: () -> Unit = {
-        controller.saveGeneralThenNavigate(profile.id, ipv6, preferIpv6, onSave)
-        Unit
-    }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(
         title = title,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = saveLabel,
         onBack = saveAndBack,
-        onSave = saveAndNavigate,
     ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
@@ -207,11 +189,9 @@ fun SkipiTrafficConfigDnsEditorScreen(
     title: String,
     padding: PaddingValues,
     isWideScreen: Boolean,
-    saveLabel: String,
     profile: TrafficConfigState,
     controller: TrafficConfigEditorController,
     onBack: () -> Unit,
-    onSave: () -> Unit,
     platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
     statusContent: (@Composable () -> Unit)? = null,
 ) {
@@ -220,18 +200,12 @@ fun SkipiTrafficConfigDnsEditorScreen(
         controller.saveDnsThenNavigate(profile.id, settings, onBack)
         Unit
     }
-    val saveAndNavigate: () -> Unit = {
-        controller.saveDnsThenNavigate(profile.id, settings, onSave)
-        Unit
-    }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(
         title = title,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = saveLabel,
         onBack = saveAndBack,
-        onSave = saveAndNavigate,
     ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
@@ -257,11 +231,9 @@ fun SkipiTrafficConfigTunnelEditorScreen(
     title: String,
     padding: PaddingValues,
     isWideScreen: Boolean,
-    saveLabel: String,
     profile: TrafficConfigState,
     controller: TrafficConfigEditorController,
     onBack: () -> Unit,
-    onSave: () -> Unit,
     platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
     statusContent: (@Composable () -> Unit)? = null,
 ) {
@@ -271,18 +243,12 @@ fun SkipiTrafficConfigTunnelEditorScreen(
         controller.saveTunnelThenNavigate(profile.id, settings, muxConcurrency, onBack)
         Unit
     }
-    val saveAndNavigate: () -> Unit = {
-        controller.saveTunnelThenNavigate(profile.id, settings, muxConcurrency, onSave)
-        Unit
-    }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(
         title = title,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = saveLabel,
         onBack = saveAndBack,
-        onSave = saveAndNavigate,
     ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),
@@ -310,11 +276,9 @@ fun SkipiTrafficConfigNetworkActivationEditorScreen(
     title: String,
     padding: PaddingValues,
     isWideScreen: Boolean,
-    saveLabel: String,
     profile: TrafficConfigState,
     controller: TrafficConfigEditorController,
     onBack: () -> Unit,
-    onSave: () -> Unit,
     platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
     statusContent: (@Composable () -> Unit)? = null,
 ) {
@@ -326,18 +290,12 @@ fun SkipiTrafficConfigNetworkActivationEditorScreen(
         controller.saveNetworkActivationThenNavigate(profile.id, enabled, transport, onBack)
         Unit
     }
-    val saveAndNavigate: () -> Unit = {
-        controller.saveNetworkActivationThenNavigate(profile.id, enabled, transport, onSave)
-        Unit
-    }
     platformBackHandler(saveAndBack)
     SkipiTrafficConfigFullScreenScaffold(
         title = title,
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = saveLabel,
         onBack = saveAndBack,
-        onSave = saveAndNavigate,
     ) { _, listPadding, scrollBehavior ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().pageScrollModifiers(scrollBehavior),

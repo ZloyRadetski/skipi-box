@@ -70,14 +70,16 @@ fun SkipiStrategyGroupMemberSelectorScreen(
     flagFallbackTint: Color = Color.White.copy(alpha = 0.65f),
     selectedSummary: @Composable (Int) -> String,
     emptyGroupMessage: String,
-    saveLabel: String,
-    onBack: () -> Unit,
+    /** Leaving the screen saves the selection, so there is no separate save action. */
     onSave: (List<Int>) -> Unit,
+    platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val listState = rememberLazyListState()
     var selectedIds by remember(selectedServerIds) { mutableStateOf(selectedServerIds.distinct()) }
     val expandedGroups = remember { mutableStateMapOf<String, Boolean>() }
+    val saveAndBack: () -> Unit = { onSave(selectedIds.toList()) }
+    platformBackHandler(saveAndBack)
     fun toggle(id: Int) {
         selectedIds = StrategyMemberSelectionState.toggleMember(selectedIds, id)
     }
@@ -94,8 +96,7 @@ fun SkipiStrategyGroupMemberSelectorScreen(
                 subtitle = selectedSummary(selectedIds.size),
                 isWideScreen = isWideScreen,
                 scrollBehavior = scrollBehavior,
-                navigationIcon = { BackNavigationIcon(onClick = onBack) },
-                actions = { NavigationIcon(onClick = { onSave(selectedIds.toList()) }, imageVector = MiuixIcons.Ok, contentDescription = saveLabel) },
+                navigationIcon = { BackNavigationIcon(onClick = saveAndBack) },
             )
         },
     ) { innerPadding ->

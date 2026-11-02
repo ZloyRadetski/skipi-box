@@ -44,9 +44,7 @@ fun SkipiTrafficConfigProxyGroupsEditorScreen(
         title = stringResource(Res.string.configs_proxy_groups_title),
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(Res.string.common_save),
         onBack = onBack,
-        onSave = onBack,
     ) { _, listPadding, scrollBehavior ->
         SkipiTrafficConfigProxyGroups(
             groups = groups,

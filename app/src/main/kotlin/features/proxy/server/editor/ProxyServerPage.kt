@@ -160,18 +160,21 @@ fun ProxyServerPage(
         }
     }
 
-    fun requestSave() {
+    // Leaving saves the draft. A draft that cannot be saved says why and offers to discard it, so the
+    // editor never traps the user.
+    fun requestBack() {
+        if (!hasChanges()) {
+            navigator.pop()
+            return
+        }
         when (val decision = ProxyServerEditorController.requestSave(psEdit)) {
-            is ProxyServerEditorSaveDecision.Reject -> scope.launch {
-                tipNotifier.show(validationMessageOf(decision.issue))
+            is ProxyServerEditorSaveDecision.Reject -> {
+                scope.launch { tipNotifier.show(validationMessageOf(decision.issue)) }
+                editorUiState.requestDiscardConfirmation()
             }
             is ProxyServerEditorSaveDecision.ConfirmFullValidation -> editorUiState.showFullValidationWarning(decision.issues)
             ProxyServerEditorSaveDecision.Save -> saveProxyServer()
         }
-    }
-
-    fun requestBack() {
-        if (hasChanges()) editorUiState.requestDiscardConfirmation() else navigator.pop()
     }
 
     NavigationBackHandler(
@@ -218,13 +221,11 @@ fun ProxyServerPage(
         title = title,
         isWideScreen = isWideScreen,
         options = editorOptions,
-        hasChanges = ::hasChanges,
         messages = dialogText,
         fullValidationMessages = editorUiState.pendingSaveIssues.map(validationMessageOf),
         showDiscardConfirmation = editorUiState.showDiscardConfirmation,
         showFullValidationWarning = editorUiState.showFullValidationWarning,
-        onRequestBack = navigator::pop,
-        onRequestDiscardConfirmation = editorUiState::requestDiscardConfirmation,
+        onRequestBack = ::requestBack,
         onConfirmDiscard = {
             editorUiState.dismissDiscardConfirmation()
             navigator.pop()
@@ -248,7 +249,6 @@ fun ProxyServerPage(
             }
         },
         onDelete = if (psEdit is StrategyGroup) ::requestDelete else null,
-        onSave = ::requestSave,
         onDismissFullValidation = editorUiState::dismissFullValidationWarning,
         onContinueFullValidation = {
             editorUiState.dismissFullValidationWarning()

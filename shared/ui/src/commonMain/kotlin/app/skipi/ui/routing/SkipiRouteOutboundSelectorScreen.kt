@@ -47,13 +47,16 @@ fun SkipiRouteOutboundSelectorScreen(
     isWideScreen: Boolean,
     subscriptionDetailsByGroupId: Map<Int, SkipiRoutingOutboundGroupDetails> = emptyMap(),
     fallbackPainter: Painter? = null,
-    onBack: () -> Unit,
+    /** Leaving the screen confirms the pending choice, so there is no separate confirm action. */
     onConfirm: (String) -> Unit,
+    platformBackHandler: @Composable (onBack: () -> Unit) -> Unit = {},
 ) {
     val selectorState = remember { RouteOutboundSelectorState(selectedTag) }
     // Match remember(selectedTag) for the pending value without discarding expansion overrides.
     selectorState.updateSelectedTag(selectedTag)
     val listState = rememberLazyListState()
+    val confirmAndBack: () -> Unit = { onConfirm(selectorState.targetTag) }
+    platformBackHandler(confirmAndBack)
     val defaultProxyServerTemplate = stringResource(Res.string.routing_default_proxy_server)
     val groups = projection.groups.map { group ->
         SkipiRoutingOutboundGroup(
@@ -73,14 +76,7 @@ fun SkipiRouteOutboundSelectorScreen(
         ),
         padding = padding,
         isWideScreen = isWideScreen,
-        onBack = onBack,
-        actions = {
-            NavigationIcon(
-                onClick = { onConfirm(selectorState.targetTag) },
-                imageVector = MiuixIcons.Ok,
-                contentDescription = stringResource(Res.string.common_save),
-            )
-        },
+        onBack = confirmAndBack,
     ) { contentPadding, scrollBehavior ->
         Box(Modifier.fillMaxSize()) {
             LazyColumn(

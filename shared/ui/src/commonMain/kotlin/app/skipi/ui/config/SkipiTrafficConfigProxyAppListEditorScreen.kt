@@ -113,7 +113,6 @@ fun SkipiTrafficConfigProxyAppListEditorScreen(
         title = stringResource(Res.string.proxy_app_list_title),
         padding = padding,
         isWideScreen = isWideScreen,
-        saveLabel = stringResource(Res.string.common_save),
         onBack = onBack,
         actions = {
             ProxyAppListModeMenu(

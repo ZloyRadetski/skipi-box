@@ -48,9 +48,7 @@ fun SkipiTrafficConfigFullScreenScaffold(
     title: String,
     padding: PaddingValues,
     isWideScreen: Boolean,
-    saveLabel: String,
     onBack: (() -> Unit)?,
-    onSave: (() -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
     topContentInset: Dp = 8.dp,
     subtitle: String = "",
@@ -69,12 +67,7 @@ fun SkipiTrafficConfigFullScreenScaffold(
                 color = Color.Transparent,
                 subtitle = subtitle,
                 navigationIcon = { onBack?.let { back -> BackNavigationIcon(onClick = back) } },
-                actions = {
-                    actions?.invoke()
-                    if (onSave != null) {
-                        NavigationIcon(onClick = onSave, imageVector = MiuixIcons.Ok, contentDescription = saveLabel)
-                    }
-                },
+                actions = { actions?.invoke() },
                 bottomContent = topBarBottomContent,
             )
         },

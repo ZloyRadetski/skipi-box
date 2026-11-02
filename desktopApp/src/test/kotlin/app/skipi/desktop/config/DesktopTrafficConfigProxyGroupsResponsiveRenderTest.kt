@@ -172,13 +172,11 @@ ${labels.groupName} = select, ${labels.memberName}, skipi-display=active_config
                 assertVisibleText(scene, labels.groupEditorTitle, width, height)
                 assertVisibleText(scene, labels.groupNameField, width, height)
                 assertVisibleText(scene, labels.members, width, height)
-                assertVisibleContentDescription(scene, labels.save, width, height)
                 saveSnapshot(scene, "group-form", width, height)
 
                 clickClickableTextAction(scene, labels.members, width, height)
                 assertVisibleText(scene, labels.members, width, height)
                 assertVisibleText(scene, labels.memberName, width, height)
-                assertVisibleContentDescription(scene, labels.save, width, height)
                 saveSnapshot(scene, "member-selector", width, height)
             } finally {
                 scene.close()

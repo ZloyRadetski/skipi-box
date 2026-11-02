@@ -5,6 +5,9 @@
 
 package features.proxy.server.editor
 
+import androidx.navigationevent.compose.rememberNavigationEventState
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.NavigationEventInfo
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -172,8 +175,12 @@ fun StrategyGroupMemberSelectorPage(
         flagFallbackTint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.85f),
         selectedSummary = { count -> stringResource(R.string.proxy_editor_strategy_group_selected_servers_summary, count) },
         emptyGroupMessage = stringResource(R.string.proxy_editor_strategy_group_no_servers),
-        saveLabel = stringResource(R.string.common_save),
-        onBack = navigator::pop,
         onSave = { ids -> navigator.setResult(resultKey, StrategyGroupMemberSelectionResult(ids)) },
+        platformBackHandler = { back ->
+            NavigationBackHandler(
+                state = rememberNavigationEventState(NavigationEventInfo.None),
+                onBackCompleted = back,
+            )
+        },
     )
 }

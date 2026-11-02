@@ -187,7 +187,6 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
     fun addingGlobalGroupKeepsDraftUntilSaveAndEmitsAutoBalancerResult() = runBlocking {
         val globalGroupsTitle = getString(Res.string.configs_global_proxy_groups)
         val addLabel = getString(Res.string.configs_add)
-        val saveLabel = getString(Res.string.common_save)
         val newName = "New global strategy group"
         val proxyServers = emptyList<CatalogProxyServerRecord>()
 
@@ -211,11 +210,11 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertEquals(proxyServers, screen.proxyServers)
 
             // A group that names no servers, subscription or filter would have no members: it is not saved.
-            clickContentDescriptionAction(screen.scene, saveLabel)
+            clickTopBarBack(screen.scene)
             assertEquals(0, screen.applyRequests().size, "A group without any source of members must not be saved")
 
             setEditableTextByCurrentValue(screen.scene, currentValue = "", newValue = "Helsinki")
-            clickContentDescriptionAction(screen.scene, saveLabel)
+            clickTopBarBack(screen.scene)
 
             val request = screen.applyRequests().single()
             assertEquals(null, request.serverId)
@@ -236,7 +235,6 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
     @Test
     fun duplicatingGlobalGroupCreatesLocalizedDetachedDraftAndPreservesItsFields() = runBlocking {
         val duplicateLabel = getString(Res.string.configs_duplicate)
-        val saveLabel = getString(Res.string.common_save)
         val copyNamePattern = getString(Res.string.configs_copy_name)
         val originalName = "Global policy group"
         val localizedCopyName = String.format(Locale.getDefault(), copyNamePattern, originalName)
@@ -282,7 +280,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertEquals(0, screen.applyRequests().size, "Editing a duplicate should remain local until Save")
             assertEquals(originalSnapshot, globalStrategy(screen.proxyServers, 40), "Editing a duplicate must leave the source row untouched")
 
-            clickContentDescriptionAction(screen.scene, saveLabel)
+            clickTopBarBack(screen.scene)
 
             val request = screen.applyRequests().single()
             assertEquals(null, request.serverId, "A duplicate must be submitted as a new catalog record")
@@ -342,7 +340,6 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
     @Test
     fun duplicatingBlankNamedGlobalGroupUsesProtocolFallbackForItsSavedName() = runBlocking {
         val duplicateLabel = getString(Res.string.configs_duplicate)
-        val saveLabel = getString(Res.string.common_save)
         val copyNamePattern = getString(Res.string.configs_copy_name)
         val originalGroup = StrategyGroup(filter = "Helsinki")
         val originalSnapshot = originalGroup.copy(proxyServerIds = originalGroup.proxyServerIds.toList())
@@ -366,7 +363,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertEquals(0, screen.applyRequests().size, "Opening a duplicate draft must not apply it")
             assertEquals(originalSnapshot, globalStrategy(screen.proxyServers, 44))
 
-            clickContentDescriptionAction(screen.scene, saveLabel)
+            clickTopBarBack(screen.scene)
 
             val request = screen.applyRequests().single()
             assertEquals(null, request.serverId, "Saving a duplicate should create a new catalog record")
@@ -389,7 +386,6 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
 
     @Test
     fun failedGlobalGroupEditShowsAdapterReasonAndKeepsPersistedDataUnchanged() = runBlocking {
-        val saveLabel = getString(Res.string.common_save)
         val originalName = "Global group with rejected save"
         val attemptedName = "Rejected edited global group"
         val failureReason = "scripted global-group rejection reason 9f2a"
@@ -413,7 +409,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             setFirstEditableText(screen.scene, attemptedName)
             assertEquals(0, screen.applyRequests().size, "Editing should remain a draft until Save")
 
-            clickContentDescriptionAction(screen.scene, saveLabel)
+            clickTopBarBack(screen.scene)
 
             val request = screen.applyRequests().single()
             assertEquals(45, request.serverId)
@@ -487,7 +483,6 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
     fun editingExistingGlobalGroupKeepsIdentityAndAppliesOnlyAfterSave() = runBlocking {
         val originalName = "Existing global group 40"
         val editedName = "Edited global group 40"
-        val saveLabel = getString(Res.string.common_save)
         val originalGroup = StrategyGroup(
             remarks = originalName,
             strategy = StrategyGroupConstants.TYPE_LEAST_PING,
@@ -514,7 +509,7 @@ class DesktopTrafficConfigCollectionScreenIntegrationTest {
             assertEquals(0, screen.applyRequests().size, "An edited global draft should remain local until Save")
             assertEquals(originalSnapshot, globalStrategy(screen.proxyServers, 40))
 
-            clickContentDescriptionAction(screen.scene, saveLabel)
+            clickTopBarBack(screen.scene)
 
             val request = screen.applyRequests().single()
             assertEquals(40, request.serverId)
@@ -1330,7 +1325,6 @@ loglevel = debug
         val editLabel = getString(Res.string.common_edit)
         val deleteLabel = getString(Res.string.common_delete)
         val cancelLabel = getString(Res.string.common_cancel)
-        val saveLabel = getString(Res.string.common_save)
         val confirmationTitle = getString(Res.string.deletion_confirmation_delete_proxy_server)
         val discardTitle = getString(Res.string.proxy_editor_discard_changes_title)
         val profileName = "Responsive collection profile metadata"
@@ -1407,7 +1401,6 @@ loglevel = debug
                 scrollViewportUntilVisible(screen.scene, globalGroupName, width, height, deltaSign = -1f)
                 clickTextAction(screen.scene, globalGroupName)
                 assertVisibleViewportText(screen.scene, groupEditorTitle, width, height)
-                assertVisibleViewportContentDescription(screen.scene, saveLabel, width, height)
                 saveViewportSnapshot(screen.scene, "global-group-editor", width, height)
 
                 clickTopBarBack(screen.scene)

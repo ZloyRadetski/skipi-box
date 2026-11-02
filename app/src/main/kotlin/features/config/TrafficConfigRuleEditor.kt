@@ -49,13 +49,11 @@ internal fun TrafficConfigRulesPage(
 
     SkipiTrafficConfigRulesEditorScreen(
         title = stringResource(R.string.configs_rules_title),
-        saveLabel = stringResource(R.string.common_save),
         padding = padding,
         isWideScreen = isWideScreen,
         profile = config,
         controller = editor,
         onBack = navigator::pop,
-        onSave = navigator::pop,
         onAdd = { navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId)) },
         onEdit = { rule -> navigator.push(Route.TrafficConfigRuleEditor(trafficConfigId, rule.lineNumber)) },
         onHapticFeedback = hapticFeedback::performHapticFeedback,

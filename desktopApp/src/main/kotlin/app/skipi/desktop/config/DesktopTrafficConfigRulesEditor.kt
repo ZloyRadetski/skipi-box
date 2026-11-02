@@ -86,13 +86,11 @@ internal fun DesktopTrafficConfigRulesEditor(
     if (session == null || editRuleMissing) {
         SkipiTrafficConfigRulesEditorScreen(
             title = stringResource(Res.string.configs_rules_title),
-            saveLabel = stringResource(Res.string.common_save),
             padding = padding,
             isWideScreen = isWideScreen,
             profile = profile,
             controller = controller,
             onBack = onBack,
-            onSave = onBack,
             onAdd = { openRuleEditor(lineNumber = null) },
             onEdit = { rule -> openRuleEditor(lineNumber = rule.lineNumber) },
             onHapticFeedback = {},
@@ -185,7 +183,6 @@ internal fun DesktopTrafficConfigRulesEditor(
                         padding = padding,
                         isWideScreen = isWideScreen,
                         subscriptionDetailsByGroupId = subscriptionDetails,
-                        onBack = { showPolicySelector = false },
                         onConfirm = { targetTag ->
                             editorState.selectedPolicy = targetTag
                             showPolicySelector = false
