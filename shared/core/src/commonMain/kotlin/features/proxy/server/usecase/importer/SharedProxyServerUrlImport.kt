@@ -36,7 +36,7 @@ fun importProxyServersFromUrls(
         if (!seenUrls.add(url)) return null
         val index = urlCount++
         return runCatching {
-            val server = ProxyServer.parse(url)
+            val server = if (url.startsWith("$VpnLinkScheme://", ignoreCase = true)) parseVpnConfLink(url) else ProxyServer.parse(url)
             val issues = if (server is AmneziaWg) server.validateFull() else server.validateBasic()
             require(issues.isEmpty()) {
                 "Proxy validation failed: ${issues.joinToString { it.error.name }}"
@@ -95,8 +95,9 @@ private val ProxyServerUrlPrefixes = listOf(
     "${ProxyServerConstants.PROTOCOL_WIREGUARD}://",
     "${ProxyServerConstants.PROTOCOL_AMNEZIA_WG}://",
     "${ProxyServerConstants.PROTOCOL_AWG}://",
+    "$VpnLinkScheme://",
 )
 
 private val ProxyServerUrlRegex = Regex(
-    "(?i)\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|wireguard|amneziawg|awg)://[^\\s<>\"']+",
+    "(?i)\\b(?:http|socks|socks4|socks5|ss|vmess|vless|trojan|hy2|hysteria2|wireguard|amneziawg|awg|vpn)://[^\\s<>\"']+",
 )
