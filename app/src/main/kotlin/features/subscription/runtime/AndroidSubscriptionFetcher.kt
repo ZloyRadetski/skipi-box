@@ -3,6 +3,8 @@
 
 package features.subscription.runtime
 
+import features.subscription.SubscriptionRedirectDecision
+import features.subscription.decideSubscriptionRedirect
 import android.content.Context
 import android.os.Build
 import data.AppSettingsPreferences
@@ -111,30 +113,39 @@ private fun fetchWithRedirects(
     timeoutSeconds: Int,
 ): SubscriptionFetchResponse {
     var currentUrl = url
+    var sendIdentity = true
     val timeoutMillis = SubscriptionFetchPolicy.timeoutSeconds(timeoutSeconds) * 1000
     repeat(SubscriptionFetchPolicy.maxRedirects + 1) {
         val connection = currentUrl.toConnection(proxy, timeoutMillis)
         try {
             connection.setRequestProperty("User-Agent", userAgent)
             connection.setRequestProperty("Connection", "close")
-            requestCredentials.deviceHeaders.forEach { (name, value) ->
-                connection.setRequestProperty(name, value)
+            if (sendIdentity) {
+                requestCredentials.deviceHeaders.forEach { (name, value) ->
+                    connection.setRequestProperty(name, value)
+                }
+                requestCredentials.agePublicKey?.let { publicKey ->
+                    connection.setRequestProperty("X-Age-Public-Key", publicKey)
+                }
+                connection.setEmbeddedBasicAuth(currentUrl)
             }
-            requestCredentials.agePublicKey?.let { publicKey ->
-                connection.setRequestProperty("X-Age-Public-Key", publicKey)
-            }
-            connection.setEmbeddedBasicAuth(currentUrl)
 
             val code = connection.responseCode
             if (code in 300..399) {
                 val location = connection.getHeaderField("Location")
                     ?: error("Redirect location missing")
-                currentUrl = URI(currentUrl).resolve(location).toString()
+                val target = URI(currentUrl).resolve(location).toString()
+                when (val decision = decideSubscriptionRedirect(currentUrl, target)) {
+                    SubscriptionRedirectDecision.Follow -> Unit
+                    SubscriptionRedirectDecision.FollowWithoutIdentity -> sendIdentity = false
+                    is SubscriptionRedirectDecision.Reject -> error("Subscription redirect refused: ${decision.reason}")
+                }
+                currentUrl = target
                 return@repeat
             }
             if (code !in 200..299) {
                 val errorBody = runCatching {
-                    connection.errorStream?.bufferedReader()?.use { it.readText() }
+                    connection.errorStream?.use { input -> input.readTextLimited(MaxSubscriptionErrorBodyBytes) }
                 }.getOrNull()
                 val serverMessage = parseSubscriptionHttpErrorMessage(errorBody)
                 throw SubscriptionHttpException(
@@ -278,6 +289,7 @@ internal fun parseSubscriptionHttpErrorMessage(errorBody: String?): String? {
 }
 
 private const val MaxSubscriptionBodyBytes = 32 * 1024 * 1024
+private const val MaxSubscriptionErrorBodyBytes = 64 * 1024
 
 /** Reads UTF-8 text, failing early instead of exhausting memory on a hostile or broken endpoint. */
 internal fun java.io.InputStream.readTextLimited(maxBytes: Int): String {
