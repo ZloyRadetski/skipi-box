@@ -833,6 +833,11 @@
     <string name="skipi_imported_config">پیکربندی اضافه شد</string>
     <string name="skipi_imported_config_activated">پیکربندی اضافه و فعال شد</string>
     <string name="skipi_import_failed">پیوند SKIPI وارد نشد</string>
+    <string name="external_import_confirm_title">افزودن از طریق پیوند؟</string>
+    <string name="external_import_confirm_message">برنامه یا صفحه وب دیگری از SKIPI می‌خواهد سرور یا پیکربندی را از %1$s اضافه کند. فقط در صورت اعتماد به منبع ادامه دهید.</string>
+    <string name="external_import_confirm_accept">افزودن</string>
+    <string name="external_import_inline_content">خود پیوند</string>
+    <string name="external_control_disabled">کنترل خارجی در تنظیمات خاموش است</string>
     <string name="skipi_control_missing_server">ابتدا یک سرور اضافه و انتخاب کنید</string>
     <string name="configs_source_url">به روز رسانی URL (اختیاری)</string>
     <string name="configs_updated">پیکربندی به روز شد</string>

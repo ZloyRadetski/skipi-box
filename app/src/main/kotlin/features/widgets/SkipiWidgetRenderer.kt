@@ -319,7 +319,9 @@ internal object SkipiWidgetRenderer {
         action: String,
         requestCode: Int,
     ): PendingIntent {
-        val intent = Intent(context, providerClass).setAction(action)
+        val intent = Intent(context, providerClass)
+            .setAction(action)
+            .putExtra(WidgetCommandToken.Extra, WidgetCommandToken.get(context))
         return PendingIntent.getBroadcast(
             context,
             requestCode,

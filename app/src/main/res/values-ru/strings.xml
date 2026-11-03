@@ -1045,6 +1045,11 @@
     <string name="skipi_imported_config">Конфигурация добавлена</string>
     <string name="skipi_imported_config_activated">Конфигурация добавлена и активирована</string>
     <string name="skipi_import_failed">Не удалось импортировать ссылку SKIPI</string>
+    <string name="external_import_confirm_title">Добавить по ссылке?</string>
+    <string name="external_import_confirm_message">Другое приложение или веб-страница просит SKIPI добавить сервер или конфиг с %1$s. Продолжайте, только если доверяете источнику.</string>
+    <string name="external_import_confirm_accept">Добавить</string>
+    <string name="external_import_inline_content">самой ссылки</string>
+    <string name="external_control_disabled">Внешнее управление отключено в настройках</string>
     <string name="skipi_control_missing_server">Сначала добавьте и выберите сервер</string>
     <string name="configs_source_url">URL обновления (необязательно)</string>
     <string name="configs_updated">Конфигурация обновлена</string>

@@ -200,7 +200,7 @@ data class AppState(
     /** Show the tunnel's public IP and country in the Home connection panel. */
     val showTunnelIpOnHome: Boolean = true,
     val maskTunnelIpOnHome: Boolean = false,
-    val enableBroadcastControl: Boolean = true,
+    val enableBroadcastControl: Boolean = false,
     val enableIpv6: Boolean = false,
     val enableIpv6Prefer: Boolean = false,
     val enableFakeDns: Boolean = false,

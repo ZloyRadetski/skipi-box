@@ -13,6 +13,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import android.app.AlertDialog
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -26,7 +27,10 @@ import data.AppSettingsPreferences
 import engine.proxy.AndroidProxyEngine
 import engine.vpn.AndroidVpnPermissionRequester
 import features.networkautomation.engine.AndroidWifiSsidPermissionRequester
+import features.config.DeepLinkGate
 import features.config.SkipiDeepLink
+import features.config.confirmationTarget
+import features.config.gate
 import features.config.toSkipiDeepLinkOrNull
 import features.config.withImportedTrafficConfig
 import features.config.withImportedSkipiServer
@@ -47,6 +51,8 @@ import features.subscription.usecase.toSubscriptionFetchOptions
 import app.effects.resolveActiveNetworkConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import ui.feedback.AndroidToastTipNotifier
 
 class MainActivity : ComponentActivity() {
@@ -307,6 +313,9 @@ class MainActivity : ComponentActivity() {
             return true
         }
         (application as SkipiApplication).appScope.launch {
+            if (!confirmExternalImport(config.url.substringAfter("://").substringBefore('/').substringBefore('?').substringAfterLast('@').substringBefore(':'))) {
+                return@launch
+            }
             runCatching {
                 subscriptionInstallConfigUseCase.install(config)
             }.onSuccess { result ->
@@ -325,8 +334,37 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
+    private suspend fun confirmExternalImport(target: String): Boolean = suspendCancellableCoroutine { continuation ->
+        runOnUiThread {
+            val shownTarget = target.ifBlank { getString(R.string.external_import_inline_content) }
+            val dialog = AlertDialog.Builder(this)
+                .setTitle(R.string.external_import_confirm_title)
+                .setMessage(getString(R.string.external_import_confirm_message, shownTarget))
+                .setPositiveButton(R.string.external_import_confirm_accept) { _, _ ->
+                    if (continuation.isActive) continuation.resume(true)
+                }
+                .setNegativeButton(android.R.string.cancel) { _, _ ->
+                    if (continuation.isActive) continuation.resume(false)
+                }
+                .setOnCancelListener { if (continuation.isActive) continuation.resume(false) }
+                .create()
+            continuation.invokeOnCancellation { runOnUiThread { dialog.dismiss() } }
+            dialog.show()
+        }
+    }
+
     private suspend fun handleSkipiDeepLink(link: SkipiDeepLink) {
         val application = application as SkipiApplication
+        // Any web page can fire a skipi:// link, so imports need an explicit
+        // approval and tunnel control honours the external-control setting.
+        when (link.gate()) {
+            DeepLinkGate.Allowed -> Unit
+            DeepLinkGate.NeedsConfirmation -> if (!confirmExternalImport(link.confirmationTarget())) return
+            DeepLinkGate.NeedsAutomationEnabled -> if (!application.stateStore.state.value.enableBroadcastControl) {
+                tipNotifier.show(getString(R.string.external_control_disabled))
+                return
+            }
+        }
         when (link) {
             is SkipiDeepLink.Subscription -> {
                 runCatching {

@@ -109,7 +109,7 @@ private object BackupDefaults {
     const val showTunnelMemoryOnHome = false
     const val showTunnelIpOnHome = true
     const val maskTunnelIpOnHome = false
-    const val enableBroadcastControl = true
+    const val enableBroadcastControl = false
     const val enableIpv6 = false
     const val enableIpv6Prefer = false
     const val enableFakeDns = false

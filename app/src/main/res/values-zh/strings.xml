@@ -855,6 +855,11 @@
     <string name="skipi_imported_config">配置已添加</string>
     <string name="skipi_imported_config_activated">配置已添加并激活</string>
     <string name="skipi_import_failed">无法导入 SKIPI 链接</string>
+    <string name="external_import_confirm_title">通过链接添加？</string>
+    <string name="external_import_confirm_message">其他应用或网页请求 SKIPI 从 %1$s 添加服务器或配置。仅在信任来源时继续。</string>
+    <string name="external_import_confirm_accept">添加</string>
+    <string name="external_import_inline_content">链接本身</string>
+    <string name="external_control_disabled">设置中已关闭外部控制</string>
     <string name="skipi_control_missing_server">首先添加并选择服务器</string>
     <string name="configs_source_url">更新 URL（可选）</string>
     <string name="configs_updated">配置已更新</string>

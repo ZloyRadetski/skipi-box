@@ -49,6 +49,12 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
     ) {
         super.onReceive(context, intent)
         val appContext = context.applicationContext.localizedContext()
+        if (intent.action in CustomActions &&
+            !WidgetCommandToken.matches(intent.getStringExtra(WidgetCommandToken.Extra), WidgetCommandToken.get(appContext))
+        ) {
+            AppLog.warn(LogTag, "Ignored widget action ${intent.action} without the install token")
+            return
+        }
         when (intent.action) {
             ActionToggle -> handleToggle(appContext)
             ActionPreviousConfig -> handleSelection(appContext, WidgetSelection.Config, WidgetCycleDirection.Previous)
@@ -394,6 +400,14 @@ open class SkipiWidgetProvider : AppWidgetProvider() {
     }
 
     internal companion object {
+        private val CustomActions = setOf(
+            "features.widgets.action.TOGGLE_PROXY",
+            "features.widgets.action.PREVIOUS_CONFIG",
+            "features.widgets.action.NEXT_CONFIG",
+            "features.widgets.action.PREVIOUS_SERVER",
+            "features.widgets.action.NEXT_SERVER",
+            "features.widgets.action.REFRESH",
+        )
         const val ActionToggle = "features.widgets.action.TOGGLE_PROXY"
         const val ActionPreviousConfig = "features.widgets.action.PREVIOUS_CONFIG"
         const val ActionNextConfig = "features.widgets.action.NEXT_CONFIG"

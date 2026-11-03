@@ -918,6 +918,11 @@
     <string name="skipi_imported_config">Configuration added</string>
     <string name="skipi_imported_config_activated">Configuration added and activated</string>
     <string name="skipi_import_failed">Could not import the SKIPI link</string>
+    <string name="external_import_confirm_title">Add from a link?</string>
+    <string name="external_import_confirm_message">Another app or web page asks SKIPI to add a server or config from %1$s. Continue only if you trust the source.</string>
+    <string name="external_import_confirm_accept">Add</string>
+    <string name="external_import_inline_content">the link itself</string>
+    <string name="external_control_disabled">External control is turned off in settings</string>
     <string name="skipi_control_missing_server">Add and select a server first</string>
     <string name="configs_source_url">Update URL (optional)</string>
     <string name="configs_updated">Configuration updated</string>
