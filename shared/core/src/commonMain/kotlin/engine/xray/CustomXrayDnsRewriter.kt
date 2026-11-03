@@ -38,7 +38,7 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
         ),
     )
 
-    return request.config.updatedWithout(setOf("fakedns", "fakeDns")) {
+    return request.config.updatedWithout(setOf("fakedns", "fakeDns") + UntrustedCustomTopLevelKeys) {
         put("inbounds", request.inbounds.toJsonObjectArray())
         put("dns", buildXrayDnsConfig(request.dnsPlan))
         putIfNotNull("fakeDns", request.dnsPlan.fakeDns)
@@ -46,6 +46,12 @@ fun rewriteCustomXrayDnsConfig(request: CustomXrayDnsRewriteRequest): JsonObject
         put("routing", routing)
     }
 }
+
+/**
+ * Sections that bind sockets or open channels outside the inbounds SKIPI
+ * controls. An imported profile is untrusted input, so they are dropped.
+ */
+private val UntrustedCustomTopLevelKeys = setOf("api", "metrics", "reverse")
 
 private data class CustomOutboundsRewrite(
     val outbounds: JsonArray,
