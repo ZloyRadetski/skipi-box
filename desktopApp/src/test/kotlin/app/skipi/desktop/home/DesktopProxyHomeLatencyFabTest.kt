@@ -364,6 +364,8 @@ class DesktopProxyHomeLatencyFabTest {
         )
         return ProxyHomeInput(
             tunnelSnapshot = TunnelSnapshot(phase = TunnelPhase.Connected),
+            // The click position is calibrated without the search bar above the list.
+            searchEnabled = false,
             selectedServerId = "selected",
             servers = listOf(
                 ProxyServerSummary(

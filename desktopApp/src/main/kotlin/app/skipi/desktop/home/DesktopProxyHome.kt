@@ -356,7 +356,7 @@ internal fun DesktopProxyHome(
         statusMessage = combinedStatusMessage,
         isStatusError = isStatusError,
         sortMode = sortMode,
-        searchEnabled = true,
+        searchEnabled = desktopSettings.showServerSearch,
         subscriptionSwipeEnabled = desktopSettings.enableSubscriptionSwipe,
         displayOptions = desktopSettings.toProxyHomeDisplayOptions(),
         availableActions = availableActions,

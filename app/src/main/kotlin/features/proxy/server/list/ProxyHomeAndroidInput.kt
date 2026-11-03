@@ -134,8 +134,7 @@ internal fun AppState.toProxyHomeInput(
         hasSubscriptions = subscriptionGroups.any { group -> group.url.isNotBlank() },
         isTestingLatency = isTestingLatency,
         sortMode = proxyHomeSortModeFromAndroidValue(proxyServerListSort),
-        // Server search is always available; the stored flag is kept only for backups.
-        searchEnabled = true,
+        searchEnabled = showServerSearch,
         subscriptionSwipeEnabled = enableSubscriptionSwipe,
         displayOptions = ProxyHomeDisplayOptions(
             connectionMode = when (connectionDisplayMode) {

@@ -312,8 +312,6 @@ fun ProxyHomeScreenContent(
     }
     val refreshSubscriptionTitle = stringResource(Res.string.home_action_refresh_subscription)
     val refreshingSubscriptionTitle = stringResource(Res.string.home_action_refreshing)
-    val searchActionTitle = stringResource(Res.string.home_action_search)
-    val hideSearchActionTitle = stringResource(Res.string.home_action_hide_search)
 
     val addActions = proxyHomeAddMenuIds(
         canAddSubscription = canUseHomeAction(state, ProxyHomeActionId.AddSubscription),
@@ -350,13 +348,6 @@ fun ProxyHomeScreenContent(
         }
         if (canUseHomeAction(state, ProxyHomeActionId.RefreshAllSubscriptions)) {
             add(SkipiProxyHomeHeaderAction("refresh-all-subscriptions", stringResource(Res.string.proxy_server_list_update_subscriptions)))
-        }
-        if (state.searchEnabled) {
-            add(SkipiProxyHomeHeaderAction(
-                id = "search",
-                title = if (state.isSearchVisible) hideSearchActionTitle else searchActionTitle,
-                selected = state.isSearchVisible,
-            ))
         }
         if (canUseHomeAction(state, ProxyHomeActionId.SetSort)) {
             add(SkipiProxyHomeHeaderAction(
@@ -512,8 +503,7 @@ fun ProxyHomeScreenContent(
                     when {
                         id == "refresh-subscription" -> state.subscription?.let { send(ProxyHomeAction.RefreshSubscription(it.id)) }
                         id == "refresh-all-subscriptions" -> send(ProxyHomeAction.RefreshAllSubscriptions)
-                        id == "search" -> send(ProxyHomeAction.SetSearchVisible(!state.isSearchVisible))
-                        id.startsWith("sort:") -> ProxyHomeSortMode.entries
+                            id.startsWith("sort:") -> ProxyHomeSortMode.entries
                             .firstOrNull { it.name == id.substringAfter("sort:") }
                             ?.let { mode -> send(ProxyHomeAction.SetSort(mode)) }
                         id.startsWith("tool:") -> state.availableServerTools

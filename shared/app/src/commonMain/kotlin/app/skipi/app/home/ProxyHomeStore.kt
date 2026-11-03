@@ -666,7 +666,8 @@ class ProxyHomeStore(
             pages = pages,
             isTestingLatency = source.isTestingLatency,
             searchQuery = local.searchQuery,
-            isSearchVisible = source.searchEnabled && local.isSearchVisible,
+            // The search field is shown whenever the Appearance setting allows it.
+            isSearchVisible = source.searchEnabled,
             searchEnabled = source.searchEnabled,
             subscriptionSwipeEnabled = source.subscriptionSwipeEnabled,
             displayOptions = normalizedDisplayOptions,

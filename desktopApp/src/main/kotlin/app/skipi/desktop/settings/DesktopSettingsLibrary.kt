@@ -77,7 +77,7 @@ data class DesktopAppSettings(
     val pinConnectionPanelOnHome: Boolean = false,
     val classicShowFloatingPowerButton: Boolean = false,
     val enableAllProxyGroup: Boolean = false,
-    val showServerSearch: Boolean = false,
+    val showServerSearch: Boolean = true,
     val enableSubscriptionSwipe: Boolean = true,
     val proxyServerListColumns: Int = 1,
     val proxyServerListSort: Int = ProxyHomeSortMode.Default.toAndroidValue(),

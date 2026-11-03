@@ -83,6 +83,6 @@ class AndroidPortableSettingsContractTest {
         assertEquals(ProxyServerListLayoutMultiple, restored.proxyServerListLayout)
         assertTrue(restored.enableAllProxyGroup)
         assertTrue(restored.showTunnelMemoryOnHome)
-        assertFalse(restored.showServerSearch)
+        assertEquals(original.showServerSearch, restored.showServerSearch)
     }
 }

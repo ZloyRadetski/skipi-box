@@ -94,7 +94,7 @@ data class HomeDisplaySettings(
     val subscriptionSwipeEnabled: Boolean = true,
     val showFloatingPowerButton: Boolean = false,
     val confirmDeletion: Boolean = true,
-    val showServerSearch: Boolean = false,
+    val showServerSearch: Boolean = true,
     /** Raw Android numeric setting; null preserves the host's current value. */
     val proxyServerListSort: Int? = null,
     /** Raw Android numeric setting; null preserves the host's current value. */

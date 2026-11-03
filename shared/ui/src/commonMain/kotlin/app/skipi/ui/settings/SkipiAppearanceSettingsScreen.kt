@@ -737,6 +737,12 @@ fun SkipiAppearanceSettingsScreen(
                             checked = appState.enableAllProxyGroup,
                             onCheckedChange = { enabled -> updateAppState { it.copy(enableAllProxyGroup = enabled) } },
                         )
+                        SwitchPreference(
+                            title = stringResource(Res.string.settings_show_server_search),
+                            summary = stringResource(Res.string.settings_show_server_search_summary),
+                            checked = appState.showServerSearch,
+                            onCheckedChange = { enabled -> updateAppState { it.copy(showServerSearch = enabled) } },
+                        )
                     }
                 }
             }

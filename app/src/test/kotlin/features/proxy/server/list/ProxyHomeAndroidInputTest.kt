@@ -679,8 +679,8 @@ class ProxyHomeAndroidInputTest {
         assertEquals(ProxyHomeButtonSize.Giant, input.displayOptions.classicButtonSize)
         assertTrue(input.displayOptions.showAllGroup)
         assertTrue(input.displayOptions.showTunnelMemory)
-        // Server search is no longer a setting: the stored flag never hides it.
-        assertTrue(input.searchEnabled)
+        // The search bar follows the Appearance setting.
+        assertFalse(input.searchEnabled)
         assertFalse(input.subscriptionSwipeEnabled)
 
         val allGroupSummary = input.groups.first { it.id == AllProxyGroupId.toString() }
