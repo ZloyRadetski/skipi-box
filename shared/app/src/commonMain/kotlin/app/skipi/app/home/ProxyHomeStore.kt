@@ -430,6 +430,8 @@ class ProxyHomeStore(
     /** Host bridge only. Call from a collector/effect, never directly during composition. */
     fun updateInput(value: ProxyHomeInput) {
         val oldValue = input.value
+        // The host rebuilds an equal input on every recomposition; recomputing the whole screen for it is wasted work.
+        if (oldValue == value) return
         if (oldValue.statusMessage != value.statusMessage) {
             transient.update {
                 it.copy(

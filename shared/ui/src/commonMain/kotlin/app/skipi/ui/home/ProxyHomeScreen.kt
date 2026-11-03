@@ -432,11 +432,37 @@ fun ProxyHomeScreenContent(
             }
     }
 
+    // While the user swipes, the title follows the page that is more than half in view. The heavy part, selecting the
+    // group and recomputing the screen, still waits for the swipe to settle.
+    var swipeGroupId by remember { mutableStateOf<String?>(null) }
+    val programmaticScroll = remember { BooleanArray(1) }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }
+            .collect { page ->
+                if (!programmaticScroll[0]) {
+                    val pageGroupId = latestState.pages.getOrNull(page)?.group?.id
+                    swipeGroupId = pageGroupId?.takeIf { it != latestState.selectedGroupId }
+                }
+            }
+    }
+    LaunchedEffect(state.selectedGroupId) { swipeGroupId = null }
+
     val onSelectGroupTab: (String) -> Unit = { groupId ->
         val targetIndex = state.pages.indexOfFirst { it.group.id == groupId }
         if (targetIndex >= 0 && targetIndex != pagerState.currentPage) {
             scope.launch {
-                pagerState.animateScrollToPage(targetIndex)
+                programmaticScroll[0] = true
+                swipeGroupId = null
+                try {
+                    // A far target would compose every page in between; jump to it instead of animating past them.
+                    if (kotlin.math.abs(targetIndex - pagerState.currentPage) > 1) {
+                        pagerState.scrollToPage(targetIndex)
+                    } else {
+                        pagerState.animateScrollToPage(targetIndex)
+                    }
+                } finally {
+                    programmaticScroll[0] = false
+                }
             }
         }
         if (groupId != state.selectedGroupId) {
@@ -448,6 +474,7 @@ fun ProxyHomeScreenContent(
             HomeGroupSelector(
                 state = state,
                 onAction = send,
+                displayedGroupId = swipeGroupId,
                 onSelectGroup = onSelectGroupTab,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -1218,6 +1245,8 @@ private fun HomeGroupSelector(
     onAction: (ProxyHomeAction) -> Unit,
     onSelectGroup: (String) -> Unit = { groupId -> onAction(ProxyHomeAction.SelectGroup(groupId)) },
     modifier: Modifier = Modifier,
+    /** Group to show as selected while a swipe is under way; null means the selected group. */
+    displayedGroupId: String? = null,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val groupItems = state.groups.map { group ->
@@ -1274,7 +1303,7 @@ private fun HomeGroupSelector(
     }.toMap()
     SkipiProxyGroupPicker(
         groups = groupItems,
-        selectedGroupId = state.selectedGroupId,
+        selectedGroupId = displayedGroupId ?: state.selectedGroupId,
         colors = SkipiProxyGroupPickerColors(
             surface = SkipiTheme.colors.surfaceVariant,
             raisedSurface = SkipiTheme.colors.surfaceVariant,
