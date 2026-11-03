@@ -56,6 +56,8 @@ data class ShadowrocketRule(
     val policy: String,
     val option: String? = null,
     val raw: String,
+    /** Set for OR / AND rules; [value] then holds the serialised body, so [toShadowrocketLine] still round-trips. */
+    val condition: ShadowrocketCondition.Group? = null,
 ) {
     val isFinal: Boolean
         get() = type.equals("FINAL", ignoreCase = true)
@@ -468,8 +470,7 @@ fun ShadowrocketRule.toShadowrocketLine(
     return if (type.equals("FINAL", ignoreCase = true)) {
         "FINAL,${policy.trim()}"
     } else {
-        listOf(type.trim().uppercase(), value.trim(), policy.trim())
-            .plus(option?.takeIf(String::isNotBlank))
+        listOfNotNull(type.trim().uppercase(), value.trim(), policy.trim(), option?.takeIf(String::isNotBlank))
             .joinToString(",")
     }
 }
@@ -500,6 +501,20 @@ private fun parseRuleLine(
     val parts = line.split(',').map(String::trim)
     if (parts.size < 2) return null
     val type = parts.first().uppercase()
+    // NOT cannot be routed (Xray has no inversion); it stays as preserved text instead of a mangled rule.
+    if (type == "NOT") return null
+    if (type == "OR" || type == "AND") {
+        val logical = parseShadowrocketLogicalRule(line) ?: return null
+        return ShadowrocketRule(
+            lineNumber = lineNumber,
+            type = type,
+            value = logical.group.toBodyText(),
+            policy = logical.policy,
+            option = logical.option,
+            raw = raw,
+            condition = logical.group,
+        )
+    }
     if (type == "FINAL") {
         val policy = parts.getOrNull(1).orEmpty()
         return policy.takeIf(String::isNotEmpty)?.let {
