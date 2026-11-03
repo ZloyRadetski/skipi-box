@@ -36,6 +36,7 @@ import app.skipi.ui.resources.routing_suggestions_geosite
 import app.skipi.ui.resources.routing_suggestions_geoip
 import app.skipi.ui.resources.routing_suggestions_title
 import app.skipi.ui.theme.SkipiTheme
+import features.config.ShadowrocketLogicalOperator
 import app.skipi.ui.text.themedFontWeight
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
@@ -47,7 +48,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 val TrafficConfigRuleTypes = listOf(
     "DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD", "IP-CIDR", "GEOIP", "DST-PORT",
-    "NETWORK", "RULE-SET", "DOMAIN-SET", "USER-AGENT", "URL-REGEX",
+    "NETWORK", "RULE-SET", "DOMAIN-SET", "USER-AGENT", "URL-REGEX", "OR", "AND",
 )
 
 /** Profile rule form. Platform navigation, asset loading, and dialogs remain host callbacks. */
@@ -114,6 +115,12 @@ fun SkipiTrafficConfigRuleEditorForm(
                 )
             }
             when (selectedType) {
+                "OR", "AND" -> SkipiTrafficConfigLogicalConditionEditor(
+                    operator = if (selectedType == "AND") ShadowrocketLogicalOperator.And else ShadowrocketLogicalOperator.Or,
+                    bodyText = value,
+                    onBodyChange = onValueChange,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                )
                 "NETWORK" -> {
                     val selectedIndex = networkOptions.indexOf(value.trim().lowercase())
                     Card(

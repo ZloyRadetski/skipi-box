@@ -34,6 +34,7 @@ import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.routing_info_title
 import app.skipi.ui.routing.SkipiRoutingRulesInfoBottomSheet
 import app.skipi.ui.settings.SkipiSettingsIcons
+import features.config.ShadowrocketLogicalOperator
 import features.config.ShadowrocketRule
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
@@ -69,6 +70,32 @@ class SkipiTrafficConfigRuleEditorState internal constructor(
         this.value = value
         textFieldState.setTextAndPlaceCursorAtEnd(value)
     }
+
+    /**
+     * Switches the rule type. Moving between a plain type and OR / AND carries the first condition across, because
+     * a plain value and an OR / AND body are different formats.
+     */
+    fun selectType(index: Int, typeOptions: List<String>) {
+        val previous = typeOptions.getOrNull(typeIndex).orEmpty()
+        val next = typeOptions.getOrNull(index).orEmpty()
+        val wasLogical = previous.logicalOperator() != null
+        val isLogical = next.logicalOperator() != null
+        if (wasLogical != isLogical) {
+            val converted = if (isLogical) {
+                logicalBodyFromPlainRule(previous, value)
+            } else {
+                plainRuleFromLogicalBody(requireNotNull(previous.logicalOperator()), value)?.second.orEmpty()
+            }
+            updateValue(converted)
+        }
+        typeIndex = index
+    }
+}
+
+private fun String.logicalOperator(): ShadowrocketLogicalOperator? = when (this) {
+    "OR" -> ShadowrocketLogicalOperator.Or
+    "AND" -> ShadowrocketLogicalOperator.And
+    else -> null
 }
 
 /** Uses the Android editor's saveable identity and initial-value rules. */
@@ -247,7 +274,7 @@ fun SkipiTrafficConfigRuleEditorScreen(
                     isFinal = isFinal,
                     selectedType = selectedType,
                     typeOptions = typeOptions,
-                    onTypeSelected = { editorState.typeIndex = it },
+                    onTypeSelected = { index -> editorState.selectType(index, typeOptions) },
                     value = editorState.value,
                     valueState = editorState.textFieldState,
                     onValueChange = { editorState.value = it },

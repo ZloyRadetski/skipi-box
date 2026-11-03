@@ -871,6 +871,10 @@
     <string name="configs_rules_edit">Edit rule</string>
     <string name="configs_rules_final_missing">Not set — tap to add FINAL,PROXY</string>
     <string name="configs_rules_type">Match type</string>
+    <string name="configs_rules_add_condition">+ Condition</string>
+    <string name="configs_rules_add_group">+ Group</string>
+    <string name="configs_rules_group_operator">Group</string>
+    <string name="configs_rules_logical_unsupported">Xray cannot route this combination (for example two conditions of the same kind joined by AND). The rule is saved and exported, but ignored by the app.</string>
     <string name="configs_rules_value">Value</string>
     <string name="configs_rules_policy">Send through</string>
     <string name="configs_android_title">Core &amp; bypass settings</string>

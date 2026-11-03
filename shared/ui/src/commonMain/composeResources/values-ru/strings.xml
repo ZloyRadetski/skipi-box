@@ -1029,6 +1029,10 @@
     <string name="configs_rules_edit">Редактировать правило</string>
     <string name="configs_rules_final_missing">Не задано — нажмите, чтобы добавить FINAL,PROXY</string>
     <string name="configs_rules_type">Тип совпадения</string>
+    <string name="configs_rules_add_condition">+ Условие</string>
+    <string name="configs_rules_add_group">+ Группа</string>
+    <string name="configs_rules_group_operator">Группа</string>
+    <string name="configs_rules_logical_unsupported">Xray не умеет маршрутизировать такую комбинацию (например, два условия одного вида через AND). Правило сохранится и попадёт в экспорт, но приложение его игнорирует.</string>
     <string name="configs_rules_value">Значение</string>
     <string name="configs_rules_policy">Направить через</string>
     <string name="configs_android_title">Параметры ядра и обхода</string>
