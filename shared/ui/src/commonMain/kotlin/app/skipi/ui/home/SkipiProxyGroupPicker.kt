@@ -3,6 +3,7 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -114,6 +115,13 @@ fun SkipiProxyGroupPicker(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(10.dp))
+                .onSecondaryClick {
+                    if (contextActions(selectedGroup.id).isNotEmpty()) {
+                        expanded = false
+                        onSelectedGroupLongClick?.invoke(selectedGroup.id)
+                        contextGroupId = selectedGroup.id
+                    }
+                }
                 .combinedClickable(
                     interactionSource = interactionSource,
                     indication = null,

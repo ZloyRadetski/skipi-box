@@ -3,6 +3,7 @@
 
 package app.skipi.ui.config
 
+import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -207,7 +208,7 @@ private fun ProxyGroupCard(
     onLongPress: (() -> Unit)? = null,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().onSecondaryClick(enabled = onLongPress != null) { onLongPress?.invoke() },
         colors = CardDefaults.defaultColors(color = SkipiTheme.colors.surface),
         cornerRadius = 16.dp,
         insideMargin = PaddingValues(14.dp),

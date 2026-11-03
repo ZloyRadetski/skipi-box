@@ -3,6 +3,7 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
@@ -107,6 +108,7 @@ fun SkipiProxyServerCompactListCard(
         Card(
             modifier = Modifier
                 .matchParentSize()
+                .onSecondaryClick { onLongPress(it) }
                 .pointerInput(onSelect, onLongPress) {
                     detectTapGestures(
                         onTap = { onSelect() },

@@ -3,6 +3,7 @@
 
 package app.skipi.ui.home
 
+import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,6 +60,7 @@ internal fun SubscriptionSummaryCardContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
+                .onSecondaryClick(enabled = state.canEdit) { actions.onEdit() }
                 .combinedClickable(
                     role = Role.Button,
                     onClick = onToggleExpanded,

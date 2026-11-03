@@ -3,6 +3,7 @@
 
 package app.skipi.ui.config
 
+import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -66,7 +67,7 @@ fun SkipiTrafficConfigProfileCard(
     trailingActions: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().onSecondaryClick { onLongPress() },
         colors = CardDefaults.defaultColors(color = if (item.active) SkipiTheme.colors.surfaceVariant else SkipiTheme.colors.surface),
         cornerRadius = 16.dp,
         insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),

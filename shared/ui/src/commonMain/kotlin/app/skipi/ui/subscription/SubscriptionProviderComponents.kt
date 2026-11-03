@@ -3,6 +3,7 @@
 
 package app.skipi.ui.subscription
 
+import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -80,6 +81,7 @@ fun SubscriptionProviderHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
+                .onSecondaryClick { onEdit() }
                 .combinedClickable(
                     onClick = { onExpandedChange(!expanded) },
                     onLongClick = onEdit,
