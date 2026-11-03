@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import app.skipi.ui.resources.Res
+import app.skipi.ui.resources.configs_rules_logical_unsupported
 import app.skipi.ui.resources.common_delete
 import app.skipi.ui.resources.configs_edit
 import app.skipi.ui.resources.configs_rules_add
@@ -42,6 +43,8 @@ import app.skipi.ui.resources.configs_rules_order
 import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.text.themedFontWeight
 import features.config.ShadowrocketRule
+import features.config.listSummary
+import features.config.xrayUnsupportedReason
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -185,13 +188,22 @@ private fun TrafficConfigVisualRuleCard(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = "${rule.type}, ${rule.value}",
+                    text = remember(rule.raw) { rule.listSummary() },
                     fontSize = 15.sp,
                     fontWeight = themedFontWeight(FontWeight.Medium),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (remember(rule.raw) { rule.xrayUnsupportedReason() } != null) {
+                    Text(
+                        text = stringResource(Res.string.configs_rules_logical_unsupported),
+                        fontSize = 11.sp,
+                        color = MiuixTheme.colorScheme.error,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = rule.policy,

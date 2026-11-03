@@ -82,3 +82,25 @@ class ShadowrocketLogicalRuleTest {
         assertEquals(1, analysis.diagnostics.count { it.lineNumber == 4 })
     }
 }
+
+class ShadowrocketLogicalRuleSummaryTest {
+    private fun rule(line: String) = "[Rule]\n$line\n".analyzeShadowrocketConfig().rules.single()
+
+    @Test
+    fun plainRuleKeepsItsOldListText() {
+        assertEquals("DOMAIN-SUFFIX, a.com", rule("DOMAIN-SUFFIX,a.com,DIRECT").listSummary())
+        assertNull(rule("DOMAIN-SUFFIX,a.com,DIRECT").xrayUnsupportedReason())
+    }
+
+    @Test
+    fun logicalRuleReadsAsAnExpression() {
+        val line = "OR,((GEOSITE,google),(AND,((DOMAIN-SUFFIX,b.com),(DST-PORT,443)))),DIRECT"
+        assertEquals("GEOSITE google OR (DOMAIN-SUFFIX b.com AND DST-PORT 443)", rule(line).listSummary())
+        assertNull(rule(line).xrayUnsupportedReason())
+    }
+
+    @Test
+    fun unsupportedRuleIsFlagged() {
+        assertNotNull(rule("AND,((DOMAIN,a.com),(DOMAIN-KEYWORD,b)),DIRECT").xrayUnsupportedReason())
+    }
+}

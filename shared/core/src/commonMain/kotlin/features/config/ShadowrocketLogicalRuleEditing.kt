@@ -35,3 +35,20 @@ fun xrayUnsupportedReasonForCondition(operator: ShadowrocketLogicalOperator, bod
     )
     return rule.convertToXrayRouteRules(firstId = 0) { it }.unsupportedReason
 }
+
+/** One-line reading of a rule for lists: `TYPE, value`, or `A OR (B AND C)` for an OR / AND rule. */
+fun ShadowrocketRule.listSummary(): String {
+    val group = condition ?: return "$type, $value"
+    return group.children.joinToString(" ${group.operator.keyword} ") { it.summaryText(nested = group.children.size > 1) }
+}
+
+private fun ShadowrocketCondition.summaryText(nested: Boolean): String = when (this) {
+    is ShadowrocketCondition.Leaf -> "$type $value"
+    is ShadowrocketCondition.Group -> children
+        .joinToString(" ${operator.keyword} ") { it.summaryText(nested = children.size > 1) }
+        .let { text -> if (nested && children.size > 1) "($text)" else text }
+}
+
+/** Why Xray cannot route this rule, or null (always null for plain rules, whose handling is unchanged). */
+fun ShadowrocketRule.xrayUnsupportedReason(): String? =
+    condition?.let { group -> xrayUnsupportedReasonForCondition(group.operator, group) }
