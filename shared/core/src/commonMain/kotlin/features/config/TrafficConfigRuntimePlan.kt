@@ -77,10 +77,11 @@ object TrafficConfigRuntimePlanner {
         }
 
         val finalRule = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
-        val resolvedRules = analysis.rules
-            .filterNot(ShadowrocketRule::isFinal)
-            .mapIndexedNotNull { index, rule ->
-                rule.toXrayRouteRule(index + 1) { policy ->
+        val resolvedRules = buildList {
+            var nextId = 1
+            analysis.rules.filterNot(ShadowrocketRule::isFinal).forEachIndexed { index, rule ->
+                // An OR / AND rule can expand to several Xray rules, so ids follow the produced rules.
+                val produced = rule.toXrayRouteRules(maxOf(index + 1, nextId)) { policy ->
                     resolveShadowrocketPolicy(
                         policy = policy,
                         policyGroups = analysis.proxyGroups,
@@ -88,7 +89,10 @@ object TrafficConfigRuntimePlanner {
                         servers = input.servers,
                     )
                 }
+                addAll(produced)
+                nextId = (produced.maxOfOrNull(RouteRule::id) ?: (nextId - 1)) + 1
             }
+        }
         val defaultRouteOutboundTag = finalRule
             ?.policy
             ?.let { policy ->

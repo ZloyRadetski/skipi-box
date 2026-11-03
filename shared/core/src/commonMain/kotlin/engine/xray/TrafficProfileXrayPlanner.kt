@@ -8,7 +8,8 @@ import features.config.ShadowrocketRule
 import features.config.ShadowrocketPolicyGroupTagPrefix
 import features.config.TrafficConfigReference
 import features.config.analyzeShadowrocketConfig
-import features.config.toXrayRouteRule
+import features.config.convertToXrayRouteRules
+import features.config.logicalLeaves
 import features.proxy.server.model.Custom
 import features.proxy.server.model.ProxyServer
 import features.proxy.server.model.StrategyGroup
@@ -209,7 +210,7 @@ object TrafficProfileXrayPlanner {
 
         val routingRules = buildList {
             analysis.rules.filterNot(ShadowrocketRule::isFinal)
-                .mapNotNull { rule -> rule.toTrafficProfileXrayRule({ policy -> policyTarget(policy) }, capabilities) }
+                .flatMap { rule -> rule.toTrafficProfileXrayRules({ policy -> policyTarget(policy) }, capabilities) }
                 .filterNot { rule -> strictFullTunnel && rule.isDirectRule() }
                 .forEach(::add)
             val finalTarget = analysis.rules.lastOrNull(ShadowrocketRule::isFinal)
@@ -251,31 +252,39 @@ private fun XrayRouteTarget.toFinalTrafficProfileRule(): JsonObject = buildJsonO
     applyTo(this)
 }
 
-private fun ShadowrocketRule.toTrafficProfileXrayRule(
+/** One plain rule gives one Xray rule; an OR / AND rule can give several that share the target. */
+private fun ShadowrocketRule.toTrafficProfileXrayRules(
     resolveTarget: (String) -> XrayRouteTarget,
     capabilities: TrafficProfileXrayCapabilities,
-): JsonObject? {
-    val cleanValue = value.trim()
-    val ruleType = type.trim().uppercase()
-
+): List<JsonObject> {
     var target: XrayRouteTarget? = null
-    val route = toXrayRouteRule(id = 0) { policy ->
+    val routes = convertToXrayRouteRules(firstId = 0) { policy ->
         resolveTarget(policy).also { target = it }.tag
-    } ?: return null
+    }.rules
+    if (routes.isEmpty()) return emptyList()
 
-    if (ruleType == "IP-ASN" && !capabilities.supportsIpAsnRules) {
-        require(false) { capabilities.unsupportedIpAsnMessage(cleanValue) }
+    val leaves = if (condition != null) {
+        logicalLeaves().map { leaf -> leaf.type to leaf.value }
+    } else {
+        listOf(type.trim().uppercase() to value.trim())
     }
-    route.validateTrafficProfileRuleSetResources(capabilities)
+    leaves.forEach { (leafType, leafValue) ->
+        if (leafType == "IP-ASN" && !capabilities.supportsIpAsnRules) {
+            require(false) { capabilities.unsupportedIpAsnMessage(leafValue) }
+        }
+    }
 
-    return buildJsonObject {
-        if (route.domain.isNotEmpty()) putJsonArray("domain") { route.domain.forEach(::add) }
-        if (route.ip.isNotEmpty()) putJsonArray("ip") { route.ip.forEach(::add) }
-        if (route.process.isNotEmpty()) putJsonArray("process") { route.process.forEach(::add) }
-        if (route.port.isNotBlank()) put("port", route.port)
-        if (route.network.isNotBlank()) put("network", route.network)
-        if (route.protocol.isNotBlank()) putJsonArray("protocol") { add(route.protocol) }
-        requireNotNull(target).applyTo(this)
+    return routes.map { route ->
+        route.validateTrafficProfileRuleSetResources(capabilities)
+        buildJsonObject {
+            if (route.domain.isNotEmpty()) putJsonArray("domain") { route.domain.forEach(::add) }
+            if (route.ip.isNotEmpty()) putJsonArray("ip") { route.ip.forEach(::add) }
+            if (route.process.isNotEmpty()) putJsonArray("process") { route.process.forEach(::add) }
+            if (route.port.isNotBlank()) put("port", route.port)
+            if (route.network.isNotBlank()) put("network", route.network)
+            if (route.protocol.isNotBlank()) putJsonArray("protocol") { add(route.protocol) }
+            requireNotNull(target).applyTo(this)
+        }
     }
 }
 
