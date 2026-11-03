@@ -81,6 +81,12 @@ fun SkipiTrafficConfigRuleEditorForm(
         valueState.setTextAndPlaceCursorAtEnd(newValue)
     }
 
+    fun applyIntent(intent: TrafficConfigRuleIntent) {
+        val index = typeOptions.indexOf(intent.type)
+        if (index >= 0) onTypeSelected(index)
+        onValueChange(intent.value)
+    }
+
     Column(modifier = modifier) {
         if (!isFinal) {
             Card(
@@ -129,7 +135,7 @@ fun SkipiTrafficConfigRuleEditorForm(
                     )
                 }
                 "GEOIP" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, uppercase = true)
+                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent, uppercase = true)
                     SuggestionChips(
                         chips = geoIpSuggestions.take(15),
                         onChipClick = ::updateValue,
@@ -140,7 +146,7 @@ fun SkipiTrafficConfigRuleEditorForm(
                     )
                 }
                 "DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange)
+                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
                     SuggestionChips(
                         chips = geoSiteSuggestions.take(12),
                         onChipClick = ::updateValue,
@@ -151,7 +157,7 @@ fun SkipiTrafficConfigRuleEditorForm(
                     )
                 }
                 "RULE-SET" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange)
+                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
                     SuggestionChips(
                         chips = ruleSetPresets,
                         onChipClick = ::updateValue,
@@ -162,7 +168,7 @@ fun SkipiTrafficConfigRuleEditorForm(
                     )
                 }
                 "DOMAIN-SET" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange)
+                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
                     SuggestionChips(
                         chips = domainSetPresets,
                         onChipClick = ::updateValue,
@@ -173,21 +179,22 @@ fun SkipiTrafficConfigRuleEditorForm(
                     )
                 }
                 "DST-PORT" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange)
+                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
                     SuggestionChips(portPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
                 }
                 "IP-CIDR" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange)
+                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
                     SuggestionChips(privateIpPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
                 }
                 "USER-AGENT" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange)
+                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
                     SuggestionChips(userAgentPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
                 }
                 else -> RuleValueField(
                     valueState,
                     stringResource(Res.string.configs_rules_value),
                     onValueChange,
+                    ::applyIntent,
                     bottomPadding = 10.dp,
                 )
             }
@@ -218,12 +225,23 @@ private fun RuleValueField(
     state: TextFieldState,
     label: String,
     onValueChange: (String) -> Unit,
+    onIntent: (TrafficConfigRuleIntent) -> Unit,
     uppercase: Boolean = false,
     bottomPadding: androidx.compose.ui.unit.Dp = 6.dp,
 ) {
     TextField(
         state = state,
-        inputTransformation = { onValueChange(asCharSequence().toString().let { if (uppercase) it.uppercase() else it }) },
+        inputTransformation = {
+            val typed = asCharSequence().toString()
+            val intent = detectTrafficConfigRuleIntent(typed)
+            if (intent != null) {
+                // "keyword:google" -> type DOMAIN-KEYWORD, value "google"; the field keeps only the value.
+                replace(0, length, intent.value)
+                onIntent(intent)
+            } else {
+                onValueChange(if (uppercase) typed.uppercase() else typed)
+            }
+        },
         label = label,
         lineLimits = TextFieldLineLimits.SingleLine,
         modifier = Modifier.fillMaxWidth().padding(bottom = bottomPadding),
