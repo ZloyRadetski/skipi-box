@@ -54,4 +54,20 @@ class TrafficConfigLogicalConditionEditorTest {
         assertNotNull(xrayUnsupportedReasonForCondition(ShadowrocketLogicalOperator.And, twoDomains))
         assertNull(xrayUnsupportedReasonForCondition(ShadowrocketLogicalOperator.Or, twoDomains))
     }
+
+    @Test
+    fun typedPrefixSwitchesTheConditionType() {
+        val leaf = ShadowrocketCondition.Leaf("DOMAIN-SUFFIX", "")
+        assertEquals(ShadowrocketCondition.Leaf("DOMAIN-KEYWORD", "google"), leaf.withTypedValue("keyword:google"))
+        assertEquals(ShadowrocketCondition.Leaf("GEOSITE", "google"), leaf.withTypedValue("geosite:google"))
+        assertEquals(ShadowrocketCondition.Leaf("GEOIP", "RU"), leaf.withTypedValue("geoip:ru"))
+        assertEquals(ShadowrocketCondition.Leaf("IP-CIDR", "10.0.0.0/8"), leaf.withTypedValue("10.0.0.0/8"))
+    }
+
+    @Test
+    fun plainTypingKeepsTheTypeAndStripsSyntaxCharacters() {
+        val leaf = ShadowrocketCondition.Leaf("DOMAIN-KEYWORD", "")
+        assertEquals(ShadowrocketCondition.Leaf("DOMAIN-KEYWORD", "ab"), leaf.withTypedValue("a(b),"))
+        assertEquals(ShadowrocketCondition.Leaf("DOMAIN-KEYWORD", "keyword"), leaf.withTypedValue("keyword"))
+    }
 }

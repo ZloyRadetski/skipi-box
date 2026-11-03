@@ -201,7 +201,7 @@ private fun LeafRow(
         TextField(
             value = leaf.value,
             // Parentheses and commas are the rule syntax; they cannot be part of a value inside OR / AND.
-            onValueChange = { typed -> onChange(leaf.copy(value = typed.filterNot { it in "()," })) },
+            onValueChange = { typed -> onChange(leaf.withTypedValue(typed)) },
             label = stringResource(Res.string.configs_rules_value),
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -219,4 +219,24 @@ private fun ActionChip(text: String, onClick: () -> Unit) {
         modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
     )
+}
+
+/**
+ * Applies typed text to a condition. Recognised input such as `keyword:google` switches the condition's type and keeps
+ * only the value, like the plain rule field does.
+ */
+internal fun ShadowrocketCondition.Leaf.withTypedValue(typed: String): ShadowrocketCondition.Leaf {
+    val intent = detectTrafficConfigRuleIntent(typed)
+        ?.let { detected ->
+            // Inside OR / AND a geosite reference is its own condition type; the plain field keeps it as a domain set.
+            if (detected.type == "DOMAIN-SET" && detected.value.startsWith("geosite:", ignoreCase = true)) {
+                TrafficConfigRuleIntent("GEOSITE", detected.value.substringAfter(':'))
+            } else {
+                detected
+            }
+        }
+        ?.takeIf { it.type in TrafficConfigLogicalLeafTypes }
+    // Parentheses and commas are the rule syntax; they cannot be part of a value inside OR / AND.
+    fun String.clean() = filterNot { it in "()," }
+    return if (intent != null) copy(type = intent.type, value = intent.value.clean()) else copy(value = typed.clean())
 }

@@ -46,6 +46,11 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private val TypesWithSuggestionChips = setOf(
+    "GEOIP", "DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD", "RULE-SET", "DOMAIN-SET",
+    "DST-PORT", "IP-CIDR", "USER-AGENT",
+)
+
 val TrafficConfigRuleTypes = listOf(
     "DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD", "IP-CIDR", "GEOIP", "DST-PORT",
     "NETWORK", "RULE-SET", "DOMAIN-SET", "USER-AGENT", "URL-REGEX", "OR", "AND",
@@ -114,6 +119,22 @@ fun SkipiTrafficConfigRuleEditorForm(
                         .padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
+            val isLogical = selectedType == "OR" || selectedType == "AND"
+            val showsValueField = !isLogical && selectedType != "NETWORK"
+            // One value field for every plain type, at one place in the composition. A field per type would be
+            // recreated whenever the type changes (for example when typing "keyword:" switches it), which drops
+            // the focus and closes the Android keyboard.
+            if (showsValueField) {
+                val hasChips = selectedType in TypesWithSuggestionChips
+                RuleValueField(
+                    state = valueState,
+                    label = stringResource(Res.string.configs_rules_value),
+                    onValueChange = onValueChange,
+                    onIntent = ::applyIntent,
+                    uppercase = selectedType == "GEOIP",
+                    bottomPadding = if (hasChips) 6.dp else 10.dp,
+                )
+            }
             when (selectedType) {
                 "OR", "AND" -> SkipiTrafficConfigLogicalConditionEditor(
                     operator = if (selectedType == "AND") ShadowrocketLogicalOperator.And else ShadowrocketLogicalOperator.Or,
@@ -141,69 +162,42 @@ fun SkipiTrafficConfigRuleEditorForm(
                         modifier = Modifier.padding(bottom = 10.dp),
                     )
                 }
-                "GEOIP" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent, uppercase = true)
-                    SuggestionChips(
-                        chips = geoIpSuggestions.take(15),
-                        onChipClick = ::updateValue,
-                        actionButtonText = stringResource(Res.string.routing_suggestions_geoip),
-                        onActionClick = onGeoIpPicker,
-                        selectedChip = value.trim().uppercase(),
-                        modifier = Modifier.padding(bottom = 10.dp),
-                    )
-                }
-                "DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
-                    SuggestionChips(
-                        chips = geoSiteSuggestions.take(12),
-                        onChipClick = ::updateValue,
-                        actionButtonText = stringResource(Res.string.routing_suggestions_geosite),
-                        onActionClick = onGeoSitePicker,
-                        selectedChip = value.trim().lowercase(),
-                        modifier = Modifier.padding(bottom = 10.dp),
-                    )
-                }
-                "RULE-SET" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
-                    SuggestionChips(
-                        chips = ruleSetPresets,
-                        onChipClick = ::updateValue,
-                        actionButtonText = stringResource(Res.string.routing_suggestions_title),
-                        onActionClick = onRuleSetPicker,
-                        selectedChip = value.trim(),
-                        modifier = Modifier.padding(bottom = 10.dp),
-                    )
-                }
-                "DOMAIN-SET" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
-                    SuggestionChips(
-                        chips = domainSetPresets,
-                        onChipClick = ::updateValue,
-                        actionButtonText = stringResource(Res.string.routing_suggestions_geosite),
-                        onActionClick = onGeoSitePicker,
-                        selectedChip = value.trim(),
-                        modifier = Modifier.padding(bottom = 10.dp),
-                    )
-                }
-                "DST-PORT" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
-                    SuggestionChips(portPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
-                }
-                "IP-CIDR" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
-                    SuggestionChips(privateIpPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
-                }
-                "USER-AGENT" -> {
-                    RuleValueField(valueState, stringResource(Res.string.configs_rules_value), onValueChange, ::applyIntent)
-                    SuggestionChips(userAgentPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
-                }
-                else -> RuleValueField(
-                    valueState,
-                    stringResource(Res.string.configs_rules_value),
-                    onValueChange,
-                    ::applyIntent,
-                    bottomPadding = 10.dp,
+                "GEOIP" -> SuggestionChips(
+                    chips = geoIpSuggestions.take(15),
+                    onChipClick = ::updateValue,
+                    actionButtonText = stringResource(Res.string.routing_suggestions_geoip),
+                    onActionClick = onGeoIpPicker,
+                    selectedChip = value.trim().uppercase(),
+                    modifier = Modifier.padding(bottom = 10.dp),
                 )
+                "DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD" -> SuggestionChips(
+                    chips = geoSiteSuggestions.take(12),
+                    onChipClick = ::updateValue,
+                    actionButtonText = stringResource(Res.string.routing_suggestions_geosite),
+                    onActionClick = onGeoSitePicker,
+                    selectedChip = value.trim().lowercase(),
+                    modifier = Modifier.padding(bottom = 10.dp),
+                )
+                "RULE-SET" -> SuggestionChips(
+                    chips = ruleSetPresets,
+                    onChipClick = ::updateValue,
+                    actionButtonText = stringResource(Res.string.routing_suggestions_title),
+                    onActionClick = onRuleSetPicker,
+                    selectedChip = value.trim(),
+                    modifier = Modifier.padding(bottom = 10.dp),
+                )
+                "DOMAIN-SET" -> SuggestionChips(
+                    chips = domainSetPresets,
+                    onChipClick = ::updateValue,
+                    actionButtonText = stringResource(Res.string.routing_suggestions_geosite),
+                    onActionClick = onGeoSitePicker,
+                    selectedChip = value.trim(),
+                    modifier = Modifier.padding(bottom = 10.dp),
+                )
+                "DST-PORT" -> SuggestionChips(portPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
+                "IP-CIDR" -> SuggestionChips(privateIpPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
+                "USER-AGENT" -> SuggestionChips(userAgentPresets, ::updateValue, selectedChip = value.trim(), modifier = Modifier.padding(bottom = 10.dp))
+                else -> Unit
             }
             if (selectedType in setOf("USER-AGENT", "URL-REGEX")) {
                 Text(
