@@ -49,7 +49,6 @@ import app.skipi.ui.theme.SkipiTheme
 import app.skipi.ui.resources.Res
 import app.skipi.ui.resources.common_more
 import app.skipi.ui.resources.proxy_server_list_add
-import app.skipi.ui.resources.proxy_server_list_latency_test
 import org.jetbrains.compose.resources.stringResource
 
 /** A host-provided command rendered in either the add or overflow menu. */
@@ -63,20 +62,15 @@ data class SkipiProxyHomeHeaderAction(
 
 data class SkipiProxyHomeHeaderState(
     val title: String,
-    val latencyTesting: Boolean = false,
-    val latencyEnabled: Boolean = true,
-    val latencyActionDescription: String? = null,
 )
 
 data class SkipiProxyHomeHeaderLabels(
-    val latencyActionDescription: String,
     val addActionDescription: String,
     val moreActionDescription: String,
 )
 
 @Composable
 fun defaultSkipiProxyHomeHeaderLabels(): SkipiProxyHomeHeaderLabels = SkipiProxyHomeHeaderLabels(
-    latencyActionDescription = stringResource(Res.string.proxy_server_list_latency_test),
     addActionDescription = stringResource(Res.string.proxy_server_list_add),
     moreActionDescription = stringResource(Res.string.common_more),
 )
@@ -97,7 +91,6 @@ fun SkipiProxyHomeHeader(
     colors: SkipiProxyHomeHeaderColors,
     addActions: List<SkipiProxyHomeHeaderAction>,
     toolActions: List<SkipiProxyHomeHeaderAction>,
-    onTestLatency: () -> Unit,
     onAddAction: (String) -> Unit,
     onToolAction: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -105,7 +98,6 @@ fun SkipiProxyHomeHeader(
 ) {
     var addMenuExpanded by remember { mutableStateOf(false) }
     var toolsMenuExpanded by remember { mutableStateOf(false) }
-    val latencyDescription = state.latencyActionDescription ?: labels.latencyActionDescription
 
     Row(
         modifier = modifier
@@ -127,32 +119,6 @@ fun SkipiProxyHomeHeader(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(
-                onClick = onTestLatency,
-                enabled = state.latencyEnabled,
-            ) {
-                if (state.latencyTesting) {
-                    Box(
-                        modifier = Modifier
-                            .size(25.dp)
-                            .semantics { contentDescription = latencyDescription },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        SkipiProxyHeroAnimatedHourglassIcon(
-                            color = colors.accent,
-                            size = 20.dp,
-                        )
-                    }
-                } else {
-                    SkipiProxyHeroStaticHourglassIcon(
-                        modifier = Modifier
-                            .size(25.dp)
-                            .semantics { contentDescription = latencyDescription },
-                        color = colors.text,
-                        size = 20.dp,
-                    )
-                }
-            }
             if (addActions.isNotEmpty()) {
                 Box {
                     IconButton(onClick = { addMenuExpanded = true }) {

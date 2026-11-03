@@ -93,6 +93,8 @@ fun SkipiProxyGroupPicker(
     onSelectedGroupLongClick: ((String) -> Unit)? = null,
     contextActions: (String) -> List<SkipiProxyGroupPickerAction> = { emptyList() },
     onContextAction: (groupId: String, actionId: String) -> Unit = { _, _ -> },
+    /** An action for the selected group (for example ping), placed after the title row so it never toggles the picker. */
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     if (groups.isEmpty()) return
     val selectedGroup = groups.firstOrNull { group -> group.id == selectedGroupId } ?: groups.first()
@@ -112,59 +114,62 @@ fun SkipiProxyGroupPicker(
 
     Box(modifier = modifier.fillMaxWidth()) {
         // A section title for the list below, not a card: the picker is secondary to the connection and the servers.
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .onSecondaryClick {
-                    if (contextActions(selectedGroup.id).isNotEmpty()) {
-                        expanded = false
-                        onSelectedGroupLongClick?.invoke(selectedGroup.id)
-                        contextGroupId = selectedGroup.id
-                    }
-                }
-                .combinedClickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = {
-                        onPickerToggled?.invoke()
-                        expanded = !expanded
-                    },
-                    onLongClick = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .onSecondaryClick {
                         if (contextActions(selectedGroup.id).isNotEmpty()) {
                             expanded = false
                             onSelectedGroupLongClick?.invoke(selectedGroup.id)
                             contextGroupId = selectedGroup.id
                         }
-                    },
+                    }
+                    .combinedClickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = {
+                            onPickerToggled?.invoke()
+                            expanded = !expanded
+                        },
+                        onLongClick = {
+                            if (contextActions(selectedGroup.id).isNotEmpty()) {
+                                expanded = false
+                                onSelectedGroupLongClick?.invoke(selectedGroup.id)
+                                contextGroupId = selectedGroup.id
+                            }
+                        },
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = selectedGroup.title,
+                    style = SkipiTheme.typography.titleSmall,
+                    fontSize = 15.sp,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
+                    color = colors.text,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = selectedGroup.title,
-                style = SkipiTheme.typography.titleSmall,
-                fontSize = 15.sp,
-                fontWeight = themedFontWeight(FontWeight.SemiBold),
-                color = colors.text,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = selectedGroup.subtitle,
-                style = SkipiTheme.typography.bodySmall,
-                fontSize = 13.sp,
-                color = colors.mutedText,
-                maxLines = 1,
-            )
-            Spacer(Modifier.width(2.dp))
-            Icon(
-                imageVector = Icons.Outlined.ExpandMore,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = chevronRotation },
-                tint = if (expanded) colors.accent else colors.mutedText,
-            )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = selectedGroup.subtitle,
+                    style = SkipiTheme.typography.bodySmall,
+                    fontSize = 13.sp,
+                    color = colors.mutedText,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.width(2.dp))
+                Icon(
+                    imageVector = Icons.Outlined.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = chevronRotation },
+                    tint = if (expanded) colors.accent else colors.mutedText,
+                )
+            }
+            trailingContent?.invoke()
         }
         SkipiHomeDropdownMenu(
             expanded = expanded,
