@@ -1332,53 +1332,8 @@ private fun HomeGroupSelector(
                 "move-down" -> onAction(ProxyHomeAction.MoveGroup(groupId, 1))
             }
         },
-        // A subscription page already has its ping next to the subscription name; every other page gets it here.
-        trailingContent = if (state.subscription == null) {
-            { HomePagePingAction(state = state, onAction = onAction) }
-        } else {
-            null
-        },
         modifier = modifier,
     )
-}
-
-/** Pings what the current page lists, or cancels the running tests. */
-@Composable
-private fun HomePagePingAction(
-    state: ProxyHomeUiState,
-    onAction: (ProxyHomeAction) -> Unit,
-) {
-    val testing = state.isTestingLatency
-    val enabled = if (testing) {
-        canUseHomeAction(state, ProxyHomeActionId.CancelLatencyTests, allowBusy = true)
-    } else {
-        state.servers.any { it.canTest } && canUseHomeAction(state, ProxyHomeActionId.TestVisibleServers)
-    }
-    val description = stringResource(
-        if (testing) Res.string.home_cancel_latency_tests else Res.string.proxy_server_list_latency_test,
-    )
-    IconButton(
-        onClick = {
-            if (testing) onAction(ProxyHomeAction.CancelLatencyTests)
-            else onAction(ProxyHomeAction.TestAllVisibleServers)
-        },
-        enabled = enabled,
-    ) {
-        if (testing) {
-            Box(
-                modifier = Modifier.size(25.dp).semantics { contentDescription = description },
-                contentAlignment = Alignment.Center,
-            ) {
-                SkipiProxyHeroAnimatedHourglassIcon(color = SkipiTheme.colors.accent, size = 20.dp)
-            }
-        } else {
-            SkipiProxyHeroStaticHourglassIcon(
-                modifier = Modifier.size(25.dp).semantics { contentDescription = description },
-                color = SkipiTheme.colors.onSurface,
-                size = 20.dp,
-            )
-        }
-    }
 }
 
 @Composable
