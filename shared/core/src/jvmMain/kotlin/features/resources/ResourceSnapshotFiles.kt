@@ -30,7 +30,9 @@ class ResourceSnapshotFiles(
     }
 
     fun file(customFile: TrafficConfigCustomResourceFile): File {
-        return File(dataDir, resourceFileName(customFile))
+        // The shared sanitizer keeps ':' for Android parity; on disk it would
+        // address an NTFS alternate data stream on Windows.
+        return File(dataDir, resourceFileName(customFile).replace(':', '_'))
     }
 
     fun currentStatus(

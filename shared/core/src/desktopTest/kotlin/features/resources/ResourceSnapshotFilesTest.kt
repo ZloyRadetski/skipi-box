@@ -263,6 +263,16 @@ class ResourceSnapshotFilesTest {
         assertEquals(listOf<Byte>(90, 91), destination.readBytes().toList())
     }
 
+    @Test
+    fun customResourceNameCannotAddressAnNtfsAlternateDataStream() = withXrayRoot { root ->
+        val files = snapshot(root, trafficConfigId = 3)
+
+        val target = files.file(TrafficConfigCustomResourceFile(id = 1, name = "geo.dat:payload.exe", url = "https://example.test/x"))
+
+        assertFalse(target.name.contains(':'))
+        assertEquals(files.dataDir, target.parentFile)
+    }
+
     private fun snapshot(root: File, trafficConfigId: Int): ResourceSnapshotFiles = ResourceSnapshotFiles(
         xrayRootDir = root,
         scope = ResourceFileScope(
