@@ -389,7 +389,7 @@ class SkipiVpnService : VpnService() {
             builder.addAddress(config.ipv6Address, prefixLength)
         }
 
-        builder.applyVpnRoutes(config)
+        builder.applyVpnRoutes()
 
         if (config.enableLocalDns) {
             config.dnsServers.forEach { dnsServer ->
@@ -410,11 +410,8 @@ class SkipiVpnService : VpnService() {
         return pfd
     }
 
-    private fun Builder.applyVpnRoutes(config: VpnServiceStartConfig): Builder {
-        addRoute(NetworkDefaults.IPV4_ANY_ADDRESS, 0)
-        if (config.enableIpv6 && config.ipv6Address != null) {
-            addRoute(NetworkDefaults.IPV6_ANY_ADDRESS, 0)
-        }
+    private fun Builder.applyVpnRoutes(): Builder {
+        planVpnRoutes().forEach { route -> addRoute(route.address, route.prefixLength) }
         return this
     }
 
@@ -808,12 +805,14 @@ class SkipiVpnService : VpnService() {
                 .onFailure { error -> AppLog.warn(LogTag, "Failed to stop Hev TUN for network handover", error) }
             runCatching { SkipiCoreRuntime.stop() }
                 .onFailure { error -> AppLog.warn(LogTag, "Failed to stop SKIPI Core for network handover", error) }
-            runCatching { tunFileDescriptor?.close() }
-                .onFailure { error -> AppLog.warn(LogTag, "Failed to close TUN for network handover", error) }
-            tunFileDescriptor = null
-
+            // The old TUN stays open until its replacement is established, so
+            // packets are blackholed instead of leaking through the physical
+            // network while the core restarts.
+            val previousTun = tunFileDescriptor
             val newTun = establishTun(config)
             tunFileDescriptor = newTun
+            runCatching { previousTun?.close() }
+                .onFailure { error -> AppLog.warn(LogTag, "Failed to close previous TUN after network handover", error) }
             updateUnderlyingNetworks(network)
             SkipiCoreRuntime.setSocketProtector { fd ->
                 this@SkipiVpnService.protect(fd)
@@ -831,6 +830,12 @@ class SkipiVpnService : VpnService() {
             AppLog.info(LogTag, "Recovered VPN runtime after physical network handover")
         }.onFailure { error ->
             AppLog.error(LogTag, "Failed to recover VPN runtime after physical network handover", error)
+            if (handoverRecoveryFailureAction(config.enableKillSwitch) == HandoverRecoveryFailureAction.HoldBlackhole) {
+                // The TUN is still established with no core behind it, so
+                // traffic is dropped until the next network change retries.
+                AppLog.warn(LogTag, "Kill switch: keeping the TUN up without a core after a failed recovery")
+                return@onFailure
+            }
             stopVpn(ForegroundNotificationDisposition.Remove)
             stateStore.update { state -> state.copy(proxyRunning = false) }
             ProxyTrafficStatsRuntimeStore.clear(applicationContext)
