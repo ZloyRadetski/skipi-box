@@ -3,6 +3,7 @@
 
 package engine.vpn
 
+import engine.xray.redactXrayConfigForLog
 import android.content.Context
 import engine.xray.configFingerprint
 import android.content.Intent
@@ -33,7 +34,7 @@ internal class VpnXrayEngine(
         val configReadyAt = SystemClock.elapsedRealtime()
         AppLog.info(
             LogTag,
-            "Prepared VPN tunnel config for server '${request.selectedServer.server.getInfo().remarks}' (id=${request.selectedServer.id}). Xray config:\n${config.xrayConfigJson}",
+            "Prepared VPN tunnel config for server '${request.selectedServer.server.getInfo().remarks}' (id=${request.selectedServer.id}). Xray config:\n${redactXrayConfigForLog(config.xrayConfigJson)}",
         )
         SkipiVpnService.start(
             context = context,

@@ -3,6 +3,7 @@
 
 package engine.vpn
 
+import engine.xray.redactXrayConfigForLog
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
@@ -308,7 +309,7 @@ class SkipiVpnService : VpnService() {
     private suspend fun startVpn(config: VpnServiceStartConfig) = coroutineScope {
         AppLog.info(
             LogTag,
-            "Starting VPN tunnel (session=${config.sessionName}, mtu=${config.mtu}, hevTun=${config.hevSocks5TunnelConfig != null}). Xray config:\n${config.xrayConfigJson}",
+            "Starting VPN tunnel (session=${config.sessionName}, mtu=${config.mtu}, hevTun=${config.hevSocks5TunnelConfig != null}). Xray config:\n${redactXrayConfigForLog(config.xrayConfigJson)}",
         )
         val startedAt = android.os.SystemClock.elapsedRealtime()
         stopVpn(ForegroundNotificationDisposition.Keep)
