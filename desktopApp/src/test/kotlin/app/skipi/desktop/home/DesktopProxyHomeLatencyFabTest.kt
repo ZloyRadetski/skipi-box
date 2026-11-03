@@ -35,6 +35,7 @@ import platform.TunnelSnapshot
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class DesktopProxyHomeLatencyFabTest {
     @Test
@@ -95,6 +96,31 @@ class DesktopProxyHomeLatencyFabTest {
             // The subscription header's ping action, below the centered connection control and its live-facts line.
             position = Offset(334f, 413f),
             screenshotName = "subscription-card-before-click.png",
+        )
+
+        assertEquals(listOf(ProxyHomeEffect.PingSubscription("subscription:7")), effects)
+    }
+
+    @Test
+    fun rightClickOnTheFloatingPingTestsEverythingOnThePage() {
+        val effects = renderAndClick(
+            input = connectedInput(selectedServerId = "selected"),
+            position = Offset(258f, 790f),
+            secondary = true,
+        )
+
+        assertEquals(1, effects.size)
+        assertTrue(effects.single() is ProxyHomeEffect.TestVisibleServers, effects.toString())
+    }
+
+    @Test
+    fun rightClickOnTheFloatingPingOnASubscriptionPageTestsTheWholeSubscription() {
+        val effects = renderAndClick(
+            input = connectedSubscriptionInput().copy(
+                displayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = true),
+            ),
+            position = Offset(258f, 790f),
+            secondary = true,
         )
 
         assertEquals(listOf(ProxyHomeEffect.PingSubscription("subscription:7")), effects)
@@ -220,6 +246,7 @@ class DesktopProxyHomeLatencyFabTest {
         position: Offset,
         screenshotName: String? = null,
         clicks: Int = 1,
+        secondary: Boolean = false,
         prepareStore: (ProxyHomeStore) -> Unit = {},
     ): List<ProxyHomeEffect> {
         val effects = mutableListOf<ProxyHomeEffect>()
@@ -266,14 +293,14 @@ class DesktopProxyHomeLatencyFabTest {
                 scene.sendPointerEvent(
                     eventType = PointerEventType.Press,
                     position = position,
-                    buttons = PointerButtons(isPrimaryPressed = true),
-                    button = PointerButton.Primary,
+                    buttons = PointerButtons(isPrimaryPressed = !secondary, isSecondaryPressed = secondary),
+                    button = if (secondary) PointerButton.Secondary else PointerButton.Primary,
                 )
                 scene.sendPointerEvent(
                     eventType = PointerEventType.Release,
                     position = position,
                     buttons = PointerButtons(),
-                    button = PointerButton.Primary,
+                    button = if (secondary) PointerButton.Secondary else PointerButton.Primary,
                 )
             }
             scene.render().close()

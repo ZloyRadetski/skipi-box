@@ -310,6 +310,13 @@ fun ProxyHomeScreenContent(
         is ProxyHomeAction.TestServer -> canUseHomeAction(state, ProxyHomeActionId.TestServer)
         else -> false
     }
+    // Long press on the floating ping: the whole subscription on its page, otherwise everything the page lists.
+    val pagePing: ProxyHomeAction? = state.subscription
+        ?.takeIf { it.serverCount > 0 && canUseHomeAction(state, ProxyHomeActionId.PingSubscription) }
+        ?.let { ProxyHomeAction.PingSubscription(it.id) }
+        ?: ProxyHomeAction.TestAllVisibleServers.takeIf {
+            hasTestableVisibleServers && canUseHomeAction(state, ProxyHomeActionId.TestVisibleServers)
+        }
     val refreshSubscriptionTitle = stringResource(Res.string.home_action_refresh_subscription)
     val refreshingSubscriptionTitle = stringResource(Res.string.home_action_refreshing)
 
@@ -750,6 +757,7 @@ fun ProxyHomeScreenContent(
                             if (state.isTestingLatency) send(ProxyHomeAction.CancelLatencyTests)
                             else compactPing?.let(send)
                         },
+                        onTestAllLatency = pagePing?.let { action -> { send(action) } },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(bottom = bottomInsetTreatment.floatingToolbarBottomPadding),

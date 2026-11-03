@@ -19,6 +19,15 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import app.skipi.ui.components.onSecondaryClick
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +69,8 @@ fun SkipiProxyHomeFloatingToolbar(
     onToggleRunning: () -> Unit,
     onTestLatency: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Long press (right click on desktop) on the ping button: ping everything on the page. Null hides the gesture. */
+    onTestAllLatency: (() -> Unit)? = null,
 ) {
     val shouldShow = showToggleAction || (showPingAction && running)
     if (!shouldShow) return
@@ -101,48 +112,22 @@ fun SkipiProxyHomeFloatingToolbar(
                         enter = slideInHorizontally(initialOffsetX = { it }) + expandHorizontally(expandFrom = Alignment.End),
                         exit = slideOutHorizontally(targetOffsetX = { it }) + shrinkHorizontally(shrinkTowards = Alignment.End),
                     ) {
-                        IconButton(
-                            onClick = onTestLatency,
+                        PingToolbarButton(
+                            testing = isTestingLatency,
                             enabled = canTestLatency,
-                            modifier = Modifier.size(52.dp),
-                        ) {
-                            if (isTestingLatency) {
-                                SkipiProxyHeroAnimatedHourglassIcon(
-                                    color = onAccent,
-                                    size = 24.dp,
-                                )
-                            } else {
-                                SkipiProxyHeroStaticHourglassIcon(
-                                    modifier = Modifier
-                                        .size(26.dp)
-                                        .semantics { contentDescription = latencyActionDescription },
-                                    color = onAccent,
-                                    size = 20.dp,
-                                )
-                            }
-                        }
+                            description = latencyActionDescription,
+                            onClick = onTestLatency,
+                            onLongClick = onTestAllLatency?.takeIf { !isTestingLatency },
+                        )
                     }
                 } else if (running) {
-                    IconButton(
-                        onClick = onTestLatency,
+                    PingToolbarButton(
+                        testing = isTestingLatency,
                         enabled = canTestLatency,
-                        modifier = Modifier.size(52.dp),
-                    ) {
-                        if (isTestingLatency) {
-                            SkipiProxyHeroAnimatedHourglassIcon(
-                                color = onAccent,
-                                size = 24.dp,
-                            )
-                        } else {
-                            SkipiProxyHeroStaticHourglassIcon(
-                                modifier = Modifier
-                                    .size(26.dp)
-                                    .semantics { contentDescription = latencyActionDescription },
-                                color = onAccent,
-                                size = 20.dp,
-                            )
-                        }
-                    }
+                        description = latencyActionDescription,
+                        onClick = onTestLatency,
+                        onLongClick = onTestAllLatency?.takeIf { !isTestingLatency },
+                    )
                 }
             }
             if (showToggleAction) {
@@ -187,6 +172,52 @@ fun SkipiProxyHomeFloatingToolbar(
                     }
                 }
             }
+        }
+    }
+}
+
+/** Ping button with a second gesture: long press on touch, right click with a mouse. */
+@Composable
+@OptIn(ExperimentalFoundationApi::class)
+private fun PingToolbarButton(
+    testing: Boolean,
+    enabled: Boolean,
+    description: String,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+) {
+    val haptics = LocalHapticFeedback.current
+    val onAccent = SkipiTheme.colors.onAccent
+    val longClick: (() -> Unit)? = onLongClick?.let { action ->
+        {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            action()
+        }
+    }
+    Box(
+        modifier = Modifier
+            .size(52.dp)
+            .clip(CircleShape)
+            .onSecondaryClick(enabled = longClick != null) { longClick?.invoke() }
+            // The page ping can be available while pinging the one selected server is not, so the long press
+            // keeps the button alive on its own.
+            .combinedClickable(
+                enabled = enabled || longClick != null,
+                role = Role.Button,
+                onClick = { if (enabled) onClick() },
+                onLongClick = longClick,
+            )
+            .graphicsLayer { alpha = if (enabled || longClick != null) 1f else 0.38f },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (testing) {
+            SkipiProxyHeroAnimatedHourglassIcon(color = onAccent, size = 24.dp)
+        } else {
+            SkipiProxyHeroStaticHourglassIcon(
+                modifier = Modifier.size(26.dp).semantics { contentDescription = description },
+                color = onAccent,
+                size = 20.dp,
+            )
         }
     }
 }
