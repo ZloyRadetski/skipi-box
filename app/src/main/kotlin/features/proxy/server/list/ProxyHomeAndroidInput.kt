@@ -8,6 +8,7 @@ import app.ProxyServerState
 import app.SubscriptionGroupState
 import app.ProxyServerLatencyTesting
 import app.modes.ConnectionDisplayModeCompact
+import app.modes.ConnectionDisplayModeLegacy
 import app.skipi.app.home.ProxyGroupSummary
 import app.skipi.app.home.ProxyHomeConnectionMode
 import app.skipi.app.home.proxyHomeButtonSizeFromSetting
@@ -137,10 +138,10 @@ internal fun AppState.toProxyHomeInput(
         searchEnabled = true,
         subscriptionSwipeEnabled = enableSubscriptionSwipe,
         displayOptions = ProxyHomeDisplayOptions(
-            connectionMode = if (connectionDisplayMode == ConnectionDisplayModeCompact) {
-                ProxyHomeConnectionMode.Compact
-            } else {
-                ProxyHomeConnectionMode.Classic
+            connectionMode = when (connectionDisplayMode) {
+                ConnectionDisplayModeCompact -> ProxyHomeConnectionMode.Compact
+                ConnectionDisplayModeLegacy -> ProxyHomeConnectionMode.Legacy
+                else -> ProxyHomeConnectionMode.Classic
             },
             pinConnectionPanel = pinConnectionPanelOnHome,
             classicFloatingPowerButton = classicShowFloatingPowerButton,

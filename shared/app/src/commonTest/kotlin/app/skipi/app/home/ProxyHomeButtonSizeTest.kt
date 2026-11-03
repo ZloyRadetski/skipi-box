@@ -16,8 +16,13 @@ class ProxyHomeButtonSizeTest {
     }
 
     @Test
-    fun anUnknownValueKeepsTheSizeTheButtonHadBeforeTheSettingExisted() {
-        assertEquals(ProxyHomeButtonSize.Large, proxyHomeButtonSizeFromSetting(-1))
-        assertEquals(ProxyHomeButtonSize.Large, proxyHomeButtonSizeFromSetting(42))
+    fun anUnknownValueFallsBackToTheDefaultMediumSize() {
+        assertEquals(ProxyHomeButtonSize.Medium, proxyHomeButtonSizeFromSetting(-1))
+        assertEquals(ProxyHomeButtonSize.Medium, proxyHomeButtonSizeFromSetting(42))
+    }
+
+    @Test
+    fun theButtonIsMediumUntilTheUserPicksAnotherSize() {
+        assertEquals(ProxyHomeButtonSize.Medium, ProxyHomeDisplayOptions().classicButtonSize)
     }
 }

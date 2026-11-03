@@ -29,9 +29,14 @@ class UiModesTest {
         assertEquals(ClassicButtonSizeLarge, normalizeClassicButtonSize(ClassicButtonSizeLarge))
         assertEquals(ClassicButtonSizeGiant, normalizeClassicButtonSize(ClassicButtonSizeGiant))
 
-        // Unknown values fall back to the size the connection button had before the setting existed.
-        assertEquals(ClassicButtonSizeLarge, normalizeClassicButtonSize(-1))
-        assertEquals(ClassicButtonSizeLarge, normalizeClassicButtonSize(99))
+        // Unknown values fall back to the default size, which is medium.
+        assertEquals(ClassicButtonSizeMedium, normalizeClassicButtonSize(-1))
+        assertEquals(ClassicButtonSizeMedium, normalizeClassicButtonSize(99))
+    }
+
+    @Test
+    fun testClassicButtonIsMediumByDefault() {
+        assertEquals(ClassicButtonSizeMedium, app.AppState().classicButtonSize)
     }
 
     @Test

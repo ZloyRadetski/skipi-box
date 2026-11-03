@@ -174,6 +174,7 @@ fun SkipiAppearanceSettingsScreen(
     val connectionDisplayModeOptions = listOf(
         stringResource(Res.string.settings_connection_display_mode_compact),
         stringResource(Res.string.settings_connection_display_mode_classic),
+        stringResource(Res.string.settings_connection_display_mode_legacy),
     )
 
     val proxyServerListLayoutOptions = listOf(
@@ -636,27 +637,38 @@ fun SkipiAppearanceSettingsScreen(
                             title = stringResource(Res.string.settings_connection_display_mode),
                             summary = stringResource(Res.string.settings_connection_display_mode_summary),
                             items = connectionDisplayModeOptions,
-                            selectedIndex = if (appState.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeCompact) 0 else 1,
+                            selectedIndex = appState.connectionDisplayMode.coerceIn(0, connectionDisplayModeOptions.lastIndex),
                             onSelectedIndexChange = { index ->
-                                val mode = if (index == 0) AppearanceSettingValues.ConnectionDisplayModeCompact else AppearanceSettingValues.ConnectionDisplayModeClassic
+                                val mode = when (index) {
+                                    0 -> AppearanceSettingValues.ConnectionDisplayModeCompact
+                                    2 -> AppearanceSettingValues.ConnectionDisplayModeLegacy
+                                    else -> AppearanceSettingValues.ConnectionDisplayModeClassic
+                                }
                                 updateAppState { it.copy(connectionDisplayMode = mode) }
                             },
                         )
                         AnimatedVisibility(
-                            visible = appState.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeClassic,
+                            visible = appState.connectionDisplayMode != AppearanceSettingValues.ConnectionDisplayModeCompact,
                             enter = fadeIn() + expandVertically(),
                             exit = shrinkVertically() + fadeOut(),
                         ) {
                             Column {
-                                AppOverlayDropdownPreference(
-                                    title = stringResource(Res.string.settings_classic_button_size),
-                                    summary = stringResource(Res.string.settings_classic_button_size_summary),
-                                    items = classicButtonSizeOptions,
-                                    selectedIndex = appState.classicButtonSize.coerceIn(0, classicButtonSizeOptions.lastIndex),
-                                    onSelectedIndexChange = { size ->
-                                        updateAppState { it.copy(classicButtonSize = size) }
-                                    },
-                                )
+                                // The size applies to the classic widget only; the legacy card has a fixed layout.
+                                AnimatedVisibility(
+                                    visible = appState.connectionDisplayMode == AppearanceSettingValues.ConnectionDisplayModeClassic,
+                                    enter = fadeIn() + expandVertically(),
+                                    exit = shrinkVertically() + fadeOut(),
+                                ) {
+                                    AppOverlayDropdownPreference(
+                                        title = stringResource(Res.string.settings_classic_button_size),
+                                        summary = stringResource(Res.string.settings_classic_button_size_summary),
+                                        items = classicButtonSizeOptions,
+                                        selectedIndex = appState.classicButtonSize.coerceIn(0, classicButtonSizeOptions.lastIndex),
+                                        onSelectedIndexChange = { size ->
+                                            updateAppState { it.copy(classicButtonSize = size) }
+                                        },
+                                    )
+                                }
                                 SwitchPreference(
                                     title = stringResource(Res.string.settings_classic_show_floating_power_button),
                                     summary = stringResource(Res.string.settings_classic_show_floating_power_button_summary),

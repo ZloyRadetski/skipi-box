@@ -11,6 +11,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import app.skipi.app.home.ProxyHomeAction
 import app.skipi.app.home.ProxyHomeActionId
 import app.skipi.app.home.ProxyHomeConnectionMode
+import app.skipi.desktop.DesktopAppSettings
 import app.skipi.app.home.ProxyHomeDisplayOptions
 import app.skipi.app.home.ProxyHomeEffect
 import app.skipi.app.home.ProxyHomeEffectHandler
@@ -92,7 +93,7 @@ class DesktopProxyHomeLatencyFabTest {
         val effects = renderAndClick(
             input = connectedSubscriptionInput(),
             // The subscription header's ping action, below the centered connection control and its live-facts line.
-            position = Offset(334f, 463f),
+            position = Offset(334f, 413f),
             screenshotName = "subscription-card-before-click.png",
         )
 
@@ -155,6 +156,41 @@ class DesktopProxyHomeLatencyFabTest {
     }
 
     @Test
+    fun legacyConnectionKeepsTheCardLayoutItHadBeforeTheRedesign() {
+        // The power control of the legacy card sits on the left of the card, where it always was.
+        val effects = renderAndClick(
+            input = connectedInput(
+                selectedServerId = "selected",
+                displayOptions = ProxyHomeDisplayOptions(
+                    connectionMode = ProxyHomeConnectionMode.Legacy,
+                    classicFloatingPowerButton = false,
+                ),
+                canToggleTunnel = true,
+            ),
+            position = Offset(72f, 160f),
+            screenshotName = "legacy-connection.png",
+        )
+
+        assertEquals(listOf(ProxyHomeEffect.ToggleTunnel), effects)
+    }
+
+    @Test
+    fun desktopLegacyDisplayModeSelectsTheLegacyWidget() {
+        assertEquals(
+            ProxyHomeConnectionMode.Legacy,
+            DesktopAppSettings(connectionDisplayMode = 2).toProxyHomeDisplayOptions().connectionMode,
+        )
+        assertEquals(
+            ProxyHomeConnectionMode.Compact,
+            DesktopAppSettings(compactHome = true).toProxyHomeDisplayOptions().connectionMode,
+        )
+        assertEquals(
+            ProxyHomeConnectionMode.Classic,
+            DesktopAppSettings().toProxyHomeDisplayOptions().connectionMode,
+        )
+    }
+
+    @Test
     fun classicConnectionWithoutFloatingPowerButtonKeepsCardPowerControlUsable() {
         val effects = renderAndClick(
             input = connectedInput(
@@ -162,7 +198,7 @@ class DesktopProxyHomeLatencyFabTest {
                 displayOptions = ProxyHomeDisplayOptions(classicFloatingPowerButton = false),
                 canToggleTunnel = true,
             ),
-            position = Offset(195f, 228f),
+            position = Offset(195f, 203f),
         )
 
         assertEquals(listOf(ProxyHomeEffect.ToggleTunnel), effects)

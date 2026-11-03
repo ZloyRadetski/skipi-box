@@ -8,6 +8,7 @@ import app.ProxyServerState
 import app.ProxyServerLatencyTesting
 import app.SubscriptionGroupState
 import app.modes.ConnectionDisplayModeCompact
+import app.modes.ConnectionDisplayModeLegacy
 import app.modes.ProxyServerListLayoutMultiple
 import app.modes.ProxyServerListSortDefault
 import app.modes.ProxyServerListSortLatency
@@ -120,6 +121,28 @@ class ProxyHomeAndroidInputTest {
         val workSummary = input.servers.first { it.id == "11" }
         assertEquals("Work node", workSummary.searchText)
         assertEquals("Work node", workSummary.sortKey)
+    }
+
+    @Test
+    fun legacyConnectionDisplayModeSelectsTheLegacyWidget() {
+        val state = AppState(connectionDisplayMode = ConnectionDisplayModeLegacy)
+        val groups = proxyServerListGroups(
+            state = state.toProxyServerListState(),
+            selectedGroupId = AllProxyGroupId,
+            searchValue = "",
+            allGroupName = "All",
+            defaultGroupName = "Manual",
+            autoBalancerGroupName = "Auto balancers",
+        )
+
+        val input = state.toProxyHomeInput(
+            groupState = groups,
+            tunnelSnapshot = TunnelSnapshot(phase = TunnelPhase.Disconnected),
+            tunnelBusy = false,
+            isTestingLatency = false,
+        )
+
+        assertEquals(ProxyHomeConnectionMode.Legacy, input.displayOptions.connectionMode)
     }
 
     @Test

@@ -17,9 +17,12 @@ import platform.TunnelSnapshot
 enum class ProxyHomeConnectionMode {
     Classic,
     Compact,
+
+    /** The connection card used before the redesign. */
+    Legacy,
 }
 
-/** Size of the classic connection button. Large is the size it had before the setting existed. */
+/** Size of the classic connection button. Medium is the default. */
 enum class ProxyHomeButtonSize {
     Small,
     Medium,
@@ -27,12 +30,12 @@ enum class ProxyHomeButtonSize {
     Giant,
 }
 
-/** Maps the stored numeric setting (0 small .. 3 giant); anything unknown keeps the previous size. */
+/** Maps the stored numeric setting (0 small .. 3 giant); anything unknown is the default medium size. */
 fun proxyHomeButtonSizeFromSetting(value: Int): ProxyHomeButtonSize = when (value) {
     0 -> ProxyHomeButtonSize.Small
-    1 -> ProxyHomeButtonSize.Medium
+    2 -> ProxyHomeButtonSize.Large
     3 -> ProxyHomeButtonSize.Giant
-    else -> ProxyHomeButtonSize.Large
+    else -> ProxyHomeButtonSize.Medium
 }
 
 /** Public address of the active tunnel and the flag emoji of its country, when resolved. */
@@ -42,7 +45,7 @@ data class ProxyHomeDisplayOptions(
     val connectionMode: ProxyHomeConnectionMode = ProxyHomeConnectionMode.Classic,
     val pinConnectionPanel: Boolean = false,
     val classicFloatingPowerButton: Boolean = false,
-    val classicButtonSize: ProxyHomeButtonSize = ProxyHomeButtonSize.Large,
+    val classicButtonSize: ProxyHomeButtonSize = ProxyHomeButtonSize.Medium,
     val requestedColumns: Int = 1,
     val showAllGroup: Boolean = false,
     val showTunnelMemory: Boolean = false,

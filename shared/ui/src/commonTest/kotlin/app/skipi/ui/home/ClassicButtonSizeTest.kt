@@ -11,9 +11,16 @@ import kotlin.test.assertTrue
 
 class ClassicButtonSizeTest {
     @Test
-    fun largeKeepsTheSizeTheButtonHadBeforeTheSettingExisted() {
+    fun largeIsTheFullBaseSizeAndMediumIsEightyPercentOfIt() {
         assertEquals(248.dp, skipiClassicButtonOuterSize(ProxyHomeButtonSize.Large, compact = true))
         assertEquals(280.dp, skipiClassicButtonOuterSize(ProxyHomeButtonSize.Large, compact = false))
+        assertEquals(248.dp * 0.8f, skipiClassicButtonOuterSize(ProxyHomeButtonSize.Medium, compact = true))
+    }
+
+    @Test
+    fun theRingStaysCloseToTheButton() {
+        // The ring is 10 percent wider than the button, not 20.
+        assertEquals(1.1f, SkipiClassicButtonRingRatio)
     }
 
     @Test

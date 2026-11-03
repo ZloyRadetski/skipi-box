@@ -137,7 +137,7 @@ fun SkipiProxyHeroClassicCard(
     val connecting = state.phase == SkipiConnectionHeroPhase.Connecting
     val outerSize = skipiClassicButtonOuterSize(buttonSize, compact)
     // The ring is the outer edge of the whole control, so there is no empty margin above or below it.
-    val buttonSize = outerSize / 1.2f
+    val buttonSize = outerSize / SkipiClassicButtonRingRatio
     // A thin ring with a clear gap around the button; it takes the accent while the tunnel is up.
     val ringSize = outerSize
     val ringColor by animateColorAsState(

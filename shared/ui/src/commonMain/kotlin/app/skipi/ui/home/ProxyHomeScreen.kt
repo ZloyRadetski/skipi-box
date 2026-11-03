@@ -526,29 +526,7 @@ fun ProxyHomeScreenContent(
             Spacer(Modifier.height(SkipiTheme.spacing.small))
 
             if (isWide) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.large),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            // Wide enough for the button at any chosen size.
-                            .width(maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false)))
-                            .fillMaxHeight()
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        HomeConnectionPanel(
-                            state = state,
-                            compact = false,
-                            onToggle = { send(ProxyHomeAction.ToggleTunnel) },
-                        )
-                        Spacer(Modifier.height(SkipiTheme.spacing.medium))
-                        SelectedServerDetailsPane(
-                            state = state,
-                            server = selectedServer,
-                            onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
-                        )
-                    }
+                val wideList: @Composable (Modifier) -> Unit = { listModifier ->
                     val wideSelectedPage = state.pages.firstOrNull { it.group.id == state.selectedGroupId }
                         ?: state.pages.firstOrNull()
                         ?: ProxyHomePageUiState(
@@ -562,7 +540,7 @@ fun ProxyHomeScreenContent(
                             subscription = state.subscription,
                             subscriptionExpanded = true,
                         )
-                    Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+                    Box(modifier = listModifier.fillMaxSize()) {
                         PageServerGrid(
                             page = wideSelectedPage,
                             state = state,
@@ -585,6 +563,53 @@ fun ProxyHomeScreenContent(
                             },
                             onAction = send,
                         )
+                    }
+                }
+                if (state.displayOptions.connectionMode == ProxyHomeConnectionMode.Legacy) {
+                    // The widget from before the redesign keeps its layout: the card on top, details beside the list.
+                    HomeConnectionPanel(
+                        state = state,
+                        compact = false,
+                        onToggle = { send(ProxyHomeAction.ToggleTunnel) },
+                    )
+                    Spacer(Modifier.height(SkipiTheme.spacing.medium))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.medium),
+                    ) {
+                        wideList(Modifier.weight(1.1f))
+                        LegacyServerDetailsPane(
+                            state = state,
+                            server = selectedServer,
+                            onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
+                            modifier = Modifier.weight(0.9f).fillMaxSize(),
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.large),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                // Wide enough for the button at any chosen size.
+                                .width(maxOf(300.dp, skipiClassicButtonOuterSize(state.displayOptions.classicButtonSize, compact = false)))
+                                .fillMaxHeight()
+                                .verticalScroll(rememberScrollState()),
+                        ) {
+                            HomeConnectionPanel(
+                                state = state,
+                                compact = false,
+                                onToggle = { send(ProxyHomeAction.ToggleTunnel) },
+                            )
+                            Spacer(Modifier.height(SkipiTheme.spacing.medium))
+                            SelectedServerDetailsPane(
+                                state = state,
+                                server = selectedServer,
+                                onTest = { s -> send(ProxyHomeAction.TestServer(s.id)) },
+                            )
+                        }
+                        wideList(Modifier.weight(1f))
                     }
                 }
             } else {
@@ -1178,6 +1203,17 @@ private fun HomeConnectionPanel(
             connectContentDescription = stringResource(Res.string.home_connection_connect),
             disconnectContentDescription = stringResource(Res.string.home_connection_disconnect),
         )
+    } else if (state.displayOptions.connectionMode == ProxyHomeConnectionMode.Legacy) {
+        SkipiProxyHeroLegacyCard(
+            state = heroState,
+            colors = colors,
+            typography = typography,
+            compact = compact,
+            onToggle = onToggle,
+            modifier = modifier,
+            connectContentDescription = stringResource(Res.string.home_connection_connect),
+            disconnectContentDescription = stringResource(Res.string.home_connection_disconnect),
+        )
     } else {
         SkipiProxyHeroClassicCard(
             state = heroState,
@@ -1429,6 +1465,79 @@ private fun FlatDetailRow(label: String, value: String) {
             textAlign = TextAlign.End,
             modifier = Modifier.weight(1f),
         )
+    }
+}
+
+@Composable
+private fun LegacyServerDetailsPane(
+    state: ProxyHomeUiState,
+    server: ProxyServerSummary?,
+    onTest: (ProxyServerSummary) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = SkipiTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = SkipiTheme.colors.surface),
+        border = BorderStroke(1.dp, SkipiTheme.colors.surfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(SkipiTheme.spacing.large),
+            verticalArrangement = Arrangement.spacedBy(SkipiTheme.spacing.medium),
+        ) {
+            Text(
+                text = stringResource(Res.string.home_server_detail_title),
+                color = SkipiTheme.colors.onSurface,
+                style = SkipiTheme.typography.titleLarge,
+                fontWeight = themedFontWeight(FontWeight.Bold),
+            )
+            if (server == null) {
+                Text(
+                    text = stringResource(Res.string.home_server_detail_hint),
+                    color = SkipiTheme.colors.onSurfaceVariant,
+                    style = SkipiTheme.typography.bodyMedium,
+                )
+            } else {
+                Text(
+                    text = server.title,
+                    color = SkipiTheme.colors.onSurface,
+                    style = SkipiTheme.typography.headlineSmall,
+                    fontWeight = themedFontWeight(FontWeight.SemiBold),
+                )
+                ServerDetailValue(
+                    label = stringResource(Res.string.home_server_address),
+                    value = server.address,
+                )
+                ServerDetailValue(
+                    label = stringResource(Res.string.home_server_protocol),
+                    value = server.protocol,
+                )
+                server.transport?.takeIf(String::isNotBlank)?.let { transport ->
+                    ServerDetailValue(
+                        label = stringResource(Res.string.home_server_transport),
+                        value = transport,
+                    )
+                }
+                val latencyMs = server.latencyMs
+                val latency = when {
+                    server.latencyTesting -> stringResource(Res.string.home_server_testing_latency)
+                    latencyMs != null -> stringResource(Res.string.home_latency_milliseconds, latencyMs)
+                    server.latencyError -> server.latencyErrorText?.takeIf(String::isNotBlank)
+                        ?: stringResource(Res.string.proxy_server_list_latency_failed)
+                    else -> "—"
+                }
+                ServerDetailValue(
+                    label = stringResource(Res.string.home_server_latency),
+                    value = latency,
+                )
+                OutlinedButton(
+                    onClick = { onTest(server) },
+                    enabled = server.canTest && !server.latencyTesting && canUseHomeAction(state, ProxyHomeActionId.TestServer),
+                ) {
+                    Text(stringResource(Res.string.home_server_test_latency))
+                }
+            }
+        }
     }
 }
 

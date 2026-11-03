@@ -9,7 +9,7 @@ data class AppearanceSettingsState(
     val backgroundPhotoDimPercent: Int = 45,
     val backgroundStyle: Int = 0,
     val bottomBarSize: Int = 1,
-    val classicButtonSize: Int = 2,
+    val classicButtonSize: Int = 1,
     val classicShowFloatingPowerButton: Boolean = true,
     val colorMode: Int = 0,
     val connectionDisplayMode: Int = 1,
@@ -102,6 +102,7 @@ object AppearanceSettingValues {
     const val ClassicButtonSizeGiant = 3
     const val ConnectionDisplayModeCompact = 0
     const val ConnectionDisplayModeClassic = 1
+    const val ConnectionDisplayModeLegacy = 2
 
     const val ProxyServerListLayoutSingle = 1
     const val ProxyServerListLayoutDouble = 2

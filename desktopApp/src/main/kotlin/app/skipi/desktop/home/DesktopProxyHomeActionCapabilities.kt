@@ -117,10 +117,14 @@ internal fun desktopProxyHomeAvailableActions(
 }
 
 internal fun DesktopAppSettings.toProxyHomeDisplayOptions() = ProxyHomeDisplayOptions(
-    connectionMode = if (compactHome) ProxyHomeConnectionMode.Compact else ProxyHomeConnectionMode.Classic,
+    connectionMode = when {
+        connectionDisplayMode == 2 -> ProxyHomeConnectionMode.Legacy
+        compactHome -> ProxyHomeConnectionMode.Compact
+        else -> ProxyHomeConnectionMode.Classic
+    },
     pinConnectionPanel = pinConnectionPanelOnHome,
     classicFloatingPowerButton = classicShowFloatingPowerButton,
-    classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize ?: 2),
+    classicButtonSize = proxyHomeButtonSizeFromSetting(classicButtonSize ?: 1),
     requestedColumns = proxyServerListColumns,
     showAllGroup = enableAllProxyGroup,
     showTunnelMemory = showTunnelMemory,

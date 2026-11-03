@@ -135,9 +135,10 @@
     <string name="settings_show_server_search">Server search</string>
     <string name="settings_show_server_search_summary">Display the search bar on the home screen</string>
     <string name="settings_connection_display_mode">Connection widget style</string>
-    <string name="settings_connection_display_mode_summary">Choose between compact and classic connection widget on home screen</string>
+    <string name="settings_connection_display_mode_summary">Choose the style of the connection widget on the home screen</string>
     <string name="settings_connection_display_mode_compact">Compact</string>
     <string name="settings_connection_display_mode_classic">Classic</string>
+    <string name="settings_connection_display_mode_legacy">Legacy</string>
     <string name="settings_pin_connection_panel">Pin connection panel</string>
     <string name="settings_pin_connection_panel_summary">Keep the connection panel and subscription selector fixed at the top when scrolling</string>
     <string name="settings_enable_subscription_swipe">Swipe to switch subscription</string>

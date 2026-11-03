@@ -84,7 +84,7 @@ fun normalizeBottomBarSize(value: Int): Int = when (value) {
     else -> BottomBarSizeLarge
 }
 
-/** Size of the connection button in the classic Home view. Large is the size it had before the setting existed. */
+/** Size of the connection button in the classic Home view. Medium is the default. */
 const val ClassicButtonSizeSmall = 0
 const val ClassicButtonSizeMedium = 1
 const val ClassicButtonSizeLarge = 2
@@ -92,7 +92,7 @@ const val ClassicButtonSizeGiant = 3
 
 fun normalizeClassicButtonSize(value: Int): Int = when (value) {
     in ClassicButtonSizeSmall..ClassicButtonSizeGiant -> value
-    else -> ClassicButtonSizeLarge
+    else -> ClassicButtonSizeMedium
 }
 
 const val FontFamilyModeDefault = 0

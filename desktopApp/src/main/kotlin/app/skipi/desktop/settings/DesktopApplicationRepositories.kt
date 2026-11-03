@@ -520,7 +520,7 @@ internal fun DesktopAppSettings.toAppearanceSettingsState(): AppearanceSettingsS
     backgroundPhotoDimPercent = backgroundPhotoDimPercent ?: 45,
     backgroundStyle = backgroundStyle ?: AppearanceSettingValues.BackgroundStyleClassic,
     bottomBarSize = bottomBarSize ?: 1,
-    classicButtonSize = classicButtonSize ?: AppearanceSettingValues.ClassicButtonSizeLarge,
+    classicButtonSize = classicButtonSize ?: AppearanceSettingValues.ClassicButtonSizeMedium,
     classicShowFloatingPowerButton = classicShowFloatingPowerButton,
     colorMode = when (themeMode) {
         DesktopThemeMode.Dark -> AppearanceSettingValues.ColorModeDark

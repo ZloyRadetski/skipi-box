@@ -23,6 +23,9 @@ const val SubscriptionPingModeHttp = 1
 const val ConnectionDisplayModeCompact = 0
 const val ConnectionDisplayModeClassic = 1
 
+/** The connection card Home used before the redesign. */
+const val ConnectionDisplayModeLegacy = 2
+
 const val BackgroundStyleClassic = 0
 const val BackgroundStylePhoto = 1
 const val BackgroundStyleConnection = 2
