@@ -9,7 +9,11 @@ import features.config.SkipiDeepLink
 internal data class DesktopLaunchRequest(
     val hidden: Boolean,
     val links: List<String>,
+    /** The instance that started this one elevated and is about to exit; the claim waits for it. */
+    val waitForPid: Long? = null,
 )
+
+internal const val WaitForPidOption = "--wait-for-pid"
 
 private val ShortLinkOptions = mapOf(
     "--toggle" to "skipi://toggle",
@@ -26,6 +30,7 @@ internal fun parseDesktopLaunchArgs(args: List<String>): DesktopLaunchRequest = 
     links = args.mapNotNull { argument ->
         ShortLinkOptions[argument] ?: argument.takeIf { it.startsWith("skipi://", ignoreCase = true) }
     },
+    waitForPid = args.indexOf(WaitForPidOption).takeIf { it >= 0 }?.let { args.getOrNull(it + 1)?.toLongOrNull() },
 )
 
 internal enum class DesktopTunnelCommand { Start, Stop, None }
@@ -55,3 +60,9 @@ internal fun desktopLinkNotificationText(status: String, failureReason: String):
         title = "SKIPI",
         body = if (failureReason.isBlank()) status else "$status: ${failureReason.trim()}",
     )
+
+/** The arguments without a previous `--wait-for-pid <pid>`, so a relaunch of a relaunched instance names only its own pid. */
+internal fun List<String>.withoutWaitForPid(): List<String> {
+    val index = indexOf(WaitForPidOption)
+    return if (index < 0) this else filterIndexed { i, _ -> i != index && i != index + 1 }
+}

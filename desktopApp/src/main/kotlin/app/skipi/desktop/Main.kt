@@ -120,6 +120,11 @@ import java.time.Duration
 
 fun main(args: Array<String>) {
     val launch = parseDesktopLaunchArgs(args.toList())
+    // An elevated relaunch starts while the instance that asked for it is still shutting down; claiming
+    // the single-instance channel before it left would hand this start's request to that dying instance.
+    launch.waitForPid?.let { pid ->
+        runCatching { ProcessHandle.of(pid).ifPresent { it.onExit().get(15, java.util.concurrent.TimeUnit.SECONDS) } }
+    }
     // A later start hands its links (or a request to show the window) to the running SKIPI and ends:
     // that is what a keyboard shortcut running `SKIPI skipi://toggle` relies on.
     val claim = runCatching {

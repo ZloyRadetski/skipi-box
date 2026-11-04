@@ -247,12 +247,14 @@ internal fun DesktopSettingsScreen(
                     persist(currentSettings.copy(enableTunMode = true), "Параметры VPN сохранены.")
                     scope.launch {
                         val launcher = ProcessHandle.current().info().command().orElse(null)
-                        val arguments = ProcessHandle.current().info().arguments().orElse(emptyArray()).toList()
+                        val currentArguments = ProcessHandle.current().info().arguments().orElse(emptyArray()).toList()
+                        // The elevated instance waits for this one to exit before it claims the single-instance channel.
+                        val arguments = currentArguments.withoutWaitForPid() + listOf(WaitForPidOption, ProcessHandle.current().pid().toString())
                         val result = withContext(Dispatchers.IO) {
                             if (launcher == null) {
                                 Result.failure(IllegalStateException("The application launcher is unknown"))
                             } else {
-                                relaunchElevated(launcher, arguments)
+                                relaunchElevated(launcher, arguments, exitDelaySeconds = 0)
                             }
                         }
                         result.onSuccess { onExitApplication() }

@@ -82,4 +82,18 @@ class DesktopLaunchRequestTest {
         applyDesktopStartupLanguage(DesktopAppSettings(languageTag = null), java.util.Locale.ENGLISH) { applied = it }
         assertEquals(java.util.Locale.ENGLISH, applied)
     }
+
+    @Test
+    fun anElevatedRelaunchNamesTheInstanceItWaitsFor() {
+        val request = parseDesktopLaunchArgs(listOf("--hidden", "--wait-for-pid", "4242", "skipi://toggle"))
+
+        assertEquals(4242L, request.waitForPid)
+        assertEquals(listOf("skipi://toggle"), request.links)
+        assertEquals(null, parseDesktopLaunchArgs(listOf("--wait-for-pid")).waitForPid)
+    }
+
+    @Test
+    fun aRelaunchReplacesAnEarlierWaitForPid() {
+        assertEquals(listOf("--hidden"), listOf("--wait-for-pid", "1", "--hidden").withoutWaitForPid())
+    }
 }
