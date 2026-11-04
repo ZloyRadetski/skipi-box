@@ -19,12 +19,19 @@ class DesktopTunHostTest {
         hevLibrary = directory.resolve("libhev-socks5-tunnel.so").takeIf { hev },
     )
 
+    private val hevDirectory: Path by lazy {
+        java.nio.file.Files.createTempDirectory("skipi-hev-test").also { dir ->
+            listOf("hev-socks5-tunnel.exe", "msys-2.0.dll", "msys-gcc_s-seh-1.dll", "wintun.dll")
+                .forEach { name -> java.nio.file.Files.writeString(dir.resolve(name), "x") }
+        }
+    }
+
     private fun windowsRuntime(hev: Boolean = true) = DesktopCoreRuntime(
         directory = directory,
         library = directory.resolve("skipicore.dll"),
         geoIp = directory.resolve("geoip.dat"),
         geoSite = directory.resolve("geosite.dat"),
-        hevExecutable = directory.resolve("hev").resolve("hev-socks5-tunnel.exe").takeIf { hev },
+        hevExecutable = hevDirectory.resolve("hev-socks5-tunnel.exe").takeIf { hev },
     )
 
     private fun windowsHost(
@@ -140,6 +147,18 @@ class DesktopTunHostTest {
         val reason = windowsHost(runtime = Result.success(windowsRuntime(hev = false))).unavailableReason()
 
         assertTrue("hev-socks5-tunnel.exe" in reason.orEmpty(), reason)
+    }
+
+    @Test
+    fun windowsWithoutAHevRuntimeLibraryReportsIt() {
+        val dir = java.nio.file.Files.createTempDirectory("skipi-hev-missing")
+        java.nio.file.Files.writeString(dir.resolve("hev-socks5-tunnel.exe"), "x")
+        listOf("msys-2.0.dll", "wintun.dll").forEach { java.nio.file.Files.writeString(dir.resolve(it), "x") }
+        val runtime = windowsRuntime().copy(hevExecutable = dir.resolve("hev-socks5-tunnel.exe"))
+
+        val reason = windowsHost(runtime = Result.success(runtime)).unavailableReason()
+
+        assertTrue("msys-gcc_s-seh-1.dll" in reason.orEmpty(), reason)
     }
 
     @Test

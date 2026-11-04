@@ -40,12 +40,13 @@ internal fun allocateDesktopLocalProxyPort(
 /** Builds the current local Core listener options, including enabled SOCKS credentials. */
 internal fun DesktopAppSettings.toLocalProxyXrayConfigOptions(
     resolvedSocksPort: Int? = null,
+    resolvedHttpPort: Int? = null,
     logPaths: DesktopCoreLogPaths = DesktopCoreLogPaths.default(),
 ): LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(
     socksPort = resolvedSocksPort
         ?: (localProxyPortRaw ?: localProxyPort.toString()).toPortOrNull()
         ?: DefaultLocalSocksPort,
-    httpProxyPort = localHttpProxyPort,
+    httpProxyPort = resolvedHttpPort ?: localHttpProxyPort,
     enableHttpProxy = useSystemProxy && isDesktopSystemProxySupported(),
     listenAddress = localProxyListenAddress,
     username = if (enableLocalProxyAuth) localProxyUsername.trim() else "",
@@ -152,7 +153,23 @@ internal class DesktopLocalProxyRuntime {
             excludedPorts = reservedPorts,
             allocatePort = allocatePort,
         ) ?: error("Unable to allocate a local proxy port")
-        val options = settings.toLocalProxyXrayConfigOptions(resolvedSocksPort = resolvedSocksPort)
+        // The system proxy points at the HTTP inbound, so a dynamic port has to move it too: with only
+        // the SOCKS port dynamic, a busy HTTP port (v2rayN and others default to 10809) still failed the start.
+        val resolvedHttpPort = if (baseOptions.enableHttpProxy && settings.enableDynamicLocalProxyPort) {
+            resolveDesktopLocalProxyPort(
+                currentPort = baseOptions.httpProxyPort,
+                dynamicEnabled = true,
+                listenAddress = baseOptions.httpProxyListenAddress,
+                excludedPorts = excludedPorts + resolvedSocksPort,
+                allocatePort = allocatePort,
+            ) ?: error("Unable to allocate a local HTTP proxy port")
+        } else {
+            null
+        }
+        val options = settings.toLocalProxyXrayConfigOptions(
+            resolvedSocksPort = resolvedSocksPort,
+            resolvedHttpPort = resolvedHttpPort,
+        )
         synchronized(lock) { pendingStartOptions = options }
         return options
     }

@@ -27,7 +27,9 @@ SKIPI/app/resources/skipicore.dll
 SKIPI/app/resources/geoip.dat
 SKIPI/app/resources/geosite.dat
 SKIPI/app/resources/hev/hev-socks5-tunnel.exe
-SKIPI/app/resources/hev/wintun.dll'
+SKIPI/app/resources/hev/wintun.dll
+SKIPI/app/resources/hev/msys-2.0.dll
+SKIPI/app/resources/hev/msys-gcc_s-seh-1.dll'
 
 expect "linux package with everything passes" 0 linux "$linux_full"
 expect "linux package without the Core library fails" 1 linux "$(echo "$linux_full" | grep -v libskipicore)"
@@ -35,6 +37,7 @@ expect "linux package without the launcher fails" 1 linux "$(echo "$linux_full" 
 expect "linux package without geo data fails" 1 linux "$(echo "$linux_full" | grep -v geosite)"
 expect "windows package with everything passes" 0 windows "$windows_full"
 expect "windows package without wintun fails" 1 windows "$(echo "$windows_full" | grep -v wintun)"
+expect "windows package without the gcc runtime fails" 1 windows "$(echo "$windows_full" | grep -v msys-gcc)"
 expect "windows package without the executable fails" 1 windows "$(echo "$windows_full" | grep -v 'SKIPI.exe')"
 expect "empty listing fails" 1 linux ""
 expect "unknown platform is a usage error" 2 beos "$linux_full"

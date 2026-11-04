@@ -29,7 +29,7 @@ class DesktopLocalProxyRuntimeLifecycleTest {
             localProxyPassword = " desktop-secret ",
         )
         val requests = mutableListOf<Pair<String, Set<Int>>>()
-        val allocatedPorts = ArrayDeque(listOf(20_480, 20_481))
+        val allocatedPorts = ArrayDeque(listOf(20_480, 20_481, 20_482, 20_483))
         val allocate: (String, Set<Int>) -> Int? = { address, excludedPorts ->
             requests += address to excludedPorts
             allocatedPorts.removeFirst()
@@ -40,18 +40,16 @@ class DesktopLocalProxyRuntimeLifecycleTest {
         runtime.onCoreStopped(Result.success(DesktopCoreState(isRunning = false)))
         val second = runtime.prepareStart(settings, allocatePort = allocate)
 
-        assertEquals(listOf(20_480, 20_481), listOf(first.socksPort, second.socksPort))
-        assertEquals(2, requests.size)
+        assertEquals(listOf(20_480, 20_482), listOf(first.socksPort, second.socksPort))
+        // The system proxy targets the HTTP inbound, so a dynamic port moves it as well, off the SOCKS port.
+        assertEquals(listOf(20_481, 20_483), listOf(first.httpProxyPort, second.httpProxyPort))
+        assertEquals(4, requests.size)
         assertEquals("0.0.0.0", requests.first().first)
-        assertEquals(
-            if (first.enableHttpProxy) setOf(settings.localHttpProxyPort) else emptySet(),
-            requests.first().second,
-        )
+        assertEquals(setOf(settings.localHttpProxyPort), requests[0].second)
+        assertEquals(setOf(20_480), requests[1].second)
         assertEquals("desktop-user", first.username)
         assertEquals(" desktop-secret ", first.password)
-        assertEquals(settings.localHttpProxyPort, first.httpProxyPort)
         assertEquals(first.enableHttpProxy, second.enableHttpProxy)
-        assertEquals(requests.first().second, requests.last().second)
     }
 
     @Test

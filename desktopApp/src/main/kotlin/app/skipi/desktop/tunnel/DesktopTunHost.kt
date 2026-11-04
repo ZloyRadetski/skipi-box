@@ -36,7 +36,10 @@ internal class DesktopTunHost(
         if (!hostSupported) return "TUN mode is available only on Linux, Windows and macOS so far"
         val files = runtime().getOrElse { return it.message ?: "SKIPI Core runtime is unavailable" }
         if (isWindows) {
-            if (files.hevExecutable == null) return "hev-socks5-tunnel.exe is missing from the application"
+            val exe = files.hevExecutable ?: return "hev-socks5-tunnel.exe is missing from the application"
+            // hev loads these at process start; a missing one kills it with 0xC0000135 and no message.
+            WindowsHevRuntimeLibraries.firstOrNull { name -> !exe.resolveSibling(name).toFile().isFile }
+                ?.let { name -> return "$name is missing from the application" }
         } else if (isMac) {
             if (files.hevExecutable == null) return "hev-socks5-tunnel is missing from the application"
         } else if (files.hevLibrary == null) {
@@ -60,6 +63,8 @@ internal class DesktopTunHost(
     }
 
     companion object {
+        private val WindowsHevRuntimeLibraries = listOf("msys-2.0.dll", "msys-gcc_s-seh-1.dll", "wintun.dll")
+
         fun forCore(
             coreController: DesktopCoreController,
             runtime: () -> Result<DesktopCoreRuntime> = DesktopCoreRuntimes::discover,
