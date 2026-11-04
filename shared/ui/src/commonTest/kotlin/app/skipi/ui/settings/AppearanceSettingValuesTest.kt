@@ -10,6 +10,11 @@ import kotlin.test.assertTrue
 
 class AppearanceSettingValuesTest {
     @Test
+    fun serverSearchIsOffByDefault() {
+        assertFalse(AppearanceSettingsState().showServerSearch)
+    }
+
+    @Test
     fun legacyAndCurrentAppearanceValuesStayCompatible() {
         assertEquals(AppearanceSettingValues.ColorModeSystem, AppearanceSettingValues.normalizeColorMode(3))
         assertEquals(AppearanceSettingValues.ColorModeLight, AppearanceSettingValues.normalizeColorMode(4))

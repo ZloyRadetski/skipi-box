@@ -204,7 +204,7 @@ data class AppState(
     val trafficStatsNotificationRefreshIntervalSeconds: Int = DefaultTrafficStatsNotificationRefreshIntervalSeconds,
     /** Show system notifications while geo/resource files are being updated. */
     val enableResourceFileNotifications: Boolean = false,
-    val showServerSearch: Boolean = true,
+    val showServerSearch: Boolean = false,
     /** Show the current VPN-core memory footprint above the server search field. */
     val showTunnelMemoryOnHome: Boolean = false,
     /** Show the tunnel's public IP and country in the Home connection panel. */

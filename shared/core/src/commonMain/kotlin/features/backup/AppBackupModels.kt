@@ -105,7 +105,7 @@ private object BackupDefaults {
     const val enableTrafficStatsNotification = true
     const val trafficStatsNotificationRefreshIntervalSeconds = 2
     const val enableResourceFileNotifications = false
-    const val showServerSearch = true
+    const val showServerSearch = false
     const val connectionDisplayMode = 1
     const val pinConnectionPanelOnHome = false
     const val enableSubscriptionSwipe = true

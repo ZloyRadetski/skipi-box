@@ -9,6 +9,11 @@ import kotlin.test.assertNull
 
 class HomeDisplaySettingsContractTest {
     @Test
+    fun serverSearchIsOffByDefault() {
+        assertEquals(false, HomeDisplaySettings().showServerSearch)
+    }
+
+    @Test
     fun keepsAndroidHomeOrdinalsRawIncludingUnknownValues() {
         val sortValues = listOf(0, 1, 2, 4)
 

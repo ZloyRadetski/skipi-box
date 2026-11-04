@@ -329,7 +329,7 @@ class DesktopSettingsLibraryTest {
             assertFalse(loaded.pinConnectionPanelOnHome)
             assertFalse(loaded.classicShowFloatingPowerButton)
             assertFalse(loaded.enableAllProxyGroup)
-            assertTrue(loaded.showServerSearch)
+            assertFalse(loaded.showServerSearch)
             assertTrue(loaded.enableSubscriptionSwipe)
             assertEquals(1, loaded.proxyServerListColumns)
 
@@ -348,7 +348,7 @@ class DesktopSettingsLibraryTest {
             assertFalse(loadedClassic.pinConnectionPanelOnHome)
             assertFalse(loadedClassic.classicShowFloatingPowerButton)
             assertFalse(loadedClassic.enableAllProxyGroup)
-            assertTrue(loadedClassic.showServerSearch)
+            assertFalse(loadedClassic.showServerSearch)
             assertTrue(loadedClassic.enableSubscriptionSwipe)
             assertEquals(1, loadedClassic.proxyServerListColumns)
         } finally {

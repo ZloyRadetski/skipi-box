@@ -47,7 +47,7 @@ data class AppearanceSettingsState(
     val pinConnectionPanelOnHome: Boolean = true,
     val proxyServerListLayout: Int = 1,
     val seedIndex: Int = 0,
-    val showServerSearch: Boolean = true,
+    val showServerSearch: Boolean = false,
     val showTunnelMemoryOnHome: Boolean = false,
     val showTunnelIpOnHome: Boolean = true,
     val maskTunnelIpOnHome: Boolean = false,

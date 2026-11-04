@@ -1,5 +1,5 @@
 ---
-title: "The home search bar is an Appearance setting again, on by default"
+title: "The home search bar is an Appearance setting again, off by default since 2026-11-04"
 author: Radetski
 date: 2026-11-03
 branch: main
@@ -22,7 +22,7 @@ touches:
 ---
 
 ## Decided
-The user wants search switched on and off in Appearance, not from the three-dot menu. The stored server-search flag drives the search bar on both Android and desktop, and the bar is shown whenever the flag is on. It defaults to on so installs that never stored the flag keep their search.
+The user wants search switched on and off in Appearance, not from the three-dot menu. The stored server-search flag drives the search bar on both Android and desktop, and the bar is shown whenever the flag is on. It defaulted to on so installs that never stored the flag kept their search; on 2026-11-04 the user asked for off by default, so those installs now lose the bar until they turn it on.
 
 ## Tried and ruled out
 An earlier session had made search always available and left the flag only for backups; this reverses that on purpose. Keeping a menu toggle on top of the setting was ruled out: it duplicated the setting.
