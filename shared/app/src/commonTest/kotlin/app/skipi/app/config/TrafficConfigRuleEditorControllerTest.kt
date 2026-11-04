@@ -152,6 +152,24 @@ class TrafficConfigRuleEditorControllerTest {
     }
 
     @Test
+    fun editedRuleKeepsItsRemarks() {
+        val opened = profile(28, "Remarks").let {
+            it.copy(rawConfig = it.rawConfig.replace("DOMAIN,second.example,DIRECT", "DOMAIN,second.example,DIRECT // Second"))
+        }
+        val rule = opened.rawConfig.analyzeShadowrocketConfig().rules[1]
+        val store = InMemoryProfileStore(opened)
+
+        TrafficConfigEditorController(store).saveRuleDraft(
+            opened.id,
+            TrafficConfigRuleDraft(rule.lineNumber, false, "DOMAIN", "third.example", "PROXY"),
+        )
+
+        val saved = store.profile(opened.id)!!.rawConfig.analyzeShadowrocketConfig().rules[1]
+        assertEquals("DOMAIN,third.example,PROXY // Second", saved.raw)
+        assertEquals("Second", saved.remarks)
+    }
+
+    @Test
     fun finalRuleIgnoresBlankValueAndSavesBeforeBackNavigation() {
         val opened = profile(27, "Final")
         val finalRule = opened.rawConfig.analyzeShadowrocketConfig().rules.first { it.isFinal }

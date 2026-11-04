@@ -58,6 +58,8 @@ data class ShadowrocketRule(
     val raw: String,
     /** Set for OR / AND rules; [value] then holds the serialised body, so [toShadowrocketLine] still round-trips. */
     val condition: ShadowrocketCondition.Group? = null,
+    /** Name of the rule, written after ` // ` at the end of its line; empty when the rule has none. */
+    val remarks: String = "",
 ) {
     val isFinal: Boolean
         get() = type.equals("FINAL", ignoreCase = true)
@@ -467,13 +469,17 @@ fun ShadowrocketRule.toShadowrocketLine(
     value: String = this.value,
     policy: String = this.policy,
 ): String {
-    return if (type.equals("FINAL", ignoreCase = true)) {
+    val body = if (type.equals("FINAL", ignoreCase = true)) {
         "FINAL,${policy.trim()}"
     } else {
         listOfNotNull(type.trim().uppercase(), value.trim(), policy.trim(), option?.takeIf(String::isNotBlank))
             .joinToString(",")
     }
+    return if (remarks.isBlank()) body else "$body$RuleRemarksSeparator${remarks.trim()}"
 }
+
+/** Separator before the name of a rule; the leading space keeps `https://` inside values out of it. */
+const val RuleRemarksSeparator = " // "
 
 fun defaultShadowrocketConfig(): String = """
     # SKIPI configuration
@@ -494,6 +500,17 @@ private fun parseGeneralLine(line: String): Pair<String, String>? {
 }
 
 private fun parseRuleLine(
+    lineNumber: Int,
+    fullLine: String,
+    raw: String,
+): ShadowrocketRule? {
+    val remarksIndex = fullLine.indexOf(" //")
+    val line = if (remarksIndex >= 0) fullLine.substring(0, remarksIndex).trim() else fullLine
+    val remarks = if (remarksIndex >= 0) fullLine.substring(remarksIndex + 3).trim() else ""
+    return parseRuleBody(lineNumber, line, raw)?.copy(remarks = remarks)
+}
+
+private fun parseRuleBody(
     lineNumber: Int,
     line: String,
     raw: String,

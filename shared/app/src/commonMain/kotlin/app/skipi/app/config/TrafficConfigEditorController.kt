@@ -10,6 +10,7 @@ import features.config.TrafficConfigAndroidSettings
 import features.config.TrafficConfigState
 import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.analyzeShadowrocketConfig
+import features.config.RuleRemarksSeparator
 import features.config.toShadowrocketLine
 import features.config.withShadowrocketProxyGroupAdded
 import features.config.withShadowrocketProxyGroupLine
@@ -216,6 +217,11 @@ class TrafficConfigEditorController(
             "${draft.type},${draft.value.trim()},${draft.policy}"
         }
         return update(profileId) { current ->
+            // The name of an edited rule is not part of the draft, so it is carried over from the latest line.
+            val remarks = draft.lineNumber?.let { lineNumber ->
+                current.rawConfig.analyzeShadowrocketConfig().rules.firstOrNull { it.lineNumber == lineNumber }?.remarks
+            }.orEmpty()
+            val line = if (remarks.isBlank()) line else "$line$RuleRemarksSeparator$remarks"
             val updatedRaw = draft.lineNumber?.let { lineNumber ->
                 current.rawConfig.withShadowrocketRuleLine(lineNumber, line)
             } ?: current.rawConfig.withShadowrocketRuleAdded(line)

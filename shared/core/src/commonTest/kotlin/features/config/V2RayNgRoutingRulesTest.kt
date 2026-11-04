@@ -109,4 +109,23 @@ class V2RayNgRoutingRulesTest {
         val unnamed = assertNotNull(json.toV2RayNgRoutingConfOrNull("Config"))
         assertTrue(!unnamed.contains("profile-name"))
     }
+
+    @Test
+    fun remarksBecomeTheNameOfEveryLineOfTheRule() {
+        val lines = rules(
+            """[{"outboundTag":"direct","domain":["domain:a.com","domain:b.com"],"remarks":"Direct
+sites"},
+               {"outboundTag":"direct","domain":["domain:c.com"],"port":"443","remarks":"With port"},
+               {"outboundTag":"proxy","port":"0-65535","remarks":"Rest"}]""",
+        )
+        assertEquals(
+            listOf(
+                "DOMAIN-SUFFIX,a.com,DIRECT // Direct sites",
+                "DOMAIN-SUFFIX,b.com,DIRECT // Direct sites",
+                "AND,((DOMAIN-SUFFIX,c.com),(DST-PORT,443)),DIRECT // With port",
+                "FINAL,PROXY // Rest",
+            ),
+            lines,
+        )
+    }
 }

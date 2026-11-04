@@ -52,16 +52,18 @@ fun String.toV2RayNgRoutingConfOrNull(fallbackName: String): String? {
             "proxy" -> "PROXY"
             else -> continue
         }
+        val remarks = rule.text("remarks")?.replace(Regex("""\s+"""), " ")?.trim().orEmpty()
+            .let { if (it.isEmpty()) "" else "$RuleRemarksSeparator$it" }
         val fields = rule.conditionFields()
         when {
             fields.isEmpty() -> {
-                lines += "FINAL,$policy"
+                lines += "FINAL,$policy$remarks"
                 break
             }
-            fields.size == 1 -> fields.single().forEach { leaf -> lines += "${leaf.type},${leaf.value},$policy" }
+            fields.size == 1 -> fields.single().forEach { leaf -> lines += "${leaf.type},${leaf.value},$policy$remarks" }
             else -> {
                 val children = fields.map { leaves -> if (leaves.size == 1) leaves.single() else Group(ShadowrocketLogicalOperator.Or, leaves) }
-                lines += "AND,${Group(ShadowrocketLogicalOperator.And, children).toBodyText()},$policy"
+                lines += "AND,${Group(ShadowrocketLogicalOperator.And, children).toBodyText()},$policy$remarks"
             }
         }
     }

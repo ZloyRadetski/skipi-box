@@ -187,14 +187,24 @@ private fun TrafficConfigVisualRuleCard(
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
+                val summary = remember(rule.raw) { rule.listSummary() }
                 Text(
-                    text = remember(rule.raw) { rule.listSummary() },
+                    text = rule.remarks.ifBlank { summary },
                     fontSize = 15.sp,
                     fontWeight = themedFontWeight(FontWeight.Medium),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (rule.remarks.isNotBlank()) {
+                    Text(
+                        text = summary,
+                        fontSize = 12.sp,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 if (remember(rule.raw) { rule.xrayUnsupportedReason() } != null) {
                     Text(
                         text = stringResource(Res.string.configs_rules_logical_unsupported),
