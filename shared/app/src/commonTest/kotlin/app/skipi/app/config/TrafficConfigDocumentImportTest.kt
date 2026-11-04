@@ -144,6 +144,30 @@ class TrafficConfigDocumentImportTest {
         sourceUrl = sourceUrl,
     )
 
+    @Test
+    fun v2rayNgRuleExportIsImportedAsANewProfile() {
+        val result = importTrafficConfigDocument(
+            trafficConfigs = emptyList(),
+            nextTrafficConfigId = 5,
+            activeTrafficConfigId = 0,
+            content = """[
+              {"outboundTag":"block","domain":["geosite:category-ads-all"],"enabled":true,"remarks":"BLOCK"},
+              {"outboundTag":"direct","port":"25565","network":"tcp,udp","domain":["domain:hypixel.net"]},
+              {"outboundTag":"proxy","port":"0-65535","network":"tcp,udp"}
+            ]""",
+            activate = true,
+            fallbackName = "v2rayNG",
+        )
+
+        assertTrue(result.created)
+        assertEquals(5, result.activeTrafficConfigId)
+        val imported = result.trafficConfigs.single()
+        assertEquals("v2rayNG", imported.name)
+        assertTrue(imported.rawConfig.contains("DOMAIN-SET,geosite:category-ads-all,REJECT"))
+        assertTrue(imported.rawConfig.contains("AND,((DOMAIN-SUFFIX,hypixel.net),(DST-PORT,25565)),DIRECT"))
+        assertTrue(imported.rawConfig.contains("FINAL,PROXY"))
+    }
+
     private fun document(name: String, logLevel: String): String = """# name: $name
 [General]
 loglevel = $logLevel

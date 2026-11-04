@@ -7,6 +7,7 @@ import features.config.ShadowrocketConfigDiagnosticSeverity
 import features.config.TrafficConfigResourceSettings
 import features.config.TrafficConfigState
 import features.config.analyzeShadowrocketConfig
+import features.config.toV2RayNgRoutingConfOrNull
 import features.config.withSkipiSettingsInRawConfig
 import features.config.withSkipiSettingsReadFromRawConfig
 
@@ -29,7 +30,8 @@ fun importTrafficConfigDocument(
     sourceUrl: String = "",
     newProfileResourceSettings: TrafficConfigResourceSettings = TrafficConfigResourceSettings(),
 ): TrafficConfigDocumentImportResult {
-    val normalized = content.trimEnd() + "\n"
+    // A v2rayNG rule export is converted to a regular profile, so every import path accepts it.
+    val normalized = (content.toV2RayNgRoutingConfOrNull(fallbackName) ?: content).trimEnd() + "\n"
     require(normalized.isNotBlank()) { "Configuration is empty" }
     val analysis = normalized.analyzeShadowrocketConfig()
     require(analysis.diagnostics.none { it.severity == ShadowrocketConfigDiagnosticSeverity.Error }) {
