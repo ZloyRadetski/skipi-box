@@ -103,6 +103,16 @@ fun ShadowrocketRule.toRoutingTableRow(): RoutingTableRow? {
 
 /** The line to store for [this] row, or null when no condition is left to write. */
 fun RoutingTableRow.toShadowrocketLineOrNull(): RoutingTableRowLine? {
+    val written = write()
+    return written.line?.let { line -> RoutingTableRowLine(line, written.unwritable) }
+}
+
+/** The values of this row that cannot be written into a rule line, also when nothing else is left of the row. */
+fun RoutingTableRow.unwritableValues(): List<String> = write().unwritable
+
+private class RoutingTableRowWrite(val line: String?, val unwritable: List<String>)
+
+private fun RoutingTableRow.write(): RoutingTableRowWrite {
     val unwritable = mutableListOf<String>()
     fun <T> List<String>.writeEach(convert: (String) -> T?): List<T> =
         map(String::trim).filter(String::isNotEmpty).distinct().mapNotNull { token ->
@@ -127,7 +137,7 @@ fun RoutingTableRow.toShadowrocketLineOrNull(): RoutingTableRowLine? {
     val terms = listOf(addressLeaves, portLeaves, networkLeaves, protocolLeaves)
         .filter(List<Leaf>::isNotEmpty)
         .map { leaves -> leaves.singleOrNull() ?: Group(Or, leaves) }
-    if (terms.isEmpty()) return null
+    if (terms.isEmpty()) return RoutingTableRowWrite(null, unwritable)
 
     val option = (extraOption.orEmpty().split(',').map(String::trim).filter(String::isNotEmpty) +
         listOfNotNull(DisabledRuleOption.takeIf { !enabled })).joinToString(", ").takeIf(String::isNotBlank)
@@ -139,7 +149,7 @@ fun RoutingTableRow.toShadowrocketLineOrNull(): RoutingTableRowLine? {
             ShadowrocketRule(0, group.operator.keyword, group.toBodyText(), policy, option, raw = "", condition = group, remarks = name)
         }
     }
-    return RoutingTableRowLine(rule.toShadowrocketLine(), unwritable)
+    return RoutingTableRowWrite(rule.toShadowrocketLine(), unwritable)
 }
 
 private val DomainTypes = setOf("DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "DOMAIN-WILDCARD", "DOMAIN-SET", "GEOSITE")

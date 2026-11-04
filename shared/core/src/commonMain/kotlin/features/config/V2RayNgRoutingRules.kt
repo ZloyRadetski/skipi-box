@@ -154,3 +154,75 @@ private fun JsonObject.stringList(key: String): List<String> = (this[key] as? Js
     ?.mapNotNull { it.primitiveOrNull()?.content?.trim() }
     .orEmpty()
     .filter(String::isNotEmpty)
+
+/**
+ * Reads a v2rayN rule export (an array of rules, or one rule), or returns null when the text is not one.
+ * [resolveOutbound] maps the outbound tag of a rule to a policy of this profile, or null when it has none.
+ */
+fun String.parseV2rayRoutingImportOrNull(
+    resolveOutbound: (String) -> String? = ::defaultV2rayOutbound,
+): V2rayRoutingImport? {
+    val rules = toV2RayNgRulesOrNull() ?: return null
+    val rows = mutableListOf<RoutingTableRow>()
+    val skipped = mutableListOf<V2rayRoutingSkippedRule>()
+    var finalPolicy: String? = null
+    var droppedAfterFinal = 0
+
+    for (rule in rules) {
+        if (finalPolicy != null) {
+            droppedAfterFinal++
+            continue
+        }
+        val name = rule.text("remarks")?.replace(Regex("""\s+"""), " ")?.trim().orEmpty()
+        if (rule.int("ruleType") == V2RayNgDnsOnlyRuleType) {
+            skipped += V2rayRoutingSkippedRule(name, V2rayRoutingSkipReason.DnsOnly)
+            continue
+        }
+        if (rule.stringList("inboundTag").isNotEmpty()) {
+            skipped += V2rayRoutingSkippedRule(name, V2rayRoutingSkipReason.InboundTag)
+            continue
+        }
+        val tag = rule.text("outboundTag").orEmpty()
+        val policy = resolveOutbound(tag)
+        if (policy == null) {
+            skipped += V2rayRoutingSkippedRule(name, V2rayRoutingSkipReason.UnknownOutbound, tag)
+            continue
+        }
+
+        val enabled = rule.flag("enabled") != false
+        val listedAddresses = rule.stringList("domain").isNotEmpty() || rule.stringList("ip").isNotEmpty() ||
+            rule.stringList("process").isNotEmpty()
+        val row = RoutingTableRow(
+            name = name,
+            enabled = enabled,
+            policy = policy,
+            // v2rayN leaves out the entries that start with # (they are switched off) and writes a comma as <COMMA>.
+            domains = rule.stringList("domain").filterNot { it.startsWith('#') }.map { it.replace("<COMMA>", ",") }.distinct(),
+            ips = rule.stringList("ip").distinct(),
+            processes = rule.stringList("process").distinct(),
+            port = rule.text("port").orEmpty().toRowPort(),
+            network = rule.text("network").orEmpty().toRowNetwork(),
+            protocols = rule.stringList("protocol").flatMap { it.split(',') }
+                .map { it.trim().lowercase() }.filter(String::isNotEmpty).distinct(),
+        )
+        when {
+            row.hasConditions -> rows += row
+            // Every value of the rule was switched off: it matches nothing, it is not a catch-all.
+            listedAddresses -> Unit
+            enabled -> finalPolicy = policy
+        }
+    }
+    return V2rayRoutingImport(rows, finalPolicy, skipped, droppedAfterFinal, totalRules = rules.size)
+}
+
+/** The whole port range is no condition. */
+private fun String.toRowPort(): String {
+    val ports = split(',').map(String::trim).filter(String::isNotEmpty)
+    return if (ports.any { it == "0-65535" || it == "1-65535" }) "" else ports.joinToString(",")
+}
+
+/** Both networks, or none, is no condition. */
+private fun String.toRowNetwork(): String {
+    val networks = split(',').map { it.trim().lowercase() }.filter { it == "tcp" || it == "udp" }.distinct()
+    return networks.singleOrNull().orEmpty()
+}
