@@ -261,6 +261,8 @@ val prepareDesktopHevWindowsRuntime = tasks.register<PrepareDesktopHevWindowsRun
     hevVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
     expectedArchiveSha256.set("a9209ad121a3f636f814b0bb899b6464d3ec201eabbb3a82f2aa486e32879ba7")
     wintunLicense.set(desktopHevSourceDirectory.file("third-part/wintun/LICENSE.txt"))
+    gccRuntime.set(layout.projectDirectory.file("packaging/windows/msys-gcc_s-seh-1.dll"))
+    expectedGccRuntimeSha256.set("a9cfd10e2a4bf74f60530fc2f4f8fbe4055b50ff7ccd61b9440ef2fbe9c85aef")
     outputDirectory.set(desktopCoreRuntime.map { root -> root.dir("hev") })
     onlyIf { isWindowsHost }
 }

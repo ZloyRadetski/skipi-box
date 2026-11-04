@@ -37,6 +37,18 @@ abstract class PrepareDesktopHevWindowsRuntimeTask : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val wintunLicense: RegularFileProperty
 
+    /**
+     * `msys-gcc_s-seh-1.dll`, which hev-socks5-tunnel.exe imports but the official archive leaves out
+     * (it only resolves on machines that happen to have MSYS2 or Git for Windows on PATH). Without it
+     * the process dies at once with STATUS_DLL_NOT_FOUND (0xC0000135).
+     */
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val gccRuntime: RegularFileProperty
+
+    @get:Input
+    abstract val expectedGccRuntimeSha256: Property<String>
+
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
@@ -50,6 +62,11 @@ abstract class PrepareDesktopHevWindowsRuntimeTask : DefaultTask() {
         val expected = expectedArchiveSha256.get().lowercase()
         require(expected.matches(Regex("[0-9a-f]{64}"))) {
             "The configured hev archive checksum must be a SHA-256 hex digest."
+        }
+        val gcc = gccRuntime.get().asFile
+        val gccActual = sha256(gcc)
+        if (!gccActual.equals(expectedGccRuntimeSha256.get(), ignoreCase = true)) {
+            throw GradleException("${gcc.name} checksum mismatch. Expected ${expectedGccRuntimeSha256.get()}, got $gccActual.")
         }
         val destination = outputDirectory.get().asFile
         val marker = File(destination, ".hev-archive-sha256")
@@ -65,6 +82,7 @@ abstract class PrepareDesktopHevWindowsRuntimeTask : DefaultTask() {
             }
             destination.mkdirs()
             extract(archive, destination)
+            Files.copy(gcc.toPath(), File(destination, GccRuntimeName).toPath(), StandardCopyOption.REPLACE_EXISTING)
             Files.copy(
                 wintunLicense.get().asFile.toPath(),
                 File(destination, "WINTUN_LICENSE.txt").toPath(),
@@ -75,6 +93,7 @@ abstract class PrepareDesktopHevWindowsRuntimeTask : DefaultTask() {
                 hev-socks5-tunnel ${hevVersion.get()} (MIT) - https://github.com/heiher/hev-socks5-tunnel
                 wintun.dll (Wintun, see WINTUN_LICENSE.txt) - https://www.wintun.net/
                 msys-2.0.dll (MSYS2 runtime, LGPL-3.0 with linking exception) - https://www.msys2.org/
+                msys-gcc_s-seh-1.dll (GCC runtime library, GPL-3.0 with GCC Runtime Library Exception) - https://www.msys2.org/
                 """.trimIndent() + System.lineSeparator(),
             )
             marker.writeText(expected + System.lineSeparator())
@@ -86,7 +105,10 @@ abstract class PrepareDesktopHevWindowsRuntimeTask : DefaultTask() {
     private fun isCurrent(destination: File, marker: File, expected: String): Boolean =
         marker.isFile &&
             marker.readText().trim().equals(expected, ignoreCase = true) &&
-            RuntimeFiles.all { File(destination, it).let { file -> file.isFile && file.length() > 0 } }
+            (RuntimeFiles + GccRuntimeName).all { File(destination, it).let { file -> file.isFile && file.length() > 0 } }
+
+    private fun sha256(file: File): String =
+        MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it.toInt() and 0xff) }
 
     private fun download(url: String, archive: File): String {
         val connection = (URI(url).toURL().openConnection() as HttpURLConnection).apply {
@@ -135,5 +157,6 @@ abstract class PrepareDesktopHevWindowsRuntimeTask : DefaultTask() {
 
     private companion object {
         val RuntimeFiles = listOf("hev-socks5-tunnel.exe", "msys-2.0.dll", "wintun.dll")
+        const val GccRuntimeName = "msys-gcc_s-seh-1.dll"
     }
 }
