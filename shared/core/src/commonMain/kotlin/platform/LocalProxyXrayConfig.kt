@@ -222,15 +222,34 @@ object LocalProxyXrayConfigFactory {
     /** The local SOCKS inbound plus the optional loopback HTTP inbound, as written to every local config. */
     fun buildInbounds(options: LocalProxyXrayConfigOptions): List<JsonObject> = buildList {
         add(buildSocksInbound(options).withSniffing(options.sniffing))
-        if (options.enableHttpProxy) {
-            add(buildJsonObject {
-                put("tag", HttpInboundTag)
-                put("listen", options.httpProxyListenAddress)
-                put("port", options.httpProxyPort)
-                put("protocol", "http")
-                put("settings", buildJsonObject { put("allowTransparent", false) })
-            })
-        }
+        if (options.enableHttpProxy) add(buildHttpInbound(options))
+    }
+
+    /** The loopback HTTP inbound; it takes the same login as the SOCKS one, so enabling auth protects both. */
+    fun buildHttpInbound(options: LocalProxyXrayConfigOptions): JsonObject = buildJsonObject {
+        put("tag", HttpInboundTag)
+        put("listen", options.httpProxyListenAddress)
+        put("port", options.httpProxyPort)
+        put("protocol", "http")
+        put(
+            "settings",
+            buildJsonObject {
+                put("allowTransparent", false)
+                if (options.username.isNotBlank()) {
+                    put(
+                        "accounts",
+                        buildJsonArray {
+                            add(
+                                buildJsonObject {
+                                    put("user", options.username)
+                                    put("pass", options.password)
+                                },
+                            )
+                        },
+                    )
+                }
+            },
+        )
     }
 
     private fun buildConfigJson(

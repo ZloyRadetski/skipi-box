@@ -80,6 +80,25 @@ class LocalProxyXrayConfigTest {
     }
 
     @Test
+    fun httpInboundTakesTheSameLoginAsSocksWhenAuthIsOn() {
+        fun httpSettings(username: String) = LocalProxyXrayConfigFactory.buildHttpInbound(
+            LocalProxyXrayConfigOptions(
+                socksPort = 20_480,
+                httpProxyPort = 20_481,
+                enableHttpProxy = true,
+                username = username,
+                password = "secret",
+            ),
+        ).getValue("settings") as JsonObject
+
+        val withAuth = httpSettings("user")
+        val account = withAuth.getValue("accounts").jsonArray.single() as JsonObject
+        assertEquals("user", account.getValue("user").jsonPrimitive.content)
+        assertEquals("secret", account.getValue("pass").jsonPrimitive.content)
+        assertEquals(false, httpSettings("").containsKey("accounts"))
+    }
+
+    @Test
     fun rejectsCollidingHttpAndSocksPorts() {
         assertFailsWith<IllegalArgumentException> {
             LocalProxyXrayConfigFactory.build(

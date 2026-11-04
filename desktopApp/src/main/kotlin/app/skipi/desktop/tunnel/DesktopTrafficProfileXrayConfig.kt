@@ -184,22 +184,7 @@ object DesktopTrafficProfileXrayConfigFactory {
                             ),
                         ),
                     )
-                    if (options.enableHttpProxy) {
-                        add(
-                            buildJsonObject {
-                                put("tag", LocalProxyXrayConfigFactory.HttpInboundTag)
-                                put("listen", options.httpProxyListenAddress)
-                                put("port", options.httpProxyPort)
-                                put("protocol", "http")
-                                put(
-                                    "settings",
-                                    buildJsonObject {
-                                        put("allowTransparent", false)
-                                    },
-                                )
-                            },
-                        )
-                    }
+                    if (options.enableHttpProxy) add(LocalProxyXrayConfigFactory.buildHttpInbound(options))
                 },
             )
             put(
