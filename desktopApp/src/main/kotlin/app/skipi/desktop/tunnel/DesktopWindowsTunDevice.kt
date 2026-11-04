@@ -19,15 +19,24 @@ internal class DesktopWindowsTunDevice(
     private val removeStaleAdapters: (String) -> Unit = ::removeStaleWintunAdapters,
 ) : DesktopTunDevice {
     private var interfaceName: String? = null
+    private var cleanup: java.util.concurrent.Future<*>? = null
 
+    /**
+     * The PowerShell clean-up of stale adapters takes a few hundred milliseconds; it only has to be
+     * done before hev creates its adapter, so it runs beside Core's start and is awaited in [open].
+     */
     override fun prepare(interfaceName: String): Result<Unit> = runCatching {
         this.interfaceName = interfaceName
-        removeStaleAdapters(interfaceName)
+        cleanup = cleanupExecutor.submit { runCatching { removeStaleAdapters(interfaceName) } }
         core.prepareTun(interfaceName)
     }
 
     /** Windows hands over no descriptor: hev opens the adapter itself. */
-    override fun open(planJson: String): Result<Int> = Result.success(NoDescriptor)
+    override fun open(planJson: String): Result<Int> {
+        runCatching { cleanup?.get(30, java.util.concurrent.TimeUnit.SECONDS) }
+        cleanup = null
+        return Result.success(NoDescriptor)
+    }
 
     override fun attach(plan: TunInterfacePlan): Result<Unit> = routes.attach(plan)
 
@@ -40,6 +49,9 @@ internal class DesktopWindowsTunDevice(
 
     private companion object {
         const val NoDescriptor = -1
+        val cleanupExecutor: java.util.concurrent.ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor { task ->
+            Thread(task, "skipi-tun-cleanup").apply { isDaemon = true }
+        }
     }
 }
 

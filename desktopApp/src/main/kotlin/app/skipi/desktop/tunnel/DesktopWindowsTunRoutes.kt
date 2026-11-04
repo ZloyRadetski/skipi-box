@@ -43,8 +43,8 @@ internal class DesktopWindowsTunRoutes(
     private val run: (List<String>) -> Result<Unit> = ::runWindowsCommand,
     private val adapterExists: (String) -> Boolean = ::windowsAdapterExists,
     private val sleep: (Long) -> Unit = Thread::sleep,
-    private val attempts: Int = 50,
-    private val pollMillis: Long = 100,
+    private val attempts: Int = 200,
+    private val pollMillis: Long = 25,
 ) {
     private var attached: TunInterfacePlan? = null
 

@@ -130,23 +130,27 @@ internal fun createDesktopTunnelController(
         // No silent fallback: with TUN mode on, a machine that cannot run it fails the connect and says why.
         tunMode = { readSettings().enableTunMode },
         prepareTun = {
-            runCatching {
-                tunHost.unavailableReason()?.let { reason -> error(reason) }
-                tunHost.tunRuntime().prepare(desktopTunInterfacePlan(readSettings(), readConfigs())).getOrThrow()
+            timedTunStage("prepare") {
+                runCatching {
+                    tunHost.unavailableReason()?.let { reason -> error(reason) }
+                    tunHost.tunRuntime().prepare(desktopTunInterfacePlan(readSettings(), readConfigs())).getOrThrow()
+                }
             }
         },
         releaseTun = { runCatching { tunHost.tunRuntime().release().getOrThrow() } },
         startTun = {
-            runCatching {
-                tunHost.unavailableReason()?.let { reason -> error(reason) }
-                val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
-                    ?: error("SKIPI Core is not running")
-                val request = desktopTunStartRequest(
-                    plan = desktopTunInterfacePlan(readSettings(), readConfigs()),
-                    options = options,
-                    logPath = DesktopLogger.logDirectory().resolve("tun2socks.log").toString(),
-                )
-                tunHost.tunRuntime().start(request).getOrThrow()
+            timedTunStage("start") {
+                runCatching {
+                    tunHost.unavailableReason()?.let { reason -> error(reason) }
+                    val options = localProxyRuntime.activeOptions(coreRunning = coreController.state().isRunning)
+                        ?: error("SKIPI Core is not running")
+                    val request = desktopTunStartRequest(
+                        plan = desktopTunInterfacePlan(readSettings(), readConfigs()),
+                        options = options,
+                        logPath = DesktopLogger.logDirectory().resolve("tun2socks.log").toString(),
+                    )
+                    tunHost.tunRuntime().start(request).getOrThrow()
+                }
             }
         },
         stopTun = { runCatching { tunHost.tunRuntime().stop().getOrThrow() } },
@@ -154,4 +158,13 @@ internal fun createDesktopTunnelController(
         tunSupported = { tunHost.hostSupported },
     )
 
+}
+
+/** Logs how long a TUN stage took, so a slow platform shows where the time goes. */
+private inline fun <T> timedTunStage(stage: String, block: () -> Result<T>): Result<T> {
+    val started = System.nanoTime()
+    val result = block()
+    val millis = (System.nanoTime() - started) / 1_000_000
+    DesktopLogger.info("Tun", "TUN $stage took $millis ms" + if (result.isFailure) " (failed)" else "")
+    return result
 }
