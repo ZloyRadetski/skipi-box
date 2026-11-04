@@ -44,6 +44,7 @@ internal fun prepareDesktopTunnelStartPlan(
             settings = settings,
             excludedPorts = excludedPorts,
             allocatePort = allocatePort,
+            jsonAuth = serverLibrary.selectedServerJsonAuth(),
         )
         val generated = buildDesktopSelectedServerConfigWithBridge(
             serverLibrary = serverLibrary,

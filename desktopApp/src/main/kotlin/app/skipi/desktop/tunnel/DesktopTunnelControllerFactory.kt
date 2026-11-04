@@ -39,7 +39,10 @@ internal fun createDesktopTunnelController(
             val latencySnapshot = readLatency().toMap()
             runCatching {
                 val globalAssetsDirectory = DesktopCoreRuntimes.discover().getOrThrow().directory
-                val options = localProxyRuntime.prepareStart(settingsSnapshot)
+                val options = localProxyRuntime.prepareStart(
+                    settingsSnapshot,
+                    jsonAuth = serverLibrarySnapshot.selectedServerJsonAuth(),
+                )
                 buildDesktopSelectedServerConfig(
                     serverLibrary = serverLibrarySnapshot,
                     configLibrary = configLibrarySnapshot,

@@ -15,6 +15,9 @@ import app.skipi.app.model.SubscriptionRecord
 import engine.network.toPortOrNull
 import java.time.Duration
 import platform.DefaultLocalSocksPort
+import platform.LocalProxyAuth
+import platform.LocalProxyCredentials
+import platform.LocalProxyJsonAuth
 import platform.LocalProxyXrayConfigOptions
 import platform.allocateAvailableTcpPort
 
@@ -38,19 +41,28 @@ internal fun allocateDesktopLocalProxyPort(
 ): Int? = allocateAvailableTcpPort(listenAddress, excludedPorts)
 
 /** Builds the current local Core listener options, including enabled SOCKS credentials. */
+/**
+ * The Core listener options of these settings. [jsonAuth] is the login the selected custom JSON carries on
+ * its own inbounds, which the "auto" and "from JSON" modes read.
+ */
 internal fun DesktopAppSettings.toLocalProxyXrayConfigOptions(
     resolvedSocksPort: Int? = null,
     resolvedHttpPort: Int? = null,
     logPaths: DesktopCoreLogPaths = DesktopCoreLogPaths.default(),
+    jsonAuth: LocalProxyJsonAuth? = null,
 ): LocalProxyXrayConfigOptions = LocalProxyXrayConfigOptions(
     socksPort = resolvedSocksPort
         ?: (localProxyPortRaw ?: localProxyPort.toString()).toPortOrNull()
         ?: DefaultLocalSocksPort,
     httpProxyPort = resolvedHttpPort ?: localHttpProxyPort,
-    enableHttpProxy = useSystemProxy && isDesktopSystemProxySupported(),
+    enableHttpProxy = httpInboundEnabled(),
     listenAddress = localProxyListenAddress,
-    username = if (enableLocalProxyAuth) localProxyUsername.trim() else "",
-    password = if (enableLocalProxyAuth) localProxyPassword else "",
+    // The HTTP inbound listens like SOCKS; a system proxy still points at loopback, which a wildcard listener serves too.
+    httpProxyListenAddress = localProxyListenAddress,
+    username = resolvedSocksLogin(jsonAuth).username,
+    password = resolvedSocksLogin(jsonAuth).password,
+    httpUsername = resolvedHttpLogin(jsonAuth).username,
+    httpPassword = resolvedHttpLogin(jsonAuth).password,
     logLevel = coreLogLevel,
     log = XrayLogConfigRequest(
         coreLogLevel = DesktopCoreLogLevels.indexOf(coreLogLevel).takeIf { it >= 0 } ?: 3,
@@ -84,7 +96,8 @@ internal fun desktopSettingsNeedReconnect(previous: DesktopAppSettings, updated:
 
 private fun DesktopAppSettings.coreRuntimeInputs(): List<Any?> = listOf(
     localProxyPort, localProxyPortRaw, localHttpProxyPort, useSystemProxy, localProxyListenAddress,
-    enableDynamicLocalProxyPort, enableLocalProxyAuth, localProxyUsername, localProxyPassword,
+    enableDynamicLocalProxyPort, enableLocalProxyAuth, localProxyUsername, localProxyPassword, localProxyAuthMode,
+    enableLocalHttpProxy, enableLocalHttpProxyAuth, localHttpProxyAuthMode, localHttpProxyUsername, localHttpProxyPassword,
     coreLogLevel, enableAccessLog, subscriptionPingUrl,
     enableTunMode, enableStrictFullTunnel, tunMtu, tunIpv4Cidr, tunIpv6Cidr, tunVpnDns,
     tunTcpKeepAliveInterval, tunTcpUserTimeout,
@@ -137,11 +150,13 @@ internal class DesktopLocalProxyRuntime {
     fun prepareStart(
         settings: DesktopAppSettings,
         excludedPorts: Set<Int> = emptySet(),
+        /** The login of the selected custom JSON, which the "auto" and "from JSON" modes read. */
+        jsonAuth: LocalProxyJsonAuth? = null,
         allocatePort: (String, Set<Int>) -> Int? = ::allocateDesktopLocalProxyPort,
     ): LocalProxyXrayConfigOptions {
         synchronized(lock) { pendingStartOptions = null }
 
-        val baseOptions = settings.toLocalProxyXrayConfigOptions()
+        val baseOptions = settings.toLocalProxyXrayConfigOptions(jsonAuth = jsonAuth)
         val reservedPorts = buildSet {
             addAll(excludedPorts)
             if (baseOptions.enableHttpProxy) add(baseOptions.httpProxyPort)
@@ -169,6 +184,7 @@ internal class DesktopLocalProxyRuntime {
         val options = settings.toLocalProxyXrayConfigOptions(
             resolvedSocksPort = resolvedSocksPort,
             resolvedHttpPort = resolvedHttpPort,
+            jsonAuth = jsonAuth,
         )
         synchronized(lock) { pendingStartOptions = options }
         return options
@@ -226,3 +242,19 @@ internal class DesktopLocalProxyRuntime {
         return base.copy(proxy = proxy)
     }
 }
+
+/** The HTTP inbound runs when the user switched it on or when the system proxy, which points at it, is on. */
+internal fun DesktopAppSettings.httpInboundEnabled(): Boolean =
+    enableLocalHttpProxy || (useSystemProxy && isDesktopSystemProxySupported())
+
+private fun DesktopAppSettings.resolvedSocksLogin(jsonAuth: LocalProxyJsonAuth?) = LocalProxyAuth.resolve(
+    socksAuthMode(),
+    LocalProxyCredentials(localProxyUsername, localProxyPassword),
+    jsonAuth?.socks,
+)
+
+private fun DesktopAppSettings.resolvedHttpLogin(jsonAuth: LocalProxyJsonAuth?) = LocalProxyAuth.resolve(
+    httpAuthMode(),
+    LocalProxyCredentials(localHttpProxyUsername, localHttpProxyPassword),
+    jsonAuth?.http,
+)

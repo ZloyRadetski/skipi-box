@@ -28,6 +28,7 @@ import features.updater.AppUpdateChannel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import platform.LocalProxyAuthMode
 import kotlinx.serialization.json.Json
 import features.routing.model.DefaultRouteOutboundTag
 import features.routing.model.RouteRule
@@ -60,6 +61,14 @@ data class DesktopAppSettings(
     val enableLocalProxyAuth: Boolean = false,
     val localProxyUsername: String = "",
     val localProxyPassword: String = "",
+    /** SOCKS auth mode while [enableLocalProxyAuth] is on; the switch itself is the "Off" mode. */
+    val localProxyAuthMode: LocalProxyAuthMode = LocalProxyAuthMode.Auto,
+    /** The HTTP inbound: the system proxy uses it, and so can any HTTP client or a LAN device. */
+    val enableLocalHttpProxy: Boolean = useSystemProxy,
+    val enableLocalHttpProxyAuth: Boolean = false,
+    val localHttpProxyAuthMode: LocalProxyAuthMode = LocalProxyAuthMode.Auto,
+    val localHttpProxyUsername: String = "",
+    val localHttpProxyPassword: String = "",
     val coreLogLevel: String = "error",
     val subscriptionFetchTimeoutSeconds: Int = 30,
     val subscriptionPingMode: Int = SubscriptionPingModeHttp,
@@ -169,7 +178,7 @@ data class DesktopAppSettings(
 }
 
 object DesktopSettingsLibraries {
-    private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
+    private val json = Json { ignoreUnknownKeys = true; prettyPrint = true; coerceInputValues = true }
 
     fun defaultPath(): Path = Path.of(
         System.getenv("APPDATA")?.takeIf(String::isNotBlank) ?: System.getProperty("user.home"),
@@ -252,6 +261,8 @@ internal fun DesktopAppSettings.normalized(
         localProxyListenAddress = normalizedListenAddress,
         useSystemProxy = effectiveSystemProxy,
         useWindowsSystemProxy = effectiveSystemProxy,
+        // The system proxy points at the HTTP inbound, so a file that had it on keeps the inbound on.
+        enableLocalHttpProxy = enableLocalHttpProxy || effectiveSystemProxy,
         coreLogLevel = coreLogLevel.trim().lowercase().takeIf { it in DesktopCoreLogLevels } ?: "error",
         subscriptionUserAgents = normalizeSkipiUserAgents(subscriptionUserAgents.ifEmpty { DefaultSubscriptionUserAgents }),
         subscriptionFetchTimeoutSeconds = subscriptionFetchTimeoutSeconds.coerceIn(10, 120),

@@ -245,7 +245,7 @@ class DesktopTrafficProfileXrayConfigTest {
     }
 
     @Test
-    fun rejectsTrafficProfileHttpInboundOutsideLoopback() {
+    fun trafficProfileHttpInboundMayListenOnTheLanLikeSocks() {
         val server = ProxyServer.parse(
             "vless://8b4a2b20-c533-4d13-a3e0-bb0a8d7eb9c6@alpha.example:443#Alpha",
         )
@@ -256,7 +256,7 @@ class DesktopTrafficProfileXrayConfigTest {
             content = "[Rule]\\nFINAL,PROXY\\n",
         )
 
-        assertFailsWith<IllegalArgumentException> {
+        val root = Json.parseToJsonElement(
             DesktopTrafficProfileXrayConfigFactory.build(
                 profile = profile,
                 serverLibrary = library,
@@ -264,10 +264,15 @@ class DesktopTrafficProfileXrayConfigTest {
                     socksPort = 20_480,
                     httpProxyPort = 20_481,
                     httpProxyListenAddress = "0.0.0.0",
+                    listenAddress = "0.0.0.0",
                     enableHttpProxy = true,
                 ),
-            )
-        }
+            ),
+        ).jsonObject
+
+        val http = root.getValue("inbounds").jsonArray.map { it.jsonObject }
+            .first { inbound -> inbound.getValue("protocol").jsonPrimitive.content == "http" }
+        assertEquals("0.0.0.0", http.getValue("listen").jsonPrimitive.content)
     }
 
     @Test

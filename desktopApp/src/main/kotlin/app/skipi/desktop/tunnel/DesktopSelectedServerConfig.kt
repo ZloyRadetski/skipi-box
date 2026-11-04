@@ -23,6 +23,8 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import platform.LocalProxyAuth
+import platform.LocalProxyJsonAuth
 import platform.LocalProxyXrayConfigFactory
 import platform.LocalProxyXrayConfigOptions
 import engine.vpn.AmneziaWgBridgePlan
@@ -199,4 +201,13 @@ internal fun buildDesktopCustomXrayConfig(
         }
     }
     return formatCustomXrayConfigJson(cleanConfig)
+}
+
+/**
+ * The login the selected raw JSON server carries on its own socks and http inbounds, which the "auto"
+ * and "from JSON" modes read. Any other server carries none.
+ */
+internal fun DesktopServerLibrary.selectedServerJsonAuth(): LocalProxyJsonAuth? {
+    val selected = selectedServerId?.let { id -> servers.firstOrNull { it.id == id } }?.decode()?.getOrNull()
+    return (selected as? Custom)?.let { custom -> LocalProxyAuth.readJsonAuth(custom.configJson) }
 }

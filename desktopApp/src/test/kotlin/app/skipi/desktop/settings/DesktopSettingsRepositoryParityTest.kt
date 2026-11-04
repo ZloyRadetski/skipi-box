@@ -122,6 +122,13 @@ class DesktopSettingsRepositoryParityTest {
             authenticationEnabled = true,
             username = "desktop-user",
             password = "desktop-secret",
+            authMode = platform.LocalProxyAuthMode.Manual,
+            httpEnabled = true,
+            httpPort = "18081",
+            httpAuthenticationEnabled = true,
+            httpAuthMode = platform.LocalProxyAuthMode.FromJson,
+            httpUsername = "http-user",
+            httpPassword = "http-secret",
         )
         val reminders = listOf(SubscriptionExpiryReminder(2, ExpiryReminderUnit.Days))
         val subscriptions = SubscriptionPreferences(
@@ -146,6 +153,13 @@ class DesktopSettingsRepositoryParityTest {
         assertTrue(fixture.settings.enableLocalProxyAuth)
         assertEquals("desktop-user", fixture.settings.localProxyUsername)
         assertEquals("desktop-secret", fixture.settings.localProxyPassword)
+        assertEquals(platform.LocalProxyAuthMode.Manual, fixture.settings.localProxyAuthMode)
+        assertTrue(fixture.settings.enableLocalHttpProxy)
+        assertEquals(18_081, fixture.settings.localHttpProxyPort)
+        assertTrue(fixture.settings.enableLocalHttpProxyAuth)
+        assertEquals(platform.LocalProxyAuthMode.FromJson, fixture.settings.localHttpProxyAuthMode)
+        assertEquals("http-user", fixture.settings.localHttpProxyUsername)
+        assertEquals("http-secret", fixture.settings.localHttpProxyPassword)
         assertEquals(45, fixture.settings.subscriptionFetchTimeoutSeconds)
         assertFalse(fixture.settings.sendDeviceHeaders)
         assertEquals("https://probe.example/check", fixture.settings.subscriptionPingUrl)

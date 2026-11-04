@@ -32,7 +32,9 @@ import features.subscription.DefaultSubscriptionGroupId
 import features.subscription.StoredSubscription
 import features.subscription.StoredSubscriptionMetadata
 import features.subscription.SubscriptionProviderLibrary
+import platform.DefaultLocalHttpProxyPort
 import platform.DefaultLocalSocksPort
+import platform.parseLocalProxyAuthMode
 
 /** Every Desktop store a backup covers, restored or reset together. */
 internal data class DesktopUserData(
@@ -302,6 +304,13 @@ private fun DesktopAppSettings.toBackupSettings(selectedServerId: Int?): AppBack
         enableLocalProxyAuth = enableLocalProxyAuth,
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
+        localProxyAuthMode = localProxyAuthMode.name,
+        enableLocalHttpProxy = enableLocalHttpProxy,
+        localHttpProxyPort = localHttpProxyPort.toString(),
+        enableLocalHttpProxyAuth = enableLocalHttpProxyAuth,
+        localHttpProxyAuthMode = localHttpProxyAuthMode.name,
+        localHttpProxyUsername = localHttpProxyUsername,
+        localHttpProxyPassword = localHttpProxyPassword,
         enableNetworkAutomation = enableNetworkAutomation,
         enableOnDemandVpn = enableOnDemandVpn,
         networkAutomationRules = networkAutomationRules,
@@ -393,6 +402,13 @@ private fun AppBackupSettings.toDesktopSettings(current: DesktopAppSettings, dat
         enableLocalProxyAuth = enableLocalProxyAuth,
         localProxyUsername = localProxyUsername,
         localProxyPassword = localProxyPassword,
+        localProxyAuthMode = parseLocalProxyAuthMode(localProxyAuthMode),
+        enableLocalHttpProxy = enableLocalHttpProxy,
+        localHttpProxyPort = localHttpProxyPort.toIntOrNull()?.takeIf { it in 1..65_535 } ?: DefaultLocalHttpProxyPort,
+        enableLocalHttpProxyAuth = enableLocalHttpProxyAuth,
+        localHttpProxyAuthMode = parseLocalProxyAuthMode(localHttpProxyAuthMode),
+        localHttpProxyUsername = localHttpProxyUsername,
+        localHttpProxyPassword = localHttpProxyPassword,
         enableNetworkAutomation = enableNetworkAutomation,
         enableOnDemandVpn = enableOnDemandVpn,
         networkAutomationRules = networkAutomationRules,

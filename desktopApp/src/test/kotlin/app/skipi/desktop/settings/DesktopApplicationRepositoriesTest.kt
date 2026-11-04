@@ -761,7 +761,7 @@ class DesktopApplicationRepositoriesTest {
         assertTrue(proxy.listenAllInterfaces)
         assertEquals("10808", proxy.port)
         assertEquals("0.0.0.0:10808", proxy.socksEndpoint)
-        assertFalse(proxy.authenticationEnabled)
+        assertEquals(platform.LocalProxyAuthMode.Off, proxy.socksAuthMode)
 
         val subscriptions = original.toSubscriptionSettingsState()
         assertEquals(30, subscriptions.fetchTimeoutSeconds)

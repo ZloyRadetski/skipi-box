@@ -77,9 +77,7 @@ object DesktopTrafficProfileXrayConfigFactory {
             require(options.httpProxyPort != options.socksPort) {
                 "Local HTTP proxy port must differ from the SOCKS port"
             }
-            require(options.httpProxyListenAddress == DefaultLocalHttpProxyListenAddress) {
-                "Windows system HTTP proxy must listen on $DefaultLocalHttpProxyListenAddress"
-            }
+            require(options.httpProxyListenAddress.isNotBlank()) { "Local HTTP proxy listen address must not be blank" }
         }
         require(options.listenAddress.isNotBlank()) { "Local SOCKS listen address must not be blank" }
 

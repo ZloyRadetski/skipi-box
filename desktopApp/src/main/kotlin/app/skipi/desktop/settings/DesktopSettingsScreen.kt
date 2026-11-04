@@ -673,10 +673,12 @@ private fun DesktopLocalProxySettings(
     val displayIp = lanAddress ?: settings.localProxyListenAddress
     val sharedState = settings.toLocalProxySettingsState().copy(
         port = portText,
+        httpPort = httpPortText,
         displayIp = displayIp,
         socksEndpoint = "$displayIp:${settings.localProxyPort}",
         httpEndpoint = "$displayIp:${settings.localHttpProxyPort}",
         portError = portError,
+        httpPortError = httpPortError.takeIf { settings.httpInboundEnabled() && !settings.enableDynamicLocalProxyPort },
     )
 
     SkipiLocalProxySettingsScreen(
@@ -690,17 +692,18 @@ private fun DesktopLocalProxySettings(
             portText = text
             settings.withLocalProxyPort(text)?.let { next -> onPersist(next, saved) }
         },
-        onListenAllInterfacesChange = { allow -> onPersist(settings.withListenAllInterfaces(allow), saved) },
-        onAuthenticationChange = { enabled -> onPersist(settings.copy(enableLocalProxyAuth = enabled), saved) },
-        onGenerateCredentials = {
-            onPersist(
-                settings.copy(
-                    localProxyUsername = generateRandomProxyCredential(),
-                    localProxyPassword = generateRandomProxyCredential(),
-                ),
-                generatedToast,
-            )
+        onHttpEnabledChange = { enabled -> onPersist(settings.withHttpInbound(enabled), saved) },
+        onHttpPortChange = { text ->
+            httpPortText = text
+            settings.withLocalHttpProxyPort(text)?.let { next -> onPersist(next, saved) }
         },
+        onListenAllInterfacesChange = { allow -> onPersist(settings.withListenAllInterfaces(allow), saved) },
+        onSocksAuthModeChange = { mode -> onPersist(settings.withSocksAuthMode(mode), saved) },
+        onHttpAuthModeChange = { mode -> onPersist(settings.withHttpAuthMode(mode), saved) },
+        onSocksCredentialsChange = { username, password -> onPersist(settings.withSocksCredentials(username, password), saved) },
+        onHttpCredentialsChange = { username, password -> onPersist(settings.withHttpCredentials(username, password), saved) },
+        onGenerateSocksCredentials = { onPersist(settings.withGeneratedSocksCredentials(), generatedToast) },
+        onGenerateHttpCredentials = { onPersist(settings.withGeneratedHttpCredentials(), generatedToast) },
         onCopy = { text, label ->
             copyToClipboard(text).fold(
                 onSuccess = { feedbackMessage = copiedTemplate.replace("%s", label).replace("%1\$s", label) },
@@ -709,6 +712,7 @@ private fun DesktopLocalProxySettings(
         },
         capabilities = LocalProxySettingsCapabilities(
             dynamicPort = true,
+            httpInbound = true,
             listenAllInterfaces = true,
             authentication = true,
             credentials = true,
@@ -722,15 +726,6 @@ private fun DesktopLocalProxySettings(
                         summary = "SKIPI временно настраивает системный HTTP/SOCKS прокси во время подключения.",
                         checked = settings.useSystemProxy,
                         onCheckedChange = { enabled -> onPersist(settings.withSystemProxy(enabled, supportsSystemProxy), saved) },
-                    )
-                    SkipiSettingsNumberField(
-                        value = httpPortText,
-                        onValueChange = { text ->
-                            httpPortText = sanitizeLocalProxyPort(text)
-                            settings.withLocalHttpProxyPort(httpPortText)?.let { next -> onPersist(next, saved) }
-                        },
-                        label = "Порт HTTP-прокси",
-                        error = httpPortError,
                     )
                     if (onClearSystemProxy != null) {
                         SkipiSettingsActionRow(
