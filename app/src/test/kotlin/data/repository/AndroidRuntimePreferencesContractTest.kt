@@ -67,6 +67,13 @@ class AndroidRuntimePreferencesContractTest {
                 authenticationEnabled = false,
                 username = " user ",
                 password = "secret",
+                authMode = original.localProxyAuthMode,
+                httpEnabled = original.enableLocalHttpProxy,
+                httpPort = original.localHttpProxyPort,
+                httpAuthenticationEnabled = original.enableLocalHttpProxyAuth,
+                httpAuthMode = original.localHttpProxyAuthMode,
+                httpUsername = original.localHttpProxyUsername,
+                httpPassword = original.localHttpProxyPassword,
             ),
             persisted.localProxy,
         )
@@ -90,6 +97,13 @@ class AndroidRuntimePreferencesContractTest {
         assertEquals(original.enableLocalProxyAuth, restored.enableLocalProxyAuth)
         assertEquals(original.localProxyUsername, restored.localProxyUsername)
         assertEquals(original.localProxyPassword, restored.localProxyPassword)
+        assertEquals(original.localProxyAuthMode, restored.localProxyAuthMode)
+        assertEquals(original.enableLocalHttpProxy, restored.enableLocalHttpProxy)
+        assertEquals(original.localHttpProxyPort, restored.localHttpProxyPort)
+        assertEquals(original.enableLocalHttpProxyAuth, restored.enableLocalHttpProxyAuth)
+        assertEquals(original.localHttpProxyAuthMode, restored.localHttpProxyAuthMode)
+        assertEquals(original.localHttpProxyUsername, restored.localHttpProxyUsername)
+        assertEquals(original.localHttpProxyPassword, restored.localHttpProxyPassword)
         assertEquals(original.subscriptionPingMode, restored.subscriptionPingMode)
         assertEquals(original.subscriptionPingUrl, restored.subscriptionPingUrl)
         assertEquals(original.subscriptionPingTimeoutMillis, restored.subscriptionPingTimeoutMillis)

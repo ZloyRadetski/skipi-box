@@ -16,6 +16,8 @@ import engine.network.toPortOrNull
 import engine.vpn.VpnDefaults
 import engine.xray.toJsonStringArray
 import engine.xray.xraySniffingDestOverrides
+import features.proxy.server.model.Custom
+import features.proxy.server.model.ProxyServer
 import platform.LocalProxyAuth
 import platform.LocalProxyJsonAuth
 import platform.LocalProxyXrayConfigFactory
@@ -145,4 +147,13 @@ fun availablePort(
     excludedPorts: Set<Int> = emptySet(),
 ): Int? {
     return findAvailableTcpPort(listenAddress, excludedPorts)
+}
+
+/**
+ * The listener options for a start with [selectedServer]: a raw JSON server also supplies the login its
+ * own inbounds carry, which the "auto" and "from JSON" modes read. Any other server carries none.
+ */
+fun AppState.toLocalProxyOptionsFor(selectedServer: ProxyServer<*>?): LocalProxyOptions {
+    val jsonAuth = (selectedServer as? Custom)?.let { custom -> LocalProxyAuth.readJsonAuth(custom.configJson) }
+    return toLocalProxyOptions(jsonAuth)
 }

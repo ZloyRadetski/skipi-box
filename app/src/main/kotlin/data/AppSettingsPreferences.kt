@@ -16,6 +16,7 @@ import app.AppState
 import features.updater.AppUpdateChannel
 import features.updater.AppUpdateDownloadStatus
 import features.updater.AppUpdateInfo
+import platform.parseLocalProxyAuthMode
 import features.config.TrafficConfigState
 import features.networkautomation.model.NetworkAutomationRule
 import features.config.TrafficConfigCustomResourceFile
@@ -180,6 +181,34 @@ internal class AppSettingsPreferences(
                 KeyLocalProxyPassword,
                 defaults.localProxyPassword,
             ) ?: defaults.localProxyPassword,
+            localProxyAuthMode = parseLocalProxyAuthMode(
+                preferences.getString(KeyLocalProxyAuthMode, null),
+                defaults.localProxyAuthMode,
+            ),
+            enableLocalHttpProxy = preferences.getBoolean(
+                KeyEnableLocalHttpProxy,
+                defaults.enableLocalHttpProxy,
+            ),
+            localHttpProxyPort = preferences.getString(
+                KeyLocalHttpProxyPort,
+                defaults.localHttpProxyPort,
+            ) ?: defaults.localHttpProxyPort,
+            enableLocalHttpProxyAuth = preferences.getBoolean(
+                KeyEnableLocalHttpProxyAuth,
+                defaults.enableLocalHttpProxyAuth,
+            ),
+            localHttpProxyAuthMode = parseLocalProxyAuthMode(
+                preferences.getString(KeyLocalHttpProxyAuthMode, null),
+                defaults.localHttpProxyAuthMode,
+            ),
+            localHttpProxyUsername = preferences.getString(
+                KeyLocalHttpProxyUsername,
+                defaults.localHttpProxyUsername,
+            ) ?: defaults.localHttpProxyUsername,
+            localHttpProxyPassword = preferences.getString(
+                KeyLocalHttpProxyPassword,
+                defaults.localHttpProxyPassword,
+            ) ?: defaults.localHttpProxyPassword,
             enableVpnAppendHttpProxy = preferences.getBoolean(
                 KeyEnableVpnAppendHttpProxy,
                 defaults.enableVpnAppendHttpProxy,
@@ -494,6 +523,13 @@ internal class AppSettingsPreferences(
             .putBoolean(KeyEnableLocalProxyAuth, state.enableLocalProxyAuth)
             .putString(KeyLocalProxyUsername, state.localProxyUsername)
             .putString(KeyLocalProxyPassword, state.localProxyPassword)
+            .putString(KeyLocalProxyAuthMode, state.localProxyAuthMode.name)
+            .putBoolean(KeyEnableLocalHttpProxy, state.enableLocalHttpProxy)
+            .putString(KeyLocalHttpProxyPort, state.localHttpProxyPort)
+            .putBoolean(KeyEnableLocalHttpProxyAuth, state.enableLocalHttpProxyAuth)
+            .putString(KeyLocalHttpProxyAuthMode, state.localHttpProxyAuthMode.name)
+            .putString(KeyLocalHttpProxyUsername, state.localHttpProxyUsername)
+            .putString(KeyLocalHttpProxyPassword, state.localHttpProxyPassword)
             .putBoolean(KeyEnableVpnAppendHttpProxy, state.enableVpnAppendHttpProxy)
             .putBoolean(KeyEnableVpnHevTun, state.enableVpnHevTun)
             .putBoolean(KeyEnableKillSwitch, state.enableKillSwitch)
@@ -894,6 +930,13 @@ private const val KeyLocalProxyListenAllInterfaces = "local_proxy_listen_all_int
 private const val KeyEnableLocalProxyAuth = "enable_local_proxy_auth"
 private const val KeyLocalProxyUsername = "local_proxy_username"
 private const val KeyLocalProxyPassword = "local_proxy_password"
+private const val KeyLocalProxyAuthMode = "local_proxy_auth_mode"
+private const val KeyEnableLocalHttpProxy = "enable_local_http_proxy"
+private const val KeyLocalHttpProxyPort = "local_http_proxy_port"
+private const val KeyEnableLocalHttpProxyAuth = "enable_local_http_proxy_auth"
+private const val KeyLocalHttpProxyAuthMode = "local_http_proxy_auth_mode"
+private const val KeyLocalHttpProxyUsername = "local_http_proxy_username"
+private const val KeyLocalHttpProxyPassword = "local_http_proxy_password"
 private const val KeyEnableVpnAppendHttpProxy = "enable_vpn_append_http_proxy"
 private const val KeyEnableVpnHevTun = "enable_vpn_hev_tun"
 private const val KeyEnableKillSwitch = "enable_kill_switch"

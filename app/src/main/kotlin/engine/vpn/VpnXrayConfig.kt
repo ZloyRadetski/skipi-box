@@ -17,7 +17,7 @@ import engine.hevtun.hevSocks5TunnelSocksTargetAddress
 import engine.proxy.LocalProxyOptions
 import engine.proxy.ProxyEngineStartRequest
 import engine.proxy.buildLocalSocksInbound
-import engine.proxy.toLocalProxyOptions
+import engine.proxy.toLocalProxyOptionsFor
 import engine.xray.XrayConfigFactory
 import engine.xray.XrayConfigRequest
 import engine.xray.XrayCoreLogPaths
@@ -84,7 +84,7 @@ internal object VpnXrayConfigFactory {
         // enforce the strict policy here as well as in AndroidProxyEngine.
         val appState = request.appState.withStrictFullTunnelApplied()
         val tunOptions = appState.toTunOptions()
-        val localProxyOptions = appState.toLocalProxyOptions()
+        val localProxyOptions = appState.toLocalProxyOptionsFor(request.selectedServer.server)
         val appendHttpProxyOptions = appState.toVpnAppendHttpProxyOptions(
             localProxyOptions = localProxyOptions,
             excludedPorts = emptySet(),

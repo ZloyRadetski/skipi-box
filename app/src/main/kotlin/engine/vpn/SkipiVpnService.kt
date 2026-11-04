@@ -443,7 +443,7 @@ class SkipiVpnService : VpnService() {
     }
 
     private fun Builder.applyAppendHttpProxy(config: VpnServiceStartConfig): Builder {
-        if (config.appendHttpProxyOptions.enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (config.appendHttpProxyOptions.appliesToVpn && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             setHttpProxy(ProxyInfo.buildDirectProxy(LocalProxyLoopbackAddress, config.appendHttpProxyOptions.port))
             AppLog.info(
                 LogTag,

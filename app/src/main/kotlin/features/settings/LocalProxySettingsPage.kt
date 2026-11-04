@@ -24,7 +24,12 @@ import app.skipi.ui.settings.LocalProxySettingsState
 import app.skipi.ui.settings.SkipiLocalProxySettingsScreen
 import app.skipi.ui.settings.isValidLocalProxyPort
 import engine.vpn.VpnDefaults
-import engine.vpn.fallbackAppendHttpProxyPort
+import app.httpProxyInboundEnabled
+import app.localProxyHttpAuthMode
+import app.localProxySocksAuthMode
+import app.withLocalHttpProxyInbound
+import app.withLocalProxyHttpAuthMode
+import app.withLocalProxySocksAuthMode
 import kotlinx.coroutines.launch
 import ui.clipboard.setPlainText
 
@@ -53,8 +58,14 @@ fun LocalProxySettingsPage(padding: PaddingValues) {
 
     val isCustomPort = !appState.enableDynamicLocalProxyPort
     val localPort = appState.localProxyPort.ifBlank { VpnDefaults.LOCAL_PROXY_PORT.toString() }
-    val httpPort = localPort.toIntOrNull()?.let(::fallbackAppendHttpProxyPort)
-        ?: (VpnDefaults.LOCAL_PROXY_PORT + 1)
+    val httpPort = appState.localHttpProxyPort.ifBlank { VpnDefaults.LOCAL_HTTP_PROXY_PORT.toString() }
+    val httpInboundOn = appState.httpProxyInboundEnabled
+    val httpPortError = when {
+        !httpInboundOn || !isCustomPort -> null
+        !isValidLocalProxyPort(appState.localHttpProxyPort) -> portInvalidMessage
+        appState.localHttpProxyPort == appState.localProxyPort -> portInvalidMessage
+        else -> null
+    }
     val displayIp = remember { localNetworkIpAddresses().firstOrNull() ?: "192.168.43.1" }
     val labels = rememberLocalProxySettingsLabels()
 
@@ -63,14 +74,19 @@ fun LocalProxySettingsPage(padding: PaddingValues) {
             dynamicPort = appState.enableDynamicLocalProxyPort,
             port = appState.localProxyPort,
             listenAllInterfaces = appState.localProxyListenAllInterfaces,
-            enableHttpEndpoint = appState.enableVpnAppendHttpProxy,
-            authenticationEnabled = appState.enableLocalProxyAuth,
+            enableHttpEndpoint = httpInboundOn,
+            httpPort = appState.localHttpProxyPort,
+            socksAuthMode = appState.localProxySocksAuthMode(),
+            httpAuthMode = appState.localProxyHttpAuthMode(),
             username = appState.localProxyUsername,
             password = appState.localProxyPassword,
+            httpUsername = appState.localHttpProxyUsername,
+            httpPassword = appState.localHttpProxyPassword,
             displayIp = displayIp,
             socksEndpoint = "$displayIp:$localPort",
             httpEndpoint = "$displayIp:$httpPort",
             portError = if (isCustomPort && !isValidLocalProxyPort(appState.localProxyPort)) portInvalidMessage else null,
+            httpPortError = httpPortError,
         ),
         labels = labels,
         padding = padding,
@@ -78,11 +94,29 @@ fun LocalProxySettingsPage(padding: PaddingValues) {
         onBack = navigator::pop,
         onDynamicPortChange = { enabled -> updateAppState { it.copy(enableDynamicLocalProxyPort = enabled) } },
         onPortChange = { port -> updateAppState { it.copy(localProxyPort = port) } },
+        onHttpEnabledChange = { enabled -> updateAppState { it.withLocalHttpProxyInbound(enabled) } },
+        onHttpPortChange = { port -> updateAppState { it.copy(localHttpProxyPort = port) } },
         onListenAllInterfacesChange = { enabled -> updateAppState { it.copy(localProxyListenAllInterfaces = enabled) } },
-        onAuthenticationChange = { enabled -> updateAppState { it.copy(enableLocalProxyAuth = enabled) } },
-        onGenerateCredentials = {
+        onSocksAuthModeChange = { mode -> updateAppState { it.withLocalProxySocksAuthMode(mode) } },
+        onHttpAuthModeChange = { mode -> updateAppState { it.withLocalProxyHttpAuthMode(mode) } },
+        onSocksCredentialsChange = { username, password ->
+            updateAppState { it.copy(localProxyUsername = username, localProxyPassword = password) }
+        },
+        onHttpCredentialsChange = { username, password ->
+            updateAppState { it.copy(localHttpProxyUsername = username, localHttpProxyPassword = password) }
+        },
+        onGenerateSocksCredentials = {
             updateAppState {
                 it.copy(localProxyUsername = generateRandomProxyCredential(), localProxyPassword = generateRandomProxyCredential())
+            }
+            scope.launch { tipNotifier.show(generatedToast) }
+        },
+        onGenerateHttpCredentials = {
+            updateAppState {
+                it.copy(
+                    localHttpProxyUsername = generateRandomProxyCredential(),
+                    localHttpProxyPassword = generateRandomProxyCredential(),
+                )
             }
             scope.launch { tipNotifier.show(generatedToast) }
         },

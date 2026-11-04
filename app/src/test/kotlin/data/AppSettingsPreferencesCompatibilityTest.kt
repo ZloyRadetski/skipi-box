@@ -7,6 +7,10 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
 import app.AppState
+import app.httpProxyInboundEnabled
+import app.localProxyHttpAuthMode
+import app.localProxySocksAuthMode
+import platform.LocalProxyAuthMode
 import app.modes.ConnectionDisplayModeCompact
 import app.modes.ProxyServerListLayoutDouble
 import app.modes.ProxyServerListLayoutMultiple
@@ -216,6 +220,61 @@ class AppSettingsPreferencesCompatibilityTest {
         val preferences = InMemorySharedPreferences().apply { seedString("app_update_channel", "weekly") }
 
         assertEquals(AppUpdateChannel.Stable, AppSettingsPreferences(TestContext(preferences)).load().appUpdateChannel)
+    }
+
+    @Test
+    fun theHttpInboundAndBothAuthModesSurviveSaveAndLoad() {
+        val preferences = InMemorySharedPreferences()
+        val store = AppSettingsPreferences(TestContext(preferences))
+        val state = AppState(
+            enableLocalHttpProxy = true,
+            localHttpProxyPort = "21001",
+            localProxyAuthMode = LocalProxyAuthMode.FromJson,
+            enableLocalHttpProxyAuth = true,
+            localHttpProxyAuthMode = LocalProxyAuthMode.Manual,
+            localHttpProxyUsername = "http-user",
+            localHttpProxyPassword = "http-pass",
+        )
+
+        store.save(state)
+        val loaded = store.load()
+
+        assertEquals(true, loaded.enableLocalHttpProxy)
+        assertEquals("21001", loaded.localHttpProxyPort)
+        assertEquals(LocalProxyAuthMode.FromJson, loaded.localProxyAuthMode)
+        assertEquals(true, loaded.enableLocalHttpProxyAuth)
+        assertEquals(LocalProxyAuthMode.Manual, loaded.localHttpProxyAuthMode)
+        assertEquals("http-user", loaded.localHttpProxyUsername)
+        assertEquals("http-pass", loaded.localHttpProxyPassword)
+    }
+
+    @Test
+    fun settingsStoredBeforeTheHttpInboundKeepItsDefaultsAndTheOldSocksSwitch() {
+        val preferences = InMemorySharedPreferences().apply {
+            seedBoolean("enable_local_proxy_auth", false)
+            seedBoolean("enable_vpn_append_http_proxy", true)
+        }
+
+        val loaded = AppSettingsPreferences(TestContext(preferences)).load()
+
+        assertEquals(false, loaded.enableLocalHttpProxy)
+        assertEquals("10809", loaded.localHttpProxyPort)
+        assertEquals(LocalProxyAuthMode.Off, loaded.localProxySocksAuthMode())
+        assertEquals(LocalProxyAuthMode.Off, loaded.localProxyHttpAuthMode())
+        assertTrue("the VPN proxy still needs the inbound", loaded.httpProxyInboundEnabled)
+    }
+
+    @Test
+    fun anUnknownStoredAuthModeFallsBackToAuto() {
+        val preferences = InMemorySharedPreferences().apply {
+            seedString("local_proxy_auth_mode", "FromTheFuture")
+            seedString("local_http_proxy_auth_mode", "")
+        }
+
+        val loaded = AppSettingsPreferences(TestContext(preferences)).load()
+
+        assertEquals(LocalProxyAuthMode.Auto, loaded.localProxyAuthMode)
+        assertEquals(LocalProxyAuthMode.Auto, loaded.localHttpProxyAuthMode)
     }
 }
 

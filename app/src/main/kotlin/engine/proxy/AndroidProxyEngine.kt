@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import app.AppState
+import app.httpProxyInboundEnabled
 import app.effects.resolveActiveNetworkConfig
 import app.withActiveTrafficConfigApplied
 import app.ProxyServerState
@@ -231,6 +232,10 @@ class AndroidProxyEngine(
             )
             if (canRetryWithAnotherPort) {
                 vpnState.localProxyPort.toIntOrNull()?.let(attemptedDynamicPorts::add)
+                // Either inbound may be the claimed one, so a dynamic retry avoids both ports.
+                if (vpnState.httpProxyInboundEnabled) {
+                    vpnState.localHttpProxyPort.toIntOrNull()?.let(attemptedDynamicPorts::add)
+                }
                 AppLog.warn(
                     LogTag,
                     "Local proxy port ${vpnState.localProxyPort} was claimed during startup; retrying with a new port",

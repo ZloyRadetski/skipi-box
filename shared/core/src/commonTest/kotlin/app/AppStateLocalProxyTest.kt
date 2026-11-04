@@ -84,3 +84,24 @@ class AppStateLocalProxyTest {
         assertTrue(AppState(enableVpnAppendHttpProxy = true).httpProxyInboundEnabled)
     }
 }
+
+class AppStateLocalProxyInboundSwitchTest {
+    @Test
+    fun switchingTheInboundOffAlsoSwitchesTheVpnProxyOff() {
+        val state = AppState(enableLocalHttpProxy = true, enableVpnAppendHttpProxy = true)
+
+        val off = state.withLocalHttpProxyInbound(false)
+
+        assertFalse(off.enableLocalHttpProxy)
+        assertFalse(off.enableVpnAppendHttpProxy)
+        assertFalse(off.httpProxyInboundEnabled)
+    }
+
+    @Test
+    fun switchingTheInboundOnLeavesTheVpnProxyAlone() {
+        val on = AppState().withLocalHttpProxyInbound(true)
+
+        assertTrue(on.enableLocalHttpProxy)
+        assertFalse(on.enableVpnAppendHttpProxy)
+    }
+}

@@ -156,3 +156,52 @@ class LocalProxyHttpOptionsTest {
         assertEquals("h-pass", options.password)
     }
 }
+
+class LocalProxyServerJsonAuthTest {
+    private val json = """
+        {"inbounds": [
+          {"protocol": "socks", "settings": {"auth": "password", "users": [{"user": "json-s", "pass": "json-sp"}]}},
+          {"protocol": "http", "settings": {"accounts": [{"user": "json-h", "pass": "json-hp"}]}}
+        ]}
+    """.trimIndent()
+
+    private val custom = features.proxy.server.model.Custom(remarks = "Raw", configJson = json)
+
+    @Test
+    fun aCustomServerSuppliesItsJsonLoginToTheAutoAndFromJsonModes() {
+        val state = AppState(enableLocalHttpProxy = true)
+            .withLocalProxySocksAuthMode(LocalProxyAuthMode.Auto)
+            .withLocalProxyHttpAuthMode(LocalProxyAuthMode.FromJson)
+
+        val options = state.toLocalProxyOptionsFor(custom)
+
+        assertEquals("json-s", options.username)
+        assertEquals("json-h", options.httpUsername)
+    }
+
+    @Test
+    fun otherServersAndNoServerCarryNoJsonLogin() {
+        val state = AppState(localProxyUsername = "stored", enableLocalHttpProxy = true)
+            .withLocalProxySocksAuthMode(LocalProxyAuthMode.Auto)
+            .withLocalProxyHttpAuthMode(LocalProxyAuthMode.FromJson)
+
+        val none = state.toLocalProxyOptionsFor(null)
+        assertEquals("stored", none.username)
+        assertEquals("", none.httpUsername)
+
+        val socks = state.toLocalProxyOptionsFor(features.proxy.server.model.Socks(server = "a.example", port = "1080"))
+        assertEquals("stored", socks.username)
+    }
+
+    @Test
+    fun manualAndOffIgnoreTheJson() {
+        val state = AppState(localProxyUsername = "stored", enableLocalHttpProxy = true)
+            .withLocalProxySocksAuthMode(LocalProxyAuthMode.Manual)
+            .withLocalProxyHttpAuthMode(LocalProxyAuthMode.Off)
+
+        val options = state.toLocalProxyOptionsFor(custom)
+
+        assertEquals("stored", options.username)
+        assertEquals("", options.httpUsername)
+    }
+}
